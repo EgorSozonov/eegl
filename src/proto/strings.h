@@ -87,7 +87,6 @@ Boole utf_iscomposing(Unt c);
 Boole utf_printable(Unt c);
 void appendSubDir(CS subDir, OUT DirName* dn);
 Boole removeSubDir(OUT DirName* restrict dn);
-declStruct(ChunkString);
 ChunkyString* createChunkyString(Arr(Byte const) c, Arena* a);
 void appendToChunkyString(Arr(Byte const) c, ChunkyString* chunky);
 CS toStringChunky(ChunkyString* chunky);

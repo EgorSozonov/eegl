@@ -11,7 +11,6 @@
 
 #define pub
 #define private static //full private (affects linking) - for functions
-#define comptime //compile-time private (doesn't affect linking) - for types and macros
 
 typedef unsigned char Byte;
 
@@ -33,12 +32,12 @@ typedef int32_t Int;
 
 #define generic(...)
 
-comptime typedef struct { //:Text
+typedef struct { //:Text
    S c;
    Unt len;
 } Text;
 
-comptime typedef struct { //:Slice
+typedef struct { //:Slice
    Unt c; //offset within the file
    Unt len;
 } Slice; //slice of text referencing the current source code file
@@ -62,7 +61,7 @@ pub typedef struct {
    S msg;
 } Error;
 
-comptime typedef struct {
+typedef struct {
    S c;       //absolute filename
    Unt dirLen; //length including the last '/' in the filename
    Unt len;    //full length (so that the short name lies in [dirLen + 1; len)
@@ -96,15 +95,15 @@ void* allocateOnArena(Unt, Arena*);
 
 #define CHUNK_QUANT 32768
 
-comptime typedef struct ArenaChunk ArenaChunk;
+typedef struct ArenaChunk ArenaChunk;
 
-comptime struct ArenaChunk { // :ArenaChunk
+struct ArenaChunk { // :ArenaChunk
    Unt size;
    ArenaChunk* next;
    char memory[]; // flexible array member
 };
 
-comptime struct Arena { // :Arena
+struct Arena { // :Arena
    ArenaChunk* firstChunk;
    ArenaChunk* currChunk;
    int currInd;
@@ -202,7 +201,7 @@ arenaTryFree(void* start, Unt len, Arena* a) {
 //{{{util types
 //{{{list
 
-#define GEN_TYPE_L(acc, T) acc typedef struct {\
+#define GEN_TYPE_L(T) typedef struct {\
       T* c;\
       Unt len;\
       Unt cap;\
@@ -233,11 +232,7 @@ arenaTryFree(void* start, Unt len, Arena* a) {
    st->len++;\
 }
 
-GEN_TYPE_L(comptime, Text);
-//GEN_TYPE_L(comptime, LText);
-
-
-//generic(private, add, L, uint8_t)
+GEN_TYPE_L(Text);
 
 #define create(A, B) create_##A##B
 
@@ -394,7 +389,7 @@ isNonempty_StringMap(StringMap* hm) {
 //}}}
 //{{{types
 
-comptime typedef struct {
+typedef struct {
    int parenLvl; // level of the ()
    int curlyLvl; // level of the {}
    Boole metParens;
@@ -403,29 +398,28 @@ comptime typedef struct {
 typedef enum {
    PUBLIC,
    PRIVATE,
-   COMPTIME,
    NONE_OR_ERROR
 } AccessLevel;
 
-comptime typedef struct {
+typedef struct {
    Unt tp : 6;
    Unt lenBts: 26;
    Unt startBt;
 } Token;
 
-comptime typedef struct { //:GenericMethod
+typedef struct { //:GenericMethod
    Slice name;
    Unt arity;
    LText* types;
 } GenericMethod;
 
-GEN_TYPE_L(comptime, Token);
+GEN_TYPE_L(Token);
 
-GEN_TYPE_L(comptime, GenericMethod);
+GEN_TYPE_L(GenericMethod);
 generic(2) GEN_create_L(private, GenericMethod);
 generic(2) GEN_add_L(private, GenericMethod);
 
-comptime typedef struct { //:GenParser
+typedef struct { //:GenParser
    LToken* tokens;
    S inp; //current position in "source"
    S source; //source code
@@ -755,7 +749,7 @@ genExternalMethod(OUT GenParser* g) {
    }
 }
 
-//`generic(1, comptime, method, type)` `generic(1)`
+//`generic(1, rivate, method, type)` `generic(1)`
 //We are here ^                      or here     ^
 //This is optional(there may be no arguments after arity)
 private Unt
@@ -775,7 +769,7 @@ genClosingParen(OUT GenParser* g) {
    return 0;
 }
 
-//The `generic(1, comptime, method, type)` which is for using externally defined generic methods
+//The `generic(1, rivate, method, type)` which is for using externally defined generic methods
 //We are here  ^
 private Unt
 genExternalMacro(OUT GenParser* g) {
@@ -875,7 +869,7 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
          if (!metParens && curlyLvl == 0) {
             append(
                OUT p, 
-               (ToplevelThing){.c = (Text){start, i - start}, .kind = CONSTANT, .acc = accLevel}
+               (ToplevelThing){.c = (Text){start, i - 1 - start}, .kind = CONSTANT, .acc = accLevel}
             );
             return;
          }
@@ -960,11 +954,8 @@ tryParseGeneric(OUT FileParse* p, OUT S* inp, Arena* a) {
 }
 
 
-comptime 
 #define forwDeclMarker "@@"
-comptime 
 #define forwDeclPrologue "//{{" "{" forwDeclMarker "forward declarations"
-comptime 
 #define forwDeclEpilogue "//}}" "}"
 
 private Text
@@ -1000,9 +991,6 @@ parseFile(Text source, FilePath fn, Arena* a) [[unsequenced]] {
             if (startsWith(inp, tConst("pub")) && isSpaceOrNewline(inp[3])) {
                inp = skipSpaces(inp + 3); //CONSUME "pub" and spaces after it
                tryParseToplevelThing(OUT &res, OUT &inp, PUBLIC);
-            } ei (startsWith(inp, tConst("comptime")) && isSpaceOrNewline(inp[8])) {
-               inp = skipSpaces(inp + 11); //CONSUME "comptime" and spaces after it
-               tryParseToplevelThing(OUT &res, OUT &inp, COMPTIME);
             } ei (startsWith(inp, tConst("private")) && isSpaceOrNewline(inp[7])) {
                inp = skipSpaces(inp + 7); //CONSUME "private" and spaces after it
                tryParseToplevelThing(OUT &res, OUT &inp, PRIVATE);
@@ -1034,7 +1022,7 @@ parseFile(Text source, FilePath fn, Arena* a) [[unsequenced]] {
 
 private Unt
 toplevelLen(ToplevelThing* t) {
-   return t->c.len + 2; //+2 for the semicolon & newline char
+   return t->kind == MACRO ? t->c.len + 1 : t->c.len + 2; //+2 for the semicolon & newline char
 }
 
 private void
@@ -1062,9 +1050,14 @@ toplevelWrite(OUT S* w, ToplevelThing* t) {
    }
    memcpy(*w, t->c.c, t->c.len);
    *w += t->c.len;
-   (*w)[0] = ';';
-   (*w)[1] = '\n';
-   *w += 2;
+   if (t->kind == MACRO) {
+      (*w)[0] = '\n';
+      (*w)++;
+   } else { 
+      (*w)[0] = ';';
+      (*w)[1] = '\n';
+      *w += 2;
+   } 
 }
 
 //Create a string like `LLText`
@@ -1133,12 +1126,13 @@ addGeneric(OUT FileParse* r, GenParser g) {
 //}}}
 //{{{writing
 
+//Build header file for public functions
 //Return allocated string, caller must free it
 private Text
 buildPublicHeader(FileParse* r) [[unsequenced]] {
    Unt totalLen = 0;
    for (Unt i = 0; i < r->len; i++) {
-      if (r->c[i].acc == PUBLIC && r->c[i].kind != MACRO) {
+      if (r->c[i].acc == PUBLIC && r->c[i].kind == FUNCTION) {
          totalLen += toplevelLen(r->c + i); 
       }
    }
@@ -1147,7 +1141,7 @@ buildPublicHeader(FileParse* r) [[unsequenced]] {
    newContent[totalLen] = ZERO;
    S w = newContent;
    for (Unt i = 0; i < r->len; i++) {
-      if (r->c[i].acc == PUBLIC && r->c[i].kind != MACRO) {
+      if (r->c[i].acc == PUBLIC && r->c[i].kind == FUNCTION) {
          toplevelWrite(OUT &w, r->c + i);
       }
    }
@@ -1162,10 +1156,10 @@ buildPublicHeader(FileParse* r) [[unsequenced]] {
 
 //Return allocated string, caller must free it
 private Text
-buildMacroHeader(FileParse* r) [[unsequenced]] {
+buildNonFnHeader(FileParse* r) [[unsequenced]] {
    Unt totalLen = 0;
    for (Unt i = 0; i < r->len; i++) {
-      if (r->c[i].acc == PUBLIC && r->c[i].kind == MACRO) {
+      if (r->c[i].acc == PUBLIC && r->c[i].kind != FUNCTION) {
          totalLen += toplevelLen(r->c + i); 
       }
    }
@@ -1174,7 +1168,7 @@ buildMacroHeader(FileParse* r) [[unsequenced]] {
    newContent[totalLen] = ZERO;
    S w = newContent;
    for (Unt i = 0; i < r->len; i++) {
-      if (r->c[i].acc == PUBLIC && r->c[i].kind == MACRO) {
+      if (r->c[i].acc == PUBLIC && r->c[i].kind != FUNCTION) {
          toplevelWrite(OUT &w, r->c + i);
       }
    }
@@ -1203,13 +1197,13 @@ dirExists(S path) {
 }
 
 private S
-determinePublicName(FileParse* r, Boole isMacro, NULLABLE S subdir) [[unsequenced]] {
+determinePublicName(FileParse* r, Boole isNonFns, NULLABLE S subdir) [[unsequenced]] {
    S publicName;
-   Unt macrosLen = isMacro ? 7 : 0;
+   Unt suffixLen = isNonFns ? 6 : 0;
    Unt len;
    if (subdir) {
       Unt subdirLen = strlen(subdir);
-      len = r->fn.len + 1 + macrosLen + subdirLen; //+1 for the slash for the subdir
+      len = r->fn.len + 1 + suffixLen + subdirLen; //+1 for the slash for the subdir
       publicName = malloc(len + 1);
       publicName[len] = ZERO;
       memcpy(publicName, r->fn.c, r->fn.dirLen);
@@ -1229,17 +1223,17 @@ determinePublicName(FileParse* r, Boole isMacro, NULLABLE S subdir) [[unsequence
             r->fn.c + r->fn.dirLen, 
             r->fn.len - r->fn.dirLen - 1 //-1 for the to-be overwritten "c" at the end
       );
-      if (isMacro) {
-         memcpy(publicName + r->fn.len + subdirLen, "macros.", macrosLen);
+      if (isNonFns) {
+         memcpy(publicName + r->fn.len + subdirLen, "types.", suffixLen);
       }
       publicName[len - 1] = 'h';
    } else {
-      len = r->fn.len + macrosLen;
+      len = r->fn.len + suffixLen;
       publicName = malloc(len + 1);
       publicName[len] = ZERO;
       memcpy(publicName, r->fn.c, r->fn.len - 1);
-      if (isMacro) {
-         memcpy(publicName + r->fn.len, "macros.", macrosLen); //-1 to overwrite the dot
+      if (isNonFns) {
+         memcpy(publicName + r->fn.len, "types.", suffixLen); //-1 to overwrite the dot
       }
       publicName[len - 1] = 'h';
    }
@@ -1247,8 +1241,8 @@ determinePublicName(FileParse* r, Boole isMacro, NULLABLE S subdir) [[unsequence
 }
 
 private void
-writePublicHeader(FileParse* r, Boole isMacro, S publicName) {
-   Text publicContent = isMacro ? buildMacroHeader(r) : buildPublicHeader(r);
+writePublicHeader(FileParse* r, Boole isNonFns, S publicName) {
+   Text publicContent = isNonFns ? buildNonFnHeader(r) : buildPublicHeader(r);
    
    FILE* out = fopen(publicName, "w");
    fputs(publicContent.c, out);
@@ -1462,7 +1456,7 @@ private void
 writeResults(FileParse* r, NULLABLE S subdir) {
    Unt countPublics = 0;
    Unt countPrivateFns = 0; //functions only, only they need forward declarations
-   Unt countMacros = 0;
+   Unt countNonFns = 0;
    for (Unt i = 0; i < r->len; i++) {
       ToplevelThing thing = r->c[i];
       
@@ -1474,17 +1468,17 @@ writeResults(FileParse* r, NULLABLE S subdir) {
          break;
       default:
       }
-      if (thing.kind == MACRO) {
-         countMacros++;
+      if (thing.acc == PUBLIC && thing.kind != FUNCTION) {
+         countNonFns++;
       }
    }
    if (countPublics > 0) {
       S publicName = determinePublicName(r, false, subdir);
       writePublicHeader(r, false, publicName);
    }
-   if (countMacros > 0) {
-      S macrosName = determinePublicName(r, true, subdir);
-      writePublicHeader(r, true, macrosName);
+   if (countNonFns > 0) {
+      S nonFnsName = determinePublicName(r, true, subdir);
+      writePublicHeader(r, true, nonFnsName);
    }
    if (countPrivateFns > 0) {
       //Need to rewrite the source file (.c) to add/update the forward fn declarations
@@ -1503,7 +1497,7 @@ printUsage() {
     printf("\n");
 }
 
-comptime typedef struct {
+typedef struct {
    S fn;
    NULLABLE S subdir;
    Boole correct;

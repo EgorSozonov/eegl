@@ -4,13 +4,141 @@
 //## hilite.c: hiliting text
 
 #include "eegl.h"
+#include "proto/book.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
 
+//{{{types
+
+//Parsed single names like the hilite group name or "clear"
+typedef struct {
+   Short start;
+   Short end;
+} HiKey;
+
+// Parsed key-value pairs like "fg=blue"
+typedef struct {
+   Short start;
+   Short keyEnd; // position of the "=". The value starts at (keyEnd + 1)
+   Short end;
+} HiKeyValue;
+
+//Information about a hilite group. The ID of a hilite group is also called group ID.
+//This is module-private info, the publically usable part is written to decorationsG.
+
+typedef struct {
+   Unt hiId;
+   Text name;
+   VTermDeco flags;   //flag of text decoration combo (bold, underline etc)
+   Byte fieldPresence; // HI_* flags
+   VTermColor fg; // foreground color
+   VTermColor bg; // background color
+   VTermColor under; // underline color, if underline is applied
+    
+   int link;   // link to this hilite group ID
+   int deflink;   // default link; restored in clearHiliteWorker()
+   ScriptPos deflink_sctx; // script where the default link was set
+   ScriptPos script_ctx;   // script in which the group was last set
+} HiliteGroup;
+
+
+// All possible keys, used for parsing
+typedef enum {
+   BG,
+   FG,
+   UNDER,
+   DECO,
+   LINK,
+   KEY_PARSE_ERROR
+} HiliteKey;
+
+//For the current state we need to remember more than just the idx.
+//When matchEndPos.lnum is 0, the items other than si_idx are unknown.
+//(The end positions have the column number of the next char)
+typedef struct state_item {
+   int si_idx;         // index of syntax pattern or KEYWORD_IDX
+   Short hiId;         // highlight group ID for keywords
+   int transparentHiId;      // idem, transparency removed
+   int matchLnum;      // lnum of the match
+   int matchStartCol;      // starting column of the match
+   PosNoVirt matchEndPos;      // just after end posn of the match
+   PosNoVirt hiStartPos;      // start position of the highlighting
+   PosNoVirt hiEndPos;      // end position of the highlighting
+   PosNoVirt endPattEndPos;      // end position of end pattern
+   int si_end_idx;      // group ID for end pattern or zero
+   int si_ends;      // if match ends before matchEndPos
+   char flags;      // decorations in this state
+   long si_flags;      // HL_HAS_EOL flag in this state, and HL_SKIP* for nextList
+   Short* si_containsHiId;      // list of contained groups
+   Short* nextList;      // nextgroup IDs after this item ends
+   RegExternalMatch *si_extmatch;   // \z(...\) matches from start pattern
+} StateItem;
+
+// struct passed to in_id_list()
+typedef struct {
+   int   inc_tag;   // ":syn include" unique tag
+   Short   hiId;      // highlight group ID of item
+   Short* containedInHiId;   // cont.in group IDs, if non-zero
+} SyntaxInfo;
+
+// different types of offsets that are possible
+#define SPO_MS_OFF   0   // match  start offset
+#define SPO_ME_OFF   1   // match  end   offset
+#define SPO_HS_OFF   2   // hilite start offset
+#define SPO_HE_OFF   3   // hilite end   offset
+#define SPO_RS_OFF   4   // region start offset
+#define SPO_RE_OFF   5   // region end   offset
+#define SPO_LC_OFF   6   // leading context offset
+#define SPO_COUNT    7
+
+//The patterns that are being searched for are stored in a syn_pattern.
+//A match item consists of one pattern.
+//A start/end item consists of n start patterns and m end patterns.
+//A start/skip/end item consists of n start patterns, one skip pattern and m
+//end patterns.
+//For the latter two, the patterns are always consecutive: start-skip-end.
+//
+//A character offset can be given for the matched text (_m_start and _m_end)
+//and for the actually highlighted text (_h_start and _h_end).
+//
+//Note that ordering of members is optimized to reduce padding.
+typedef struct syn_pattern {
+   char sp_type;      // see SPTYPE_ defines below
+   char syncing;      // this item used for syncing
+   Short patternHiId; // highlight group ID of pattern
+   Short sp_off_flags; // see below
+   int sp_offsets[SPO_COUNT];   // offsets
+   Unt sp_flags;      // see HL_ defines below
+   Boole sp_ic;         // ignore-case flag for prog
+   int sp_sync_idx;      // sync item index (syncing only)
+   int sp_line_id;      // ID of last line where tried
+   int sp_startcol;      // next match in sp_line_id line
+   Short* sp_containsHiId;      // cont. group IDs, if non-zero
+   Short* sp_next_list;      // next group IDs, if non-zero
+   SyntaxInfo syntax;      // struct passed to in_id_list()
+   CS pattern;      // regexp to match, pattern
+   RegProg* prog;      // regexp to match, program
+} SyntaxPattern;
+
+typedef int SynTime;
+
+// Struct to reduce the number of arguments to get_syn_options(), it's used very often.
+typedef struct {
+   int flags;      // flags for contained and transparent
+   int keyword;   // true for ":syn keyword"
+   int* sync_idx;   // syntax item for "grouphere" argument, NULL if not allowed
+   Boole has_containsHiId;   // true if "containsHiId" can be used
+   Short* containsHiId;   // group IDs for "contains" argument
+   Short* containedInHiId;   // group IDs for "containedin" argument
+   Short* next_list;   // group IDs for "nextgroup" argument
+} SynOptArg;
+
+//}}}
 //{{{@@forward declarations
 private Text keyName(HiKey kv, CS s);
 private Text keyOf(HiKeyValue kv, CS s);
 private Text valueOf(HiKeyValue kv, CS s);
 private Boole sliceCmpToConst0(Text a, Arr(char) b, Unt len);
-private char *(hiliteGroupStrings[]) =;
 private Text hiliteGroupName(Short hiId);
 private void initializeGroups(void);
 private int setDecoration(Text arg, OUT HiliteGroup* g);
@@ -47,7 +175,6 @@ private Short hiResolveLinks(Short hiId);
 private HiliteGroup* resolveLinksByGroup(HiliteGroup* group);
 private Bag * getDecorationDict(int hlDeco);
 private Bag* toDict(Short hiId, int resolveLinks);
-private CS (spo_name_tab[SPO_COUNT]) =;
 private void clear_syn_state(SyntaxState *p);
 private void clear_current_state(void);
 private void syn_sync(Portal   *wp, LineNr   start_lnum, SyntaxState   *last_valid);
@@ -113,10 +240,10 @@ private void syn_add_start_off(
 private CS syn_getcurline(void);
 private ColNr syn_getcurline_len(void);
 private int syn_regexec(
-   RegMultilineMatch   *rmp,
-   LineNr   lnum,
-   ColNr   col,
-   syn_Time*
+   RegMultilineMatch* rmp,
+   LineNr lnum,
+   ColNr col,
+   SynTime*
 );
 private Short check_keyword_id(
    CS line,
@@ -132,7 +259,7 @@ private void syn_cmd_foldlevel(Invocation* invo, int);
 private void syn_cmd_spell(Invocation* invo, int);
 private void syn_cmd_iskeyword(Invocation* invo, int);
 private void syntax_sync_clear(void);
-private void syn_remove_pattern( SyntaxBlock   *block, int      idx);
+private void syn_remove_pattern(SyntaxBlock* block, int idx);
 private void syn_clear_pattern(SyntaxBlock *block, int i);
 private void syn_clear_cluster(SyntaxBlock *block, int i);
 private void clearSubcommand(Invocation* invo, int syncing);
@@ -214,59 +341,16 @@ private int syn_cur_foldlevel(void);
 //}}}
 //{{{Hilite groups
 
-//Information about a hilite group. The ID of a hilite group is also called group ID.
-//This is module-private info, the publically usable part is written to decorationsG.
-
-typedef struct {
-   Unt hiId;
-   Text name;
-   VTermDeco flags;   //flag of text decoration combo (bold, underline etc)
-   Byte fieldPresence; // HI_* flags
-   VTermColor fg; // foreground color
-   VTermColor bg; // background color
-   VTermColor under; // underline color, if underline is applied
-    
-   int link;   // link to this hilite group ID
-   int deflink;   // default link; restored in clearHiliteWorker()
-   ScriptPos deflink_sctx; // script where the default link was set
-   ScriptPos script_ctx;   // script in which the group was last set
-} HiliteGroup;
-
-// All possible keys, used for parsing
-typedef enum {
-   BG,
-   FG,
-   UNDER,
-   DECO,
-   LINK,
-   KEY_PARSE_ERROR
-} HiliteKey;
-
 typedef struct {
    int nameStart; // index into "colorsText"
    int nameLen;
    VTermColor value;
 } BuiltinColor;
 
-
-//Parsed single names like the hilite group name or "clear"
-typedef struct {
-   Short start;
-   Short end;
-} HiKey;
-
 private Text
 keyName(HiKey kv, CS s) {
    return (Text){.c = s + kv.start, .len = kv.end - kv.start};
 }
-
-// Parsed key-value pairs like "fg=blue"
-typedef struct {
-   Short start;
-   Short keyEnd; // position of the "=". The value starts at (keyEnd + 1)
-   Short end;
-} HiKeyValue;
-
 
 private Text
 keyOf(HiKeyValue kv, CS s) {
@@ -317,7 +401,7 @@ private Kv* decoKindIndices[] = {
 
 #define COMBINE_DECORATIONS(d0, d1) ((((d1) & HL_NOCOMBINE) ? (d1) : (d0)) | (d1))
 
-comptime enum {
+enum {
     BLACK = 0,
     DARKBLUE,
     DARKGREEN,
@@ -349,98 +433,98 @@ comptime enum {
 };
 
 // The hilite groups. Keep in sync with the HLF_* constants
-private char *(hiliteGroupStrings[]) = {
-   "None fg=regular7 bg=regular0", //0
-   "NonText deco=bold fg=regular4",
-   "NormalFloat link=None",
-   "InvisAtEndOfScreen link=None", // HLF_AT chars at end of screen, chars that don't really exist in text 
-   "Directories link=None",        //HLF_D directories in CTRL-D listing
-   "ErrorMsg bg=regular1 fg=regular7", //HLF_E  error messages
-   "WarningMsg link=None",         // HLF_W       warning messages
-   "MoreMsg link=None",            // 10 HLF_M    "--More--" message
-   "ModeName deco=bold",           // HLF_CM    Mode (e.g., "-- INSERT --")
-   "CurrentLineNr link=None",      // HLF_CLN   current line number
-   "CurrentSign link=None",        // HLF_CLS   current line sign column
-   "CurrentFold link=None",        // HLF_CLF   current line fold
-   "YesNoQuestions link=None",     // HLF_R     return to continue message and yes/no questions
-   "StatusLine deco=inverse",      // HLF_S  status lines
-   "StatusLinesInactive deco=inverse", // HLF_SNC    status lines of not-current portals
-   "VertSplit deco=inverse",       // HLF_C    column to separate vertically split portals
-   "OutputOfAutocmd link=None",    // HLF_T     Titles for output from ":set all", ":autocmd" etc.
-   "VisualMode deco=bold",         // 20 HLF_V       Visual mode
-   "VisualModeAutoselecting link=None", // HLF_VNC   Visual mode, autoselecting and not clipboard owner
-   "WildcardMenu link=None",       // HLF_WM    Wildmenu hilite
-   "FoldedLine link=None",         // HLF_FL      Folded line
-   "DiffTextAdd fg=regular2",      // HLF_ADD  Added diff line
-   "DiffText fg=regular4",         // HLF_CHD  Changed diff line
-   "DiffChangedTextInChanged link=None", // HLF_TXD  Text Changed in changed diff line
-   "DiffAddedTextInChanged link=None", // HLF_TXA  Text Added in changed diff line
+private CS hiliteGroupStrings[] = {
+   S"None fg=regular7 bg=regular0", //0
+   S"NonText deco=bold fg=regular4",
+   S"NormalFloat link=None",
+   S"InvisAtEndOfScreen link=None", // HLF_AT chars at end of screen, chars that don't really exist in text 
+   S"Directories link=None",        //HLF_D directories in CTRL-D listing
+   S"ErrorMsg bg=regular1 fg=regular7", //HLF_E  error messages
+   S"WarningMsg link=None",         // HLF_W       warning messages
+   S"MoreMsg link=None",            // 10 HLF_M    "--More--" message
+   S"ModeName deco=bold",           // HLF_CM    Mode (e.g., "-- INSERT --")
+   S"CurrentLineNr link=None",      // HLF_CLN   current line number
+   S"CurrentSign link=None",        // HLF_CLS   current line sign column
+   S"CurrentFold link=None",        // HLF_CLF   current line fold
+   S"YesNoQuestions link=None",     // HLF_R     return to continue message and yes/no questions
+   S"StatusLine deco=inverse",      // HLF_S  status lines
+   S"StatusLinesInactive deco=inverse", // HLF_SNC    status lines of not-current portals
+   S"VertSplit deco=inverse",       // HLF_C    column to separate vertically split portals
+   S"OutputOfAutocmd link=None",    // HLF_T     Titles for output from ":set all", ":autocmd" etc.
+   S"VisualMode deco=bold",         // 20 HLF_V       Visual mode
+   S"VisualModeAutoselecting link=None", // HLF_VNC   Visual mode, autoselecting and not clipboard owner
+   S"WildcardMenu link=None",       // HLF_WM    Wildmenu hilite
+   S"FoldedLine link=None",         // HLF_FL      Folded line
+   S"DiffTextAdd fg=regular2",      // HLF_ADD  Added diff line
+   S"DiffText fg=regular4",         // HLF_CHD  Changed diff line
+   S"DiffChangedTextInChanged link=None", // HLF_TXD  Text Changed in changed diff line
+   S"DiffAddedTextInChanged link=None", // HLF_TXA  Text Added in changed diff line
    // Deleted diff line
-   "DiffDeleted deco=bold bg=bright6 fg=regular4", // HLF_DED
-   "SignColumn bg=grey10 fg=regular6", // 30 HLF_SC Sign column
-   "Pmenu bg=regular4 bg=regular0", // HLF_PNI  popup menu normal item
-   "PmenuSelected bg=grey4",         // HLF_PSI  popup menu selected item
-   "PmenuMatchedText link=None",   // HLF_PMNI popup menu matched text in normal item
-   "PmenuMatchedInSelected link=None", // HLF_PMSI popup menu matched text in selected item
-   "PmenuNormalItem link=None",    // HLF_PNK  popup menu normal item "kind"
-   "PmenuSelectedItem link=None",  // HLF_PSK   popup menu selected item "kind"
-   "PmenuExtraText link=None",     // HLF_PNX   popup menu normal item "menu" (extra text)
-   "PmenuSelectedExtraText link=None", // HLF_PSX   popup menu selected item "menu" (extra text)
-   "PmenuScrollbar bg=grey12",       // HLF_PSB  popup menu scrollbar
-   "PmenuScrollBarThumb  bg=regular7", // 40 HLF_PST  popup menu scrollbar thumb
-   "Tabpanel deco=underline bg=grey4", // HLF_TPL   tabpanel
-   "TabpanelSelected link=None",   // HLF_TPLS  tabpanel selected
-   "TabpanelFill link=None",       // HLF_TPLF  tabpanel filler
-   "CursorLine  bg=444",             // HLF_CUL  'cursorline'
-   "LocationPortalSelected link=PmenuSelectedItem", //HLF_QFL   location portal line currently 
-                                                    //selected
-   "TerminalStatusLine link=None", // 50 HLF_ST    status lines of terminal portals
-   "TerminalNoncurrentStatusLine link=None", //HLF_STNC  status lines of not-current terminal 
-                                               //portals
-   "TerminalRed fg=regular1",      //HLF_TERMR  status lines of not-current terminal portals
-   "TerminalGreen fg=bright2",     //HLF_TERMG  status lines of not-current terminal portals
-   "TerminalBlue fg=bright4",      //HLF_TERMB  status lines of not-current terminal portals
-   "MessageArea link=None",        //HLF_MSG   message area
-   "MetaSpecialKeys link=None",    //HLF_8 Meta & special keys listed with ":map", text that is 
-                                   //   displayed different
-   "LineNr fg=regular3",           //HLF_N   line number for ":number" and ":#" commands
-   "LineNrAbove link=None",        //HLF_LNA  LineNrAbove
-   "LineNrBelow link=None",        //HLF_LNB  LineNrBelow
-   "Directory fg=bright6",
-   "CursorLineNr deco=bold fg=regular3",
-   "MoreMsg deco=bold fg=143",
-   "Question deco=bold fg=bright2", 
-   "SpecialKey fg=bright4",
-   "Title deco=bold fg=bright5",
-   "WarningMsg bg=grey7 fg=bright1",
-   "InfoMsg bg=grey6 fg=bright2",
-   "WildMenu bg=regular3 fg=regular0",
-   "Folded bg=grey2 fg=bright6",
-   "Visual bg=grey16 fg=grey23",
-   "ColorColumn bg=regular1",
-   "MatchParen bg=regular6",
-   "StatusLineTerm deco=bold fg=regular2 bg=bright2",
-   "StatusLineTermNC fg=353 bg=050",
-   "Search fg=regular0 bg=bright3",
-   "CurSearch link=Search",
-   "LocationLine link=Search",
-   "Comment fg=regular2",
-   "Constant fg=544",
-   "Special fg=540",
-   "Identifier fg=255",
-   "Statement fg=552",
-   "PreProc fg=525",
-   "Type fg=353",
-   "Keyword fg=550",
-   "Underlined fg=125 deco=underline",
-   "Ignore fg=grey7",
-   "Added fg=252",
-   "Changed fg=225",
-   "Removed fg=regular1",
-   "Error bg=regular1",
-   "Todo bg=regular3 fg=regular4",
-   "Bold deco=bold",
-   "Italic deco=italic"
+   S"DiffDeleted deco=bold bg=bright6 fg=regular4", // HLF_DED
+   S"SignColumn bg=grey10 fg=regular6", // 30 HLF_SC Sign column
+   S"Pmenu bg=regular4 bg=regular0", // HLF_PNI  popup menu normal item
+   S"PmenuSelected bg=grey4",         // HLF_PSI  popup menu selected item
+   S"PmenuMatchedText link=None",   // HLF_PMNI popup menu matched text in normal item
+   S"PmenuMatchedInSelected link=None", // HLF_PMSI popup menu matched text in selected item
+   S"PmenuNormalItem link=None",    // HLF_PNK  popup menu normal item "kind"
+   S"PmenuSelectedItem link=None",  // HLF_PSK   popup menu selected item "kind"
+   S"PmenuExtraText link=None",     // HLF_PNX   popup menu normal item "menu" (extra text)
+   S"PmenuSelectedExtraText link=None", // HLF_PSX   popup menu selected item "menu" (extra text)
+   S"PmenuScrollbar bg=grey12",       // HLF_PSB  popup menu scrollbar
+   S"PmenuScrollBarThumb  bg=regular7", // 40 HLF_PST  popup menu scrollbar thumb
+   S"Tabpanel deco=underline bg=grey4", // HLF_TPL   tabpanel
+   S"TabpanelSelected link=None",   // HLF_TPLS  tabpanel selected
+   S"TabpanelFill link=None",       // HLF_TPLF  tabpanel filler
+   S"CursorLine  bg=444",             // HLF_CUL  'cursorline'
+   S"LocationPortalSelected link=PmenuSelectedItem", //HLF_QFL   location portal line currently 
+                                                     //selected
+   S"TerminalStatusLine link=None", // 50 HLF_ST    status lines of terminal portals
+   S"TerminalNoncurrentStatusLine link=None", //HLF_STNC  status lines of not-current terminal 
+                                              //portals
+   S"TerminalRed fg=regular1",      //HLF_TERMR  status lines of not-current terminal portals
+   S"TerminalGreen fg=bright2",     //HLF_TERMG  status lines of not-current terminal portals
+   S"TerminalBlue fg=bright4",      //HLF_TERMB  status lines of not-current terminal portals
+   S"MessageArea link=None",        //HLF_MSG   message area
+   S"MetaSpecialKeys link=None",    //HLF_8 Meta & special keys listed with ":map", text that is 
+   S                                //   displayed different
+   S"LineNr fg=regular3",           //HLF_N   line number for ":number" and ":#" commands
+   S"LineNrAbove link=None",        //HLF_LNA  LineNrAbove
+   S"LineNrBelow link=None",        //HLF_LNB  LineNrBelow
+   S"Directory fg=bright6",
+   S"CursorLineNr deco=bold fg=regular3",
+   S"MoreMsg deco=bold fg=143",
+   S"Question deco=bold fg=bright2", 
+   S"SpecialKey fg=bright4",
+   S"Title deco=bold fg=bright5",
+   S"WarningMsg bg=grey7 fg=bright1",
+   S"InfoMsg bg=grey6 fg=bright2",
+   S"WildMenu bg=regular3 fg=regular0",
+   S"Folded bg=grey2 fg=bright6",
+   S"Visual bg=grey16 fg=grey23",
+   S"ColorColumn bg=regular1",
+   S"MatchParen bg=regular6",
+   S"StatusLineTerm deco=bold fg=regular2 bg=bright2",
+   S"StatusLineTermNC fg=353 bg=050",
+   S"Search fg=regular0 bg=bright3",
+   S"CurSearch link=Search",
+   S"LocationLine link=Search",
+   S"Comment fg=regular2",
+   S"Constant fg=544",
+   S"Special fg=540",
+   S"Identifier fg=255",
+   S"Statement fg=552",
+   S"PreProc fg=525",
+   S"Type fg=353",
+   S"Keyword fg=550",
+   S"Underlined fg=125 deco=underline",
+   S"Ignore fg=grey7",
+   S"Added fg=252",
+   S"Changed fg=225",
+   S"Removed fg=regular1",
+   S"Error bg=regular1",
+   S"Todo bg=regular3 fg=regular4",
+   S"Bold deco=bold",
+   S"Italic deco=italic"
 }; 
    
 // The names of hilite groups, separated by ZERO. Same len as hiliteGroupStrings
@@ -1323,7 +1407,7 @@ typedef struct buf_state {
 // syn_state contains the syntax state stack for the start of one line. Used by array[].
 typedef struct SyntaxState SyntaxState;
 
-private struct SyntaxState {
+struct SyntaxState {
    SyntaxState   *next; // next entry in used or free list
    LineNr   lnum;   // line number for this state
    union {
@@ -1338,17 +1422,10 @@ private struct SyntaxState {
 };
 
 
-// struct passed to in_id_list()
-typedef struct {
-   int   inc_tag;   // ":syn include" unique tag
-   Short   hiId;      // highlight group ID of item
-   Short* containedInHiId;   // cont.in group IDs, if non-zero
-} SyntaxInfo;
-
 // Each keyword has one keyentry, which is linked in a hash list.
 typedef struct KeyEntry KeyEntry;
 
-private struct KeyEntry {
+struct KeyEntry {
    KeyEntry   *next;   // next entry with identical "keyword[]"
    SyntaxInfo syntax;   // struct passed to in_id_list()
    Short* next_list;   // ID list for next match (if non-zero)
@@ -1356,48 +1433,9 @@ private struct KeyEntry {
    Byte keyword[1];   // actually longer
 };
 
-// different types of offsets that are possible
-#define SPO_MS_OFF   0   // match  start offset
-#define SPO_ME_OFF   1   // match  end   offset
-#define SPO_HS_OFF   2   // hilite start offset
-#define SPO_HE_OFF   3   // hilite end   offset
-#define SPO_RS_OFF   4   // region start offset
-#define SPO_RE_OFF   5   // region end   offset
-#define SPO_LC_OFF   6   // leading context offset
-#define SPO_COUNT    7
-
-private CS (spo_name_tab[SPO_COUNT]) = {
+private CS spo_name_tab[SPO_COUNT] = {
    SMAP((CS), "ms=", "me=", "hs=", "he=", "rs=", "re=", "lc=")
 };
-
-//The patterns that are being searched for are stored in a syn_pattern.
-//A match item consists of one pattern.
-//A start/end item consists of n start patterns and m end patterns.
-//A start/skip/end item consists of n start patterns, one skip pattern and m
-//end patterns.
-//For the latter two, the patterns are always consecutive: start-skip-end.
-//
-//A character offset can be given for the matched text (_m_start and _m_end)
-//and for the actually highlighted text (_h_start and _h_end).
-//
-//Note that ordering of members is optimized to reduce padding.
-typedef struct syn_pattern {
-   char sp_type;      // see SPTYPE_ defines below
-   char syncing;      // this item used for syncing
-   Short patternHiId; // highlight group ID of pattern
-   Short sp_off_flags; // see below
-   int sp_offsets[SPO_COUNT];   // offsets
-   Unt sp_flags;      // see HL_ defines below
-   Boole sp_ic;         // ignore-case flag for prog
-   int sp_sync_idx;      // sync item index (syncing only)
-   int sp_line_id;      // ID of last line where tried
-   int sp_startcol;      // next match in sp_line_id line
-   Short* sp_containsHiId;      // cont. group IDs, if non-zero
-   Short* sp_next_list;      // next group IDs, if non-zero
-   SyntaxInfo syntax;      // struct passed to in_id_list()
-   CS pattern;      // regexp to match, pattern
-   RegProg* prog;      // regexp to match, program
-} SyntaxPattern;
 
 // The sp_off_flags are computed like this:
 // offset from the start of the matched text: (1 << SPO_XX_OFF)
@@ -1481,42 +1519,9 @@ private int keepend_level = -1;
 
 private Byte msg_no_items[] = "No Syntax items defined for this buffer";
 
-//For the current state we need to remember more than just the idx.
-//When matchEndPos.lnum is 0, the items other than si_idx are unknown.
-//(The end positions have the column number of the next char)
-typedef struct state_item {
-   int si_idx;         // index of syntax pattern or KEYWORD_IDX
-   Short hiId;         // highlight group ID for keywords
-   int transparentHiId;      // idem, transparency removed
-   int matchLnum;      // lnum of the match
-   int matchStartCol;      // starting column of the match
-   PosNoVirt matchEndPos;      // just after end posn of the match
-   PosNoVirt hiStartPos;      // start position of the highlighting
-   PosNoVirt hiEndPos;      // end position of the highlighting
-   PosNoVirt endPattEndPos;      // end position of end pattern
-   int si_end_idx;      // group ID for end pattern or zero
-   int si_ends;      // if match ends before matchEndPos
-   char flags;      // decorations in this state
-   long si_flags;      // HL_HAS_EOL flag in this state, and HL_SKIP* for nextList
-   Short* si_containsHiId;      // list of contained groups
-   Short* nextList;      // nextgroup IDs after this item ends
-   RegExternalMatch *si_extmatch;   // \z(...\) matches from start pattern
-} StateItem;
-
 #define KEYWORD_IDX   (-1)       // value of si_idx for keywords
 #define ID_LIST_ALL   ((Short *)-1) // valid of si_containsHiId for containing all
                                     // but contained groups
-
-// Struct to reduce the number of arguments to get_syn_options(), it's used very often.
-typedef struct {
-   int flags;      // flags for contained and transparent
-   int keyword;   // true for ":syn keyword"
-   int* sync_idx;   // syntax item for "grouphere" argument, NULL if not allowed
-   Boole has_containsHiId;   // true if "containsHiId" can be used
-   Short* containsHiId;   // group IDs for "contains" argument
-   Short* containedInHiId;   // group IDs for "containedin" argument
-   Short* next_list;   // group IDs for "nextgroup" argument
-} SynOptArg;
 
 //The next possible match in the current line for any pattern is remembered,
 //to avoid having to try for a match in each column.
@@ -1559,7 +1564,6 @@ private int current_line_id = 0;   // unique number for current line
 #define CUR_STATE(idx)   ((StateItem *)(current_state.c))[idx]
 
 #define IF_SYN_TIME(p) NULL
-typedef int syn_Time;
 
 private void syn_stack_apply_changes_block(SyntaxBlock *block, Book* book);
 private void find_endpos(
@@ -3672,22 +3676,21 @@ syn_getcurline_len(void) {
 // Call eeRegexec() to find a match with "rmp" in "synBookS". Return true when there is a match.
 private int
 syn_regexec(
-   RegMultilineMatch   *rmp,
-   LineNr   lnum,
-   ColNr   col,
-   syn_Time*
+   RegMultilineMatch* rmp,
+   LineNr lnum,
+   ColNr col,
+   SynTime*
 ) {
-   int      r;
-   int      timed_out = false;
+   int timed_out = false;
 
-   if (rmp->regprog == NULL)
+   if (!rmp->regprog)
       // This can happen if a previous call to eeRegexec_multi() tried to
       // use the NFA engine, which resulted in NFA_TOO_EXPENSIVE, and
       // compiling the pattern with the other engine fails.
       return false;
 
    rmp->rmm_maxcol = SYNTAX_MAX_COL;
-   r = eeRegexec_multi(rmp, syntPortS, synBookS, lnum, col, &timed_out);
+   int r = eeRegexec_multi(rmp, syntPortS, synBookS, lnum, col, &timed_out);
 
    if (timed_out && redrawtime_limit_set && !syntPortS->ownSyntax->redrawTime) {
       syntPortS->ownSyntax->redrawTime = true;
@@ -3933,7 +3936,7 @@ syntax_clear(SyntaxBlock *block) {
 
 // Get rid of ownsyntax for window "wp".
 pub void
-reset_synblock(Portal *wp) {
+reset_synblock(Portal* wp) {
    if (wp->ownSyntax != &wp->book->syntax) {
       syntax_clear(wp->ownSyntax);
       eeglFree(wp->ownSyntax);
@@ -3964,10 +3967,8 @@ syntax_sync_clear(void) {
 
 // Remove one pattern from the buffer's pattern list.
 private void
-syn_remove_pattern( SyntaxBlock   *block, int      idx) {
-   SyntaxPattern   *spp;
-
-   spp = &(SYN_ITEMS(block)[idx]);
+syn_remove_pattern(SyntaxBlock* block, int idx) {
+   SyntaxPattern* spp = &(SYN_ITEMS(block)[idx]);
    if (spp->sp_flags & HL_FOLD)
       --block->b_syn_folditems;
    syn_clear_pattern(block, idx);
@@ -6120,7 +6121,7 @@ syntax_present(Portal* po) {
        || po->ownSyntax->keywordsIgnoreCase.count > 0);
 }
 
-comptime enum {
+enum {
    EXP_SUBCMD,       // expand ":syn" sub-commands
    EXP_CASE,       // expand ":syn case" arguments
    EXP_SPELL,       // expand ":syn spell" arguments
@@ -6249,17 +6250,6 @@ syn_get_id(
    return (trans ? current_trans_id : current_id);
 }
 
-#if defined(PROTO)
-// Get extra information about the syntax item.  Must be called right after syntGetDeco().
-// Stores the current item sequence nr in "*seqnrp". Returns the current flags.
-pub int
-get_syntax_info(int *seqnrp) {
-   *seqnrp = current_seqnr;
-   return current_flags;
-}
-
-#endif
-
 // Return the syntax ID at position "i" in the current stack. The caller must have called 
 // syn_get_id() before to fill the stack. Returns -1 when "i" is out of range.
 pub int
@@ -6276,7 +6266,7 @@ syn_get_stack_item(int i) {
 
 private int
 syn_cur_foldlevel(void) {
-   int      level = 0;
+   int  level = 0;
    for (int i = 0; i < current_state.len; ++i) {
       if (CUR_STATE(i).si_flags & HL_FOLD)
          ++level;
@@ -6288,8 +6278,6 @@ syn_cur_foldlevel(void) {
 pub int
 syn_get_foldlevel(Portal *po, long lnum) {
    int level = 0;
-   int low_level;
-   int cur_level;
 
    // Return quickly when there are no fold items at all.
    if (po->ownSyntax->b_syn_folditems != 0 && !po->ownSyntax->b_syn_error){
@@ -6300,8 +6288,8 @@ syn_get_foldlevel(Portal *po, long lnum) {
 
       if (po->ownSyntax->foldLevel == SYNFLD_MINIMUM) {
          // Find the lowest fold level that is followed by a higher one.
-         cur_level = level;
-         low_level = cur_level;
+         int cur_level = level;
+         int low_level = cur_level;
          while (!currentFinishedS) {
             (void)getCurrentDeco(false, false, false);
             cur_level = syn_cur_foldlevel();

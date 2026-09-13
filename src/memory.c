@@ -127,7 +127,7 @@ private Boole set_ref_in_item_channel(Channel* ch, int copyID, HtStack** ht_stac
 //}}}
 //{{{allocations
 
-#if defined(MEM_PROFILE) || defined(PROTO)
+#if defined(MEM_PROFILE)
 
 # define MEM_SIZES  8200
 private Ulong mem_allocs[MEM_SIZES];
@@ -378,7 +378,7 @@ lalloc_id(Unt size, int message, AllocId id) {
    return (lalloc(size, message));
 }
 
-#if defined(MEM_PROFILE) || defined(PROTO)
+#if defined(MEM_PROFILE)
 
 // realloc() with memory profiling.
 pub void *
@@ -420,12 +420,12 @@ do_outofmem_msg(Unt size) {
 }
 
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 
-// Free everything that we allocated. Can be used to detect memory leaks, e.g., with ccmalloc.
-// NOTE: This is tricky!  Things are freed that functions depend on.  Don't be
-// surprised if Eegl crashes...
-// Some things can't be freed, esp. things local to a library function.
+//Free everything that we allocated. Can be used to detect memory leaks, e.g., with ccmalloc.
+//NOTE: This is tricky!  Things are freed that functions depend on.  Don't be
+//surprised if Eegl crashes...
+//Some things can't be freed, esp. things local to a library function.
 pub void
 free_all_mem(void) {
    //When we cause a crash here it is caught and Eegl tries to exit cleanly.
@@ -648,7 +648,7 @@ mch_total_mem(int) {
    return (Ulong)0x1fffff;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 
 pub void
 mch_free_mem(void){
@@ -754,7 +754,7 @@ _getRefCount(void* a) {
 // When searching for a specific line, we remember what blocks in the tree
 // are the branches leading to that block. This is stored in ml_stack.  Each
 // entry is a pointer to info in a block (may be data block or pointer block)
-private struct InfoPtr {
+struct InfoPtr {
    BlockId   ip_bnum;   // block number
    LineNr   ip_low;      // lowest lnum in this block
    LineNr   ip_high;   // highest lnum in this block
@@ -817,7 +817,7 @@ typedef struct PtrEntry   PtrEntry;         // block/line-count pair
 
 
 //pointer to a block, used in a pointer block
-private struct PtrEntry {
+struct PtrEntry {
    BlockId   blockId;   // block number
    LineNr   lineCount;   // number of lines in this branch
    LineNr   oldLnum;   // lnum for this block (for recovery)
@@ -825,7 +825,7 @@ private struct PtrEntry {
 };
 
 // A pointer block contains a list of branches in the tree.
-private struct PointerBlock {
+struct PointerBlock {
    Short id;             // ID for pointer block: PTR_ID
    Short pointerCount;   // number of pointers in this block
    Short pointerCountMax;// maximum value for pointerCount
@@ -844,7 +844,7 @@ private struct PointerBlock {
 //
 //    [id...countLines|...free...[line2 contents\0][line1 \0][line0 \0]]
 //    ^ DataBlock     ^c         ^startByte                             ^ endByte
-private struct DataBlock {
+struct DataBlock {
    Short   id;      // ID for data block: DATA_ID
    unsigned   freeSpace;   // free space available
    unsigned   startByte;   // byte where text starts
@@ -893,7 +893,7 @@ private struct DataBlock {
 //This block is built up of single bytes, to make it portable across
 //different machines. b0_magic_* is used to check the byte order and size of
 //variables, because the rest of the swap file is not portable.
-private struct Block0 {
+struct Block0 {
    Byte   b0_id[2];   // id for block 0: BLOCK0_ID0 and BLOCK0_ID1,
             // BLOCK0_ID1_C0, BLOCK0_ID1_C1, etc.
    Byte   b0_version[10];   // Eegl version string
@@ -4340,7 +4340,6 @@ memMakePercentSwapName(CS dir, CS dir_end, CS name) {
 //{{{reference counting
 
 //These macros must only be defined for structs where the first value is an Unt holding the refcount
-//The function implementations are in memory.c
 pub
 #define getRefCount(a) _Generic((a),\
    Job*: _getRefCount\
@@ -5619,19 +5618,6 @@ setRefInSet(EeSet* eeset, int copyID, ListStack   **list_stack) {
 
    return abort;
 }
-
-#if defined(PROTO)
-
-// Mark a dict and its items with "copyID". Return true if setting references failed somehow.
-pub int
-set_ref_in_dict(Bag* b, int copyID) {
-   if (b && b->copyId != copyID) {
-      b->copyId = copyID;
-      return setRefInSet(&b->hashTable, copyID, NULL, NULL);
-   }
-   return false;
-}
-#endif
 
 // Mark a list and its items with "copyID". Return true if setting references failed somehow.
 pub int

@@ -49,13 +49,13 @@ private void initDict1(Arena* a, int size, Arr(Unt) temp, OUT DictStringInt128* 
 
 typedef struct ArenaChunk ArenaChunk;
 
-private struct ArenaChunk { // :ArenaChunk
+struct ArenaChunk { // :ArenaChunk
    Unt size;
    ArenaChunk* next;
    char memory[]; // flexible array member
 };
 
-private struct Arena { // :Arena
+struct Arena { // :Arena
    ArenaChunk* firstChunk;
    ArenaChunk* currChunk;
    int currInd;
@@ -2603,13 +2603,13 @@ removeSubDir(OUT DirName* restrict dn) {
 
 pub declStruct(ChunkString);
 
-private struct ChunkString {
+struct ChunkString {
    Arr(Byte const) c;
    Int len;
    ChunkString* next;
 };
 
-private struct ChunkyString {
+struct ChunkyString {
    ChunkString first;
    ChunkString* last;
    Int len; 

@@ -1890,7 +1890,7 @@ set_last_insert(Unt c) {
    last_insert_skip = 0;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_last_insert(void) {
    EE_CLEAR_STRING(lastInsertP);
@@ -6391,7 +6391,7 @@ may_advance_cpt_index(CS cpt) {
 }
 
 // Return value of process_next_cpt_value()
-comptime enum {
+enum {
    INS_COMPL_CPT_OK = 1,
    INS_COMPL_CPT_CONT,
    INS_COMPL_CPT_END
@@ -8642,7 +8642,7 @@ quote_meta(CS dest, CS src, int len) {
    return m;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_insexpand_stuff(void) {
    EE_CLEAR_STRING(compl_orig_text);

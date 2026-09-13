@@ -4,7 +4,6 @@
 //## getchar.c: Code related to getting a character from the user or scripts, redo & stuff buffers
 
 #include "eegl.h"
-
 #include <wchar.h>
 
 // These buffers are used for storing:
@@ -75,7 +74,45 @@ private Unt lastRecordedLen = 0;   // number of last recorded chars
 
 private MapBlock* last_used_map = NULL;
 private int last_used_sid = -1;
+//{{{types
 
+// stateG for adding bytes to a recording or 'showcmd'.
+typedef struct {
+   Byte   buf[MB_MAXBYTES * 3 + 4];
+   int      prev_c;
+   Unt   buflen;
+   unsigned   pending_special;
+   unsigned   pending_mbyte;
+} GotCharsState;
+
+typedef struct {
+   MapBlock* longestFull;
+   MapBlock* foundMapping;
+   int maxMLen; //max_mlen
+   int matchLen; //mlen
+   int currLen; // mp_match_len 
+   int wantTermcode; // 1 if termcode expected after maxMLen
+   int keylen;
+} MatchFinding;
+
+typedef enum {
+   mrFail,    // failed, break loop
+   mrGet,     // get a character from typeahead
+   mrRetry,   // try to map again
+   mrNoMatch  // no matching mapping, get char
+} MapResult;
+
+// Argument for flush_buffers().
+pub typedef enum {
+   FLUSH_MINIMAL,
+   FLUSH_TYPEAHEAD,   // flush current typebuf contents
+   FLUSH_INPUT      // flush typebuf and inchar() input
+} FlushBuffers;
+
+//}}}
+#include "proto/input.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
 //{{{@@forward declarations
 private void freeBuffer(TextHeader* buf);
 private CS get_buffcont(
@@ -541,13 +578,6 @@ pub void
 typeahead_noflush(int c) {
    TYPEAHEAD_CHAR = c;
 }
-
-// Argument for flush_buffers().
-pub typedef enum {
-   FLUSH_MINIMAL,
-   FLUSH_TYPEAHEAD,   // flush current typebuf contents
-   FLUSH_INPUT      // flush typebuf and inchar() input
-} FlushBuffers;
 
 //Remove the contents of the stuff buffer and the mapped characters in the
 //typeahead buffer (used in case of an error). If "flush_typeahead" is true,
@@ -1210,15 +1240,6 @@ del_typebuf(int len, int offset) {
       typeBufG.changeCnt = 1;
 }
 
-// stateG for adding bytes to a recording or 'showcmd'.
-typedef struct {
-   Byte   buf[MB_MAXBYTES * 3 + 4];
-   int      prev_c;
-   Unt   buflen;
-   unsigned   pending_special;
-   unsigned   pending_mbyte;
-} GotCharsState;
-
 // Add a single byte to a recording or 'showcmd'.
 // Return true if a full key has been received, false otherwise.
 private int
@@ -1401,9 +1422,7 @@ save_typeahead(TypeaheadSave *tp) {
    readbuf1.first.next = NULL;
    tp->save_readbuf2 = readbuf2;
    readbuf2.first.next = NULL;
-# ifdef USE_INPUT_BUF
    tp->save_inputbuf = get_input_buf();
-# endif
 }
 
 // Restore the typeahead to what it was before calling save_typeahead().
@@ -1423,9 +1442,7 @@ restore_typeahead(TypeaheadSave* tp, Boole overwrite) {
     readbuf1 = tp->save_readbuf1;
     freeBuffer(&readbuf2);
     readbuf2 = tp->save_readbuf2;
-# ifdef USE_INPUT_BUF
     set_input_buf(tp->save_inputbuf, overwrite);
-# endif
 }
 
 // Open a new script file for the ":source!" command.
@@ -1495,7 +1512,7 @@ closeScript(void) {
       --curscript;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 close_all_scripts(void) {
     while (scriptin[0] != NULL)
@@ -2118,14 +2135,6 @@ parse_queued_messages(void) {
    --entered;
 }
 
-
-typedef enum {
-   mrFail,    // failed, break loop
-   mrGet,     // get a character from typeahead
-   mrRetry,   // try to map again
-   mrNoMatch  // no matching mapping, get char
-} MapResult;
-
 // Check if the bytes at the start of the typeahead buffer are a character used
 // in Insert mode completion.  This includes the form with a CTRL modifier.
 private int
@@ -2199,16 +2208,6 @@ checkSimplifyModifier(int const maxOffset) {
    }
    return 0;
 }
-
-typedef struct {
-   MapBlock* longestFull;
-   MapBlock* foundMapping;
-   int maxMLen; //max_mlen
-   int matchLen; //mlen
-   int currLen; // mp_match_len 
-   int wantTermcode; // 1 if termcode expected after maxMLen
-   int keylen;
-} MatchFinding;
 
 // Loop until a partially matching mapping is found or all (local) mappings have been checked.
 // The longest full match is remembered in this var. A full match is only accepted if there
@@ -3120,17 +3119,14 @@ fixInputBuffer(OUT CS buf, int len) {
    *p = ZERO;      // add trailing ZERO
    return len;
 }
-
-#if defined(USE_INPUT_BUF) || defined(PROTO)
-// Return true when bytes are in the input buffer or in the typeahead buffer.
-// Normally the input buffer would be sufficient, but the server_to_input_buf()
-// or feedkeys() may insert characters in the typeahead buffer while we are
-// waiting for input to arrive.
+//Return true when bytes are in the input buffer or in the typeahead buffer.
+//Normally the input buffer would be sufficient, but the server_to_input_buf()
+//or feedkeys() may insert characters in the typeahead buffer while we are
+//waiting for input to arrive.
 pub int
 input_available(void) {
    return (!eeIsInputBufEmpty()|| typebuf_was_filled);
 }
-#endif
 
 // Function passed to doCommand() to get the command after a <Cmd> key from typeahead.
 private CS
@@ -3631,8 +3627,6 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
 //
 //The eeglinfo file is a special case: Only text is converted, not file names.
 
-
-pub int mb_ptr2cells_len(CS p, int size);
 
 //Set up for using multi-byte characters. Called in three cases:
 //- by main() to initialize
@@ -4986,7 +4980,7 @@ is_mouse_key(Unt c) {
       || c == K_X2RELEASE;
 }
 
-private struct mousetable {
+struct mousetable {
    Unt pseudo_code;   // Code for pseudo mouse event
    Unt button;      // Which mouse button is it?
    Boole is_click;      // Is it a mouse button click event?

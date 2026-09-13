@@ -4,10 +4,159 @@
 //## draw.c: drawing text lines to the screen 
  
 #include "eegl.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
 
 //used for @hlsearch hilite matching
 private Match screenSearchP;
 
+//{{{types
+
+typedef struct {
+   int topEnd;
+   int midStart;
+   int midEnd;
+   int botStart; //first row of the bot area that needs updating. 999 when no bot area updating
+   LineNr modTop;
+   LineNr modBot;
+   LineNr oldBottLine;
+   Boole eof;
+   Boole topToMod; //redraw above modTop
+} UpdatePortalInfo;
+
+// structure with variables passed between drawLineOnScreen() and other functions
+typedef struct {
+   Byte drawState;   // what to draw next
+
+   LineNr lnum;      // line number to be drawn
+
+   int startrow;   // first row in the portal to be drawn
+   int endRow;
+   
+   int row;      // row in the portal, excl windowRow
+   int screen_row;   // row on the screen, incl windowRow
+
+   long vcol;      // virtual column, before wrapping
+   int col;      // visual column on screen, after wrapping
+   int virtualOffset;   // offset for virtual text
+   int eol_hl_off;   // 1 if hilited char after EOL
+   Unt off;      // offset in screenTextP/screenDecosP
+   CS ptr; // current position in text line
+   CS line; // current text line start
+
+   Decoration portalDeco;   // background for the whole portal, except margins and "~" lines.
+   Decoration portcolorDeco;   // decorations from 'portcolor'
+   Decoration cursorlineDeco;   // set when 'cursorline' active
+   Decoration lineDeco;   // for the whole line, includes 'cursorline'
+   int screen_line_flags;  // flags for screen_line()
+   int fromcol;   // start of inverting
+   int tocol;      // end of inverting
+
+   long vcol_sbr;       // virtual column after showbreak
+   int need_showbreak;       // overlong line, skipping first x chars
+   int dont_use_showbreak; // do not use 'showbreak'
+   int textPropAbove_count;
+
+   // true when 'cursorlineopt' has "screenline" and cursor is in this line
+   int cul_screenline;
+   Decoration charDeco;   // decorations for the next character
+
+   int countExtraBytes;   // number of extra bytes (for virtual text)
+   CS extraBytes; // virtual text. This is only used when c_extra and c_final are ZERO
+   CS p_extra_free;  // extraBytes buffer that needs to be freed
+   Decoration extraDeco; // decorations for extraBytes, should be combined with portalDeco if needed
+   int toSkipBeforeDeco;    // chars to skip before using extraDeco
+   Unt c_extra;   // extra chars, virtual text
+   Unt c_final;   // final char, mandatory if set
+   int extra_for_textprop; // countExtraBytes set for textprop
+   int start_extra_for_textprop; // extra_for_textprop was just set
+
+   // saved "extra" items for when drawState becomes WL_LINE (again)
+   int saved_n_extra;
+   CS saved_p_extra;
+   CS saved_p_extra_free;
+   Decoration saved_extraDeco;
+   int saved_toSkipBeforeDeco;
+   int saved_extra_for_textprop;
+   int saved_c_extra;
+   int saved_c_final;
+   Decoration saved_charDeco;
+
+   Byte extra[NUMBUFLEN + MB_MAXBYTES]; // "%ld " must fit in here, as well any text sign
+
+   Unt diff_hlf;   // type of diff hiliting
+   int filler_lines;   // nr of filler lines to be drawn
+   int filler_todo;   // nr of filler lines still to do + 1
+   SignHilite signHilites;
+   // do consider wrapping in linebreak mode only after encountering a non whitespace char
+   Boole needLinebreak;
+   int textPropNext; // next text property to use
+   Boole syntaxHilitingOn;
+   int* anyEmsgSave;
+   int cellsToSkip;   // nr of cells to skip for leftCol or skipCol
+   long bufferLen; // length of the currently built part of the text line
+   int changeIndex;
+   Short searchHiId;
+   Boole inMultispace;   // in multiple consecutive spaces
+   int multispacePos;   // position in lcs-multispace string
+} DrawCtx;
+
+typedef struct {
+   Decoration lineDecoSaved; 
+   Boole signPresent; 
+   LineNr lnum;
+   Boole inCurLine; 
+   int lastTextpropTextInd; 
+   Boole isLineVisible;
+   Decoration numDeco;
+   int drawingOnlyNumberCol; 
+   int left_curline_col;
+   int right_curline_col;
+   Boole areaHiliting;
+   Boole hasExtraHiliting;
+   Arr(TextProp) textProps;
+   Arr(int) textPropIndices;
+   int textPropCount;
+   int fromcol_prev; // start of inverting after cursor
+   Decoration visualDeco;
+   Boole noInvertCursor;
+   DiffLine* lineChanges;
+   int* changeStart;
+   int* changeEnd;
+   Boole needDecoFromTerm;
+   int currCheckedCol;
+   int nextLineCol;
+   Arr(Byte) nextLine; //len = (SPWORDLEN * 2);
+   int nextLineInd;
+   int vcolFirstChar;
+   ColNr trailcol;   // start of trailing spaces
+   ColNr leadcol;      // start of leading spaces
+} Subcontext;
+
+typedef struct {
+   Boole decoPriority;
+   int mb_c; 
+   Boole mb_utf8; 
+   Arr(int) characterCombiner; //len = MAX_COMBINED_SYMBOLS
+
+   Unt listCharEndOfLine;
+   Decoration areaDeco; 
+   Decoration charDecoSaved;
+   Boole textPropFlags; 
+   Boole textPropFollows;
+   int numDecoCells;
+   int textPropAbove;
+   int didLineDeco;
+   Boole resetOverlayDeco;
+   long vcol_prev;
+   Decoration multiDeco;
+   
+   int skippedCells;  // nr of skipped cells for virtual text to be added to m.vcol later
+} SubSubcontext;
+
+
+//}}}
 //{{{@@forward declarations
 private int fillRowsWithCharsWithColumnOffset(
    Portal* po,
@@ -76,7 +225,7 @@ private void fold_line(
    int row
 );
 private void updatePortalFinish(Portal* po, UpdatePortalInfo u);
-private void updatePortal(Portal* po);
+private void updatePortal(Portal* po, OUT Boole* didUpdateOnePortal);
 private void overlayDeco(OUT Decoration* baseDeco, OverlayDeco overlayingDeco);
 private void computeHilitingMargins(Portal* po, OUT int* leftCol, OUT int* rightCol);
 private int useCursorLineHilite(Portal* po, LineNr lnum);
@@ -3250,12 +3399,12 @@ drawUpdateScreen(Unt type_arg) {
       pum_will_redraw = true;
 
    //Go from top to bottom through the portals, redrawing the ones that need it
-   didUpdateOnePortal = false;
+   Boole didUpdateOnePortal = false;
    screenSearchP.rm.regprog = NULL;
    FOR_ALL_PORTALS(po) {
       if (po->redrawType != 0) {
          cursor_off();
-         updatePortal(po);
+         updatePortal(po, OUT &didUpdateOnePortal);
       }
 
       //redraw status line after the portal to minimize cursor movement
@@ -3694,18 +3843,6 @@ fold_line(
    }
 }
 
-typedef struct {
-   int topEnd;
-   int midStart;
-   int midEnd;
-   int botStart; //first row of the bot area that needs updating. 999 when no bot area updating
-   LineNr modTop;
-   LineNr modBot;
-   LineNr oldBottLine;
-   Boole eof;
-   Boole topToMod; //redraw above modTop
-} UpdatePortalInfo;
-
 
 private void
 updatePortalFinish(Portal* po, UpdatePortalInfo u) {
@@ -4071,7 +4208,8 @@ updatePortalFinish(Portal* po, UpdatePortalInfo u) {
          j = curBook->lineCountDiff;
          curBook->lineCountDiff = 0;
          curs_columns(true);
-         updatePortal(curPor);
+         Boole didUpdateOnePortal = false;
+         updatePortal(curPor, OUT &didUpdateOnePortal);
          curBook->needsRedraw = needsRedrawSaved;
          curBook->lineCountDiff = j;
       }
@@ -4112,7 +4250,7 @@ updatePortalFinish(Portal* po, UpdatePortalInfo u) {
 //mid: from midStart to midEnd (update inversion or changed text)
 //bot: from botStart to last row (when scrolled up)
 private void
-updatePortal(Portal* po) {
+updatePortal(Portal* po, OUT Boole* didUpdateOnePortal) {
    Book* book = po->book;
    int topEnd = 0; //Below last row of the top area that needs updating. 
                    //0 when no top area updating.
@@ -4137,8 +4275,8 @@ updatePortal(Portal* po) {
    LineNr modBot = 0;
 
    // This needs to be done only for the first portal when drawUpdateScreen() is called.
-   if (!didUpdateOnePortal) {
-      didUpdateOnePortal = true;
+   if (!*didUpdateOnePortal) {
+      *didUpdateOnePortal = true;
       start_search_hl();
       // When Visual area changed, may have to update selection.
       clip_update_selection(&clipboard);
@@ -5000,84 +5138,6 @@ computeHilitingMargins(Portal* po, OUT int* leftCol, OUT int* rightCol) {
    saved_virtCol = po->virtCol;
 }
 
-// structure with variables passed between drawLineOnScreen() and other functions
-typedef struct {
-   Byte drawState;   // what to draw next
-
-   LineNr lnum;      // line number to be drawn
-
-   int startrow;   // first row in the portal to be drawn
-   int endRow;
-   
-   int row;      // row in the portal, excl windowRow
-   int screen_row;   // row on the screen, incl windowRow
-
-   long vcol;      // virtual column, before wrapping
-   int col;      // visual column on screen, after wrapping
-   int virtualOffset;   // offset for virtual text
-   int eol_hl_off;   // 1 if hilited char after EOL
-   Unt off;      // offset in screenTextP/screenDecosP
-   CS ptr; // current position in text line
-   CS line; // current text line start
-
-   Decoration portalDeco;   // background for the whole portal, except margins and "~" lines.
-   Decoration portcolorDeco;   // decorations from 'portcolor'
-   Decoration cursorlineDeco;   // set when 'cursorline' active
-   Decoration lineDeco;   // for the whole line, includes 'cursorline'
-   int screen_line_flags;  // flags for screen_line()
-   int fromcol;   // start of inverting
-   int tocol;      // end of inverting
-
-   long vcol_sbr;       // virtual column after showbreak
-   int need_showbreak;       // overlong line, skipping first x chars
-   int dont_use_showbreak; // do not use 'showbreak'
-   int textPropAbove_count;
-
-   // true when 'cursorlineopt' has "screenline" and cursor is in this line
-   int cul_screenline;
-   Decoration charDeco;   // decorations for the next character
-
-   int countExtraBytes;   // number of extra bytes (for virtual text)
-   CS extraBytes; // virtual text. This is only used when c_extra and c_final are ZERO
-   CS p_extra_free;  // extraBytes buffer that needs to be freed
-   Decoration extraDeco; // decorations for extraBytes, should be combined with portalDeco if needed
-   int toSkipBeforeDeco;    // chars to skip before using extraDeco
-   Unt c_extra;   // extra chars, virtual text
-   Unt c_final;   // final char, mandatory if set
-   int extra_for_textprop; // countExtraBytes set for textprop
-   int start_extra_for_textprop; // extra_for_textprop was just set
-
-   // saved "extra" items for when drawState becomes WL_LINE (again)
-   int saved_n_extra;
-   CS saved_p_extra;
-   CS saved_p_extra_free;
-   Decoration saved_extraDeco;
-   int saved_toSkipBeforeDeco;
-   int saved_extra_for_textprop;
-   int saved_c_extra;
-   int saved_c_final;
-   Decoration saved_charDeco;
-
-   Byte extra[NUMBUFLEN + MB_MAXBYTES]; // "%ld " must fit in here, as well any text sign
-
-   Unt diff_hlf;   // type of diff hiliting
-   int filler_lines;   // nr of filler lines to be drawn
-   int filler_todo;   // nr of filler lines still to do + 1
-   SignHilite signHilites;
-   // do consider wrapping in linebreak mode only after encountering a non whitespace char
-   Boole needLinebreak;
-   int textPropNext; // next text property to use
-   Boole syntaxHilitingOn;
-   int* anyEmsgSave;
-   int cellsToSkip;   // nr of cells to skip for leftCol or skipCol
-   long bufferLen; // length of the currently built part of the text line
-   int changeIndex;
-   Short searchHiId;
-   Boole inMultispace;   // in multiple consecutive spaces
-   int multispacePos;   // position in lcs-multispace string
-} DrawCtx;
-
-
 // drawState values for items that are drawn in sequence:
 #define WL_START    0                 // nothing done yet, must be zero
 #define WL_COMMLINE (WL_START + 1)    // commline portal column
@@ -5600,60 +5660,6 @@ applyCursorlineHilite(DrawCtx* m) {
 
 
 #define VCOL_HLC (m->vcol - m->virtualOffset)
-
-typedef struct {
-   Decoration lineDecoSaved; 
-   Boole signPresent; 
-   LineNr lnum;
-   Boole inCurLine; 
-   int lastTextpropTextInd; 
-   Boole isLineVisible;
-   Decoration numDeco;
-   int drawingOnlyNumberCol; 
-   int left_curline_col;
-   int right_curline_col;
-   Boole areaHiliting;
-   Boole hasExtraHiliting;
-   Arr(TextProp) textProps;
-   Arr(int) textPropIndices;
-   int textPropCount;
-   int fromcol_prev; // start of inverting after cursor
-   Decoration visualDeco;
-   Boole noInvertCursor;
-   DiffLine* lineChanges;
-   int* changeStart;
-   int* changeEnd;
-   Boole needDecoFromTerm;
-   int currCheckedCol;
-   int nextLineCol;
-   Arr(Byte) nextLine; //len = (SPWORDLEN * 2);
-   int nextLineInd;
-   int vcolFirstChar;
-   ColNr trailcol;   // start of trailing spaces
-   ColNr leadcol;      // start of leading spaces
-} Subcontext;
-
-typedef struct {
-   Boole decoPriority;
-   int mb_c; 
-   Boole mb_utf8; 
-   Arr(int) characterCombiner; //len = MAX_COMBINED_SYMBOLS
-
-   Unt listCharEndOfLine;
-   Decoration areaDeco; 
-   Decoration charDecoSaved;
-   Boole textPropFlags; 
-   Boole textPropFollows;
-   int numDecoCells;
-   int textPropAbove;
-   int didLineDeco;
-   Boole resetOverlayDeco;
-   long vcol_prev;
-   Decoration multiDeco;
-   
-   int skippedCells;  // nr of skipped cells for virtual text to be added to m.vcol later
-} SubSubcontext;
-
 //Return false if need to break from the loop in drawLineLoop
 private Boole
 drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int currSymb) {

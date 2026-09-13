@@ -5,7 +5,7 @@ INTERNAL_CFLAGS = --std=c23 -gdwarf-5 -pthread -Wp,-D_FORTIFY_SOURCE=2 -fno-plt 
 
 # The debug flags
 CFLAGS ?=  $(INTERNAL_CFLAGS) -Wall -Wextra -Wfatal-errors -O0 \
-              -Wno-cpp -Werror=return-type -Werror=pointer-compare \
+              -Wno-cpp -Werror=return-type -Wno-unused-function -Werror=pointer-compare \
 # The release flags
 RELEASE_CFLAGS = $(INTERNAL_CFLAGS) -O2
 

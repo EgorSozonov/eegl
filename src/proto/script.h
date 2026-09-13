@@ -208,7 +208,6 @@ int cmdline_overstrike(void);
 int cmdline_at_end(void);
 ColNr cmdline_getvcol_cursor(void);
 int reallocateCommBuf(int len);
-void free_arshape_buf(void);
 void putcmdline(int c, int shift);
 void unputcmdline(void);
 int put_on_cmdline(Byte *str, int len, int redraw);
@@ -286,7 +285,6 @@ void func_init(void);
 EeSet * func_tbl_get(void);
 CS make_ufunc_name_readable(Byte *name, Byte* builder, Unt bufsize);
 Text get_lambda_name(void);
-Byte * register_cfunc(cfunc_T cb, cfunc_free_T cb_free, void *state);
 int get_lambda_tv(
    Byte       **arg,
    Var    *returnVar,
@@ -445,8 +443,6 @@ int var_wrong_func_name(
    Text name,    // points to start of variable name
    int    new_var)  // true when creating the variable
 ;
-declStruct(AutoComm);
-declStruct(AutoPat);
 void scrRemoveAutocommsFromBook(Book* book);
 Boole auGroupExists(CS name);
 void do_augroup(CS arg, Boole del_group);

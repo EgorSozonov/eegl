@@ -125,7 +125,7 @@ typedef struct {
 //Note: If returned FAIL or matches->len is 0, matches->c will NOT be freed by caller.
 typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
 
-private struct Option { //:Option
+struct Option { //:Option
    CS fullName;   // full option name
    OptionValue defaultValue; // default value for option
    
@@ -331,7 +331,6 @@ private CS did_set_matchpairs(OptionChange* cha);
 private CS (p_mopt_values[]) =;
 private CS did_set_messagesopt(OptionChange* cha);
 private int expand_set_messagesopt(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_imactivatekey(OptionChange*);
 private CS setExpandTriggers(OptionChange* cha);
 private CS did_set_iskeyword(OptionChange* cha);
 private CS parse_status_rulerformat(OptionChange* cha);
@@ -651,7 +650,7 @@ optSetStringDefault(CS name, CS val) {
    optSetStringDefault_esc(name, val, false);
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 
 //Free all options.
 
@@ -3102,16 +3101,6 @@ expand_set_messagesopt(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_mopt_values));
 }
 
-#if defined(PROTO)
-
-private CS
-did_set_imactivatekey(OptionChange*) {
-   if (!im_xim_isvalid_imactivate())
-      return e_invalid_argument;
-   return NULL;
-}
-#endif
-
 private CS
 setExpandTriggers(OptionChange* cha) {
    Boole     lastWasStick = false;
@@ -4942,7 +4931,7 @@ init_locales(void) {
    did_init_locales = true;
 }
 
-# if defined(EXITFREE) || defined(PROTO)
+# if defined(EXITFREE)
 pub void
 free_locales(void) {
    if (!locales)

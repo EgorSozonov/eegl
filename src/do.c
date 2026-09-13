@@ -8,8 +8,37 @@
 pub int stat(const char* restrict path, struct stat* restrict buf);
 int mkdir(const char* pathname, mode_t mode);
 
-private Boole anySyntaxEmsgS; // anyEmsgG set because of a syntax error
+#include "proto/book.h"
+#include "proto/data.types.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
 
+private Boole anySyntaxEmsgS; // anyEmsgG set because of a syntax error
+//{{{types
+
+// Struct to save a few things while debugging.  Used in doCommand() only.
+typedef struct {
+   int force_abort;
+   Exception* caught_stack;
+   CS vv_exception;
+   CS vv_throwpoint;
+   int anyEmsgG;
+   int gotInterruptG;
+   int did_throw;
+   Boole need_rethrow;
+   Exception* current_exception;
+} DebugStuff;
+
+
+// Structure passed around between functions.
+typedef struct {
+   Book* bk;
+   FILE* file;
+} BufInfo;
+
+//}}}
 //{{{@@forward decls
 private int linelen(OUT int* has_tab);
 private int string_compare(const void *s1, const void *s2);
@@ -980,7 +1009,7 @@ doCopy(LineNr line1, LineNr line2, LineNr n) {
 
 private CS prevcmd = NULL;   // the previous command
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_prev_shellcmd(void) {
     eeglFree(prevcmd);
@@ -3865,7 +3894,7 @@ set_old_sub(CS val) {
    prevSubstS = val;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_old_sub(void) {
    eeglFree(prevSubstS);
@@ -4949,19 +4978,6 @@ private void   close_redir(void);
 #include "indices/commands.h"
 
 private Byte dollar_command[2] = {'$', ZERO};
-
-// Struct to save a few things while debugging.  Used in doCommand() only.
-typedef struct {
-   int force_abort;
-   Exception* caught_stack;
-   CS vv_exception;
-   CS vv_throwpoint;
-   int anyEmsgG;
-   int gotInterruptG;
-   int did_throw;
-   Boole need_rethrow;
-   Exception* current_exception;
-} DebugStuff;
 
 private void
 saveDbgStuff(DebugStuff* dsp) {
@@ -8377,7 +8393,7 @@ private Callback findFnCb;
 
 // ":pclose": Close any preview portal.
 pub void
-c_pclose(Invocation* invo) {
+c_pclose(Invocation*) {
    Portal* port;
 
    // First close any normal portal.
@@ -8880,7 +8896,7 @@ setFindFn(OptionChange* cha) {
    return NULL;
 }
 
-# if defined(EXITFREE) || defined(PROTO)
+# if defined(EXITFREE)
 pub void
 doFreeFindFnOption(void) {
    evFreeCallback(&findFnCb);
@@ -9396,7 +9412,7 @@ c_read(Invocation* invo) {
 
 private CS prev_dir = NULL;
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_cd_dir(void) {
    EE_CLEAR(prev_dir);
@@ -10521,7 +10537,7 @@ c_tag(Invocation* invo) {
    tagCmd(invo, commands[invo->id].name);
 }
 
-comptime enum {
+enum {
    SPEC_PERC = 0,
    SPEC_HASH,
    SPEC_CWORD,       // cursor word
@@ -11401,33 +11417,6 @@ veryfast_breakcheck(void) {
 // Size of buffer used for writing.
 #define WRITE_BUILDER_SIZE 8192
 
-// Structure passed around between functions.
-typedef struct {
-   Book* bk;
-   FILE* file;
-} BufInfo;
-
-
-private void u_unch_branch(UndoHeader *uhp);
-private UndoEntry *u_get_headentry(void);
-private void u_getbot(void);
-private void u_doit(int count);
-private void u_undoredo(Boole undo);
-private void u_undo_end(Boole did_undo, Boole absolute);
-private void u_freeheader(Book *book, UndoHeader *uhp, UndoHeader **uhpp);
-private void freeBranch(Book *book, UndoHeader *uhp, UndoHeader **uhpp);
-private void u_freeentries(Book *book, UndoHeader *uhp, UndoHeader **uhpp);
-private void freeEntry(UndoEntry *, long);
-private int undo_read(BufInfo *bi, CS buffer, Unt size);
-private int serialize_uep(BufInfo *bi, UndoEntry *uep);
-private UndoEntry *unserialize_uep(BufInfo *bi, int *error, CS file_name);
-private void serialize_pos(BufInfo *bi, Pos pos);
-private void deserializePos(BufInfo *bi, Pos *pos);
-private void serialize_visualinfo(BufInfo *bi, VisualInfo *info);
-private void unserialize_visualinfo(BufInfo *bi, VisualInfo *info);
-private void u_saveline(LineNr lnum);
-private void u_blockfree(Book *book);
-
 #define U_ALLOC_LINE(size) lalloc(size, false)
 
 // used in undo_end() to report number of added and deleted lines
@@ -11438,7 +11427,7 @@ private int   undo_undoes = false;
 
 private int   lastmark = 0;
 
-#if defined(U_DEBUG) || defined(PROTO)
+#if defined(U_DEBUG)
 //Validate the undo structures. Print a warning when something looks wrong.
 private int seen_currHead;
 private int seen_newHead;
@@ -11446,10 +11435,9 @@ private int header_count;
 
 private void
 u_check_tree(UndoHeader *uhp, UndoHeader *exp_uh_next, UndoHeader *exp_altPrev) {
-   UndoEntry *uep;
-
-   if (uhp == NULL)
+   if (!uhp)
       return;
+      
    ++header_count;
    if (uhp == curBook->undo.currHead && ++seen_currHead > 1) {
       emsg("currHead found twice (looping?)");
@@ -11465,20 +11453,20 @@ u_check_tree(UndoHeader *uhp, UndoHeader *exp_uh_next, UndoHeader *exp_altPrev) 
    else {
       // Check pointers back are correct.
       if (uhp->next.ptr != exp_uh_next) {
-          emsg("next wrong");
-          smsg("expected: 0x%x, actual: 0x%x", exp_uh_next, uhp->next.ptr);
+         emsg("next wrong");
+         smsg("expected: 0x%x, actual: 0x%x", exp_uh_next, uhp->next.ptr);
       }
       if (uhp->altPrev.ptr != exp_altPrev) {
-          emsg("altPrev wrong");
-          smsg("expected: 0x%x, actual: 0x%x", exp_altPrev, uhp->altPrev.ptr);
+         emsg("altPrev wrong");
+         smsg("expected: 0x%x, actual: 0x%x", exp_altPrev, uhp->altPrev.ptr);
       }
 
       // Check the undo tree at this header.
-      for (uep = uhp->uh_entry; uep != NULL; uep = uep->ue_next) {
-          if (uep->ue_magic != UE_MAGIC) {
-         emsg("ue_magic wrong (may be using freed memory)");
-         break;
-          }
+      for (UndoEntry* uep = uhp->uh_entry; uep != NULL; uep = uep->ue_next) {
+         if (uep->ue_magic != UE_MAGIC) {
+            emsg("ue_magic wrong (may be using freed memory)");
+            break;
+         }
       }
 
       // Check the next alt tree.
@@ -11486,7 +11474,7 @@ u_check_tree(UndoHeader *uhp, UndoHeader *exp_uh_next, UndoHeader *exp_altPrev) 
 
       // Check the next header in this branch.
       u_check_tree(uhp->prev.ptr, uhp, NULL);
-    }
+   }
 }
 
 private void
@@ -13558,10 +13546,10 @@ c_undolist(Invocation*) {
 
 //":undojoin": continue adding to the last entry list
 pub void
-c_undojoin(Invocation* invo) {
-   if (curBook->undo.newHead == NULL)
+c_undojoin(Invocation*) {
+   if (!curBook->undo.newHead)
       return;          // nothing changed before
-   if (curBook->undo.currHead != NULL) {
+   if (curBook->undo.currHead) {
       emsg(_(e_undojoin_is_not_allowed_after_undo));
       return;
    }

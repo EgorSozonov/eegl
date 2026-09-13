@@ -4,6 +4,14 @@
 //## fileio.c: read from and write to a file
 
 #include "eegl.h"
+#include "proto/book.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+
 #ifndef PROTO
 #include <sys/stat.h> // for stat, fstat etc
 #endif
@@ -12,9 +20,74 @@ pub ssize_t listxattr(const char*, char*, size_t); //from sys/xattr.h
 ssize_t getxattr(const char*, const char*, void*, size_t);
 pub int setxattr(const char*, const char*, const void*, size_t, int);
 
-#define SHELL_SPECIAL (CS)"\t \"&'$;<>()\\|"
+#define SHELL_SPECIAL S"\t \"&'$;<>()\\|"
 #define SWAP_DIR S"~/.local/state/"
 
+//{{{types
+
+//type for already visited directories or files.
+typedef struct Visited {
+   struct Visited* next;
+
+   // Visited directories are different if the wildcard string are
+   // different. So we have to save it.
+   CS wildcardPath;
+
+   // for unix use inode etc for comparison (needed because of links), else use filename.
+   int areDevInoValid;   // deviceId and inodeId were set
+   dev_t deviceId;   // device number
+   ino_t inodeId;   // inode number
+   // The memory for this struct is allocated according to the length of ffv_fname.
+   Byte ffv_fname[1];   // actually longer
+} Visited;
+
+//We might have to manage several visited lists during a search.
+//This is especially needed for the tags option. If tags is set to:
+//     "./++/tags,./++/TAGS,++/tags"  (replace + with *)
+//So we have to do 3 searches:
+//  1) search from the current files directory downward for the file "tags"
+//  2) search from the current files directory downward for the file "TAGS"
+//  3) search from Eegl's current directory downwards for the file "tags"
+//As you can see, the first and the third search are for the same file, so for
+//the third search we can use the visited list of the first search. For the
+//second search we must start from a empty visited list.
+//The struct ff_visited_list_hdr is used to manage a linked list of already visited lists.
+pub declStruct(VisitedList);
+struct VisitedList {
+   VisitedList* next;
+
+   // the filename the attached visited list is for
+   CS filename;
+   Visited* ffvl_visited_list;
+};
+
+// type for the directory search stack
+pub declStruct (DirSearchStack);
+struct DirSearchStack {
+   DirSearchStack* ffs_prev;
+
+   // the fixed part (no wildcards) and the part containing the wildcards of the search path
+   Text fixedPathPart;
+   Text wildcardPathPart;
+
+   // files/dirs found in the above directory, matched by the first wildcard of wc_part
+   ExpandMatch files;
+   int ffs_filearray_cur;   // needed for partly handled dirs
+
+   // to store status of partly handled directories
+   // 0: we work on this directory for the first time
+   // 1: this directory was partly searched in an earlier step
+   int stage;
+
+   // How deep are we in the directory tree?
+   // Counts backward from value of level parameter to eeFindFile_init
+   int depth;
+
+   // Did we already expand '**' to an empty string?
+   Boole didExpandStarStar;
+};
+
+//}}}
 //{{{@@forward declarations
 private void findfilendir(Arr(Var) argvars, Var* returnVar, int find_what);
 private int mkdir_recurse(CS dir, Unt prot, Byte** created);
@@ -1675,8 +1748,6 @@ typedef DIR* DirPtr;
 GEN_TYPE_L(DirPtr)
 
 
-
-
 // search for a string like "txt" in a list like "a,b,c,txt"
 //private Boole
 //searchStringInCommaedList(CS needle, CS haystack) {
@@ -2550,68 +2621,6 @@ home_replace(
 //ATTENTION:
 //==========
 //  Also we use an allocated search context here, these functions are NOT thread-safe!
-
-// type for the directory search stack
-pub declStruct (DirSearchStack);
-struct DirSearchStack {
-   DirSearchStack* ffs_prev;
-
-   // the fixed part (no wildcards) and the part containing the wildcards of the search path
-   Text fixedPathPart;
-   Text wildcardPathPart;
-
-   // files/dirs found in the above directory, matched by the first wildcard of wc_part
-   ExpandMatch files;
-   int ffs_filearray_cur;   // needed for partly handled dirs
-
-   // to store status of partly handled directories
-   // 0: we work on this directory for the first time
-   // 1: this directory was partly searched in an earlier step
-   int stage;
-
-   // How deep are we in the directory tree?
-   // Counts backward from value of level parameter to eeFindFile_init
-   int depth;
-
-   // Did we already expand '**' to an empty string?
-   Boole didExpandStarStar;
-};
-
-//type for already visited directories or files.
-typedef struct Visited {
-   struct Visited* next;
-
-   // Visited directories are different if the wildcard string are
-   // different. So we have to save it.
-   CS wildcardPath;
-
-   // for unix use inode etc for comparison (needed because of links), else use filename.
-   int areDevInoValid;   // deviceId and inodeId were set
-   dev_t deviceId;   // device number
-   ino_t inodeId;   // inode number
-   // The memory for this struct is allocated according to the length of ffv_fname.
-   Byte ffv_fname[1];   // actually longer
-} Visited;
-
-//We might have to manage several visited lists during a search.
-//This is especially needed for the tags option. If tags is set to:
-//     "./++/tags,./++/TAGS,++/tags"  (replace + with *)
-//So we have to do 3 searches:
-//  1) search from the current files directory downward for the file "tags"
-//  2) search from the current files directory downward for the file "TAGS"
-//  3) search from Eegl's current directory downwards for the file "tags"
-//As you can see, the first and the third search are for the same file, so for
-//the third search we can use the visited list of the first search. For the
-//second search we must start from a empty visited list.
-//The struct ff_visited_list_hdr is used to manage a linked list of already visited lists.
-pub declStruct(VisitedList);
-struct VisitedList {
-   VisitedList* next;
-
-   // the filename the attached visited list is for
-   CS filename;
-   Visited* ffvl_visited_list;
-};
 
 
 //'**' can be expanded to several directory levels.
@@ -3890,7 +3899,7 @@ findFileInPath(
    );
 }
 
-# if defined(EXITFREE) || defined(PROTO)
+# if defined(EXITFREE)
 pub void
 free_findfile(void){
     EE_CLEAR_STRING(fileExpansionS);
@@ -5378,12 +5387,7 @@ readfile(
       if (perm >= 0 && !S_ISREG(perm)          // not a regular file ...
                && !S_ISFIFO(perm)       // ... or fifo
                && !S_ISSOCK(perm)       // ... or socket
-# ifdef OPEN_CHR_FILES
-               && !(S_ISCHR(perm) && is_dev_fd_file(fname))
-            // ... or a character special file named /dev/fd/<n>
-# endif
-                     )
-      {
+      ) {
          //On Unix it is possible to read a directory, so we have to check for it before the open()
          if (S_ISDIR(perm)) {
             filemess(curBook, fname, (CS)_(msg_is_a_directory), 0);
@@ -5892,12 +5896,6 @@ failed:
          buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[socket]"));
          c = true;
       }
-#ifdef OPEN_CHR_FILES
-      if (S_ISCHR(perm)) {            // or character special
-         buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[character special]"));
-         c = true;
-      }
-#endif
       if (!curBook->o.modifiable) {
          buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, "[-]");
          c = true;
@@ -6116,19 +6114,6 @@ write_blob(FILE* fd, Blob* blob) {
 
 //}}}
 //{{{aux functions
-
-#if defined(OPEN_CHR_FILES) || defined(PROTO)
-//Return true if the file name argument is of the form "/dev/fd/\d\+", which is the name of files 
-//used for process substitution output by some shells on some operating systems, e.g., bash on 
-//SunOS. Do not accept "/dev/fd/[012]", opening these may hang Eegl.
-pub int
-is_dev_fd_file(CS fname) {
-   return STRNCMP(fname, "/dev/fd/", 8) == 0
-       && EE_ISDIGIT(fname[8])
-       && *skipdigits(fname + 9) == ZERO
-       && (fname[9] != ZERO || (fname[8] != '0' && fname[8] != '1' && fname[8] != '2'));
-}
-#endif
 
 //Fill "*invo" to force the 'binary' option to be equal to the book "book". 
 //Used for calling readfile(). Return OK or FAIL.

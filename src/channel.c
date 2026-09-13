@@ -46,7 +46,7 @@ private volatile SigAtomic deadlySignalS = 0;      // The signal we caught
 #define fd_close(sd) close(sd)
 
 // Structure to hold info about an async shell Job
-private struct Job {
+struct Job {
    Unt refCount; //reference count
    Job* next;
    Job* prev;
@@ -139,6 +139,7 @@ private void appendToBook(Book* book, CS msg, Channel* channel, ChannelFdKind pa
 private void drop_messages(Channel* channel, ChannelFdKind part);
 private int channel_use_json_head(Channel* channel, ChannelFdKind part);
 private int may_invoke_callback(Channel* channel, ChannelFdKind part);
+private int channel_can_write_to(Channel* channel);
 private void * channel_readahead_pointer(Channel* channel, ChannelFdKind part);
 private int channel_has_readahead(Channel *channel, ChannelFdKind part);
 private CS channel_status(Channel *channel, int req_part);
@@ -2212,14 +2213,13 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
    return true;
 }
 
-#if defined(PROTO)
 // Return true when channel "channel" is open for writing to. false for invalid "channel".
-pub int
+//TODO delete
+private int
 channel_can_write_to(Channel* channel) {
    return channel 
       && (channel->fds[PART_SOCK].fd != INVALID_FD || channel->fds[PART_IN].fd != INVALID_FD);
 }
-#endif
 
 // Return true when channel "channel" is open for reading or writing. false for invalid "channel".
 pub int
@@ -2473,7 +2473,7 @@ channel_clear(Channel* channel) {
    evFreeCallback(&channel->ch_close_cb);
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 channel_free_all(void) {
    Channel *channel;
@@ -3647,7 +3647,7 @@ private void deathtrap SIGPROTOARG;
 static void catch_sigusr1 SIGPROTOARG;
 private void catch_sigpwr SIGPROTOARG;
 
-private struct SignalInfo {
+struct SignalInfo {
    int sig;   // Signal number, eg. SIGSEGV etc
    char* name;   // Signal name (not Byte!).
    char deadly;   // Catch as a deadly signal?
@@ -3687,7 +3687,7 @@ private SignalInfo signalInfos[] = {
 
 private stack_t sigstk;         // for sigaltstack()
 
-#if (defined(HAVE_SETJMP_H) && ((defined(FEAT_X11)))) || defined(PROTO)
+#if (defined(HAVE_SETJMP_H) && ((defined(FEAT_X11))))
 # define USING_SETJMP 1
 
 // argument to SETJMP()
@@ -5769,7 +5769,7 @@ free_jobs_to_free_later(void) {
    }
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 job_free_all(void) {
    while (firstJobS)
@@ -5805,21 +5805,6 @@ private int
 job_still_useful(Job* job) {
     return job_need_end_check(job) || job_channel_still_useful(job);
 }
-
-#if defined(GUI_MAY_FORK) || defined(PROTO)
-// Return true when there is any running job that we care about.
-pub int
-job_any_running(void) {
-   Job* job;
-   FOR_ALL_JOBS(job) {
-      if (job_still_useful(job)) {
-         lo("GUI not forking because a job is running");
-         return true;
-      }
-   } 
-   return false;
-}
-#endif
 
 //NOTE: Must call job_cleanup() only once right after the status of "job"
 //changed to JOB_ENDED (i.e. after job_status() returned "dead" first or

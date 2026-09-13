@@ -75,7 +75,7 @@ typedef struct {
   Unt tmpbuffer_len;  // default: 4096
 } VTermBuilder;
 
-comptime enum {
+enum {
   VTERM_BASELINE_NORMAL,
   VTERM_BASELINE_RAISE,
   VTERM_BASELINE_LOWER,
@@ -182,7 +182,7 @@ typedef struct {
    VTermLineInfo *lineinfos[2]; // [1] may be NULL
 } VTermStateFields;
 
-comptime enum {
+enum {
    VTERM_PROP_CURSORSHAPE_BLOCK = 1,
    VTERM_PROP_CURSORSHAPE_UNDERLINE,
    VTERM_PROP_CURSORSHAPE_BAR_LEFT,
@@ -190,7 +190,7 @@ comptime enum {
    VTERM_N_PROP_CURSORSHAPES
 };
 
-comptime enum {
+enum {
   VTERM_PROP_MOUSE_NONE = 0,
   VTERM_PROP_MOUSE_CLICK,
   VTERM_PROP_MOUSE_DRAG,
@@ -289,13 +289,13 @@ rect_intersects(VTermRect* a, VTermRect* b) {
 #define BUFIDX_PRIMARY   0
 #define BUFIDX_ALTSCREEN 1
 
-comptime declStruct(VTermState);
-comptime declStruct(VTermScreen);
-comptime declStruct(VTerm);
+declStruct(VTermState);
+declStruct(VTermScreen);
+declStruct(VTerm);
 
 typedef void VTermOutputCallback(CS s, Unt len, void *user);
 
-comptime declStruct(VTermGlyphInfo);
+declStruct(VTermGlyphInfo);
 
 typedef struct {
    int (*text)(Byte *bytes, Unt len, void *user);
@@ -310,7 +310,7 @@ typedef struct {
    Boole (*resize)(Short rows, Short cols, void *user);
 } VTermParserCallbacks;
 
-private struct VTermLineInfo {
+struct VTermLineInfo {
    Unt doublewidth:1;  //DECDWL or DECDHL line
    Unt doubleheight:2; //DECDHL line (1=top 2=bottom)
    Unt continuation:1; //Line is a flow continuation of the previous
@@ -331,7 +331,7 @@ typedef struct {
    int (*sb_clear)(void* user);
 } VTermStateCallbacks;
 
-private struct VTerm {
+struct VTerm {
    VTermAllocatorFunctions* allocator;
 
    int rows;
@@ -425,7 +425,7 @@ typedef struct {
    int (*query)(VTermSelectionMask mask, void* user);
 } VTermSelectionCallbacks;
 
-private struct VTermState {
+struct VTermState {
    VTerm* vt;
 
    VTermStateCallbacks* callbacks;
@@ -539,12 +539,12 @@ private struct VTermState {
   } selection;
 };
 
-comptime struct VTermGlyphInfo {
+struct VTermGlyphInfo {
   Unt* chars;
   int width;
 };
 
-comptime enum {
+enum {
   C1_SS3 = 0x8f,
   C1_DCS = 0x90,
   C1_CSI = 0x9b,
@@ -922,7 +922,7 @@ private void do_by_tplmode(
 # define DEBUG_PRINT_UTF8
 #endif
 
-private struct UTF8DecoderData {
+struct UTF8DecoderData {
   // number of bytes remaining in this codepoint
   int bytes_remaining;
 
@@ -2636,7 +2636,7 @@ vterm_mouse_button(VTerm *vt, int button, int pressed, VTermModifier mod) {
 
 #undef DEBUG_REFLOW
 
-private struct VTermScreen {
+struct VTermScreen {
    VTerm* vt;
    VTermState* state;
 
@@ -6336,7 +6336,7 @@ typedef struct sb_line_S {
 } ScrollbackLine;
 
 // typedef Terminal in eegl.h@@structs
-private struct Terminal {
+struct Terminal {
    Terminal* next;
 
    VTerm* vterm;
@@ -10703,13 +10703,10 @@ term_report_winsize(Terminal* term, int rows, int cols) {
       mch_signal_job(term->job, S"winch");
 }
 
-
-#if defined(PROTO)
 pub Job*
 term_getjob(Terminal* term) {
    return term ? term->job : NULL;
 }
-#endif
 
 private void
 prepare_to_exit(void) {
@@ -11345,7 +11342,6 @@ ui_breakcheck_force(Boole force) {
 //
 // For the client-server code in the console the received keys are put in the input buffer.
 
-#if defined(USE_INPUT_BUF) || defined(PROTO)
 
 // Internal typeahead buffer. Includes extra space for long key code descriptions which would 
 // otherwise overflow.  The buffer is considered full when only this extra space (or part of it) 
@@ -11368,13 +11364,6 @@ pub int
 eeIsInputBufEmpty(void) {
    return (inbufcount == 0);
 }
-
-#if defined(PROTO)
-pub int
-eeglFree_in_input_buf(void) {
-   return (INBUFLEN - inbufcount);
-}
-#endif
 
 // Return the current contents of the input buffer and make it empty.
 // The returned pointer must be passed to set_input_buf() later.
@@ -11551,7 +11540,6 @@ fill_input_buf(Boole exit_on_error) {
      }
    }
 }
-#endif // USE_INPUT_BUF
 
 // Exit because of an input read error.
 pub void

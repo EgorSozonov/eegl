@@ -1,4 +1,3 @@
-int fstat(int fd, struct stat* statbuf);
 YankReg * get_y_regs(void);
 YankReg * get_y_current(void);
 YankReg * get_y_previous(void);

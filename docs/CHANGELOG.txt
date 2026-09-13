@@ -53,6 +53,7 @@
 [+] MESSAGE_QUEUE
 [+] HAS_MESSAGE_WINDOW
 [+] VIM_BACKTICK
+[+] USE_INPUT_BUF
 
 
 [[[Deleted cruft]]]
@@ -285,6 +286,8 @@
 [-] scripting capabilities in commands (:if, :try etc). They will be in Wren only
 [-] request of terminal version - useless
 [-] EINTR ifdefs
+[-] OPEN_CHR_FILES (some FreeBSD thing)
+[-] PROTO (now we have BetterC instead)
 
 tag.c:do_tag (weird matches is static, also newMatches?)
 

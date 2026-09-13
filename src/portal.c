@@ -3013,7 +3013,7 @@ freePortalMem(
    return po;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 portFreeAll(void) {
    // avoid an error for switching tabpage with the commline portal open
@@ -10387,7 +10387,7 @@ get_spaces(int len) {
 //Update popup portals.  They are drawn on top of normal portals.
 //"portUpdate" is called for each popup portal, lowest zindex first.
 pub void
-update_popups(void (*portUpdate)(Portal* po)) {
+update_popups(void (*portUpdate)(Portal* po, Boole *)) {
    Portal* po;
    Decoration borderDeco[4];
    Unt border_char[8];

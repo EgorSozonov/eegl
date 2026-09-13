@@ -4,9 +4,31 @@
 //## data.c: core data structures
 
 #include "eegl.h"
-#include "proto/book.h"
-#include "proto/channel.h"
+//{{{macros
+//{{{list
 
+pub
+#define GEN_TYPE_L(T) typedef struct {\
+   T* c;\
+   Unt len;\
+   Unt cap;\
+   Arena* a;\
+} L##T;
+
+//}}}
+//}}}
+//{{{imports
+
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/memory.types.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+
+//}}}
 //{{{types
 
 // struct used in the array that's given to qsort()
@@ -199,14 +221,6 @@ private int json_decode_item(JsReader* reader, Var *res);
 private int json_decode_all(OUT Var* res, JsReader* reader);
 //}}}
 //{{{list
-
-pub
-#define GEN_TYPE_L(T) typedef struct {\
-   T* c;\
-   Unt len;\
-   Unt cap;\
-   Arena* a;\
-} L##T;
 
 pub
 #define GEN_add_L(acc, T) p##acc void add_L##T (L##T * l, T newItem) {\
@@ -7012,7 +7026,7 @@ f_assert_true(Arr(Var) argvars, Var* returnVar) {
 
 //"test_alloc_fail(id, countdown, repeat)" function
 pub void
-f_test_alloc_fail(Arr(Var) argvars, Var* returnVar) {
+f_test_alloc_fail(Arr(Var) argvars, Var*) {
     if (argvars[0].tag != VAR_NUMBER
        || argvars[0].number <= 0
        || argvars[1].tag != VAR_NUMBER
@@ -7036,13 +7050,11 @@ f_test_autochdir(Arr(Var), Var*) {
 
 pub void
 f_test_feedinput(Arr(Var) argvars, Var*) {
-#ifdef USE_INPUT_BUF
    CS val = convertVarToStringSingleUse(&argvars[0]);
    if (val) {
       trash_input_buf();
       add_to_input_buf_csi(val, (int)STRLEN(val));
    }
-#endif
 }
 
 //"test_getvalue({name})" function
@@ -7152,7 +7164,7 @@ f_test_refcount(Arr(Var) argvars, Var* returnVar) {
       break;
 
    case VAR_JOB:
-      if (argvars[0].job)
+      if (argvars[0].job != null)
          retval = getRefCount(argvars[0].job) - 1;
       break;
    case VAR_CHANNEL:

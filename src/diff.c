@@ -9,9 +9,18 @@
 //- Let 'diffexpr' do the work, using files.
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/book.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+
 int stat(const char* restrict path, struct stat* restrict buf); // from sys/stat.h
 
-private struct DiffBlock {
+//{{{types
+
+struct DiffBlock {
    DiffBlock* df_next;
    LineNr   lnum[DB_COUNT];   // line number in book
    LineNr   count[DB_COUNT];   // nr of inserted/changed lines
@@ -22,29 +31,70 @@ private struct DiffBlock {
    ArrayList   changes;      // list of inline changes (DifflineChange)
 };
 
-#define IGNORE_WHITESPACE (1 << 1)
-#define IGNORE_WHITESPACE_CHANGE (1 << 2)
-#define IGNORE_WHITESPACE_AT_EOL (1 << 3)
-#define IGNORE_CR_AT_EOL (1 << 4)
-#define WHITESPACE_FLAGS (IGNORE_WHITESPACE | \
-               IGNORE_WHITESPACE_CHANGE | \
-               IGNORE_WHITESPACE_AT_EOL | \
-               IGNORE_CR_AT_EOL)
+typedef struct s_xdpsplit {
+   long i1, i2;
+   int min_lo, min_hi;
+} XdpSplit;
 
-#define IGNORE_BLANK_LINES (1 << 7)
+typedef struct s_diffdata {
+   long nrec;
+   unsigned long const *ha;
+   long *rindex;
+   CS rchg;
+} DiffData;
 
-#define PATIENCE_DIFF (1 << 14)
-#define XDF_HISTOGRAM_DIFF (1 << 15)
-#define XDF_DIFF_ALGORITHM_MASK (PATIENCE_DIFF | XDF_HISTOGRAM_DIFF)
-#define XDF_DIFF_ALG(x) ((x) & XDF_DIFF_ALGORITHM_MASK)
+typedef struct s_xdg {
+   long mxcost;
+   long snake_cnt;
+   long heur_min;
+} Environment;
 
-#define INDENT_HEURISTIC (1 << 23)
+typedef struct s_xdchange {
+   struct s_xdchange *next;
+   long i1, i2;
+   long chg1, chg2;
+   int ignore;
+} XdChange;
 
-// xpparm_t.flags
-#define NEED_MINIMAL (1 << 0)
+pub declStruct(Record);
+struct Record {
+   Record* next;
+   CS ptr;
+   long size;
+   unsigned long ha;
+};
 
-// Allocate an array of nr zeroed out elements, return NULL on failure
-#define XDL_CALLOC_ARRAY(p, nr)   ((p) = xdl_calloc(nr, sizeof(*(p))))
+declStruct(ChaNode);
+struct ChaNode {
+   ChaNode* next;
+   long icurr;
+};
+
+
+typedef struct s_chastore {
+   ChaNode *head, *tail;
+   long isize, nsize;
+   ChaNode *ancur;
+   ChaNode *sncur;
+   long scurr;
+} ChaStore;
+
+typedef struct s_xdfile {
+   ChaStore rcha;
+   long nrec;
+   unsigned int hbits;
+   Record **rhash;
+   long dstart, dend;
+   Record **recs;
+   CS rchg;
+   long *rindex;
+   long nreff;
+   unsigned long *ha;
+} XdFile;
+
+typedef struct s_xdfenv {
+   XdFile xdf1, xdf2;
+} XdfEnv;
 
 typedef struct s_mmfile {
    Byte* ptr;
@@ -62,21 +112,6 @@ typedef struct s_xpparam {
    char **anchors;
    Unt anchors_nr;
 } XpParam;
-
-pub declStruct(ChaNode);
-struct ChaNode {
-   ChaNode* next;
-   long icurr;
-};
-
-typedef struct s_chastore {
-   ChaNode *head, *tail;
-   long isize, nsize;
-   ChaNode *ancur;
-   ChaNode *sncur;
-   long scurr;
-} ChaStore;
-
 
 typedef long (*FindFn)(
    CS line, long line_len, char* buffer, long buffer_size, void *priv
@@ -105,31 +140,6 @@ typedef struct s_xdemitcb {
          Byte* func, long funclen);
    int (*out_line)(void *, MmBuffer *, int);
 } XdEmitCb;
-
-pub declStruct(Record);
-struct Record {
-   Record* next;
-   CS ptr;
-   long size;
-   unsigned long ha;
-};
-
-typedef struct s_xdfile {
-   ChaStore rcha;
-   long nrec;
-   unsigned int hbits;
-   Record **rhash;
-   long dstart, dend;
-   Record **recs;
-   CS rchg;
-   long *rindex;
-   long nreff;
-   unsigned long *ha;
-} XdFile;
-
-typedef struct s_xdfenv {
-   XdFile xdf1, xdf2;
-} XdfEnv;
 
 // used for diff input
 typedef struct {
@@ -166,6 +176,188 @@ typedef struct {
    int dio_ctxlen;   // unified diff context length
 } DiffIo;
 
+typedef int (*emit_func_t)(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb, XdEmitConf const *xecfg);
+
+// Characteristics measured about a hypothetical split position.
+typedef struct SplitMeasurement {
+   //Is the split at the end of the file (aside from any blank lines)?
+   int end_of_file;
+
+   //How much is the line immediately following the split indented (or -1 if the line is blank):
+   int indent;
+
+   //How many consecutive lines above the split are blank?
+   int pre_blank;
+
+   //How much is the nearest non-blank line above the split indented (or
+   //-1 if there is no such line)?
+   int pre_indent;
+
+   //How many lines after the line following the split are blank?
+   int post_blank;
+
+   //How much is the nearest non-blank line after the line following the
+   //split indented (or -1 if there is no such line)?
+   int post_indent;
+} SplitMeasurement;
+
+typedef struct {
+   // The effective indent of this split (smaller is preferred).
+   int effective_indent;
+
+   // Penalty for this split (smaller is preferred).
+   int penalty;
+} SplitScore;
+
+//Represent a group of changed lines in an XdFile (i.e., a contiguous group
+//of lines that was inserted or deleted from the corresponding version of the
+//file). We consider there to be such a group at the beginning of the file, at
+//the end of the file, and between any two unchanged lines, though most such
+//groups will usually be empty.
+//
+//If the first line in a group is equal to the line following the group, then
+//the group can be slid down. Similarly, if the last line in a group is equal
+//to the line preceding the group, then the group can be slid up. See
+//group_slide_down() and group_slide_up().
+//
+//Note that loops that are testing for changed lines in xdf->rchg do not need
+//index bounding since the array is prepared with a zero at position -1 and N.
+typedef struct {
+   //The index of the first changed line in the group, or the index of
+   //the unchanged line above which the (empty) group is located.
+   long start;
+
+   //The index of the first unchanged line after the group. For an empty group, end == start
+   long end;
+} XdlGroup;
+
+pub declStruct(XdlClass);
+struct XdlClass {
+   XdlClass* next;
+   Ulong ha;
+   CS line;
+   long size;
+   long idx;
+   long len1;
+   long len2;
+};
+
+//This is a hash mapping from line hash to line numbers in the first and second file.
+pub declStruct(Entry);
+struct Entry {
+   Ulong hash;
+   //0 = unused entry, 1 = first line, 2 = second, etc.
+   //line2 is NON_UNIQUE if the line is not unique in either the first or the second file.
+   Ulong line1;
+   Ulong line2;
+   //"next" & "previous" are used for the longest common sequence;
+   //initially, "next" reflects only the order in file1.
+   Entry* next;
+   Entry* previous;
+
+   //If 1, this entry can serve as an anchor. See manual/diff-options.txt for more information.
+   unsigned anchor : 1;
+};
+
+
+typedef struct s_xdlclassifier {
+   unsigned int hbits;
+   long hsize;
+   XdlClass **rchash;
+   ChaStore ncha;
+   XdlClass **rcrecs;
+   long alloc;
+   long count;
+   long flags;
+} Classifier;
+
+typedef struct {
+   int nr;
+   int alloc;
+   Arr(Entry) entries;
+   Entry* first;
+   Entry* last;
+   
+   // were common records found?
+   Ulong has_matches;
+   XdfEnv *env;
+   XpParam const *xpp;
+} DiffMap;
+
+pub declStruct(XdRecord);
+struct XdRecord {
+   Unt ptr;
+   Unt cnt;
+   XdRecord* next;
+};
+
+typedef struct {
+   XdRecord** records; // an occurrence
+   XdRecord** line_map; // map of line to record chain
+   ChaStore rcha;
+   Unt* next_ptrs;
+   Unt table_bits;
+   Unt records_size;
+   Unt line_map_size;
+
+   Unt max_chain_length;
+   Unt key_shift;
+   Unt ptr_shift;
+
+   Unt cnt;
+   Unt has_common;
+
+   XdfEnv* env;
+   XpParam const* xpp;
+} HistIndex;
+
+typedef struct {
+   Unt begin1;
+   Unt end1;
+   Unt begin2;
+   Unt end2;
+} DRegion;
+
+#define LN_MAX_BUFS 8
+#define LN_DECISION_MAX 255  // pow(2, LN_MAX_BUFS(8)) - 1 = 255
+
+// struct for running the diff linematch algorithm
+pub declStruct(DiffCmpPath);
+struct DiffCmpPath {
+    // to keep track of the total score of this path
+    int levScore;
+    Unt pathInd;   // current index of this path
+    int choiceMem[LN_DECISION_MAX + 1];
+    int choice[LN_DECISION_MAX];
+    // to keep track of this path traveled
+    DiffCmpPath* decision[LN_DECISION_MAX];
+    Unt optimalChoice;
+};
+
+//}}}
+#define IGNORE_WHITESPACE (1 << 1)
+#define IGNORE_WHITESPACE_CHANGE (1 << 2)
+#define IGNORE_WHITESPACE_AT_EOL (1 << 3)
+#define IGNORE_CR_AT_EOL (1 << 4)
+#define WHITESPACE_FLAGS (IGNORE_WHITESPACE | \
+               IGNORE_WHITESPACE_CHANGE | \
+               IGNORE_WHITESPACE_AT_EOL | \
+               IGNORE_CR_AT_EOL)
+
+#define IGNORE_BLANK_LINES (1 << 7)
+
+#define PATIENCE_DIFF (1 << 14)
+#define XDF_HISTOGRAM_DIFF (1 << 15)
+#define XDF_DIFF_ALGORITHM_MASK (PATIENCE_DIFF | XDF_HISTOGRAM_DIFF)
+#define XDF_DIFF_ALG(x) ((x) & XDF_DIFF_ALGORITHM_MASK)
+
+#define INDENT_HEURISTIC (1 << 23)
+
+// xpparm_t.flags
+#define NEED_MINIMAL (1 << 0)
+
+// Allocate an array of nr zeroed out elements, return NULL on failure
+#define XDL_CALLOC_ARRAY(p, nr)   ((p) = xdl_calloc(nr, sizeof(*(p))))
 
 //{{{@@forward declarations
 private Unt line_len(const MmFile *m);
@@ -300,7 +492,7 @@ private int parse_diff_optarg(
 private void list_to_diffin(List* l, DiffInp* din, int icase);
 private Bag * get_diff_hunk_indices(Hunk* hunk);
 private long xdl_split(    unsigned long const *ha1, long off1, long lim1, unsigned long const *ha2, long off2, long lim2,
-   long *kvdf, long *kvdb, int need_min, xdpsplit_t *spl, Environment *xenv
+   long *kvdf, long *kvdb, int need_min, XdpSplit *spl, Environment *xenv
 );
 private int  xdl_recs_cmp(DiffData* dd1, long off1, long lim1,
        DiffData* dd2, long off2, long lim2,
@@ -402,22 +594,6 @@ private XdChange * xdl_get_hunk(XdChange** xscr, XdEmitConf const* xecfg);
 private int xdl_emit_diff(XdfEnv* xe, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg);
 //}}}
 //{{{linematch algorithm
-
-#define LN_MAX_BUFS 8
-#define LN_DECISION_MAX 255  // pow(2, LN_MAX_BUFS(8)) - 1 = 255
-
-// struct for running the diff linematch algorithm
-pub declStruct(DiffCmpPath);
-struct DiffCmpPath {
-    // to keep track of the total score of this path
-    int levScore;
-    Unt pathInd;   // current index of this path
-    int choiceMem[LN_DECISION_MAX + 1];
-    int choice[LN_DECISION_MAX];
-    // to keep track of this path traveled
-    DiffCmpPath* decision[LN_DECISION_MAX];
-    Unt optimalChoice;
-};
 
 private Unt unwrap_indexes(const int *values, const int *diff_len, const Unt ndiffs);
 private Ulong test_charmatch_paths(DiffCmpPath *node, int lastdecision);
@@ -4752,31 +4928,8 @@ private long xdl_mmfile_size(MmFile *mmf);
 #define DEFAULT_CONFLICT_MARKER_SIZE 7
 
 
-typedef struct s_xdchange {
-   struct s_xdchange *next;
-   long i1, i2;
-   long chg1, chg2;
-   int ignore;
-} XdChange;
-
-typedef int (*emit_func_t)(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb,
-            XdEmitConf const *xecfg);
-
 private XdChange *xdl_get_hunk(XdChange **xscr, XdEmitConf const *xecfg);
 private int xdl_emit_diff(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb, XdEmitConf const *xecfg);
-
-typedef struct s_diffdata {
-   long nrec;
-   unsigned long const *ha;
-   long *rindex;
-   CS rchg;
-} DiffData;
-
-typedef struct s_xdg {
-   long mxcost;
-   long snake_cnt;
-   long heur_min;
-} Environment;
 
 
 private int matching_chars(const MmFile *m1, const MmFile *m2);
@@ -4796,11 +4949,6 @@ private int xdl_do_histogram_diff(XpParam const *xpp, XdfEnv *env);
 #define XDL_LINE_MAX (long)((1UL << (8 * sizeof(long) - 1)) - 1)
 #define XDL_SNAKE_CNT 20
 #define XDL_K_HEUR 4
-
-typedef struct s_xdpsplit {
-   long i1, i2;
-   int min_lo, min_hi;
-} xdpsplit_t;
 
 private long xdl_bogosqrt(long n);
 private int xdl_emit_diffrec(CS rec, long size, CS pre, long psize, XdEmitCb *ecb);
@@ -4874,7 +5022,7 @@ private void xdl_free_env(XdfEnv *xe);
 //search and to return a suboptimal point.
 private long xdl_split(
    unsigned long const *ha1, long off1, long lim1, unsigned long const *ha2, long off2, long lim2,
-   long *kvdf, long *kvdb, int need_min, xdpsplit_t *spl, Environment *xenv
+   long *kvdf, long *kvdb, int need_min, XdpSplit *spl, Environment *xenv
 ) {
    long dmin = off1 - lim2, dmax = lim1 - off2;
    long fmid = off1 - off2, bmid = lim1 - lim2;
@@ -5091,7 +5239,7 @@ xdl_recs_cmp(DiffData* dd1, long off1, long lim1,
       for (; off1 < lim1; off1++)
          rchg1[rindex1[off1]] = 1;
    } else {
-      xdpsplit_t spl;
+      XdpSplit spl;
       spl.i1 = spl.i2 = 0;
 
       //Divide ...
@@ -5225,37 +5373,6 @@ xget_indent(Record* rec) {
 //this value. This avoids requiring O(N^2) work for pathological cases, and
 //also ensures that the output of score_split fits in an int.
 #define MAX_BLANKS 20
-
-// Characteristics measured about a hypothetical split position.
-typedef struct SplitMeasurement {
-   //Is the split at the end of the file (aside from any blank lines)?
-   int end_of_file;
-
-   //How much is the line immediately following the split indented (or -1 if the line is blank):
-   int indent;
-
-   //How many consecutive lines above the split are blank?
-   int pre_blank;
-
-   //How much is the nearest non-blank line above the split indented (or
-   //-1 if there is no such line)?
-   int pre_indent;
-
-   //How many lines after the line following the split are blank?
-   int post_blank;
-
-   //How much is the nearest non-blank line after the line following the
-   //split indented (or -1 if there is no such line)?
-   int post_indent;
-} SplitMeasurement;
-
-typedef struct {
-   // The effective indent of this split (smaller is preferred).
-   int effective_indent;
-
-   // Penalty for this split (smaller is preferred).
-   int penalty;
-} SplitScore;
 
 //Fill m with information about a hypothetical split of xdf above line split.
 private void 
@@ -5417,28 +5534,6 @@ score_cmp(SplitScore* s1, SplitScore* s2) {
 
    return INDENT_WEIGHT * cmp_indents + (s1->penalty - s2->penalty);
 }
-
-//Represent a group of changed lines in an XdFile (i.e., a contiguous group
-//of lines that was inserted or deleted from the corresponding version of the
-//file). We consider there to be such a group at the beginning of the file, at
-//the end of the file, and between any two unchanged lines, though most such
-//groups will usually be empty.
-//
-//If the first line in a group is equal to the line following the group, then
-//the group can be slid down. Similarly, if the last line in a group is equal
-//to the line preceding the group, then the group can be slid up. See
-//group_slide_down() and group_slide_up().
-//
-//Note that loops that are testing for changed lines in xdf->rchg do not need
-//index bounding since the array is prepared with a zero at position -1 and N.
-typedef struct {
-   //The index of the first changed line in the group, or the index of
-   //the unchanged line above which the (empty) group is located.
-   long start;
-
-   //The index of the first unchanged line after the group. For an empty group, end == start
-   long end;
-} XdlGroup;
 
 //Initialize g to point at the first group in xdf.
 private void
@@ -6154,42 +6249,6 @@ xdl_alloc_grow_helper(void* p, Long nr, Long* alloc, Unt size) {
 #define XDL_GUESS_NLINES1 256
 #define XDL_GUESS_NLINES2 20
 
-pub declStruct(XdlClass);
-struct XdlClass {
-   XdlClass* next;
-   Ulong ha;
-   CS line;
-   long size;
-   long idx;
-   long len1;
-   long len2;
-};
-
-typedef struct s_xdlclassifier {
-   unsigned int hbits;
-   long hsize;
-   XdlClass **rchash;
-   ChaStore ncha;
-   XdlClass **rcrecs;
-   long alloc;
-   long count;
-   long flags;
-} Classifier;
-
-
-private int xdl_init_classifier(Classifier *cf, long size, long flags);
-private void xdl_free_classifier(Classifier *cf);
-private int xdl_classify_record(unsigned int pass, Classifier *cf, Record **rhash,
-                unsigned int hbits, Record *rec);
-private int xdl_prepare_ctx(unsigned int pass, MmFile *mf, long narec, XpParam const *xpp,
-            Classifier *cf, XdFile *xdf);
-private void xdl_free_ctx(XdFile *xdf);
-private int xdl_clean_mmatch(Byte* dis, long i, long s, long e);
-private int xdl_cleanup_records(Classifier *cf, XdFile *xdf1, XdFile *xdf2);
-private int xdl_trim_ends(XdFile *xdf1, XdFile *xdf2);
-private int xdl_optimize_ctxs(Classifier *cf, XdFile *xdf1, XdFile *xdf2);
-
-
 private int xdl_init_classifier(Classifier *cf, long size, long flags) {
    cf->flags = flags;
 
@@ -6565,36 +6624,6 @@ private int xdl_optimize_ctxs(Classifier* cf, XdFile* xdf1, XdFile* xdf2) {
 
 #define NON_UNIQUE UNT
 
-//This is a hash mapping from line hash to line numbers in the first and second file.
-pub declStruct(Entry);
-struct Entry {
-   Ulong hash;
-   //0 = unused entry, 1 = first line, 2 = second, etc.
-   //line2 is NON_UNIQUE if the line is not unique in either the first or the second file.
-   Ulong line1;
-   Ulong line2;
-   //"next" & "previous" are used for the longest common sequence;
-   //initially, "next" reflects only the order in file1.
-   Entry* next;
-   Entry* previous;
-
-   //If 1, this entry can serve as an anchor. See manual/diff-options.txt for more information.
-   unsigned anchor : 1;
-};
-
-typedef struct {
-   int nr;
-   int alloc;
-   Arr(Entry) entries;
-   Entry* first;
-   Entry* last;
-   
-   // were common records found?
-   Ulong has_matches;
-   XdfEnv *env;
-   XpParam const *xpp;
-} DiffMap;
-
 private int 
 is_anchor(XpParam const *xpp, CS line) {
    for (int i = 0; i < (int)xpp->anchors_nr; i++) {
@@ -6879,40 +6908,6 @@ xdl_do_patience_diff(XpParam const *xpp, XdfEnv *env) {
 #define LINE_END(n) (line##n + count##n - 1)
 #define LINE_END_PTR(n) (*line##n + *count##n - 1)
 
-
-pub declStruct(XdRecord);
-struct XdRecord {
-   Unt ptr;
-   Unt cnt;
-   XdRecord* next;
-};
-
-typedef struct {
-   XdRecord** records; // an occurrence
-   XdRecord** line_map; // map of line to record chain
-   ChaStore rcha;
-   Unt* next_ptrs;
-   Unt table_bits;
-   Unt records_size;
-   Unt line_map_size;
-
-   Unt max_chain_length;
-   Unt key_shift;
-   Unt ptr_shift;
-
-   Unt cnt;
-   Unt has_common;
-
-   XdfEnv* env;
-   XpParam const* xpp;
-} HistIndex;
-
-typedef struct {
-   Unt begin1;
-   Unt end1;
-   Unt begin2;
-   Unt end2;
-} DRegion;
 
 #define LINE_MAP(i, a) (i->line_map[(a) - i->ptr_shift])
 

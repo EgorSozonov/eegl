@@ -1,6 +1,3 @@
-declStruct(ChaNode);
-declStruct(Record);
-declStruct(DiffCmpPath);
 void diffDeleteBook(Book* book);
 void diffBookAdjust(Portal* port);
 void diffAddBook(Book* book);
@@ -36,6 +33,3 @@ LineNr diff_lnum_win(LineNr lnum, Portal *po);
 void f_diff_filler(Var *argvars, Var *returnVar);
 void f_diff_hlID(Var* argvars, Var* returnVar);
 void f_diff(Var* argvars, Var* returnVar);
-declStruct(XdlClass);
-declStruct(Entry);
-declStruct(XdRecord);

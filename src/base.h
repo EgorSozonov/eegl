@@ -10,7 +10,6 @@ typedef unsigned char* CS; // ZERO-terminated byte arrays only
 
 #define private static
 #define pub
-#define privateComp
 #define public
 #define OUT
 #define Arr(T) T*

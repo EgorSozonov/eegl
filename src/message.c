@@ -1588,7 +1588,7 @@ c_messages(Invocation *invo) {
 
 //To be able to scroll back at the "more" and "hit-enter" prompts we need to
 //store the displayed text and remember where screen lines start.
-private struct MsgChunk {
+struct MsgChunk {
    MsgChunk   *sb_next;
    MsgChunk   *sb_prev;
    char   sb_eol;      // true when line ends after this text
@@ -2591,7 +2591,7 @@ msg_use_printf(void){
    );
 }
 
-#if defined(USE_MCH_ERRMSG) || defined(PROTO)
+#if defined(USE_MCH_ERRMSG)
 
 #ifdef mch_errmsg
 # undef mch_errmsg

@@ -4,8 +4,35 @@
 //## eval.c: evaluation of functions
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/book.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
 
 #define USING_FLOAT_STUFF
+//{{{types
+
+typedef struct {
+   int flag;
+   char* str;
+} FlagString;
+
+typedef struct {
+   Var* var;    // Base internal var.
+   int isArg;   // name is an arg (not a member).
+} LvalRoot;
+
+typedef enum {
+   MATCH_END,       // matchend()
+   MATCH_MATCH,    // match()
+   MATCH_STR,       // matchstr()
+   MATCH_LIST,       // matchlist()
+   MATCH_POS       // matchstrpos()
+} MatchTypeSpec;
+
+//}}}
 //{{{@@forward declarations
 private int compareNames(const void *s1, const void *s2);
 private int eval1_emsg(Byte **arg, Var* returnVar, Invocation* invo);
@@ -374,7 +401,7 @@ private void f_keytrans(Arr(Var) argvars, Var* returnVar);
 private void f_last_buffer_nr(Arr(Var), Var* returnVar);
 private void f_line(Arr(Var) argvars, Var* returnVar);
 private void f_line2byte(Arr(Var) argvars, Var* returnVar);
-private void find_some_match(Arr(Var) argvars, Var* returnVar, matchTypeSpec type);
+private void find_some_match(Arr(Var) argvars, Var* returnVar, MatchTypeSpec type);
 private int get_matches_in_str(
    CS str,
    RegMatch   *rmp,
@@ -506,11 +533,6 @@ checkIfNameReserved(CS name, int is_objm_access) {
 
 //This specifies optional parameters for getLval(). Arguments may be NULL.
 
-typedef struct {
-   Var* var;    // Base internal var.
-   int isArg;   // name is an arg (not a member).
-} LvalRoot;
-
 //Flags for eval_variable().
 #define EVAL_VAR_VERBOSE    1   // may give error message
 #define EVAL_VAR_NOAUTOLOAD 2   // do not use script autoloading
@@ -585,7 +607,7 @@ evalInitGlobals(void) {
    func_init();
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 eval_clear(void) {
    evalvars_clear();
@@ -1491,10 +1513,6 @@ eval_foldexpr(Portal *wp, int *cp) {
 #define ASSIGN_COMPOUND_OP 0x200  // compound operator e.g. "+="
 
 #ifdef LOG_LOCKVAR
-typedef struct {
-   int       flag;
-   char    *str;
-} FlagString;
 
 private CS
 flags_tostring(Unt flags, FlagString* _fstring, CS buf, Unt n) {
@@ -2362,7 +2380,7 @@ tv_op(Var *tv1, Var *tv2, CS op) {
 //{{{loops
 
 // Info used by a ":for" loop.
-private struct ForInfo {
+struct ForInfo {
    int endsWithSemicolon;   // true if ending in '; var]'
    int fi_varcount;   // nr of variables in [] or zero
    int fi_break_count;   // nr of line breaks encountered
@@ -5917,7 +5935,7 @@ initGlobalAndSpecialVars(void) {
    set_reg_var(0);
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 // Free all Eegl variables information on exit
 pub void
 evalvars_clear(void) {
@@ -10543,7 +10561,6 @@ execute_redir_str(CS value, int value_len) {
    redir_execute_ga.len += len;
 }
 
-#if defined(PROTO)
 //Get next line from a string containing NL separated lines.
 //Called by doCommand() to get the next line.
 //Return an allocated string, or NULL when at the end of the string.
@@ -10556,10 +10573,10 @@ get_str_line(Unt, void* cookie, int, GetlineAlgo) {
       return NULL;
    p = firstOccurrence(p, '\n');
    CS line;
-   if (p)
+   if (p) {
       line = copySubstr(start, p - start);
       p++;
-   else {
+   } else {
       line = copyStr(start);
    }
 
@@ -10570,11 +10587,10 @@ get_str_line(Unt, void* cookie, int, GetlineAlgo) {
 // Execute a series of commands in 'str'
 pub void
 execute_cmds_from_string(CS str) {
-   doCommand(NULL, get_str_line, (void *)&str,
-      DOCMD_NOWAIT|DOCMD_VERBOSE|DOCMD_REPEAT|DOCMD_KEYTYPED);
+   doCommand(
+      NULL, get_str_line, (void *)&str, DOCMD_NOWAIT|DOCMD_VERBOSE|DOCMD_REPEAT|DOCMD_KEYTYPED
+   );
 }
-
-#endif
 
 //}}}
 //{{{API functions 2
@@ -10864,7 +10880,6 @@ f_feedkeys(Arr(Var) argvars, Var*) {
 
    if (*keys != ZERO || execute) {
       if (lowlevel) {
-#ifdef USE_INPUT_BUF
          lo("feedkeys() lowlevel: %s", keys);
 
          int len = (int)STRLEN(keys);
@@ -10875,9 +10890,6 @@ f_feedkeys(Arr(Var) argvars, Var*) {
                 gotInterruptG = true;
             add_to_input_buf(keys + idx, 1);
          }
-#else
-         emsg(_(e_lowlevel_input_not_supported));
-#endif
       } else {
          //Need to escape K_SPECIAL and CSI before putting the string in the typeahead buffer.
          CS keys_esc = copyStr_escape_csi(keys);
@@ -10886,8 +10898,12 @@ f_feedkeys(Arr(Var) argvars, Var*) {
 
          lo("feedkeys(%s): %s", typed ? "typed" : "", keys);
 
-         insertIntoTypebuf(keys_esc, (remap ? REMAP_YES : REMAP_NONE),
-                  insert ? 0 : typeBufG.validLen, !typed, false);
+         insertIntoTypebuf(
+               keys_esc, 
+               (remap ? REMAP_YES : REMAP_NONE), insert ? 0 : typeBufG.validLen, 
+               !typed, 
+               false
+         );
          if (vgetcBusyG || timer_busy || input_busy)
             typebuf_was_filled = true;
 
@@ -10895,8 +10911,8 @@ f_feedkeys(Arr(Var) argvars, Var*) {
       }
 
       if (execute) {
-         int      save_msg_scroll = msg_scroll;
-         ScriptPos   save_sctx;
+         int save_msg_scroll = msg_scroll;
+         ScriptPos save_sctx;
 
          // Avoid a 1 second delay when the keys start Insert mode.
          msg_scroll = false;
@@ -12722,17 +12738,8 @@ f_line2byte(Arr(Var) argvars, Var* returnVar) {
       ++returnVar->number;
 }
 
-
-typedef enum {
-   MATCH_END,       // matchend()
-   MATCH_MATCH,    // match()
-   MATCH_STR,       // matchstr()
-   MATCH_LIST,       // matchlist()
-   MATCH_POS       // matchstrpos()
-} matchTypeSpec;
-
 private void
-find_some_match(Arr(Var) argvars, Var* returnVar, matchTypeSpec type) {
+find_some_match(Arr(Var) argvars, Var* returnVar, MatchTypeSpec type) {
    Byte   *str = NULL;
    long   len = 0;
    Byte   *expr = NULL;

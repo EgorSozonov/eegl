@@ -186,7 +186,7 @@ match_user(CS name) {
 
 
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 
 pub void
 free_homedir(void) {
@@ -915,52 +915,6 @@ fail:
    hash_clear_all(&terminal_bufs, 0);
    return ret;
 }
-
-# if (defined(EXPERIMENTAL_GUI_CMD)) || defined(PROTO)
-//Generate a script that can be used to restore the current editing session.
-//Save the value of v:this_session before running :mksession in order to make
-//automagic session save fully transparent.  Return true on success.
-pub int
-write_session_file(CS filename) {
-   // Build a command line to create a script that restores the current
-   // session if executed.  Escape the filename to avoid nasty surprises.
-   CS escaped_filename = copyStr_escaped(filename, escape_chars);
-   CS mksession_cmdline = alloc(10 + (int)STRLEN(escaped_filename) + 1);
-   strcpy(mksession_cmdline, "mksession ");
-   STRCAT(mksession_cmdline, escaped_filename);
-   eeglFree(escaped_filename);
-
-   //Use a reasonable hardcoded set of 'sessionoptions' flags to avoid unpredictable effects 
-   //when the session is saved automatically.
-
-   executeCommLine(S"let Save_VV_this_session = v:this_session");
-   int failed = (executeCommLine((CS)mksession_cmdline) == FAIL);
-   executeCommLine(S"let v:this_session = Save_VV_this_session");
-   unletImpl(S"Save_VV_this_session", true);
-
-   eeglFree(mksession_cmdline);
-
-   //Reopen the file and append a command to restore v:this_session,
-   //as if this save never happened.   This is to avoid conflicts with
-   //the user's own sessions.  FIXME: It's probably less hackish to add
-   //a "stealth" flag to 'sessionoptions' -- gotta ask Bram.
-   if (!failed) {
-      FILE* fd = doOpenCommandsFile(filename, true, APPENDBIN);
-      failed = (fd == NULL
-             || put_line(fd, S"let v:this_session = Save_VV_this_session") == FAIL
-             || put_line(fd, S"unlet Save_VV_this_session") == FAIL);
-
-      if (fd != NULL && fclose(fd) != 0)
-         failed = true;
-
-      if (failed)
-         mch_remove(filename);
-   }
-
-   return !failed;
-}
-# endif
-
 
 // ":mkvimrc",  and ":mksession".
 pub void

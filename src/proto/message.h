@@ -1,4 +1,3 @@
-declStruct(MsgChunk);
 CS msg_strtrunc(CS s, int force);
 void trunc_string(
    Byte   *s,
@@ -46,7 +45,6 @@ int msgAndKeep(
    char      flags,
    int      keep)       // true: set msgAfterRedrawG if it doesn't scroll
 ;
-int eeSnprintf0(CS str, Unt str_m, const char *fmt, ...);
 int smsg0(char const* s, ...);
 int smsgDeco0(char flags, const char *s, ...);
 int smsgDecoKeep0(char flags, const char *s, ...);

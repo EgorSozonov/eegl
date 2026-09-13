@@ -1,5 +1,3 @@
-ssize_t listxattr(const char*, char*, size_t);
-int setxattr(const char*, const char*, const void*, size_t, int);
 void init_homedir(void);
 int file_is_readable(CS fname);
 void f_chdir(Var* argvars, Var* returnVar);
@@ -80,8 +78,6 @@ void home_replace(
    int dstlen,  //maximum length of the result
    Boole one      //if true, only replace one file name, include spaces and commas in the file name.
 );
-declStruct (DirSearchStack);
-declStruct(VisitedList);
 Byte * eeFindfirst(Byte *path, Byte *filename, int level);
 CS eeFindnext(void);
 FileSearchCtx* eeFindFile_init(
@@ -150,7 +146,6 @@ int readfile(
 );
 int read_blob(FILE* fd, Var* returnVar, FileOffset offset, FileOffset size_arg);
 int write_blob(FILE* fd, Blob* blob);
-int is_dev_fd_file(CS fname);
 int prep_exarg(Invocation* invo, Book* book);
 void set_file_options(Invocation* invo);
 int check_file_readonly(CS fname, Unt perm);

@@ -289,7 +289,7 @@ restore_search_patterns(void) {
    setHlsearch(saved_spatsHlsearch);
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_search_patterns(void) {
    for (int i = 0; i < (int)ARRAY_LENGTH(prevSearchPatternsP); ++i) {

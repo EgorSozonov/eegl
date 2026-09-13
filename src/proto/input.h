@@ -5,11 +5,6 @@ int get_number(Boole allowColonToUpdate, int* mouse_used);
 int stuff_empty(void);
 int readbuf1_empty(void);
 void typeahead_noflush(int c);
-typedef enum {
-   FLUSH_MINIMAL,
-   FLUSH_TYPEAHEAD,   // flush current typebuf contents
-   FLUSH_INPUT      // flush typebuf and inchar() input
-} FlushBuffers;
 void flush_buffers(FlushBuffers flush_typeahead);
 void ResetRedobuff(void);
 void CancelRedo(void);
@@ -76,7 +71,6 @@ int ends_in_white(LineNr lnum);
 int same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS leader2_flags);
 int getwhitecols_curline(void);
 void format_lines(LineNr   line_count, int avoid_fex);
-int mb_ptr2cells_len(CS p, int size);
 CS inputInitCharLens(void);
 int mb_get_class(CS p);
 int inpGetClassForBook(CS p, Book* book);

@@ -4618,7 +4618,7 @@ did_set_operatorfunc(OptionChange *cha) {
    return NULL;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 opsFreeOperatorFnOption(void) {
    evFreeCallback(&opfunc_cb);
@@ -5781,7 +5781,7 @@ timer_valid(Timer *timer) {
    return false;
 }
 
-# if defined(EXITFREE) || defined(PROTO)
+# if defined(EXITFREE)
 pub void
 timer_free_all(void) {
    while (firstTimerS != NULL) {
@@ -6103,7 +6103,7 @@ elapsed(TimeVal *start_tv) {
 # endif
 #endif
 
-# if defined(PROF_NSEC) || defined(PROTO)
+# if defined(PROF_NSEC)
 // Implement timeout with timer_create() and timer_settime().
 private volatile sig_atomic_t timeout_flag = false;
 private timer_t timer_id;

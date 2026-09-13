@@ -718,7 +718,7 @@ is_not_a_term_or_gui(void) {
    return paramsP.not_a_term;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_vbuf(void) {
    if (virtualBuf) {

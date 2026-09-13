@@ -472,10 +472,6 @@ private int findsign_id(Book* book, // book whose sign we are searching for
             LineNr lnum, // line number of sign
             CS groupname // sign group name
 );
-private int buf_findsigntype_id(Book* book, // buffer whose sign we are searching for
-                    LineNr lnum, // line number of sign
-                    int typenr // sign type number
-);
 private void sign_list_placed(Book* rbook, CS sign_group);
 private void sign_mark_adjust(
     LineNr line1,
@@ -624,7 +620,7 @@ typedef struct {
 } LocationList;
 
 //Quickfix/Location list stack definition. Contains a list of location lists (LocationList)
-private struct LocationStack {
+struct LocationStack {
    // Count of references to this list. Used only for location lists.
    // When a location list portal reference this list, refcount
    // will be 2. Otherwise, refcount will be 1. When refcount
@@ -806,7 +802,7 @@ clearArrayList(void) {
 #define LINE_MAXLEN 4096
 
 //Patterns used.  Keep in sync with parseFormats[].
-private struct fmtpattern{
+struct fmtpattern{
    CS pattern;
    Byte   convchar;
 } FORMAT_PATTERNS[FMT_PATTERNS] = { SMAP1((CS),
@@ -1087,7 +1083,7 @@ parse_efm_end:
    return fmtFirst;
 }
 
-comptime enum {
+enum {
    QF_FAIL = 0,
    QF_OK = 1,
    QF_END_OF_INPUT = 2,
@@ -2347,7 +2343,7 @@ decrementLlBusyness(void) {
 #endif
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 check_qfBusynessG(void) {
    if (qfBusynessG != 0) {
@@ -6210,7 +6206,7 @@ exportLocList(
 }
 
 // Flags used by getqflist()/getloclist() to determine which fields to return.
-comptime enum {
+enum {
    QF_GETLIST_NONE    = 0x0,
    QF_GETLIST_TITLE   = 0x1,
    QF_GETLIST_ITEMS   = 0x2,
@@ -7436,7 +7432,7 @@ c_helpgrep(Invocation* invo) {
    decrementLlBusyness();
 }
 
-# if defined(EXITFREE) || defined(PROTO)
+# if defined(EXITFREE)
 pub void
 free_quickfix(void) {
    // Free all global location lists
@@ -8636,7 +8632,7 @@ set_last_cursor(Portal *port) {
       port->book->lastCursor = port->cursor;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_all_marks(void) {
    int      i;
@@ -8756,7 +8752,7 @@ f_getmarklist(Var *argvars, Var* returnVar) {
 // Struct to hold the sign properties.
 typedef struct Sign Sign;
 
-private struct Sign {
+struct Sign {
    Sign* next; // next sign in list
    int typeNr; // type number of sign
    CS name; // name of sign
@@ -9309,29 +9305,6 @@ findsign_id(Book* book, // book whose sign we are searching for
     return 0;
 }
 
-# if defined(PROTO)
-
-//See if a given type of sign exists on a specific line.
-private int
-buf_findsigntype_id(Book* book, // buffer whose sign we are searching for
-                    LineNr lnum, // line number of sign
-                    int typenr // sign type number
-){
-   SignEntry *sign = NULL; // a sign in the signlist
-   FOR_ALL_SIGNS_IN_BOOK(book, sign) {
-      // Signs are sorted by line number in the book. No need to check
-      // for signs after the specified line number 'lnum'.
-      if (sign->lnum > lnum)
-         break;
-
-      if (sign->lnum == lnum && sign->typeNr == typenr)
-         return sign->id;
-   }
-
-   return 0;
-}
-
-# endif // FEAT_PROTO
 
 //Delete signs in group 'group' in book. If 'group' is '*', then delete all the signs.
 pub void
@@ -10340,7 +10313,7 @@ free_signs(void) {
       sign_undefine(first_sign, NULL);
 }
 
-comptime enum {
+enum {
    EXP_SUBCMD, // expand :sign sub-commands
    EXP_DEFINE, // expand :sign define {name} args
    EXP_PLACE, // expand :sign place {id} args

@@ -355,11 +355,7 @@ private int get_function_args(
 ;
 private int register_closure(UserFunc *fp);
 private UserFunc * alloc_ufunc(Byte *name, Unt namelen);
-private CS skip_arrow(
-   CS start,
-   int   equal_arrow,
-   int   *white_error
-);
+private CS skip_arrow(CS start, int equal_arrow, int* white_error);
 private int isFunctionComm(CS* comm);
 private int get_function_body(
    Invocation       *invo,
@@ -1752,7 +1748,7 @@ get_scriptname(ScriptId id) {
    }
 }
 
-# if defined(EXITFREE) || defined(PROTO)
+# if defined(EXITFREE)
 pub void
 free_scriptnames(void) {
    for (int i = script_items.len; i > 0; --i) {
@@ -4745,7 +4741,7 @@ setContextInLangCommand(Expand *xp, CS arg){
    return NULL;
 }
 
-comptime enum {
+enum {
    EXP_FILETYPECMD_ALL,   // expand all :filetype values
    EXP_FILETYPECMD_PLUGIN,   // expand plugin on off
    EXP_FILETYPECMD_INDENT,   // expand indent on off
@@ -4756,7 +4752,7 @@ comptime enum {
 #define EXPAND_FILETYPECMD_INDENT 0x02
 #define EXPAND_FILETYPECMD_ONOFF  0x04
 
-comptime enum {
+enum {
    EXP_BREAKPT_ADD,   // expand ":breakadd" sub-commands
    EXP_BREAKPT_DEL,   // expand ":breakdel" sub-commands
    EXP_PROFDEL      // expand ":profdel" sub-commands
@@ -9662,7 +9658,6 @@ cmdline_at_end(void) {
     return (commInfo.cmdpos >= commInfo.cmdlen);
 }
 
-#if defined(PROTO)
 //Return the virtual column number at the current cursor position.
 //This is used by the IM code to obtain the start of the preedit string.
 pub ColNr
@@ -9678,7 +9673,6 @@ cmdline_getvcol_cursor(void) {
 
    return col;
 }
-#endif
 
 //Deallocate a command line buffer, updating the buffer size and length.
 private void
@@ -9733,17 +9727,6 @@ reallocateCommBuf(int len) {
 
    return OK;
 }
-
-#if defined(PROTO)
-private Byte   *arshape_buf = NULL;
-
-# if defined(EXITFREE) || defined(PROTO)
-pub void
-free_arshape_buf(void) {
-   eeglFree(arshape_buf);
-}
-# endif
-#endif
 
 //Draw part of the cmdline at the current cursor position.
 private void
@@ -12535,7 +12518,7 @@ typedef struct {
 } Deferral;
 
 // Struct used by trans_function_name()
-private struct FuncDict {
+struct FuncDict {
    Bag* bag;   // Dictionary used
    CS newKey;   // new key in "dict" in allocated memory
    DictItem* item;      // Dictionary item used
@@ -12871,44 +12854,15 @@ alloc_ufunc(Byte *name, Unt namelen) {
    return fp;
 }
 
-#if defined(PROTO)
-//Register a native C callback which can be called from Vim script.
-//Return the name of the Vim script function.
-pub Byte *
-register_cfunc(cfunc_T cb, cfunc_free_T cb_free, void *state) {
-   Text   name = get_lambda_name();
-   UserFunc* fp = alloc_ufunc(name.c, name.len);
-   if (!fp)
-      return NULL;
-
-   fp->refCount = 1;
-   fp->uf_varargs = true;
-   fp->uf_flags = FC_CFUNC | FC_LAMBDA;
-   fp->uf_calls = 0;
-   fp->scriptCtx = scriptPosG;
-   fp->uf_cb = cb;
-   fp->uf_cb_free = cb_free;
-   fp->uf_cb_state = state;
-
-   hash_add(&userDefinedFnsS, UF2HIKEY(fp), S"add C function");
-
-   return name.c;
-}
-#endif
-
 //Skip over "->" or "=>" after the arguments of a lambda.
 //If ": type" is found make "ret_type" point to "type".
 //If "white_error" is not NULL check for correct use of white space and set
 //"white_error" to true if there is an error.
 //Return NULL if no valid arrow found.
 private CS
-skip_arrow(
-   CS start,
-   int   equal_arrow,
-   int   *white_error
-) {
-    Byte  *s = start;
-    Byte  *bef = start - 2; // "start" points to > of ->
+skip_arrow(CS start, int equal_arrow, int* white_error) {
+   Byte  *s = start;
+   Byte  *bef = start - 2; // "start" points to > of ->
 
    if (equal_arrow) {
       bef = s;
@@ -14495,7 +14449,7 @@ delete_scrifntions(int sid) {
     }
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_all_functions(void) {
    EeSetItem   *hi;
@@ -17041,7 +16995,7 @@ private AutoPat *firstAutopatS[NUM_EVENTS] = { NULL };
 private AutoPat *lastAutopatS[NUM_EVENTS] = { NULL };
 
 //struct used to keep status while executing autocommands for an event.
-private struct AutoPatComm {
+struct AutoPatComm {
    AutoPat* curpat;   // next AutoPat to examine
    AutoComm* nextComm;   // next AutoComm to execute
    Unt group;      // group being used
@@ -17373,7 +17327,7 @@ autocmd_init(void){
    CLEAR_FIELD(autoCommPortG);
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_all_autocmds(void){
    for (currAugroupS = -1; currAugroupS < augroups.len; ++currAugroupS)

@@ -1577,8 +1577,6 @@ typedef unsigned short DisplayTick;   // display tick type
 // thus it is not 100% accurate!)
 #define fnamecmp(x, y) STRCMP((Byte *)(x), (Byte *)(y))
 
-#define USE_INPUT_BUF
-
 #define eeWriteToFile(fd, buf, count)  write((fd), (char *)(buf), (Unt) (count))
 
 //EXTERN is only defined in main.c. That's where global variables are actually defined
@@ -1606,7 +1604,6 @@ typedef unsigned short DisplayTick;   // display tick type
 //plus six following composing characters of three bytes each.
 #define MB_MAXBYTES   21
 
-#if !defined(PROTO)
 // Use tv_fsec for fraction of second (micro or nano) of ProfTime
 #define PROF_NSEC 1
 typedef struct timespec ProfTime;
@@ -1616,9 +1613,6 @@ typedef struct timespec ProfTime;
 #define PROF_TIME_FORMAT "%3ld.%09ld"
 #define PROF_TIME_BLANK "              "
 #define PROF_TOTALS_HEADER "count     total (s)      self (s)"
-#else
-typedef int ProfTime;       // dummy for function prototypes
-#endif
 
 typedef time_t Tyme;
 typedef int Socket;
@@ -3021,9 +3015,7 @@ typedef struct {
    int         oldModMask;
    TextHeader   save_readbuf1;
    TextHeader   save_readbuf2;
-#ifdef USE_INPUT_BUF
    Byte      *save_inputbuf;
-#endif
 } TypeaheadSave;
 
 // Structure used for the command line history.
@@ -5516,9 +5508,6 @@ typedef enum {
 //}}}
 //{{{prototypes: include the (automatically generated) function prototypes
 
-//Don't include these while generating prototypes.  Prevents problems when files are missing.
-#if !defined(PROTO) && !defined(NOPROTO)
-
 //Machine-dependent routines. avoid errors in function prototypes
 //#define Display int
 //#define Widget int
@@ -5532,7 +5521,6 @@ typedef enum {
 #include "proto/eval.h"
 #include "proto/fileio.h"
 #include "proto/hilite.h"
-#include "proto/input.h"
 #include "proto/insert.h"
 #include "proto/location.h"
 #include "proto/memory.h"
@@ -5588,20 +5576,12 @@ void ch_log(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 void lo(const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(1, 2);
 void ch_error(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 
-#endif // !PROTO && !NOPROTO
 
 //}}}
 
-// This has to go after the include of proto.h, as proto/gui.h declares
-// functions of these names. The declarations would break if the defines had
-// been seen at that stage.  But it must be before globals, where errorsG is declared.
-#if defined(PROTO)
-#define USE_MCH_ERRMSG
-#else
 #define mch_errmsg(str)   fprintf(stderr, "%s", (str))
 #define display_errors()   fflush(stderr)
 #define mch_msg(str)      printf("%s", (str))
-#endif
 
 //{{{:::globals: global variables and messages
 
@@ -8159,10 +8139,6 @@ EXTERN Byte e_invalid_operation_for_blob[]
    INIT(= "E978: Invalid operation for Blob");
 EXTERN Byte e_blob_index_out_of_range_nr[]
    INIT(= "E979: Blob index out of range: %ld");
-# ifndef USE_INPUT_BUF
-EXTERN Byte e_lowlevel_input_not_supported[]
-   INIT(= "E980: Lowlevel input not supported");
-# endif
 EXTERN Byte e_duplicate_argument_str[]
    INIT(= "E983: Duplicate argument: %s");
 EXTERN Byte e_cannot_modify_tag_stack_within_tagfunc[]

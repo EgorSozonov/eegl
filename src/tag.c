@@ -260,7 +260,7 @@ did_set_tagfunc(OptionChange *cha) {
    return NULL;
 }
 
-# if defined(EXITFREE) || defined(PROTO)
+# if defined(EXITFREE)
 pub void
 free_tagfunc_option(void) {
    evFreeCallback(&tfu_cb);
@@ -2387,7 +2387,7 @@ found_tagfile_cb(CS fname, void*) {
    ((Byte **)(tag_fnames.c))[tag_fnames.len++] = tag_fname;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_tag_stuff(void) {
    ga_clear_strings(&tag_fnames);
@@ -3490,7 +3490,7 @@ cs_usage_msg(csid_e x) {
    (void)showErrFmtMsg(_(e_usage_cscope_str), cs_cmds[(int)x].usage);
 }
 
-comptime enum {
+enum {
    EXP_CSCOPE_SUBCMD,  //expand ":cscope" sub-commands
    EXP_SCSCOPE_SUBCMD, //expand ":scscope" sub-commands
    EXP_CSCOPE_FIND,    //expand ":cscope find" arguments

@@ -579,7 +579,7 @@ set_termname(CS termName) {
    return OK;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 
 #include <term.h>       // declares cur_term
 
@@ -1020,8 +1020,7 @@ ttest(int pairs) {
    needToGatherTermLeaders = true;
 }
 
-#if defined(PROTO)
-// Represent the given Ulong as individual bytes, with the most significant
+//Represent the given Ulong as individual bytes, with the most significant
 // byte first, and store them in dst.
 pub void
 add_long_to_buf(Ulong val, CS dst) {
@@ -1050,7 +1049,6 @@ get_long_from_buf(CS buffer, Ulong* val) {
    }
    return len;
 }
-#endif
 
 // Read the next num_bytes bytes from buffer, and store them in bytes.  Assume
 // that buffer has been through inchar().   Returns the actual number of bytes used
@@ -2844,7 +2842,7 @@ check_mouse_termcode(void) {
 // functions that use lookup tables for various things, generally to do with special key codes.
 
 // Some useful tables.
-private struct modmasktable {
+struct modmasktable {
    Short modMaskG; // Bit-mask for particular key modifier
    Short mod_flag; // Bit(s) for particular key modifier
    Byte name;      // Single letter name of modifier

@@ -36,7 +36,7 @@
 
 private declStruct(RState);
 // NFA state. Such a state may have no outgoing edge, when it is a MATCH state.
-private struct RState {
+struct RState {
    Unt         c; // a char
    RState      *out;
    RState      *out1;
@@ -46,7 +46,7 @@ private struct RState {
 };
 
 // Structure used by the NFA matcher.
-private struct RegProg {
+struct RegProg {
    // These three members implement RegProg
    Unt regflags;
    Unt re_engine;
@@ -88,7 +88,7 @@ typedef struct {
 //Structure to be used for single-line matching.
 //Sub-match "no" starts at "startp[no]" and ends just before "endp[no]".
 //When there is no match, the pointer is NULL.
-private struct RegMatch {
+struct RegMatch {
    RegProg* regprog;
    Byte* startp[NSUBEXP];
    Byte* endp[NSUBEXP];
@@ -211,7 +211,7 @@ backslash_trans(Unt c) {
    return c;
 }
 
-comptime enum {
+enum {
    CHAR_CLASS_ALNUM = 0,
    CHAR_CLASS_ALPHA,
    CHAR_CLASS_BLANK,
@@ -1973,7 +1973,7 @@ eeRegsub_multi(
 #define MAX_REGSUB_NESTING 4
 private Byte* eval_result[MAX_REGSUB_NESTING] = {NULL, NULL, NULL, NULL};
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_resub_eval_result(void) {
    for (int i = 0; i < MAX_REGSUB_NESTING; ++i)
@@ -2537,7 +2537,7 @@ reg_submatch_list(int no) {
 
 //{{{ Regex tokens
 
-comptime enum {
+enum {
     SPLIT = 4294967295 - 1024,
     MATCH,
     EMPTY,             // matches 0-length
@@ -9313,7 +9313,7 @@ eeRegFree(RegProg* prog) {
       freeBranch(prog);
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 free_regexp_stuff(void) {
    ga_clear(&regstack);

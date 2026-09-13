@@ -282,7 +282,6 @@ private void vwl_seat_listener_capabilities(
 );
 private void vwl_destroy_seat(WaylandSeat *seat);
 private WaylandSeat * vwl_get_seat(CS label);
-private struct wl_keyboard * vwl_seat_get_keyboard(WaylandSeat *seat);
 private int vwl_focus_stealing_available(void);
 private void vwl_xdg_surface_listener_configure(void*, struct xdg_surface* surface, Unt serial);
 private void vwl_bs_buffer_listener_release(void* data, struct wl_buffer*);
@@ -408,15 +407,15 @@ private XdgWmBase_listener  vwl_xdg_wm_base_listener = {
     .ping       = vwl_xdg_wm_base_listener_ping
 };
 
-private struct xdg_surface_listener  vwl_xdg_surface_listener = {
+struct xdg_surface_listener  vwl_xdg_surface_listener = {
     .configure       = vwl_xdg_surface_listener_configure
 };
 
-private struct wl_buffer_listener    vwl_cb_buffer_listener = {
+struct wl_buffer_listener    vwl_cb_buffer_listener = {
     .release       = vwl_bs_buffer_listener_release
 };
 
-private struct wl_keyboard_listener  vwl_fs_keyboard_listener = {
+struct wl_keyboard_listener  vwl_fs_keyboard_listener = {
     .enter       = vwl_fs_keyboard_listener_enter,
     .key       = vwl_fs_keyboard_listener_key,
     .keymap       = vwl_fs_keyboard_listener_keymap,
@@ -425,16 +424,16 @@ private struct wl_keyboard_listener  vwl_fs_keyboard_listener = {
     .repeat_info    = vwl_fs_keyboard_listener_repeat_info
 };
 
-private struct wl_callback_listener  vwl_callback_listener = {
+struct wl_callback_listener  vwl_callback_listener = {
     .done       = vwl_callback_done
 };
 
-private struct wl_registry_listener  vwl_registry_listener = {
+struct wl_registry_listener  vwl_registry_listener = {
     .global       = vwl_registry_listener_global,
     .global_remove  = vwl_registry_listener_global_remove
 };
 
-private struct wl_seat_listener vwl_seat_listener = {
+struct wl_seat_listener vwl_seat_listener = {
     .name       = vwl_seat_listener_name,
     .capabilities   = vwl_seat_listener_capabilities
 };
@@ -1324,7 +1323,7 @@ init_yank(void) {
       y_regs[i].y_array = NULL;
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 pub void
 clear_registers(void) {
    for (int i = 0; i < NUM_REGISTERS; ++i) {
@@ -4432,7 +4431,7 @@ vwl_get_seat(CS label) {
 
 // Get keyboard object from seat and return it. NULL is returned on
 // failure such as when a keyboard is not available for seat.
-private struct wl_keyboard *
+struct wl_keyboard *
 vwl_seat_get_keyboard(WaylandSeat *seat) {
    if (!(seat->capabilities & WL_SEAT_CAPABILITY_KEYBOARD))
       return NULL;
@@ -4948,7 +4947,7 @@ VWL_FUNC_DATA_OFFER_OFFER(zwp_primary_selection_offer_v1)
 // Listener handlers. Used via VWL_CODE_DATA_OBJECT_ADD_LISTENER macro
 
 // DATA DEVICES
-private struct ext_data_control_device_v1_listener
+struct ext_data_control_device_v1_listener
 ext_data_control_device_v1_listenerObj = {
     .data_offer = ext_data_control_device_v1_listener_data_offer,
     .selection  = ext_data_control_device_v1_listener_selection,
@@ -4956,47 +4955,47 @@ ext_data_control_device_v1_listenerObj = {
     .finished   = ext_data_control_device_v1_listener_finished
 };
 
-private struct wl_data_device_listener wl_data_device_listenerObj = {
+struct wl_data_device_listener wl_data_device_listenerObj = {
     .data_offer = wl_data_device_listener_data_offer,
     .selection  = wl_data_device_listener_selection,
 };
 
-private struct zwp_primary_selection_device_v1_listener
+struct zwp_primary_selection_device_v1_listener
 zwp_primary_selection_device_v1_listenerObj = {
     .selection  = zwp_primary_selection_device_v1_listener_primary_selection,
     .data_offer = zwp_primary_selection_device_v1_listener_data_offer
 };
 
 // DATA SOURCES
-private struct ext_data_control_source_v1_listener
+struct ext_data_control_source_v1_listener
 ext_data_control_source_v1_listenerObj = {
     .send      = ext_data_control_source_v1_listener_send,
     .cancelled = ext_data_control_source_v1_listener_cancelled
 };
 
-private struct wl_data_source_listener 
+struct wl_data_source_listener 
 wl_data_source_listenerObj = {
     .send      = wl_data_source_listener_send,
     .cancelled = wl_data_source_listener_cancelled
 };
 
-private struct zwp_primary_selection_source_v1_listener
+struct zwp_primary_selection_source_v1_listener
 zwp_primary_selection_source_v1_listenerObj = {
     .send      = zwp_primary_selection_source_v1_listener_send,
     .cancelled = zwp_primary_selection_source_v1_listener_cancelled,
 };
 
 // OFFERS
-private struct ext_data_control_offer_v1_listener
+struct ext_data_control_offer_v1_listener
 ext_data_control_offer_v1_listenerObj = {
     .offer = ext_data_control_offer_v1_listener_offer
 };
 
-private struct wl_data_offer_listener wl_data_offer_listenerObj = {
+struct wl_data_offer_listener wl_data_offer_listenerObj = {
     .offer = wl_data_offer_listener_offer
 };
 
-private struct zwp_primary_selection_offer_v1_listener
+struct zwp_primary_selection_offer_v1_listener
 zwp_primary_selection_offer_v1_listenerObj = {
     .offer = zwp_primary_selection_offer_v1_listener_offer
 };

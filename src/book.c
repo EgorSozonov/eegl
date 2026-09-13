@@ -17,8 +17,11 @@
 
 #include "eegl.h"
 #include "proto/book.h"
-#include "proto/data.macros.h"
+#include "proto/data.types.h"
+#include "proto/channel.types.h"
 #include "proto/channel.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
 #include <fcntl.h>      // Definition of AT_* constants for utimensat()
 #include <sys/stat.h> // for stat,  utimensat() (modification time changin')
 
@@ -2036,12 +2039,7 @@ bookOpenFromInvo(
       Boole save_bin = curBook->o.binary;
       int perm;
       perm = mch_getperm(curBook->fullFileName);
-      if (perm >= 0 && (S_ISFIFO(perm)
-               || S_ISSOCK(perm)
-# ifdef OPEN_CHR_FILES
-               || (S_ISCHR(perm) && is_dev_fd_file(curBook->fullFileName))
-# endif
-             ))
+      if (perm >= 0 && (S_ISFIFO(perm) || S_ISSOCK(perm)))
          read_fifo = true;
       if (read_fifo)
          curBook->o.binary = true;
@@ -9848,7 +9846,7 @@ clear_ht_prop_types(EeSet *ht) {
    eeglFree(ht);
 }
 
-#if defined(EXITFREE) || defined(PROTO)
+#if defined(EXITFREE)
 // Free all global property types.
 pub void
 clear_global_prop_types(void) {

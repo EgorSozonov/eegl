@@ -1,4 +1,3 @@
-extern char *UP, *BC, PC;
 void termInitProps(Boole all);
 void f_terminalprops(Var*, Var* returnVar);
 int set_termname(CS termName);
@@ -96,8 +95,6 @@ int trans_special(
    int escape_ks,   // escape K_SPECIAL bytes in the character
    OUT Boole* didSimplify  // FSK_SIMPLIFY and found <C-H> or <A-x>
 );
-char *ptsname(int);
-int grantpt(int);
 int setup_slavepty(int fd);
 int openpty(char **ttyn);
 int mch_isatty(int fd);

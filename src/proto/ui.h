@@ -1,8 +1,3 @@
-int fstat(int fd, struct stat* statbuf);
-declStruct(VTermLineInfo);
-int WCWIDTH_FUNCTION(uint32_t ucs);
-int IS_COMBINING_FUNCTION(uint32_t codepoint);
-int GET_SPECIAL_PTY_TYPE_FUNCTION(void);
 void init_job_options(JobOptions *opt);
 void c_terminal(Invocation* invo);
 int expand_terminal_opt(CS pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches);
@@ -96,7 +91,6 @@ void ui_breakcheck(void);
 void ui_breakcheck_force(Boole force);
 int eeIsInputBufFull(void);
 int eeIsInputBufEmpty(void);
-int eeglFree_in_input_buf(void);
 CS get_input_buf(void);
 void set_input_buf(CS p, Boole overwrite);
 void add_to_input_buf(CS s, int len);

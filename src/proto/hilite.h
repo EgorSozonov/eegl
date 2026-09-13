@@ -30,7 +30,7 @@ Decoration syntGetDeco(
    int keep_state   // keep state of char at "col"
 );
 void syntax_clear(SyntaxBlock *block);
-void reset_synblock(Portal *wp);
+void reset_synblock(Portal* wp);
 Short syntaxClusterByName(Text line);
 void c_syntax(Invocation* invo);
 void c_ownsyntax(Invocation* invo);
@@ -46,7 +46,6 @@ int syn_get_id(
    int      trans,      // remove transparency
    int      keep_state  // keep state of char at "col"
 );
-int get_syntax_info(int *seqnrp);
 int syn_get_stack_item(int i);
 int syn_get_foldlevel(Portal *po, long lnum);
 void f_synIDtrans(Arr(Var) argvars, Var* returnVar);

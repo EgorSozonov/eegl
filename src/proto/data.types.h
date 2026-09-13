@@ -3,7 +3,7 @@
    Unt len;\
    Unt cap;\
    Arena* a;\
-} L##T;;
+} L##T;
 #define GEN_add_L(acc, T) p##acc void add_L##T (L##T * l, T newItem) {\
    if (l->len < l->cap) {\
       l->c[l->len] = newItem;\
@@ -15,7 +15,7 @@
       l->cap *= 2;\
    }\
    l->len++;\
-};
+}
 #define GEN_create_L(acc, T)\
 p##acc L##T * create_L##T (int initCapacity, Arena* a) {\
    int capacity = initCapacity < 4 ? 4 : initCapacity;\
@@ -26,13 +26,13 @@ p##acc L##T * create_L##T (int initCapacity, Arena* a) {\
    T* arr = allocateArray(capacity, T, a);\
    result->c = arr;\
    return result;\
-};
-#define last(l) (l)->c[(l)->len - 1];
-#define sLast(l) (l).c[(l).len - 1];
+}
+#define last(l) (l)->c[(l)->len - 1]
+#define sLast(l) (l).c[(l).len - 1]
 #define eq(a, b) _Generic((a),\
    Text: _Generic((b),\
          Text: eq_Text_Text,\
          CS: eq_Text_CString\
       ),\
    CS: eq_CString_CString\
-)(a, b);
+)(a, b)
