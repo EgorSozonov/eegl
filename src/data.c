@@ -4,6 +4,20 @@
 //## data.c: core data structures
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/memory.types.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/insert.h"
+#include "proto/memory.h"
+
 //{{{macros
 //{{{list
 
@@ -16,18 +30,6 @@ pub
 } L##T;
 
 //}}}
-//}}}
-//{{{imports
-
-#include "proto/data.types.h"
-#include "proto/data.h"
-#include "proto/book.h"
-#include "proto/channel.types.h"
-#include "proto/channel.h"
-#include "proto/memory.types.h"
-#include "proto/input.types.h"
-#include "proto/input.h"
-
 //}}}
 //{{{types
 

@@ -4,12 +4,66 @@
 //## normal.c: code for actions in Normal and Visual modes. Communicates with ops.c
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/memory.h"
+#include "proto/diff.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/fileio.h"
+#include "proto/insert.h"
+#include "proto/hilite.h"
+#include "proto/location.h"
+#include "proto/motor.h"
 
 private int VIsual_mode_orig = ZERO;      // saved Visual mode
 
 // nv_*(): functions are called to handle Normal and Visual mode actions.
 // n_*(): functions are called to handle Normal mode actions.
 // v_*(): functions are called to handle Visual mode actions.
+//{{{types
+
+typedef struct {
+   LineNr lnum; // line number
+   int fill;    // filler lines
+   int height;  // height of added line
+} LineOffset;
+
+// typedef Fold
+//The toplevel folds for each portal are stored in the folds arraylist.
+//Each toplevel fold can contain an array of second level folds in the fd_nested arraylist.
+//The info stored in both growarrays is the same: An array of Fold.
+typedef struct {
+   LineNr   fd_top;  // first line of fold; for nested fold relative to parent
+   LineNr   fd_len;  // number of lines in the fold
+   ArrayList   fd_nested; // array of nested folds
+   char   fd_flags;  // see below
+   char   fd_small;  // true, false or MAYBE: is fold line count above 1; MAYBE
+                     // applies to nested folds too
+} Fold;
+
+// Folding by indent, expr, marker and syntax.
+// Define "FoldLine", passed to get fold level for a line.
+typedef struct {
+   Portal* po;
+   LineNr lnum;      // current line number
+   LineNr off;      // offset between lnum and real line number
+   LineNr lnum_save;   // line nr used by foldUpdateIEMSRecurse()
+   int lvl;      // current level (-1 for undefined)
+   int lvl_next;   // level used for next line
+   int start;      // number of folds that are forced to start at this line.
+   int end;      // level of fold that is forced to end below this line
+   int had_end;   // level of fold that is forced to end above
+            // this line (copy of "end" of prev. line)
+} FoldLine;
+
+//}}}
 //{{{@@@forward decls
 private int cls(void);
 private int skip_chars(int cclass, int dir);
@@ -451,26 +505,26 @@ normFindNextParagraf(
    int what,
    int both
 ){
-   int      did_skip;   // true after separating lines have been skipped
-   int      first;       // true on first line
-   LineNr   fold_first;   // first line of a closed fold
-   LineNr   fold_last;   // last line of a closed fold
-   int      fold_skipped;   // true if a closed fold was skipped this iteration
+   int did_skip;   // true after separating lines have been skipped
+   int first;       // true on first line
+   LineNr fold_first;   // first line of a closed fold
+   LineNr fold_last;   // last line of a closed fold
+   int fold_skipped;   // true if a closed fold was skipped this iteration
 
    LineNr curr = curPor->cursor.lnum;
 
    while (count--) {
       did_skip = false;
       for (first = true; ; first = false) {
-          if (*ml_get(curr) != ZERO)
-         did_skip = true;
+         if (*ml_get(curr) != ZERO)
+            did_skip = true;
 
-          // skip folded lines
-          fold_skipped = false;
-          if (first && getFolds(curr, &fold_first, &fold_last)) {
-         curr = ((dir > 0) ? fold_last : fold_first) + dir;
-         fold_skipped = true;
-          }
+         // skip folded lines
+         fold_skipped = false;
+         if (first && getFolds(curr, &fold_first, &fold_last)) {
+            curr = ((dir > 0) ? fold_last : fold_first) + dir;
+            fold_skipped = true;
+         }
 
          if (!first && did_skip && (startPS(curr, what, both)))
             break;
@@ -7145,20 +7199,6 @@ v_swap_corners(int cmdchar) {
 // 2. Scroll the text, the cursor is moved into the text visible in the portal.
 // The 'scrolloff' option makes this a bit complicated.
 
-private void redraw_for_cursorline(Portal *po);
-private int scrolljump_value(void);
-private int check_top_offset(void);
-private void curs_rows(Portal *po);
-
-typedef struct {
-   LineNr lnum; // line number
-   int fill;    // filler lines
-   int height;  // height of added line
-} LineOffset;
-
-private void topline_back(LineOffset *lp);
-private void botline_forw(LineOffset *lp);
-
 // Get the number of screen lines skipped with "po->skipCol".
 pub int
 adjust_plines_for_skipcol(Portal *po) {
@@ -7392,8 +7432,7 @@ update_topline(void) {
 
          if (hasAnyFolding(curPor)) {
             // Count the number of logical lines between the cursor and
-            // topline + scrolloff (approximation of how much will be
-            // scrolled).
+            // topline + scrolloff (approximation of how much will be scrolled).
             n = 0;
             for (LineNr lnum = curPor->cursor.lnum; lnum < curPor->topLine + *scrollOff; ++lnum) {
                ++n;
@@ -11910,19 +11949,6 @@ c_abclear(Invocation* invo) {
 //{{{fold: text folding
 
 // local declarations
-// typedef Fold
-//The toplevel folds for each portal are stored in the folds arraylist.
-//Each toplevel fold can contain an array of second level folds in the fd_nested arraylist.
-//The info stored in both growarrays is the same: An array of Fold.
-typedef struct {
-   LineNr   fd_top;  // first line of fold; for nested fold relative to parent
-   LineNr   fd_len;  // number of lines in the fold
-   ArrayList   fd_nested; // array of nested folds
-   char   fd_flags;  // see below
-   char   fd_small;  // true, false or MAYBE: is fold line count above 1; MAYBE
-                     // applies to nested folds too
-} Fold;
-
 #define FD_OPEN     0   // fold is open (nested ones can be closed)
 #define FD_CLOSED   1   // fold is closed
 #define FD_LEVEL    2   // depends on 'foldlevel' (nested folds too)
@@ -13487,37 +13513,8 @@ foldtext_cleanup(CS str) {
    }
 }
 
-// Folding by indent, expr, marker and syntax.
-// Define "FoldLine", passed to get fold level for a line.
-typedef struct {
-   Portal* po;
-   LineNr lnum;      // current line number
-   LineNr off;      // offset between lnum and real line number
-   LineNr lnum_save;   // line nr used by foldUpdateIEMSRecurse()
-   int lvl;      // current level (-1 for undefined)
-   int lvl_next;   // level used for next line
-   int start;      // number of folds that are forced to start at this line.
-   int end;      // level of fold that is forced to end below this line
-   int had_end;   // level of fold that is forced to end above
-            // this line (copy of "end" of prev. line)
-} FoldLine;
-
 // Flag is set when redrawing is needed.
 private int fold_changed;
-
-// Function declarations.
-private LineNr foldUpdateIEMSRecurse(
-      ArrayList *gap, int level, LineNr startlnum, FoldLine *flp, void (*getlevel)(FoldLine *), 
-      LineNr bot, int topflags
-);
-private int foldInsert(ArrayList *gap, int i);
-private void foldSplit(ArrayList *gap, int i, LineNr top, LineNr bot);
-private void foldRemove(ArrayList *gap, LineNr top, LineNr bot);
-private void foldMerge(Fold *fp1, ArrayList *gap, Fold *fp2);
-private void foldlevelIndent(FoldLine *flp);
-private void foldlevelDiff(FoldLine *flp);
-private void foldlevelExpr(FoldLine *flp);
-private void foldlevelMarker(FoldLine *flp);
 
 //Update the folding for portal "po", at least from lines "top" to "bot".
 //Return true if any folds did change.
@@ -13572,27 +13569,27 @@ foldUpdateIEMS(Portal* po, LineNr top, LineNr bot) {
    if (po->o.foldMethod == FOLD_MARKER && po->o.foldMarker) {
       getlevel = foldlevelMarker;
 
-      // Init marker variables to speed up foldlevelMarker().
+      //Init marker variables to speed up foldlevelMarker().
       parseMarker(po);
 
-      // Need to get the level of the line above top, it is used if there is
-      // no marker at the top.
+      //Need to get the level of the line above top, it is used if there is
+      //no marker at the top.
       if (top > 1) {
-          // Get the fold level at top - 1.
-          level = foldLevelWin(po, top - 1);
+         // Get the fold level at top - 1.
+         level = foldLevelWin(po, top - 1);
 
-          // The fold may end just above the top, check for that.
-          fline.lnum = top - 1;
-          fline.lvl = level;
-          getlevel(&fline);
+         // The fold may end just above the top, check for that.
+         fline.lnum = top - 1;
+         fline.lvl = level;
+         getlevel(&fline);
 
-          // If a fold started here, we already had the level, if it stops
-          // here, we need to use lvl_next.  Could also start and end a fold
-          // in the same line.
-          if (fline.lvl > level)
-         fline.lvl = level - (fline.lvl - fline.lvl_next);
-          else
-         fline.lvl = fline.lvl_next;
+         // If a fold started here, we already had the level, if it stops
+         // here, we need to use lvl_next.  Could also start and end a fold
+         // in the same line.
+         if (fline.lvl > level)
+            fline.lvl = level - (fline.lvl - fline.lvl_next);
+         else
+            fline.lvl = fline.lvl_next;
       }
       fline.lnum = top;
       getlevel(&fline);
@@ -13636,8 +13633,8 @@ foldUpdateIEMS(Portal* po, LineNr top, LineNr bot) {
       if (fline.lnum > po->book->mem.lineCount)
          break;
       if (fline.lnum > end) {
-         // For "marker", "expr"  and "syntax"  methods: If a change caused
-         // a fold to be removed, we need to continue at least until where it ended.
+         //For "marker", "expr"  and "syntax"  methods: If a change caused
+         //a fold to be removed, we need to continue at least until where it ended.
          if (getlevel != foldlevelMarker && getlevel != foldlevelExpr)
             break;
          if ((start <= end
@@ -13794,16 +13791,16 @@ foldUpdateIEMSRecurse(
       {
          //Remove or update folds that have lines between startlnum and firstlnum.
          while (!gotInterruptG) {
-            // set concat to 1 if it's allowed to concatenate this fold
-            // with a previous one that touches it.
+            //set concat to 1 if it's allowed to concatenate this fold
+            //with a previous one that touches it.
             if (flp->start != 0 || flp->had_end <= MAX_LEVEL)
                concat = 0;
             else
                concat = 1;
 
-            // Find an existing fold to re-use.  Preferably one that
-            // includes startlnum, otherwise one that ends just before
-            // startlnum or starts after it.
+            //Find an existing fold to re-use. Preferably one that
+            //includes startlnum, otherwise one that ends just before
+            //startlnum or starts after it.
             if (gap->len > 0 && (foldFind(gap, startlnum, &fp)
                || (fp < ((Fold *)gap->c) + gap->len
                    && fp->fd_top <= firstlnum)

@@ -4,6 +4,22 @@
 //## insert.c: functions for Insert mode (manual input of text)
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/hilite.h"
+#include "proto/memory.h"
+#include "proto/fileio.h"
+#include "proto/insert.h"
+#include "proto/location.h"
+#include "proto/motor.h"
 
 #define BACKSPACE_CHAR           1
 #define BACKSPACE_WORD           2
@@ -12,7 +28,27 @@
 
 //Set when doing something for completion that may call edit() recursively, which is not allowed.
 private Boole isCompletionBusyS = false;
+//{{{types
 
+declStruct(InsertCompletion);
+
+//state information used for getting the next set of insert completion matches.
+typedef struct {
+   CS e_cpt_copy;      // copy of 'complete'
+   CS e_cpt;         // current entry in "e_cpt_copy"
+   Book* scannedBook;      // book being scanned
+   Pos* cur_match_pos;      // current match position
+   Pos prev_match_pos;      // previous match position
+   int set_match_pos;      // save first_match_pos/last_match_pos
+   Pos first_match_pos;   // first match position
+   Pos last_match_pos;      // last match position
+   int found_all;      // found all matches of a certain type.
+   CS dict;         // dictionary file to search
+   int dict_f;         // "dict" is an exact file name or not
+   Callback* func_cb;      // callback of function in 'cpt' option
+} InsertionCompletionNext;
+
+//}}}
 //{{{@@forward declarations
 private int char_before_cursor(void);
 private void redrawInInsertMode(Boole ready);
@@ -1532,19 +1568,18 @@ insertchar0(
    //        before 'textwidth'
    if (textwidth > 0
        && (force_format
-         || (!SPACE_OR_TAB(c)
-             && (curPor->cursor.lnum != insertStartG.lnum
-            || ((!has_format_option(FO_INS_LONG)
-               || insertStartG_textlen <= (ColNr)textwidth)
-                && (!fo_ins_blank
-               || insertStartG_blank_vcol <= (ColNr)textwidth
-                )))))
+            || (!SPACE_OR_TAB(c)
+                && (curPor->cursor.lnum != insertStartG.lnum
+                  || ((!has_format_option(FO_INS_LONG) || insertStartG_textlen <= (ColNr)textwidth)
+                      && (!fo_ins_blank || insertStartG_blank_vcol <= (ColNr)textwidth)
+                     ))
+               )
+          )
    ) {
       // Format with @formatexpr when it's set.  Use internal formatting
       // when @formatexpr isn't set or it returns non-zero.
       Boole do_internal = true;
-      ColNr virtcol = get_nolist_virtcol()
-                 + bookChar2Cells(c != ZERO ? c : gchar_cursor());
+      ColNr virtcol = get_nolist_virtcol() + bookChar2Cells(c != ZERO ? c : gchar_cursor());
 
       if (curBook->o.formatExpr && (flags & INSCHAR_NO_FEX) == 0
          && (force_format || virtcol > (ColNr)textwidth)
@@ -3397,7 +3432,6 @@ private CS ctrl_x_mode_names[] = {SMAP((CS),
 )};
 
 // Structure used to store one match for insert completion.
-typedef struct InsertCompletion InsertCompletion;
 struct InsertCompletion {
    InsertCompletion* next;
    InsertCompletion* prev;
@@ -6396,22 +6430,6 @@ enum {
    INS_COMPL_CPT_CONT,
    INS_COMPL_CPT_END
 };
-
-//state information used for getting the next set of insert completion matches.
-typedef struct {
-   CS e_cpt_copy;      // copy of 'complete'
-   CS e_cpt;         // current entry in "e_cpt_copy"
-   Book* scannedBook;      // book being scanned
-   Pos* cur_match_pos;      // current match position
-   Pos prev_match_pos;      // previous match position
-   int set_match_pos;      // save first_match_pos/last_match_pos
-   Pos first_match_pos;   // first match position
-   Pos last_match_pos;      // last match position
-   int found_all;      // found all matches of a certain type.
-   CS dict;         // dictionary file to search
-   int dict_f;         // "dict" is an exact file name or not
-   Callback* func_cb;      // callback of function in 'cpt' option
-} InsertionCompletionNext;
 
 //Process the next 'complete' option value in st->e_cpt.
 //

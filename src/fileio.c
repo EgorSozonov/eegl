@@ -11,6 +11,15 @@
 #include "proto/channel.h"
 #include "proto/input.types.h"
 #include "proto/input.h"
+#include "proto/do.h"
+#include "proto/memory.h"
+#include "proto/diff.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/fileio.h"
+#include "proto/hilite.h"
+#include "proto/insert.h"
+#include "proto/motor.h"
 
 #ifndef PROTO
 #include <sys/stat.h> // for stat, fstat etc

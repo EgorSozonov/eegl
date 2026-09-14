@@ -74,7 +74,6 @@ void format_lines(LineNr   line_count, int avoid_fex);
 CS inputInitCharLens(void);
 int mb_get_class(CS p);
 int inpGetClassForBook(CS p, Book* book);
-int utf_composinglike(CS p1, CS p2);
 int utfc_ptr2char(CS p, OUT int* pcc);
 int utfc_ptr2char_len(
     CS p,
@@ -84,7 +83,7 @@ int utfc_ptr2char_len(
 int utf_class(int c);
 void mb_adjust_cursor(void);
 void mb_adjustpos(Book* book, Pos *lp);
-void f_charclass(Arr(Var) argvars, Var*);
+void f_charclass(Arr(Var) argvars, Var* returnVar);
 int utf_class_buf(Unt c, Book* book);
 int mb_char2cells(int c);
 int utf_uint2cells(Unt c);

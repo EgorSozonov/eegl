@@ -4,16 +4,6 @@
 #ifndef EEGL__H
 #define EEGL__H
 
-#ifdef PROTO
-// cproto runs into trouble when these types are missing
-typedef double _Float16;
-typedef double _Float32;
-typedef double _Float64;
-typedef double _Float128;
-typedef double _Float32x;
-typedef double _Float64x;
-#endif
-
 //Full GNU mode for glibc
 #define _DEFAULT_SOURCE 1
 #define _GNU_SOURCE 1
@@ -66,11 +56,9 @@ typedef double _Float64x;
 //# include <sys/param.h>
 
 // always use unlink() to remove files
-#ifndef PROTO
 #define eeMkdir(x, y) mkdir((char *)(x), y)
 #define mch_rmdir(x) rmdir((char *)(x))
 #define mch_remove(x) unlink((char *)(x))
-#endif
 
 #define SIGPROTOARG   (int)
 #define SIGDUMMYARG   0
@@ -100,11 +88,7 @@ typedef struct pollfd PollFd;
 
 #include <pwd.h>
 
-#ifndef PROTO
-
 #include <sys/file.h>
-
-#endif // PROTO
 
 #define MAIN_HELPFILE "/usr/share/doc/eegl/help.txt"
 
@@ -145,11 +129,9 @@ typedef struct pollfd PollFd;
 #endif
 
 
-#ifndef PROTO
 #define mch_rename(src, dst) rename(src, dst)
 #define mch_getenv(x) (CS)getenv((char *)(x))
 #define mch_setenv(name, val, x) setenv((char *)name, (char *)val, x)
-#endif
 
 #include <string.h>
 
@@ -218,11 +200,7 @@ typedef unsigned char Byte;
 //We use 64-bit file functions here, if available.  E.g. ftello() returns
 //off_t instead of long, which helps if long is 32 bit and off_t is 64 bit.
 //We assume that when fseeko() is available then ftello() is too.
-#ifdef PROTO
-typedef long FileOffset;
-#else
 typedef off_t FileOffset;
-#endif
 
 //The characters and attributes cached for the screen.
 typedef Byte Byte;
@@ -678,9 +656,7 @@ typedef Byte Byte;
 #include <wctype.h>
 
 // for offsetof()
-#ifndef PROTO
 #include <stddef.h>
-#endif
 
 
 // ================ end of the header file puzzle ===============
@@ -5512,19 +5488,6 @@ typedef enum {
 //#define Display int
 //#define Widget int
 //#define XImage int
-
-//#include "proto/book.h"
-#include "proto/data.h"
-#include "proto/diff.h"
-#include "proto/do.h"
-#include "proto/draw.h"
-#include "proto/eval.h"
-#include "proto/fileio.h"
-#include "proto/hilite.h"
-#include "proto/insert.h"
-#include "proto/location.h"
-#include "proto/memory.h"
-#include "proto/motor.h"
 
 // These prototypes cannot be produced automatically.
 int smsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);

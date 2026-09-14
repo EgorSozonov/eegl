@@ -4,6 +4,21 @@
 //## portal.c: portals (views) into text for user interface
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/memory.h"
+#include "proto/diff.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/fileio.h"
+#include "proto/insert.h"
+#include "proto/location.h"
+#include "proto/hilite.h"
+#include "proto/motor.h"
 
 //{{{@@forward declarations
 private Portal * horizNeighbor(Tab* t, Portal* po, Boole left, long count);
@@ -7190,7 +7205,7 @@ private Tab* popupMaskTabS INIT(= NULL);
 
 
 // Values for w_popup_flags.
-#define POPF_IS_POPUP    0x01   // this is a popup window
+#define POPF_IS_POPUP    0x01   // this is a popup portal
 #define POPF_HIDDEN      0x02   // popup is not displayed
 #define POPF_HIDDEN_FORCE 0x04  // popup is explicitly set to not be displayed
 #define POPF_CURSORLINE  0x08   // popup is highlighting at the cursorline
@@ -8147,36 +8162,36 @@ popup_extra_width(Portal* po) {
 // Adjust the position and size of the popup to fit on the screen.
 private void
 adjustPosition(Portal* po) {
-   LineNr   lnum;
-   int      wrapped = 0;
-   int      maxwidth;
-   int      maxwidth_no_scrollbar;
-   int      width_with_scrollbar = 0;
-   int      used_maxwidth = false;
-   int      margin_width = 0;
-   int      maxspace;
-   int      center_vert = false;
-   int      center_hor = false;
-   int      allow_adjust_left = !po->pup.fixed;
-   int      top_extra = popup_top_extra(po);
-   int      right_extra = po->pup.border[1] + po->pup.padding[1];
-   int      bot_extra = po->pup.border[2] + po->pup.padding[2];
-   int      left_extra = po->pup.border[3] + po->pup.padding[3];
-   int      extra_height = top_extra + bot_extra;
-   int      extra_width = left_extra + right_extra;
-   int      w_height_before_limit;
-   int      org_winrow = po->windowRow;
-   int      org_wincol = po->windowCol;
-   int      org_width = po->width;
-   int      org_height = po->height;
-   int      org_leftcol = po->leftCol;
-   int      org_leftoff = po->pup.leftOff;
-   int      minwidth, minheight;
-   int      maxheight = visibleRowsG;
-   int      wantline = po->pup.wantLine;  // adjusted for textprop
-   int      wantcol = po->pup.wantCol;    // adjusted for textprop
-   int      use_wantcol = wantcol != 0;
-   int      adjust_height_for_top_aligned = false;
+   LineNr lnum;
+   int wrapped = 0;
+   int maxwidth;
+   int maxwidth_no_scrollbar;
+   int width_with_scrollbar = 0;
+   int used_maxwidth = false;
+   int margin_width = 0;
+   int maxspace;
+   int center_vert = false;
+   int center_hor = false;
+   int allow_adjust_left = !po->pup.fixed;
+   int top_extra = popup_top_extra(po);
+   int right_extra = po->pup.border[1] + po->pup.padding[1];
+   int bot_extra = po->pup.border[2] + po->pup.padding[2];
+   int left_extra = po->pup.border[3] + po->pup.padding[3];
+   int extra_height = top_extra + bot_extra;
+   int extra_width = left_extra + right_extra;
+   int w_height_before_limit;
+   int org_winrow = po->windowRow;
+   int org_wincol = po->windowCol;
+   int org_width = po->width;
+   int org_height = po->height;
+   int org_leftcol = po->leftCol;
+   int org_leftoff = po->pup.leftOff;
+   int minwidth, minheight;
+   int maxheight = visibleRowsG;
+   int wantline = po->pup.wantLine;  // adjusted for textprop
+   int wantcol = po->pup.wantCol;    // adjusted for textprop
+   int use_wantcol = wantcol != 0;
+   int adjust_height_for_top_aligned = false;
 
    po->windowRow = 0;
    po->windowCol = 0;
@@ -8189,22 +8204,19 @@ adjustPosition(Portal* po) {
       highlightCurrentLine(po);
  
    if (po->pup.propType > 0 && portalIsValid(po->pup.propPort)) {
-      Portal       *prop_win = po->pup.propPort;
+      Portal* propP = po->pup.propPort;
       TextProp  prop;
-      LineNr    prop_lnum;
-      Pos       pos;
-      int       screen_row;
-      int       screen_scol;
-      int       screen_ccol;
-      int       screen_ecol;
+      LineNr prop_lnum;
+      Pos pos;
+      int screen_row;
+      int screen_scol;
+      int screen_ccol;
+      int screen_ecol;
 
       // Popup portal is positioned relative to a text property.
-      if (find_visible_prop(prop_win,
-               po->pup.propType, po->pup.propId,
-               &prop, &prop_lnum) == FAIL)
-      {
-         // Text property is no longer visible, hide the popup.
-         // Unhiding the popup is done in check_popup_unhidden().
+      if (find_visible_prop(propP, po->pup.propType, po->pup.propId, &prop, &prop_lnum) == FAIL) {
+         //Text property is no longer visible, hide the popup.
+         //Unhiding the popup is done in check_popup_unhidden().
          if ((po->pup.flags & POPF_HIDDEN) == 0) {
             po->pup.flags |= POPF_HIDDEN;
             if (portalIsValid(po->pup.propPort))
@@ -8219,7 +8231,7 @@ adjustPosition(Portal* po) {
       pos.col = prop.col;
       if (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT)
          pos.col += prop.len - 1;
-      textpos2screenpos(prop_win, &pos, &screen_row, &screen_scol, &screen_ccol, &screen_ecol);
+      textpos2screenpos(propP, &pos, &screen_row, &screen_scol, &screen_ccol, &screen_ecol);
 
       if (screen_scol == 0) {
           // position is off screen, make the width zero to hide it.
@@ -8273,14 +8285,14 @@ adjustPosition(Portal* po) {
          center_hor = true;
       ei (wantcol > 0 && (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT)) {
          po->windowCol = wantcol - 1;
-         // Need to see at least one character after the decoration.
+         //Need to see at least one character after the decoration.
          if (po->windowCol > firstPor->windowCol + (int)topframeG->width - left_extra - 1)
             po->windowCol = firstPor->windowCol + topframeG->width - left_extra - 1;
       }
    }
 
-   // When centering or right aligned, use maximum width. When left aligned use the space 
-   // available, but shift to the left when we hit the right of the screen.
+   //When centering or right aligned, use maximum width. When left aligned use the space 
+   //available, but shift to the left when we hit the right of the screen.
    maxspace = firstPor->windowCol + topframeG->width - po->windowCol - left_extra;
    maxwidth = maxspace;
    if (po->pup.maxWidth > 0 && maxwidth > po->pup.maxWidth) {
@@ -8296,8 +8308,8 @@ adjustPosition(Portal* po) {
 
    minwidth = po->pup.minWidth;
    minheight = po->pup.minHeight;
-   // A terminal popup initially does not have content, use a default minimal width of 20 
-   // characters and height of 5 lines.
+   //A terminal popup initially does not have content, use a default minimal width of 20 
+   //characters and height of 5 lines.
    if (po->book->term != NULL) {
       if (minwidth == 0)
           minwidth = 20;
@@ -10431,8 +10443,9 @@ update_popups(void (*portUpdate)(Portal* po, Boole *)) {
          // May need to update the "cursorline" highlighting, which may also change "topline"
          if (po->pup.lastCurline != po->cursor.lnum)
             highlightCurrentLine(po);
-
-         portUpdate(po);
+            
+         Boole didUpdateOnePortal;
+         portUpdate(po, OUT &didUpdateOnePortal);
 
          //move the cursor into the visible lines, otherwise executing
          //commands with win_execute() may cause the text to jump.

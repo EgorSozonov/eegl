@@ -4,6 +4,22 @@
 //## motor.c: the appliation runner of Eegl
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/memory.h"
+#include "proto/diff.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/fileio.h"
+#include "proto/hilite.h"
+#include "proto/location.h"
+#include "proto/motor.h"
 
 // Various parameters passed between main() and other functions.
 private MainParams paramsP;

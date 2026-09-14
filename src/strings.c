@@ -4096,6 +4096,18 @@ concat_fnames(CS fname1, CS fname2, Boole sep){
 //}}}
 //{{{simple formats
 
+pub Boole
+isComment(CS c) { //:isComment
+   return (*c == '/' && c[1] == '/');
+}
+
+//Check if "c" ends a Command.
+pub int
+endsComm(CS c) { //:endsComm
+   return *c == ZERO || isComment(c) || *c == '\n';
+}
+
+
 //private Short
 //hexDigit(int c) {
 //   if (isdigit(c))

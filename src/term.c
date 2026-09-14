@@ -4,6 +4,19 @@
 //## term.c: terminal and pseudo-teletype functions
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/insert.h"
+#include "proto/memory.h"
+#include "proto/motor.h"
 #include <termcap.h>
 
 typedef struct termios TermIos;
@@ -15,6 +28,34 @@ private CS TC_CURSOR_SHAPES[] = {
 };
 private CS TC_CURSOR_DEFAULT_SHAPE = S"\033[0 q";
 
+//{{{types
+
+//The entries are also included, the system terminfo may be incomplete and a few Eegl-specific
+//entries are added.
+//
+//The builtin entries can be accessed with "builtin_xterm", "builtin_debug", etc.
+//
+//Each terminfo is a list of TinfoEntry.
+//
+//Entries marked with "guessed" may be wrong.
+typedef struct {
+   CS value; // value
+   Unt c;   // either a KS_xxx code (>= 0), or a K_xxx code.
+} TinfoEntry;
+
+typedef enum {
+   STATUS_GET,    // send request when switching to RAW mode
+   STATUS_SENT,   // did send request, checking for response
+   STATUS_GOT,    // received response
+   STATUS_FAIL    // timed out
+} RequestProgress;
+
+typedef struct {
+   RequestProgress progress;
+   Tyme start;   // when request was sent, -1 for never
+} TermRequest;
+
+//}}}
 //{{{@@forward declarations
 private int isEeglXterm(CS name);
 private void applyBuiltinCapability(Arr(TinfoEntry) entries, int len);
@@ -46,7 +87,7 @@ private int putStr(
    OUT int* bufLen
 );
 private int modifiers2keycode(Unt modifiers, Unt* key, OUT CS string);
-private void handle_u7_response(int* arg, CS t, int);
+private void handle_u7_response(int* arg, CS, int);
 private int add_key_to_buf(Unt key, OUT CS buffer);
 private int putKeyModifiersIntoTypeBuf(
    Unt key_arg,
@@ -152,18 +193,6 @@ private Unt may_remove_shift_modifier(Unt modifiers, Unt key);
 
 private CS invoke_tgetent(CS , CS );
 
-typedef enum {
-   STATUS_GET,    // send request when switching to RAW mode
-   STATUS_SENT,   // did send request, checking for response
-   STATUS_GOT,    // received response
-   STATUS_FAIL    // timed out
-} RequestProgress;
-
-typedef struct {
-   RequestProgress progress;
-   Tyme start;   // when request was sent, -1 for never
-} TermRequest;
-
 #define TERMREQUEST_INIT {STATUS_GET, -1}
 
 // Request Cursor position report:
@@ -219,19 +248,6 @@ private int initial_cursor_blink = false;
 
 //}}}
 //{{{terminfo: The builtin terminfo entries.
-
-//The entries are also included, the system terminfo may be incomplete and a few Eegl-specific
-//entries are added.
-//
-//The builtin entries can be accessed with "builtin_xterm", "builtin_debug", etc.
-//
-//Each terminfo is a list of TinfoEntry.
-//
-//Entries marked with "guessed" may be wrong.
-typedef struct {
-   CS value; // value
-   Unt c;   // either a KS_xxx code (>= 0), or a K_xxx code.
-} TinfoEntry;
 
 //Reset all text attributes (like colors, boldness, or background shades) back to the terminal's 
 //default settings.
@@ -1972,7 +1988,7 @@ modifiers2keycode(Unt modifiers, Unt* key, OUT CS string) {
 
 // Handle a cursor position report.
 private void
-handle_u7_response(int* arg, CS t, int) {
+handle_u7_response(int* arg, CS, int) {
    if (arg[0] == 2 && arg[1] >= 2) {
       LOG_TRN("Received U7 status: %s", tp);
       u7_status.progress = STATUS_GOT;

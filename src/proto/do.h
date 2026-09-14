@@ -143,7 +143,6 @@ void c_bnext(Invocation* invo);
 void c_bprevious(Invocation* invo);
 void c_brewind(Invocation* invo);
 void c_blast(Invocation* invo);
-int endsComm(CS c);
 CS find_nextcmd(CS p);
 CS get_command_name(Expand *, int idx);
 void c_hilite(Invocation* invo);

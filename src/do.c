@@ -8,12 +8,23 @@
 pub int stat(const char* restrict path, struct stat* restrict buf);
 int mkdir(const char* pathname, mode_t mode);
 
-#include "proto/book.h"
 #include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
 #include "proto/channel.types.h"
 #include "proto/channel.h"
 #include "proto/input.types.h"
 #include "proto/input.h"
+#include "proto/memory.h"
+#include "proto/diff.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/hilite.h"
+#include "proto/eval.h"
+#include "proto/fileio.h"
+#include "proto/insert.h"
+#include "proto/location.h"
+#include "proto/motor.h"
 
 private Boole anySyntaxEmsgS; // anyEmsgG set because of a syntax error
 //{{{types
@@ -8199,12 +8210,6 @@ c_blast(Invocation* invo) {
    bookGoto(invo, DOBOOK_LAST, BACKWARD, 0);
    if (invo->higherOrderComm)
       do_cmd_argument(invo->higherOrderComm);
-}
-
-// Check if "c" ends a Command.
-pub int
-endsComm(CS c) {
-   return *c == ZERO || isComment(c) || *c == '\n';
 }
 
 //Return the next command, after the first '|' or '\n'. NULL if not found.

@@ -5,11 +5,22 @@
 
 #include "eegl.h"
 #include "proto/data.types.h"
+#include "proto/data.h"
 #include "proto/book.h"
 #include "proto/channel.types.h"
 #include "proto/channel.h"
+#include "proto/do.h"
+#include "proto/draw.h"
 #include "proto/input.types.h"
 #include "proto/input.h"
+#include "proto/hilite.h"
+#include "proto/memory.h"
+#include "proto/eval.h"
+#include "proto/diff.h"
+#include "proto/fileio.h"
+#include "proto/insert.h"
+#include "proto/location.h"
+#include "proto/motor.h"
 
 #define USING_FLOAT_STUFF
 //{{{types
@@ -2749,11 +2760,6 @@ newline_skip_comments(CS arg) {
      ++p;  // skip another NL
    }
    return p;
-}
-
-pub Boole
-isComment(CS c) {
-   return (*c == '/' && c[1] == '/');
 }
 
 // Call skipwhite() and get the next line if needed.
@@ -8312,8 +8318,8 @@ list_one_var_a(
    }
 }
 
-// Addition handling for setting a v: variable.
-// Return true if the variable should be set normally, false if nothing else needs to be done.
+//Addition handling for setting a v: variable.
+//Return true if the variable should be set normally, false if nothing else needs to be done.
 pub int
 before_set_vvar(
     CS varname,
@@ -8327,14 +8333,14 @@ before_set_vvar(
       if (copy || tv->tag != VAR_STRING) {
          CS val = tv_get_string(tv);
 
-         // Careful: when assigning to v:errmsg and
-         // tv_get_string() causes an error message the variable will already be set.
+         //Careful: when assigning to v:errmsg and
+         //tv_get_string() causes an error message the variable will already be set.
          if (di->c.string == NULL)
             di->c.string = copyStr(val);
       } else {
-          // Take over the string to avoid an extra alloc/free.
-          di->c.string = tv->string;
-          tv->string = NULL;
+         // Take over the string to avoid an extra alloc/free.
+         di->c.string = tv->string;
+         tv->string = NULL;
       }
       return false;
    } ei (di->c.tag == VAR_NUMBER) {
@@ -8546,7 +8552,7 @@ var_check_lock(Unt flags, Text name, Boole use_gettext) {
 // Return true if flags "flags" indicates variable "name" is fixed. Also give an error message.
 pub Boole
 var_check_fixed(int flags, Text name, Boole use_gettext) {
-   if (flags & DI_FLAGS_FIX) {
+   if ((flags & DI_FLAGS_FIX) != 0) {
       if (name.len == 0)
           emsg(_(e_cannot_delete_variable));
       else

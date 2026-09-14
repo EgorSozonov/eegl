@@ -4,10 +4,28 @@
 //## juggle.c: low-level operations and operators for changing text
 
 #include "eegl.h"
-//#include "proto/input.public.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/eval.h"
+#include "proto/memory.h"
+#include "proto/diff.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/hilite.h"
+#include "proto/insert.h"
+#include "proto/location.h"
 
 #define TABSIZE_MAX 16
+//{{{types
 
+typedef struct tm Tm; 
+
+//}}}
 //{{{@@forward decls
 private void check_status(Book* book);
 private void checkRecordedChanges(
@@ -86,7 +104,7 @@ private void add_timer_info(OUT Var* returnVar, Timer *timer);
 private void add_timer_info_all(OUT Var* returnVar);
 private void time_diff(TimeVal *then, TimeVal *now);
 private void set_flag(union sigval);
-private void set_flag(int);
+private void set_flag(union sigval);
 private int coladvance2(
    Pos   *pos,
    int      addspaces,   // change the text to achieve our goal?
@@ -5286,7 +5304,6 @@ private Byte   tz_cache[64];
 #define FOR_ALL_TIMERS(t) \
     for ((t) = firstTimerS; (t) != NULL; (t) = (t)->next)
     
-typedef struct tm Tm; 
 
 //Call either localtime(3) or localtime_r(3) from POSIX libc time.h, with the
 //latter version preferred for reentrancy.
@@ -6146,7 +6163,6 @@ start_timeout(long msec) {
    struct itimerspec interval = {
        {0, 0},               // Do not repeat.
        {msec / 1000, (msec % 1000) * 1000000}};   // Timeout interval
-   int ret;
 
    // This is really the caller's responsibility, but let's make sure the
    // previous timer has been stopped.
@@ -6157,7 +6173,7 @@ start_timeout(long msec) {
 
       action.sigev_notify = SIGEV_THREAD;
       action.sigev_notify_function = set_flag;
-      ret = timer_create(CLOCK_MONOTONIC, &action, &timer_id);
+      int ret = timer_create(CLOCK_MONOTONIC, &action, &timer_id);
       if (ret < 0) {
          showErrFmtMsg(_(e_could_not_set_timeout_str), strerror(errno));
          return &timeout_flag;
@@ -6167,7 +6183,7 @@ start_timeout(long msec) {
 
    lo("setting timeout timer to %d sec %ld nsec",
           (int)interval.it_value.tv_sec, (long)interval.it_value.tv_nsec);
-   ret = timer_settime(timer_id, 0, &interval, NULL);
+   int ret = timer_settime(timer_id, 0, &interval, NULL);
    if (ret < 0)
       showErrFmtMsg(_(e_could_not_set_timeout_str), strerror(errno));
 
@@ -6195,7 +6211,7 @@ private volatile sig_atomic_t   alarm_pending        = false;
 
 // Handle SIGALRM for a timeout.
 private void
-set_flag(int) {
+set_flag(union sigval) {
    if (alarm_pending)
       alarm_pending = false;
    else

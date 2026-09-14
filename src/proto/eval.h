@@ -54,7 +54,6 @@ void free_for_info(void *fi_void);
 int op_pending(void);
 void set_context_for_expression(Expand   *xp, CS arg, CommIndex   id);
 int pattern_match(CS pat, CS text, int ic);
-Boole isComment(CS c);
 CS skipwhite_and_linebreak(CS arg, EvalCtx *evalarg);
 int eval0(CS arg, Var* returnVar, EvalCtx* evalarg);
 int may_call_simple_func(CS arg, OUT Var* returnVar);

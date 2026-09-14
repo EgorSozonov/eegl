@@ -169,6 +169,8 @@ int strCutPathFromListOfPaths(OUT CS* option, OUT CS buf, int maxlen, CS sep_cha
 Boole strMatchLowPrioSuffix(CS fname, CS suffixes);
 void add_pathsep(CS p);
 CS concat_fnames(CS fname1, CS fname2, Boole sep);
+Boole isComment(CS c);
+int endsComm(CS c);
 int valid_name(CS val, CS allowed);
 int isValidForScriptName(int c);
 int isValidForScriptName1(int c);

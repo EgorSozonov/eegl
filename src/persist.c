@@ -4,10 +4,39 @@
 //## persist.c: session related functions. Saving and restoring IDE state to files
 
 #include "eegl.h"
-#ifndef PROTO
 #include <sys/stat.h> // for stat, fstat, S_ISDIR
-#endif
 
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/do.h"
+#include "proto/eval.h"
+#include "proto/memory.h"
+#include "proto/fileio.h"
+#include "proto/location.h"
+
+//{{{types
+
+// Variable flavor
+typedef enum {
+   VAR_FLAVOR_DEFAULT,   // doesn't start with uppercase
+   VAR_FLAVOR_SESSION,   // starts with uppercase, some lower
+   VAR_FLAVOR_EEGLINFO      // all uppercase
+} VarFlavor;
+
+// Structure used for reading from the eeglinfo file.
+typedef struct {
+   CS line;   // text of the current line
+   FILE* vir_fd;   // file descriptor
+   int vir_version;   // eeglinfo version detected or -1
+   ArrayList vir_barlines;   // lines starting with |
+} Vir;
+
+//}}}
 //{{{@@forward declarations
 private void add_user(Byte *user, int need_copy);
 private void init_users(void);
@@ -215,13 +244,6 @@ get_user_name(CS builder, int len) {
 
 //}}}
 //{{{sessions
-
-// Variable flavor
-typedef enum {
-   VAR_FLAVOR_DEFAULT,   // doesn't start with uppercase
-   VAR_FLAVOR_SESSION,   // starts with uppercase, some lower
-   VAR_FLAVOR_EEGLINFO      // all uppercase
-} VarFlavor;
 
 private Boole did_lcd;   // whether ":lcd" was produced for a session
 
@@ -1046,14 +1068,6 @@ put_line(FILE *fd, CS s) {
 #define BARTYPE_HISTORY  2
 #define BARTYPE_REGISTER 3
 #define BARTYPE_MARK     4
-
-// Structure used for reading from the eeglinfo file.
-typedef struct {
-   CS line;   // text of the current line
-   FILE* vir_fd;   // file descriptor
-   int vir_version;   // eeglinfo version detected or -1
-   ArrayList vir_barlines;   // lines starting with |
-} Vir;
 
 typedef enum {
    BVAL_NR,

@@ -7,6 +7,12 @@
 #include "proto/book.h"
 #include "proto/data.types.h"
 #include "proto/data.h"
+#include "proto/do.h"
+#include "proto/strings.h"
+#include "proto/memory.h"
+#include "proto/eval.h"
+#include "proto/draw.h"
+#include "proto/hilite.h"
 
 //{{{types
 

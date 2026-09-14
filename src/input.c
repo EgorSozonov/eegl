@@ -5,6 +5,20 @@
 
 #include "eegl.h"
 #include <wchar.h>
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/book.h"
+#include "proto/memory.h"
+#include "proto/diff.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/fileio.h"
+#include "proto/insert.h"
+#include "proto/eval.h"
+#include "proto/location.h"
+#include "proto/motor.h"
 
 // These buffers are used for storing:
 // - stuffed characters: A command that is translated into another command.
@@ -111,8 +125,6 @@ pub typedef enum {
 
 //}}}
 #include "proto/input.h"
-#include "proto/channel.types.h"
-#include "proto/channel.h"
 //{{{@@forward declarations
 private void freeBuffer(TextHeader* buf);
 private CS get_buffcont(
@@ -3668,26 +3680,11 @@ inpGetClassForBook(CS p, Book* book) {
    }
    return utf_class_buf(mb_ptr2char(p), book);
 }
-#ifdef PROTO
-//Check if the character pointed to by "p2" is a composing character when it
-//comes after "p1".  For Arabic sometimes "ab" is replaced with "c", which
-//behaves like a composing character.
-pub int
-utf_composinglike(CS p1, CS p2) {
-   int c2 = mb_ptr2char(p2);
-   if (utf_iscomposing(c2))
-      return true;
-   if (!arabic_maycombine(c2))
-      return false;
-   return arabic_combine(mb_ptr2char(p1), c2);
-}
-#endif
 
 //Convert a UTF-8 byte string to a wide character. Also get up to MAX_COMBINED_SYMBOLS
 //composing characters.
 pub int
 utfc_ptr2char(CS p, OUT int* pcc) {   // return: composing chars, last one is 0
-   int cc;
    int i = 0;
 
    Unt c = mb_ptr2char(p);
@@ -3695,7 +3692,7 @@ utfc_ptr2char(CS p, OUT int* pcc) {   // return: composing chars, last one is 0
 
    // Only accept a composing char when the first char isn't illegal.
    if ((len > 1 || *p < 0x80) && p[len] >= 0x80 && UTF_COMPOSINGLIKE(p, p + len)) {
-      cc = mb_ptr2char(p + len);
+      int cc = mb_ptr2char(p + len);
       for (;;) {
          pcc[i++] = cc;
          if (i == MAX_COMBINED_SYMBOLS)
@@ -3773,7 +3770,7 @@ mb_adjustpos(Book* book, Pos *lp) {
 }
 
 pub void
-f_charclass(Arr(Var) argvars, Var*) {
+f_charclass(Arr(Var) argvars, Var* returnVar) {
    if (check_for_string_arg(argvars, 0) == FAIL || argvars[0].string == NULL)
       return;
    returnVar->number = mb_get_class(argvars[0].string);

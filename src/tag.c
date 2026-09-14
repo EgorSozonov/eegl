@@ -4,6 +4,23 @@
 //## tag.c: Code to handle tags and the tag stack
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/memory.h"
+#include "proto/hilite.h"
+#include "proto/fileio.h"
+#include "proto/insert.h"
+#include "proto/location.h"
+
+//{{{types
 
 //Pointers to various items in a tag line.
 typedef struct tag_pointers {
@@ -67,6 +84,16 @@ typedef struct {
    int   sort_error;      // tags file not sorted
 } FindTagsMatchArgs;
 
+//Info about the tag pattern being used.
+typedef struct {
+   CS pat;      // the pattern
+   int      len;      // length of pat[]
+   CS head;      // start of pattern head
+   int      headlen;   // length of head[]
+   RegMatch   regmatch;   // regexp program, may be NULL
+} TagPattern;
+
+
 //The matching tags are first stored in one of the hash tables.  In
 //which one depends on the priority of the match.
 //ht_match[] is used to find duplicates, ga_match[] to keep them in sequence.
@@ -79,6 +106,51 @@ typedef struct {
 #define MT_RE_OFF   8  // add for regexp match
 #define MT_MASK     7  // mask for printing priority
 #define MT_COUNT   16
+
+// State information used during a tag search
+typedef struct {
+   TagSearchState   state;      // tag search state
+   int stop_searching;      // stop when match found or error
+   TagPattern   *orgpat;      // holds unconverted pattern info
+   Byte* lbuf;         // line buffer
+   int lbuf_size;      // length of lbuf
+   CS tag_fname;      // name of the tag file
+   FILE* fp;         // current tags file pointer
+   int flags;         // flags used for tag search
+   int tag_file_sorted;   // !_TAG_FILE_SORTED value
+   int get_searchpat;      // used for 'showfulltag'
+   int help_only;      // only search for help tags
+   int did_open;      // did open a tag file
+   int mincount;      // MAXCOL: find all matches
+               // other: minimal number of matches
+   int linear;         // do a linear search
+   Byte help_lang[3];      // lang of current tags file
+   int help_pri;      // help language priority
+   CS help_lang_find;   // lang to be found
+   int is_txt;         // flag of file extension
+   int match_count;      // number of matches found
+   ArrayList ga_match[MT_COUNT];   // stores matches in sequence
+   EeSet ht_match[MT_COUNT];   // stores matches by key
+} FindTags;
+
+typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
+
+typedef struct {
+   CS name;
+   int (*func)(Invocation* invo);
+   CS help;
+   CS usage;
+   int cansplit;      // if supports splitting window
+} CScopeCommand;
+
+typedef enum {
+   Store,
+   Get,
+   Free,
+   Print
+} Mcmd;
+
+//}}}
 
 private char* mt_names[MT_COUNT/2] = {"FSC", "F C", "F  ", "FS ", " SC", "  C", "   ", " S "};
 
@@ -1128,15 +1200,6 @@ tag_strnicmp(CS s1, CS s2, Unt len) {
    return 0;            // strings match
 }
 
-//Info about the tag pattern being used.
-typedef struct {
-   CS pat;      // the pattern
-   int      len;      // length of pat[]
-   CS head;      // start of pattern head
-   int      headlen;   // length of head[]
-   RegMatch   regmatch;   // regexp program, may be NULL
-} TagPattern;
-
 //Extract info from the tag search pattern "pats->pat".
 private void
 prepare_pats(TagPattern *pats, int has_re) {
@@ -1362,32 +1425,6 @@ find_tagfunc_tags(
    *match_count = ntags;
    return result;
 }
-
-// State information used during a tag search
-typedef struct {
-   TagSearchState   state;      // tag search state
-   int      stop_searching;      // stop when match found or error
-   TagPattern   *orgpat;      // holds unconverted pattern info
-   Byte     *lbuf;         // line buffer
-   int      lbuf_size;      // length of lbuf
-   CS tag_fname;      // name of the tag file
-   FILE* fp;         // current tags file pointer
-   int flags;         // flags used for tag search
-   int tag_file_sorted;   // !_TAG_FILE_SORTED value
-   int get_searchpat;      // used for 'showfulltag'
-   int help_only;      // only search for help tags
-   int did_open;      // did open a tag file
-   int mincount;      // MAXCOL: find all matches
-               // other: minimal number of matches
-   int linear;         // do a linear search
-   Byte help_lang[3];      // lang of current tags file
-   int      help_pri;      // help language priority
-   CS help_lang_find;   // lang to be found
-   int      is_txt;         // flag of file extension
-   int      match_count;      // number of matches found
-   ArrayList   ga_match[MT_COUNT];   // stores matches in sequence
-   EeSet   ht_match[MT_COUNT];   // stores matches by key
-} FindTags;
 
 // Initialize the state used by find_tags(). Returns OK on success and FAIL on memory allocation 
 // failure.
@@ -3412,14 +3449,6 @@ set_tagstack(Portal *wp, Bag *d, Unt action) {
 
 // See ":help cscope-find" for the possible queries.
 
-typedef struct {
-   CS name;
-   int (*func)(Invocation* invo);
-   CS help;
-   CS usage;
-   int cansplit;      // if supports splitting window
-} CScopeCommand;
-
 typedef struct csi {
    CS fname;     //cscope db name
    CS ppath;     //path to prepend (the -P option)
@@ -3432,38 +3461,6 @@ typedef struct csi {
    FILE* to_fp;  //to cscope: FILE.
 } CscopeInfo;
 
-typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
-
-typedef enum {
-   Store,
-   Get,
-   Free,
-   Print
-} Mcmd;
-
-private int cs_add(Invocation* invo);
-private int cs_add_common(CS, CS, CS);
-private int cs_check_for_connections(void);
-private int cs_check_for_tags(void);
-private int cs_cnt_connections(void);
-private int cs_create_connection(int i);
-private void cs_file_results(FILE *, int *);
-private void cs_fill_results(CS, int , int *, Byte ***, Byte ***, int *);
-private int cs_find(Invocation* invo);
-private int cs_find_common(CS opt, CS pat, Boole, Boole, Boole, CS commline);
-private int cs_help(Invocation* invo);
-private int cs_insert_filelist(CS, CS, CS, FileStat *);
-private int cs_kill(Invocation* invo);
-private void cs_kill_execute(int, CS);
-private CScopeCommand* cs_lookup_cmd(Invocation* invo);
-private CS cs_make_eegl_style_matches(CS, CS, CS, CS);
-private CS cs_manage_matches(Arr(CS), Arr(CS), int, Mcmd);
-private void cs_print_tags_priv(Arr(CS), Arr(CS), int);
-private int cs_read_prompt(int);
-private void cs_release_csp(int, int freefnpp);
-private int cs_reset(Invocation* invo);
-private CS cs_resolve_file(int, CS );
-private int cs_show(Invocation* invo);
 
 private CscopeInfo* csinfo = NULL;
 private int csinfo_size = 0;   // number of items allocated in csinfo[]
@@ -4275,7 +4272,7 @@ cs_help(Invocation*) {
    (void)msg_puts(_("cscope commands:\n"));
    while (cmdp->name) {
       CS help = _(cmdp->help);
-      int  space_cnt = 30 - eeglStrSize((CS)help);
+      int space_cnt = 30 - eeglStrSize((CS)help);
 
       // Use %*s rather than %30s to ensure proper alignment in utf-8
       if (space_cnt < 0)

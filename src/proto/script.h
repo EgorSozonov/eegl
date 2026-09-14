@@ -142,7 +142,7 @@ int wildmenu_process_key(CommlineInfo *cclp, Unt key, Expand *xp);
 void wildmenu_cleanup(CommlineInfo* cclp);
 void f_getcompletion(Arr(Var) argvars, Var* returnVar);
 void f_getcompletiontype(Arr(Var) argvars, Var* returnVar);
-void f_cmdcomplete_info(Arr(Var) argvars, Var* returnVar);
+void f_cmdcomplete_info(Arr(Var), Var* returnVar);
 int getHistLen(void);
 Arr(HistoryEntry) get_histentry(int hist_type);
 void set_histentry(int hist_type, HistoryEntry* entry);

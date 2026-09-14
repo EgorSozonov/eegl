@@ -4,10 +4,147 @@
 //## location.c: location lists (searches, errors from compilation, help greps) & marks (`ma`)
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/memory.h"
+#include "proto/diff.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/fileio.h"
+#include "proto/hilite.h"
+#include "proto/insert.h"
+#include "proto/location.h"
+
 pub int fstat(int fd, struct stat* statbuf);
 int stat(const char* restrict path, struct stat* restrict buf);
 pub int lstat(const char* restrict, struct stat* restrict);
 
+//{{{types
+
+typedef struct ErrorFormatInfo ErrorFormatInfo;
+
+typedef enum {
+   SOURCE_FILENAME, // a proto-source, so to speak - will be turned into SOURCE_FILE after opening
+   SOURCE_FILE, // reading locations from file
+   SOURCE_BOOK, // reading locations from an Eegl buffer
+   SOURCE_STRING, // reading locations from a big ole string
+   SOURCE_LIST // reading location from a Var containing a list of strings
+} SourceKind;
+
+typedef struct { // SOURCE_FILENAME
+   CS c;
+} FileNameSource;
+
+typedef struct { // SOURCE_FILE
+   FILE* c;
+} FileSource;
+
+typedef struct { // SOURCE_BOOK
+   Book* c;
+   LineNr start;
+   LineNr end;
+} BookSource;
+
+typedef struct { // SOURCE_STRING
+   CS c;
+} StringSource;
+
+typedef struct { // SOURCE_LIST
+   ListItem* c;
+} ListSource;
+
+typedef struct { // A source can be a file, a Book, a string var or a list vaar
+   SourceKind tag;
+   union {
+      FileNameSource FileName;
+      FileSource File;
+      BookSource Book;
+      StringSource String;
+      ListSource List;
+   };
+} Source;
+
+// State information used to parse lines and add entries to a quickfix/location list.
+typedef struct {
+   Source source;
+   CS linebuf;
+   int      linelen;
+   Byte   *growbuf;
+   int      growbufsiz;
+} LocationState;
+
+typedef struct {
+    CS namebuf;
+    int      bnr;
+    CS module;
+    CS errmsg;
+    int      errmsglen;
+    long   lnum;
+    long   end_lnum;
+    int      col;
+    int      end_col;
+    Byte   use_viscol;
+    CS pattern;
+    int enr;
+    int type;
+    Var* user_data;
+    int valid;
+} Fields;
+
+declStruct(LocLine);
+declStruct(DirStack); 
+
+//Quickfix/Location list definition
+//Contains a list of entries (LocLine). first points to the first entry
+//and last points to the last entry. count contains the list size.
+//
+//Usually the list contains one or more entries. But an empty list can be
+//created using setqflist()/setloclist() with a title and/or user context
+//information and entries can be added later using setqflist()/setloclist().
+typedef struct {
+   Unt id;      // Unique identifier for this list
+   LocLine* first;   // pointer to the first error
+   LocLine* last;   // pointer to the last error
+   LocLine* curr;   // pointer to the current error
+   int count;   // number of errors (0 means empty list)
+   int currentIdx;   // current index in the error list
+   int noValidEntries;   // true if not a single valid entry found
+   int hasUserData; // true if at least one item has user_data attached
+   CS title;   // title derived from the command that created
+            // the error list or set by setqflist
+   Var* qf_ctx;   // context set by setqflist/setloclist
+   Callback  textFn;   // 'quickfixtextfunc' callback function
+
+   DirStack* dirStack;
+   CS dir;
+   DirStack* fileStack;
+   CS currFName;
+   int qf_multiline;
+   int qf_multiignore;
+   int qf_multiscan;
+   long changedTick;
+} LocationList;
+
+// :vimgrep command arguments
+typedef struct {
+   long tomatch;   // maximum number of matches to find
+   CS spat;      // search pattern
+   Unt flags;      // search modifier
+   Arr(CS) fnames;   // list of files to search
+   int fcount;      // number of files
+   RegMultilineMatch   regmatch;   // compiled search pattern
+   CS title;   // quickfix list title
+} VimGrepArgs;
+
+declStruct(Sign);
+
+//}}}
 //{{{@@forward declarations
 private ArrayList * getTempList(void);
 private void clearArrayList(void);
@@ -51,7 +188,6 @@ private int qf_parse_fmt_p(RegMatch* rmp, int midx, Fields* fields);
 private int qf_parse_fmt_v(RegMatch* rmp, int midx, Fields* fields);
 private int qf_parse_fmt_s(RegMatch* rmp, int midx, Fields* fields);
 private int qf_parse_fmt_o(RegMatch* rmp, int midx, Fields* fields);
-private int (*parseFormats[FMT_PATTERNS])(RegMatch *, int, Fields *) =;
 private int parseErrorFormatMatch(
    CS linebuf,
    int linelen,
@@ -552,7 +688,6 @@ private SignEntry * get_first_valid_sign(Portal *wp);
 //}}}
 //{{{location lists
 
-typedef struct DirStack DirStack; 
 struct DirStack {
    DirStack* next;
    CS dirname;
@@ -563,7 +698,6 @@ struct DirStack {
 #define STACK_CAPACITY 20
 
 // For each error the next struct is allocated and linked in a list.
-typedef struct LocLine LocLine;
 struct LocLine {
    LocLine* next;   // pointer to next error in the list
    LocLine* prev;   // pointer to previous error in the list
@@ -587,37 +721,6 @@ struct LocLine {
 // There is a stack of location lists.
 #define INVALID_LL_IND (3000000000)
 #define INVALID_LL_BUFNR (0)
-
-//Quickfix/Location list definition
-//Contains a list of entries (LocLine). first points to the first entry
-//and last points to the last entry. count contains the list size.
-//
-//Usually the list contains one or more entries. But an empty list can be
-//created using setqflist()/setloclist() with a title and/or user context
-//information and entries can be added later using setqflist()/setloclist().
-typedef struct {
-   Unt id;      // Unique identifier for this list
-   LocLine* first;   // pointer to the first error
-   LocLine* last;   // pointer to the last error
-   LocLine* curr;   // pointer to the current error
-   int count;   // number of errors (0 means empty list)
-   int currentIdx;   // current index in the error list
-   int noValidEntries;   // true if not a single valid entry found
-   int hasUserData; // true if at least one item has user_data attached
-   Arr(Byte) title;   // title derived from the command that created
-            // the error list or set by setqflist
-   Var* qf_ctx;   // context set by setqflist/setloclist
-   Callback  textFn;   // 'quickfixtextfunc' callback function
-
-   DirStack* dirStack;
-   Arr(Byte) dir;
-   DirStack* fileStack;
-   Arr(Byte) currFName;
-   int         qf_multiline;
-   int         qf_multiignore;
-   int         qf_multiscan;
-   long      changedTick;
-} LocationList;
 
 //Quickfix/Location list stack definition. Contains a list of location lists (LocationList)
 struct LocationStack {
@@ -646,10 +749,9 @@ private List* makeInProgressS; // the list of messages from a running "make" com
 
 
 // Structure used to hold the info of one part of 'errorformat'
-typedef struct ErrorFormatInfo ErrorFormatInfo;
 struct ErrorFormatInfo {
     RegProg* prog;   // pre-formatted part of 'errorformat'
-    ErrorFormatInfo       *next;   // pointer to next (NULL if last)
+    ErrorFormatInfo* next;   // pointer to next (NULL if last)
     Byte addr[FMT_PATTERNS]; // indices of used % patterns
     Byte prefix;   // prefix of this format line:
             //   'D' enter directory
@@ -678,17 +780,6 @@ struct DeletionList {
     DeletionList* next;
     LocationStack      *stack;
 };
-
-// :vimgrep command arguments
-typedef struct {
-   long tomatch;   // maximum number of matches to find
-   CS spat;      // search pattern
-   Unt flags;      // search modifier
-   Arr(CS) fnames;   // list of files to search
-   int fcount;      // number of files
-   RegMultilineMatch   regmatch;   // compiled search pattern
-   CS title;   // quickfix list title
-} VimGrepArgs;
 
 private DeletionList* deletionListG = NULL;
 
@@ -1093,57 +1184,6 @@ enum {
    QF_ABORT = 6
 };
 
-typedef enum {
-   SOURCE_FILENAME, // a proto-source, so to speak - will be turned into SOURCE_FILE after opening
-   SOURCE_FILE, // reading locations from file
-   SOURCE_BOOK, // reading locations from an Eegl buffer
-   SOURCE_STRING, // reading locations from a big ole string
-   SOURCE_LIST // reading location from a Var containing a list of strings
-} SourceKind;
-
-typedef struct { // SOURCE_FILENAME
-   CS c;
-} FileNameSource;
-
-typedef struct { // SOURCE_FILE
-   FILE* c;
-} FileSource;
-
-typedef struct { // SOURCE_BOOK
-   Book* c;
-   LineNr start;
-   LineNr end;
-} BookSource;
-
-
-typedef struct { // SOURCE_STRING
-   CS c;
-} StringSource;
-
-typedef struct { // SOURCE_LIST
-   ListItem* c;
-} ListSource;
-
-typedef struct { // A source can be a file, a Book, a string var or a list vaar
-   SourceKind tag;
-   union {
-      FileNameSource FileName;
-      FileSource File;
-      BookSource Book;
-      StringSource String;
-      ListSource List;
-   };
-} Source;
-
-// State information used to parse lines and add entries to a quickfix/location list.
-typedef struct {
-   Source source;
-   CS linebuf;
-   int      linelen;
-   Byte   *growbuf;
-   int      growbufsiz;
-} LocationState;
-
 //Allocate more memory for the line buffer used for parsing lines.
 private CS
 growLineBuffer(LocationState* state, int newsz) {
@@ -1348,24 +1388,6 @@ getNextLine(LocationState *state) {
    return QF_OK;
 }
 
-typedef struct {
-    CS namebuf;
-    int      bnr;
-    CS module;
-    CS errmsg;
-    int      errmsglen;
-    long   lnum;
-    long   end_lnum;
-    int      col;
-    int      end_col;
-    Byte   use_viscol;
-    CS pattern;
-    int enr;
-    int type;
-    Var* user_data;
-    int valid;
-} Fields;
-
 //Parse the match for filename ('%f') pattern in regmatch.
 //Return the matched value in "fields->namebuf".
 private int
@@ -1568,7 +1590,9 @@ qf_parse_fmt_o(RegMatch* rmp, int midx, Fields* fields) {
 //The '%f' and '%r' formats are parsed differently from other formats.
 //See parseErrorFormatMatch() for details.
 //Keep in sync with FORMAT_PATTERNS[].
-private int (*parseFormats[FMT_PATTERNS])(RegMatch *, int, Fields *) = {
+
+typedef int (*ParseFormatFn)(RegMatch *, int, Fields *);
+private ParseFormatFn parseFormats[FMT_PATTERNS] = {
    NULL, // %f
    qf_parse_fmt_b,
    qf_parse_fmt_n,
@@ -8750,7 +8774,6 @@ f_getmarklist(Var *argvars, Var* returnVar) {
 
 
 // Struct to hold the sign properties.
-typedef struct Sign Sign;
 
 struct Sign {
    Sign* next; // next sign in list

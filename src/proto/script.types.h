@@ -1,2 +1,2 @@
-declStruct(AutoComm);
 declStruct(AutoPat);
+declStruct(AutoComm);

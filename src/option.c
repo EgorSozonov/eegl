@@ -5,6 +5,20 @@
 
 #define IN_OPTION_C
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/memory.h"
+#include "proto/diff.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/fileio.h"
+#include "proto/insert.h"
+#include "proto/hilite.h"
+#include "proto/location.h"
 
 #include <locale.h> // for LC_MESSAGES et al
 
@@ -100,12 +114,12 @@ typedef struct {
    OptionValue origValue;
 
    // True if using set+= instead of set=
-   Boole      append;
+   Boole append;
    // If we would like to add the original option value as the first choice.
-   Boole      includeOrigVal;
+   Boole includeOrigVal;
 
    //Regex from the cmdline, for matching potential options against.
-   RegMatch   *oe_regmatch;
+   RegMatch* oe_regmatch;
    //The expansion context.
    Expand* expand;
 
@@ -125,7 +139,25 @@ typedef struct {
 //Note: If returned FAIL or matches->len is 0, matches->c will NOT be freed by caller.
 typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
 
-struct Option { //:Option
+#define refStr(x) (OptionRef){.tag = OPTION_STRING, .string = (CS*)x}
+#define refNum(x) (OptionRef){.tag = OPTION_NUM, .num = x}
+#define refBoole(x) (OptionRef){.tag = OPTION_BOOLE, .boole = x}
+#define refEnum(x) (OptionRef){.tag = OPTION_ENUM, .enume = x}
+#define refFlag(x) (OptionRef){.tag = OPTION_FLAGS, .flags = x}
+#define refCallback(x) (OptionRef){.tag = OPTION_CALLBACK, .callback = x}
+#define portal() (OptionRef){.tag = OPTION_PORTAL_LOCAL, .num = null}
+
+
+#define FOR_GLOBAL(o) \
+   for (Option* o = OPTIONS_GLOBAL; o < OPTIONS_GLOBAL + OPTION_GLOBAL_COUNT; o++)
+   
+#define FOR_PORTAL(o) \
+   for (Option* o = OPTIONS_PORTAL; o < OPTIONS_PORTAL + OPTION_PORTAL_COUNT; o++)
+   
+#define FOR_BOOK(o) \
+   for (Option* o = OPTIONS_BOOK; o < OPTIONS_BOOK + OPTION_BOOK_COUNT; o++)
+   
+typedef struct { //:Option
    CS fullName;   // full option name
    OptionValue defaultValue; // default value for option
    
@@ -145,25 +177,8 @@ struct Option { //:Option
       } local;
       OptionRef reference; // for global options
    } c;
-};
+} Option;
 
-#define refStr(x) (OptionRef){.tag = OPTION_STRING, .string = (CS*)x}
-#define refNum(x) (OptionRef){.tag = OPTION_NUM, .num = x}
-#define refBoole(x) (OptionRef){.tag = OPTION_BOOLE, .boole = x}
-#define refEnum(x) (OptionRef){.tag = OPTION_ENUM, .enume = x}
-#define refFlag(x) (OptionRef){.tag = OPTION_FLAGS, .flags = x}
-#define refCallback(x) (OptionRef){.tag = OPTION_CALLBACK, .callback = x}
-#define portal() (OptionRef){.tag = OPTION_PORTAL_LOCAL, .num = null}
-
-
-#define FOR_GLOBAL(o) \
-   for (Option* o = OPTIONS_GLOBAL; o < OPTIONS_GLOBAL + OPTION_GLOBAL_COUNT; o++)
-   
-#define FOR_PORTAL(o) \
-   for (Option* o = OPTIONS_PORTAL; o < OPTIONS_PORTAL + OPTION_PORTAL_COUNT; o++)
-   
-#define FOR_BOOK(o) \
-   for (Option* o = OPTIONS_BOOK; o < OPTIONS_BOOK + OPTION_BOOK_COUNT; o++)
    
 //}}}
 //{{{@@forward declarations
@@ -282,7 +297,6 @@ private CS copyOptionVal(OUT Polystring* buf, CS val);
 private void expand1(OUT Expand* xp, Option* o, CS argend);
 private int wildcharUseKeyname(OptionRef ref, long* wcp);
 private CS setFormatListPat(OptionChange* cha);
-private CS (p_cfc_values[]) =;
 private CS setCompletefuzzycollect(OptionChange* cha);
 private int expandCompletefuzzycollect(OptExpand* args, OUT ExpandMatch *matches);
 private CS did_set_completeitemalign(OptionChange* cha);
@@ -291,18 +305,13 @@ private CS did_set_debug(OptionChange* cha);
 private int expand_set_debug(OptExpand* args, OUT ExpandMatch* matches);
 private CS did_set_diffanchors(OptionChange* cha);
 private CS setDiffopt(OptionChange* cha);
-private CS(p_dip_algorithm_values[]) =;
-private CS(p_dip_inline_values[]) =;
 private int expandDiffopt(OptExpand* args, OUT ExpandMatch* matches);
-private CS(p_popup_option_align_values[]) =;
-private CS(p_popup_option_border_values[]) =;
 private int expand_set_popupoption(OptExpand* args, OUT ExpandMatch* matches);
 private CS setCursorInsert(OptionChange* cha);
 private CS setCursorNormal(OptionChange* cha);
 private int expand_set_formatoptions(OptExpand* args, OUT ExpandMatch* matches);
 private CS did_set_helplang(OptionChange* cha);
 private CS setOptexpr(OptionChange* cha);
-private CS (p_ead_values[]) =;
 private CS setEadirection(OptionChange* cha);
 private int expandEadirection(OptExpand* args, OUT ExpandMatch* matches);
 private CS did_set_eventignore(OptionChange* cha);
@@ -310,10 +319,8 @@ private CS did_set_verbosefile(OptionChange*);
 private CS setEeglinfo(OptionChange* cha);
 private CS did_set_whichwrap(OptionChange* cha);
 private int expand_set_whichwrap(OptExpand* args, OUT ExpandMatch* matches);
-private CS(p_wim_values[]) =;
 private CS did_set_wildmode(OptionChange*);
 private int expand_set_wildmode(OptExpand* args, OUT ExpandMatch* matches);
-private CS(p_wop_values[]) =;
 private CS setWildoptions(OptionChange* cha);
 private int expandWildoptions(OptExpand* args, OUT ExpandMatch* matches);
 private int expand_set_eventignore(OptExpand* args, OUT ExpandMatch* matches);
@@ -322,13 +329,11 @@ private CS did_set_foldignore(OptionChange*);
 private CS did_set_foldmarker(OptionChange* cha);
 private CS setFoldMethod(OptionChange* cha);
 private int expand_set_foldmethod(OptExpand* args, OUT ExpandMatch *matches);
-private CS(p_fdo_values[]) =;
 private CS setFoldopen(OptionChange* cha);
 private int expandFoldopen(OptExpand* args, OUT ExpandMatch* matches);
 private CS did_set_formatoptions(OptionChange* cha);
 private CS setIsopt(OptionChange* cha);
 private CS did_set_matchpairs(OptionChange* cha);
-private CS (p_mopt_values[]) =;
 private CS did_set_messagesopt(OptionChange* cha);
 private int expand_set_messagesopt(OptExpand* args, OUT ExpandMatch* matches);
 private CS setExpandTriggers(OptionChange* cha);
@@ -336,7 +341,6 @@ private CS did_set_iskeyword(OptionChange* cha);
 private CS parse_status_rulerformat(OptionChange* cha);
 private CS setRulerFormat(OptionChange* cha);
 private CS did_set_tabpanelopt(OptionChange* cha);
-private CS (p_tplo_align_values[]) =;
 private int expand_set_tabpanelopt(OptExpand* args, OUT ExpandMatch* matches);
 private CS setScrollopt(OptionChange* cha);
 private int expand_set_scrollopt(OptExpand* args, OUT ExpandMatch* matches);
@@ -345,7 +349,6 @@ private CS did_set_showbreak(OptionChange* cha);
 private CS did_set_showcmdloc(OptionChange* cha);
 private int expand_set_showcmdloc(OptExpand* args, OUT ExpandMatch* matches);
 private CS did_set_statusline(OptionChange* cha);
-private CS(p_swb_values[]) =;
 private CS setSwitchbook(OptionChange* cha);
 private int expand_set_switchbook(OptExpand* args, OUT ExpandMatch* matches);
 private CS setTabClose(OptionChange* cha);
@@ -372,7 +375,6 @@ private CS setBreakindentOpt(OptionChange* cha);
 private int expandBreakindentOpt(OptExpand* args, OUT ExpandMatch* matches);
 private CS setComplete(OptionChange* cha);
 private int expandComplete(OptExpand* args, ExpandMatch* matches);
-private CS (completeOptValues[]) =;
 private CS setCompleteopt(OptionChange* cha);
 private int expandCompleteopt(OptExpand* args, OUT ExpandMatch* matches);
 private Unt calcDefaultStringValuesLen(Arr(Option) opts, Unt count);
@@ -2602,7 +2604,7 @@ setFormatListPat(OptionChange* cha) {
    return null; 
 }
 
-private CS (p_cfc_values[]) = {SMAP((CS), "keyword", "files", "whole_line")};
+private CS p_cfc_values[] = {SMAP((CS), "keyword", "files", "whole_line")};
 private CS
 setCompletefuzzycollect(OptionChange* cha) {
    return validateAndSetListOfStrings(OUT cha, p_cfc_values);
@@ -2702,11 +2704,11 @@ private CS p_dip_values[] = {SMAP((CS),
 )};
 
 
-private CS(p_dip_algorithm_values[]) = {SMAP((CS), 
+private CS p_dip_algorithm_values[] = {SMAP((CS), 
    "myers", "minimal", "patience", "histogram"
 )};
 
-private CS(p_dip_inline_values[]) = {SMAP((CS), "none", "simple", "char", "word")};
+private CS p_dip_inline_values[] = {SMAP((CS), "none", "simple", "char", "word")};
 
 private int
 expandDiffopt(OptExpand* args, OUT ExpandMatch* matches) {
@@ -2733,9 +2735,9 @@ expandDiffopt(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_dip_values));
 }
 
-private CS(p_popup_option_align_values[]) = {S"item", S"menu"};
+private CS p_popup_option_align_values[] = {S"item", S"menu"};
 
-private CS(p_popup_option_border_values[]) = {S"on", S"off"};
+private CS p_popup_option_border_values[] = {S"on", S"off"};
 
 // Note: Keep this in sync with portal.c:parse_popup_option()
 private CS p_popup_option_values[] = {SMAP((CS), 
@@ -2831,7 +2833,7 @@ setOptexpr(OptionChange* cha) {
    return NULL;
 }
 
-private CS (p_ead_values[]) = {SMAP((CS), "both", "ver", "hor")};
+private CS p_ead_values[] = {SMAP((CS), "both", "ver", "hor")};
 private CS
 setEadirection(OptionChange* cha) {
    Byte v = parseEnumValue(cha->newVal.string, p_ead_values);
@@ -2941,7 +2943,7 @@ expand_set_whichwrap(OptExpand* args, OUT ExpandMatch* matches) {
 }
 
 // Note: Keep this in sync with check_opt_wim()
-private CS(p_wim_values[]) = {SMAP((CS), "full", "longest", "list", "lastused", "noselect")};
+private CS p_wim_values[] = {SMAP((CS), "full", "longest", "list", "lastused", "noselect")};
 
 private CS
 did_set_wildmode(OptionChange*) {
@@ -2955,7 +2957,7 @@ expand_set_wildmode(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_wim_values));
 }
 
-private CS(p_wop_values[]) = {SMAP((CS), "fuzzy", "tagfile", "pum", "exacttext")};
+private CS p_wop_values[] = {SMAP((CS), "fuzzy", "tagfile", "pum", "exacttext")};
 private CS
 setWildoptions(OptionChange* cha) {
    return validateAndSetListOfStrings(OUT cha, p_wop_values);
@@ -3032,7 +3034,7 @@ expand_set_foldmethod(OptExpand* args, OUT ExpandMatch *matches) {
 }
 
 // keep in sync with eegl.h:FDO_ flags
-private CS(p_fdo_values[]) = {SMAP((CS), 
+private CS p_fdo_values[] = {SMAP((CS), 
    "all", "block", "hor", "mark", "percent", "quickfix", "search", "tag", "insert", "undo", "jump"
 )};
 
@@ -3085,7 +3087,7 @@ did_set_matchpairs(OptionChange* cha) {
    return NULL;
 }
 
-private CS (p_mopt_values[]) = {SMAP((CS), "hit-enter", "wait:", "history:")};
+private CS p_mopt_values[] = {SMAP((CS), "hit-enter", "wait:", "history:")};
 
 private CS
 did_set_messagesopt(OptionChange* cha) {
@@ -3180,7 +3182,7 @@ did_set_tabpanelopt(OptionChange* cha) {
    return NULL;
 }
 
-private CS (p_tplo_align_values[]) = {S"left", S"right"};
+private CS p_tplo_align_values[] = {S"left", S"right"};
 
 // Note: Keep this in sync with ui.c:tabpanelopt_changed()
 private CS p_tplo_values[] = {SMAP((CS), "align:", "columns:", "vert")};
@@ -3268,7 +3270,7 @@ did_set_statusline(OptionChange* cha) {
    return parse_status_rulerformat(cha);
 }
 
-private CS(p_swb_values[]) = {SMAP((CS), 
+private CS p_swb_values[] = {SMAP((CS), 
    "useopen", "usetab", "split", "newtab", "vsplit", "uselast"
 )};
 
@@ -3644,7 +3646,7 @@ expandComplete(OptExpand* args, ExpandMatch* matches) {
 }
 
 //Keep in sync with eegl.h:COT_*
-private CS (completeOptValues[]) = {SMAP((CS), "menu", "menuone", "longest", "preview", 
+private CS completeOptValues[] = {SMAP((CS), "menu", "menuone", "longest", "preview", 
    "popup", "popuphidden", "noinsert", "noselect", "fuzzy", "nosort", "preinsert", "nearest"
 )};
 
@@ -3746,7 +3748,6 @@ calcDefaultStringValuesLen(Arr(Option) opts, Unt count) {
 private Unt
 calcGlobalStringValuesLen() {
    Unt totalLen = 0;
-   Option* o;
    FOR_GLOBAL(o) {
       if (o->defaultValue.tag == OPTION_STRING && (*o->c.reference.string)) {
          totalLen += (STRLEN(*o->c.reference.string) + 1); // +1 for the ZERO
@@ -3860,7 +3861,6 @@ updateStringRef(OptionChange* cha) {
          Polystring buf = polystring(newCap);
          
          CS wr = buf.c;
-         Option* o;
          FOR_GLOBAL(o) {
             if (*o->c.reference.string == cha->oldVal.string) {
                
@@ -3965,7 +3965,6 @@ pub void
 optInit0() {
    langmap_init();
    
-   Option* o;
    FOR_BOOK(o) {
       o->flags |= P_BOOK;
    }
@@ -4179,7 +4178,6 @@ setDefaultValuesForAllOptions(SetScope setScope) {
    copyDefaultsToGlobalStringValues(OUT &bookStringOptionsG, OPTIONS_BOOK, OPTION_BOOK_COUNT);
    copyDefaultsToGlobalStringValues(OUT &portalStringOptionsG, OPTIONS_PORTAL, OPTION_PORTAL_COUNT);
    
-   Option* o;
    FOR_GLOBAL(o) {
       if (o->defaultValue.tag != OPTION_STRING && (o->flags & P_NODEFAULT) == 0) {
          setDefault(o, SET_GLOBAL);
@@ -4215,7 +4213,6 @@ optSetLocalOptionsToDefault(Portal *wp, Boole doBook) {
    curBook = curPor->book;
    block_autocmds();
 
-   Option* o;
    FOR_PORTAL(o) {
       if ((o->flags & P_NODEFAULT) == 0 && !isOptionAtDefault(o, getRefInScope(o, OPT_LOCAL)))
          setDefault(o, SET_LOCAL);
@@ -4387,7 +4384,6 @@ findOption(CS arg) {
 pub Bag*
 getBookOrPortOptions(Boole bufopt) {
    Bag* b = allocBag();
-   Option* o;
    if (bufopt) { // book-local
       FOR_BOOK(o) {
          if (o->defaultValue.tag == OPTION_STRING)
@@ -4554,7 +4550,6 @@ optExpandOption(
       (void)matchString(names[match], regmatch, matches, doFuzzy, fuzzystr, &fuzzy);
    }
    
-   Option* o;
    FOR_GLOBAL(o) {
       matchString(xp->fullInput, regmatch, matches, doFuzzy, fuzzystr, &fuzzy);
    }

@@ -4,6 +4,20 @@
 //## script.c: script files, user command line, its completion and user-defined functions
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/memory.h"
+#include "proto/eval.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/fileio.h"
+#include "proto/hilite.h"
+#include "proto/insert.h"
+#include "proto/location.h"
+#include "proto/motor.h"
 
 #define DECLARE_COMMANDS_FLAGS
 #include "commands.h"
@@ -12,6 +26,79 @@
 // table to store parsed 'wildmode'
 private Byte wim_flags[4];
 
+//{{{types
+
+// Cookie used by scrGetSourceLine().
+//
+// It is used used to store info for each sourced file. It is shared between scriptRunFile() and 
+// scrGetSourceLine(). This is passed to do_cmdline().
+typedef struct {
+   FILE* fp;      // opened file for sourcing
+   CS nextline;   // if not NULL: line that was read ahead
+   LineNr sourcing_lnum;   // line number of the source file
+   Boole finished;   // ":finish" used
+   Boole sourceFromCurBook;
+   int buf_lnum;   // line number in the current buffer
+   ArrayList buflines;   // lines in the current buffer
+   LineNr breakpoint;   // next line with breakpoint or zero
+   CS fname;      // name of sourced file
+   int dbg_tick;   // debug_tick when breakpoint was set
+   int level;      // top nesting level of sourced file
+} SourceCookie;
+
+//The list of breakpoints: dbg_breakp. This is an arraylist of structs.
+typedef struct {
+   int dbg_nr;      // breakpoint number
+   int dbg_type;   // DBG_FUNC, DBG_FILE or DBG_EXPR
+   CS dbg_name;   // function, expression or file name
+   RegProg* dbg_prog;   // regexp program
+   LineNr dbg_lnum;   // line number in function or file
+   int dbg_forceit;   // ! used
+   Var* dbg_val;       // last result of watchexpression
+   int dbg_level;      // stored nested level for expr
+} Debuggy;
+
+// Struct to store the viewstate during 'incsearch' highlighting.
+typedef struct {
+   ColNr   vs_curswant;
+   ColNr   vs_leftcol;
+   ColNr   vs_skipcol;
+   LineNr   vs_topline;
+   int      vs_topfill;
+   LineNr   vs_botline;
+   LineNr   vs_empty_rows;
+} ViewState;
+
+// Struct to store the state of 'incsearch' highlighting.
+typedef struct {
+   Pos search_start;   // where 'incsearch' starts searching
+   Pos save_cursor;
+   int winid;      // window where this state is valid
+   ViewState init_viewstate;
+   ViewState old_viewstate;
+   Pos match_start;
+   Pos match_end;
+   int did_incsearch;
+   int incsearch_postponed;
+} IncSearch;
+
+typedef struct ucmd {
+   CS uc_name;   // The command name
+   Unt   uc_namelen;   // The length of the command name (excluding the ZERO)
+   Ulong   uc_argt;   // The argument type
+   CS uc_rep;   // The command's replacement string
+   long   uc_def;      // The default value for a range/count
+   int uc_compl;   // completion type
+   CommandAddress   uc_addr_type;   // The command's address type
+   ScriptPos   uc_scriptCtx;   // SCTX where the command was defined
+   int uc_flags;   // some UC_ flags
+   CS uc_compl_arg;   // completion argument if any
+} UserCommand;
+
+pub declStruct(AutoPat);
+pub declStruct(AutoComm);
+
+//}}}
 //{{{@@forward declarations
 private void stacktrace_push_item(
    List* l,
@@ -205,8 +292,6 @@ private int expandPatternInBook(
    Unt dir,         // direction: FORWARD or BACKWARD
    OUT ExpandMatch* matches
 );
-private HistoryEntry *(history[HIST_COUNT]) =;
-private CS (historyNames[]) =;
 private int get_histtype(Byte *name);
 private int get_history_idx(int histype);
 private int calc_hist_idx(int histype, int num);
@@ -217,8 +302,8 @@ private void trigger_cmd_autocmd(int typechar, int evt);
 private void abandon_cmdline(void);
 private int empty_pattern(Byte *p, Unt len, int delim);
 private int empty_pattern_magic(Byte *p, Unt len, Magic magic_val);
-private void save_viewstate(viewstate_T *vs);
-private void restore_viewstate(viewstate_T *vs);
+private void save_viewstate(ViewState *vs);
+private void restore_viewstate(ViewState *vs);
 private void init_incsearch_state(IncSearch *is_state);
 private void set_search_match(Pos *t);
 private int incsearchHilitingImpl(
@@ -448,24 +533,6 @@ private CS set_context_in_autocmd(Expand* xp, CS arg, int doautocmd);
 private void autocommAddOrDelete(Arr(Var) argvars, Var* returnVar, Boole delete);
 //}}}
 //{{{script files
-
-// Cookie used by scrGetSourceLine().
-//
-// It is used used to store info for each sourced file. It is shared between scriptRunFile() and 
-// scrGetSourceLine(). This is passed to do_cmdline().
-typedef struct {
-   FILE* fp;      // opened file for sourcing
-   CS nextline;   // if not NULL: line that was read ahead
-   LineNr sourcing_lnum;   // line number of the source file
-   Boole finished;   // ":finish" used
-   Boole sourceFromCurBook;
-   int buf_lnum;   // line number in the current buffer
-   ArrayList buflines;   // lines in the current buffer
-   LineNr breakpoint;   // next line with breakpoint or zero
-   CS fname;      // name of sourced file
-   int dbg_tick;   // debug_tick when breakpoint was set
-   int level;      // top nesting level of sourced file
-} SourceCookie;
 
 // The names of packages that once were loaded are remembered.
 private ArrayList ga_loaded = {0, 0, sizeof(CS), 4, NULL};
@@ -2736,18 +2803,6 @@ dbg_check_skipped(Invocation* invo) {
     gotInterruptG |= prev_gotInterruptG;
     return true;
 }
-
-//The list of breakpoints: dbg_breakp. This is an arraylist of structs.
-typedef struct {
-   int dbg_nr;      // breakpoint number
-   int dbg_type;   // DBG_FUNC, DBG_FILE or DBG_EXPR
-   CS dbg_name;   // function, expression or file name
-   RegProg* dbg_prog;   // regexp program
-   LineNr dbg_lnum;   // line number in function or file
-   int dbg_forceit;   // ! used
-   Var* dbg_val;       // last result of watchexpression
-   int dbg_level;      // stored nested level for expr
-} Debuggy;
 
 private ArrayList dbg_breakp = {0, 0, sizeof(Debuggy), 4, NULL};
 #define BREAKP(idx)      (((Debuggy *)dbg_breakp.c)[idx])
@@ -6571,7 +6626,7 @@ f_getcompletiontype(Arr(Var) argvars, Var* returnVar){
 }
 
 pub void
-f_cmdcomplete_info(Arr(Var) argvars, Var* returnVar) {
+f_cmdcomplete_info(Arr(Var), Var* returnVar) {
    CommlineInfo* ccline = getCommlineInfo();
    allocReturnDict(returnVar);
    if (!ccline || !ccline->xpc || !(ccline->xpc->files.c))
@@ -6856,7 +6911,7 @@ cleanup:
 //}}}
 //{{{ history: Functions for the history of the command-line.
 
-private HistoryEntry *(history[HIST_COUNT]) = {NULL, NULL, NULL, NULL, NULL};
+private HistoryEntry* history[HIST_COUNT] = {NULL, NULL, NULL, NULL, NULL};
 private int   hisidx[HIST_COUNT] = {-1, -1, -1, -1, -1};  // lastused entry
 private int   hisnum[HIST_COUNT] = {0, 0, 0, 0, 0}; // identifying (unique) number of newest 
                                                     // history entry
@@ -6906,12 +6961,12 @@ hist_char2type(int c) {
 //Table of history names. These names are used in :history and various hist...() functions.
 //It is sufficient to give the significant prefix of a history name.
 
-private CS (historyNames[]) = {
-   [HIST_CMD] = (CS)"command",
-   [HIST_SEARCH] = (CS)"search",
-   [HIST_EXPR] = (CS)"expr",
-   [HIST_INPUT] = (CS)"input",
-   [HIST_DEBUG] = (CS)"debug",
+private CS historyNames[] = {
+   [HIST_CMD] = S"command",
+   [HIST_SEARCH] = S"search",
+   [HIST_EXPR] = S"expr",
+   [HIST_INPUT] = S"input",
+   [HIST_DEBUG] = S"debug",
    NULL
 };
 
@@ -7562,19 +7617,8 @@ empty_pattern_magic(Byte *p, Unt len, Magic magic_val) {
       );
 }
 
-// Struct to store the viewstate during 'incsearch' highlighting.
-typedef struct {
-   ColNr   vs_curswant;
-   ColNr   vs_leftcol;
-   ColNr   vs_skipcol;
-   LineNr   vs_topline;
-   int      vs_topfill;
-   LineNr   vs_botline;
-   LineNr   vs_empty_rows;
-} viewstate_T;
-
 private void
-save_viewstate(viewstate_T *vs) {
+save_viewstate(ViewState *vs) {
    vs->vs_curswant = curPor->cursWant;
    vs->vs_leftcol = curPor->leftCol;
    vs->vs_skipcol = curPor->skipCol;
@@ -7585,7 +7629,7 @@ save_viewstate(viewstate_T *vs) {
 }
 
 private void
-restore_viewstate(viewstate_T *vs) {
+restore_viewstate(ViewState *vs) {
    curPor->cursWant = vs->vs_curswant;
    curPor->leftCol = vs->vs_leftcol;
    curPor->skipCol = vs->vs_skipcol;
@@ -7594,19 +7638,6 @@ restore_viewstate(viewstate_T *vs) {
    curPor->bottomLine = vs->vs_botline;
    curPor->emptyRowCount = vs->vs_empty_rows;
 }
-
-// Struct to store the state of 'incsearch' highlighting.
-typedef struct {
-   Pos   search_start;   // where 'incsearch' starts searching
-   Pos   save_cursor;
-   int      winid;      // window where this state is valid
-   viewstate_T   init_viewstate;
-   viewstate_T   old_viewstate;
-   Pos   match_start;
-   Pos   match_end;
-   int      did_incsearch;
-   int      incsearch_postponed;
-} IncSearch;
 
 private void
 init_incsearch_state(IncSearch *is_state) {
@@ -10860,19 +10891,6 @@ f_wildtrigger(Arr(Var), Var*) {
 
 //}}}
 //{{{user commands
-
-typedef struct ucmd {
-   CS uc_name;   // The command name
-   Unt   uc_namelen;   // The length of the command name (excluding the ZERO)
-   Ulong   uc_argt;   // The argument type
-   CS uc_rep;   // The command's replacement string
-   long   uc_def;      // The default value for a range/count
-   int uc_compl;   // completion type
-   CommandAddress   uc_addr_type;   // The command's address type
-   ScriptPos   uc_scriptCtx;   // SCTX where the command was defined
-   int uc_flags;   // some UC_ flags
-   CS uc_compl_arg;   // completion argument if any
-} UserCommand;
 
 // List of all user commands.
 private ArrayList userComms = {0, 0, sizeof(UserCommand), 4, NULL};
@@ -16854,7 +16872,6 @@ var_wrong_func_name(
 //
 //The order of AutoComms is important, this is the order in which they were
 //defined and will have to be executed.
-pub declStruct(AutoComm);
 struct AutoComm {
    CS comm;    // The command to be executed (NULL when command has been removed).
    Boole once;    // "One shot": removed after execution
@@ -16864,7 +16881,6 @@ struct AutoComm {
    AutoComm* next;      // next AutoComm in list
 };
 
-pub declStruct(AutoPat);
 struct AutoPat {
    AutoPat* next;      // Next AutoPat in AutoPat list; MUST be the first entry.
    CS pat;      // pattern as typed (NULL when pattern has been removed)

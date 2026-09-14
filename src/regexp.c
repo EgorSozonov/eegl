@@ -9,32 +9,36 @@
 // #define DEBUG
 
 #include "eegl.h"
-
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/book.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/do.h"
+#include "proto/eval.h"
+#include "proto/location.h"
+#include "proto/memory.h"
 
 //{{{header
 
-/*
- *
- * NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
- *
- * This is NOT the original regular expression code as written by Henry
- * Spencer.  This code has been modified specifically for use with Eegl, and
- * should not be used apart from compiling Eegl.  If you want a good regular
- * expression library, get the original code.
- *
- * NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
- */
- 
+//NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+//
+//This is NOT the original regular expression code as written by Henry
+//Spencer.  This code has been modified specifically for use with Eegl, and
+//should not be used apart from compiling Eegl.  If you want a good regular
+//expression library, get the original code.
+//
+//NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
 
-// How many braces are allowed.
-// TODO(RE): Use dynamic memory allocation instead of static, like here
+//How many braces are allowed.
+//TODO(RE): Use dynamic memory allocation instead of static, like here
 #define MAX_BRACES 20
 
 // how many states are allowed
 #define MAX_STATES 100000
 #define TOO_EXPENSIVE (-1)
 
-private declStruct(RState);
+declStruct(RState);
 // NFA state. Such a state may have no outgoing edge, when it is a MATCH state.
 struct RState {
    Unt         c; // a char
@@ -362,6 +366,67 @@ private int   re_mult_next(CS what);
 private int   reg_iswordc(int);
 
 //}}}
+//{{{types
+
+typedef enum {
+    RGLF_LINE = 0x01,
+    RGLF_LENGTH = 0x02,
+    RGLF_SUBMATCH = 0x04
+} GetlineFlags;
+
+typedef struct {
+   int in_use; // number of subexpr with useful info
+
+   // When REG_MULTI is true list.multi is used, otherwise list.line.
+   union {
+      struct multipos {
+         LineNr start_lnum;
+         LineNr end_lnum;
+         ColNr start_col;
+         ColNr end_col;
+      } multi[NSUBEXP];
+      struct linepos {
+         Byte* start;
+         Byte* end;
+      } line[NSUBEXP];
+   } list;
+   ColNr   orig_start_col;  // list.multi[0].start_col without \zs
+} Submatch;
+
+typedef struct {
+   Submatch norm; // \( .. \) matches
+   Submatch synt; // \z( .. \) matches
+} Submatches;
+
+// PostponedMatch stores a Postponed Invisible Match.
+typedef struct {
+   int      result;      // PIM_*, see below
+   RState   *state;      // the invisible match start state
+   Submatches   subs;      // submatch info, only party used
+   union {
+      PosNoVirt   pos;
+      Byte   *ptr;
+   } end;         // where the match must end
+} PostponedMatch;
+
+// nfa_thread_T contains execution information of a NFA state
+typedef struct {
+   RState* state;
+   int count;
+   PostponedMatch pim;      // if pim.result != PIM_UNUSED: postponed invisible match
+   Submatches subs;      // submatch info, only party used
+} nfa_thread_T;
+
+// NfaList contains the alternative NFA execution states.
+typedef struct {
+   nfa_thread_T* t;      // allocated array of states
+   int n;      // nr of states currently in "t"
+   int len;   // max nr of states in "t"
+   int id;      // ID of the list
+   int has_pim;   // true when any state has a PIM
+} NfaList;
+
+//}}}
 //{{{@@forward declarations
 private int no_Magic(int x);
 private int toggle_Magic(int x);
@@ -383,12 +448,7 @@ private Long gethexchrs(int maxinputlen);
 private Long getdecchrs(void);
 private int read_limits(long *minval, long *maxval);
 private int reg_iswordc(int c);
-private void reg_getline_common(
-    LineNr      lnum,
-    reg_getline_flags_T   flags,
-    Byte      **line,
-    ColNr      *length)
-;
+private void reg_getline_common(LineNr lnum, GetlineFlags flags, Byte** line, ColNr* length);
 private Byte * reg_getline(LineNr lnum);
 private ColNr reg_getline_len(LineNr lnum);
 private RegExternalMatch * make_extmatch(void);
@@ -402,8 +462,8 @@ private int match_with_backref(
     ColNr  start_col,
     LineNr end_lnum,
     ColNr  end_col,
-    int        *bytelen)
-;
+    OUT int* bytelen
+);
 private int re_mult_next(CS what);
 private void mb_decompose(int c, int *c1, int *c2, int *c3);
 private int cstrncmp(Byte *s1, Byte *s2, int *n);
@@ -446,6 +506,7 @@ private StateList * list1(RState** outp);
 private void patch(StateList* l, RState* s);
 private StateList * concat(StateList* l1, StateList* l2);
 private void st_error(Unt *postfix, Unt* end, Unt* p);
+private void st_error(Unt *, Unt* , Unt* );
 private void addFrag(Frag s, Frag** fr, Frag* sentinel);
 private Frag removeLastFrag(Frag** p, Frag* stack);
 private int nfa_max_width(RState* startstate, int depth);
@@ -470,7 +531,7 @@ private void report_state(char *action,
         PostponedMatch *pim)
 ;
 private int has_state_with_pos(
-    nfa_List      *l,   // runtime state list
+    NfaList      *l,   // runtime state list
     RState      *state,   // state to update
     Submatches      *subs,   // pointers to subexpressions
     PostponedMatch      *pim)   // postponed match or NULL
@@ -478,19 +539,19 @@ private int has_state_with_pos(
 private int pim_equal(PostponedMatch *one, PostponedMatch *two);
 private int match_follows(RState *startstate, int depth);
 private int state_in_list(
-    nfa_List      *l,   // runtime state list
+    NfaList      *l,   // runtime state list
     RState      *state,   // state to update
     Submatches      *subs   // pointers to subexpressions
 );
 private Submatches * addstate(
-   nfa_List      *l,       // runtime state list
+   NfaList      *l,       // runtime state list
    RState      *state,       // state to update
    Submatches      *subs_arg,  // pointers to subexpressions
    PostponedMatch      *pim,       // postponed look-behind match
    int         off_arg    // byte offset, when -1 go to next line
 );
 private Submatches * addstate_here(
-   nfa_List      *l,   // runtime state list
+   NfaList      *l,   // runtime state list
    RState      *state,   // state to update
    Submatches      *subs,   // pointers to subexpressions
    PostponedMatch      *pim,   // postponed look-behind match
@@ -1150,7 +1211,6 @@ read_limits(long *minval, long *maxval) {
 // Global work variables for eeRegexec().
 private void cleanup_subexpr(void);
 private void cleanup_zsubexpr(void);
-private int  match_with_backref(LineNr start_lnum, ColNr start_col, LineNr end_lnum, ColNr end_col, int *bytelen);
 
 //Sometimes need to save a copy of a line.  Since alloc()/free() is very
 //slow, we keep one allocated piece of memory and only re-allocate it when
@@ -1246,12 +1306,6 @@ typedef struct {
 
 private regsubMatch rsm;  // can only be used when can_f_submatch is true
 
-typedef enum {
-    RGLF_LINE = 0x01,
-    RGLF_LENGTH = 0x02,
-    RGLF_SUBMATCH = 0x04
-} reg_getline_flags_T;
-
 //
 // common code for reg_getline(), reg_getline_len(), reg_getline_submatch() and
 // reg_getline_submatch_len().
@@ -1259,18 +1313,13 @@ typedef enum {
 // or not submatch is in effect.
 // note:
 private void
-reg_getline_common(
-    LineNr      lnum,
-    reg_getline_flags_T   flags,
-    Byte      **line,
-    ColNr      *length)
-{
-    int get_line = flags & RGLF_LINE;
-    int get_length = flags & RGLF_LENGTH;
-    LineNr firstlnum;
-    LineNr maxline;
+reg_getline_common(LineNr lnum, GetlineFlags flags, Byte** line, ColNr* length) {
+   int get_line = flags & RGLF_LINE;
+   int get_length = flags & RGLF_LENGTH;
+   LineNr firstlnum;
+   LineNr maxline;
 
-   if (flags & RGLF_SUBMATCH) {
+   if ((flags & RGLF_SUBMATCH) != 0) {
       firstlnum = rsm.sm_firstlnum + lnum;
       maxline = rsm.sm_maxline;
    } else {
@@ -1308,7 +1357,6 @@ reg_getline_common(
 private Byte *
 reg_getline(LineNr lnum) {
    Byte *line;
-
    reg_getline_common(lnum, RGLF_LINE, &line, NULL);
 
    return line;
@@ -1318,9 +1366,7 @@ reg_getline(LineNr lnum) {
 private ColNr
 reg_getline_len(LineNr lnum) {
    ColNr length;
-
-   reg_getline_common(lnum, RGLF_LENGTH, NULL, &length);
-
+   reg_getline_common(lnum, RGLF_LENGTH, NULL, OUT &length);
    return length;
 }
 
@@ -1371,14 +1417,12 @@ reg_prev_class(void) {
 private int
 reg_match_visual(void) {
    Pos   top, bot;
-   LineNr    lnum;
-   ColNr   col;
-   Portal   *wp = exe.portal == NULL ? curPor : exe.portal;
-   int      mode;
-   ColNr   start, end;
-   ColNr   start2, end2;
-   ColNr   cols;
-   ColNr   curswant;
+   Portal* wp = exe.portal ? exe.portal : curPor;
+   int mode;
+   ColNr start, end;
+   ColNr start2, end2;
+   ColNr cols;
+   ColNr curswant;
 
    // Check if the book is the current book and not using a string.
    if (exe.book != curBook || VIsual.lnum == 0 || !REG_MULTI)
@@ -1408,11 +1452,11 @@ reg_match_visual(void) {
       mode = curBook->visual.vi_mode;
       curswant = curBook->visual.vi_curswant;
    }
-   lnum = exe.lnum + exe.reg_firstlnum;
+   LineNr lnum = exe.lnum + exe.reg_firstlnum;
    if (lnum < top.lnum || lnum > bot.lnum)
       return false;
 
-   col = (ColNr)(exe.input - exe.line);
+   ColNr col = (ColNr)(exe.input - exe.line);
    if (mode == 'v') {
       if ((lnum == top.lnum && col < top.col)
             || (lnum == bot.lnum && col >= bot.col + 1))
@@ -1435,7 +1479,7 @@ reg_match_visual(void) {
       if (cols < start || cols > end)
           return false;
    }
-    return true;
+   return true;
 }
 
 // Cleanup the subexpressions, if this wasn't done yet.
@@ -1489,15 +1533,15 @@ match_with_backref(
     ColNr  start_col,
     LineNr end_lnum,
     ColNr  end_col,
-    int        *bytelen)
-{
-    LineNr   clnum = start_lnum;
-    ColNr   ccol = start_col;
-    int      len;
-    Byte   *p;
+    OUT int* bytelen
+) {
+   LineNr   clnum = start_lnum;
+   ColNr   ccol = start_col;
+   int      len;
+   Byte   *p;
 
-    if (bytelen != NULL)
-   *bytelen = 0;
+   if (bytelen)
+      *bytelen = 0;
     for (;;) {
    // Since getting one line may invalidate the other, need to make copy. Slow!
    if (exe.line != reg_tofree) {
@@ -1522,7 +1566,7 @@ match_with_backref(
 
    if (cstrncmp(p + ccol, exe.input, &len) != 0)
        return RA_NOMATCH;  // doesn't match
-   if (bytelen != NULL)
+   if (bytelen)
        *bytelen += len;
    if (clnum == end_lnum)
        break;      // match and at end!
@@ -1531,7 +1575,7 @@ match_with_backref(
 
    // Advance to next line.
    reg_nextline();
-   if (bytelen != NULL)
+   if (bytelen)
        *bytelen = 0;
    ++clnum;
    ccol = 0;
@@ -5247,9 +5291,9 @@ concat(StateList* l1, StateList* l2) {
 // Stack used for transforming postfix form into NFA.
 private Frag empty;
 
+#ifdef REGEXP_ERROR_LOG
 private void
 st_error(Unt *postfix, Unt* end, Unt* p) {
-#ifdef REGEXP_ERROR_LOG
    int *p2;
 
    FILE* df = fopen(REGEXP_ERROR_LOG, "a");
@@ -5280,9 +5324,14 @@ st_error(Unt *postfix, Unt* end, Unt* p) {
       fprintf(df, "\n--------------------------\n");
       fclose(df);
    }
-#endif
    emsg(_(e_nfa_regexp_could_not_pop_stack));
 }
+#else
+private void
+st_error(Unt *, Unt* , Unt* ) {
+   emsg(_(e_nfa_regexp_could_not_pop_stack));
+}
+#endif
 
 // Push an item onto the stack.
 private void
@@ -6053,64 +6102,11 @@ addOptimizationHints(RegProg* prog) {
 // NFA execution code.
 /////////////////////////////////////////////////////////////////
 
-typedef struct {
-   int in_use; // number of subexpr with useful info
-
-   // When REG_MULTI is true list.multi is used, otherwise list.line.
-   union {
-      struct multipos {
-         LineNr start_lnum;
-         LineNr end_lnum;
-         ColNr start_col;
-         ColNr end_col;
-      } multi[NSUBEXP];
-      struct linepos {
-         Byte* start;
-         Byte* end;
-      } line[NSUBEXP];
-   } list;
-   ColNr   orig_start_col;  // list.multi[0].start_col without \zs
-} Submatch;
-
-typedef struct {
-   Submatch norm; // \( .. \) matches
-   Submatch synt; // \z( .. \) matches
-} Submatches;
-
-// PostponedMatch stores a Postponed Invisible Match.
-typedef struct {
-   int      result;      // PIM_*, see below
-   RState   *state;      // the invisible match start state
-   Submatches   subs;      // submatch info, only party used
-   union {
-      PosNoVirt   pos;
-      Byte   *ptr;
-   } end;         // where the match must end
-} PostponedMatch;
-
 // Values for done in PostponedMatch.
 #define PIM_UNUSED   0   // pim not used
 #define PIM_TODO     1   // pim not done yet
 #define PIM_MATCH    2   // pim executed, matches
 #define PIM_NOMATCH  3   // pim executed, no match
-
-
-// nfa_thread_T contains execution information of a NFA state
-typedef struct {
-   RState   *state;
-   int      count;
-   PostponedMatch   pim;      // if pim.result != PIM_UNUSED: postponed invisible match
-   Submatches   subs;      // submatch info, only party used
-} nfa_thread_T;
-
-// nfa_List contains the alternative NFA execution states.
-typedef struct {
-   nfa_thread_T    *t;      // allocated array of states
-   int          n;      // nr of states currently in "t"
-   int          len;   // max nr of states in "t"
-   int          id;      // ID of the list
-   int          has_pim;   // true when any state has a PIM
-} nfa_List;
 
 #ifdef REGEXP_LOGGING
 private void log_subexpr(Submatch *sub);
@@ -6377,7 +6373,7 @@ report_state(char *action,
 // Return true if the same state is already in list "l" with the same positions as "subs".
 private int
 has_state_with_pos(
-    nfa_List      *l,   // runtime state list
+    NfaList      *l,   // runtime state list
     RState      *state,   // state to update
     Submatches      *subs,   // pointers to subexpressions
     PostponedMatch      *pim)   // postponed match or NULL
@@ -6507,7 +6503,7 @@ match_follows(RState *startstate, int depth) {
 // Return true if "state" is already in list "l".
 private int
 state_in_list(
-    nfa_List      *l,   // runtime state list
+    NfaList      *l,   // runtime state list
     RState      *state,   // state to update
     Submatches      *subs   // pointers to subexpressions
 ){
@@ -6526,7 +6522,7 @@ state_in_list(
 //Return NULL when recursiveness is too deep or timed out.
 private Submatches *
 addstate(
-   nfa_List      *l,       // runtime state list
+   NfaList      *l,       // runtime state list
    RState      *state,       // state to update
    Submatches      *subs_arg,  // pointers to subexpressions
    PostponedMatch      *pim,       // postponed look-behind match
@@ -6911,7 +6907,7 @@ addstate(
 // matters for alternatives.
 private Submatches *
 addstate_here(
-   nfa_List      *l,   // runtime state list
+   NfaList      *l,   // runtime state list
    RState      *state,   // state to update
    Submatches      *subs,   // pointers to subexpressions
    PostponedMatch      *pim,   // postponed look-behind match
@@ -7102,7 +7098,8 @@ retempty:
             sub->list.multi[subidx].start_col,
             sub->list.multi[subidx].end_lnum,
             sub->list.multi[subidx].end_col,
-            bytelen) == RA_MATCH)
+            OUT bytelen) == RA_MATCH
+         )
          return true;
       }
    } else {
@@ -7557,10 +7554,10 @@ match(
    int      flag = 0;
    int      go_to_nextline = false;
    nfa_thread_T *t;
-   nfa_List   list[2];
+   NfaList   list[2];
    int      listidx;
-   nfa_List   *thislist;
-   nfa_List   *nextlist;
+   NfaList* thislist;
+   NfaList* nextlist;
    int      *listids = NULL;
    int      listids_len = 0;
    RState *add_state;

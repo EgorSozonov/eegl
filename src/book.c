@@ -18,10 +18,21 @@
 #include "eegl.h"
 #include "proto/book.h"
 #include "proto/data.types.h"
+#include "proto/data.h"
 #include "proto/channel.types.h"
 #include "proto/channel.h"
+#include "proto/diff.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
 #include "proto/input.types.h"
 #include "proto/input.h"
+#include "proto/hilite.h"
+#include "proto/memory.h"
+#include "proto/fileio.h"
+#include "proto/location.h"
+#include "proto/motor.h"
+
 #include <fcntl.h>      // Definition of AT_* constants for utimensat()
 #include <sys/stat.h> // for stat,  utimensat() (modification time changin')
 

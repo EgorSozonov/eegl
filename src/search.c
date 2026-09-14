@@ -4,6 +4,19 @@
 //## search.c: code for normal mode searching commands and hiliting matches
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/book.h"
+#include "proto/memory.h"
+#include "proto/eval.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/fileio.h"
+#include "proto/hilite.h"
+#include "proto/insert.h"
+#include "proto/location.h"
 
 typedef struct searchstat {
    int cur;        // current position of found words
@@ -245,7 +258,7 @@ save_re_pat(int idx, Text pat, int magic) {
    prevSearchPatternsP[idx].no_scs = no_smartcase;
    last_idx = idx;
    //If @hlsearch set and search pat changed: need redraw.
-   if (p_hls && idx == RE_SEARCH)
+   if ((p_hls && idx == RE_SEARCH) != 0)
       redraw_all_later(UPD_SOME_VALID);
    setHlsearch(true);
 }
