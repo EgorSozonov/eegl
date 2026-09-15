@@ -12,14 +12,25 @@
 #include "proto/memory.h"
 #include "proto/diff.h"
 #include "proto/do.h"
+#include "proto/draw.types.h"
 #include "proto/draw.h"
 #include "proto/eval.h"
 #include "proto/fileio.h"
 #include "proto/insert.h"
 #include "proto/location.h"
 #include "proto/hilite.h"
+#include "proto/juggle.h"
+#include "proto/message.h"
 #include "proto/motor.h"
+#include "proto/normal.h"
 #include "proto/option.h"
+#include "proto/portal.h"
+#include "proto/search.h"
+#include "proto/script.h"
+#include "proto/strings.h"
+#include "proto/tag.h"
+#include "proto/term.h"
+#include "proto/ui.h"
 
 //{{{@@forward declarations
 private Portal * horizNeighbor(Tab* t, Portal* po, Boole left, long count);
@@ -118,6 +129,7 @@ private void recomputeFramePositions(Frame* topFr, OUT int* row, OUT int* col);
 private void frame_setheight(Frame *curfrp, int height);
 private void frame_setwidth(Frame* curfrp, int width);
 private void portalNewHeight(Portal* po, int height);
+private void checkCursorColPort(Portal* po);
 private int plinesUpToCol(Portal *wp, LineNr lnum, long column);
 private void portalNewWidth(Portal* po, int width);
 private void frame_add_height(Frame *fr, int n);
@@ -5463,14 +5475,14 @@ check_cursor_lnum(void) {
 //Make sure curPor->cursor.col is valid.
 pub void
 check_cursor_col(void) {
-   check_cursor_col_win(curPor);
+   checkCursorColPort(curPor);
 }
 
 //Set "curPor->leftCol" to "leftcol". Adjust the cursor position if needed. Return true if the 
 //cursor was moved.
 pub int
 set_leftcol(ColNr leftcol) {
-   int      retval = false;
+   int retval = false;
 
    // Return quickly when there is no change.
    if (curPor->leftCol == leftcol)
@@ -5516,8 +5528,8 @@ set_leftcol(ColNr leftcol) {
 
 
 //Make sure po->cursor.col is valid.
-pub void
-check_cursor_col_win(Portal* po) {
+private void
+checkCursorColPort(Portal* po) {
    ColNr      oldcol = po->cursor.col;
 
    ColNr len = memGetBookLen(po->book, po->cursor.lnum);

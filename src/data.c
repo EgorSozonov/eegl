@@ -13,10 +13,16 @@
 #include "proto/input.types.h"
 #include "proto/input.h"
 #include "proto/do.h"
+#include "proto/draw.types.h"
 #include "proto/draw.h"
 #include "proto/eval.h"
 #include "proto/insert.h"
 #include "proto/memory.h"
+#include "proto/message.h"
+#include "proto/portal.h"
+#include "proto/script.h"
+#include "proto/strings.h"
+#include "proto/ui.h"
 
 //{{{macros
 //{{{list

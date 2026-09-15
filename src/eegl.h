@@ -672,21 +672,6 @@ typedef Byte Byte;
 #define NGETTEXT(x, xs, n) (CS)ngettext((char*)(x), (char*)(xs), (n))
 #define N_(x) (CS)x
 
-//Flags for update_screen(). The higher the value, the higher the priority.
-#define UPD_VALID_NO_UPDATE 5  // no new changes, keep the command line if possible
-#define UPD_VALID          10  // book not changed, or changes marked with b_mod_*
-#define UPD_INVERTED       20  // redisplay inverted part that changed
-#define UPD_INVERTED_ALL   25  // redisplay whole inverted part
-#define UPD_REDRAW_TOP     30  // display first w_upd_rows screen lines
-#define UPD_SOME_VALID     35  // like UPD_NOT_VALID but may scroll
-#define UPD_NOT_VALID      40  // book needs complete redraw
-#define UPD_CLEAR          50  // screen messed up, clear it
-
-// flags for screen_line()
-#define SLF_RIGHTLEFT  1
-#define SLF_POPUP      2
-#define SLF_INC_VCOL   4
-
 //Flags for w_valid.
 //These are set when something in a window structure becomes invalid, except
 //when the cursor is moved.  Call check_cursor_moved() before testing one of the flags.
@@ -5519,18 +5504,6 @@ int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
    ATTRIBUTE_FORMAT_PRINTF(3, 0);
 #define eeVarPrintf(a, b, fmt, ...) eeVarPrintf0((char*)a, b, (char const*)fmt, ##__VA_ARGS__)
 
-#include "proto/juggle.h"
-#include "proto/message.h"
-#include "proto/normal.h"
-#include "proto/persist.h"
-#include "proto/portal.h"
-#include "proto/regexp.h"
-#include "proto/script.h"
-#include "proto/search.h"
-#include "proto/strings.h"
-#include "proto/tag.h"
-#include "proto/term.h"
-#include "proto/ui.h"
 
 // Not generated automatically so that we can add an extra attribute.
 void ch_log(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
@@ -6282,15 +6255,6 @@ EXTERN LineNr      spell_redraw_lnum INIT(= 0);
 
 // Set when the cursor line needs to be redrawn.
 EXTERN int      need_cursor_line_redraw INIT(= FALSE);
-
-#ifdef USE_MCH_ERRMSG
-// Grow array to collect error messages in until they can be displayed.
-EXTERN ArrayList errorsG
-# ifdef MAIN_C
-          = {0, 0, 0, 0, NULL}
-# endif
-          ;
-#endif
 
 // Some messages that can be shared are included here.
 EXTERN char top_bot_msg[]   INIT(= "search hit TOP, continuing at BOTTOM");
@@ -9066,11 +9030,6 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 #define VGR_GLOBAL  1
 #define VGR_NOJUMP  2
 #define VGR_FUZZY   4
-
-// behavior for bad character, "++bad=" argument
-#define BAD_REPLACE   '?'   // replace it with '?' (default)
-#define BAD_KEEP    1000   // leave it
-#define BAD_DROP    1002   // erase it
 
 // last argument for do_source()
 #define DOSO_NONE  0

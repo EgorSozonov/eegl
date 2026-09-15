@@ -17,8 +17,17 @@
 #include "proto/eval.h"
 #include "proto/memory.h"
 #include "proto/fileio.h"
+#include "proto/juggle.h"
 #include "proto/location.h"
+#include "proto/message.h"
+#include "proto/normal.h"
 #include "proto/option.h"
+#include "proto/persist.h"
+#include "proto/portal.h"
+#include "proto/search.h"
+#include "proto/script.h"
+#include "proto/strings.h"
+#include "proto/ui.h"
 #include "proto/window.h"
 
 //{{{types

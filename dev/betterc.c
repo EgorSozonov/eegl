@@ -813,14 +813,13 @@ append(OUT FileParse* p, ToplevelThing new) {
 private ToplevelThing
 parseMacro(OUT S* inp, S i, AccessLevel accLevel) {
    S p = i + 8; //+8 for `#define `
-   _bp(true);
    for (; p[0] != ZERO && p[0] != '\n'; p++) {
       if (p[0] == '\\') {
          for (; p[0] != ZERO && p[0] != '\n'; p++)
             {}
       }
    }
-   *inp = p;
+   *inp = p - 1;
    return (ToplevelThing){(Text){i, p - i}, MACRO, accLevel};
 }
 
@@ -885,10 +884,7 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
          break;
       case '#':
          if (startsWithKeyword("#define")) {
-            append(
-               OUT p,
-               parseMacro(OUT inp, i, accLevel)
-            ); 
+            append(OUT p, parseMacro(OUT inp, i, accLevel)); 
             return;
          }
          break;

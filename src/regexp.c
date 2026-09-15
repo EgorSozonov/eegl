@@ -16,8 +16,13 @@
 #include "proto/input.h"
 #include "proto/do.h"
 #include "proto/eval.h"
+#include "proto/juggle.h"
 #include "proto/location.h"
+#include "proto/message.h"
 #include "proto/memory.h"
+#include "proto/regexp.h"
+#include "proto/script.h"
+#include "proto/strings.h"
 
 //{{{header
 

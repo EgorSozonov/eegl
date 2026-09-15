@@ -91,7 +91,6 @@ void set_fraction(Portal* po);
 void check_cursor_lnum(void);
 void check_cursor_col(void);
 int set_leftcol(ColNr leftcol);
-void check_cursor_col_win(Portal* po);
 void check_cursor(void);
 void check_visual_pos(void);
 void adjust_cursor_col(void);

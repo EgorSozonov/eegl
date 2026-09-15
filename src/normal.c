@@ -14,14 +14,27 @@
 #include "proto/memory.h"
 #include "proto/diff.h"
 #include "proto/do.h"
+#include "proto/draw.types.h"
 #include "proto/draw.h"
 #include "proto/eval.h"
 #include "proto/fileio.h"
-#include "proto/insert.h"
 #include "proto/hilite.h"
+#include "proto/insert.h"
+#include "proto/juggle.h"
 #include "proto/location.h"
+#include "proto/message.h"
 #include "proto/motor.h"
+#include "proto/normal.h"
 #include "proto/option.h"
+#include "proto/persist.h"
+#include "proto/portal.h"
+#include "proto/regexp.h"
+#include "proto/script.h"
+#include "proto/search.h"
+#include "proto/strings.h"
+#include "proto/tag.h"
+#include "proto/term.h"
+#include "proto/ui.h"
 #include "proto/window.h"
 
 private int VIsual_mode_orig = ZERO;      // saved Visual mode
@@ -423,7 +436,7 @@ findsent(int dir, long count) {
 
       // go back to the previous non-white non-punctuation character
       found_dot = false;
-      while (c = gchar_pos(&pos), SPACE_OR_TAB(c) || firstOccurrence((CS)".!?)]\"'", c) != NULL) {
+      while (c = gchar_pos(&pos), SPACE_OR_TAB(c) || firstOccurrence(S".!?)]\"'", c) != NULL) {
          tpos = pos;
          if (decl(&tpos) == -1 || (LINEEMPTY(tpos.lnum) && dir == FORWARD))
             break;

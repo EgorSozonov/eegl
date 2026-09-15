@@ -17,13 +17,20 @@
 #include "proto/input.types.h"
 #include "proto/input.h"
 #include "proto/do.h"
+#include "proto/draw.types.h"
 #include "proto/draw.h"
 #include "proto/memory.h"
 #include "proto/fileio.h"
 #include "proto/diff.h"
 #include "proto/eval.h"
+#include "proto/juggle.h"
 #include "proto/location.h"
+#include "proto/message.h"
+#include "proto/normal.h"
 #include "proto/option.h"
+#include "proto/portal.h"
+#include "proto/script.h"
+#include "proto/strings.h"
 
 int stat(const char* restrict path, struct stat* restrict buf); // from sys/stat.h
 

@@ -11,8 +11,13 @@
 #include "proto/strings.h"
 #include "proto/memory.h"
 #include "proto/eval.h"
+#include "proto/draw.types.h"
 #include "proto/draw.h"
 #include "proto/hilite.h"
+#include "proto/juggle.h"
+#include "proto/message.h"
+#include "proto/regexp.h"
+#include "proto/script.h"
 
 //{{{types
 

@@ -101,8 +101,6 @@ void outputShortenedToALine(Text slice, char flags);
 void msgPutsDeco(CS s, char flags);
 int message_filtered(CS msg);
 int msg_use_printf(void);
-void mch_errmsg(CS errMsg);
-void mch_msg(CS str);
 void repeat_message(void);
 void msg_clr_eos(void);
 void msg_clr_eos_force(void);

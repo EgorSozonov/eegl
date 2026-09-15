@@ -14,13 +14,25 @@
 #include "proto/do.h"
 #include "proto/memory.h"
 #include "proto/diff.h"
+#include "proto/draw.types.h"
 #include "proto/draw.h"
 #include "proto/eval.h"
 #include "proto/fileio.h"
 #include "proto/hilite.h"
 #include "proto/insert.h"
+#include "proto/juggle.h"
+#include "proto/message.h"
 #include "proto/motor.h"
+#include "proto/normal.h"
 #include "proto/option.h"
+#include "proto/persist.h"
+#include "proto/portal.h"
+#include "proto/regexp.h"
+#include "proto/script.h"
+#include "proto/strings.h"
+#include "proto/tag.h"
+#include "proto/term.h"
+#include "proto/ui.h"
 
 #include <sys/stat.h> // for stat, fstat etc
 
@@ -30,6 +42,14 @@ pub int setxattr(const char*, const char*, const void*, size_t, int);
 
 #define SHELL_SPECIAL S"\t \"&'$;<>()\\|"
 #define SWAP_DIR S"~/.local/state/"
+
+// behavior for bad character, "++bad=" argument
+pub
+#define BAD_REPLACE   '?'   // replace it with '?' (default)
+pub
+#define BAD_KEEP    1000   // leave it
+pub
+#define BAD_DROP    1002   // erase it
 
 //{{{types
 

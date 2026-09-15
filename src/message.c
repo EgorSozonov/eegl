@@ -38,7 +38,7 @@ private int  verbose_did_open = false;
 // Text builder holding one message line, sized up to the longest line ever printed
 private Text longestLineS = (Text){.len = 0, .c = null};
 
-pub declStruct(MsgChunk);
+declStruct(MsgChunk);
 private MsgChunk *lastChunkS = NULL; // last displayed text
 
 //{{{@@forward declarations
@@ -2579,66 +2579,6 @@ msg_use_printf(void){
        || (termIsScreenBeingSwapped() && !termcap_active)
    );
 }
-
-#if defined(USE_MCH_ERRMSG)
-
-#ifdef mch_errmsg
-# undef mch_errmsg
-#endif
-#ifdef mch_msg
-# undef mch_msg
-#endif
-
-//Give an error message. To be used when the screen hasn't been initialized yet. When stderr can't 
-//be used, collect error messages until the TUI has started and they can be displayed in a message 
-//box.
-pub void
-mch_errmsg(CS errMsg) {
-   // Use stderr if it's a tty. When not going to start the GUI also use stderr.
-   if (isatty(2)) {
-      fprintf(stderr, "%s", errMsg);
-      return;
-   }
-
-   // avoid a delay for a message that isn't there
-   emsg_on_display = false;
-
-   int len = (int)STRLEN(errMsg) + 1;
-   if (errorsG.ga_growsize == 0) {
-      errorsG.ga_growsize = 80;
-      errorsG.ga_itemsize = 1;
-   }
-   if (ga_grow(&errorsG, len) == OK) {
-      MEMMOVE((CS)errorsG.c + errorsG.len, (CS)errMsg, len);
-      // remove CR characters, they are displayed
-      {
-         Byte* p = (CS)errorsG.c + errorsG.len;
-         for (;;) {
-            p = firstOccurrence(p, '\r');
-            if (!p)
-                break;
-            *p = ' ';
-         }
-      }
-      errorsG.len += (len - 1); // don't count the ZERO at the end
-   }
-}
-
-// Give a message. To be used when the screen hasn't been initialized yet. When there is no tty, 
-// collect messages until the GUI has started and they can be displayed in a message box.
-pub void
-mch_msg(CS str) {
-   // Use stdout if we have a tty.  This allows "eegl -h | more" and uses mch_errmsg() when started 
-   // from the desktop. When not going to start the GUI also use stdout.
-   // On Mac, when started from Finder, stderr is the console.
-   if (isatty(2)) {
-      printf("%s", str);
-      return;
-   }
-
-   mch_errmsg(str);
-}
-#endif // USE_MCH_ERRMSG
 
 // Put a character on the screen at the current message position and advance to the next position.
 // Only for printable ASCII!

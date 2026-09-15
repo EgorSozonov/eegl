@@ -17,8 +17,18 @@
 #include "proto/fileio.h"
 #include "proto/hilite.h"
 #include "proto/insert.h"
+#include "proto/juggle.h"
 #include "proto/location.h"
+#include "proto/message.h"
 #include "proto/motor.h"
+#include "proto/normal.h"
+#include "proto/portal.h"
+#include "proto/regexp.h"
+#include "proto/script.h"
+#include "proto/search.h"
+#include "proto/strings.h"
+#include "proto/term.h"
+#include "proto/ui.h"
 #include "proto/window.h"
 
 //used for @hlsearch hilite matching
@@ -269,6 +279,7 @@ private void drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port);
 //}}}
 //{{{low level
 
+
 private Arr(Decoration) screenDecosP = null;
 private Arr(ColNr) screenColS = null;
 
@@ -332,6 +343,24 @@ private Decoration defaultDecoP;
 
 // Ugly global: overrule decoration used by singleChar()
 private VTermDeco screen_charDeco = DECO_NONE;
+
+//Flags for update_screen(). The higher the value, the higher the priority.
+pub
+#define UPD_VALID_NO_UPDATE 5  // no new changes, keep the command line if possible
+pub
+#define UPD_VALID          10  // book not changed, or changes marked with b_mod_*
+pub
+#define UPD_INVERTED       20  // redisplay inverted part that changed
+pub
+#define UPD_INVERTED_ALL   25  // redisplay whole inverted part
+pub
+#define UPD_REDRAW_TOP     30  // display first w_upd_rows screen lines
+pub
+#define UPD_SOME_VALID     35  // like UPD_NOT_VALID but may scroll
+pub
+#define UPD_NOT_VALID      40  // book needs complete redraw
+pub
+#define UPD_CLEAR          50  // screen messed up, clear it
 
 pub void
 drawInit() {
@@ -493,6 +522,16 @@ fillchar_vsep(OUT Decoration* deco) {
    *deco = getFullDecoration(HLF_C);
    return (deco->flags == 0 && fillCharsG.vert == ' ') ? '|' : fillCharsG.vert;
 }
+
+
+
+// flags for screen_line()
+pub
+#define SLF_RIGHTLEFT  1
+pub
+#define SLF_POPUP      2
+pub
+#define SLF_INC_VCOL   4
 
 //Move one "cooked" screen line to the screen, but only the characters that
 //have actually changed.  Handle insert/delete character.
@@ -3193,6 +3232,7 @@ check_chars_options(CS newVal) {
 
 //}}}
 //{{{high level
+
 
 //Code for updating all the portals on the screen.
 //
