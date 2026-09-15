@@ -20,6 +20,8 @@
 #include "proto/insert.h"
 #include "proto/location.h"
 #include "proto/motor.h"
+#include "proto/option.h"
+#include "proto/window.h"
 
 #define BACKSPACE_CHAR           1
 #define BACKSPACE_WORD           2

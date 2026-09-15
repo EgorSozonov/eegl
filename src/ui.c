@@ -37,11 +37,16 @@
 #include "proto/channel.types.h"
 #include "proto/channel.h"
 #include "proto/draw.h"
+#include "proto/eval.h"
 #include "proto/do.h"
+#include "proto/fileio.h"
+#include "proto/hilite.h"
 #include "proto/location.h"
 #include "proto/memory.types.h"
 #include "proto/memory.h"
 #include "proto/motor.h"
+#include "proto/option.h"
+#include "proto/window.h"
 
 #include <stdarg.h>
 pub int fstat(int fd, struct stat* statbuf); //from sys/stat.h
@@ -10810,9 +10815,6 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
       int finished = true; // default is to 'loop' just once
       TimeVal tv;
       TimeVal* timePtr;
-      //These are static because they can take 8 Kbyte each and cause the
-      //signal stack to run out with -O3.
-      static fd_set rfds, wfds, efds;
       Long towait = msec;
 
       if (towait >= 0) {
@@ -10830,7 +10832,8 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
          (PollFd){.fd = wayland_display_fd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0},
       };
 
-      //maxfd = channel_select_setup(maxfd, &rfds, &wfds, &tv, &timePtr);
+      LPollFd listFds = (LPollFd){.c = pollFds, .len = 2, .cap = 2};
+      channel_select_setup(&listFds, &tv, &timePtr);
       if (interrupted)
          *interrupted = false;
 
@@ -10862,8 +10865,7 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
 
       // also call when ret == 0, we may be polling a keep-open channel
       if (ret >= 0)
-         (void)chCheckPollResult(ret, &rfds, &wfds);
-
+         (void)chCheckPollResult(ret, OUT &listFds);
 
       if (finished || msec == 0)
          break;

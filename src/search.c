@@ -17,6 +17,7 @@
 #include "proto/hilite.h"
 #include "proto/insert.h"
 #include "proto/location.h"
+#include "proto/option.h"
 
 typedef struct searchstat {
    int cur;        // current position of found words

@@ -25,6 +25,8 @@ int mkdir(const char* pathname, mode_t mode);
 #include "proto/insert.h"
 #include "proto/location.h"
 #include "proto/motor.h"
+#include "proto/option.h"
+#include "proto/window.h"
 
 private Boole anySyntaxEmsgS; // anyEmsgG set because of a syntax error
 //{{{types

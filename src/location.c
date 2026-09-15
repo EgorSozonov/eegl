@@ -20,6 +20,7 @@
 #include "proto/hilite.h"
 #include "proto/insert.h"
 #include "proto/location.h"
+#include "proto/option.h"
 
 pub int fstat(int fd, struct stat* statbuf);
 int stat(const char* restrict path, struct stat* restrict buf);

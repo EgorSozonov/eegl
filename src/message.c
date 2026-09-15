@@ -927,10 +927,6 @@ msgAndKeep(
    return retval;
 }
 
-// Automatic prototype generation does not understand this function. Their protos are in eegl.h
-// Note: Caller of smsg() and smsgDeco() must check the resulting string is shorter than IOSIZE!!!
-#ifndef PROTO
-
 pub int eeSnprintf0(CS str, Unt str_m, const char *fmt, ...);
 
 pub int
@@ -980,8 +976,6 @@ smsgDecoKeep0(char flags, const char *s, ...) {
    va_end(arglist);
    return msgAndKeep(IObuff, flags, true);
 }
-
-#endif
 
 //Remember the last sourcing name/lnum used in an error message, so that it
 //isn't printed each time when it didn't change.
@@ -1290,8 +1284,6 @@ emsg(CS s) {
 }
 
 
-#ifndef PROTO  // manual proto with __attribute__
-
 //Print error message "s" with format string and variable arguments.
 //"s" should already be translated.
 //Note: caller must not use "IObuff" for "s"!
@@ -1314,7 +1306,6 @@ showErrFmtMsg0(char const* s, ...) {
    va_end(ap);
    return emsgImpl(IObuff);
 }
-#endif
 
 //Same as emsg(...), but abort on error when ABORT_ON_INTERNAL_ERROR is defined. It is used for 
 //internal errors only, so that they can be detected when fuzzing Eegl.
@@ -1336,7 +1327,6 @@ internalErrMsg(CS s) {
 #endif
 }
 
-#ifndef PROTO  // manual proto with __attribute__
 // Same as showErrFmtMsg(...) but abort on error when ABORT_ON_INTERNAL_ERROR is
 // defined. It is used for internal errors only, so that they can be
 // detected when fuzzing Eegl.
@@ -1368,7 +1358,6 @@ internalErrFmtMsg0(const char *s, ...) {
     abort();
 # endif
 }
-#endif
 
 // Give an "Internal error" message.
 pub void

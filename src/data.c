@@ -4448,56 +4448,6 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
    return false;
 }
 
-//Get an option value.
-//"arg" points to the '&' or '+' before the option name.
-//"arg" is advanced to character after the option name.
-//Return OK or FAIL.
-pub int
-eval_option(
-   Byte** arg,
-   Var* returnVar,   // when NULL, only check if option exists
-   int evaluate
-) {
-   int ret = OK;
-
-   // Isolate the option name and find its value.
-   int scope;
-   CS option_end = find_option_end(OUT arg, OUT &scope);
-   if (!option_end) {
-      if (returnVar)
-         showErrFmtMsg(_(e_option_name_missing_str), *arg);
-      return FAIL;
-   }
-
-   if (!evaluate) {
-      *arg = option_end;
-      return OK;
-   }
-
-   int c = *option_end;
-   *option_end = ZERO;
-   OptionValue optVal = optGetValue(null, *arg, scope);
-
-   if (returnVar) {
-      returnVar->lock = 0;
-      if (optVal.tag == OPTION_BOOLE) {
-         returnVar->tag = VAR_NUMBER;
-         returnVar->number = optVal.boole;
-      } ei (optVal.tag == OPTION_NUM) {
-         returnVar->tag = VAR_NUMBER;
-         returnVar->number = optVal.num;
-      } else {            // string option
-          returnVar->tag = VAR_STRING;
-          returnVar->string = optVal.string;
-      }
-   } 
-
-   *option_end = c;          // put back for error messages
-   *arg = option_end;
-
-   return ret;
-}
-
 //Allocate a variable for a number constant. Also deals with "0z" for blob. Return OK or FAIL.
 pub int
 eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
@@ -7070,17 +7020,6 @@ f_test_getvalue(Arr(Var) argvars, Var* returnVar) {
    if (STRCMP(name, (CS)"needFileinfoG") == 0)
       returnVar->number = needFileinfoG;
    else
-      showErrFmtMsg(_(e_invalid_argument_str), name);
-}
-
-//"test_option_not_set({name})" function
-pub void
-f_test_option_not_set(Arr(Var) argvars, Var*) {
-   if (check_for_string_arg(argvars, 0) == FAIL)
-      return;
-
-   CS name = tv_get_string(&argvars[0]);
-   if (reset_optWasSet(name) == FAIL)
       showErrFmtMsg(_(e_invalid_argument_str), name);
 }
 

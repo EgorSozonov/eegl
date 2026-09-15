@@ -30,11 +30,7 @@ int channel_send(
    int     len_arg,
    char* fun
 );
-int channel_select_setup(
-   OUT LPollFd* pollFds,
-   TimeVal* tv,
-   TimeVal** tvp
-);
+int channel_select_setup(OUT LPollFd* pollFds, TimeVal* tv, TimeVal** tvp);
 int chCheckPollResult(int ret_in, OUT LPollFd* fds);
 int channel_parse_messages(void);
 int channel_any_readahead(void);

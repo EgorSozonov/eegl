@@ -19,6 +19,7 @@
 #include "proto/location.h"
 #include "proto/hilite.h"
 #include "proto/motor.h"
+#include "proto/option.h"
 
 //{{{@@forward declarations
 private Portal * horizNeighbor(Tab* t, Portal* po, Boole left, long count);

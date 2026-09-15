@@ -18,6 +18,8 @@
 #include "proto/memory.h"
 #include "proto/fileio.h"
 #include "proto/location.h"
+#include "proto/option.h"
+#include "proto/window.h"
 
 //{{{types
 

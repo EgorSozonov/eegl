@@ -6,7 +6,6 @@
 #include "eegl.h"
 #include "proto/data.macros.h"
 
-#ifndef PROTO
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -14,7 +13,6 @@
 #include <sys/un.h>
 #include <sys/resource.h>
 #include <sys/poll.h>
-#endif
 
 typedef sigset_t SignalSet;
 
@@ -2543,7 +2541,7 @@ channel_wait(Channel* channel, Socket fd, int timeout) {
       // set this every time, some buffers may be done.
       maxfd = (int)fd + 1;
       FD_ZERO(&wfds);
-      maxfd = channel_fill_wfds(maxfd, &wfds);
+      channel_fill_wfds(maxfd, &wfds);
 
       ret = poll(maxfd, &rfds, &wfds, NULL, &tval);
       SOCK_ERRNO;
@@ -3224,13 +3222,8 @@ ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
 
 #define KEEP_OPEN_TIME 20  // msec
 
-// The "fd_set" type is hidden to avoid problems with the function proto.
 pub int
-channel_select_setup(
-   OUT LPollFd* pollFds,
-   TimeVal* tv,
-   TimeVal** tvp
-) {
+channel_select_setup(OUT LPollFd* pollFds, TimeVal* tv, TimeVal** tvp) {
    int maxfd = maxfd_in;
    Channel* channel;
    fd_set* rfds = rfds_in;
@@ -3241,29 +3234,29 @@ channel_select_setup(
       for (part = PART_SOCK; part < PART_IN; ++part) {
          PollFd fd = channel->fds[part].fd;
 
-         if (fd.fd != INVALID_FD) {
-            if (channel->ch_keep_open) {
-               //For unknown reason select() returns immediately for a keep-open channel. 
-               //Instead of adding it to the rfds add a short timeout and check, like polling.
-               //TODO does poll() need this?
-               if (*tvp == NULL || tv->tv_sec > 0 || tv->tv_usec > KEEP_OPEN_TIME * 1000) {
-                  *tvp = tv;
-                  tv->tv_sec = 0;
-                  tv->tv_usec = KEEP_OPEN_TIME * 1000;
-               }
-            } else {
-               add(fd, OUT pollFds);
+         if (fd.fd == INVALID_FD) {
+            continue;
+         }
+         if (channel->ch_keep_open) {
+            //For unknown reason select() returns immediately for a keep-open channel. 
+            //Instead of adding it to the rfds add a short timeout and check, like polling.
+            //TODO does poll() need this?
+            if (*tvp == NULL || tv->tv_sec > 0 || tv->tv_usec > KEEP_OPEN_TIME * 1000) {
+               *tvp = tv;
+               tv->tv_sec = 0;
+               tv->tv_usec = KEEP_OPEN_TIME * 1000;
             }
+         } else {
+            add(fd, OUT pollFds);
          }
       }
    }
 
-   maxfd = channel_fill_wfds(maxfd, wfds);
+   channel_fill_wfds(maxfd, wfds);
 
    return maxfd;
 }
 
-//The "fd_set" type is hidden to avoid problems with the function proto.
 pub int
 chCheckPollResult(int ret_in, OUT LPollFd* fds) {
    int ret = ret_in;
@@ -3393,7 +3386,7 @@ channel_parse_messages(void) {
 pub int
 channel_any_readahead(void) {
    Channel* channel = first_channel;
-   ChannelFdKind   part = PART_SOCK;
+   ChannelFdKind part = PART_SOCK;
 
    while (channel) {
       if (channel_has_readahead(channel, part))
@@ -6600,7 +6593,6 @@ logLead(CS what, Channel* ch, ChannelFdKind part) {
       fprintf(log_fd, "%s: ", what);
 }
 
-#ifndef PROTO  // prototype is in eegl.h
 
 pub void
 ch_log(Channel* ch, char const* fmt, ...) {
@@ -6649,7 +6641,6 @@ ch_error(Channel* ch, char const* fmt, ...) {
    fflush(log_fd);
    did_repeated_msg = 0;
 }
-#endif
 
 //Log a message "builder[len]" for channel "ch" part "part".
 //Only to be called when ch_log_active() returns true.

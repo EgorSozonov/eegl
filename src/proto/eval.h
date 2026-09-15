@@ -65,6 +65,7 @@ int eval_leader(Byte **arg);
 int handle_predefined(CS s, int len, Var* returnVar);
 CS partial_name(PartiallyApplied* pt);
 void partial_unref(PartiallyApplied *pt);
+void f_test_option_not_set(Arr(Var) argvars, Var*);
 CS echo_string_core(
    Var   *tv,
    Byte   **tofree,

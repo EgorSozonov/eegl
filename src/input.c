@@ -19,6 +19,7 @@
 #include "proto/eval.h"
 #include "proto/location.h"
 #include "proto/motor.h"
+#include "proto/window.h"
 
 // These buffers are used for storing:
 // - stuffed characters: A command that is translated into another command.

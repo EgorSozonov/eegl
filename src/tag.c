@@ -19,6 +19,7 @@
 #include "proto/fileio.h"
 #include "proto/insert.h"
 #include "proto/location.h"
+#include "proto/option.h"
 
 //{{{types
 
@@ -3437,9 +3438,7 @@ set_tagstack(Portal *wp, Bag *d, Unt action) {
 
 //{{{Cscope integration
 
-#ifndef PROTO
 #include <sys/stat.h> // for fstat, stat, S_ISDIR
-#endif
 
 #define CSCOPE_SUCCESS 0
 #define CSCOPE_FAILURE -1

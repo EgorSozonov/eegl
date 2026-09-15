@@ -18,6 +18,8 @@
 #include "proto/insert.h"
 #include "proto/location.h"
 #include "proto/motor.h"
+#include "proto/option.h"
+#include "proto/window.h"
 
 #define DECLARE_COMMANDS_FLAGS
 #include "commands.h"

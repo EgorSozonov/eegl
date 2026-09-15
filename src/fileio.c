@@ -20,10 +20,9 @@
 #include "proto/hilite.h"
 #include "proto/insert.h"
 #include "proto/motor.h"
+#include "proto/option.h"
 
-#ifndef PROTO
 #include <sys/stat.h> // for stat, fstat etc
-#endif
 
 pub ssize_t listxattr(const char*, char*, size_t); //from sys/xattr.h
 ssize_t getxattr(const char*, const char*, void*, size_t);

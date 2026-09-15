@@ -5522,7 +5522,6 @@ int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
 #include "proto/juggle.h"
 #include "proto/message.h"
 #include "proto/normal.h"
-#include "proto/option.h"
 #include "proto/persist.h"
 #include "proto/portal.h"
 #include "proto/regexp.h"
@@ -5532,7 +5531,6 @@ int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
 #include "proto/tag.h"
 #include "proto/term.h"
 #include "proto/ui.h"
-#include "proto/window.h"
 
 // Not generated automatically so that we can add an extra attribute.
 void ch_log(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);

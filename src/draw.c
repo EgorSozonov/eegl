@@ -19,6 +19,7 @@
 #include "proto/insert.h"
 #include "proto/location.h"
 #include "proto/motor.h"
+#include "proto/window.h"
 
 //used for @hlsearch hilite matching
 private Match screenSearchP;

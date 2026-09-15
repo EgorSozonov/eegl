@@ -6,10 +6,9 @@
 #include "eegl.h"
 //#include "proto/input.public.h"
 
-#ifndef PROTO
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
-#endif
+
 pub int fstat(int fd, struct stat* statbuf); // from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 pub int lstat(const char* restrict, struct stat* restrict);

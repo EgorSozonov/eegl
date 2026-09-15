@@ -16,14 +16,12 @@
 #include "eegl.h"
 #endif
 
-#ifndef PROTO
 #include <wchar.h>   //for towupper() and towlower()
 #include <wctype.h>  //for towlower()
 #include <ctype.h>   //for islower()
 #include <stdlib.h>  //for atol()
 #include <sys/stat.h>
 #include <time.h> // for time()
-#endif
 
 //{{{@@forward declarations
 private Unt calculateChunkSize(Unt allocSize);
@@ -3465,10 +3463,6 @@ string_count(CS haystack, CS needle, int ic) {
 //eeVarPrintf0() can be invoked with either "va_list" or a list of
 //"Var".  When the latter is not used it must be NULL.
 
-// When generating prototypes all of this is skipped, cproto doesn't
-// understand this.
-#ifndef PROTO
-
 // Like vsnprintf() but append to the string.
 pub int
 eeSnprintfAdd0(CS str, Unt str_m, const char *fmt, ...) {
@@ -3510,8 +3504,6 @@ eeSnprintfSafelen0(CS str, Unt str_m, const char *fmt, ...) {
    }
    return ((Unt)str_l >= str_m) ? str_m - 1 : (Unt)str_l;
 }
-
-#endif // PROTO
 
 //Get the byte index for character index "idx" in string "str" with length
 //"str_len".  Composing characters are included.

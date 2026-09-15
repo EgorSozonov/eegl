@@ -17,6 +17,7 @@
 #include "proto/insert.h"
 #include "proto/memory.h"
 #include "proto/motor.h"
+#include "proto/option.h"
 #include <termcap.h>
 
 typedef struct termios TermIos;
@@ -226,9 +227,7 @@ private TermRequest* requestsP[] = {
 //OK    -> can write t_8u
 private int write_t_8u_state = false;
 
-#ifndef PROTO
 pub extern char *UP, *BC, PC; // in termcap.h
-#endif
 
 # define TGETENT(b, t)   tgetent((char *)(b), (char *)(t))
 private CS eeTgetstr(CS s, Byte **pp);

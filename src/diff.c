@@ -23,6 +23,7 @@
 #include "proto/diff.h"
 #include "proto/eval.h"
 #include "proto/location.h"
+#include "proto/option.h"
 
 int stat(const char* restrict path, struct stat* restrict buf); // from sys/stat.h
 

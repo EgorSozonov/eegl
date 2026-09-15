@@ -19,6 +19,8 @@
 #include "proto/hilite.h"
 #include "proto/insert.h"
 #include "proto/location.h"
+#include "proto/option.h"
+#include "proto/window.h"
 
 #define TABSIZE_MAX 16
 //{{{types
@@ -6108,7 +6110,6 @@ profile_msg(ProfTime *tm){
    return buf;
 }
 
-#ifndef PROTO  // proto is defined in eegl.h
 # ifdef ELAPSED_TIMEVAL
 // Return time in msec since "start_tv".
 pub long
@@ -6118,7 +6119,6 @@ elapsed(TimeVal *start_tv) {
    return (now_tv.tv_sec - start_tv->tv_sec) * 1000L + (now_tv.tv_usec - start_tv->tv_usec) / 1000L;
 }
 # endif
-#endif
 
 # if defined(PROF_NSEC)
 // Implement timeout with timer_create() and timer_settime().

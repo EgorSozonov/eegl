@@ -19,6 +19,8 @@
 #include "proto/insert.h"
 #include "proto/hilite.h"
 #include "proto/location.h"
+#include "proto/option.h"
+#include "proto/window.h"
 
 #include <locale.h> // for LC_MESSAGES et al
 

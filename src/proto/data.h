@@ -216,11 +216,6 @@ int daCompareVars_string(
 CS daStringOfVar(Var *arg, int quotes);
 int tv_islocked(Var *tv);
 int tv_equal(Var* tv1, Var* tv2, int ic);
-int eval_option(
-   Byte** arg,
-   Var* returnVar,   // when NULL, only check if option exists
-   int evaluate
-);
 int eval_number(CS* arg, Var* returnVar, int evaluate, int want_string);
 CS tv2string(
    Var* tv,
@@ -339,7 +334,6 @@ void f_test_alloc_fail(Arr(Var) argvars, Var*);
 void f_test_autochdir(Arr(Var), Var*);
 void f_test_feedinput(Arr(Var) argvars, Var*);
 void f_test_getvalue(Arr(Var) argvars, Var* returnVar);
-void f_test_option_not_set(Arr(Var) argvars, Var*);
 void f_test_override(Arr(Var) argvars, Var*);
 void f_test_refcount(Arr(Var) argvars, Var* returnVar);
 void f_test_garbagecollect_now(Arr(Var), Var*);

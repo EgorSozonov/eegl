@@ -21,6 +21,8 @@
 #include "proto/insert.h"
 #include "proto/location.h"
 #include "proto/motor.h"
+#include "proto/option.h"
+#include "proto/window.h"
 
 #define USING_FLOAT_STUFF
 //{{{types
@@ -159,12 +161,13 @@ private int eval9_var_func_name(
    int      evaluate,
    CS* name_start)
 ;
+private int eval_option(Byte** arg, Var* returnVar, Boole evaluate);
 private int eval9(
    OUT CS* arg,
-   Var   *returnVar,
-   EvalCtx   *evalarg,
-   Boole      want_string)   // after "." operator
-;
+   Var* returnVar,
+   EvalCtx* evalarg,
+   Boole want_string   // after "." operator
+);
 private int eval9_leader(
    Var* returnVar,
    int numeric_only,
@@ -3778,6 +3781,52 @@ eval9_var_func_name(
    return ret;
 }
 
+//Get an option value.
+//"arg" points to the '&' or '+' before the option name.
+//"arg" is advanced to character after the option name. Return OK or FAIL.
+private int
+eval_option(Byte** arg, Var* returnVar, Boole evaluate) {
+   int ret = OK;
+
+   // Isolate the option name and find its value.
+   int scope;
+   CS option_end = find_option_end(OUT arg, OUT &scope);
+   if (!option_end) {
+      if (returnVar)
+         showErrFmtMsg(_(e_option_name_missing_str), *arg);
+      return FAIL;
+   }
+
+   if (!evaluate) {
+      *arg = option_end;
+      return OK;
+   }
+
+   int c = *option_end;
+   *option_end = ZERO;
+   OptionValue optVal = optGetValue(null, *arg, scope);
+
+   if (returnVar) {
+      returnVar->lock = 0;
+      if (optVal.tag == OPTION_BOOLE) {
+         returnVar->tag = VAR_NUMBER;
+         returnVar->number = optVal.boole;
+      } ei (optVal.tag == OPTION_NUM) {
+         returnVar->tag = VAR_NUMBER;
+         returnVar->number = optVal.num;
+      } else {            // string option
+          returnVar->tag = VAR_STRING;
+          returnVar->string = optVal.string;
+      }
+   } 
+
+   *option_end = c;          // put back for error messages
+   *arg = option_end;
+
+   return ret;
+}
+
+
 //Handle eighth level expression:
 // number      number constant
 // 0zFFFFFFFF      Blob constant
@@ -3809,11 +3858,11 @@ eval9_var_func_name(
 private int
 eval9(
    OUT CS* arg,
-   Var   *returnVar,
-   EvalCtx   *evalarg,
-   Boole      want_string)   // after "." operator
-{
-   Boole evaluate = evalarg && (evalarg->eval_flags & EVAL_EVALUATE);
+   Var* returnVar,
+   EvalCtx* evalarg,
+   Boole want_string   // after "." operator
+){
+   Boole evaluate = evalarg && (evalarg->eval_flags & EVAL_EVALUATE) != 0;
    CS name_start = NULL;
    CS start_leader;
    CS end_leader;
@@ -4319,6 +4368,17 @@ partial_unref(PartiallyApplied *pt) {
 
    if (--pt->refCount <= 0)
       partial_free(pt);
+}
+
+//"test_option_not_set({name})" function
+pub void
+f_test_option_not_set(Arr(Var) argvars, Var*) {
+   if (check_for_string_arg(argvars, 0) == FAIL)
+      return;
+
+   CS name = tv_get_string(&argvars[0]);
+   if (reset_optWasSet(name) == FAIL)
+      showErrFmtMsg(_(e_invalid_argument_str), name);
 }
 
 //Return a textual representation of a string in "tv".

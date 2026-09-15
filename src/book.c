@@ -32,6 +32,7 @@
 #include "proto/fileio.h"
 #include "proto/location.h"
 #include "proto/motor.h"
+#include "proto/option.h"
 
 #include <fcntl.h>      // Definition of AT_* constants for utimensat()
 #include <sys/stat.h> // for stat,  utimensat() (modification time changin')

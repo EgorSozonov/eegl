@@ -20,6 +20,8 @@
 #include "proto/hilite.h"
 #include "proto/location.h"
 #include "proto/motor.h"
+#include "proto/option.h"
+#include "proto/window.h"
 
 // Various parameters passed between main() and other functions.
 private MainParams paramsP;

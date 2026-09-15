@@ -4,8 +4,24 @@
 //## window.c: functions for displaying the window in Wayland
 
 #include "eegl.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/channel.types.h"
+#include "proto/channel.h"
+#include "proto/book.h"
+#include "proto/location.h"
+#include "proto/hilite.h"
+#include "proto/memory.h"
+#include "proto/window.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/fileio.h"
+#include "proto/motor.h"
+#include "proto/input.types.h"
+#include "proto/input.h"
+#include "proto/insert.h"
 
-#ifndef PROTO
 // for shm_open:
 #include <sys/mman.h>
 #include <sys/select.h>
@@ -17,7 +33,6 @@ int stat(const char* restrict path, struct stat* restrict buf);
 #include "../libs/wayland/ext-data-control-v1.h"
 #include "../libs/wayland/xdg-shell.h"
 #include "../libs/wayland/primary-selection-unstable-v1.h"
-#endif
 
 // Struct that represents a seat. (Should be accessed via vwl_get_seat()).
 typedef struct {
@@ -403,7 +418,7 @@ private DataSourceListener dataSourceListener = {
 
 private DataOfferListener dataOfferListener = {.offer = vwl_data_offer_listener_offer};
 
-private XdgWmBase_listener  vwl_xdg_wm_base_listener = {
+private struct xdg_wm_base_listener  vwl_xdg_wm_base_listener = {
     .ping       = vwl_xdg_wm_base_listener_ping
 };
 
@@ -3720,7 +3735,7 @@ clip_convert_selection(OUT Byte** str, OUT Ulong *len, ClipBoard* cbd) {
    for (int i = 0; i < yReg->y_size; i++)
       *len += (Ulong)yReg->y_array[i].len + 1; // 1 for the end of line char
 
-   // Don't want newline character at end of last line if we're in MCHAR mode.
+   //Don't want newline character at end of last line if we're in MCHAR mode.
    if (yReg->y_type == MCHAR && *len >= 1)
       (*len)--;
 
@@ -3753,7 +3768,7 @@ may_get_selection(int regname) {
    return regname;
 }
 
-// If we have written to a clipboard register, send the text to the clipboard.
+//If we have written to a clipboard register, send the text to the clipboard.
 private void
 may_set_selection(void){
    if ((get_y_current() == getYRegister(STAR_REGISTER))) {
@@ -3809,7 +3824,7 @@ clip_wl_receive_data(ClipBoard* cbd, CS mime_type, int fd) {
           break;
       ei (r < 0) {
           if (errno == EAGAIN || errno == EINTR) {
-   poll_data:
+poll_data:
          tv.tv_sec = 0;
          tv.tv_usec = p_wtm * 1000;
          if (poll(fd + 1, &rfds, NULL, NULL, &tv) > 0)
