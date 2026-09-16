@@ -20,6 +20,7 @@
 #include "proto/fileio.h"
 #include "proto/hilite.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/motor.h"
@@ -111,10 +112,10 @@ list_version(void) {
    // Print the list of extra patch descriptions if there is at least one.
    if (extra_patches[0] != NULL) {
       msg_puts(_("\nExtra patches: "));
-      s = E;
+      s = S"";
       for (i = 0; extra_patches[i] != NULL; ++i) {
          msg_puts(s);
-         s = (CS)", ";
+         s = S", ";
          msg_puts(extra_patches[i]);
       }
    }

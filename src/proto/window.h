@@ -27,11 +27,11 @@ int insert_reg(
     int      literally_arg)   // insert literally, not as if typed
 ;
 int get_spec_reg(
-   int      regname,
+   int regname,
    OUT CS* retVal,
-   int      *allocated,   // return: true when value was allocated
-   int      errmsg)      // give error message when failing
-;
+   int* allocated,   // return: true when value was allocated
+   int errmsg      // give error message when failing
+);
 int cmdline_paste_reg(
    int regname,
    int literally_arg,   // Insert text literally instead of "as typed"
@@ -79,13 +79,16 @@ void write_reg_contents_ex(
    long block_len
 );
 void clip_init();
-void clip_update_selection(ClipBoard *clip);
+void clip_update_selection();
+Short clipGetState();
+void clipSetVmode(Unt newVal);
+Boole clipIsOwned();
 void clip_lose_selection(ClipBoard* cbd);
 void start_global_changes(void);
 void end_global_changes(void);
 void clip_auto_select(void);
 void clip_modeless(int button, int is_click, int is_drag);
-void clip_clear_selection(ClipBoard *cbd);
+void clip_clear_selection();
 void clip_may_clear_selection(int row1, int row2);
 void clip_scroll_selection(int rows) ;
 void clip_copy_modeless_selection();

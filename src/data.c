@@ -4310,7 +4310,7 @@ daStringOfVar(Var *arg, int quotes) {
    if (!arg)
       return copyStr(S"(does not exist)");
    if (!quotes && arg->tag == VAR_STRING) {
-      ret = copyStr(arg->string == NULL ? E : arg->string);
+      ret = copyStr(arg->string ? arg->string : S"");
    } else {
       ret = tv2string(arg, &tofree, numbuf, 0);
       // Make a copy if we have a value but it's not in allocated memory.
@@ -8113,7 +8113,7 @@ f_str2blob(Arr(Var) argvars, OUT Var* returnVar) {
 
       CS str = li->c.string;
       if (!str)
-         str = E;
+         str = S"";
 
       if (li != list->first)
          // Each list string item is separated by a newline in the blob
@@ -11420,7 +11420,7 @@ private int
 json_encode_gap(ArrayList* gap, Var* val, int options) {
    if (json_encode_item(gap, val, get_copyID(), options) == FAIL) {
       ga_clear(gap);
-      gap->c = copyStr(E);
+      gap->c = copyStr(S"");
       return FAIL;
    }
    return OK;

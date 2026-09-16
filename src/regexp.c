@@ -17,6 +17,7 @@
 #include "proto/do.h"
 #include "proto/eval.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/memory.h"
@@ -8533,10 +8534,9 @@ match(
       case MARK:
       case MARK_GT:
       case MARK_LT: {
-         Pos   *pos;
-         Unt   col = REG_MULTI ? exe.input - exe.line : 0;
+         Unt col = REG_MULTI ? exe.input - exe.line : 0;
 
-         pos = markGetBook(exe.book, t->state->val, false);
+         Pos* pos = markGetBook(exe.book, t->state->val, false);
 
          // Line may have been freed, get it again.
          if (REG_MULTI) {

@@ -15,6 +15,7 @@ int mkdir(const char* pathname, mode_t mode);
 #include "proto/channel.h"
 #include "proto/input.types.h"
 #include "proto/input.h"
+#include "proto/memory.types.h"
 #include "proto/memory.h"
 #include "proto/diff.h"
 #include "proto/do.h"
@@ -26,6 +27,7 @@ int mkdir(const char* pathname, mode_t mode);
 #include "proto/fileio.h"
 #include "proto/insert.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/motor.h"
@@ -3844,7 +3846,7 @@ outofmem:
                 beginline(BL_WHITE | BL_FIX);
          }
          if (!do_sub_msg(subflags.do_count) && subflags.do_ask)
-            msg(E);
+            msg(S"");
       } else
          globalNeedBeginlineS = true;
       if (subflags.do_print)
@@ -3853,7 +3855,7 @@ outofmem:
       if (gotInterruptG)      // interrupted
           emsg(_(e_interrupted));
       ei (got_match)   // did find something but nothing substituted
-          msg(E);
+          msg(S"");
       ei (subflags.do_error)   // nothing found
           showErrFmtMsg(_(e_pattern_not_found_str), get_search_pat());
    }
@@ -10700,7 +10702,7 @@ evalVars(
             : spec_idx == SPEC_CEXPR ? (FIND_IDENT | FIND_STRING | FIND_EVAL)
             : FIND_STRING);
       if (resultlen == 0) {
-         *errorMsg = E;
+         *errorMsg = S"";
          return NULL;
       }
    }
@@ -10755,7 +10757,7 @@ evalVars(
             }
             result = list_find_str(get_EeglVar_list(VV_OLDFILES), (long)i);
             if (!result) {
-               *errorMsg = E;
+               *errorMsg = S"";
                return NULL;
             }
          } else {
@@ -10781,7 +10783,7 @@ evalVars(
       case SPEC_CFILE:   // file name under cursor
          result = file_name_at_cursor(FNAME_MESS|FNAME_HYP, 1L, NULL);
          if (!result) {
-            *errorMsg = E;
+            *errorMsg = S"";
             return NULL;
          }
          resultbuf = result;       // remember allocated string
@@ -11605,7 +11607,7 @@ u_save_line(UndoLine *ul, LineNr lnum) {
    ul->ul_textlen = ml_get_len(lnum);
    if (curBook->mem.lineLen == 0) {
       ul->ul_len = 1;
-      ul->ul_line = copyStr(E);
+      ul->ul_line = copyStr(S"");
     } else {
       // This uses the length in the memline, thus text properties are included.
       ul->ul_len = curBook->mem.lineLen;

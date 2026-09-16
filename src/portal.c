@@ -17,6 +17,7 @@
 #include "proto/eval.h"
 #include "proto/fileio.h"
 #include "proto/insert.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/hilite.h"
 #include "proto/juggle.h"
@@ -12170,8 +12171,8 @@ balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
       goto failed;
 
    // Add an empty line above and below, looks better.
-   (*array)->pum_text = copyStr(E);
-   (*array + height - 1)->pum_text = copyStr(E);
+   (*array)->pum_text = copyStr(S"");
+   (*array + height - 1)->pum_text = copyStr(S"");
 
    for (Unt line = 1, item_idx = 0; line < height - 1; ++item_idx) {
       int   skip;

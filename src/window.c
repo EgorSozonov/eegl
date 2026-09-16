@@ -9,6 +9,7 @@
 #include "proto/channel.types.h"
 #include "proto/channel.h"
 #include "proto/book.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/hilite.h"
 #include "proto/memory.h"
@@ -43,6 +44,31 @@ int stat(const char* restrict path, struct stat* restrict buf);
 #include "../libs/wayland/ext-data-control-v1.h"
 #include "../libs/wayland/xdg-shell.h"
 #include "../libs/wayland/primary-selection-unstable-v1.h"
+
+
+// Info about selected text
+struct ClipBoard {
+   Boole owned;      //Flag: do we own the selection?
+   Pos start;      //Start of selected area
+   Pos end;        //End of selected area
+   Unt vmode;      //Visual mode character
+
+   // Fields for selection that doesn't use Visual mode
+   Short origin_row;
+   Short origin_start_col;
+   Short origin_end_col;
+   Short word_start_col;
+   Short word_end_col;
+   // limits for selection inside a popup window
+   Short min_col;
+   Short max_col;
+   Short min_row;
+   Short max_row;
+
+   Pos prev;      // Previous position
+   Short state;   // Current selection state
+   Short mode;    // Select by char, word, or line.
+};
 
 // Struct that represents a seat. (Should be accessed via vwl_get_seat()).
 typedef struct {
@@ -239,10 +265,10 @@ private void finish_write_reg(
    YankReg   *old_y_previous,
    YankReg   *old_y_current)
 ;
-private int clip_gen_own_selection(ClipBoard *cbd);
-private void clip_own_selection(ClipBoard *cbd);
+private int clip_gen_own_selection();
+private void clip_own_selection();
 private void clip_gen_lose_selection(ClipBoard *cbd);
-private void clip_copy_selection(ClipBoard *clip);
+private void clip_copy_selection();
 private int is_clipboard_needs_update(void);
 private int clip_compare_pos(int row1, int col1, int row2, int col2);
 private void clip_invert_rectangle(
@@ -267,7 +293,7 @@ private int clip_get_line_end(ClipBoard *cbd, int row);
 private void startSelection(int col, int row, int repeated_click);
 private void processSelection(int button, int col, int row, Unt repeated_click);
 private void clip_yank_selection(int type, CS str, long len, ClipBoard* cbd);
-private void clip_gen_set_selection(ClipBoard *cbd);
+private void clip_gen_set_selection();
 private void clip_gen_request_selection(ClipBoard *cbd);
 private void freeSelection(ClipBoard* cbd);
 private void clip_get_selection(ClipBoard* cbd);
@@ -415,6 +441,8 @@ private int copy0();
 private int paste0();
 //}}}
 
+
+
 private vwl_data_device_Listener   vwl_data_device_listener = {
     .data_offer       = vwl_data_device_listener_data_offer,
     .selection       = vwl_data_device_listener_selection,
@@ -487,16 +515,6 @@ private YankReg   y_regs[NUM_REGISTERS];
 private YankReg   *y_current;       // ptr to current yankreg
 private int      y_append;       // true when appending
 private YankReg   *y_previous = NULL; // ptr to last written yankreg
-
-private int   stuff_yank(int, CS);
-private void   put_reedit_in_typeBufG(int silent);
-private int   put_in_typeBufG(CS s, int esc, int colon, int silent);
-private int   yank_copy_line(BlockDef* bd, long y_idx, int exclude_trailing_space);
-private void   copy_yank_reg(YankReg *reg);
-private void   dis_msg(CS p, int skip_esc);
-
-private void may_set_selection(void);
-private void clip_gen_set_selection(ClipBoard *cbd);
 
 pub YankReg *
 get_y_regs(void) {
@@ -672,11 +690,11 @@ get_register(int      name, int copy) {  // make a copy, if false make register 
 
    // When Visual area changed, may have to update selection. Obtain the selection too.
    if (name == '*') {
-      clip_update_selection(&clipboard);
+      clip_update_selection();
       may_get_selection(name);
    }
    if (name == '+') {
-      clip_update_selection(&clipboard);
+      clip_update_selection();
       may_get_selection(name);
    }
 
@@ -763,7 +781,7 @@ do_record(int c) {
       // needs to be removed again to put it in a register.  exec_reg then
       // adds the escaping back later.
       reg_recording = 0;
-      msg(E);
+      msg(S"");
       p = get_recorded();
       if (!p)
          retval = FAIL;
@@ -1147,14 +1165,14 @@ insert_reg(
 //If "regname" is a special register, return true and store a pointer to its value in "retVal".
 pub int
 get_spec_reg(
-   int      regname,
+   int regname,
    OUT CS* retVal,
-   int      *allocated,   // return: true when value was allocated
-   int      errmsg)      // give error message when failing
-{
-   int      cnt;
+   int* allocated,   // return: true when value was allocated
+   int errmsg      // give error message when failing
+){
+   int cnt;
 
-   *retVal = E;
+   *retVal = S"";
    *allocated = false;
    switch (regname) {
    case '%':      // file name
@@ -1175,7 +1193,7 @@ get_spec_reg(
    case ':':      // last command line
       if (!lastCommlineG && errmsg)
          emsg(_(e_no_previous_command_line));
-      *retVal = lastCommlineG != E ? lastCommlineG : E;
+      *retVal = lastCommlineG != S"" ? lastCommlineG : S"";
       return true;
 
    case '/':      // last search-pattern
@@ -1208,7 +1226,7 @@ get_spec_reg(
       return false;
        cnt = find_ident_under_cursor(retVal, regname == Ctrl_W
                ?  (FIND_IDENT|FIND_STRING) : FIND_STRING);
-       *retVal = cnt ? copySubstr(*retVal, cnt) : E;
+       *retVal = cnt ? copySubstr(*retVal, cnt) : S"";
        *allocated = true;
        return true;
 
@@ -1557,8 +1575,8 @@ op_yank(Operator *opArg, int deleting, int mess) {
          // Copy the text from register 0 to the clipboard register.
          copy_yank_reg(&(y_regs[STAR_REGISTER]));
 
-      clip_own_selection(&clipboard);
-      clip_gen_set_selection(&clipboard);
+      clip_own_selection();
+      clip_gen_set_selection();
    }
 
    //If we were yanking to the '+' register, send result to selection.
@@ -1570,8 +1588,8 @@ op_yank(Operator *opArg, int deleting, int mess) {
          // Copy the text from register 0 to the clipboard register.
          copy_yank_reg(&(y_regs[PLUS_REGISTER]));
 
-      clip_own_selection(&clipboard);
-      clip_gen_set_selection(&clipboard);
+      clip_own_selection();
+      clip_gen_set_selection();
    }
 
    if (!deleting && has_textyankpost())
@@ -1703,7 +1721,7 @@ do_put(
    if (u_save(curPor->cursor.lnum, curPor->cursor.lnum + 1) == FAIL)
       goto end;
 
-   if (insertText.c != E) {
+   if (insertText.len != 0) {
       insertText.len = STRLEN(insertText.c);
 
       y_type = MCHAR;
@@ -2874,6 +2892,8 @@ write_reg_contents_ex(
 //}}}
 //{{{clipboard
 
+ClipBoard clipboardP;   // CLIPBOARD selection in Wayland
+
 //Functions for copying and pasting text between applications.
 //This is always included in a GUI version, but may also be included when the
 //clipboard and mouse is available to a terminal version such as xterm.
@@ -2936,7 +2956,7 @@ clip_init(){
 //selected so we can still give it to others.   Will probably have to make sure
 //this is called whenever VIsual mode is ended.
 pub void
-clip_update_selection(ClipBoard *clip){
+clip_update_selection(){
    Pos start, end;
 
    // If visual mode is only due to a redo command ("."), then ignore it
@@ -2951,32 +2971,48 @@ clip_update_selection(ClipBoard *clip){
       }
       if (!EQUAL_POS(clip->start, start)
          || !EQUAL_POS(clip->end, end)
-         || clip->vmode != VIsual_mode)
-      {
-         clip_clear_selection(clip);
+         || clip->vmode != VIsual_mode
+      ) {
+         clip_clear_selection();
          clip->start = start;
          clip->end = end;
          clip->vmode = VIsual_mode;
          freeSelection(clip);
-         clip_own_selection(clip);
-         clip_gen_set_selection(clip);
+         clip_own_selection();
+         clip_gen_set_selection();
       }
    }
 }
 
+pub Short
+clipGetState() {
+   return clipboardP.state;
+}
+
+pub void
+clipSetVmode(Unt newVal) {
+   clipboardP.vmode = newVal;
+}
+
+pub Boole
+clipIsOwned() {
+   return clipboardP.owned;
+}
+
 private int
-clip_gen_own_selection(ClipBoard *cbd){
-   return clip_wl_own_selection(cbd);
+clip_gen_own_selection(){
+   return clip_wl_own_selection(&clipboardP);
 }
 
 private void
-clip_own_selection(ClipBoard *cbd){
+clip_own_selection(){
    //Also want to check somehow that we are reading from the keyboard rather than a mapping etc
    //Always own the selection, we might have lost it without being notified, e.g. during a ":sh" 
    //command.
+   ClipBoard* cbd = &clipboardP;
    int was_owned = cbd->owned;
 
-   cbd->owned = (clip_gen_own_selection(cbd) == OK);
+   cbd->owned = (clip_gen_own_selection() == OK);
    if (!was_owned && cbd == &clipboard) {
       // May have to show a different kind of hiliting for the selected area. There is no specific
       // redraw command for this, just redraw all portals into the current book.
@@ -3004,14 +3040,14 @@ clip_lose_selection(ClipBoard* cbd) {
 }
 
 private void
-clip_copy_selection(ClipBoard *clip) {
+clip_copy_selection() {
    if (VIsual_active && (stateG & MODE_NORMAL) != 0) {
-      clip_update_selection(clip);
+      clip_update_selection();
       freeSelection(clip);
       clip_own_selection(clip);
       if (clip->owned)
          clip_get_selection(clip);
-      clip_gen_set_selection(clip);
+      clip_gen_set_selection();
    }
 }
 
@@ -3046,8 +3082,8 @@ end_global_changes(void){
       clip_did_set_selection = true;
       if (clipboard_needs_update) {
          // only store something in the clipboard if we have yanked anything to it
-         clip_own_selection(&clipboard);
-         clip_gen_set_selection(&clipboard);
+         clip_own_selection();
+         clip_gen_set_selection();
       }
    }
    clipboard_needs_update = false;
@@ -3468,14 +3504,15 @@ processSelection(int button, int col, int row, Unt repeated_click) {
 
 // Called from outside to clear selected region from the display
 pub void
-clip_clear_selection(ClipBoard *cbd){
-   if (cbd->state == SELECT_CLEARED)
+clip_clear_selection(){
+   if (clipboardP->state == SELECT_CLEARED)
       return;
 
    clip_invert_area(
-      cbd, (int)cbd->start.lnum, cbd->start.col, (int)cbd->end.lnum, cbd->end.col, CLIP_CLEAR
+      clipboardP, (int)clipboardP->start.lnum, clipboardP->start.col, 
+      (int)clipboardP->end.lnum, clipboardP->end.col, CLIP_CLEAR
    );
-   cbd->state = SELECT_CLEARED;
+   clipboardP->state = SELECT_CLEARED;
 }
 
 // Clear the selection if any lines from "row1" to "row2" are inside of it.
@@ -3484,7 +3521,7 @@ clip_may_clear_selection(int row1, int row2){
    if (clipboard.state == SELECT_DONE
           && row2 >= clipboard.start.lnum
           && row1 <= clipboard.end.lnum)
-      clip_clear_selection(&clipboard);
+      clip_clear_selection();
 }
 
 //Called before the screen is scrolled up or down.  Adjusts the line numbers
@@ -3617,28 +3654,26 @@ clip_copy_modeless_selection() {
 
    // First cleanup any old selection and become the owner.
    freeSelection(&clipboard);
-   clip_own_selection(&clipboard);
+   clip_own_selection();
 
    // Yank the text into the '*' register.
    clip_yank_selection(MCHAR, buffer, (long)(bufp - buffer), &clipboard);
 
    // Make the register contents available to the outside world.
-   clip_gen_set_selection(&clipboard);
+   clip_gen_set_selection();
 
    eeglFree(buffer);
 }
 
 private void
-clip_gen_set_selection(ClipBoard *cbd){
+clip_gen_set_selection(){
    if (!clip_did_set_selection) {
       //Updating postponed, so that accessing the system clipboard won't
       //hang Eegl when accessing it many times (e.g. on a :g command).
-      if (cbd == &clipboard) {
-          clipboard_needs_update = true;
-          return;
-      }
+      clipboard_needs_update = true;
+      return;
    }
-   clip_wl_set_selection(cbd);
+   clip_wl_set_selection(&clipboardP);
 }
 
 private void
@@ -3782,11 +3817,11 @@ may_get_selection(int regname) {
 private void
 may_set_selection(void){
    if ((get_y_current() == getYRegister(STAR_REGISTER))) {
-      clip_own_selection(&clipboard);
-      clip_gen_set_selection(&clipboard);
+      clip_own_selection();
+      clip_gen_set_selection();
    } ei ((get_y_current() == getYRegister(PLUS_REGISTER))) {
-      clip_own_selection(&clipboard);
-      clip_gen_set_selection(&clipboard);
+      clip_own_selection();
+      clip_gen_set_selection();
    }
 }
 

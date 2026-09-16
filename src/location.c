@@ -11,6 +11,7 @@
 #include "proto/input.h"
 #include "proto/channel.types.h"
 #include "proto/channel.h"
+#include "proto/memory.types.h"
 #include "proto/memory.h"
 #include "proto/diff.h"
 #include "proto/do.h"
@@ -21,7 +22,6 @@
 #include "proto/hilite.h"
 #include "proto/insert.h"
 #include "proto/juggle.h"
-#include "proto/location.h"
 #include "proto/message.h"
 #include "proto/normal.h"
 #include "proto/option.h"
@@ -34,9 +34,9 @@
 #include "proto/term.h"
 #include "proto/ui.h"
 
-pub int fstat(int fd, struct stat* statbuf);
+int fstat(int fd, struct stat* statbuf);
 int stat(const char* restrict path, struct stat* restrict buf);
-pub int lstat(const char* restrict, struct stat* restrict);
+int lstat(const char* restrict, struct stat* restrict);
 
 //{{{types
 
@@ -157,7 +157,19 @@ typedef struct {
 
 declStruct(Sign);
 
+
+// Specific action on a location list
+pub typedef enum {
+   LL_ACTION_INVALID, // placeholder for ill-defined strings
+   LL_ACTION_ADD, // add entry to location list
+   LL_ACTION_REPLACE, 
+   LL_ACTION_UPDATE,
+   LL_ACTION_NEW, // create new location list
+   LL_ACTION_FREE
+} LocListAction;
+
 //}}}
+#include "proto/location.h"
 //{{{@@forward declarations
 private ArrayList * getTempList(void);
 private void clearArrayList(void);
@@ -564,7 +576,7 @@ private void get_global_marks(List *l);
 private SignGroup * sign_group_ref(CS groupname);
 private void sign_group_unref(CS groupname);
 private int sign_in_group(SignEntry *sign, CS group);
-private int sign_group_for_window(SignEntry *sign, Portal *wp);
+private Boole signIsVisible(SignEntry* sign, Portal* po);
 private int sign_group_get_next_signid(Book *book, CS groupname);
 private void insert_sign(
    Book *book, // buffer to store sign in
@@ -697,7 +709,7 @@ private int sign_place_from_dict(
 );
 private void sign_undefine_multiple(List *l, List *retlist);
 private int sign_unplace_from_dict(Var *group_tv, Bag *dict);
-private SignEntry * get_first_valid_sign(Portal *wp);
+private NULLABLE SignEntry * get_first_valid_sign(Portal *wp);
 //}}}
 //{{{location lists
 
@@ -3311,7 +3323,7 @@ printMsg(
       update_topline_redraw();
    eeSnprintf(IObuff, IOSIZE, _("(%d of %d)%s%s: "), currentIdx,
        getCurrent(stack)->count,
-       curr->isCleared ? _(" (line deleted)") : E,
+       curr->isCleared ? _(" (line deleted)") : S"",
        createMsg(curr->kind, curr->errNum));
    // Add the message, skipping leading whitespace and newlines.
    ga_concat(gap, IObuff);
@@ -3770,7 +3782,7 @@ c_llAge(Invocation* invo) {
          ++stack->currList;
       }
    }
-   qf_msg(stack, stack->currList, E);
+   qf_msg(stack, stack->currList, S"");
    updateBook(stack, NULL);
 }
 
@@ -6588,8 +6600,8 @@ addEntry_from_dict(LocationList* ll, Bag* d, int first_entry, int* valid_entry){
    CS type = bagGetString(d, tConst("type"), true);
    CS pattern = bagGetString(d, tConst("pattern"), true);
    CS text = bagGetString(d, tConst("text"), true);
-   if (text == NULL)
-      text = copyStr(E);
+   if (!text)
+      text = copyStr(S"");
    Var user_data;
    user_data.tag = VAR_UNKNOWN;
    bagGetVar(d, tConst("user_data"), &user_data);
@@ -7691,13 +7703,10 @@ mark_forget_file(Portal *wp, int fnum) {
    } 
 }
 
-// Set the previous context mark to the current position and add it to the jump list.
+//Set the previous context mark to the current position and add it to the jump list.
 pub void
 setpcmark(void) {
-   int      i;
-   FileMarkExt   *fm;
-
-   // for :global the mark is set only once
+   //for :global the mark is set only once
    if (global_busy || listcmd_busy || (commModifierG.cmod_flags & CMOD_KEEPJUMPS))
       return;
 
@@ -7710,15 +7719,15 @@ setpcmark(void) {
        //contain nothing beyond the current index.
        curPor->jumpListLen = curPor->jumpListInd + 1;
 
-   // If jumplist is full: remove oldest entry
+   //If jumplist is full: remove oldest entry
    if (++curPor->jumpListLen > JUMPLISTSIZE) {
       curPor->jumpListLen = JUMPLISTSIZE;
       eeglFree(curPor->jumpList[0].fname);
-      for (i = 1; i < JUMPLISTSIZE; ++i)
+      for (int i = 1; i < JUMPLISTSIZE; ++i)
          curPor->jumpList[i - 1] = curPor->jumpList[i];
    }
    curPor->jumpListInd = curPor->jumpListLen;
-   fm = &curPor->jumpList[curPor->jumpListLen - 1];
+   FileMarkExt* fm = &curPor->jumpList[curPor->jumpListLen - 1];
 
    fm->fmark.mark = curPor->prevContextMark;
    fm->fmark.fnum = curBook->fiNum;
@@ -8890,12 +8899,12 @@ sign_in_group(SignEntry *sign, CS group) {
    );
 }
 
-//Return true if "sign" is to be displayed in window "wp".
-//If the group name starts with "PopUp" it only shows in a popup portal.
-private int
-sign_group_for_window(SignEntry *sign, Portal *wp) {
-   int for_popup = sign->group && sign->group->isPopupOnly;
-   return PORTAL_IS_POPUP(wp) ? for_popup : !for_popup;
+//Return true if "sign" is to be displayed in portal "wp".
+//If the group name starts with "PopUp", it only shows in a popup portal.
+private Boole
+signIsVisible(SignEntry* sign, Portal* po) {
+   Boole for_popup = sign->group && sign->group->isPopupOnly;
+   return PORTAL_IS_POPUP(po) ? for_popup : !for_popup;
 }
 
 // Get the next free sign identifier in the specified group
@@ -9037,7 +9046,7 @@ sign_get_info(SignEntry* sign) {
       return NULL;
 
    bagAddNumber(b, S"id", sign->id);
-   bagAddString(b, S"group", (!sign->group) ? E : sign->group->sg_name);
+   bagAddString(b, S"group", sign->group ?sign->group->sg_name : S"");
    bagAddNumber(b, S"lnum", sign->lnum);
    bagAddString(b, S"name", sign_typenr2name(sign->typeNr));
    bagAddNumber(b, S"priority", sign->priority);
@@ -9176,7 +9185,7 @@ markGetSignDecorations(Portal *wp, LineNr lnum, OUT SignHilite* signHilites) {
       if (sign->lnum > lnum)
           break;
 
-      if (sign->lnum == lnum && sign_group_for_window(sign, wp)) {
+      if (sign->lnum == lnum && signIsVisible(sign, wp)) {
          signHilites->typeNr = sign->typeNr;
          Sign *sp = find_sign_by_typenr(sign->typeNr);
          if (!sp)
@@ -10968,17 +10977,17 @@ cleanup:
    return retval;
 }
 
-private SignEntry *
+private NULLABLE SignEntry *
 get_first_valid_sign(Portal *wp) {
-   SignEntry *sign = wp->book->signList;
-   while (sign && !sign_group_for_window(sign, wp))
+   SignEntry* sign = wp->book->signList;
+   while (sign && !signIsVisible(sign, wp))
       sign = sign->next;
    return sign;
 }
 
 pub Boole
-isSigncolumnOn(Portal *wp) {
-   return get_first_valid_sign(wp) != NULL ? wp->o.signColumn : false;
+isSigncolumnOn(Portal* po) {
+   return get_first_valid_sign(po) != NULL ? po->o.signColumn : false;
 }
 
 pub void

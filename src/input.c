@@ -19,6 +19,7 @@
 #include "proto/insert.h"
 #include "proto/eval.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/motor.h"
@@ -4746,7 +4747,7 @@ do_mouse(
             VIsual_mode = Ctrl_V;
           // Make sure the clipboard gets updated.  Needed because start and
           // end may still be the same, and the selection needs to be owned
-          clipboard.vmode = ZERO;
+          clipSetVmode(ZERO);
       }
       // A double click selects a word or a block.
       if ((modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK) {

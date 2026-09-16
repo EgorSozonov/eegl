@@ -15,6 +15,7 @@
 #include "proto/input.types.h"
 #include "proto/input.h"
 #include "proto/hilite.h"
+#include "proto/memory.types.h"
 #include "proto/memory.h"
 #include "proto/eval.h"
 #include "proto/diff.h"
@@ -22,6 +23,7 @@
 #include "proto/fileio.h"
 #include "proto/insert.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/motor.h"
@@ -5744,7 +5746,7 @@ eval_next_line(CS arg, EvalCtx* evalarg) {
       //comment line use an empty string.
       if (*p == ZERO || isComment(p)) {
          eeglFree(line);
-         line = copyStr(E);
+         line = copyStr(S"");
       }
 
       ((Byte **)gap->c)[gap->len] = line;
@@ -6886,21 +6888,19 @@ list_arg_vars(Invocation* invo, CS arg, int* first) {
                         showErrFmtMsg(_(e_cant_list_variables_for_str), name);
                      }
                   } else {
-                      Byte   numbuf[NUMBUFLEN];
-                      Byte   *tf;
-                      int      c;
-                      Byte   *s;
-
-                      s = echo_string(&tv, &tf, numbuf, 0);
-                      c = *arg;
-                      *arg = ZERO;
-                      list_one_var_a(E,
-                         arg == arg_subsc ? name : name_start,
-                         tv.tag,
-                         s == NULL ? (CS)"" : s,
-                         first);
-                      *arg = c;
-                      eeglFree(tf);
+                     Byte numbuf[NUMBUFLEN];
+                     Byte* tf;
+                     CS s = echo_string(&tv, OUT &tf, numbuf, 0);
+                     int c = *arg;
+                     *arg = ZERO;
+                     list_one_var_a(
+                        S"",
+                        arg == arg_subsc ? name : name_start,
+                        tv.tag,
+                        s ? s : S"",
+                        first);
+                     *arg = c;
+                     eeglFree(tf);
                   }
                   clearVar(&tv);
                }
@@ -8347,7 +8347,7 @@ list_one_var(DictItem *v, CS prefix, int *first) {
    Byte numbuf[NUMBUFLEN];
 
    CS s = echo_string(&v->c, &tofree, numbuf, get_copyID());
-   list_one_var_a(prefix, v->key, v->c.tag, s == NULL ? E : s, first);
+   list_one_var_a(prefix, v->key, v->c.tag, s ? s : S"", first);
    eeglFree(tofree);
 }
 
@@ -8921,7 +8921,7 @@ var_redir_start(CS name, int append) {
    int called_emsg_before = called_emsg;
    Var tv;
    tv.tag = VAR_STRING;
-   tv.string = E;
+   tv.string = S"";
    letImpl(OUT redirLvalS, &tv, true, ASSIGN_NO_DECL, append ? S"." : S"=");
    clear_lval(OUT redirLvalS);
    if (called_emsg > called_emsg_before) {

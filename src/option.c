@@ -20,6 +20,7 @@
 #include "proto/hilite.h"
 #include "proto/insert.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/normal.h"

@@ -21,6 +21,7 @@
 #include "proto/hilite.h"
 #include "proto/insert.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/motor.h"
@@ -2663,7 +2664,7 @@ end_visual_mode_keep_button(void) {
    //If we are using the clipboard, then remember what was selected in case we need to paste it 
    //somewhere while we still own the selection. Only do this when the clipboard is already owned.
    //Don't want to grab the selection when hitting ESC.
-   if (clipboard.owned)
+   if (clipIsOwned())
       clip_auto_select();
 
    // Emit a TextYankPost for the automatic copy of the selection into the star and/or plus register
@@ -5824,9 +5825,9 @@ nv_gv_cmd(ActionArg*) {
    update_topline();
 
    setmouse();
-   // Make sure the clipboard gets updated.  Needed because start and
-   // end are still the same, and the selection needs to be owned
-   clipboard.vmode = ZERO;
+   //Make sure the clipboard gets updated. Needed because start and end are still the same, and the 
+   //selection needs to be owned
+   clipSetVmode(ZERO);
    drawCurBookLater(UPD_INVERTED);
    showmode();
 }
@@ -7140,7 +7141,7 @@ n_start_visual_mode(int c) {
        redrawCommlineG = true;   // show visual mode later
    // Make sure the clipboard gets updated.  Needed because start and
    // end may still be the same, and the selection needs to be owned
-   clipboard.vmode = ZERO;
+   clipSetVmode(ZERO);
 
    // Only need to redraw this line, unless still need to redraw an old
    // Visual area (when 'lazyredraw' is set).

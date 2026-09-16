@@ -18,6 +18,7 @@
 #include "proto/memory.h"
 #include "proto/fileio.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/normal.h"
@@ -2085,12 +2086,12 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
 // Write global vars that start with a capital to the eeglinfo file
 private void
 write_eeglinfo_varlist(FILE* fp) {
-   EeSet   *gvht = get_globvar_ht();
-   EeSetItem   *hi;
-   CS s = E;
+   EeSet* gvht = get_globvar_ht();
+   EeSetItem* hi;
+   CS s = S"";
    CS p;
    CS tofree;
-   Byte   numbuf[NUMBUFLEN];
+   Byte numbuf[NUMBUFLEN];
 
    if (find_eeglinfo_parameter('!') == NULL)
       return;
@@ -2279,7 +2280,7 @@ write_eeglinfo_search_pattern(FILE* fp) {
 
    fprintf(fp, "\n# hlsearch on (H) or off (h):\n~%c",
        (!hiliteSearchG || find_eeglinfo_parameter('h') != NULL) ? 'h' : 'H');
-   wvsp_one(fp, RE_SEARCH, E, '/');
+   wvsp_one(fp, RE_SEARCH, S"", '/');
    wvsp_one(fp, RE_SUBST, _("Substitute "), '&');
 }
 

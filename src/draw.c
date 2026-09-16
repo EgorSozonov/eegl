@@ -15,9 +15,11 @@
 #include "proto/draw.h"
 #include "proto/eval.h"
 #include "proto/fileio.h"
+#include "proto/hilite.types.h"
 #include "proto/hilite.h"
 #include "proto/insert.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/motor.h"
@@ -2178,7 +2180,7 @@ drawInsertLines(
    if (!screen_valid(true)
         || line_count <= 0 || line_count > p_ttyscroll
         || end > visibleRowsG
-        || (clipboard.state != SELECT_CLEARED && redrawingForCallbackS > 0)
+        || (clipGetState() != SELECT_CLEARED && redrawingForCallbackS > 0)
         || popup_visible
    )
       return FAIL;
@@ -2243,7 +2245,7 @@ drawInsertLines(
    //Remove a modeless selection when inserting lines halfway the screen
    //or not the full width of the screen.
    if (off + row > 0 || (po && po->width != topframeG->width))
-      clip_clear_selection(&clipboard);
+      clip_clear_selection();
    else
       clip_scroll_selection(-line_count);
 
@@ -2361,7 +2363,7 @@ screen_del_lines(
           || line_count <= 0
           || (!force && line_count > p_ttyscroll)
           || end > visibleRowsG
-          || (clipboard.state != SELECT_CLEARED && redrawingForCallbackS > 0)
+          || (clipGetState() != SELECT_CLEARED && redrawingForCallbackS > 0)
     )
       return FAIL;
 
@@ -2406,7 +2408,7 @@ screen_del_lines(
    //Remove a modeless selection when deleting lines halfway the screen or
    //not the full width of the screen.
    if (off + row > 0 || (po && po->width != topframeG->width))
-      clip_clear_selection(&clipboard);
+      clip_clear_selection();
    else
       clip_scroll_selection(line_count);
 
@@ -2980,7 +2982,7 @@ private CharsTableEntry listCharTable[] = {
 private CS
 field_value_err(OUT ErrBuilder* errb, CS fmt, CS field) {
    if (!errb->c)
-      return E;
+      return S"";
    eeSnprintf(errb->c, errb->len, _(fmt), field);
    return errb->c;
 }
@@ -4332,7 +4334,7 @@ updatePortal(Portal* po, OUT Boole* didUpdateOnePortal) {
       *didUpdateOnePortal = true;
       start_search_hl();
       // When Visual area changed, may have to update selection.
-      clip_update_selection(&clipboard);
+      clip_update_selection();
    }
 
    int type = po->redrawType;
@@ -6877,7 +6879,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   if (!(c->areaHiliting && virtual_active()
                             && m->tocol != MAXCOL
                             && m->vcol < m->tocol))
-                     m->extraBytes = E;
+                     m->extraBytes = S"";
                   m->countExtraBytes = 0;
                }
                if (port->o.list && listCharsG.eol > 0)

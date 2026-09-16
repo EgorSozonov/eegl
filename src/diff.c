@@ -24,6 +24,7 @@
 #include "proto/diff.h"
 #include "proto/eval.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/normal.h"

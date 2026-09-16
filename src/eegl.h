@@ -499,11 +499,7 @@ typedef Byte Byte;
 
 #define mch_access(n, p)   access((char*)(n), (p))
 
-#define E (Byte*)""
-
 #define TIME_MSG(s) do { if (time_fd != NULL) time_msg((CS)s, NULL); } while (0)
-
-
 
 #define MB_CHARLEN(p)       (mb_charlen(p))
 #define MB_CHAR2LEN(c)       (mb_char2len(c))
@@ -2000,6 +1996,7 @@ declStruct(Callback);
 //}}}
 //{{{data structures
 
+//TODO
 #define get(needle, d) _Generic((needle),\
    CS: _Generic((d),\
                DictStringInt128*: get_DictStringInt128\
@@ -2135,11 +2132,6 @@ typedef struct {
    Unt chars[MAX_COMBINED_SYMBOLS];
    CellDeco deco;
 } ScreenCell;
-
-#define HI_HAS_FG    1
-#define HI_HAS_BG    2
-#define HI_HAS_UNDER 4
-#define HI_IS_LINK   8
 
 typedef struct {
    VTermColor fg; // foreground, always from original hiId group
@@ -2326,57 +2318,13 @@ struct UndoHeader {
 
 // things used in memfile.c
 
-typedef struct BlockHeader BlockHeader;
-typedef struct MemFile MemFile;
+declStruct(BlockHeader);
+declStruct(MemFile);
 typedef long BlockId;
 
-//MfHashTable is a chained hashtable with BlockId key and arbitrary structures as items. This is 
-//an intrusive data structure: we require that items begin with MfHashItem which contains the key 
-//and linked list pointers.  List of items in each bucket is doubly-linked.
 declStruct(MfHashItem);
 
-struct MfHashItem {
-   MfHashItem* next;
-   MfHashItem* prev;
-   BlockId key;
-};
-
-#define MHT_INIT_SIZE   64
-
-typedef struct mf_hashtab_S {
-   Ulong mask; // mask used for hash value (nr of items in array is "mht_mask" + 1)
-   Ulong mht_count;       // nr of items inserted into hashtable
-   MfHashItem** mht_buckets;  // points to mht_small_buckets or dynamically allocated array
-   MfHashItem* mht_small_buckets[MHT_INIT_SIZE];   // initial buckets
-   Byte mht_fixed;       // non-zero value forbids growth
-} MfHashTable;
-
-//for each (previously) used block in the memfile there is one block header.
-//
-//The block may be linked in the used list OR in the free list.
-//The used blocks are also kept in hash lists.
-//
-//The used list is a doubly linked list, most recently used block first.
-//  The blocks in the used list have a block of memory allocated.
-//  mf_used_count is the number of pages in the used list.
-//The hash lists are used to quickly find a block in the used list.
-//The free list is a single linked list, not sorted.
-//  The blocks in the free list have no block of memory allocated and
-//  the contents of the block in the file (if any) is irrelevant.
-
-struct BlockHeader {
-   MfHashItem hashItem;      // header for hash table and key
-#define bh_bnum hashItem.key // block number, part of hashItem
-
-   BlockHeader* bh_next;       // next block_hdr in free or used list
-   BlockHeader* bh_prev;       // previous block_hdr in used list
-   Arr(Byte) bh_data;       // pointer to memory (for used block)
-   int pageCount;       // number of pages in this block
-
-#define BH_DIRTY    1
-#define BH_LOCKED   2
-   Byte bh_flags;       // BH_DIRTY or BH_LOCKED
-};
+#define MHT_INIT_SIZE 64
 
 declStruct(TextChunk);
 declStruct(TextHeader);
@@ -2437,7 +2385,6 @@ typedef struct {
    short   refcnt;
    Byte* matches[NSUBEXP];
 } RegExternalMatch;
-
 
 //Structure to be used for multi-line matching.
 //Sub-match "no" starts in line "startpos[no].lnum" column "startpos[no].col"
@@ -2505,7 +2452,6 @@ struct MatchItem {
    Short hiId;   // highlight group ID
 };
 
-
 //}}}
 //{{{command line
 
@@ -2550,9 +2496,7 @@ struct Invocation {
    CS arg;          //argument of the command
    CS*  commline;     //pointer to pointer of allocated cmdline
    CS commlineToFree; //free later
-   long   argFlags;   //flags for the command
-   Boole skip;      //don't execute the command, only parse it
-   Boole forceit;   //TRUE if ! present
+   Long argFlags;   //flags for the command
    int addr_count;  //the number of addresses given
    LineNr line1;    //the first line number
    LineNr line2;    //the second line number or count
@@ -2560,9 +2504,11 @@ struct Invocation {
    Unt flags;       //extra flags after count: EXFLAG_
    CS higherOrderComm; //+command arg to be used in edited file
    LineNr higherOrderLnum; //the line number in an edited file
-   int append;      //TRUE with ":w >>file" command
-   int usefilter;   //TRUE with ":w !command" and ":r!command"
-   int amount;      //number of '>' or '<' for shift command
+   Boole skip;      //don't execute the command, only parse it
+   Boole forceit;   //TRUE if ! present
+   Boole append;      //TRUE with ":w >>file" command
+   Boole usefilter;   //TRUE with ":w !command" and ":r!command"
+   Unt amount;      //number of '>' or '<' for shift command
    int regname;     //register name (NUL if none)
    Unt force_bin;   //0, FORCE_BIN or FORCE_NOBIN
    Boole read_edit; //++edit argument
@@ -2676,46 +2622,12 @@ typedef struct {
 //}}}
 //{{{memfile
 
-typedef enum {
-   MF_DIRTY_NO = 0,      // no dirty blocks
-   MF_DIRTY_YES,      // there are dirty blocks
-   MF_DIRTY_YES_NOSYNC,   // there are dirty blocks, do not sync yet
-} MfDirty;
-
-struct MemFile {
-   CS fullFName;      // name of the file
-   CS fName;          // idem, full path
-   int      fd;         // file descriptor
-   int      mf_flags;      // flags used when opening this memfile
-   int      mf_reopen;      // mf_fd was closed, retry opening
-   BlockHeader   *freeFirst;      // first block_hdr in free list
-   BlockHeader   *usedFirst;      // mru block_hdr in used list
-   BlockHeader   *usedLast;      // lru block_hdr in used list
-   unsigned   mf_used_count;      // number of pages in used list
-   unsigned   usedCountMax;   // maximum number of pages in memory
-   MfHashTable mf_hash;      // hash lists
-   MfHashTable mf_trans;      // trans lists
-   BlockId   mf_blocknr_max;      // highest positive block number + 1
-   BlockId   mf_blocknr_min;      // lowest negative block number - 1
-   BlockId   mf_neg_count;      // number of negative blocks numbers
-   BlockId   pagesInFile;   // number of pages in the file
-   unsigned   pageSize;      // number of bytes in a page
-   MfDirty   mf_dirty;
-   Book* book;      // book this memfile is for
-};
-
-// things used in memory.c
-
-typedef struct ml_chunksize {
-   int      mlcs_numlines;
-   long   mlcs_totalsize;
-} MemChunkSize;
-
 // Flags when calling ml_updatechunk()
 # define ML_CHNK_ADDLINE 1
 # define ML_CHNK_DELLINE 2
 # define ML_CHNK_UPDLINE 3
 declStruct(InfoPtr);
+declStruct(MemChunkSize);
 
 // the memline structure holds all the information about a memline
 typedef struct memline {
@@ -2740,7 +2652,7 @@ typedef struct memline {
    LineNr   lockedLow;   // first line in locked
    LineNr   lockedHigh;   // last line in locked
    int      lockedInsertedLines;  // number of lines inserted in ml_locked
-   MemChunkSize *ml_chunksize;
+   MemChunkSize* ml_chunksize;
    int      ml_numchunks;
    int      ml_usedchunks;
 } MemBuf;
@@ -3616,71 +3528,6 @@ typedef enum {
 
 typedef struct timeval Elapsed;
 
-// The per-fd info for a channel.
-typedef struct {
-   int fd;       // socket/stdin/stdout/stderr, -1 if not used
-
-   ChannelMode ch_mode;
-   JobIoMode ch_io;
-   int ch_timeout;   // request timeout in msec
-
-   ReadChunk head;   // header for circular raw read queue
-   JsonQ ch_json_head;   // header for circular json read queue
-   ArrayList ch_block_ids;   // list of IDs that channel_read_json_block() is waiting for
-   // When ch_wait_len is non-zero use deadline to wait for incomplete message to be complete. 
-   // The value is the length of the incomplete message when the deadline was set.  If it gets 
-   // longer (something was received) the deadline is reset.
-   Unt ch_wait_len;
-   TimeVal deadline;
-   int ch_block_write; // for testing: 0 when not used, -1 when write
-                       // does not block, 1 simulate blocking
-   int ch_nonblocking; // write() is non-blocking
-   WriteQueue ch_writeque;   // header for write queue
-
-   CbNode ch_cb_head;   // dummy node for per-request callbacks
-   void (*nativeCb)(Arr(Byte));
-   Callback ch_callback;   // call when a msg is not handled
-
-   BookRef bookref;   // book to read from or write to
-   int ch_nomodifiable; // TRUE when book can be not 'modifiable'
-   int ch_nomod_error;   // TRUE when e_modifiable was given
-   int ch_buf_append;   // write appended lines instead top-bot
-   LineNr ch_buf_top;   // next line to send
-   LineNr ch_buf_bot;   // last line to send
-} ChannelFd;
-
-struct Channel {
-   Channel* next;
-   Channel* prev;
-
-   int id;      // ID of the channel
-   int lastMsgId;   // ID of the last message
-   CS socketName;      //Unix domain socket name
-   ChannelFd fds[PART_COUNT]; // info for socket, out, err and in
-   int writeTextMode; // write book lines with CR, not NL
-
-   Boole ch_to_be_closed; // bitset of readable fds to be closed.
-            // When all readable fds have been closed, set to (1 << PART_COUNT).
-   Boole ch_to_be_freed; // When TRUE, channel must be freed when it's safe to invoke callbacks
-   int error;   //When TRUE an error was reported.  Avoids giving pages full of error 
-                //messages when the other side has exited, only mention the first error 
-                //until the connection works again.
-
-   Callback ch_callback;   // call when any msg is not handled
-   Callback ch_close_cb;   // call when channel is closed
-   int ch_drop_never;
-   int ch_keep_open;   // do not close on read error
-   int ch_nonblock;
-
-   Job* job;   // Job that uses this channel; this does not count as a reference to avoid a 
-                  // circular reference, the job refers to the channel.
-   int ch_job_killed;   // TRUE when there was a job and it was killed or we know it died.
-   int ch_anonymous_pipe;  // ConPTY
-   int isBeingKilled;       // TerminateJobObject() was called
-
-   Unt refCount;   // reference count
-   int copyId;
-};
 
 #define JO_MODE           0x0001   // channel mode
 #define JO_IN_MODE        0x0002   // stdin mode
@@ -3832,21 +3679,10 @@ typedef enum {
 typedef pid_t ProId;
 
 //}}}
-//{{{garbage collection
+//{{{gc
 
-// structure used for explicit stack while garbage collecting hash tables
 declStruct(HtStack);
-struct HtStack {
-   EeSet* ht;
-   HtStack* prev;
-};
-
-// structure used for explicit stack while garbage collecting lists
 declStruct(ListStack);
-struct ListStack{
-   List* list;
-   ListStack* prev;
-};
 
 //}}}
 //{{{timer
@@ -3907,50 +3743,6 @@ typedef enum {
 # define POPUPMENU_ZINDEX      100
 # define POPUPWIN_DIALOG_ZINDEX      200
 # define POPUPWIN_NOTIFICATION_ZINDEX   300
-
-//}}}
-//{{{c-indent
-
-// values set from b_p_cino
-typedef struct {
-   int level;
-   int open_imag;
-   int no_brace;
-   int first_open;
-   int open_extra;
-   int close_extra;
-   int open_left_imag;
-   int jump_label;
-   int caseInd;
-   int case_code;
-   int case_break;
-   int param;
-   int func_type;
-   int comment;
-   int in_comment;
-   int in_comment2;
-   int cpp_baseclass;
-   int continuation;
-   int unclosed;
-   int unclosed2;
-   int unclosed_noignore;
-   int unclosed_wrapped;
-   int unclosed_whiteok;
-   int matching_paren;
-   int paren_prev;
-   int maxparen;
-   int maxcomment;
-   int scopedecl;
-   int scopedecl_code;
-   int java;
-   int js;
-   int keep_case_label;
-   int hash_comment;
-   int cpp_namespace;
-   int if_for_while;
-   int cpp_extern_c;
-   int pragma;
-} CIndent;
 
 //}}}
 //{{{Book
@@ -4617,6 +4409,8 @@ struct Portal { //:Portal
    LocationStack* locationStackRef;
 };
 
+declStruct(ClipBoard);
+
 // Arguments for operators.
 typedef struct Operator {
    Unt opTy;   // current pending operator type
@@ -4659,16 +4453,6 @@ typedef struct {
 
 //}}}
 //{{{location lists
-
-// Specific action on a location list
-typedef enum {
-   LL_ACTION_INVALID, // placeholder for ill-defined strings
-   LL_ACTION_ADD, // add entry to location list
-   LL_ACTION_REPLACE, 
-   LL_ACTION_UPDATE,
-   LL_ACTION_NEW, // create new location list
-   LL_ACTION_FREE
-} LocListAction;
 
 //}}}
 //{{{cursor
@@ -5276,30 +5060,6 @@ typedef enum {
 #define SELECT_DONE        2
 
 
-// Info about selected text
-typedef struct {
-   Boole owned;      //Flag: do we own the selection?
-   Pos start;      //Start of selected area
-   Pos end;        //End of selected area
-   Unt vmode;      //Visual mode character
-
-   // Fields for selection that doesn't use Visual mode
-   Short origin_row;
-   Short origin_start_col;
-   Short origin_end_col;
-   Short word_start_col;
-   Short word_end_col;
-   // limits for selection inside a popup window
-   Short min_col;
-   Short max_col;
-   Short min_row;
-   Short max_row;
-
-   Pos prev;      // Previous position
-   Short state;   // Current selection state
-   Short mode;    // Select by char, word, or line.
-} ClipBoard;
-
 
 #if (defined(__GNUC__) || defined(__clang__))
 # define ATTRIBUTE_FORMAT_PRINTF(fmt_idx, arg_idx) \
@@ -5806,7 +5566,6 @@ EXTERN Boole redraw_not_allowed INIT(= false);
 //using invalid portals or books.
 EXTERN Boole dont_parse_messages INIT(= false);
 
-EXTERN ClipBoard clipboard;   // CLIPBOARD selection in Wayland
 
 //All regular portals are linked in a list. "firstpor" points to the first entry, "lastpor" to the 
 //last entry (can be the same as firstwin) and "curpor" to the currently active portal.
@@ -9245,6 +9004,5 @@ typedef struct dirent DirEntry;
 #ifndef SIG_HOLD
 # define SIG_HOLD   ((SigHandler)-2)
 #endif
-
 
 #endif // EEGL__H

@@ -12,6 +12,7 @@
 #include "proto/input.types.h"
 #include "proto/input.h"
 #include "proto/do.h"
+#include "proto/memory.types.h"
 #include "proto/memory.h"
 #include "proto/diff.h"
 #include "proto/draw.types.h"
@@ -6830,7 +6831,7 @@ fiCheckBookTimestamp(
          Unt  tbufsize;
 
          if (!helpmesg)
-            mesg2 = E;
+            mesg2 = S"";
          tbufsize = STRLEN(mesg) + STRLEN(path) + 2 + STRLEN(mesg2) + 1; //+2 for "\n" or "; "
                                                                          // and +1 for ZERO
          CS tbuf = alloc(tbufsize);

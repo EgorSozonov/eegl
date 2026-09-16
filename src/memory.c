@@ -9,9 +9,9 @@
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 
-pub int fstat(int fd, struct stat* statbuf); // from sys/stat.h
+int fstat(int fd, struct stat* statbuf); // from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
-pub int lstat(const char* restrict, struct stat* restrict);
+int lstat(const char* restrict, struct stat* restrict);
 
 //when a block with a negative number is flushed to the file, it gets
 //a positive number. Because the reference to the block is still the negative
@@ -24,6 +24,86 @@ typedef struct {
    BlockId   nt_new_bnum;      // new, positive, number
 } NrTranslation;
 
+//{{{types
+
+//MfHashTable is a chained hashtable with BlockId key and arbitrary structures as items. This is 
+//an intrusive data structure: we require that items begin with MfHashItem which contains the key 
+//and linked list pointers.  List of items in each bucket is doubly-linked.
+struct MfHashItem {
+   MfHashItem* next;
+   MfHashItem* prev;
+   BlockId key;
+};
+
+//for each (previously) used block in the memfile there is one block header.
+//
+//The block may be linked in the used list OR in the free list.
+//The used blocks are also kept in hash lists.
+//
+//The used list is a doubly linked list, most recently used block first.
+//  The blocks in the used list have a block of memory allocated.
+//  mf_used_count is the number of pages in the used list.
+//The hash lists are used to quickly find a block in the used list.
+//The free list is a single linked list, not sorted.
+//  The blocks in the free list have no block of memory allocated and
+//  the contents of the block in the file (if any) is irrelevant.
+pub typedef struct mf_hashtab_S {
+   Ulong mask; // mask used for hash value (nr of items in array is "mht_mask" + 1)
+   Ulong mht_count;       // nr of items inserted into hashtable
+   MfHashItem** mht_buckets;  // points to mht_small_buckets or dynamically allocated array
+   MfHashItem* mht_small_buckets[MHT_INIT_SIZE];   // initial buckets
+   Byte mht_fixed;       // non-zero value forbids growth
+} MfHashTable;
+
+struct BlockHeader {
+   MfHashItem hashItem;      // header for hash table and key
+#define bh_bnum hashItem.key // block number, part of hashItem
+
+   BlockHeader* bh_next;       // next block_hdr in free or used list
+   BlockHeader* bh_prev;       // previous block_hdr in used list
+   Arr(Byte) bh_data;       // pointer to memory (for used block)
+   int pageCount;       // number of pages in this block
+
+#define BH_DIRTY    1
+#define BH_LOCKED   2
+   Byte bh_flags;       // BH_DIRTY or BH_LOCKED
+};
+
+pub typedef enum {
+   MF_DIRTY_NO = 0,      // no dirty blocks
+   MF_DIRTY_YES,      // there are dirty blocks
+   MF_DIRTY_YES_NOSYNC,   // there are dirty blocks, do not sync yet
+} MfDirty;
+
+typedef struct ml_chunksize {
+   int mlcs_numlines;
+   Long mlcs_totalsize;
+} MemChunkSize;
+
+pub
+struct MemFile {
+   CS fullFName;      // name of the file
+   CS fName;          // idem, full path
+   int fd;         // file descriptor
+   Unt mf_flags;      // flags used when opening this memfile
+   int mf_reopen;      // mf_fd was closed, retry opening
+   BlockHeader* freeFirst;      // first block_hdr in free list
+   BlockHeader* usedFirst;      // mru block_hdr in used list
+   BlockHeader* usedLast;      // lru block_hdr in used list
+   Unt mf_used_count;      // number of pages in used list
+   Unt usedCountMax;   // maximum number of pages in memory
+   MfHashTable mf_hash;      // hash lists
+   MfHashTable mf_trans;      // trans lists
+   BlockId mf_blocknr_max;      // highest positive block number + 1
+   BlockId mf_blocknr_min;      // lowest negative block number - 1
+   BlockId mf_neg_count;      // number of negative blocks numbers
+   BlockId pagesInFile;   // number of pages in the file
+   Unt pageSize;      // number of bytes in a page
+   MfDirty mf_dirty;
+   Book* book;      // book this memfile is for
+};
+
+//}}}
 //{{{@@forward declarations
 private void mem_pre_alloc_s(Unt *sizep);
 private void mem_pre_alloc_l(Unt *sizep);
@@ -5385,6 +5465,18 @@ mf_hash_grow(MfHashTable *mht) {
 //}}}
 //{{{garbage collection of variables
 
+// structure used for explicit stack while garbage collecting hash tables
+struct HtStack {
+   EeSet* ht;
+   HtStack* prev;
+};
+
+// structure used for explicit stack while garbage collecting lists
+struct ListStack{
+   List* list;
+   ListStack* prev;
+};
+
 // When recursively copying lists and dicts we need to remember which ones we
 // have done to avoid endless recursiveness.  This unique ID is used for that.
 // The last bit is used for previous_funccal, ignored when comparing.
@@ -5583,7 +5675,7 @@ free_unref_items(int copyID) {
 //
 //Return true if setting references failed somehow.
 pub int
-setRefInSet(EeSet* eeset, int copyID, ListStack   **list_stack) {
+setRefInSet(EeSet* eeset, int copyID, ListStack** list_stack) {
    int      todo;
    int      abort = false;
    EeSetItem* hi;

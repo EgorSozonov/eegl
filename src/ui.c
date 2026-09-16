@@ -43,6 +43,7 @@
 #include "proto/fileio.h"
 #include "proto/hilite.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/memory.types.h"
 #include "proto/memory.h"
@@ -8752,9 +8753,9 @@ handle_pushline(int cols, Arr(ScreenCell) cells, void* user) {
    Unt text_len;
    if (ga_grow(&ga, 1) == FAIL) {
       if (update_buffer)
-         text = E;
+         text = S"";
       else
-         text = copyStr(E);
+         text = copyStr(S"");
       text_len = 0;
    } else {
       text = ga.c;

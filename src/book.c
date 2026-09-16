@@ -30,10 +30,12 @@
 #include "proto/input.types.h"
 #include "proto/input.h"
 #include "proto/juggle.h"
+#include "proto/memory.types.h"
 #include "proto/memory.h"
 #include "proto/message.types.h"
 #include "proto/message.h"
 #include "proto/fileio.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/motor.h"
 #include "proto/normal.h"
@@ -792,7 +794,7 @@ getLinesIntoVar(
       return;
       
    if (!retlist) {
-      p = (start >= 1 && start <= book->mem.lineCount) ? memGetLine(book, start, false) : E;
+      p = (start >= 1 && start <= book->mem.lineCount) ? memGetLine(book, start, false) : S"";
       returnVar->string = copyStr(p);
    } else {
       if (end < start)
@@ -4523,7 +4525,7 @@ fileinfo(
       doWasCurBookChanged() ? (S" (+)") : S" ",
       (curBook->flags & BF_NOTEDITED) && !bookDontWrite(curBook) ? _("[Not edited]") : S"",
       (curBook->flags & BF_NEW) && !bookDontWrite(curBook) ? new_file_message() : S"",
-      (curBook->flags & BF_READERR) ? _("[Read errors]") : E, 
+      (curBook->flags & BF_READERR) ? _("[Read errors]") : S"", 
       curBook->o.modifiable ? S"" : S"[-]",
       (doWasCurBookChanged() || (curBook->flags & BF_WRITE_MASK) || !curBook->o.modifiable) ? S" " : S"" 
    );
@@ -9693,7 +9695,7 @@ prop_type_set(Var *argvars, int add) {
          if (hiliteName && *hiliteName != ZERO)
             hiId = hiliteGroupByName(mbText(hiliteName));
          if (hiId == SHORT) {
-            showErrFmtMsg(_(e_unknown_highlight_group_name_str), hiliteName ? hiliteName : E);
+            showErrFmtMsg(_(e_unknown_highlight_group_name_str), hiliteName ? hiliteName : S"");
             return;
          }
          prop->hilite = hiId;

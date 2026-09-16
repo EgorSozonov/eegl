@@ -126,6 +126,6 @@ void f_sign_jump(Var *argvars, Var* returnVar);
 void f_sign_place(Var *argvars, Var* returnVar);
 void f_sign_placelist(Var *argvars, Var* returnVar);
 void f_sign_undefine(Var *argvars, Var* returnVar);
-Boole isSigncolumnOn(Portal *wp);
+Boole isSigncolumnOn(Portal* po);
 void f_sign_unplace(Var *argvars, Var* returnVar);
 void f_sign_unplacelist(Var *argvars, Var* returnVar);

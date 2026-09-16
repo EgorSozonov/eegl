@@ -19,6 +19,7 @@
 #include "proto/insert.h"
 #include "proto/message.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/normal.h"
 #include "proto/option.h"
@@ -29,6 +30,7 @@
 #include "proto/strings.h"
 #include "proto/tag.h"
 #include "proto/term.h"
+#include "proto/window.h"
 
 typedef struct searchstat {
    int cur;        // current position of found words
@@ -2177,17 +2179,17 @@ current_search(long   count, Boole forward) {  // true for forward, false for ba
    if (!VIsual_active)
       VIsual = start_pos;
 
-   // put the cursor after the match
+   //put the cursor after the match
    curPor->cursor = end_pos;
    if (LT_POS(VIsual, end_pos) && forward) {
       if (skip_first_backward)
-         // put the cursor on the start of the match
+         //put the cursor on the start of the match
          curPor->cursor = pos;
       else
-         // put the cursor on last character of match
+         //put the cursor on last character of match
          dec_cursor();
    } ei (VIsual_active && LT_POS(curPor->cursor, VIsual) && forward)
-      curPor->cursor = pos;   // put the cursor on the start of the match
+      curPor->cursor = pos;   //put the cursor on the start of the match
    VIsual_active = true;
    VIsual_mode = 'v';
 
@@ -2195,9 +2197,9 @@ current_search(long   count, Boole forward) {  // true for forward, false for ba
       foldOpenCursor();
 
    setmouse();
-   // Make sure the clipboard gets updated.  Needed because start and
-   // end are still the same, and the selection needs to be owned
-   clipboard.vmode = ZERO;
+   //Make sure the clipboard gets updated. Needed because start and
+   //end are still the same, and the selection needs to be owned
+   clipSetVmode(ZERO);
    drawCurBookLater(UPD_INVERTED);
    showmode();
 
@@ -5095,7 +5097,7 @@ c_helptags(Invocation* invo) {
    }
 
    if (STRCMP(invo->arg, "ALL") == 0) {
-      doInPath(S"/usr/share/doc/", E, S"eegl", DIP_ALL + DIP_DIR, helptagsCb, &add_help_tags);
+      doInPath(S"/usr/share/doc/", S"", S"eegl", DIP_ALL + DIP_DIR, helptagsCb, &add_help_tags);
    } else {
       expandInit(&expand);
       expand.context = EXPAND_DIRECTORIES;

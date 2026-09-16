@@ -20,6 +20,7 @@
 #include "proto/fileio.h"
 #include "proto/insert.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/motor.h"
@@ -2513,7 +2514,7 @@ ins_esc(long* count, int commChar, int nomove) {      // don't move cursor
    if (reg_recording != 0 || restart_edit != ZERO)
       showmode();
    ei (p_smd && (gotInterruptG || !skip_showmode()))
-      msg(E);
+      msg(S"");
 
    return true;       // exit Insert mode
 }
@@ -4492,7 +4493,7 @@ prepend_startcol_text(Text* dest, Text* src, int startcol) {
 //the buffer line to the original compl_leader.
 private Text*
 get_leader_for_startcol(InsertCompletion* match, int cached) {
-   static Text adjusted_leader = {E, 0};
+   static Text adjusted_leader = {null, 0};
 
    if (!match) {
       EE_CLEAR_STRING(adjusted_leader);

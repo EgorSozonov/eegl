@@ -18,6 +18,7 @@
 #include "proto/hilite.h"
 #include "proto/insert.h"
 #include "proto/juggle.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/message.h"
 #include "proto/motor.h"
@@ -1041,7 +1042,7 @@ do_in_path_and_pp(
    int done = FAIL;
 
    if ((flags & DIP_NORTP) == 0)
-      done = doInPath(path, E, name, flags, callback, cookie);
+      done = doInPath(path, S"", name, flags, callback, cookie);
 
    if ((done == FAIL || (flags & DIP_ALL)) && (flags & DIP_START))
       done = doInPath(runtimePath, S"pack/*/start/*/", name, flags, callback, cookie);
@@ -1156,7 +1157,7 @@ pub void
 load_start_packages(void){
    did_source_packages = true;
    doInPath(
-         runtimePath, E, S"pack/*/start/*", DIP_ALL + DIP_DIR, add_pack_plugin, &APP_LOAD
+         runtimePath, S"", S"pack/*/start/*", DIP_ALL + DIP_DIR, add_pack_plugin, &APP_LOAD
    );
 }
 
@@ -1173,7 +1174,7 @@ c_packloadall(Invocation* invo) {
 //":packadd[!] {name}"
 pub void
 c_packadd(Invocation* invo) {
-   static CS plugpat = (CS)"pack/*/%s/%s";
+   static CS plugpat = S"pack/*/%s/%s";
    int len;
    int res = OK;
 
@@ -1189,7 +1190,7 @@ c_packadd(Invocation* invo) {
       // The first round don't give a "not found" error, in the second round
       // only when nothing was found in the first round.
       res = doInPath(
-         runtimePath, E, pat,
+         runtimePath, S"", pat,
          DIP_ALL + DIP_DIR + (round == 2 && res == FAIL ? DIP_ERR : 0),
          add_pack_plugin, invo->forceit ? &APP_ADD_DIR : &APP_BOTH
       );
@@ -7595,7 +7596,7 @@ abandon_cmdline(void) {
    deallocCommBuf();
    if (msg_scrolled == 0)
       compute_cmdrow();
-   msg(E);
+   msg(S"");
    redrawCommlineG = true;
 }
 
@@ -9136,8 +9137,9 @@ getCommandWorker(
 
       case Ctrl_Y:
          // Copy the modeless selection, if there is one.
-         if (clipboard.state != SELECT_CLEARED) {
-            if (clipboard.state == SELECT_DONE)
+         Short clipboardState = clipGetState();
+         if (clipboardState != SELECT_CLEARED) {
+            if (clipboardState == SELECT_DONE)
                clip_copy_modeless_selection();
             goto commlineUnchanged;
          }
@@ -16572,7 +16574,7 @@ define_function(Invocation* invo, ArrayList* lines_to_free) {
          p += 7;
          if (!currentCallS) {
             emsg_funcname(
-                e_closure_function_should_not_be_at_top_level_str, name ? name : E
+                e_closure_function_should_not_be_at_top_level_str, name ? name : S""
             );
             goto erret;
          }
@@ -18465,7 +18467,7 @@ applyAutocommGroup(
          }
       }
       if (!fname)
-         fname = E;
+         fname = S"";
       fname = copyStr(fname);   // make a copy, so we can change it
    } else {
       sfname = copyStr(fname);
@@ -18862,12 +18864,12 @@ has_autocmd(AutoEvent event, CS sfname, Book* book) {
 private CS
 get_augroup_name(Expand*, int idx) {
    if (idx == augroups.len)      // add "END" add the end
-      return (CS)"END";
+      return S"END";
    if (idx < 0 || idx >= augroups.len)   // end of list
       return NULL;
    if (AUGROUP_NAME(idx) == NULL || AUGROUP_NAME(idx) == get_deleted_augroup())
       // skip deleted entries
-      return E;
+      return S"";
    return AUGROUP_NAME(idx);      // return a name
 }
 
@@ -19167,7 +19169,7 @@ autocommAddOrDelete(Arr(Var) argvars, Var* returnVar, Boole delete) {
                 continue;
             }
          } ei (delete)
-            pat = E;
+            pat = S"";
       }
 
       once = bagGetBool(event_dict, tConst("once"), false);
@@ -19179,7 +19181,7 @@ autocommAddOrDelete(Arr(Var) argvars, Var* returnVar, Boole delete) {
       comm = bagGetString(event_dict, tConst("comm"), true);
       if (!comm) {
          if (delete)
-            comm = copyStr(E);
+            comm = copyStr(S"");
          else
             continue;
       }

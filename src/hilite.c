@@ -144,6 +144,15 @@ typedef struct {
    Short* next_list;   // group IDs for "nextgroup" argument
 } SynOptArg;
 
+pub
+#define HI_HAS_FG    1
+pub
+#define HI_HAS_BG    2
+pub
+#define HI_HAS_UNDER 4
+pub
+#define HI_IS_LINK   8
+
 //}}}
 //{{{@@forward declarations
 private Text keyName(HiKey kv, CS s);
@@ -1207,7 +1216,7 @@ pub Text
 getHiliteGroupName(Expand*, int id) {
    Short hiId = (Short)id;
    if (hiId == SHORT)
-      return (Text){E, 0};
+      return (Text){null, 0};
    ei (hiId == countGroups && hiComplIncludeNoneG != 0)
       return text(S"NONE");
    ei (hiId == countGroups + hiComplIncludeNoneG && hiComplIncludeDefaultG != 0)

@@ -100,7 +100,7 @@ void mf_fullname(MemFile* mfp);
 int mf_need_trans(MemFile* mfp);
 int get_copyID(void);
 int garbage_collect(int testing);
-int setRefInSet(EeSet* eeset, int copyID, ListStack   **list_stack);
+int setRefInSet(EeSet* eeset, int copyID, ListStack** list_stack);
 int set_ref_in_list(List *ll, int copyID);
 int set_ref_in_list_items(List* l, int copyID, HtStack** ht_stack);
 Boole memSetRefInCallback(Callback* cb, int copyID);

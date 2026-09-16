@@ -20,6 +20,7 @@
 #include "proto/hilite.h"
 #include "proto/fileio.h"
 #include "proto/insert.h"
+#include "proto/location.types.h"
 #include "proto/location.h"
 #include "proto/normal.h"
 #include "proto/option.h"
@@ -2791,7 +2792,7 @@ jumpto_tag(
       eeglFree(nofile_fname);
       nofile_fname = copyStr(fname);
       if (nofile_fname == NULL)
-         nofile_fname = E;
+         nofile_fname = S"";
       goto erret;
    }
 
