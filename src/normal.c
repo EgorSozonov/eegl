@@ -2661,12 +2661,6 @@ end_visual_mode(void) {
 
 pub void
 end_visual_mode_keep_button(void) {
-   //If we are using the clipboard, then remember what was selected in case we need to paste it 
-   //somewhere while we still own the selection. Only do this when the clipboard is already owned.
-   //Don't want to grab the selection when hitting ESC.
-   if (clipIsOwned())
-      clip_auto_select();
-
    // Emit a TextYankPost for the automatic copy of the selection into the star and/or plus register
    if (has_textyankpost()) {
        callYankDoAutocmd('*');
@@ -5825,9 +5819,6 @@ nv_gv_cmd(ActionArg*) {
    update_topline();
 
    setmouse();
-   //Make sure the clipboard gets updated. Needed because start and end are still the same, and the 
-   //selection needs to be owned
-   clipSetVmode(ZERO);
    drawCurBookLater(UPD_INVERTED);
    showmode();
 }
@@ -6369,7 +6360,7 @@ set_op_var(int optype) {
 
 //Handle an operator action. The actual work is done by jugExecuteVisualOperator().
 private void
-nv_operator(ActionArg* aArg) {
+nv_operator(ActionArg* aArg) { //:nv_operator
    Unt opTy = get_op_type(aArg->cmdchar, aArg->nchar);
    if (bt_prompt(curBook) && op_is_change(opTy) && !prompt_curpos_editable()) {
       clearopbeep(aArg->oper);
@@ -7139,9 +7130,6 @@ n_start_visual_mode(int c) {
 
    if (p_smd && msg_silent == 0)
        redrawCommlineG = true;   // show visual mode later
-   // Make sure the clipboard gets updated.  Needed because start and
-   // end may still be the same, and the selection needs to be owned
-   clipSetVmode(ZERO);
 
    // Only need to redraw this line, unless still need to redraw an old
    // Visual area (when 'lazyredraw' is set).

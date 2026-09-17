@@ -393,13 +393,6 @@ libMain(void) {
    no_wait_return = false;
    msg_scroll = false;
 
-   if (wayland_init_client(wayland_display_name) == OK) {
-      TIME_MSG("connected to Wayland display");
-
-      if (wayland_cb_init(p_wse) == OK)
-         TIME_MSG("setup Wayland clipboard");
-   }
-
    //If "-" argument given: Read file from stdin. Do this before starting Raw mode, because it may 
    //change things that the writing end of the pipe doesn't like, e.g., in case stdin and stderr
    //are the same terminal: "cat | eegl -". Using autocommands here may cause trouble...
@@ -577,7 +570,6 @@ init1(OUT MainParams* par) {
    //   --windowid
    earlyArgScan(par);
 
-   clip_init();      // Initialise clipboard stuff
    TIME_MSG("clipboard setup");
 
    //Check if we have an interactive window.
@@ -1372,10 +1364,6 @@ scanCommandLineArgs(MainParams *par) {
             want_argument = true;
             break;
 
-         case 'Y':      // "-Y" don't connect to Wayland compositor
-            wayland_no_connect = true;
-            break;
-
          case 'c':      // "-c{command}" or "-c {command}" execute command
             if (argv[0][argv_idx] != ZERO) {
                if (par->n_commands >= MAX_ARG_CMDS)
@@ -1969,7 +1957,6 @@ usage(void) {
    main_msg(_("-s <scriptin>\tRead Normal mode commands from file <scriptin>"));
    main_msg(_("-w <scriptout>\tAppend all typed commands to file <scriptout>"));
    main_msg(_("-W <scriptout>\tWrite all typed commands to file <scriptout>"));
-   main_msg(_("-Y\t\t\tDo not connect to Wayland compositor"));
    main_msg(_("--remote <files>\tEdit <files> in a Eegl server if possible"));
    main_msg(_("--remote-silent <files>  Same, don't complain if there is no server"));
    main_msg(_("--remote-wait <files>  As --remote but wait for files to have been edited"));

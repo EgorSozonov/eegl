@@ -4052,9 +4052,7 @@ c_global(Invocation* invo) {
             showErrFmtMsg(_(e_pattern_not_found_str), used_pat);
          }
       } else {
-          start_global_changes();
           global_exe(cmd);
-          end_global_changes();
       }
 
       ml_clearmarked();      // clear rest of the marks
@@ -4416,7 +4414,6 @@ c_listDo(Invocation* invo) {
       } 
       book = curBook;
    }
-   start_global_changes();
 
    i = 0;
    // start at the invo->line1 argument/portal/book
@@ -4562,7 +4559,6 @@ c_listDo(Invocation* invo) {
           }
       }
     }
-    end_global_changes();
 }
 
 // ":compiler[!] {name}"
@@ -11070,8 +11066,6 @@ c_foldopen(Invocation* invo) {
 
 pub void
 c_folddo(Invocation* invo) {
-   start_global_changes();
-
    // First set the marks for all lines closed/open.
    for (LineNr lnum = invo->line1; lnum <= invo->line2; ++lnum) {
       if (getFolds(lnum, NULL, NULL) == (invo->id == C_folddoclosed))
@@ -11081,7 +11075,6 @@ c_folddo(Invocation* invo) {
    // Execute the command on the marked lines.
    global_exe(invo->arg);
    ml_clearmarked();      // clear rest of the marks
-   end_global_changes();
 }
 
 pub int

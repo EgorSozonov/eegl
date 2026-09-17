@@ -4584,7 +4584,6 @@ do_mouse(
    }
 
    if ((jump_flags & IN_OTHER_WIN) && !VIsual_active) {
-      clip_modeless(which_button, is_click, is_drag);
       return false;
    }
 
@@ -4745,9 +4744,6 @@ do_mouse(
             VIsual_mode = 'V';
          ei ((modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_4CLICK)
             VIsual_mode = Ctrl_V;
-          // Make sure the clipboard gets updated.  Needed because start and
-          // end may still be the same, and the selection needs to be owned
-          clipSetVmode(ZERO);
       }
       // A double click selects a word or a block.
       if ((modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK) {

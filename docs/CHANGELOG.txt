@@ -242,7 +242,7 @@
 [-] Portal.futureBufOpts
 [-] P_SECURE, was_set_insecurely for options (complexity for not real gain). Sandbox too
 [-] :mkview, p_vop (weird saving of just one portal, and the @viewoptions)
-[ ] p_vdir (@viewdir for mkview)
+[-] p_vdir (@viewdir for mkview)
 [-] p_sop (sessionoptions, always on)
 [-] p_km (keymodel, Windows compatibility selections, fixed at fully ON)
 [-] p_lpl (loadplugins, superfluous)
@@ -288,6 +288,7 @@
 [-] EINTR ifdefs
 [-] OPEN_CHR_FILES (some FreeBSD thing)
 [-] PROTO (now we have BetterC instead)
+[ ] clipboard object (no need, we have wl-copy & wl-paste)
 
 tag.c:do_tag (weird matches is static, also newMatches?)
 
@@ -315,6 +316,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [?] Command to comment or uncomment out a block
 [+] sane discriminated unions in options.c instead of byte casting 
 [+] move @signcolumn option from string to bool
+[ ] refactor regexp.c to not produce side effects (messages) but instead return values
 [-] ml_get_alloc_lines (some weird crap that made separate allocations for every text line)
 [+] draw.c:screenLinesCG: change array layout to improve cache locality
 [ ] auto-replace >=, <=, != with single Unicode chars (new book-local option)
@@ -333,7 +335,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] Transition to pure 256-color palette and removal of double-width symbols
 [+] Removed UNUSED from function params because with C23 it's not needed
 [ ] Replace VimScript with Eyr
-[ ] Intern the code of unibillium and get rid of the "tinfo" dependency
+[ ] Intern the code of unibillium and get rid of the "tinfo" dependency. Parse terminfo directly
 [ ] @errorformat is unsuitable for an option: it should be per-filetype. We need a new event type
    to control via autocommands: the IsCodeChange. Scratch buffers are created with isCode = false. 
    Then when they are saved with .txt, .json, .yaml or without file extension, they stay that way.
@@ -341,7 +343,6 @@ tag.c:do_tag (weird matches is static, also newMatches?)
    The existing @errorformat should be repurposed as a global option that the autocommand can 
    choose to use. But we need separate commands to set the errorformat property for a book, also 
    to set isCode.
-[ ] Replace terminfo use with parsing the terminfo file directly
 [ ] Replace clipboard with shelling out to wl-copy and wl-paste
 [ ] Add MUSL and make the program statically-linked
 

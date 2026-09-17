@@ -1909,8 +1909,6 @@ EXTERN CS p_wim;     //@wildmode
 EXTERN Boole p_wmnu; //@wildmenu
 EXTERN long p_wh;    //@winheight
 EXTERN long p_wiw;   //@winwidth
-EXTERN CS p_wse;     //@wlseat
-EXTERN Boole p_wst;  //@wlsteal
 EXTERN long p_wtm;   //@wltimeoutlen
 EXTERN int p_wa;     //@writeany
 EXTERN long p_wd;    //@writedelay
@@ -3400,7 +3398,7 @@ typedef struct {
 //   new_argcount = fe_argv_func(current_argcount, argv, partial_argcount, called_func)
 //
 typedef struct {
-   int (* fe_argv_func)(int, Var *, int, UserFunc *);
+   int (* fe_argv_func)(int, Var *, int);
    LineNr fe_firstline; //first line of range
    LineNr fe_lastline;  //last line of range
    int* fe_doesrange;   //if not NULL: return: function handled range
@@ -5053,12 +5051,6 @@ typedef enum {
 #define HIST_INPUT   3   // input() lines
 #define HIST_DEBUG   4   // debug commands
 #define HIST_COUNT   5   // number of history tables
-
-// Selection states for modeless selection
-#define SELECT_CLEARED     0
-#define SELECT_IN_PROGRESS 1
-#define SELECT_DONE        2
-
 
 
 #if (defined(__GNUC__) || defined(__clang__))

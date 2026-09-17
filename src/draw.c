@@ -571,8 +571,6 @@ screen_line(
    if (endcol > visibleColsG)
       endcol = visibleColsG;
 
-   clip_may_clear_selection(row, row);
-
    Unt offFrom = (Unt)(currScreenLineS - screenTextP);
    Unt offTo = lineStartsP[row] + coloff;
 
@@ -1186,8 +1184,6 @@ screen_draw_rectangle(int row, int col, int height, int width, Boole invert) {
 // Redraw the characters for a vertically split portal
 private void
 redraw_block(int row, int end, Portal* po) {
-   clip_may_clear_selection(row, end - 1);
-
    int col;
    int width;
    if (!po) {
@@ -1650,9 +1646,6 @@ screenclear2(Boole doclear) {
 
    activeDecoP = defaultDecoP;   // force setting the None colors
    drawStopHilite();   // don't want hiliting here
-
-   // disable selection without redrawing it
-   clip_scroll_selection(9999);
 
    // blank out screenTextP
    for (int i = 0; i < visibleRowsG; ++i) {
@@ -2180,7 +2173,7 @@ drawInsertLines(
    if (!screen_valid(true)
         || line_count <= 0 || line_count > p_ttyscroll
         || end > visibleRowsG
-        || (clipGetState() != SELECT_CLEARED && redrawingForCallbackS > 0)
+        || redrawingForCallbackS > 0
         || popup_visible
    )
       return FAIL;
@@ -2241,13 +2234,6 @@ drawInsertLines(
    //the deleted lines won't later surface during a screen_del_lines.
    if (*termCodesG[KS_DB])
       screen_del_lines(off, end - line_count, line_count, end, false, 0, po);
-
-   //Remove a modeless selection when inserting lines halfway the screen
-   //or not the full width of the screen.
-   if (off + row > 0 || (po && po->width != topframeG->width))
-      clip_clear_selection();
-   else
-      clip_scroll_selection(-line_count);
 
    if (po && po->windowCol != 0 && *termCodesG[KS_CSV] != ZERO && *termCodesG[KS_CCS] == ZERO)
       cursor_col = po->windowCol;
@@ -2363,7 +2349,7 @@ screen_del_lines(
           || line_count <= 0
           || (!force && line_count > p_ttyscroll)
           || end > visibleRowsG
-          || (clipGetState() != SELECT_CLEARED && redrawingForCallbackS > 0)
+          || redrawingForCallbackS > 0
     )
       return FAIL;
 
@@ -2404,14 +2390,6 @@ screen_del_lines(
       type = USE_T_CDL;
    else
       return FAIL;
-
-   //Remove a modeless selection when deleting lines halfway the screen or
-   //not the full width of the screen.
-   if (off + row > 0 || (po && po->width != topframeG->width))
-      clip_clear_selection();
-   else
-      clip_scroll_selection(line_count);
-
 
    if (po && po->windowCol != 0 && *termCodesG[KS_CSV] != ZERO && *termCodesG[KS_CCS] == ZERO)
       cursor_col = po->windowCol;
@@ -4333,8 +4311,6 @@ updatePortal(Portal* po, OUT Boole* didUpdateOnePortal) {
    if (!*didUpdateOnePortal) {
       *didUpdateOnePortal = true;
       start_search_hl();
-      // When Visual area changed, may have to update selection.
-      clip_update_selection();
    }
 
    int type = po->redrawType;

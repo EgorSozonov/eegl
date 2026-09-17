@@ -8521,11 +8521,6 @@ cmdline_left_right_mouse(Unt c, int *ignore_drag_release) {
    else
       *ignore_drag_release = false;
    if (mouseRowG < (int)commlineRowG) {
-
-      // Handle modeless selection.
-      Boole is_click, is_drag;
-      int button = get_mouse_button(KEY2TERMCAP1(c), OUT &is_click, OUT &is_drag);
-      clip_modeless(button, is_click, is_drag);
       return;
    }
 
@@ -9134,16 +9129,6 @@ getCommandWorker(
             is_state.search_start = is_state.save_cursor;
          redrawcmd();
          goto commlineChanged;
-
-      case Ctrl_Y:
-         // Copy the modeless selection, if there is one.
-         Short clipboardState = clipGetState();
-         if (clipboardState != SELECT_CLEARED) {
-            if (clipboardState == SELECT_DONE)
-               clip_copy_modeless_selection();
-            goto commlineUnchanged;
-         }
-         break;
 
       case ESC:   // get here if p_wc != ESC or when ESC typed twice
       case Ctrl_C:
@@ -14833,12 +14818,17 @@ call_func(
          if (fp && (fp->uf_flags & FC_DELETED))
             error = FCERR_DELETED;
          ei (fp) {
-            if (funcexe->fe_argv_func != NULL) {
-               // postponed filling in the arguments, do it now
-               argcount = funcexe->fe_argv_func(argcount, argvars, argv_clear, fp);
+            if (funcexe->fe_argv_func) {
+               if (!has_varargs(fp) && fp->args.len <= argv_clear) {
+                  // called function doesn't take a submatches argument
+                  argcount = argv_clear;
+               } else { 
+                  // postponed filling in the arguments, do it now
+                  argcount = funcexe->fe_argv_func(argcount, argvars, argv_clear);
+               } 
             }
 
-            if (funcexe->fe_basetv != NULL) {
+            if (funcexe->fe_basetv) {
                // Method call: base->Method()
                MEMMOVE(&argv[1], argvars, sizeof(Var) * argcount);
                argv[0] = *funcexe->fe_basetv;

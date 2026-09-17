@@ -60,7 +60,7 @@
 #include "proto/window.h"
 
 #include <stdarg.h>
-pub int fstat(int fd, struct stat* statbuf); //from sys/stat.h
+int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 #include <poll.h> //for poll
 
@@ -7372,28 +7372,11 @@ handleMouseEvent(VTerm *vterm, Unt key) {
       case K_RIGHTDRAG:
       case K_RIGHTRELEASE:
          // Ignore drag and release events when the button-down wasn't seen before.
-         if (ignoreDragRelease) {
-            int save_mouse_col, save_mouse_row;
-
-            if (enter_mouse_col < 0)
-               break;
-
-            // mouse click in the portal gave us focus, handle that click now
-            save_mouse_col = mouseColG;
-            save_mouse_row = mouseRowG;
-            mouseColG = enter_mouse_col;
-            mouseRowG = enter_mouse_row;
-            clip_modeless(MOUSE_LEFT, true, false);
-            mouseColG = save_mouse_col;
-            mouseRowG = save_mouse_row;
-         }
+         if (ignoreDragRelease && enter_mouse_col < 0)
+            break;
          // FALLTHROUGH
       case K_LEFTMOUSE:
       case K_RIGHTMOUSE:
-         ignoreDragRelease = (key == K_LEFTRELEASE || key == K_RIGHTRELEASE);
-         Boole is_click, is_drag;
-         int button = get_mouse_button(KEY2TERMCAP1(key), OUT &is_click, OUT &is_drag);
-         clip_modeless(button, is_click, is_drag);
          break;
 
       case K_MIDDLEMOUSE:
@@ -10867,12 +10850,6 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
          //external command after the process has finished.
          goto select_eintr;
       }
-
-      //Technically we should first call wl_display_prepare_read() before
-      //polling the fd, then read and dispatch after we poll. However that is
-      //only needed for multi threaded environments to prevent deadlocks so we are fine.
-      if (ret > 0 && (pollFds[1].revents & POLLIN) != 0)
-          wayland_client_update();
 
       // also call when ret == 0, we may be polling a keep-open channel
       if (ret >= 0)

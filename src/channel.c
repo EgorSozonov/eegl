@@ -4,7 +4,10 @@
 //## channel.c: implements communication through a socket or any file handle, plus logging
 
 #include "eegl.h"
-#include "proto/data.macros.h"
+#include "proto/data.types.h"
+#include "proto/data.h"
+#include "proto/memory.types.h"
+#include "proto/memory.h"
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -16,13 +19,13 @@
 
 typedef sigset_t SignalSet;
 
-# define EXEC_FAILED 122 //Exit code when shell didn't execute. Don't use
+#define EXEC_FAILED 122 //Exit code when shell didn't execute. Don't use
                          //127, some shells use that already
-# define OPEN_NULL_FAILED 123 // Exit code if /dev/null can't be opened
+#define OPEN_NULL_FAILED 123 // Exit code if /dev/null can't be opened
 
-# define SIGSET_DECL(set)   SignalSet set;
-# define BLOCK_SIGNALS(set)   block_signals(set)
-# define UNBLOCK_SIGNALS(set)   unblock_signals(set)
+#define SIGSET_DECL(set)   SignalSet set;
+#define BLOCK_SIGNALS(set)   block_signals(set)
+#define UNBLOCK_SIGNALS(set)   unblock_signals(set)
 
 private int dontCheckJobEndedP = 0;
 
@@ -159,7 +162,15 @@ struct Channel {
    Unt refCount;   // reference count
    int copyId;
 };
+
+typedef enum {
+   CW_READY,
+   CW_NOT_READY,
+   CW_ERROR
+} channel_wait_result;
+
 //}}}
+#include "proto/channel.h"
 //{{{@@forward declarations
 private void channel_free_contents(Channel* channel);
 private void channel_free_channel(Channel* channel);
@@ -2580,12 +2591,6 @@ channel_fill_wfds(int maxfd_arg, OUT LPollFd* pollFds) {
       }
    }
 }
-
-typedef enum {
-   CW_READY,
-   CW_NOT_READY,
-   CW_ERROR
-} channel_wait_result;
 
 // Check for reading from "fd" with "timeout" msec. Return CW_READY when there is something to read.
 // CW_NOT_READY when there is nothing to read. CW_ERROR when there is an error.

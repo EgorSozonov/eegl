@@ -293,8 +293,6 @@ private CS did_set_wildchar(OptionChange* cha);
 private CS setWinHeight(OptionChange* cha);
 private CS setHelpHeight(OptionChange* cha);
 private CS did_set_winwidth(OptionChange* cha);
-private CS did_set_wlsteal(OptionChange* cha);
-private CS did_set_wltimeoutlen(OptionChange* cha);
 private CS did_set_wrap(OptionChange* cha);
 private CS setTimeoutLen(OptionChange* cha);
 private CS setHistory(OptionChange* cha);
@@ -359,7 +357,6 @@ private CS did_set_tabpanelopt(OptionChange* cha);
 private int expand_set_tabpanelopt(OptExpand* args, OUT ExpandMatch* matches);
 private CS setScrollopt(OptionChange* cha);
 private int expand_set_scrollopt(OptExpand* args, OUT ExpandMatch* matches);
-private CS setWlseat(OptionChange*);
 private CS did_set_showbreak(OptionChange* cha);
 private CS did_set_showcmdloc(OptionChange* cha);
 private int expand_set_showcmdloc(OptExpand* args, OUT ExpandMatch* matches);
@@ -2154,24 +2151,6 @@ did_set_winwidth(OptionChange* cha) {
    return null;
 }
 
-// Process the new @wlsteal option value.
-private CS
-did_set_wlsteal(OptionChange* cha) {
-   updateBoolRef(cha);
-   wayland_cb_reload();
-   return NULL;
-}
-
-//Process the new @wltimeoutlen option value.
-private CS
-did_set_wltimeoutlen(OptionChange* cha) {
-   if (cha->newVal.num < 0) {
-      return e_argument_must_not_be_negative;
-   }
-   updateNumRef(cha);
-   return NULL;
-}
-
 //Process the updated @wrap value.
 private CS
 did_set_wrap(OptionChange* cha) {
@@ -3235,15 +3214,6 @@ setScrollopt(OptionChange* cha) {
 private int
 expand_set_scrollopt(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_scbopt_values));
-}
-
-private CS
-setWlseat(OptionChange*) {
-   //If there isn't any seat named 'wlseat', then let the Wayland clipboard be
-   //unavailable. Ignore errors returned.
-   wayland_cb_reload();
-
-   return NULL;
 }
 
 private CS backupCopyValues[] = {SMAP((CS), 

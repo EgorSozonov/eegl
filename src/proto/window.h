@@ -9,7 +9,7 @@ void set_expr_line(CS new_line, Invocation* invo);
 CS get_expr_line(void);
 int valid_yank_reg(int regname, Boole writing);
 int get_yank_register(int regname, int writing);
-void * get_register(int      name, int copy);
+void * get_register(Unt name, int copy);
 void put_register(int name, void *reg);
 void free_register(void *reg);
 int yank_register_mline(int regname);
@@ -22,10 +22,7 @@ int do_execreg(
     int       addcr,      // always add '\n' to end of line
     int       silent)      // set "silent" flag in typeahead buffer
 ;
-int insert_reg(
-    int      regname,
-    int      literally_arg)   // insert literally, not as if typed
-;
+int insert_reg(Unt regname, int literally_arg);
 int get_spec_reg(
    int regname,
    OUT CS* retVal,
@@ -35,14 +32,14 @@ int get_spec_reg(
 int cmdline_paste_reg(
    int regname,
    int literally_arg,   // Insert text literally instead of "as typed"
-   int remcr)      // don't add CR characters
-;
+   int remcr      // don't add CR characters
+);
 void shift_delete_registers(void);
 void yank_do_autocmd(Operator* opArg, YankReg *reg);
 void init_yank(void);
 void clear_registers(void);
 void free_yank_all(void);
-int op_yank(Operator *opArg, int deleting, int mess);
+int op_yank(Operator *opArg, int deleting, Boole mess);
 void do_put(
    int      regname,
    CS expr_result,   // result for regname "=" when compiled
@@ -67,7 +64,7 @@ void write_reg_contents_lst(
    Byte** strings,
    int,
    int must_append,
-   int yank_type,
+   Unt yank_type,
    long block_len
 );
 void write_reg_contents_ex(
@@ -75,43 +72,8 @@ void write_reg_contents_ex(
    CS str,
    int maxlen,
    int must_append,
-   int yank_type,
+   Unt yank_type,
    long block_len
 );
-void clip_init();
-void clip_update_selection();
-Short clipGetState();
-void clipSetVmode(Unt newVal);
-Boole clipIsOwned();
-void clip_lose_selection(ClipBoard* cbd);
-void start_global_changes(void);
-void end_global_changes(void);
-void clip_auto_select(void);
-void clip_modeless(int button, int is_click, int is_drag);
-void clip_clear_selection();
-void clip_may_clear_selection(int row1, int row2);
-void clip_scroll_selection(int rows) ;
-void clip_copy_modeless_selection();
-int may_get_selection(int regname);
+int may_get_selection(Unt regname);
 void clipGetDefaultRegister(OUT int* rp);
-int wayland_init_client(CS display);
-void wayland_uninit_client(void);
-int wayland_client_is_connected(int quiet);
-int wayland_client_update(void);
-int wayland_cb_init(CS seat);
-void wayland_cb_uninit(void);
-ArrayList * wayland_cb_get_mime_types(WaylandSelection selection);
-int wayland_cb_receive_data(CS mime_type, WaylandSelection selection);
-int wayland_cb_own_selection(
-   wayland_cb_send_data_func_T send_cb,
-   wayland_cb_selection_cancelled_func_T cancelled_cb,
-   Arr(CS) mime_types,
-   int len,
-   WaylandSelection selection
-);
-void wayland_cb_lose_selection(WaylandSelection selection);
-int wayland_cb_selection_is_owned(WaylandSelection selection);
-int wayland_cb_is_ready(void);
-int wayland_cb_reload(void);
-int wayland_may_restore_connection(void);
-void c_wlrestore(Invocation *invo);

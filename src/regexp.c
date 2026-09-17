@@ -452,7 +452,7 @@ private void skipchr_keepstart(void);
 private Unt getchr(void);
 private Long gethexchrs(int maxinputlen);
 private Long getdecchrs(void);
-private int read_limits(long *minval, long *maxval);
+private int read_limits(long* minval, long* maxval);
 private int reg_iswordc(int c);
 private void reg_getline_common(LineNr lnum, GetlineFlags flags, Byte** line, ColNr* length);
 private Byte * reg_getline(LineNr lnum);
@@ -476,7 +476,7 @@ private int cstrncmp(Byte *s1, Byte *s2, int *n);
 private Byte * cstrchr(Byte *s, int c);
 private void do_upper(int *d, int c);
 private void do_lower(int *d, int c);
-private int fill_submatch_list(int, Var *argv, int argskip, UserFunc *fp);
+private int fill_submatch_list(int, Var *argv, int argskip);
 private void clear_submatch_list(StaticList10 *sl);
 private int eeRegsub_both(
    CS source,
@@ -604,7 +604,7 @@ private long parseBranchexec_both(
    ColNr   startcol,   // column to start looking for match
    int      *timed_out // flag set on timeout or NULL
 );
-private RegProg * compile(CS expr, int flags);
+private RegProg* compile(CS expr, int flags);
 private void freeBranch(RegProg *prog);
 private int parseBranchexec_nl(
    RegMatch   *rmp,
@@ -1162,45 +1162,38 @@ getdecchrs(void) {
    return nr;
 }
 
-
-/*
- * read_limits - Read two integers to be taken as a minimum and maximum.
- * If the first character is '-', then the range is reversed.
- * Should end with 'end'.  If minval is missing, zero is default, if maxval is
- * missing, a very big number is the default.
- */
+//read_limits - Read two integers to be taken as a minimum and maximum.
+//If the first character is '-', then the range is reversed.
+//Should end with 'end'.  If minval is missing, zero is default, if maxval is
+//missing, a very big number is the default.
 private int
-read_limits(long *minval, long *maxval) {
-    int      reverse = false;
-    Byte   *first_char;
-    long   tmp;
+read_limits(long* minval, long* maxval) {
+   Boole reverse = false;
+   Byte* first_char;
+   Long tmp;
 
-    if (*regparse == '-') {
-   // Starts with '-', so reverse the range later
-   regparse++;
-   reverse = true;
-    }
-    first_char = regparse;
-    *minval = parseLong(&regparse);
-    if (*regparse == ',') {      // There is a comma
-   if (eeIsDigit(*++regparse))
-       *maxval = parseLong(&regparse);
+   if (*regparse == '-') {
+      // Starts with '-', so reverse the range later
+      regparse++;
+      reverse = true;
+   }
+   first_char = regparse;
+   *minval = parseLong(&regparse);
+      if (*regparse == ',') {      // There is a comma
+      if (eeIsDigit(*++regparse))
+          *maxval = parseLong(&regparse);
+      else
+          *maxval = MAX_LIMIT;
+   } ei (EE_ISDIGIT(*first_char))
+      *maxval = *minval;       // It was \{n} or \{-n}
    else
-       *maxval = MAX_LIMIT;
-    }
-    ei (EE_ISDIGIT(*first_char))
-   *maxval = *minval;       // It was \{n} or \{-n}
-    else
-   *maxval = MAX_LIMIT;       // It was \{} or \{-}
-    if (*regparse == '\\')
-   regparse++;   // Allow either \{...} or \{...\}
+      *maxval = MAX_LIMIT;       // It was \{} or \{-}
+   if (*regparse == '\\')
+      regparse++;   // Allow either \{...} or \{...\}
    if (*regparse != '}')
       EMSG2_RET_FAIL(_(e_syntax_error_in_str_curlies), reg_magic == MAGIC_ALL);
 
-   /*
-    * Reverse the range if there was a '-', or make sure it is in the right
-    * order otherwise.
-    */
+   //Reverse the range if there was a '-', or make sure it is in the right order otherwise.
    if ((!reverse && *minval > *maxval) || (reverse && *minval < *maxval)) {
       tmp = *minval;
       *minval = *maxval;
@@ -1291,7 +1284,7 @@ typedef struct {
 private Execution   exe;
 private int      isBusyS = false;
 
-//Return true if character 'c' is included in 'iskeyword' option for "buf" buffer.
+//Return true if character 'c' is included in 'iskeyword' option for book where we're executin'.
 private int
 reg_iswordc(int c) {
    return eeIsWordc_buf(c, exe.book);
@@ -1899,18 +1892,14 @@ regtilde(CS source) {
 }
 
 
-// Put the submatches in "argv[argskip]" which is a list passed into
-// call_func() by eeRegsub_both().
+//Put the submatches into "argv[argskip]" which is a list passed into call_func() by 
+//eeRegsub_both(). Precondition: has_varargs(fp) || fp->args.len > argskip)
 private int
-fill_submatch_list(int, Var *argv, int argskip, UserFunc *fp) {
+fill_submatch_list(int, Var *argv, int argskip) {
    ListItem   *li;
    int      i;
    Byte   *s;
    Var   *listarg = argv + argskip;
-
-   if (!has_varargs(fp) && fp->args.len <= argskip)
-      // called function doesn't take a submatches argument
-      return argskip;
 
    // Relies on list to be the first item in StaticList10.
    init_static_list((StaticList10 *)(listarg->list));
@@ -2031,6 +2020,7 @@ free_resub_eval_result(void) {
 }
 # endif
 
+//Return difference in lengths minus 1, or 0 in case of error.
 private int
 eeRegsub_both(
    CS source,
@@ -2054,7 +2044,7 @@ eeRegsub_both(
    int      copy = flags & REGSUB_COPY;
 
    // Be paranoid...
-   if ((source == NULL && expr == NULL) || dest == NULL) {
+   if ((!source && !expr) || !dest) {
       internalErrMsg(e_null_argument);
       return 0;
    }
@@ -2066,7 +2056,7 @@ eeRegsub_both(
    src = source;
    dst = dest;
 
-   // When the substitute part starts with "\=" evaluate it as an expression.
+   // When the substitute part starts with "\=", evaluate it as an expression.
    if (expr || (source[0] == '\\' && source[1] == '=')) {
       // To make sure that the length doesn't change between checking the
       // length and copying the string, and to speed up things, the
@@ -2074,9 +2064,8 @@ eeRegsub_both(
       // "flags & REGSUB_COPY" == 0 to the call with
       // "flags & REGSUB_COPY" != 0.
       if (copy) {
-         if (eval_result[nested] != NULL) {
+         if (eval_result[nested]) {
             int eval_len = (int)STRLEN(eval_result[nested]);
-
             if (eval_len < destlen) {
                STRCPY(dest, eval_result[nested]);
                dst += eval_len;
@@ -2084,13 +2073,13 @@ eeRegsub_both(
             }
          }
       } else {
-          int          prev_can_f_submatch = can_f_submatch;
-          regsubMatch   rsm_save;
+         int prev_can_f_submatch = can_f_submatch;
+         regsubMatch   rsm_save;
 
-          EE_CLEAR(eval_result[nested]);
+         EE_CLEAR(eval_result[nested]);
 
-         // The expression may contain substitute(), which calls us
-         // recursively.  Make sure submatch() gets the text from the first level.
+         //The expression may contain substitute(), which calls us
+         //recursively.  Make sure submatch() gets the text from the first level.
          if (can_f_submatch)
             rsm_save = rsm;
          can_f_submatch = true;
@@ -2186,10 +2175,10 @@ eeRegsub_both(
       }
    } else {
       while ((c = *src++) != ZERO) {
-         if (c == '&' && (flags & REGSUB_MAGIC))
+         if (c == '&' && (flags & REGSUB_MAGIC) != 0)
             no = 0;
          ei (c == '\\' && *src != ZERO) {
-            if (*src == '&' && !(flags & REGSUB_MAGIC)) {
+            if (*src == '&' && (flags & REGSUB_MAGIC) == 0) {
                ++src;
                no = 0;
             } ei ('0' <= *src && *src <= '9') {
@@ -2301,14 +2290,13 @@ eeRegsub_both(
             if (REG_MULTI) {
                clnum = exe.multiMatch->startpos[no].lnum;
                if (clnum < 0 || exe.multiMatch->endpos[no].lnum < 0)
-                   s = NULL;
+                  s = NULL;
                else {
-                   s = reg_getline(clnum) + exe.multiMatch->startpos[no].col;
-                   if (exe.multiMatch->endpos[no].lnum == clnum)
-                  len = exe.multiMatch->endpos[no].col
-                            - exe.multiMatch->startpos[no].col;
-                   else
-                  len = (int)reg_getline_len(clnum) - exe.multiMatch->startpos[no].col;
+                  s = reg_getline(clnum) + exe.multiMatch->startpos[no].col;
+                  if (exe.multiMatch->endpos[no].lnum == clnum)
+                     len = exe.multiMatch->endpos[no].col - exe.multiMatch->startpos[no].col;
+                  else
+                     len = (int)reg_getline_len(clnum) - exe.multiMatch->startpos[no].col;
                }
             } else {
                s = exe.match->startp[no];
@@ -2317,35 +2305,35 @@ eeRegsub_both(
                else
                   len = (int)(exe.match->endp[no] - s);
             }
-            if (s != NULL) {
-               for (;;) {
-                  if (len == 0) {
-                     if (REG_MULTI) {
-                        if (exe.multiMatch->endpos[no].lnum == clnum)
-                           break;
-                        if (copy) {
-                           if (dst + 1 > dest + destlen) {
-                              internalErrMsg(S"eeRegsub_both(): not enough space");
-                              return 0;
-                           }
-                           *dst = ENTER;
+            if (!s) {
+               goto blockEnd;
+            }
+            for (;;) {
+               if (len == 0) {
+                  if (REG_MULTI) {
+                     if (exe.multiMatch->endpos[no].lnum == clnum)
+                        break;
+                     if (copy) {
+                        if (dst + 1 > dest + destlen) {
+                           internalErrMsg(S"eeRegsub_both(): not enough space");
+                           return 0;
                         }
-                        ++dst;
-                        s = reg_getline(++clnum);
-                        if (exe.multiMatch->endpos[no].lnum == clnum)
-                           len = exe.multiMatch->endpos[no].col;
-                        else
-                           len = (int)reg_getline_len(clnum);
-                     } else
-                         break;
-                   }
-                   ei (*s == ZERO) // we hit ZERO.
-                   {
+                        *dst = ENTER;
+                     }
+                     ++dst;
+                     s = reg_getline(++clnum);
+                     if (exe.multiMatch->endpos[no].lnum == clnum)
+                        len = exe.multiMatch->endpos[no].col;
+                     else
+                        len = (int)reg_getline_len(clnum);
+                  } else
+                      break;
+               } ei (*s == ZERO) {
                   if (copy)
-                      internalErrMsg(e_damaged_match_string);
+                     internalErrMsg(e_damaged_match_string);
                   goto exit;
-                   } else {
-                  if ((flags & REGSUB_BACKSLASH) && (*s == ENTER || *s == '\\')) {
+               } else {
+                  if ((flags & REGSUB_BACKSLASH) != 0 && (*s == ENTER || *s == '\\')) {
                      //Insert a backslash in front of a CR, otherwise
                      //it will be replaced by a line break.
                      //Number of backslashes will be halved later, double them here.
@@ -2356,8 +2344,8 @@ eeRegsub_both(
                         }
                         dst[0] = '\\';
                         dst[1] = *s;
-                      }
-                      dst += 2;
+                     }
+                     dst += 2;
                   } else {
                      c = mb_ptr2char(s);
 
@@ -2388,9 +2376,9 @@ eeRegsub_both(
 
                   ++s;
                   --len;
-                   }
                }
             }
+blockEnd: 
             no = -1;
          }
       }
@@ -4080,7 +4068,7 @@ parseAtom(OUT Boole* hadEol) {
          break;
 
       case '[': {
-         int       n;
+         int n;
 
          // \%[abc]
          for (n = 0; (c = peekchr()) != ']'; ++n) {
@@ -9076,14 +9064,12 @@ theend:
          exe.match->rm_matchcol = col;
       }
    }
-
    return retval;
 }
 
-
 // Compile a regular expression into internal code for the NFA matcher.
 // Return the program in allocated space. Returns NULL for an error.
-private RegProg *
+private RegProg*
 compile(CS expr, int flags) {
    if (!expr)
       return NULL;

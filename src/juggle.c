@@ -4789,18 +4789,6 @@ jugExecuteVisualOperator(ActionArg* cap, int old_col, int clipbYank) {
    //The visual area is remembered for redo
    static RedoVisual redo_VIsual = {ZERO, 0, 0, 0,0};
 
-   //Yank the visual area into the GUI selection register before we operate
-   //on it and lose it forever.
-   //Don't do it if a specific register was specified, so that ""x"*P works.
-   //This could call jugExecuteVisualOperator() recursively, but that's OK
-   //because clipbYank will be true for the nested call.
-   if (      oper->opTy != OP_NOP
-          && !clipbYank
-          && VIsual_active
-          && !isRedoVisualBusy
-          && oper->regname == 0
-   )
-      clip_auto_select();
    old_cursor = curPor->cursor;
 
    //If an operation is pending, handle it...
@@ -4808,18 +4796,18 @@ jugExecuteVisualOperator(ActionArg* cap, int old_col, int clipbYank) {
       //Avoid a problem with unwanted linebreaks in block mode.
       oper->is_VIsual = VIsual_active;
       if (oper->motion_force == 'V')
-          oper->motion_type = MLINE;
+         oper->motion_type = MLINE;
       ei (oper->motion_force == 'v') {
-         // If the motion was linewise, "inclusive" will not have been set.
-         // Use "exclusive" to be consistent.  Makes "dvj" work nice.
+         //If the motion was linewise, "inclusive" will not have been set.
+         //Use "exclusive" to be consistent.  Makes "dvj" work nice.
          if (oper->motion_type == MLINE)
             oper->inclusive = false;
-         // If the motion already was characterwise, toggle "inclusive"
+         //If the motion already was characterwise, toggle "inclusive"
          ei (oper->motion_type == MCHAR)
             oper->inclusive = !oper->inclusive;
          oper->motion_type = MCHAR;
       } ei (oper->motion_force == Ctrl_V) {
-         // Change line- or characterwise motion into Visual block mode.
+         //Change line- or characterwise motion into Visual block mode.
          if (!VIsual_active) {
             VIsual_active = true;
             VIsual = oper->start;
@@ -4828,7 +4816,7 @@ jugExecuteVisualOperator(ActionArg* cap, int old_col, int clipbYank) {
          VIsual_reselect = false;
       }
 
-      //Only redo yank when 'y' flag is in 'cpoptions'. Never redo "zf" (define fold).
+      //Never redo yank. Never redo "zf" (define fold).
       if (oper->opTy != OP_YANK
          && ((!VIsual_active || oper->motion_force)
              //Also redo Operator-pending Visual mode mappings
@@ -4967,7 +4955,7 @@ jugExecuteVisualOperator(ActionArg* cap, int old_col, int clipbYank) {
             resel_VIsual_line_count = oper->line_count;
          }
 
-         // can't redo yank (unless 'y' is in 'cpoptions') and ":"
+         // can't redo yank and ":"
          if (oper->opTy != OP_YANK
              && oper->opTy != OP_COLON
              && oper->opTy != OP_FOLD

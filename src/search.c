@@ -2197,9 +2197,6 @@ current_search(long   count, Boole forward) {  // true for forward, false for ba
       foldOpenCursor();
 
    setmouse();
-   //Make sure the clipboard gets updated. Needed because start and
-   //end are still the same, and the selection needs to be owned
-   clipSetVmode(ZERO);
    drawCurBookLater(UPD_INVERTED);
    showmode();
 

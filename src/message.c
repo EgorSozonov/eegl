@@ -1678,14 +1678,6 @@ wait_return(Boole redraw) {
             reg_recording = save_reg_recording;
             scriptout = save_scriptout;
 
-            // Strange way to allow copying (yanking) a modeless selection at the hit-enter prompt.
-            // Use CTRL-Y, because the same is used in Commline-mode and it's harmless when there 
-            // is no selection.
-            if (c == Ctrl_Y && clipboard.state == SELECT_DONE) {
-               clip_copy_modeless_selection();
-               c = K_IGNORE;
-            }
-
             //Allow scrolling back in the messages.
             //Also accept scroll-down commands when messages fill the screen, to avoid that 
             //typing one 'j' too many makes the messages disappear.
@@ -2122,13 +2114,6 @@ do_more_prompt(int typedChar) {
          lines_left = visibleRowsG - 1;
          break;
 
-      case Ctrl_Y:
-         //Strange way to allow copying (yanking) a modeless selection at the more prompt.
-         //Use CTRL-Y, because the same is used in Cmdline-mode and at the hit-enter prompt. 
-         //However, scrolling one line up might be expected...
-         if (clipboard.state == SELECT_DONE)
-            clip_copy_modeless_selection();
-         continue;
       default:      // no valid response
           msg_moremsg(true);
           continue;

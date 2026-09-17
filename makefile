@@ -11,7 +11,7 @@ RELEASE_CFLAGS = $(INTERNAL_CFLAGS) -O2
 
 LDFLAGS ?= -L/usr/lib -Wl,-z,relro,-z,now 
 
-LIBS	= -lm -ltinfo -lwayland-client
+LIBS	= -lm -ltinfo
 
 
 .RECIPEPREFIX = /
@@ -40,15 +40,6 @@ CPP_MM		= M
 DEPEND_FLAGS_FILTER = | sed 's+-I */+-isystem /+g'
 
 OBJDIR ?= ../.b/eegl
-
-WAYLAND_SRC	= libs/wayland/ext-data-control-v1.c \
-        libs/wayland/xdg-shell.c       libs/wayland/primary-selection-unstable-v1.c
-WAYLAND_OBJ	= $(OBJDIR)/ext-data-control-v1.o \
-   $(OBJDIR)/xdg-shell.o \
-   $(OBJDIR)/primary-selection-unstable-v1.o
-WAYLAND_FLAGS  = 
-
-
 
 CHANNEL_OBJ	= $(OBJDIR)/channel.o
 
@@ -724,19 +715,10 @@ BASIC_SRC_NO_DIR = \
 BASIC_SRC = $(addprefix src/, $(BASIC_SRC_NO_DIR))
 
 
-SRC =	$(BASIC_SRC) $(WAYLAND_SRC)
+SRC =	$(BASIC_SRC)
 
 EXTRA_SRC = src/channel.c \
 /     $(GRESOURCE_SRC)
-
-$(WAYLAND_SRC):
-/ cd libs/wayland; $(MAKE)
-
-# Needed for parallel jobs to work
-libs/wayland/ext-data-control-v1.h: libs/wayland/ext-data-control-v1.c
-libs/wayland/wlr-data-control-unstable-v1.h: libs/wayland/wlr-data-control-unstable-v1.c
-libs/wayland/primary-selection-unstable-v1.h: libs/wayland/primary-selection-unstable-v1.c
-libs/wayland/xdg-shell.h: libs/wayland/xdg-shell.c
 
 # Unittest files
 JSON_TEST_SRC = src/json_test.c
@@ -753,7 +735,7 @@ UNITTEST_TARGETS = $(JSON_TEST_TARGET) $(KWORD_TEST_TARGET) $(MEMFILE_TEST_TARGE
 RUN_UNITTESTS = run_json_test run_kword_test run_memfile_test run_message_test
 
 # All sources, also the ones that are not configured
-ALL_LOCAL_SRC = $(BASIC_SRC) $(UNITTEST_SRC) $(EXTRA_SRC) $(WAYLAND_SRC)
+ALL_LOCAL_SRC = $(BASIC_SRC) $(UNITTEST_SRC) $(EXTRA_SRC)
 ALL_SRC = $(ALL_LOCAL_SRC)
 
 # Which files to check with lint.  Select one of these three lines. 
@@ -784,7 +766,6 @@ OBJ_COMMON = \
  $(OBJDIR)/term.o \
  $(OBJDIR)/ui.o \
  $(OBJDIR)/window.o \
- $(WAYLAND_OBJ) \
  $(CHANNEL_OBJ)
 
 # The files included by tests are not in OBJ_COMMON.
@@ -1572,7 +1553,6 @@ clean: testclean
 / if test -d $(PODIR); then \
 / 	cd $(PODIR); $(MAKE) prefix=$(DESTDIR)$(prefix) clean; \
 / fi
-/ cd libs/wayland; $(MAKE) clean
 
 LINKEDFILES = ../*.[chm] ../*.cc ../*.in ../*.sh ../*.xs ../*.xbm ../gui_gtk_res.xml ../toolcheck \
    ../proto ../libvterm ../vimtutor ../install-sh ../Make_all.mak
@@ -1632,19 +1612,10 @@ $(OBJDIR)/ui.o: src/ui.c
 / $(COMPILE) -o $@ $<
 
 $(OBJDIR)/window.o: src/window.c
-/ $(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
+/ $(COMPILE) -o $@ $<
 
 $(OBJDIR)/main.o: main.c
 / $(COMPILE) -o $@ $<
-
-$(OBJDIR)/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
-/ $(COMPILE) $(WAYLAND_FLAGS) -o $@ $< 
-
-$(OBJDIR)/xdg-shell.o: libs/wayland/xdg-shell.c
-/ $(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
-
-$(OBJDIR)/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c
-/ $(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
 
 ###############################################################################
@@ -1717,10 +1688,6 @@ $(OBJDIR)/channel.o: src/channel.c src/eegl.h
 $(OBJDIR)/window.o: src/window.c src/eegl.h src/commands.h
 $(OBJDIR)/main.o: main.c src/eegl.h
  
-$(OBJDIR)/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
-$(OBJDIR)/xdg-shell.o: libs/wayland/xdg-shell.c
-$(OBJDIR)/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c
-
 #}}}
 
 package: ##Create a package for Arch Linux by building a specific version

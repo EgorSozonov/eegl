@@ -223,8 +223,8 @@ private CS partial_tv2string(
     Var   *tv,
     Byte   **tofree,
     Byte   *numbuf,
-    int      copyID)
-;
+    int      copyID
+);
 private CS list_tv2string(
    Var   *tv,
    Byte   **tofree,
@@ -742,11 +742,11 @@ eval_expr_valid_arg(Var *tv) {
 //Return the result in "returnVar" and OK or FAIL.
 private int
 partialEvalExp(Var* expr, Var* argv, int argc, Var* returnVar) {
-   PartiallyApplied   *partial = expr->partial;
+   PartiallyApplied* partial = expr->partial;
    if (!partial)
       return FAIL;
 
-   Byte* s = partial_name(partial);
+   CS s = partial_name(partial);
    FnExe funcexe;
 
    if (!s || *s == ZERO)
@@ -4477,17 +4477,16 @@ partial_tv2string(
     Var   *tv,
     Byte   **tofree,
     Byte   *numbuf,
-    int      copyID)
-{
+    int      copyID
+) {
    Byte   *r = NULL;
    PartiallyApplied   *pt;
-   Byte   *fname;
    ArrayList   ga;
    int      i;
    Byte   *tf;
 
    pt = tv->partial;
-   fname = string_quote(pt == NULL ? NULL : partial_name(pt), false);
+   CS fname = string_quote(pt == NULL ? NULL : partial_name(pt), false);
 
    ga_init2(&ga, 1, 100);
    ga_concat(&ga, (CS)"function(");
