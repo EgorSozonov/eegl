@@ -4,7 +4,7 @@
 //## memory.c: low-level functions for managing memory, including the text
 
 #include "eegl.h"
-//#include "proto/input.public.h"
+//#include "h/input.public.h"
 
 #include <sys/resource.h>
 #include <sys/sysinfo.h>

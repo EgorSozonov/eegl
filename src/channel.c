@@ -4,10 +4,18 @@
 //## channel.c: implements communication through a socket or any file handle, plus logging
 
 #include "eegl.h"
-#include "proto/data.types.h"
-#include "proto/data.h"
-#include "proto/memory.types.h"
-#include "proto/memory.h"
+#include "h/data.types.h"
+#include "h/data.h"
+#include "h/eval.h"
+#include "h/book.h"
+#include "h/juggle.h"
+#include "h/memory.types.h"
+#include "h/memory.h"
+#include "h/message.h"
+#include "h/option.h"
+#include "h/strings.h"
+#include "h/term.h"
+#include "h/ui.h"
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -170,7 +178,7 @@ typedef enum {
 } channel_wait_result;
 
 //}}}
-#include "proto/channel.h"
+#include "h/channel.h"
 //{{{@@forward declarations
 private void channel_free_contents(Channel* channel);
 private void channel_free_channel(Channel* channel);
@@ -434,10 +442,6 @@ channel_may_free(Channel *channel) {
    return false;
 }
 
-GEN_TYPE_L(PollFd)
-GEN_add_L(PollFd)
-
-
 //Decrement the reference count on "channel" and maybe free it when it goes
 //down to zero.  Don't free it if there is a pending action.
 //Return true when the channel is no longer referenced.
@@ -574,14 +578,12 @@ channel_connect(
       Long elapsed_msec = 0;
       //If connect() didn't finish then try using poll() to wait for the connection to be made.
       {
-         TimeVal tv;
          int so_error = 0;
          socklen_t so_error_len = sizeof(so_error);
          TimeVal start_tv;
          TimeVal end_tv;
          PollFd pollFd = (PollFd){.fd = sd, .events = POLLIN|POLLOUT, .revents = 0};
 
-         tv.tv_usec = (waitnow % 1000) * 1000;
          gettimeofday(&start_tv, NULL);
          ch_log(channel, "Waiting for connection (waiting %d msec)...", waitnowMs);
 
@@ -599,7 +601,7 @@ channel_connect(
          //poll() will not wait (as if writing is possible), need to use getsockopt() to check 
          //if the socket is actually able to connect. We detect a failure to connect when either 
          //read and write fds are set. Use getsockopt() to find out what kind of failure.
-         if ((pollFd.revents & (POLLIN|POLLOUT)) != 0)
+         if ((pollFd.revents & (POLLIN|POLLOUT)) != 0) {
             ret = getsockopt(sd, SOL_SOCKET, SO_ERROR, &so_error, &so_error_len);
             if (ret < 0 || (so_error != 0
                && so_error != EWOULDBLOCK
@@ -631,12 +633,12 @@ channel_connect(
          //The port isn't ready but we also didn't get an error. This happens when the server 
          //didn't open the socket yet. poll() may return early, wait until the remaining
          //"waitnow"  and try again.
-         waitnow -= elapsed_msec;
+         waitnowMs -= elapsed_msec;
          *waittime -= elapsed_msec;
-         if (waitnow > 0) {
-            mch_delay((long)waitnow, MCH_DELAY_IGNOREINPUT);
+         if (waitnowMs > 0) {
+            mch_delay((Long)waitnowMs, MCH_DELAY_IGNOREINPUT);
             ui_breakcheck();
-            *waittime -= waitnow;
+            *waittime -= waitnowMs;
          }
          if (!gotInterruptG) {
             if (*waittime <= 0)

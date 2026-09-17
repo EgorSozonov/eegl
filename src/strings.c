@@ -8,7 +8,7 @@
 #include <strings.h>
 #ifdef FREESTANDING_STRINGS
 #include "base.h"
-#include "proto/strings.h"
+#include "h/strings.h"
 #define alloc malloc
 #define eeRealloc realloc
 #define eeglFree(a) if (a) { free(a); }

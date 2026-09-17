@@ -4,34 +4,34 @@
 //## window.c: functions for displaying the window in Wayland
 
 #include "eegl.h"
-#include "proto/data.types.h"
-#include "proto/data.h"
-#include "proto/channel.types.h"
-#include "proto/channel.h"
-#include "proto/book.h"
-#include "proto/location.types.h"
-#include "proto/location.h"
-#include "proto/hilite.h"
-#include "proto/memory.h"
-#include "proto/window.h"
-#include "proto/do.h"
-#include "proto/draw.types.h"
-#include "proto/draw.h"
-#include "proto/eval.h"
-#include "proto/fileio.h"
-#include "proto/input.types.h"
-#include "proto/input.h"
-#include "proto/juggle.h"
-#include "proto/message.h"
-#include "proto/motor.h"
-#include "proto/normal.h"
-#include "proto/insert.h"
-#include "proto/portal.h"
-#include "proto/search.h"
-#include "proto/script.h"
-#include "proto/strings.h"
-#include "proto/term.h"
-#include "proto/ui.h"
+#include "h/data.types.h"
+#include "h/data.h"
+#include "h/channel.types.h"
+#include "h/channel.h"
+#include "h/book.h"
+#include "h/location.types.h"
+#include "h/location.h"
+#include "h/hilite.h"
+#include "h/memory.h"
+#include "h/window.h"
+#include "h/do.h"
+#include "h/draw.types.h"
+#include "h/draw.h"
+#include "h/eval.h"
+#include "h/fileio.h"
+#include "h/input.types.h"
+#include "h/input.h"
+#include "h/juggle.h"
+#include "h/message.h"
+#include "h/motor.h"
+#include "h/normal.h"
+#include "h/insert.h"
+#include "h/portal.h"
+#include "h/search.h"
+#include "h/script.h"
+#include "h/strings.h"
+#include "h/term.h"
+#include "h/ui.h"
 
 // for shm_open:
 #include <sys/mman.h>
@@ -74,7 +74,6 @@ private int init_write_reg(
    Unt*
 );
 private void finish_write_reg(int name, YankReg* old_y_previous, YankReg* old_y_current);
-private int clip_compare_pos(int row1, int col1, int row2, int col2);
 private void clip_yank_selection(int type, CS str, Long len);
 private void copyToClipboard();
 private void clip_wl_set_selection(ClipBoard *);
@@ -2448,41 +2447,7 @@ write_reg_contents_ex(
 //(visible - for Visual mode use) selection, and only that. There are no
 //versions of these for the 'clipboard' selection, as Visual mode has no use for them.
 
-//EE_ATOM_NAME is the older Eegl-specific selection type for X11.  Still
-//supported for when a mix of Eegl versions is used.
-#define EE_ATOM_NAME "_EE_TEXT"
-#define SELECT_MODE_CHAR   0
-#define SELECT_MODE_WORD   1
-#define SELECT_MODE_LINE   2
-
-//Mime types we support sending and receiving
-//Mimes with a lower index in the array are prioritized first when we are receiving data.
-private CS supported_mimes[] = {SMAP((CS),
-   EE_ATOM_NAME,
-   "text/plain;charset=utf-8",
-   "text/plain",
-   "UTF8_STRING",
-   "STRING",
-   "TEXT"
- )};
-
-//Selection stuff using Visual mode, for cutting and pasting text to other windows.
-
-private int global_change_count = 0; // if set, inside a start_global_changes
-private int clipboard_needs_update = false; // clipboard needs to be updated
-private int clip_did_set_selection = true;
-
 // Stuff for general mouse selection, without using Visual mode.
-
-//Compare two screen positions ala strcmp()
-private int
-clip_compare_pos(int row1, int col1, int row2, int col2) {
-   if (row1 > row2) return(1);
-   if (row1 < row2) return(-1);
-   if (col1 > col2) return(1);
-   if (col1 < col2) return(-1);
-   return(0);
-}
 
 // "how" flags for clip_invert_area()
 #define CLIP_CLEAR   1

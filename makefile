@@ -93,12 +93,6 @@ APP = eegl
 #	  want to disable using X11 libraries.	This speeds up starting Eegl,
 #	  but the window title will not be set and the X11 selection can not
 #	  be used.
-#	- Uncomment the line "CONF_OPT_XSMP = --disable-xsmp" if you have the
-#	  X11 Session Management Protocol (XSMP) library (libSM) but do not
-#	  want to use it.
-#	  This can speedup Eegl startup but Eegl loses the ability to catch the
-#	  user logging out from session-managers like GNOME and work
-#	  could be lost.
 #	- Uncomment one of the lines with --with-features= to enable a set of
 #	  features (but not the interfaces just mentioned).
 #	- Uncomment the line with --disable-gpm to disable gpm support
@@ -260,11 +254,6 @@ first: all
 # COMPILED BY - For including a specific e-mail address for ":version".
 #CONF_OPT_COMPBY = "--with-compiledby=John Doe <JohnDoe@yahoo.com>"
 
-# X11 Session Management Protocol support
-# Eegl will try to use XSMP to catch the user logging out if there are unsaved
-# files.  Uncomment this line to disable that (it prevents vim trying to open
-# communications with the session manager).
-#CONF_OPT_XSMP = --disable-xsmp
 
 # You may wish to include xsmp but use exclude xsmp-interact if the logout
 # XSMP functionality does not work well with your session-manager (at time of
@@ -620,7 +609,7 @@ TRANSSOURCE = ../lang
 
 SHELL = /usr/bin/bash
 
-PRE_DEFS = -iquote=src/proto
+PRE_DEFS = -iquote=src/h
 
 ALL_FLAGS = $(PRE_DEFS) $(CFLAGS) $(PROFILE_FLAGS) $(SANITIZER_FLAGS) $(LEAK_FLAGS) \
    $(ABORT_FLAGS)
@@ -630,7 +619,7 @@ LINT_FLAGS = -DLINT -I. $(PRE_DEFS) -Dinline= -D__extension__= -Dalloca=alloca
 
 LINT_EXTRA = -D"__attribute__(x)="
 
-DEPEND_FLAGS = -DPROTO -DDEPEND $(LINT_FLAGS)
+DEPEND_FLAGS =  -DDEPEND $(LINT_FLAGS)
 
 ALL_LIBS = \
 /    $(LIBS) \
@@ -875,18 +864,14 @@ $(BETTERC): ##Better C: codegen for headers & generics
 / $(CC) --std=c23 -Wall dev/betterc.c -o $(OBJDIR)/betterc
 
 better: $(BETTERC)
-/ for f in src/*.c; do $(BETTERC) -d proto "$$f"; done
+/ for f in src/*.c; do $(BETTERC) -d h "$$f"; done
 
-src/proto/%.h: src/%.c $(BETTERC)
-/ $(OBJDIR)/betterc -d proto $<
-
-proto: $(PROTO_RESULTS) $(addprefix src/proto/,$(PRO_MANUAL))
-
-      
+src/h/%.h: src/%.c $(BETTERC)
+/ $(OBJDIR)/betterc -d h $<
 
 # The normal command to compile a .c file to its .o file.
 # Without or with ALL_FLAGS.
-COMPILE = $(CC) -c -iquote $(srcdir) $(ALL_FLAGS)
+COMPILE = $(CC) -c $(ALL_FLAGS)
 CClink = $(CC)
 
 # MAIN. LINK the target for normal use or debugging.
@@ -921,8 +906,6 @@ update-po:
 / cd $(PODIR); CC="$(CC)" $(MAKE) prefix=$(DESTDIR)$(prefix) update-po
 
 
-PROTO_RESULTS := $(addprefix src/proto/,$(patsubst %.c,%.h,$(BASIC_SRC_NO_DIR)))
-
 notags:
 / -rm -f tags
 
@@ -938,7 +921,7 @@ tags TAGS: notags
 csclean:
 / -rm -vf cscope.out
 cscope.out:
-/ cscope -bv ./*.[ch] src/proto/*.h
+/ cscope -bv ./*.[ch] src/h/*.h
 cscope: csclean cscope.out  ;
 
 # Make a hilite file for types.  Requires Exuberant ctags and awk
@@ -1555,7 +1538,7 @@ clean: testclean
 / fi
 
 LINKEDFILES = ../*.[chm] ../*.cc ../*.in ../*.sh ../*.xs ../*.xbm ../gui_gtk_res.xml ../toolcheck \
-   ../proto ../libvterm ../vimtutor ../install-sh ../Make_all.mak
+   ../h ../libvterm ../vimtutor ../install-sh ../Make_all.mak
 
 
 distclean: clean scratch
