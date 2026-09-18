@@ -349,19 +349,12 @@ private VTermDeco screen_charDeco = DECO_NONE;
 //Flags for update_screen(). The higher the value, the higher the priority.
 pub
 #define UPD_VALID_NO_UPDATE 5  // no new changes, keep the command line if possible
-pub
 #define UPD_VALID          10  // book not changed, or changes marked with b_mod_*
-pub
 #define UPD_INVERTED       20  // redisplay inverted part that changed
-pub
 #define UPD_INVERTED_ALL   25  // redisplay whole inverted part
-pub
 #define UPD_REDRAW_TOP     30  // display first w_upd_rows screen lines
-pub
 #define UPD_SOME_VALID     35  // like UPD_NOT_VALID but may scroll
-pub
 #define UPD_NOT_VALID      40  // book needs complete redraw
-pub
 #define UPD_CLEAR          50  // screen messed up, clear it
 
 pub void

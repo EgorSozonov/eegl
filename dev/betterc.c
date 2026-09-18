@@ -590,6 +590,7 @@ generic(2) GEN_add_L(private, Token);
 // The following group of variants are transferred to the AST byte for byte, with no analysis
 // Their values must exactly correspond with the initial group of variants in "Node"
 // The largest value must be stored in "topVerbatimTokenVariant" constant
+pub
 #define tokArity        1 //GEN_*()
 #define tokMethod       2 //the argument signifying the method
 #define tokType         3 //the argument holding a type chunk
@@ -808,19 +809,27 @@ append(OUT FileParse* p, ToplevelThing new) {
    p->c[p->len++] = new;
 }
 
-//#define macro()...
-//Here    ^
+//\n#define macro()...
+//^ Here
 private ToplevelThing
 parseMacro(OUT S* inp, S i, AccessLevel accLevel) {
-   S p = i + 8; //+8 for `#define `
+   S p = i + 9; //+9 for `\n#define `
    for (; p[0] != ZERO && p[0] != '\n'; p++) {
       if (p[0] == '\\') {
          for (; p[0] != ZERO && p[0] != '\n'; p++)
             {}
       }
    }
-   *inp = p - 1;
-   return (ToplevelThing){(Text){i, p - i}, MACRO, accLevel};
+   *inp = p;
+   return (ToplevelThing){(Text){i + 1, p - i - 1}, MACRO, accLevel}; //1 for the newline
+}
+
+private void
+parseMacroOrMacros(OUT FileParse* p, OUT S* inp, S i, AccessLevel accLevel) {
+   append(OUT p, parseMacro(OUT inp, i, accLevel)); 
+   while (startsWith(*inp, tConst("\n#define"))) {
+      append(OUT p, parseMacro(OUT inp, *inp, accLevel)); 
+   }
 }
 
 //*inp is looking at the first non-space after "pub"/"private"/etc
@@ -884,7 +893,8 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
          break;
       case '#':
          if (startsWithKeyword("#define")) {
-            append(OUT p, parseMacro(OUT inp, i, accLevel)); 
+            parseMacroOrMacros(OUT p, OUT inp, i - 1, accLevel); //macros are parsed starting at \n
+            inp--; //to compensate for the ++ in the {parseFile} loop
             return;
          }
          break;
@@ -981,34 +991,35 @@ parseFile(Text source, FilePath fn, Arena* a) [[unsequenced]] {
       .a = a
    };
    for (S inp = source.c; inp[0] != ZERO; inp++) {
-      if (inp[0] == '\n') {
-         if (inp[1] == 'p' || inp[1] == 'i') {
-            inp++; //CONSUME the newline
-            if (startsWith(inp, tConst("pub")) && isSpaceOrNewline(inp[3])) {
-               inp = skipSpaces(inp + 3); //CONSUME "pub" and spaces after it
-               tryParseToplevelThing(OUT &res, OUT &inp, PUBLIC);
-            } ei (startsWith(inp, tConst("private")) && isSpaceOrNewline(inp[7])) {
-               inp = skipSpaces(inp + 7); //CONSUME "private" and spaces after it
-               tryParseToplevelThing(OUT &res, OUT &inp, PRIVATE);
+      if (inp[0] != '\n') {
+         continue;
+      }
+      if (inp[1] == 'p') {
+         inp++; //CONSUME the newline
+         if (startsWith(inp, tConst("pub")) && isSpaceOrNewline(inp[3])) {
+            inp = skipSpaces(inp + 3); //CONSUME "pub" and spaces after it
+            tryParseToplevelThing(OUT &res, OUT &inp, PUBLIC);
+         } ei (startsWith(inp, tConst("private")) && isSpaceOrNewline(inp[7])) {
+            inp = skipSpaces(inp + 7); //CONSUME "private" and spaces after it
+            tryParseToplevelThing(OUT &res, OUT &inp, PRIVATE);
+         }
+      } ei (inp[1] == 'g') { 
+         inp++; //CONSUME the newline
+         if (startsWith(inp, tConst("generic("))) {
+            inp += 8;
+            tryParseGeneric(OUT &res, OUT &inp, a);
+         } 
+      } ei (inp[1] == '/' && inp[2] == '/') {
+         if (inp[3] == '{' && startsWith(inp + 1, tConst("//{{" "{" forwDeclMarker))) {
+            //found forward declarations block. It will be written to, and no need to read it
+            
+            res.existingForwDecls = determineExistingForwDecls(inp + 8);
+            if (res.existingForwDecls.len > 0) {
+               //skipping the forward declarations block as it has nothing interesting
+               inp = res.existingForwDecls.c + res.existingForwDecls.len + 3;
             }
-         } ei (inp[1] == 'g') { 
-            inp++; //CONSUME the newline
-            if (startsWith(inp, tConst("generic("))) {
-               inp += 8;
-               tryParseGeneric(OUT &res, OUT &inp, a);
-            } 
-         } ei (inp[1] == '/' && inp[2] == '/') {
-            if (inp[3] == '{' && startsWith(inp + 1, tConst("//{{" "{" forwDeclMarker))) {
-               //found forward declarations block. It will be written to, and no need to read it
-               
-               res.existingForwDecls = determineExistingForwDecls(inp + 8);
-               if (res.existingForwDecls.len > 0) {
-                  //skipping the forward declarations block as it has nothing interesting
-                  inp = res.existingForwDecls.c + res.existingForwDecls.len + 3;
-               }
-            } else {
-               inp = skipNormalComment(inp);
-            }
+         } else {
+            inp = skipNormalComment(inp);
          }
       }
    }

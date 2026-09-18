@@ -47,9 +47,7 @@ pub int setxattr(const char*, const char*, const void*, size_t, int);
 // behavior for bad character, "++bad=" argument
 pub
 #define BAD_REPLACE   '?'   // replace it with '?' (default)
-pub
 #define BAD_KEEP    1000   // leave it
-pub
 #define BAD_DROP    1002   // erase it
 
 //{{{types
@@ -115,6 +113,13 @@ struct DirSearchStack {
    // Did we already expand '**' to an empty string?
    Boole didExpandStarStar;
 };
+
+
+// Flags for find_file_*() functions.
+pub
+#define FINDFILE_FILE  0  // only files
+#define FINDFILE_DIR   1  // only directories
+#define FINDFILE_BOTH  2  // files and directories
 
 //}}}
 //{{{@@forward declarations

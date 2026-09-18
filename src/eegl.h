@@ -884,11 +884,6 @@ typedef Byte Byte;
 #define EW_NOTENV    0x10000  //do not expand environment variables
 #define EW_CDPATH    0x20000  //search in 'cdpath' too
 
-// Flags for find_file_*() functions.
-#define FINDFILE_FILE  0  // only files
-#define FINDFILE_DIR   1  // only directories
-#define FINDFILE_BOTH  2  // files and directories
-
 #define COLUMNS_WITHOUT_TPL() (visibleColsG - tabpanel_width())
 #define TPL_LCOL()  tabpanel_leftcol()
 

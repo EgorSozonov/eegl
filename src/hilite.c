@@ -146,11 +146,8 @@ typedef struct {
 
 pub
 #define HI_HAS_FG    1
-pub
 #define HI_HAS_BG    2
-pub
 #define HI_HAS_UNDER 4
-pub
 #define HI_IS_LINK   8
 
 //}}}

@@ -18,6 +18,7 @@
 #include "h/memory.h"
 #include "h/message.h"
 #include "h/hilite.h"
+#include "h/fileio.types.h"
 #include "h/fileio.h"
 #include "h/insert.h"
 #include "h/location.types.h"

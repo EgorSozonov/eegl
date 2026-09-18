@@ -7,5 +7,4 @@
 #define UPD_NOT_VALID      40  // book needs complete redraw
 #define UPD_CLEAR          50  // screen messed up, clear it
 #define SLF_RIGHTLEFT  1
-#define SLF_POPUP      2
 #define SLF_INC_VCOL   4
