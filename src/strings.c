@@ -3050,6 +3050,25 @@ splitBySpace(CS inp) {
    return split;
 }
 
+pub Text
+tokenizeSeparator(OUT CS* inp, Byte separator) {
+   for (CS p = *inp;;) {
+      for (; p[0] != ZERO && p[0] != separator; p++) {
+      }
+      if (p[0] == ZERO) {
+         Text res = (Text){*inp, p - *inp};
+         *inp = p;
+         return res;
+      } ei (p[0] == separator) {
+         Text res = (Text){*inp, p - *inp};
+         *inp = p + 1;
+         return res;
+      } else {
+         p++;
+      }
+   } 
+}
+
 //Like copyStr(), but make all characters uppercase.
 //This uses ASCII lower-to-upper case translation, language independent.
 pub CS
@@ -3571,14 +3590,16 @@ fileExtension(Text fName) {
    }
 }
 
-// Does longerStr start with shorterStr?
+// Does haystack start with needle?
 pub Boole
-startsWith(CS longerStr, CS shorterStr) {
-   CS l = longerStr;
-   CS s = shorterStr;
-   for(; *l == *s && *l != ZERO && s != ZERO; l++, s++)
-      {}
-   return (*s == ZERO);
+startsWith(Text haystack, Text needle) {
+   if (needle.len > haystack.len) {
+      return false;
+   } ei (needle.len == 0) {
+      return true;
+   }
+   
+   return memcpy(haystack.c, needle.c, needle.len) == 0;
 }
 
 //}}}

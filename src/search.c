@@ -15,6 +15,7 @@
 #include "h/draw.types.h"
 #include "h/draw.h"
 #include "h/fileio.h"
+#include "h/hilite.types.h"
 #include "h/hilite.h"
 #include "h/insert.h"
 #include "h/message.h"

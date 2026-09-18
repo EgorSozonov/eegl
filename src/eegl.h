@@ -915,12 +915,6 @@ typedef Byte Byte;
 #define SEARCH_PEEK  0x800  //peek for typed char, cancel search
 #define SEARCH_COL  0x1000  //start at specified column instead of zero
 
-// Values for find_ident_under_cursor()
-#define FIND_IDENT   1 //find identifier (word)
-#define FIND_STRING  2 //find any string (WORD)
-#define FIND_EVAL    4 //include "->", "[]" and "."
-#define FIND_NOERROR 8 //no error when no word found
-
 // Values for file_name_in_line()
 #define FNAME_MESS   1 //give error message
 #define FNAME_EXP    2 //expand to path
@@ -953,11 +947,6 @@ typedef Byte Byte;
 #define BLN_REUSE       64 //may re-use number from buf_reuse
 #define BLN_NOCURWIN   128 //book is not associated with curPor
 #define BLN_MODIFIABLE 256 //book should be modifiable
-
-// Values for in_cinkeys()
-#define KEY_OPEN_FORW  0x101
-#define KEY_OPEN_BACK  0x102
-#define KEY_COMPLETE   0x103 //end of completion
 
 // Values for "noremap" argument of ins_typebuf().  Also used for
 // map->m_noremap and menu->noremap[].
@@ -1311,62 +1300,6 @@ typedef enum AutoEvent AutoEvent;
 #define AUGROUP_DEFAULT  (4000000000) //default autocomm group
 #define AUGROUP_ERROR    (4000000001) //erroneous autocomm group
 #define AUGROUP_ALL      (4000000002) //all autocomm groups
-
-//Values for index in highlight_attr[]. When making changes, also update HL_FLAGS below!
-//And update the default value of 'highlight': HIGHLIGHT_INIT in option.c
-
-
-#define HLF_NONE     0 //No decorations
-#define HLF_NONTEXT  1 //Non-text
-#define HLF_FLOAT    2 //Normal float
-#define HLF_AT       3 // characters at end of screen, characters that don't really exist in the text
-#define HLF_D        4 //directories in CTRL-D listing
-#define HLF_E        5 //error messages
-#define HLF_W        6 //warning messages
-#define HLF_M        7 //"--More--" message
-#define HLF_CM       8 //Mode (e.g., "-- INSERT --")
-#define HLF_CLN      9 //current line number
-#define HLF_CLS     10 //current line sign column
-#define HLF_CLF     11 //current line fold
-#define HLF_R       12 //return to continue message and yes/no questions
-#define HLF_S       13 //status lines
-#define HLF_SNC     14 //status lines of not-current portals
-#define HLF_C       15 //column to separate vertically split windows
-#define HLF_T       16 //Titles for output from ":set all", ":autocmd" etc.
-#define HLF_V       17 //Visual mode
-#define HLF_VNC     18 //Visual mode, autoselecting and not clipboard owner
-#define HLF_WM      19 //Wildmenu highlight
-#define HLF_FL      20 //Folded line
-#define HLF_ADD     21 //Added diff line
-#define HLF_CHD     22 //Changed diff line
-#define HLF_TXD     23 //Text Changed in changed diff line
-#define HLF_TXA     24 //Text Added in changed diff line
-#define HLF_DED     25 //Deleted diff line
-#define HLF_SC      26 //Sign column
-#define HLF_PNI     27 //popup menu normal item
-#define HLF_PSI     28 //popup menu selected item
-#define HLF_PMNI    29 //popup menu matched text in normal item
-#define HLF_PMSI    30 //popup menu matched text in selected item
-#define HLF_PNK     31 //popup menu normal item "kind"
-#define HLF_PSK     32 //popup menu selected item "kind"
-#define HLF_PNX     33 //popup menu normal item "menu" (extra text)
-#define HLF_PSX     34 //popup menu selected item "menu" (extra text)
-#define HLF_PSB     35 //popup menu scrollbar
-#define HLF_PST     36 //popup menu scrollbar thumb
-#define HLF_TPL     37 //tabpanel
-#define HLF_TPLS    38 //tabpanel selected
-#define HLF_TPLF    39 //tabpanel filler
-#define HLF_QFL     40 //location portal line currently selected
-#define HLF_ST      41 //status lines of terminal windows
-#define HLF_STNC    42 //status lines of not-current terminal portals
-#define HLF_TERMR   43 //status lines of not-current terminal portals
-#define HLF_TERMG   44 //status lines of not-current terminal portals
-#define HLF_TERMB   45 //status lines of not-current terminal portals
-#define HLF_MSG     46 //message area
-#define HLF_8       47 //Meta & special keys listed with ":map", text that is displayed different
-#define HLF_N       48 //line number for ":number" and ":#" commands
-#define HLF_LNA     49 //LineNrAbove
-#define HLF_LNB     50 //LineNrBelow
 
 typedef enum {
    OVERLAY_DECO_NONE,
@@ -4543,42 +4476,6 @@ struct JsReader {
 #define WIN_VER  2 //"-O" vertically split portals
 #define WIN_TABS 3 //"-p" portals on tabs
 
-// Struct for various parameters passed between main() and other functions.
-typedef struct {
-   int argc;
-   Arr(Arr(char)) argv;
-
-   CS fname;         // first file to edit
-
-   CS altInitFile;      // alternative init file name from -u argument
-   int clean;         // --clean argument
-
-   int n_commands;                 //no. of commands from + or -c
-   CS commands[MAX_ARG_CMDS];      //commands from + or -c arg.
-   Byte cmds_tofree[MAX_ARG_CMDS]; //commands that need free()
-   int n_pre_commands;             //no. of commands from --cmd
-   CS pre_commands[MAX_ARG_CMDS];  //commands from --cmd argument
-
-   int edit_type; //type of editing to do
-   CS tagname;    //tag from -t argument
-   CS use_ef;     //@errorfile from -q argument
-
-   int want_full_screen;
-   int not_a_term;      // no warning for missing term?
-   int tty_fail;      // exit if not a tty
-   CS term;         // specified terminal name
-   int no_swap_file;      // "-n" argument used
-   int use_debug_break_level;
-   Unt portalCount;      // number of portals to use
-   int portalLayout;     // 0, WIN_HOR, WIN_VER or WIN_TABS
-
-   int serverArg;      // TRUE when argument for a server
-   CS serverName_arg;  // cmdline arg for server name
-   CS serverStr;       // remote server command
-   CS servername;      // allocated name for our server
-   int diff_mode;      // start with 'diff' set
-} MainParams;
-
 //Lvalue. Structure returned by get_lval() and used by set_var_lval(). For a plain name:
 //  "name"       points to the variable name.
 //  "exp_name"  is NULL.
@@ -5065,15 +4962,6 @@ typedef enum {
 # define ATTRIBUTE_COLD
 #endif
 
-typedef enum {
-   ASSERT_EQUAL,
-   ASSERT_NOTEQUAL,
-   ASSERT_MATCH,
-   ASSERT_NOTMATCH,
-   ASSERT_FAILS,
-   ASSERT_OTHER
-} AssertKind;
-
 // Mode for bracketed_paste().
 typedef enum {
    PASTE_INSERT,   // insert mode
@@ -5393,22 +5281,22 @@ EXTERN Unt extraInterruptCharG INIT(= 0);       // extra interrupt character
 
 EXTERN int vgetcBusyG INIT(= 0);         // when inside vgetc() then > 0
 
-// Lines left before a "more" message.   Ex mode needs to be able to reset this
-// after you type something.
+//Lines left before a "more" message.  Ex mode needs to be able to reset this
+//after you type something.
 EXTERN int   lines_left INIT(= -1);       // lines left for listing
 EXTERN int   msg_no_more INIT(= FALSE);  // don't use more prompt, truncate messages
 
 EXTERN Boole frozenOptionsG INIT(= false);
 
-// Stack of execution contexts.  Each entry is an Estack.
-// Current context is at len - 1.
+//Stack of execution contexts.  Each entry is an Estack.
+//Current context is at len - 1.
 EXTERN ArrayList   exestack INIT5(0, 0, sizeof(Estack), 50, NULL);
-// name of error message source
+//name of error message source
 #define SOURCING_NAME (((Estack *)exestack.c)[exestack.len - 1].name)
-// line number in the message source or zero
+//line number in the message source or zero
 #define SOURCING_LNUM (((Estack *)exestack.c)[exestack.len - 1].lnum)
 
-// Script context being sourced or was sourced to define the current function.
+//Script context being sourced or was sourced to define the current function.
 EXTERN ScriptPos scriptPosG INIT3(0, 0, 0);
 
 EXTERN int   debug_break_level INIT(= -1);   // break below this level
@@ -5781,11 +5669,11 @@ typedef enum {
    MOKS_DISABLED,
    //Used after outputting t_TE when the state was not MOKS_ENABLED.
    MOKS_AFTER_T_TE,
-} mokstate_T;
+} MokState;
 
 // Set when a response to XTQMODKEYS was received. Only works for xterm
 // version 377 and later.
-EXTERN mokstate_T modify_otherkeys_state INIT(= MOKS_INITIAL);
+EXTERN MokState modify_otherkeys_state INIT(= MOKS_INITIAL);
 
 EXTERN Boole no_mapping INIT(= false);   // currently no mapping allowed
 EXTERN int isZeroJustANumberG INIT(= 0); // if "0" is interpreted as a number, not the action
@@ -6093,8 +5981,6 @@ EXTERN Byte showcmd_buf[SHOWCMD_BUFLEN];
 // If we've already warned about missing/unavailable clipboard
 EXTERN int did_warn_clipboard INIT(= FALSE);
 
-EXTERN int wayland_no_connect INIT(= FALSE); //Don't connect to Wayland compositor if TRUE
-EXTERN NULLABLE CS wayland_display_name INIT(= NULL); //Wayland display name (ex. wayland-0)
 EXTERN int wayland_display_fd; // Wayland display file descriptor; set by wayland_init_client()
 
 
@@ -8771,11 +8657,6 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 // values for eeHandleSignal() that are not a signal
 #define SIGNAL_BLOCK   (-1)
 #define SIGNAL_UNBLOCK  (-2)
-
-// flags for skipEeglGrepPat()
-#define VGR_GLOBAL  1
-#define VGR_NOJUMP  2
-#define VGR_FUZZY   4
 
 // last argument for do_source()
 #define DOSO_NONE  0

@@ -18,12 +18,12 @@
 #include "h/draw.h"
 #include "h/eval.h"
 #include "h/fileio.h"
+#include "h/hilite.types.h"
 #include "h/hilite.h"
 #include "h/juggle.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
-#include "h/motor.h"
 #include "h/normal.h"
 #include "h/option.h"
 #include "h/persist.h"
@@ -34,14 +34,6 @@
 #include "h/term.h"
 #include "h/ui.h"
 #include "h/window.h"
-
-// Various parameters passed between main() and other functions.
-private MainParams paramsP;
-
-private void* virtualBuf = null;      // buffer for setvbuf()
-
-private CS start_dir = NULL;   // current working dir on startup
-
 //{{{the intro screen and version info about the current build
 
 //Vim originated from Stevie version 3.6 (Fish disk 217) by GRWalter (Fred)
@@ -275,6 +267,45 @@ c_intro(Invocation*){
 #define EDIT_TAG    3       // tag name argument given, use tagname
 #define EDIT_QF     4       // start in quickfix mode
 
+// Struct for various parameters passed between main() and other functions.
+pub
+typedef struct {
+   int argc;
+   Arr(Arr(char)) argv;
+
+   CS fname;         // first file to edit
+
+   CS altInitFile;      // alternative init file name from -u argument
+   int clean;         // --clean argument
+
+   int n_commands;                 //no. of commands from + or -c
+   CS commands[MAX_ARG_CMDS];      //commands from + or -c arg.
+   Byte cmds_tofree[MAX_ARG_CMDS]; //commands that need free()
+   int n_pre_commands;             //no. of commands from --cmd
+   CS pre_commands[MAX_ARG_CMDS];  //commands from --cmd argument
+
+   int edit_type; //type of editing to do
+   CS tagname;    //tag from -t argument
+   CS use_ef;     //@errorfile from -q argument
+
+   int want_full_screen;
+   int not_a_term;      // no warning for missing term?
+   int tty_fail;      // exit if not a tty
+   CS term;         // specified terminal name
+   int no_swap_file;      // "-n" argument used
+   int use_debug_break_level;
+   Unt portalCount;      // number of portals to use
+   int portalLayout;     // 0, WIN_HOR, WIN_VER or WIN_TABS
+
+   int serverArg;      // TRUE when argument for a server
+   CS serverName_arg;  // cmdline arg for server name
+   CS serverStr;       // remote server command
+   CS servername;      // allocated name for our server
+   int diff_mode;      // start with 'diff' set
+} MainParams;
+
+
+#include "h/motor.h"
 //{{{@@forward declarations
 private void list_version(void);
 private void intro_message(int colon);
@@ -304,6 +335,14 @@ private void usage(void);
 private void check_swap_exists_action(void);
 private void set_progpath(CS argv0);
 //}}}
+
+
+// Various parameters passed between main() and other functions.
+private MainParams paramsP;
+
+private void* virtualBuf = null;      // buffer for setvbuf()
+
+private CS start_dir = NULL;   // current working dir on startup
 
 #ifndef NO_EEGL_MAIN
 private void usage(void);

@@ -26,6 +26,7 @@
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
+#include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/normal.h"
 #include "h/option.h"

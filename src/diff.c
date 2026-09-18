@@ -24,6 +24,8 @@
 #include "h/diff.h"
 #include "h/eval.h"
 #include "h/juggle.h"
+#include "h/hilite.types.h"
+#include "h/hilite.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"

@@ -592,7 +592,9 @@ generic(2) GEN_add_L(private, Token);
 // The largest value must be stored in "topVerbatimTokenVariant" constant
 pub
 #define tokArity        1 //GEN_*()
+pub
 #define tokMethod       2 //the argument signifying the method
+pub
 #define tokType         3 //the argument holding a type chunk
 
 #define errGenParser    1
@@ -894,7 +896,8 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
       case '#':
          if (startsWithKeyword("#define")) {
             parseMacroOrMacros(OUT p, OUT inp, i - 1, accLevel); //macros are parsed starting at \n
-            inp--; //to compensate for the ++ in the {parseFile} loop
+            
+            (*inp)--; //to compensate for the ++ in the {parseFile} loop
             return;
          }
          break;
@@ -1297,7 +1300,6 @@ buildFileImpl(
          toplevelWrite(OUT &w, r->c + i);
       }
    }
-   _bp(true);
    if (genericMacros.len > 0) {
       memcpy(w, genericMacros.c, genericMacros.len);
       w += genericMacros.len;

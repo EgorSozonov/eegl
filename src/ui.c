@@ -41,6 +41,7 @@
 #include "h/eval.h"
 #include "h/do.h"
 #include "h/fileio.h"
+#include "h/hilite.types.h"
 #include "h/hilite.h"
 #include "h/juggle.h"
 #include "h/location.types.h"
@@ -10823,7 +10824,7 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
       
       PollFd pollFds[2] = {
          (PollFd){.fd = fd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0},
-         (PollFd){.fd = wayland_display_fd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0},
+         //(PollFd){.fd = wayland_display_fd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0},
       };
 
       LPollFd listFds = (LPollFd){.c = pollFds, .len = 2, .cap = 2};

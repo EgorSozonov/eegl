@@ -334,6 +334,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [ ] Frozen options mode? (options cannot be changed after the init script)
 [+] Transition to pure 256-color palette and removal of double-width symbols
 [+] Removed UNUSED from function params because with C23 it's not needed
+[ ] Replace all uses of strtok() with a better function
 [ ] Replace VimScript with Eyr
 [ ] Intern the code of unibillium and get rid of the "tinfo" dependency. Parse terminfo directly
 [ ] @errorformat is unsuitable for an option: it should be per-filetype. We need a new event type

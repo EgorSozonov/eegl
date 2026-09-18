@@ -74,6 +74,14 @@ typedef struct match_struct {
    double match_bonus[MATCH_MAX_LEN];
 } MatchInfo;
 
+typedef enum {
+   ASSERT_EQUAL,
+   ASSERT_NOTEQUAL,
+   ASSERT_MATCH,
+   ASSERT_NOTMATCH,
+   ASSERT_FAILS,
+   ASSERT_OTHER
+} AssertKind;
 
 //}}}
 //{{{@@forward declarations

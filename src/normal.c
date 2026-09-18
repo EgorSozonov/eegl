@@ -18,12 +18,14 @@
 #include "h/draw.h"
 #include "h/eval.h"
 #include "h/fileio.h"
+#include "h/hilite.types.h"
 #include "h/hilite.h"
 #include "h/insert.h"
 #include "h/juggle.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
+#include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/normal.h"
 #include "h/option.h"
@@ -2737,6 +2739,13 @@ checkIsBalloonItem(CS ptr, int* colp, int* bnp, int dir){
    }
    return false;
 }
+
+
+pub
+#define FIND_IDENT   1 //find identifier (keyword)
+#define FIND_STRING  2 //find any non-whitespace text
+#define FIND_EVAL    4 //include "->", "[]" and "." (useful for C program debugging)
+#define FIND_NOERROR 8 //no error when no word found
 
 // Find the identifier under or to the right of the cursor.
 // "find_type" can have one of three values:

@@ -17,6 +17,7 @@
 #include "h/eval.h"
 #include "h/memory.h"
 #include "h/message.h"
+#include "h/hilite.types.h"
 #include "h/hilite.h"
 #include "h/fileio.types.h"
 #include "h/fileio.h"
@@ -151,7 +152,7 @@ typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
 
 typedef struct {
    CS name;
-   int (*func)(Invocation* invo);
+   int (*func)(Invocation* invo, OUT CS* inp);
    CS help;
    CS usage;
    int cansplit;      // if supports splitting window
@@ -169,7 +170,7 @@ typedef enum {
 private char* mt_names[MT_COUNT/2] = {"FSC", "F C", "F  ", "FS ", " SC", "  C", "   ", " S "};
 
 #define NOTAGFILE   99      // return value for jumpto_tag
-private Byte   *nofile_fname = NULL;   // fname for NOTAGFILE error
+private Byte* nofile_fname = NULL;   // fname for NOTAGFILE error
 
 
 //{{{@@forward declarations
@@ -293,8 +294,8 @@ private CS cs_parse_results(
    int cnumber,
    CS buf,
    int bufsize,
-   Byte **context,
-   Byte **linenumber,
+   OUT CS* context,
+   OUT CS* linenumber,
    Byte **search
 );
 private void cs_file_results(FILE* f, int* nummatches_a);
@@ -312,11 +313,11 @@ private int cs_read_prompt(int i);
 private void sig_handler(int);
 private void cs_release_csp(int i, int freefnpp);
 private int cs_reset(Invocation*);
-private CS cs_resolve_file(int i, CS name);
+private CS cs_resolve_file(int i, Text name);
 private int cs_show(Invocation*);
 //}}}
 
-private Byte   *tagmatchname = NULL;   // name of last used tag
+private Byte* tagmatchname = NULL;   // name of last used tag
 
 //Tag for preview window is remembered separately, to avoid messing up the normal tagstack.
 private Taggy ptag_entry = {NULL, {{0, 0, 0}, 0}, 0, 0, NULL};
@@ -3477,8 +3478,7 @@ typedef struct csi {
 private CscopeInfo* csinfo = NULL;
 private int csinfo_size = 0;   // number of items allocated in csinfo[]
 
-private int eap_arg_len;    // length of invo->arg, set in cs_lookup_cmd()
-private CScopeCommand       cs_cmds[] = {
+private CScopeCommand cs_cmds[] = {
    { S"add",   cs_add,
      S"Add a new database",    S"add file|dir [pre-path] [flags]", 0 },
    { S"find",   cs_find,
@@ -3771,8 +3771,7 @@ cs_connection(int num, CS dbpath, CS ppath) {
 
 //PRIVATE functions
 
-//Add cscope database or a directory name (to look for cscope.out)
-//to the cscope connection list.
+//Add cscope database or a directory name (to look for cscope.out) to the cscope connection list.
 private int
 cs_add(Invocation*) {
    CS flags = NULL;
@@ -3923,7 +3922,6 @@ cs_reading_emsg(int idx) {// connection index
 //Count the number of matches for a given cscope connection.
 private int
 cs_cnt_matches(int idx) {
-   CS stok;
    int nlines = 0;
 
    CS buf = alloc(CSREAD_BUFSIZE);
@@ -3944,29 +3942,28 @@ cs_cnt_matches(int idx) {
       //Bail out for the "Unable to search" error.
       if (STRSTR(buf, "Unable to search database") != NULL)
          break;
-      if ((stok = (CS)strtok((char*)buf, (const char *)" ")) == NULL)
-         continue;
-      if (STRSTR(stok, "cscope:") == NULL)
+      CS p = buf;
+      Text stok = tokenizeSeparator(OUT &p, ' ');
+      if (stok.len == 0 || !startsWith(stok, tConst("cscope:")))
          continue;
 
-      if ((stok = (CS)strtok(NULL, (const char *)" ")) == NULL)
+      stok = tokenizeSeparator(OUT &p, ' ');
+      if (stok.len == 0)
          continue;
-      nlines = ATOI(stok);
+      nlines = ATOI(stok.c);
       if (nlines < 0) {
          nlines = 0;
          break;
       }
 
-      if ((stok = (CS)strtok(NULL, (const char *)" ")) == NULL)
-         continue;
-      if (STRNCMP(stok, "lines", 5))
+      stok = tokenizeSeparator(OUT &p, ' ');
+      if (stok.len == 0 || !eq(stok, tConst("lines")))
          continue;
 
-      break;
+      eeglFree(buf);
+      return nlines;
    }
-
-   eeglFree(buf);
-   return nlines;
+   return 0;
 }
 
 
@@ -4149,13 +4146,6 @@ cs_find(Invocation* invo) {
       return false;
    }
 
-   //Let's replace the ZEROs written by strtok() with spaces - we need the
-   //spaces to correctly display the quickfix/location list window's title.
-   for (int i = 0; i < eap_arg_len; ++i) {
-      if (ZERO == invo->arg[i])
-         invo->arg[i] = ' ';
-   }
-
    return cs_find_common(
           opt, pat, invo->forceit, true, invo->id == C_lcscope, *invo->commline
    );
@@ -4279,7 +4269,7 @@ cs_find_common(
 //Print help.
 private int
 cs_help(Invocation*) {
-   CScopeCommand *cmdp = cs_cmds;
+   CScopeCommand* cmdp = cs_cmds;
 
    (void)msg_puts(_("cscope commands:\n"));
    while (cmdp->name) {
@@ -4385,21 +4375,17 @@ cs_insert_filelist(CS fname, CS ppath, CS flags, FileStat* sb) {
 //Find cscope command in command table.
 private CScopeCommand *
 cs_lookup_cmd(Invocation* invo) {
-   CScopeCommand* cmdp;
-   CS stok;
-
-   if (invo->arg == NULL)
+   if (!invo->arg)
       return NULL;
 
-   // Store length of invo->arg before it gets modified by strtok().
-   eap_arg_len = (int)STRLEN(invo->arg);
-
-   if ((stok = (CS)strtok((char *)(invo->arg), (const char *)" ")) == NULL)
+   CS p = invo->arg;
+   Text stok = tokenizeSeparator(OUT &p, ' ');
+   
+   if (stok.len == 0)
       return NULL;
 
-   Unt len = STRLEN(stok);
-   for (cmdp = cs_cmds; cmdp->name != NULL; ++cmdp) {
-      if (STRNCMP((stok), cmdp->name, len) == 0)
+   for (CScopeCommand* cmdp = cs_cmds; cmdp->name; ++cmdp) {
+      if (STRNCMP((stok.c), cmdp->name, stok.len) == 0)
           return (cmdp);
    }
    return NULL;
@@ -4409,7 +4395,6 @@ cs_lookup_cmd(Invocation* invo) {
 private int
 cs_kill(Invocation*) {
    CS stok;
-   int i;
 
    if ((stok = (CS)strtok((char *)NULL, (const char *)" ")) == NULL) {
       cs_usage_msg(Kill);
@@ -4417,6 +4402,7 @@ cs_kill(Invocation*) {
    }
 
    // only single digit positive and negative integers are allowed
+   int i;
    if ((STRLEN(stok) < 2 && EE_ISDIGIT((int)(stok[0])))
        || (STRLEN(stok) < 3 && stok[0] == '-' && EE_ISDIGIT((int)(stok[1])))
    )
@@ -4503,7 +4489,6 @@ cs_make_eegl_style_matches(CS fname, CS slno, CS search, CS tagstr) {
    return buf;
 }
 
-
 //This is kind of hokey, but i don't see an easy way round this.
 //
 //Store: keep a ptr to the (malloc'd) memory of matches originally
@@ -4531,7 +4516,7 @@ cs_manage_matches(Arr(CS) matches, Arr(CS) contexts, int totmatches, Mcmd cmd) {
       assert(matches != NULL);
       assert(totmatches > 0);
       if (mp || cp)
-          (void)cs_manage_matches(NULL, NULL, -1, Free);
+         (void)cs_manage_matches(NULL, NULL, -1, Free);
       mp = matches;
       cp = contexts;
       cnt = totmatches;
@@ -4539,7 +4524,7 @@ cs_manage_matches(Arr(CS) matches, Arr(CS) contexts, int totmatches, Mcmd cmd) {
       break;
    case Get:
       if (next >= cnt)
-          return NULL;
+         return NULL;
 
       p = mp[next];
       next++;
@@ -4577,17 +4562,16 @@ cs_parse_results(
    int cnumber,
    CS buf,
    int bufsize,
-   Byte **context,
-   Byte **linenumber,
+   OUT CS* context,
+   OUT CS* linenumber,
    Byte **search
 ) {
    int ch;
    CS p;
-   CS name;
 
    if (FGETS(buf, bufsize, csinfo[cnumber].fr_fp) == NULL) {
       if (feof(csinfo[cnumber].fr_fp))
-          errno = EIO;
+         errno = EIO;
 
       cs_reading_emsg(cnumber);
 
@@ -4605,13 +4589,20 @@ cs_parse_results(
    //cscope output is in the following format:
    //
    //  <filename> <context> <line number> <pattern>
-   if ((name = (CS)strtok((char*)buf, (const char *)" ")) == NULL)
+   CS p1 = buf;
+   Text name = tokenizeSeparator(OUT &p1, ' ');
+   if (name.len == 0)
       return NULL;
-   if ((*context = (CS)strtok(NULL, (const char *)" ")) == NULL)
+   Text contextTk = tokenizeSeparator(OUT &p1, ' ');   
+   *context = contextTk.c;
+   if (contextTk.len == 0)
       return NULL;
-   if ((*linenumber = (CS)strtok(NULL, (const char *)" ")) == NULL)
+   Text linenumberTk = tokenizeSeparator(OUT &p1, ' '); 
+   *linenumber = linenumberTk.c; 
+   if (linenumberTk.len == 0)
       return NULL;
-   *search = *linenumber + STRLEN(*linenumber) + 1;   // +1 to skip \0
+      
+   *search = *linenumber + linenumberTk.len + 1;   // +1 to skip ZERO
 
    // --- nvi ---
    // If the file is older than the cscope database, that is,
@@ -4620,8 +4611,7 @@ cs_parse_results(
    if (STRCMP(*search, "<unknown>") == 0)
       *search = NULL;
 
-   name = cs_resolve_file(cnumber, name);
-   return name;
+   return cs_resolve_file(cnumber, name);
 }
 
 //Write cscope find results to file.
@@ -4765,8 +4755,9 @@ cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
    CS matchesbuf = alloc(STRLEN(matches[0]) + 1);
 
    STRCPY(matchesbuf, matches[0]);
-   CS ptag = (CS)strtok((char*)matchesbuf, "\t");
-   if (ptag == NULL) {
+   CS p = matchesbuf;
+   Text ptag = tokenizeSeparator(OUT &p, '\t');
+   if (ptag.len == 0) {
       eeglFree(matchesbuf);
       return;
    }
@@ -4792,16 +4783,17 @@ cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
       matchesbuf = alloc(STRLEN(matches[idx]) + 1);
       (void)STRCPY(matchesbuf, matches[idx]);
 
-      if (strtok((char*)matchesbuf, (const char *)"\t") == NULL
-         || (fname = (CS)strtok(NULL, (const char *)"\t")) == NULL
-         || (lno = (CS)strtok(NULL, (const char *)"\t")) == NULL)
-      {
-          eeglFree(matchesbuf);
-          continue;
+      CS p = matchesbuf;
+      Text firstTk = tokenizeSeparator(OUT &p, '\t');
+      Text sndTk = tokenizeSeparator(OUT &p, '\t');
+      Text thirdTk =  tokenizeSeparator(OUT &p, '\t');
+      if (firstTk.len == 0 || secondTk.len == 0 || thirdTk.len == 0){
+         eeglFree(matchesbuf);
+         continue;
       }
-      extra = (CS)strtok(NULL, (const char *)"\t");
+      Text extraTk = tokenizeSeparator(OUT &p, '\t');
 
-      lno[STRLEN(lno)-2] = '\0';  // ignore ;" at the end
+      lno[secondTk.len - 2] = '\0';  // ignore ;" at the end
 
       // hopefully 'num' (num of matches) will be less than 10^16
       newsize = (int)(STRLEN(csfmt_str) + 16 + STRLEN(lno));
@@ -4842,7 +4834,7 @@ cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
           outputShortenedToALine(text((CS)extra), 0);
       }
 
-      eeglFree(matchesbuf); // only after printing extra due to strtok use
+      eeglFree(matchesbuf);
 
       if (msgColG)
           msg_putchar('\n');
@@ -5064,10 +5056,10 @@ cs_reset(Invocation*) {
 //We need to prepend the prefix because on some cscope's, the output never has the prefix 
 //prepended. Contrast this with my development system (Digital Unix), which does.
 private CS
-cs_resolve_file(int i, CS name) {
+cs_resolve_file(int i, Text name) {
    //Ppath is freed when we destroy the cscope connection. Fullname is freed after 
    //cs_make_eegl_style_matches, after it's been copied into the tag buffer used by Eegl.
-   Unt len = (int)(STRLEN(name) + 2);
+   Unt len = (int)(name.len + 2);
    Byte csdir[MAXPATHL];
    if (csinfo[i].ppath)
       len += STRLEN(csinfo[i].ppath);
@@ -5083,18 +5075,20 @@ cs_resolve_file(int i, CS name) {
    //"../.." and the prefix path is also "../..".  if something like this
    //happens, you are screwed up and need to fix how you're using cscope.
    CS fullname;
-   if (csinfo[i].ppath
-       && (STRNCMP(name, csinfo[i].ppath, STRLEN(csinfo[i].ppath)) != 0)
-       && (name[0] != '/')
+   Text ppath = mbText(csinfo[i].ppath);
+   if (ppath.len > 0
+       && !startsWith(name, ppath)
+       && (name.c[0] != '/')
      
    ) {
       fullname = alloc(len);
-      (void)SPRINTF(fullname, "%s/%s", csinfo[i].ppath, name);
+      (void)SPRINTF(fullname, "%s/", csinfo[i].ppath);
+      (void)SNPRINTF(fullname + ppath.len, name.len, "%s", name.c);
    } ei (csinfo[i].fname && *csdir != ZERO) {
       // Check for csdir to be non empty to avoid empty path concatenated to cscope output.
-      fullname = concat_fnames(csdir, name, true);
+      fullname = concat_fnames(csdir, name.c, true);
    } else {
-      fullname = copyStr(name);
+      fullname = copyStr(name.c);
    }
 
    return fullname;

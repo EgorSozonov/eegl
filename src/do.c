@@ -21,6 +21,7 @@ int mkdir(const char* pathname, mode_t mode);
 #include "h/do.h"
 #include "h/draw.types.h"
 #include "h/draw.h"
+#include "h/hilite.types.h"
 #include "h/hilite.h"
 #include "h/eval.h"
 #include "h/fileio.types.h"
@@ -30,7 +31,9 @@ int mkdir(const char* pathname, mode_t mode);
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
+#include "h/motor.types.h"
 #include "h/motor.h"
+#include "h/normal.types.h"
 #include "h/normal.h"
 #include "h/option.h"
 #include "h/persist.h"
@@ -66,6 +69,13 @@ typedef struct {
    Book* bk;
    FILE* file;
 } BufInfo;
+
+
+// flags for skipEeglGrepPat()
+pub
+#define VGR_GLOBAL  1
+#define VGR_NOJUMP  2
+#define VGR_FUZZY   4
 
 //}}}
 //{{{@@forward decls
@@ -4294,11 +4304,11 @@ skipEeglGrepPat_ext(CS p, Byte **s, Unt* flags, Byte** nulp, int *cp) {
       while (*p == 'g' || *p == 'j' || *p == 'f') {
          if (flags) {
             if (*p == 'g')
-                *flags |= VGR_GLOBAL;
+               *flags |= VGR_GLOBAL;
             ei (*p == 'j')
-                *flags |= VGR_NOJUMP;
+               *flags |= VGR_NOJUMP;
             else
-                *flags |= VGR_FUZZY;
+               *flags |= VGR_FUZZY;
           }
           ++p;
       }
@@ -4306,11 +4316,10 @@ skipEeglGrepPat_ext(CS p, Byte **s, Unt* flags, Byte** nulp, int *cp) {
    return p;
 }
 
-// Skip over the pattern argument of ":vimgrep /pat/[g][j]".
-// Put the start of the pattern in "*s", unless "s" is NULL.
-// If "flags" is not NULL put the flags in it: VGR_GLOBAL, VGR_NOJUMP.
-// If "s" is not NULL terminate the pattern with a ZERO.
-// Return a pointer to the char just past the pattern plus flags.
+//Skip over the pattern argument of ":vimgrep /pat/[g][j]". Put the start of the pattern in "*s", 
+//unless "s" is NULL. If "flags" is not NULL put the flags in it: VGR_GLOBAL, VGR_NOJUMP.
+//If "s" is not NULL terminate the pattern with a ZERO.
+//Return a pointer to the char just past the pattern plus flags.
 pub CS
 skipEeglGrepPat(CS p, Byte **s, Unt *flags) {
    return skipEeglGrepPat_ext(p, s, flags, NULL, NULL);
