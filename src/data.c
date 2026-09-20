@@ -11422,8 +11422,8 @@ copyStr_shellescape(CS string, int do_special, int do_newline) {
 
 private int json_encode_item(ArrayList *gap, Var *val, int copyID, int options);
 
-// Encode "val" into a JSON format string. The result is added to "gap"
-// Returns FAIL on failure and makes gap->c empty.
+//Encode "val" into a JSON format string. The result is added to "gap"
+//Return FAIL on failure and make gap->c empty.
 private int
 json_encode_gap(ArrayList* gap, Var* val, int options) {
    if (json_encode_item(gap, val, get_copyID(), options) == FAIL) {
@@ -11452,18 +11452,17 @@ json_encode(Var* val, int options) {
 //Return NULL when out of memory.
 pub CS
 json_encode_nr_expr(int nr, Var* val, int options) {
-   Var   listtv;
-   Var   nrtv;
-   ArrayList   ga;
-
+   Var nrtv;
    nrtv.tag = VAR_NUMBER;
    nrtv.number = nr;
+   Var listtv;
    allocReturnList(&listtv);
    if (list_append_tv(listtv.list, &nrtv) == FAIL || list_append_tv(listtv.list, val) == FAIL) {
       list_unref(listtv.list);
       return NULL;
    }
 
+   ArrayList ga;
    ga_init2(&ga, 1, 4000);
    if (json_encode_gap(&ga, &listtv, options) == OK && (options & JSON_NL))
       ga_append(&ga, '\n');
@@ -11475,8 +11474,7 @@ json_encode_nr_expr(int nr, Var* val, int options) {
 //Encode "val" into a JSON format string prefixed by the LSP HTTP header. NULL when out of memory.
 pub CS
 json_encode_lsp_msg(Var* val) {
-   ArrayList   ga;
-
+   ArrayList ga;
    ga_init2(&ga, 1, 4000);
    if (json_encode_gap(&ga, val, 0) == FAIL)
       return NULL;
@@ -11507,19 +11505,18 @@ private const char ascii_needs_escape[128] = {
 //Encode the utf-8 encoded string "str" into "gap".
 private void
 write_string(ArrayList* gap, CS str) {
-   CS res = str;
-   Unt c;
-
-   if (!res) {
+   if (!str) {
       ga_concat(gap, (CS)"\"\"");
       return;
    }
 
+   CS res = str;
    ga_append(gap, '"');
    // `from` is the beginning of a sequence of bytes we can directly copy from
    // the input string, avoiding the overhead associated to decoding/encoding them.
    CS from = res;
    Byte numbuf[NUMBUFLEN];
+   Unt c;
    while ((c = *res) != ZERO) {
       // always use utf-8 encoding, ignore 'encoding'
       if (c < 0x80) {
@@ -11532,37 +11529,36 @@ write_string(ArrayList* gap, CS str) {
             ga_concat_len(gap, from, res - from);
          from = res + 1;
 
-          switch (c) {
+         switch (c) {
          case 0x08:
-             ga_append(gap, '\\'); ga_append(gap, 'b'); break;
+            ga_append(gap, '\\'); ga_append(gap, 'b'); break;
          case 0x09:
-             ga_append(gap, '\\'); ga_append(gap, 't'); break;
+            ga_append(gap, '\\'); ga_append(gap, 't'); break;
          case 0x0a:
-             ga_append(gap, '\\'); ga_append(gap, 'n'); break;
+            ga_append(gap, '\\'); ga_append(gap, 'n'); break;
          case 0x0c:
-             ga_append(gap, '\\'); ga_append(gap, 'f'); break;
+            ga_append(gap, '\\'); ga_append(gap, 'f'); break;
          case 0x0d:
-             ga_append(gap, '\\'); ga_append(gap, 'r'); break;
+            ga_append(gap, '\\'); ga_append(gap, 'r'); break;
          case 0x22: // "
          case 0x5c: // backslash
-             ga_append(gap, '\\');
-             ga_append(gap, c);
-             break;
+            ga_append(gap, '\\');
+            ga_append(gap, c);
+            break;
          default:
-             eeSnprintf(numbuf, NUMBUFLEN, (CS)"\\u%04lx", (long)c);
-             ga_concat(gap, numbuf);
-          }
+            eeSnprintf(numbuf, NUMBUFLEN, (CS)"\\u%04lx", (long)c);
+            ga_concat(gap, numbuf);
+         }
 
-          res += 1;
+         res += 1;
       } else {
          int l = utf_ptr2len(res);
-
          if (l > 1) {
             res += l;
             continue;
          }
 
-         // Invalid utf-8 sequence, replace it with the Unicode replacement character U+FFFD.
+         //Invalid utf-8 sequence, replace it with the Unicode replacement character U+FFFD.
          if (res != from)
             ga_concat_len(gap, from, res - from);
          from = res + 1;
@@ -11601,12 +11597,12 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
    case VAR_SPECIAL:
       switch ((long)val->number) {
       case VVAL_NONE: 
-      case VVAL_NULL: ga_concat(gap, (CS)"null"); break;
+      case VVAL_NULL: ga_concat(gap, S"null"); break;
       }
       break;
 
    case VAR_NUMBER:
-      eeSnprintf(numbuf, NUMBUFLEN, (CS)"%ld", (Long)val->number);
+      eeSnprintf(numbuf, NUMBUFLEN, S"%ld", (Long)val->number);
       ga_concat(gap, numbuf);
       break;
 
@@ -11646,11 +11642,11 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
          if (l->copyId == copyID)
              ga_concat(gap, S"[]");
          else {
-            ListItem   *li;
 
             l->copyId = copyID;
             ga_append(gap, '[');
             CHECK_LIST_MATERIALIZE(l);
+            ListItem* li;
             for (li = l->first; li != NULL && !gotInterruptG; ) {
                if (json_encode_item(gap, &li->c, copyID, 0) == FAIL)
                   return FAIL;
@@ -11672,20 +11668,20 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
          if (d->copyId == copyID)
             ga_concat(gap, (CS)"{}");
          else {
-            int      first = true;
-            int      todo = (int)d->hashTable.count;
-            EeSetItem   *hi;
+            int first = true;
+            int todo = (int)d->hashTable.count;
+            EeSetItem* hi;
 
             d->copyId = copyID;
             ga_append(gap, '{');
 
             for (hi = d->hashTable.array; todo > 0 && !gotInterruptG; ++hi) {
                if (!HASHITEM_EMPTY(hi)) {
-                   --todo;
-                   if (first)
-                  first = false;
-                   else
-                  ga_append(gap, ',');
+                  --todo;
+                  if (first)
+                     first = false;
+                  else
+                     ga_append(gap, ',');
                   write_string(gap, hi->hi_key);
                   ga_append(gap, ':');
                   if (json_encode_item(gap, &bagLookup(hi)->c, copyID, options | JSON_NO_NONE) 

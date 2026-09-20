@@ -24,6 +24,7 @@
 #include "h/input.h"
 #include "h/juggle.h"
 #include "h/message.h"
+#include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/normal.types.h"
 #include "h/normal.h"

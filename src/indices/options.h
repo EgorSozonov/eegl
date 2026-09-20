@@ -1,6 +1,6 @@
 //Automatically generated code by the `make indices` command.
 typedef struct {CS name; Unt index;} NameIndex;
-static NameIndex const NAME_INDICES[194] = {
+static NameIndex const NAME_INDICES[191] = {
 {(Byte*)"autocomplete", 0},
 {(Byte*)"autocompletedelay", 1},
 {(Byte*)"autoindent", 131072},
@@ -189,9 +189,6 @@ static NameIndex const NAME_INDICES[194] = {
 {(Byte*)"wildoptions", 107},
 {(Byte*)"winheight", 108},
 {(Byte*)"winwidth", 109},
-{(Byte*)"wlseat", 116},
-{(Byte*)"wlsteal", 117},
-{(Byte*)"wltimeoutlen", 118},
 {(Byte*)"wrap", 65556},
 {(Byte*)"wrapmargin", 131107},
 {(Byte*)"writedelay", 110},
@@ -221,10 +218,10 @@ static int const FIRST_LETTER_INDICES[27] = {
 172,
 176,
 178,
-194,
-194,
-194,
-194,
+191,
+191,
+191,
+191,
 };
 
-#define OPTION_COUNT 194
+#define OPTION_COUNT 191

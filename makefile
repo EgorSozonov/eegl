@@ -847,13 +847,16 @@ all: $(EEGLTARGET) $(TOOLS) languages
 
 tools: $(TOOLS)
 
+MUSL_STUFF:=-static-pie -nostdinc -I/usr/lib/musl/include \
+   -B/usr/lib/musl/lib -lgcc
+
 
 
 # Run the script to generate the Command lookup table and the normal/visual mode command lookup 
 # tables. This only needs to be run when command has been added or changed.
 # If this fails because you don't have Eegl yet, first build and install Eegl without changes.
 indices: src/commands.h src/actions.h
-/ $(CC) -iquote src $(INDICES_FLAGS) dev/indexGenerator.c -o $(OBJDIR)/indexGenerator
+/ $(CC) -iquote src $(INDICES_FLAGS) $(MUSL_STUFF) -o $(OBJDIR)/indexGenerator dev/indexGenerator.c
 / $(OBJDIR)/indexGenerator actions
 / $(OBJDIR)/indexGenerator commands
 / $(OBJDIR)/indexGenerator options
@@ -861,7 +864,8 @@ indices: src/commands.h src/actions.h
 BETTERC:=$(OBJDIR)/betterc
 
 $(BETTERC): ##Better C: codegen for headers & generics
-/ $(CC) --std=c23 -Wall dev/betterc.c -o $(OBJDIR)/betterc
+/ $(CC) --std=c23 -Wall  -o $(OBJDIR)/betterc $(MUSL_STUFF) \
+   dev/betterc.c
 
 better: $(BETTERC)
 / for f in src/*.c; do $(BETTERC) -d h "$$f"; done

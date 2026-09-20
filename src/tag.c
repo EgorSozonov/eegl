@@ -152,7 +152,7 @@ typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
 
 typedef struct {
    CS name;
-   int (*func)(Invocation* invo, OUT CS* inp);
+   int (*func)(Invocation* invo, CS inp);
    CS help;
    CS usage;
    int cansplit;      // if supports splitting window
@@ -259,12 +259,12 @@ private void tagstack_set_curidx(Portal* po, int curidx);
 private void cs_usage_msg(csid_e x);
 private void do_cscope_general(Invocation* invo, int make_split);
 private int cs_connection(int num, CS dbpath, CS ppath);
-private int cs_add(Invocation*);
+private int cs_add(Invocation*, CS argTail);
 private void cs_stat_emsg(CS fname);
 private int cs_add_common(
-   CS arg1,       // filename - may contain environment variables
-   CS arg2,       // prepend path - may contain environment variables
-   CS flags
+   Text arg1,       // filename - may contain environment variables
+   Text arg2,       // prepend path - may contain environment variables
+   Text flags
 );
 private int cs_check_for_connections(void);
 private int cs_check_for_tags(void);
@@ -273,7 +273,7 @@ private void cs_reading_emsg(int idx);
 private int cs_cnt_matches(int idx);
 private CS cs_create_cmd(CS csoption, CS pattern);
 private int cs_create_connection(int i);
-private int cs_find(Invocation* invo);
+private int cs_find(Invocation* invo, CS argTail);
 private int cs_find_common(
    CS opt,
    CS pat,
@@ -282,12 +282,12 @@ private int cs_find_common(
    Boole   use_ll,
    CS commline
 );
-private int cs_help(Invocation*);
+private int cs_help(Invocation*, CS argTail);
 private void clear_csinfo(int i);
 private int cs_insert_filelist(CS fname, CS ppath, CS flags, FileStat* sb);
 private CScopeCommand * cs_lookup_cmd(Invocation* invo);
-private int cs_kill(Invocation*);
-private void cs_kill_execute(int i,                 CS cname);
+private int cs_kill(Invocation*, CS argTail);
+private void cs_kill_execute(int i,  Text cname);
 private CS cs_make_eegl_style_matches(CS fname, CS slno, CS search, CS tagstr);
 private CS cs_manage_matches(Arr(CS) matches, Arr(CS) contexts, int totmatches, Mcmd cmd);
 private CS cs_parse_results(
@@ -312,9 +312,9 @@ private void cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches
 private int cs_read_prompt(int i);
 private void sig_handler(int);
 private void cs_release_csp(int i, int freefnpp);
-private int cs_reset(Invocation*);
+private int cs_reset(Invocation*, CS argTail);
 private CS cs_resolve_file(int i, Text name);
-private int cs_show(Invocation*);
+private int cs_show(Invocation*, CS argTail);
 //}}}
 
 private Byte* tagmatchname = NULL;   // name of last used tag
@@ -3479,18 +3479,12 @@ private CscopeInfo* csinfo = NULL;
 private int csinfo_size = 0;   // number of items allocated in csinfo[]
 
 private CScopeCommand cs_cmds[] = {
-   { S"add",   cs_add,
-     S"Add a new database",    S"add file|dir [pre-path] [flags]", 0 },
-   { S"find",   cs_find,
-     S"Query for a pattern",   S"find a|c|d|e|f|g|i|s|t name", 1 },
-   { S"help",   cs_help,
-     S"Show this message",     S"help", 0 },
-   { S"kill",   cs_kill,
-     S"Kill a connection",     S"kill #", 0 },
-   { S"reset",   cs_reset,
-     S"Reinit all connections", S"reset", 0 },
-   { S"show",   cs_show,
-     S"Show connections",   S"show", 0 },
+   { S"add",   cs_add,   S"Add a new database",  S"add file|dir [pre-path] [flags]", 0 },
+   { S"find",  cs_find,  S"Query for a pattern", S"find a|c|d|e|f|g|i|s|t name", 1 },
+   { S"help",  cs_help,  S"Show this message",   S"help", 0 },
+   { S"kill",  cs_kill,  S"Kill a connection",   S"kill #", 0 },
+   { S"reset", cs_reset, S"Reinit all connections", S"reset", 0 },
+   { S"show",  cs_show,  S"Show connections",    S"show", 0 },
    { NULL, NULL, NULL, NULL, 0 }
 };
 
@@ -3590,7 +3584,7 @@ private void
 do_cscope_general(Invocation* invo, int make_split) { // whether to split window
    CScopeCommand* cmdp;
    if ((cmdp = cs_lookup_cmd(invo)) == NULL) {
-      cs_help(invo);
+      cs_help(invo, invo->arg);
       return;
    }
 
@@ -3604,7 +3598,7 @@ do_cscope_general(Invocation* invo, int make_split) { // whether to split window
       postponed_split_tab = commModifierG.cmod_tab;
    }
 
-   cmdp->func(invo);
+   cmdp->func(invo, invo->arg);
 
    postponed_split_flags = 0;
    postponed_split_tab = 0;
@@ -3773,16 +3767,16 @@ cs_connection(int num, CS dbpath, CS ppath) {
 
 //Add cscope database or a directory name (to look for cscope.out) to the cscope connection list.
 private int
-cs_add(Invocation*) {
-   CS flags = NULL;
-   CS fname;
-   if ((fname = (CS)strtok((char *)NULL, (const char *)" ")) == NULL) {
+cs_add(Invocation*, CS argTail) {
+   Text fname = tokenizeSeparator(OUT &argTail, ' ');
+   if (fname.len == 0) {
       cs_usage_msg(Add);
       return CSCOPE_FAILURE;
    }
-   CS ppath;
-   if ((ppath = (CS)strtok((char *)NULL, (const char *)" ")) != NULL)
-      flags = (CS)strtok((char *)NULL, (const char *)" ");
+   Text ppath = tokenizeSeparator(OUT &argTail, ' ');
+   Text flags = (Text){null, 0};
+   if (ppath.len != 0)
+      flags = tokenizeSeparator(OUT &argTail, ' ');
 
    return cs_add_common(fname, ppath, flags);
 }
@@ -3796,9 +3790,9 @@ cs_stat_emsg(CS fname) {
 //The common routine to add a new cscope connection. Called by cs_add() and cs_reset().
 private int
 cs_add_common(
-   CS arg1,       // filename - may contain environment variables
-   CS arg2,       // prepend path - may contain environment variables
-   CS flags
+   Text arg1,       // filename - may contain environment variables
+   Text arg2,       // prepend path - may contain environment variables
+   Text flags
 ) {
    FileStat   statbuf;
    int ret;
@@ -3810,9 +3804,9 @@ cs_add_common(
    // get the filename (arg1), expand it, and try to stat it
    CS fname = alloc(MAXPATHL + 1);
 
-   Unt len = doExpandEnv(OUT (Text){fname, MAXPATHL}, (CS)arg1);
+   Unt len = doExpandEnv(OUT (Text){fname, MAXPATHL}, arg1.c);
    CS fbuf = (CS)fname;
-   (void)modify_fname((CS)":p", false, &usedlen, (Byte **)&fname, &fbuf, &len);
+   (void)modify_fname(S":p", false, &usedlen, (Byte **)&fname, &fbuf, &len);
    if (!fname)
       goto add_err;
    fname = copySubstr((CS)fname, len);
@@ -3827,12 +3821,12 @@ staterr:
    }
 
    // get the prepend path (arg2), expand it, and try to stat it
-   if (arg2) {
+   if (arg2.len > 0) {
       FileStat statbuf2;
 
       ppath = alloc(MAXPATHL + 1);
 
-      doExpandEnv(OUT (Text){ppath, MAXPATHL}, (CS)arg2);
+      doExpandEnv(OUT (Text){ppath, MAXPATHL}, arg2.c);
       ret = STAT(ppath, &statbuf2);
       if (ret < 0)
          goto staterr;
@@ -3859,9 +3853,9 @@ staterr:
          goto add_err;
       }
 
-      i = cs_insert_filelist(fname2, ppath, flags, &statbuf);
+      i = cs_insert_filelist(fname2, ppath, flags.c, &statbuf);
    } ei (S_ISREG(statbuf.st_mode) || S_ISLNK(statbuf.st_mode)) {
-      i = cs_insert_filelist(fname, ppath, flags, &statbuf);
+      i = cs_insert_filelist(fname, ppath, flags.c, &statbuf);
    } else {
       if (p_csverbose)
          (void)showErrFmtMsg(_(e_str_is_not_directory_or_valid_cscope_database), fname);
@@ -4128,26 +4122,26 @@ cs_create_connection(int i) {
 //
 //return true if we jump to a tag or abort, false if not.
 private int
-cs_find(Invocation* invo) {
+cs_find(Invocation* invo, CS argTail) {
    if (cs_check_for_connections() == false) {
       (void)emsg(_(e_no_cscope_connections));
       return false;
    }
 
-   CS opt;
-   if ((opt = (CS)strtok((char *)NULL, (const char *)" ")) == NULL) {
+   Text opt = tokenizeSeparator(OUT &argTail, ' ');
+   if (opt.len == 0) {
       cs_usage_msg(Find);
       return false;
    }
 
-   CS pat = opt + STRLEN(opt) + 1;
-   if (pat >= invo->arg + eap_arg_len) {
+   CS pat = opt.c + opt.len + 1;
+   if (pat >= invo->arg + STRLEN(invo->arg)) {
       cs_usage_msg(Find);
       return false;
    }
 
    return cs_find_common(
-          opt, pat, invo->forceit, true, invo->id == C_lcscope, *invo->commline
+          opt.c, pat, invo->forceit, true, invo->id == C_lcscope, *invo->commline
    );
 }
 
@@ -4268,7 +4262,7 @@ cs_find_common(
 
 //Print help.
 private int
-cs_help(Invocation*) {
+cs_help(Invocation*, CS) {
    CScopeCommand* cmdp = cs_cmds;
 
    (void)msg_puts(_("cscope commands:\n"));
@@ -4393,37 +4387,36 @@ cs_lookup_cmd(Invocation* invo) {
 
 // Nuke em.
 private int
-cs_kill(Invocation*) {
-   CS stok;
-
-   if ((stok = (CS)strtok((char *)NULL, (const char *)" ")) == NULL) {
+cs_kill(Invocation*, CS argTail) {
+   Text stok = tokenizeSeparator(OUT &argTail, ' ');
+   if (stok.len == 0) {
       cs_usage_msg(Kill);
       return CSCOPE_FAILURE;
    }
 
    // only single digit positive and negative integers are allowed
    int i;
-   if ((STRLEN(stok) < 2 && EE_ISDIGIT((int)(stok[0])))
-       || (STRLEN(stok) < 3 && stok[0] == '-' && EE_ISDIGIT((int)(stok[1])))
+   if ((stok.len < 2 && EE_ISDIGIT((int)(stok.c[0])))
+       || (stok.len < 3 && stok.c[0] == '-' && EE_ISDIGIT((int)(stok.c[1])))
    )
-      i = ATOI(stok);
+      i = ATOI(stok.c);
    else {
       // It must be part of a name.  We will try to find a match
       // within all the names in the csinfo data structure
       for (i = 0; i < csinfo_size; i++) {
-         if (csinfo[i].fname != NULL && STRSTR(csinfo[i].fname, stok))
+         if (csinfo[i].fname && startsWith(text(csinfo[i].fname), stok))
             break;
       }
    }
 
-   if ((i != -1) && (i >= csinfo_size || i < -1 || csinfo[i].fname == NULL)) {
+   if ((i != -1) && (i >= csinfo_size || i < -1 || !csinfo[i].fname)) {
       if (p_csverbose)
          (void)showErrFmtMsg(_(e_cscope_connection_str_not_founc), stok);
    } else {
       if (i == -1) {
          for (i = 0; i < csinfo_size; i++) {
             if (csinfo[i].fname)
-               cs_kill_execute(i, csinfo[i].fname);
+               cs_kill_execute(i, text(csinfo[i].fname));
          }
       } else
          cs_kill_execute(i, stok);
@@ -4434,11 +4427,11 @@ cs_kill(Invocation*) {
 
 // Actually kills a specific cscope connection.
 private void
-cs_kill_execute(int i,                 CS cname) { 
+cs_kill_execute(int i,  Text cname) { 
                 // cscope table index  // cscope database name
    if (p_csverbose) {
       msg_clr_eos();
-      (void)smsgDeco(getDecoFlags(HLF_R) | MSG_HIST, _("cscope connection %s closed"), cname);
+      (void)smsgDeco(getDecoFlags(HLF_R) | MSG_HIST, _("cscope connection %s closed"), cname.c);
    }
    cs_release_csp(i, true);
 }
@@ -4741,7 +4734,6 @@ cs_pathcomponents(CS path) {
 private void
 cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
    int bufsize = 0; // Track available bufsize
-   int newsize = 0;
    CS fname, lno, extra;
    int i, idx, num;
    CS globalcntx = S"GLOBAL";
@@ -4762,7 +4754,7 @@ cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
       return;
    }
 
-   newsize = (int)(STRLEN(cstag_msg) + STRLEN(ptag));
+   int newsize = (int)(STRLEN(cstag_msg) + ptag.len);
    CS buf = alloc(newsize);
    bufsize = newsize;
    (void)SPRINTF(buf, cstag_msg, ptag);
@@ -4787,13 +4779,13 @@ cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
       Text firstTk = tokenizeSeparator(OUT &p, '\t');
       Text sndTk = tokenizeSeparator(OUT &p, '\t');
       Text thirdTk =  tokenizeSeparator(OUT &p, '\t');
-      if (firstTk.len == 0 || secondTk.len == 0 || thirdTk.len == 0){
+      if (firstTk.len == 0 || sndTk.len == 0 || thirdTk.len == 0){
          eeglFree(matchesbuf);
          continue;
       }
-      Text extraTk = tokenizeSeparator(OUT &p, '\t');
+      //Text extraTk = tokenizeSeparator(OUT &p, '\t');
 
-      lno[secondTk.len - 2] = '\0';  // ignore ;" at the end
+      lno[sndTk.len - 2] = ZERO;  // ignore ;" at the end
 
       // hopefully 'num' (num of matches) will be less than 10^16
       newsize = (int)(STRLEN(csfmt_str) + 16 + STRLEN(lno));
@@ -5006,16 +4998,16 @@ cs_release_csp(int i, int freefnpp) {
 
 //Call cs_kill on all cscope connections then reinits.
 private int
-cs_reset(Invocation*) {
+cs_reset(Invocation*, CS) {
    Byte buf[20]; // for SPRINTF " (#%d)"
 
    if (csinfo_size == 0)
       return CSCOPE_SUCCESS;
 
-   // malloc our db and ppath list
-   CS* dblist = ALLOC_MULT(CS, csinfo_size);
-   CS* pplist = ALLOC_MULT(CS, csinfo_size);
-   CS* fllist = ALLOC_MULT(CS, csinfo_size);
+   //malloc our db and ppath list
+   Arr(CS) dblist = ALLOC_MULT(CS, csinfo_size);
+   Arr(CS) pplist = ALLOC_MULT(CS, csinfo_size);
+   Arr(CS) fllist = ALLOC_MULT(CS, csinfo_size);
 
    for (int i = 0; i < csinfo_size; i++) {
       dblist[i] = csinfo[i].fname;
@@ -5025,13 +5017,13 @@ cs_reset(Invocation*) {
          cs_release_csp(i, false);
    }
 
-   // rebuild the cscope connection list
+   //rebuild the cscope connection list
    for (int i = 0; i < csinfo_size; i++) {
-      if (dblist[i] != NULL) {
-         cs_add_common(dblist[i], pplist[i], fllist[i]);
+      if (dblist[i]) {
+         cs_add_common(text(dblist[i]), mbText(pplist[i]), mbText(fllist[i]));
          if (p_csverbose) {
-            // don't use smsgDeco() because we want to display the
-            // connection number in the same line as "Added cscope database..."
+            //don't use smsgDeco() because we want to display the
+            //connection number in the same line as "Added cscope database..."
             SPRINTF(buf, " (#%d)", i);
             msgPutsDeco(buf, getDecoFlags(HLF_R));
          }
@@ -5094,10 +5086,9 @@ cs_resolve_file(int i, Text name) {
    return fullname;
 }
 
-
 // Show all cscope connections.
 private int
-cs_show(Invocation*) {
+cs_show(Invocation*, CS) {
    if (cs_cnt_connections() == 0)
       msg_puts(_("no cscope connections\n"));
    else {
@@ -5121,7 +5112,6 @@ cs_show(Invocation*) {
    return CSCOPE_SUCCESS;
 }
 
-
 //Only called when Eegl exits to quit any cscope sessions.
 pub void
 cs_end(void) {
@@ -5135,7 +5125,7 @@ cs_end(void) {
 //Check the existence of a cscope connection.
 pub void
 f_cscope_connection(Arr(Var) argvars, Var *returnVar) {
-   int      num = 0;
+   int num = 0;
    CS dbpath = NULL;
    CS prepend = NULL;
    Byte buf[NUMBUFLEN];

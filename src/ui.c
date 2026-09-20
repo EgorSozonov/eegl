@@ -49,6 +49,7 @@
 #include "h/memory.types.h"
 #include "h/memory.h"
 #include "h/message.h"
+#include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/normal.h"
 #include "h/option.h"

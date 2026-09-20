@@ -18,6 +18,7 @@
 #include "h/insert.h"
 #include "h/memory.h"
 #include "h/message.h"
+#include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/normal.h"
 #include "h/option.h"
@@ -294,6 +295,424 @@ isEeglXterm(CS name) {
       || STRCMP(name, "builtin_xterm") == 0
    );
 }
+
+//}}}
+//{{{terminfo parsing
+
+//This parses both the traditional ncurses terminfo format (starting
+//with the bytes C<1A 01>) and the newer "wide integer" format (starting with the bytes C<1E 02>).
+
+
+// The terminfo file format (as used by ncurses)
+//In the following description, these data type representations are assumed:
+//Byte, bool, 16-bit integer in little-endian format, C ASCII strings.
+
+//-----Standard capabilities
+//A terminfo file starts with a 12 byte header, consisting of 6 ints:
+//MAGIC The number 282 (stored in the file as [1A 01]).
+//NAME_SIZE The size (in bytes) of the name section.
+//BOOL_COUNT The number of entries in the bool section.
+//NUM_COUNT The number of entries in the num section.
+//STRING_COUNT The number of entries in the string section.
+//TABLE_SIZE The size (in bytes) of the string table.
+
+//Data
+
+//To make sense of the stored data, you need to know that there is a fixed number of 
+//bool/num/string capabilities each, and that they have a fixed order. So if a terminfo file 
+//wanted to set the third num capability to 4 and leave the first/second num capabilities 
+//unspecified, it would fill its num section with { -1, -1, 4 }.
+
+//The name section
+
+//The name section contains a (NUL-terminated) string with one or more parts separated by | (pipe).
+//The first part is the primary name of the terminal; the last part is a human-readable 
+//description. The middle parts should be other names for the terminal. All parts except for the 
+//last should contain lowercase letters only.
+
+// The bool section
+// The bool section consists of I<BOOL_COUNT> bytes, each representing a boolean value.
+
+//Interlude: padding
+//If NAME_SIZE + BOOL_COUNT is not an even number, a padding byte is inserted here.
+
+//The num section
+
+//The num section consists of NUM_COUNT ints. A value of {FF FF} indicates that
+//the corresponding numeric capability is missing.
+
+//The string section
+
+//The string section consists of STRING_COUNT ints. A value of {FF FF} indicates
+//that the corresponding string capability is missing. Any other value is an
+//offset from the beginning of the string table.
+
+//The string table
+
+//The string table consists of TABLE_SIZE bytes. It stores the data for
+//string capabilities. Each entry in the string section specifies the byte at
+//which the corresponding string starts; the end of a string is marked by a NUL byte.
+
+//-----Extended capabilities
+
+//In addition to the standard capabilities described above, ncurses supports
+//user-defined capabilities with arbitrary names. If any of these are present,
+//instead of the end of the file an extended header follows after the main data.
+
+//Header
+//The extended header consists of possibly a padding byte and 5 ints.
+
+//Interlude: padding
+// If the standard part of the file contains an odd number of bytes, a padding
+//byte is inserted here.
+
+//EXT_BOOL_COUNT The number of entries in the extended bool section.
+//EXT_NUM_COUNT The number of entries in the extended num section.
+//EXT_STRING_COUNT The number of entries in the extended string section.
+// EXT_OFFSET_COUNT The number of entries in the string table.
+//NB: The ncurses code for writing terminfo files calculates this as
+//EXT_BOOL_COUNT + EXT_NUM_COUNT + EXT_STRING_COUNT + EXT_STRING_COUNT (one entry for each 
+//capability name plus one entry for each string value). The ncurses code for reading terminfo 
+//files ignores this field.
+
+//EXT_TABLE_SIZE The size (in bytes) of the extended string table.
+
+//Data
+
+//The extended bool section
+
+//The extended bool section consists of EXT_BOOL_COUNT bytes, each
+//representing a boolean value.
+
+//Interlude: padding
+//If EXT_BOOL_COUNT is an odd number, a padding byte is inserted here.
+
+//The extended num section
+//The extended num section consists of EXT_NUM_COUNT ints.
+
+//The extended string section
+//The extended string section consists of EXT_STRING_COUNT ints that are
+//offsets from the beginning of the extended string table.
+
+//The extended string section 2: Electric boogaloo
+//The extended string section 2 consists of 
+//EXT_BOOL_COUNT + EXT_NUM_COUNT + EXT_STRING_COUNT ints that are offsets from the middle
+//(see below) of the extended string table.
+
+//The extended string table
+
+//The extended string table consists of EXT_TABLE_SIZE bytes. The first half of the extended 
+//string table stores the data for extended string capabilities. The second half of the string 
+//table stores the names of all extended capabilities.
+
+//The start of the second half (what I call the "middle") must be computed
+//dynamically from the number (I<EXT_STRING_COUNT>) and size of the strings in the first half.
+
+//#define MAGIC_16BIT 00432
+//#define MAGIC_32BIT 01036
+//
+//struct RawTerminfo {
+//   char* name;
+//   char** aliases;
+//
+//   unsigned char bools[NCONTAINERS(unibi_boolean_end_ - unibi_boolean_begin_ - 1, CHAR_BIT)];
+//   int nums[unibi_numeric_end_ - unibi_numeric_begin_ - 1];
+//   char *strs[unibi_string_end_ - unibi_string_begin_ - 1];
+//   char *alloc;
+//
+//   DYNARR_T(bool) ext_bools;
+//   DYNARR_T(num) ext_nums;
+//   DYNARR_T(str) ext_strs;
+//   DYNARR_T(str) ext_names;
+//   char *ext_alloc;
+//};
+//
+//private Short 
+//get_ushort16(char *p) {
+//   unsigned char *q = (unsigned char *)p;
+//   return q[0] + q[1] * 256;
+//}
+//
+//private Short
+//get_short16(char *p) {
+//   unsigned short n = get_ushort16(p);
+//   return n <= MAX15BITS ? n : 0xFFFF;
+//}
+//
+//private Unt 
+//get_uint32(char *p) {
+//   unsigned char *q = (const unsigned char *)p;
+//   return q[0] + q[1] * 256u + q[2] * 256u * 256u + q[3] * 256u * 256u * 256u;
+//}
+//
+//private int
+//get_int32(char *p) {
+//   Unt n = get_uint32(p);
+//   return n <= MAX31BITS ? (int)n : -1;
+//}
+//
+//private void
+//fill_1(int *p, size_t n) {
+//   while (n--) {
+//      *p++ = -1;
+//   }
+//}
+//
+//private void
+//fill_null(char **p, size_t n) {
+//    while (n--) {
+//        *p++ = NULL;
+//    }
+//}
+//
+//static const char *off_of(const char *p, size_t n, short i) {
+//    return i < 0 || (size_t)i >= n ? NULL : p + i;
+//}
+//
+//
+//private RawTerminfo *
+//unibi_from_mem(char *p, size_t n) {
+//   RawTerminfo *t = NULL;
+//   size_t numsize;
+//   Short magic, namlen, boollen, numlen, strslen, tablsz;
+//   char *strp, *namp;
+//   size_t namco;
+//   size_t i;
+//
+//   FAIL_IF(n < 12, EFAULT);
+//
+//   magic   = get_ushort16(p + 0);
+//   FAIL_IF(magic != MAGIC_16BIT && magic != MAGIC_32BIT, EINVAL);
+//   numsize = magic == MAGIC_16BIT ? 2 : 4;
+//
+//   namlen  = get_ushort16(p + 2);
+//   boollen = get_ushort16(p + 4);
+//   numlen  = get_ushort16(p + 6);
+//   strslen = get_ushort16(p + 8);
+//   tablsz  = get_ushort16(p + 10);
+//   p += 12;
+//   n -= 12;
+//
+//   FAIL_IF(n < namlen, EFAULT);
+//
+//   namco = mcount(p, namlen, '|') + 1;
+//
+//   if (!(t = malloc(sizeof *t))) {
+//      return NULL;
+//   }
+//   {
+//      void *mem;
+//      mem = malloc(namco * sizeof *t->aliases + tablsz + namlen + 1);
+//      t->alloc = mem;
+//      t->aliases = mem;
+//   }
+//   strp = t->alloc + namco * sizeof *t->aliases;
+//   namp = strp + tablsz;
+//   memcpy(namp, p, namlen);
+//   namp[namlen] = '\0';
+//   p += namlen;
+//   n -= namlen;
+//
+//   {
+//      size_t k = 0;
+//      char *a, *z;
+//      a = namp;
+//
+//      while ((z = strchr(a, '|'))) {
+//         *z = '\0';
+//         t->aliases[k++] = a;
+//         a = z + 1;
+//      }
+//      assert(k < namco);
+//      t->aliases[k] = NULL;
+//
+//      t->name = a;
+//   }
+//
+//   DYNARR(bool, init)(&t->ext_bools);
+//   DYNARR(num, init)(&t->ext_nums);
+//   DYNARR(str, init)(&t->ext_strs);
+//   DYNARR(str, init)(&t->ext_names);
+//   t->ext_alloc = NULL;
+//
+//   DEL_FAIL_IF(n < boollen, EFAULT, t);
+//   memset(t->bools, '\0', sizeof t->bools);
+//   for (i = 0; i < boollen && i / CHAR_BIT < COUNTOF(t->bools); i++) {
+//       if (p[i]) {
+//           t->bools[i / CHAR_BIT] |= 1 << i % CHAR_BIT;
+//       }
+//   }
+//   p += boollen;
+//   n -= boollen;
+//
+//   if ((namlen + boollen) % 2 && n > 0) {
+//       p++;
+//       n--;
+//   }
+//
+//   DEL_FAIL_IF(n < numlen * numsize, EFAULT, t);
+//   for (i = 0; i < numlen && i < COUNTOF(t->nums); i++) {
+//      if (numsize == 2) {
+//         t->nums[i] = get_short16(p + i * 2);
+//      } else {
+//         t->nums[i] = get_int32(p + i * 4);
+//      }
+//   }
+//   fill_1(t->nums + i, COUNTOF(t->nums) - i);
+//   p += numlen * numsize;
+//   n -= numlen * numsize;
+//
+//   DEL_FAIL_IF(n < strslen * 2u, EFAULT, t);
+//   for (i = 0; i < strslen && i < COUNTOF(t->strs); i++) {
+//      t->strs[i] = off_of(strp, tablsz, get_short16(p + i * 2));
+//   }
+//   fill_null(t->strs + i, COUNTOF(t->strs) - i);
+//   p += strslen * 2;
+//   n -= strslen * 2;
+//
+//   DEL_FAIL_IF(n < tablsz, EFAULT, t);
+//   memcpy(strp, p, tablsz);
+//   if (tablsz) {
+//      strp[tablsz - 1] = '\0';
+//   }
+//   p += tablsz;
+//   n -= tablsz;
+//
+//   if (tablsz % 2 && n > 0) {
+//      p += 1;
+//      n -= 1;
+//   }
+//
+//   if (n >= 10) {
+//      Short extboollen, extnumlen, extstrslen, extofflen, exttablsz;
+//      size_t extalllen;
+//
+//      extboollen = get_ushort16(p + 0);
+//      extnumlen  = get_ushort16(p + 2);
+//      extstrslen = get_ushort16(p + 4);
+//      extofflen  = get_ushort16(p + 6);
+//      exttablsz  = get_ushort16(p + 8);
+//
+//      if (
+//          extboollen <= MAX15BITS
+//          && extnumlen <= MAX15BITS
+//          && extstrslen <= MAX15BITS
+//          && extofflen <= MAX15BITS
+//          && exttablsz <= MAX15BITS
+//      ) {
+//         p += 10;
+//         n -= 10;
+//
+//         extalllen = 0;
+//         extalllen += extboollen;
+//         extalllen += extnumlen;
+//         extalllen += extstrslen;
+//
+//         DEL_FAIL_IF(extofflen != extalllen + extstrslen, EINVAL, t);
+//
+//         DEL_FAIL_IF(
+//            n <
+//            extboollen
+//            + extboollen % 2
+//            + extnumlen * numsize
+//            + extstrslen * 2
+//            + extalllen * 2 
+//            + exttablsz,
+//            EFAULT,
+//            t
+//         );
+//
+//         DEL_FAIL_IF(
+//            !DYNARR(bool, ensure_slots)(&t->ext_bools, extboollen)
+//            || !DYNARR(num, ensure_slots)(&t->ext_nums, extnumlen)
+//            || !DYNARR(str, ensure_slots)(&t->ext_strs, extstrslen)
+//            || !DYNARR(str, ensure_slots)(&t->ext_names, extalllen)
+//            || (exttablsz && !(t->ext_alloc = malloc(exttablsz))),
+//            ENOMEM,
+//            t
+//         );
+//
+//         for (i = 0; i < extboollen; i++) {
+//            t->ext_bools.data[i] = !!p[i];
+//         }
+//         t->ext_bools.used = extboollen;
+//         p += extboollen;
+//         n -= extboollen;
+//
+//         if (extboollen % 2 != 0) {
+//            p += 1;
+//            n -= 1;
+//         }
+//
+//         for (i = 0; i < extnumlen; i++) {
+//            if (numsize == 2) {
+//               t->ext_nums.data[i] = get_short16(p + i * 2);
+//            } else {
+//               t->ext_nums.data[i] = get_int32(p + i * 4);
+//            }
+//         }
+//         t->ext_nums.used = extnumlen;
+//         p += extnumlen * numsize;
+//         n -= extnumlen * numsize;
+//
+//         {
+//            char *ext_alloc2;
+//            size_t tblsz2;
+//            const char *const tbl1 = p + extstrslen * 2 + extalllen * 2;
+//            size_t s_max = 0, s_sum = 0;
+//
+//            for (i = 0; i < extstrslen; i++) {
+//               const short v = get_short16(p + i * 2);
+//               if (v < 0 || (unsigned short)v >= exttablsz) {
+//                  t->ext_strs.data[i] = NULL;
+//               } else {
+//                  const char *start = tbl1 + v;
+//                  const char *end = memchr(start, '\0', exttablsz - v);
+//                  if (end) {
+//                     end++;
+//                  } else {
+//                     end = tbl1 + exttablsz;
+//                  }
+//                  s_sum += end - start;
+//                  s_max = size_max(s_max, end - tbl1);
+//                  t->ext_strs.data[i] = t->ext_alloc + v;
+//               }
+//            }
+//            t->ext_strs.used = extstrslen;
+//            p += extstrslen * 2;
+//            n -= extstrslen * 2;
+//
+//            DEL_FAIL_IF(s_max != s_sum, EINVAL, t);
+//
+//            ext_alloc2 = t->ext_alloc + s_sum;
+//            tblsz2 = exttablsz - s_sum;
+//
+//            for (i = 0; i < extalllen; i++) {
+//               Short v = get_short16(p + i * 2);
+//               DEL_FAIL_IF(v < 0 || (unsigned short)v >= tblsz2, EINVAL, t);
+//               t->ext_names.data[i] = ext_alloc2 + v;
+//            }
+//            t->ext_names.used = extalllen;
+//            p += extalllen * 2;
+//            n -= extalllen * 2;
+//
+//            assert(p == tbl1);
+//
+//            if (exttablsz) {
+//               memcpy(t->ext_alloc, p, exttablsz);
+//               t->ext_alloc[exttablsz - 1] = '\0';
+//
+//               p += exttablsz;
+//               n -= exttablsz;
+//            }
+//         }
+//      }
+//   }
+//
+//   ASSERT_EXT_NAMES(t);
+//
+//   return t;
+//}
 
 //}}}
 //{{{functions for controlling the terminal

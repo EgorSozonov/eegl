@@ -375,12 +375,12 @@ createOptionIndices() {
       perror("Couldn't open src/indices/optionCounts.h for writing");
       exit(1);
    }
-   fprintf(tgt, "//Automatically generated code by the `make indices` command.\n\n");
-   fprintf(tgt, "#define OPTION_GLOBAL_COUNT %d\n", countGlobal);
-   fprintf(tgt, "#define OPTION_PORTAL_COUNT %d\n", countPortal);
-   fprintf(tgt, "#define OPTION_BOOK_COUNT %d\n", countBook);
-   fprintf(tgt, "\n");
-   fclose(tgt); 
+   fprintf(countsTgt, "//Automatically generated code by the `make indices` command.\n\n");
+   fprintf(countsTgt, "#define OPTION_GLOBAL_COUNT %d\n", countGlobal);
+   fprintf(countsTgt, "#define OPTION_PORTAL_COUNT %d\n", countPortal);
+   fprintf(countsTgt, "#define OPTION_BOOK_COUNT %d\n", countBook);
+   fprintf(countsTgt, "\n");
+   fclose(countsTgt); 
 }
 
 //}}}
