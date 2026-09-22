@@ -6,13 +6,19 @@
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
+#include "h/do.h"
+#include "h/draw.types.h"
+#include "h/draw.h"
 #include "h/eval.h"
 #include "h/book.h"
 #include "h/juggle.h"
 #include "h/memory.types.h"
 #include "h/memory.h"
 #include "h/message.h"
+#include "h/normal.types.h"
+#include "h/normal.h"
 #include "h/option.h"
+#include "h/script.h"
 #include "h/strings.h"
 #include "h/term.h"
 #include "h/ui.h"
@@ -31,9 +37,9 @@ typedef sigset_t SignalSet;
                          //127, some shells use that already
 #define OPEN_NULL_FAILED 123 // Exit code if /dev/null can't be opened
 
-#define SIGSET_DECL(set)   SignalSet set;
-#define BLOCK_SIGNALS(set)   block_signals(set)
-#define UNBLOCK_SIGNALS(set)   unblock_signals(set)
+#define SIGSET_DECL(set) SignalSet set;
+#define BLOCK_SIGNALS(set) block_signals(set)
+#define UNBLOCK_SIGNALS(set) unblock_signals(set)
 
 private int dontCheckJobEndedP = 0;
 
@@ -99,7 +105,7 @@ typedef struct sockaddr SockAddr;
 
 
 pub GEN_TYPE_L(PollFd);
-GEN_add_L(rivate, PollFd)
+generic(2) GEN_add_L(rivate, PollFd)
 
 //{{{types
 
@@ -230,14 +236,14 @@ private int channel_can_write_to(Channel* channel);
 private void * channel_readahead_pointer(Channel* channel, ChannelFdKind part);
 private int channel_has_readahead(Channel *channel, ChannelFdKind part);
 private CS channel_status(Channel *channel, int req_part);
-private void channel_part_info(Channel *channel, Bag *dict, CS name, ChannelFdKind part);
+private void channel_part_info(Channel* channel, Bag* bag, CS name, ChannelFdKind part);
 private void channelInfoIntoDict(Channel *channel, OUT Bag *dict);
 private void channel_close(Channel *channel, int invoke_close_cb);
 private void channel_close_in(Channel *channel);
 private void remove_from_writeque(WriteQueue *wq, WriteQueue *entry);
 private void channel_clear_one(Channel *channel, ChannelFdKind part);
 private int is_channel_write_remaining(ChannelFd* in_part);
-private void channel_fill_wfds(int maxfd_arg, OUT LPollFd* pollFds);
+private void channel_fill_wfds(OUT LPollFd* pollFds);
 private channel_wait_result channel_wait(Channel* channel, Socket fd, int timeout);
 private void ch_close_part_on_error(Channel *channel, ChannelFdKind part, int is_err, char *func);
 private void channel_close_now(Channel *channel);
@@ -317,6 +323,9 @@ private void job_info(Job* job, Bag* bag);
 private void job_info_all(List* l);
 private void logLead(CS what, Channel* ch, ChannelFdKind part);
 private void ch_log_literal(CS lead, Channel* ch, ChannelFdKind part, OUT Text builder);
+#define add(a, b) _Generic((a),\
+   LPollFd*: add_LPollFd\
+   )(a, b)
 //}}}
 //{{{auxiliary
 
@@ -978,26 +987,25 @@ channel_set_job(Channel* channel, Job* job, JobOptions* options) {
    if (!job->inBook)
       return;
 
-   ChannelFd* in_part = &channel->fds[PART_IN];
+   ChannelFd* intake = &channel->fds[PART_IN];
 
-   bookStoreInRef(OUT &in_part->bookref, job->inBook);
-   ch_log(channel, "reading from buffer '%s'", (char *)in_part->bookref.c->fullFileName);
+   bookStoreInRef(OUT &intake->bookref, job->inBook);
+   ch_log(channel, "reading from buffer '%s'", (char *)intake->bookref.c->fullFileName);
    if (options->set & JO_IN_TOP) {
       if (options->jo_in_top == 0 && !(options->set & JO_IN_BOT)) {
-          // Special mode: send last-but-one line when appending a line
-          // to the buffer.
-          in_part->bookref.c->writeToChannel = true;
-          in_part->ch_buf_append = true;
-          in_part->ch_buf_top =
-         in_part->bookref.c->mem.lineCount + 1;
+         //Special mode: send last-but-one line when appending a line to the buffer.
+         intake->bookref.c->writeToChannel = true;
+         intake->ch_buf_append = true;
+         intake->ch_buf_top =
+         intake->bookref.c->mem.lineCount + 1;
       } else
-          in_part->ch_buf_top = options->jo_in_top;
+         intake->ch_buf_top = options->jo_in_top;
    } else
-      in_part->ch_buf_top = 1;
+      intake->ch_buf_top = 1;
    if (options->set & JO_IN_BOT)
-      in_part->ch_buf_bot = options->jo_in_bot;
+      intake->ch_buf_bot = options->jo_in_bot;
    else
-      in_part->ch_buf_bot = in_part->bookref.c->mem.lineCount;
+      intake->ch_buf_bot = intake->bookref.c->mem.lineCount;
 }
 
 // Set the callback for "channel"/"part" for the response with "id".
@@ -1048,31 +1056,26 @@ write_buf_line(Book* book, LineNr lnum, Channel* channel) {
 // true if "channel" can be written to. * false if the input is closed or the write would block.
 private int
 can_write_buf_line(Channel* channel) {
-   ChannelFd* in_part = &channel->fds[PART_IN];
+   ChannelFd* intake = &channel->fds[PART_IN];
 
-   if (in_part->fd == INVALID_FD)
+   if (intake->fd == INVALID_FD)
       return false;  // pipe was closed
 
    // for testing: block every other attempt to write
-   if (in_part->ch_block_write == 1)
-      in_part->ch_block_write = -1;
-   ei (in_part->ch_block_write == -1)
-      in_part->ch_block_write = 1;
+   if (intake->ch_block_write == 1)
+      intake->ch_block_write = -1;
+   ei (intake->ch_block_write == -1)
+      intake->ch_block_write = 1;
 
-   TimeVal tval;
-   fd_set wfds;
    int ret;
 
-   FD_ZERO(&wfds);
-   FD_SET((int)in_part->fd, &wfds);
-   tval.tv_sec = 0;
-   tval.tv_usec = 0;
+   PollFd channelFd = (PollFd){intake->fd, POLLIN, 0};
    for (;;) {
-      ret = poll((int)in_part->fd + 1, NULL, &wfds, NULL, &tval);
+      ret = poll(&channelFd, 1, 100);
       SOCK_ERRNO;
       if (ret == -1 && errno == EINTR)
          continue;
-      if (ret <= 0 || in_part->ch_block_write == 1) {
+      if (ret <= 0 || intake->ch_block_write == 1) {
          if (ret > 0)
             ch_log(channel, "FAKED Input not ready for writing");
          else
@@ -1084,25 +1087,25 @@ can_write_buf_line(Channel* channel) {
    return true;
 }
 
-// Write any buffer lines to the input channel.
+// Write any book lines to the input channel.
 pub void
 channel_write_in(Channel* channel) {
-   ChannelFd* in_part = &channel->fds[PART_IN];
-   LineNr lnum;
-   Book* book = in_part->bookref.c;
-   int written = 0;
+   ChannelFd* intake = &channel->fds[PART_IN];
+   Book* book = intake->bookref.c;
 
-   if (!book || in_part->ch_buf_append)
-      return;  // no buffer or using appending
-   if (!bookRefValid(&in_part->bookref) || book->mem.mfile == NULL) {
-      // buffer was wiped out or unloaded
-      ch_log(channel, "input buffer has been wiped out");
-      in_part->bookref.c = NULL;
+   if (!book || intake->ch_buf_append)
+      return;
+   if (!bookRefValid(&intake->bookref) || !book->mem.mfile) {
+      // book was wiped out or unloaded
+      ch_log(channel, "input book has been wiped out");
+      intake->bookref.c = NULL;
       return;
    }
 
-   for (lnum = in_part->ch_buf_top; 
-        lnum <= in_part->ch_buf_bot && lnum <= book->mem.lineCount; 
+   int written = 0;
+   LineNr lnum;
+   for (lnum = intake->ch_buf_top; 
+        lnum <= intake->ch_buf_bot && lnum <= book->mem.lineCount; 
         ++lnum
    ) {
       if (!can_write_buf_line(channel))
@@ -1116,14 +1119,14 @@ channel_write_in(Channel* channel) {
    ei (written > 1)
       ch_log(channel, "written %d lines to channel", written);
 
-   in_part->ch_buf_top = lnum;
-   if (lnum > book->mem.lineCount || lnum > in_part->ch_buf_bot) {
+   intake->ch_buf_top = lnum;
+   if (lnum > book->mem.lineCount || lnum > intake->ch_buf_bot) {
       // Send CTRL-D to close stdin
       if (channel->job)
          term_send_eof(channel);
 
-      // Writing is done, no longer need the buffer.
-      in_part->bookref.c = NULL;
+      //Writing is done, no longer need the book.
+      intake->bookref.c = NULL;
       ch_log(channel, "Finished writing all lines to channel");
 
       // Close the pipe/socket, so that the other side gets EOF.
@@ -1152,13 +1155,13 @@ chaFreeBook(Book* book) {
 // Write any lines waiting to be written to "channel".
 private void
 channel_write_input(Channel* channel) {
-   ChannelFd* in_part = &channel->fds[PART_IN];
+   ChannelFd* intake = &channel->fds[PART_IN];
 
-   if (in_part->ch_writeque.next)
+   if (intake->ch_writeque.next)
       channel_send(channel, PART_IN, S"", 0, "channel_write_input");
-   ei (in_part->bookref.c != NULL) {
-      if (in_part->ch_buf_append)
-         channel_write_new_lines(in_part->bookref.c);
+   ei (intake->bookref.c) {
+      if (intake->ch_buf_append)
+         channel_write_new_lines(intake->bookref.c);
       else
          channel_write_in(channel);
     }
@@ -1181,15 +1184,15 @@ channel_write_new_lines(Book* book) {
 
    // There could be more than one channel for the buffer, loop over all of them.
    FOR_ALL_CHANNELS(channel) {
-      ChannelFd  *in_part = &channel->fds[PART_IN];
+      ChannelFd* intake = &channel->fds[PART_IN];
       LineNr    lnum;
       int       written = 0;
 
-      if (in_part->bookref.c == book && in_part->ch_buf_append) {
-         if (in_part->fd == INVALID_FD)
+      if (intake->bookref.c == book && intake->ch_buf_append) {
+         if (intake->fd == INVALID_FD)
             continue;  // pipe was closed
          found_one = true;
-         for (lnum = in_part->ch_buf_bot; lnum < book->mem.lineCount; ++lnum) {
+         for (lnum = intake->ch_buf_bot; lnum < book->mem.lineCount; ++lnum) {
             if (!can_write_buf_line(channel))
                break;
             write_buf_line(book, lnum, channel);
@@ -1203,7 +1206,7 @@ channel_write_new_lines(Book* book) {
          if (lnum < book->mem.lineCount)
             ch_log(channel, "Still %ld more lines to write", (long)(book->mem.lineCount - lnum));
 
-         in_part->ch_buf_bot = lnum;
+         intake->ch_buf_bot = lnum;
       }
    }
    if (!found_one)
@@ -2044,10 +2047,10 @@ appendToBook(Book* book, CS msg, Channel* channel, ChannelFdKind part) {
       // Find channels reading from this book and adjust their next-to-read line number.
       book->writeToChannel = true;
       FOR_ALL_CHANNELS(ch) {
-          ChannelFd  *in_part = &ch->fds[PART_IN];
+         ChannelFd  *intake = &ch->fds[PART_IN];
 
-          if (in_part->bookref.c == book)
-         in_part->ch_buf_bot = book->mem.lineCount;
+         if (intake->bookref.c == book)
+            intake->ch_buf_bot = book->mem.lineCount;
       }
    }
 }
@@ -2369,15 +2372,14 @@ channel_status(Channel *channel, int req_part) {
 }
 
 private void
-channel_part_info(Channel *channel, Bag *dict, CS name, ChannelFdKind part) {
-   ChannelFd *chanpart = &channel->fds[part];
-   Byte   namebuf[20];  // longest is "sock_timeout"
-   Unt   tail;
-   CS s = E;
+channel_part_info(Channel* channel, Bag* bag, CS name, ChannelFdKind part) {
+   ChannelFd* chanpart = &channel->fds[part];
+   Byte namebuf[20];  // longest is "sock_timeout"
+   CS s = S"";
 
    copySubstrToAllocation(namebuf, (Text){name, 4});
    STRCAT(namebuf, "_");
-   tail = STRLEN(namebuf);
+   Unt tail = STRLEN(namebuf);
 
    STRCPY(namebuf + tail, "status");
    CS status;
@@ -2387,7 +2389,7 @@ channel_part_info(Channel *channel, Bag *dict, CS name, ChannelFdKind part) {
       status = S"buffered";
    else
       status = S"closed";
-   bagAddString(dict, namebuf, (CS)status);
+   bagAddString(bag, namebuf, (CS)status);
 
    STRCPY(namebuf + tail, "mode");
    switch (chanpart->ch_mode) {
@@ -2396,7 +2398,7 @@ channel_part_info(Channel *channel, Bag *dict, CS name, ChannelFdKind part) {
    case CH_MODE_JSON: s = S"JSON"; break;
    case CH_MODE_LSP: s = S"LSP"; break;
    }
-   bagAddString(dict, namebuf, s);
+   bagAddString(bag, namebuf, s);
 
    STRCPY(namebuf + tail, "io");
    if (part == PART_SOCK)
@@ -2408,10 +2410,10 @@ channel_part_info(Channel *channel, Bag *dict, CS name, ChannelFdKind part) {
       case JIO_BUFFER: s = S"buffer"; break;
       case JIO_OUT: s = S"out"; break;
    }
-   bagAddString(dict, namebuf, (CS)s);
+   bagAddString(bag, namebuf, (CS)s);
 
    STRCPY(namebuf + tail, "timeout");
-   bagAddNumber(dict, namebuf, chanpart->ch_timeout);
+   bagAddNumber(bag, namebuf, chanpart->ch_timeout);
 }
 
 private void
@@ -2568,70 +2570,59 @@ channel_free_all(void) {
 // Book size for reading incoming messages.
 #define MAXMSGSIZE 4096
 
-// Check if there are remaining data that should be written for "in_part".
+// Check if there are remaining data that should be written for "intake".
 private int
-is_channel_write_remaining(ChannelFd* in_part) {
-   Book* book = in_part->bookref.c;
+is_channel_write_remaining(ChannelFd* intake) {
+   Book* book = intake->bookref.c;
 
-   if (in_part->ch_writeque.next)
+   if (intake->ch_writeque.next)
       return true;
    if (!book)
       return false;
-   return in_part->ch_buf_append
-       ? (in_part->ch_buf_bot < book->mem.lineCount)
-       : (in_part->ch_buf_top <= in_part->ch_buf_bot && in_part->ch_buf_top <= book->mem.lineCount);
+   return intake->ch_buf_append
+       ? (intake->ch_buf_bot < book->mem.lineCount)
+       : (intake->ch_buf_top <= intake->ch_buf_bot && intake->ch_buf_top <= book->mem.lineCount);
 }
 
-//Add write fds where we are waiting for writing to be possible.
+//Add write file descriptors where we are waiting for writing to be possible.
 private void
-channel_fill_wfds(int maxfd_arg, OUT LPollFd* pollFds) {
+channel_fill_wfds(OUT LPollFd* pollFds) {
    Channel* ch;
    FOR_ALL_CHANNELS(ch) {
       ChannelFd* inPart = &ch->fds[PART_IN];
       if (inPart->fd != INVALID_FD && is_channel_write_remaining(inPart)) {
-         add((PollFd){inPart->fd, .events = POLLOUT, .revents = 0}, OUT pollFds);
+         add(OUT pollFds, ((PollFd){inPart->fd, .events = POLLOUT, .revents = 0}));
       }
    }
 }
 
-// Check for reading from "fd" with "timeout" msec. Return CW_READY when there is something to read.
-// CW_NOT_READY when there is nothing to read. CW_ERROR when there is an error.
+//Check for reading from "fd" with "timeout" msec. Return CW_READY when there is something to read.
+//CW_NOT_READY when there is nothing to read. CW_ERROR when there is an error.
 private channel_wait_result
 channel_wait(Channel* channel, Socket fd, int timeout) {
    if (timeout > 0)
       ch_log(channel, "Waiting for up to %d msec", timeout);
-
-   {
+   findme;
    TimeVal tval;
    fd_set rfds;
    fd_set wfds;
-   int ret;
-   int maxfd;
 
    tval.tv_sec = timeout / 1000;
    tval.tv_usec = (timeout % 1000) * 1000;
-   for (;;) {
-      FD_ZERO(&rfds);
-      FD_SET((int)fd, &rfds);
-
-      // Write lines to a pipe when a pipe can be written to.  Need to
-      // set this every time, some buffers may be done.
-      maxfd = (int)fd + 1;
-      FD_ZERO(&wfds);
-      channel_fill_wfds(maxfd, &wfds);
-
-      ret = poll(maxfd, &rfds, &wfds, NULL, &tval);
-      SOCK_ERRNO;
-      if (ret == -1 && errno == EINTR)
-         continue;
-      if (ret > 0) {
-         if (FD_ISSET(fd, &rfds))
-            return CW_READY;
-         channel_write_any_lines();
-         continue;
-      }
-      break;
-   }
+   LPollFd* descriptors;
+cycle:
+   //Write lines to a pipe when a pipe can be written to.
+   channel_fill_wfds(OUT descriptors);
+   PollFd pollFd = (PollFd){(int)fd, POLLOUT, 0};
+   int ret = poll(&pollFd, 1, timeout);
+   SOCK_ERRNO;
+   if (ret == -1 && errno == EINTR)
+      goto cycle;
+   if (ret > 0) {
+      if ((descriptors->c[0].revents & POLLIN) != 0)
+         return CW_READY;
+      channel_write_any_lines();
+      goto cycle;
    }
    return CW_NOT_READY;
 }
@@ -2718,10 +2709,10 @@ private CS
 channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, int *outlen){
    CS buf;
    CS msg;
-   ChannelMode   mode = channel->fds[part].ch_mode;
-   Socket   fd = channel->fds[part].fd;
+   ChannelMode mode = channel->fds[part].ch_mode;
+   Socket fd = channel->fds[part].fd;
    Byte* nl;
-   ReadChunk   *node;
+   ReadChunk* node;
 
    ch_log(channel, "Blocking %s read, timeout: %d msec",
               mode == CH_MODE_RAW ? "RAW" : "NL", timeout);
@@ -3301,7 +3292,6 @@ ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
 
 pub int
 channel_select_setup(OUT LPollFd* pollFds, TimeVal* tv, TimeVal** tvp) {
-   int maxfd = maxfd_in;
    Channel* channel;
    fd_set* rfds = rfds_in;
    fd_set* wfds = wfds_in;
@@ -3329,7 +3319,7 @@ channel_select_setup(OUT LPollFd* pollFds, TimeVal* tv, TimeVal** tvp) {
       }
    }
 
-   channel_fill_wfds(maxfd, wfds);
+   channel_fill_wfds(wfds);
 
    return maxfd;
 }
@@ -3341,7 +3331,6 @@ chCheckPollResult(int ret_in, OUT LPollFd* fds) {
    fd_set* rfds = rfds_in;
    fd_set* wfds = wfds_in;
    ChannelFdKind part;
-   ChannelFd* in_part;
 
    FOR_ALL_CHANNELS(channel) {
       for (part = PART_SOCK; part < PART_IN; ++part) {
@@ -3358,10 +3347,10 @@ chCheckPollResult(int ret_in, OUT LPollFd* fds) {
          }
       }
 
-      in_part = &channel->fds[PART_IN];
-      if (ret > 0 && in_part->fd != INVALID_FD && (in_part->fd.revents & POLLOUT) != 0) {
+      ChannelFd* intake = &channel->fds[PART_IN];
+      if (ret > 0 && intake->fd != INVALID_FD && (intake->fd.revents & POLLOUT) != 0) {
          //Clear the flag first, fd may change in channel_write_input().
-         FD_CLR(in_part->fd, wfds);
+         FD_CLR(intake->fd, wfds);
          channel_write_input(channel);
          --ret;
       }
@@ -4597,7 +4586,7 @@ deathtrap(int) {
    // Suggested by SungHyun Nam.
     {
 # define EE_GDB_FILE "/tmp/eegdb"
-# define EE_NAME "/usr/bin/eegl"
+# define EE_NAME PREFIX "/bin/eegl"
    FILE *fp = fopen(VI_GDB_FILE, "w");
    if (fp)
    {

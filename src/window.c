@@ -38,7 +38,6 @@
 
 // for shm_open:
 #include <sys/mman.h>
-#include <sys/select.h>
 #include <fcntl.h>
 
 //{{{@@forward declarations

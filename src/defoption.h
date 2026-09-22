@@ -389,7 +389,7 @@ OPTION("grepformat", grepFormat, CS, "%f:%l:%m,%f:%l%m,%f  %l%m", P_ONECOMMA|P_N
       null, null)
 //Add an extra file name so that grep will always insert a file name in the match line
 OPTION("grepprog", grepProg, CS, "grep -n $* /dev/null", P_EXPAND, null, null)
-OPTION("path", path, CS, ".,/usr/include,,", P_EXPAND_DIR|P_EXPAND_3_BS|P_COMMA|P_NODUP, 
+OPTION("path", path, CS, PREFIX "/include,.,", P_EXPAND_DIR|P_EXPAND_3_BS|P_COMMA|P_NODUP, 
       null, null)
 OPTION("makeprog", makeProg, CS, "make", P_EXPAND, null, null)
 OPTION("errorformat", errorFormat, CS, DFLT_EFM, P_ONECOMMA|P_NODUP, null, null)

@@ -4188,7 +4188,7 @@ c_help(Invocation* invo) {
       else {
          // There is no help portal yet. Try to open the file specified by the "helpfile" option.
          FILE* helpfd;   // file descriptor of help file
-         if ((helpfd = fopen(MAIN_HELPFILE, READBIN)) == NULL) {
+         if ((helpfd = FOPEN(MAIN_HELPFILE, READBIN)) == NULL) {
             smsg(_("Sorry, help file \"%s\" not found"), MAIN_HELPFILE);
             goto erret;
          }
@@ -4847,7 +4847,7 @@ generateHelpTagsForDir(
 
    //If using the "++t" argument or generating tags for "docs" add the "help-tags" tag.
    ga_init2(&ga, sizeof(CS), 100);
-   if (add_help_tags || fullpathcmp(S"/usr/share/cim/doc", dir, false, true) == FPC_SAME){
+   if (add_help_tags || fullpathcmp(PREFIX "/share/cim/doc", dir, false, true) == FPC_SAME){
       if (ga_grow(&ga, 1) == FAIL)
          gotInterruptG = true;
       else {
@@ -5095,7 +5095,7 @@ c_helptags(Invocation* invo) {
    }
 
    if (STRCMP(invo->arg, "ALL") == 0) {
-      doInPath(S"/usr/share/doc/", S"", S"eegl", DIP_ALL + DIP_DIR, helptagsCb, &add_help_tags);
+      doInPath(PREFIX "/share/doc/", S"", S"eegl", DIP_ALL + DIP_DIR, helptagsCb, &add_help_tags);
    } else {
       expandInit(&expand);
       expand.context = EXPAND_DIRECTORIES;

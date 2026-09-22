@@ -8,6 +8,10 @@
 #define _DEFAULT_SOURCE 1
 #define _GNU_SOURCE 1
 
+#ifndef PREFIX
+#define PREFIX S"/usr"
+#endif
+
 #include "base.h"
 
 // ============ the header file puzzle: order matters =========
@@ -90,7 +94,7 @@ typedef struct pollfd PollFd;
 
 #include <sys/file.h>
 
-#define MAIN_HELPFILE "/usr/share/doc/eegl/help.txt"
+#define MAIN_HELPFILE PREFIX "/share/doc/eegl/help.txt"
 
 #ifndef EE_DEFAULTS_FILE
 # define EE_DEFAULTS_FILE (CS)"$EEGLRUNTIME/defaults.vim"

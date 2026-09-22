@@ -46,7 +46,7 @@
 //- Add documentation!  One line in manual/manual.help, full description in
 //  noncode/help/reference.help, and any other related places.
 //When making changes:
-//- Adjust the help for the option in /usr/share/eegl/doc/reference.help.
+//- Adjust the help for the option in PREFIX /share/eegl/doc/reference.help.
 
 //{{{enums
 

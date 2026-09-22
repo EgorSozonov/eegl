@@ -282,7 +282,7 @@ private int cs_find_common(
    Boole   use_ll,
    CS commline
 );
-private int cs_help(Invocation*, CS argTail);
+private int cs_help(Invocation*, CS);
 private void clear_csinfo(int i);
 private int cs_insert_filelist(CS fname, CS ppath, CS flags, FileStat* sb);
 private CScopeCommand * cs_lookup_cmd(Invocation* invo);
@@ -312,9 +312,9 @@ private void cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches
 private int cs_read_prompt(int i);
 private void sig_handler(int);
 private void cs_release_csp(int i, int freefnpp);
-private int cs_reset(Invocation*, CS argTail);
+private int cs_reset(Invocation*, CS);
 private CS cs_resolve_file(int i, Text name);
-private int cs_show(Invocation*, CS argTail);
+private int cs_show(Invocation*, CS);
 //}}}
 
 private Byte* tagmatchname = NULL;   // name of last used tag

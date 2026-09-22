@@ -7452,7 +7452,7 @@ c_helpgrep(Invocation* invo) {
       newLocList(stack, copyCommandTitle(*invo->commline));
       ll = getCurrent(stack);
 
-      searchFilesInDir(ll, (CS)"/usr/share/doc/eegl/", &regmatch, lang);
+      searchFilesInDir(ll, PREFIX "/share/doc/eegl/", &regmatch, lang);
 
       eeRegFree(regmatch.regprog);
 
