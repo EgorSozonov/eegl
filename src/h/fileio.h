@@ -2,42 +2,42 @@ void init_homedir(void);
 int file_is_readable(CS fname);
 void f_chdir(Var* argvars, Var* returnVar);
 void f_delete(Var* argvars, Var* returnVar);
-void f_executable(Var *argvars, Var* returnVar);
-void f_exepath(Var *argvars, Var* returnVar);
-void f_filereadable(Var *argvars, Var* returnVar);
-void f_filewritable(Var *argvars, Var* returnVar);
-void f_finddir(Var *argvars, Var* returnVar);
-void f_findfile(Var *argvars, Var* returnVar);
-void f_fnamemodify(Var *argvars, Var* returnVar);
-void f_getcwd(Var *argvars, Var* returnVar);
+void f_executable(Arr(Var) argvars, Var* returnVar);
+void f_exepath(Arr(Var) argvars, Var* returnVar);
+void f_filereadable(Arr(Var) argvars, Var* returnVar);
+void f_filewritable(Arr(Var) argvars, Var* returnVar);
+void f_finddir(Arr(Var) argvars, Var* returnVar);
+void f_findfile(Arr(Var) argvars, Var* returnVar);
+void f_fnamemodify(Arr(Var) argvars, Var* returnVar);
+void f_getcwd(Arr(Var) argvars, Var* returnVar);
 CS getfpermst(FileStat *st, CS perm);
-void f_getfperm(Var *argvars, Var* returnVar);
-void f_getfsize(Var *argvars, Var* returnVar);
-void f_getftime(Var *argvars, Var* returnVar);
+void f_getfperm(Arr(Var) argvars, Var* returnVar);
+void f_getfsize(Arr(Var) argvars, Var* returnVar);
+void f_getftime(Arr(Var) argvars, Var* returnVar);
 CS getftypest(FileStat *st);
-void f_getftype(Var *argvars, Var* returnVar);
-void f_glob(Var *argvars, Var* returnVar);
-void f_glob2regpat(Var *argvars, Var* returnVar);
-void f_globpath(Var *argvars, Var* returnVar);
-void f_isdirectory(Var *argvars, Var* returnVar);
-void f_isabsolutepath(Var *argvars, Var* returnVar);
+void f_getftype(Arr(Var) argvars, Var* returnVar);
+void f_glob(Arr(Var) argvars, Var* returnVar);
+void f_glob2regpat(Arr(Var) argvars, Var* returnVar);
+void f_globpath(Arr(Var) argvars, Var* returnVar);
+void f_isdirectory(Arr(Var) argvars, Var* returnVar);
+void f_isabsolutepath(Arr(Var) argvars, Var* returnVar);
 void f_mkdir(Var* argvars, Var* returnVar);
-void f_pathshorten(Var *argvars, Var* returnVar);
-void f_readdir(Var *argvars, Var* returnVar);
-void f_readdirex(Var *argvars, Var* returnVar);
+void f_pathshorten(Arr(Var) argvars, Var* returnVar);
+void f_readdir(Arr(Var) argvars, Var* returnVar);
+void f_readdirex(Arr(Var) argvars, Var* returnVar);
 void f_readblob(Var* argvars, Var* returnVar);
 void f_readfile(Var* argvars, Var* returnVar);
-void f_resolve(Var *argvars, Var* returnVar);
+void f_resolve(Arr(Var) argvars, Var* returnVar);
 void f_tempname(Var*, Var* returnVar);
 void f_writefile(Var* argvars, Var* returnVar);
 void f_browse(Arr(Var), Var* returnVar);
 void f_browsedir(Arr(Var), Var* returnVar);
-void f_filecopy(Var *argvars, Var* returnVar);
+void f_filecopy(Arr(Var) argvars, Var* returnVar);
 CS fiExpandAndCopy(NULLABLE CS fname, int force);
-int eeFexists(CS fname);
+Boole eeFexists(CS fname);
 int expand_wildcards_eval(
    Arr(CS) pattern,      // pointer to input pattern
-   Unt         flags,  // EW_DIR, etc.
+   Unt flags,  // EW_DIR, etc.
    OUT ExpandMatch* files
 );
 int expand_wildcards(
@@ -78,8 +78,6 @@ void home_replace(
    int dstlen,  //maximum length of the result
    Boole one      //if true, only replace one file name, include spaces and commas in the file name.
 );
-Byte * eeFindfirst(Byte *path, Byte *filename, int level);
-CS eeFindnext(void);
 FileSearchCtx* eeFindFile_init(
    CS path,
    Text filename,
@@ -210,4 +208,3 @@ void mch_copy_xattr(CS from_file, CS to_file);
 int mch_fsetperm(int fd, long perm);
 int mch_can_exe(CS name, Arr(CS) path, int use_path);
 CS fiBuildSwapOrUndoFname(CS fname, Boole isUndo);
-int xxdMain(int argc, char* argv[]);

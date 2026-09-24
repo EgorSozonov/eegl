@@ -3752,8 +3752,8 @@ EXTERN CS p_buftype_values[]
 //Info used in undo.c
 typedef struct {
    UndoHeader* oldHead; // pointer to oldest header
-   UndoHeader   *newHead; // newest header; may not be valid if b_u_curhead is not NULL
-   UndoHeader   *currHead;   // pointer to current header
+   UndoHeader* newHead; // newest header; may not be valid if b_u_curhead is not NULL
+   UndoHeader* currHead;   // pointer to current header
    int countHeaders;   // current number of headers
    int synced;   // entry lists are synced
    long seqLast;   // last used undo sequence number

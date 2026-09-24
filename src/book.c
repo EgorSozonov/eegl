@@ -2079,7 +2079,6 @@ bookOpenFromInvo(
       if (read_fifo) {
          curBook->o.binary = save_bin;
          if (retval == OK)
-            // don't add READ_FIFO here, otherwise we won't be able to detect the encoding
             retval = readBook(false, invo, flags);
       }
       msg_silent = old_msg_silent;

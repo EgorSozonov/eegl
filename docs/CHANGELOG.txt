@@ -288,7 +288,8 @@
 [-] EINTR ifdefs
 [-] OPEN_CHR_FILES (some FreeBSD thing)
 [-] PROTO (now we have BetterC instead)
-[ ] clipboard object (no need, we have wl-copy & wl-paste)
+[-] clipboard object (no need, we have wl-copy & wl-paste)
+[-] xxd (we have `hexdump -C` instead)
 
 tag.c:do_tag (weird matches is static, also newMatches?)
 
@@ -303,6 +304,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] the :edit command should work with multiple files `:e a.txt b.txt` 
 [+] Skip the quickfix buffer when looping through buffers
 [+] The :S command: a case-sensitive version of :s substitution
+[ ] Correct handling of /r, /n in substitutions. `s| |\n|g` should work correctly!
 [+] :hi prints hilite groups sorted by name
 [+] replace CUT_BUFFER0 in X11 with PRIMARY or CLIPBOARD (clipboard.c) and remove string_convert()
 [+] Tab in insert mode enters Normal Mode
@@ -316,7 +318,6 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [?] Command to comment or uncomment out a block
 [+] sane discriminated unions in options.c instead of byte casting 
 [+] move @signcolumn option from string to bool
-[ ] refactor regexp.c to not produce side effects (messages) but instead return values
 [-] ml_get_alloc_lines (some weird crap that made separate allocations for every text line)
 [+] draw.c:screenLinesCG: change array layout to improve cache locality
 [ ] auto-replace >=, <=, != with single Unicode chars (new book-local option)
@@ -325,7 +326,6 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [ ] finish implementing @smoothscroll?
 [ ] "gg" to a line should open all folds this line is in
 [ ] ":ls" should open a popup where jk moves the cursor up/down while hl move the buffers up/down
-[ ] Growable strings (search for `TODO growable string`)
 [+] Remove internet connectivity (channel.c) to massively increase security
 [ ] Replace the "messages" mess with popup portals
 [ ] function to reformat minified JSON into human-readable form? Maybe just use jq? And just
@@ -333,11 +333,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] remove dependency on libattr - migrate to glibc 
 [ ] Frozen options mode? (options cannot be changed after the init script)
 [+] Transition to pure 256-color palette and removal of double-width symbols
-[+] Removed UNUSED from function params because with C23 it's not needed
-[+] Replace all uses of strtok() with a better function
-[+] Static linking for auxiliary dev programs
 [ ] Replace VimScript with Eyr
-[ ] Intern the code of unibillium and get rid of the "tinfo" dependency. Parse terminfo directly
 [ ] @errorformat is unsuitable for an option: it should be per-filetype. We need a new event type
    to control via autocommands: the IsCodeChange. Scratch buffers are created with isCode = false. 
    Then when they are saved with .txt, .json, .yaml or without file extension, they stay that way.
@@ -346,7 +342,20 @@ tag.c:do_tag (weird matches is static, also newMatches?)
    choose to use. But we need separate commands to set the errorformat property for a book, also 
    to set isCode.
 [ ] Replace clipboard with shelling out to wl-copy and wl-paste
+
+
+   [[[Code enhancements]]]
+
+[+] Removed UNUSED from function params because with C23 it's not needed
+[+] Replace all uses of strtok() with a better function
+[+] Static linking for auxiliary dev programs
+[ ] Intern the code of unibillium and get rid of the "tinfo" dependency. Parse terminfo directly
+[ ] Growable strings (search for `TODO growable string`)
 [ ] Add MUSL and make the program statically-linked
+[ ] refactor regexp.c to not produce side effects (messages) but instead return values
+
+
+
 
 
    [[[Bugs to fix]]]

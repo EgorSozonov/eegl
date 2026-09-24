@@ -242,7 +242,7 @@ private void channel_close(Channel *channel, int invoke_close_cb);
 private void channel_close_in(Channel *channel);
 private void remove_from_writeque(WriteQueue *wq, WriteQueue *entry);
 private void channel_clear_one(Channel *channel, ChannelFdKind part);
-private int is_channel_write_remaining(ChannelFd* in_part);
+private int is_channel_write_remaining(ChannelFd* intake);
 private void channel_fill_wfds(OUT LPollFd* pollFds);
 private channel_wait_result channel_wait(Channel* channel, Socket fd, int timeout);
 private void ch_close_part_on_error(Channel *channel, ChannelFdKind part, int is_err, char *func);

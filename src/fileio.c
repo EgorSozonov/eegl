@@ -127,8 +127,8 @@ pub
 //{{{@@forward declarations
 private void findfilendir(Arr(Var) argvars, Var* returnVar, int find_what);
 private int mkdir_recurse(CS dir, Unt prot, Byte** created);
-private int readdirex_dict_arg(Var *argvars, int *cmp);
-private void read_file_or_blob(Var *argvars, Var* returnVar, int always_blob);
+private int readdirex_dict_arg(Arr(Var) argvars, int *cmp);
+private void read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob);
 private int dir_of_file_exists(CS fname);
 private int eeBacktick(CS p);
 private int expand_backtick(OUT ExpandMatch* matches, CS pat, Unt flags);
@@ -151,9 +151,9 @@ private int ff_wc_equal(CS s1, CS s2);
 private int checkFirstTimeVisit(Visited** visited_list, Text fname, CS wc_path, Unt wc_pathlen);
 private DirSearchStack * ff_create_stack_element(
    CS fix_part,
-   Unt   fix_partlen,
+   Unt fix_partlen,
    CS wc_part,
-   Unt   wc_partlen,
+   Unt wc_partlen,
    int level,
    Boole star_star_empty
 );
@@ -211,18 +211,6 @@ private void eeSettempdir(CS tempdir);
 private void fiGetShellOutput_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist);
 private int executable_file(CS name);
 private int resolveSymlink(OUT Text* result, Unt cap);
-private int huntype(
-  FILE *fpi,
-  FILE *fpo,
-  int cols,
-  int hextype,
-  long base_off
-);
-private void print_colored_line(FILE* fp, CS l, CS colors);
-private void exit_with_usage(void);
-private int enable_color(void);
-private void xxdline(FILE* fp, CS l, CS colors, int nz);
-private Byte get_color_char(int e);
 //}}}
 //{{{file paths: dealing with file names and paths.
 
@@ -346,13 +334,13 @@ f_delete(Var* argvars, Var* returnVar) {
 
 // "executable()" function
 pub void
-f_executable(Var *argvars, Var* returnVar) {
+f_executable(Arr(Var) argvars, Var* returnVar) {
    // Check in $PATH and also check directly if there is a directory name.
    returnVar->number = mch_can_exe(tv_get_string(&argvars[0]), NULL, true);
 }
 
 pub void
-f_exepath(Var *argvars, Var* returnVar) {
+f_exepath(Arr(Var) argvars, Var* returnVar) {
    CS p = NULL;
    (void)mch_can_exe(tv_get_string(&argvars[0]), OUT &p, true);
    returnVar->tag = VAR_STRING;
@@ -361,13 +349,13 @@ f_exepath(Var *argvars, Var* returnVar) {
 
 // "filereadable()" function
 pub void
-f_filereadable(Var *argvars, Var* returnVar) {
+f_filereadable(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = file_is_readable(tv_get_string(&argvars[0]));
 }
 
 //Return 0 for not writable, 1 for writable file, 2 for a dir which we have rights to write into.
 pub void
-f_filewritable(Var *argvars, Var* returnVar) {
+f_filewritable(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = filewritable(tv_get_string(&argvars[0]));
 }
 
@@ -435,19 +423,19 @@ findfilendir(Arr(Var) argvars, Var* returnVar, int find_what){
 
 //"finddir({fname}[, {path}[, {count}]])" function
 pub void
-f_finddir(Var *argvars, Var* returnVar){
+f_finddir(Arr(Var) argvars, Var* returnVar){
    findfilendir(argvars, returnVar, FINDFILE_DIR);
 }
 
 //"findfile({fname}[, {path}[, {count}]])" function
 pub void
-f_findfile(Var *argvars, Var* returnVar){
+f_findfile(Arr(Var) argvars, Var* returnVar){
    findfilendir(argvars, returnVar, FINDFILE_FILE);
 }
 
 // "fnamemodify({fname}, {mods})" function
 pub void
-f_fnamemodify(Var *argvars, Var* returnVar) {
+f_fnamemodify(Arr(Var) argvars, Var* returnVar) {
    CS fname;
    CS mods;
    Unt   usedlen = 0;
@@ -485,7 +473,7 @@ f_fnamemodify(Var *argvars, Var* returnVar) {
 //directory of the specified tab.  Otherwise return the directory of the specified portal in the 
 //specified tab. If the portal or the tab doesn't exist then return NULL.
 pub void
-f_getcwd(Var *argvars, Var* returnVar) {
+f_getcwd(Arr(Var) argvars, Var* returnVar) {
    Portal   *wp = NULL;
    Tab   *tp = NULL;
    int      global = false;
@@ -528,7 +516,7 @@ getfpermst(FileStat *st, CS perm){
 
 //"getfperm({fname})" function
 pub void
-f_getfperm(Var *argvars, Var* returnVar) {
+f_getfperm(Arr(Var) argvars, Var* returnVar) {
    FileStat   st;
    CS perm = NULL;
    Byte permbuf[] = "---------";
@@ -544,7 +532,7 @@ f_getfperm(Var *argvars, Var* returnVar) {
 
 //"getfsize({fname})" function
 pub void
-f_getfsize(Var *argvars, Var* returnVar) {
+f_getfsize(Arr(Var) argvars, Var* returnVar) {
    CS fname;
    FileStat   st;
 
@@ -565,7 +553,7 @@ f_getfsize(Var *argvars, Var* returnVar) {
 
 // "getftime({fname})" function
 pub void
-f_getftime(Var *argvars, Var* returnVar) {
+f_getftime(Arr(Var) argvars, Var* returnVar) {
    CS fname;
    FileStat   st;
 
@@ -602,7 +590,7 @@ getftypest(FileStat *st){
 
 // "getftype({fname})" function
 pub void
-f_getftype(Var *argvars, Var* returnVar) {
+f_getftype(Arr(Var) argvars, Var* returnVar) {
    FileStat   st;
    CS type = NULL;
 
@@ -616,7 +604,7 @@ f_getftype(Var *argvars, Var* returnVar) {
 
 // "glob()" function
 pub void
-f_glob(Var *argvars, Var* returnVar) {
+f_glob(Arr(Var) argvars, Var* returnVar) {
    int options = WILD_SILENT|WILD_USE_NL;
    Expand expand = {};
    Boole error = false;
@@ -656,7 +644,7 @@ f_glob(Var *argvars, Var* returnVar) {
 }
 
 pub void
-f_glob2regpat(Var *argvars, Var* returnVar) {
+f_glob2regpat(Arr(Var) argvars, Var* returnVar) {
    Byte buf[NUMBUFLEN];
 
    CS pat = convertVarToString_strict(&argvars[0], buf, false);
@@ -665,7 +653,7 @@ f_glob2regpat(Var *argvars, Var* returnVar) {
 }
 
 pub void
-f_globpath(Var *argvars, Var* returnVar) {
+f_globpath(Arr(Var) argvars, Var* returnVar) {
    Unt flags = WILD_IGNORE_COMPLETESLASH;
    Byte buf1[NUMBUFLEN];
    Boole error = false;
@@ -703,13 +691,13 @@ f_globpath(Var *argvars, Var* returnVar) {
 
 // "isdirectory()" function
 pub void
-f_isdirectory(Var *argvars, Var* returnVar) {
+f_isdirectory(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = mch_isdir(tv_get_string(&argvars[0]));
 }
 
 // "isabsolutepath()" function
 pub void
-f_isabsolutepath(Var *argvars, Var* returnVar) {
+f_isabsolutepath(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = strIsRelative(tv_get_string_strict(&argvars[0])) ? 0 : 1;
 }
 
@@ -799,7 +787,7 @@ f_mkdir(Var* argvars, Var* returnVar) {
 
 // "pathshorten()" function
 pub void
-f_pathshorten(Var *argvars, Var* returnVar) {
+f_pathshorten(Arr(Var) argvars, Var* returnVar) {
    int trim_len = 1;
 
    if (argvars[1].tag != VAR_UNKNOWN) {
@@ -823,7 +811,7 @@ f_pathshorten(Var *argvars, Var* returnVar) {
 //Process the keys in the Bag argument to the readdir() and readdirex()
 //functions.  Assumes the Bag argument is the 3rd argument.
 private int
-readdirex_dict_arg(Var *argvars, int *cmp) {
+readdirex_dict_arg(Arr(Var) argvars, int *cmp) {
    CS compare;
 
    if (check_for_nonnull_dict_arg(argvars, 2) == FAIL)
@@ -848,7 +836,7 @@ readdirex_dict_arg(Var *argvars, int *cmp) {
 }
 
 pub void
-f_readdir(Var *argvars, Var* returnVar) {
+f_readdir(Arr(Var) argvars, Var* returnVar) {
    int      ret;
    CS p;
    ArrayList   ga;
@@ -872,7 +860,7 @@ f_readdir(Var *argvars, Var* returnVar) {
 }
 
 pub void
-f_readdirex(Var *argvars, Var* returnVar) {
+f_readdirex(Arr(Var) argvars, Var* returnVar) {
    int      ret;
    ArrayList   ga;
    int      i;
@@ -896,7 +884,7 @@ f_readdirex(Var *argvars, Var* returnVar) {
 }
 
 private void
-read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
+read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
    int binary = false;
    int blob = always_blob;
    int failed = false;
@@ -937,8 +925,8 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
       allocReturnList(returnVar);
    }
 
-   // Always open the file in binary mode, library functions have a mind of
-   // their own about CR-LF conversion.
+   //Always open the file in binary mode, library functions have a mind of
+   //their own about CR-LF conversion.
    CS fname = tv_get_string(&argvars[0]);
 
    if (mch_isdir(fname)) {
@@ -952,7 +940,7 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
 
    if (blob) {
       if (read_blob(fd, returnVar, offset, size) == FAIL)
-          showErrFmtMsg(_(e_cant_read_file_str), fname);
+         showErrFmtMsg(_(e_cant_read_file_str), fname);
       fclose(fd);
       return;
    }
@@ -960,15 +948,14 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
    while (cnt < maxline || maxline < 0) {
       readlen = (int)fread(buf, 1, io_size, fd);
 
-      // This for loop processes what was read, but is also entered at end
-      // of file so that either:
+      //This for loop processes what was read, but is also entered at end
+      //of file so that either:
       // - an incomplete line gets written
-      // - a "binary" file gets an empty line at the end if it ends in a
-      //   newline.
+      // - a "binary" file gets an empty line at the end if it ends in a newline.
       for (p = buf, start = buf;
          p < buf + readlen || (readlen <= 0 && (prevlen > 0 || binary));
-         ++p)
-      {
+         ++p
+      ) {
          if (readlen <= 0 || *p == '\n') {
             ListItem  *li;
             CS s   = NULL;
@@ -976,12 +963,13 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
 
             // Finished a line.  Remove CRs before NL.
             if (readlen > 0 && !binary) {
-                while (len > 0 && start[len - 1] == '\r')
-               --len;
-                // removal may cross back to the "prev" string
-                if (len == 0)
-               while (prevlen > 0 && prev[prevlen - 1] == '\r')
-                   --prevlen;
+               while (len > 0 && start[len - 1] == '\r')
+                  --len;
+               // removal may cross back to the "prev" string
+               if (len == 0) {
+                  while (prevlen > 0 && prev[prevlen - 1] == '\r')
+                     --prevlen;
+               } 
             }
             if (prevlen == 0)
                s = copySubstr(start, len);
@@ -1012,41 +1000,7 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
                break;
          } ei (*p == ZERO)
             *p = '\n';
-         //Check for utf8 "bom"; U+FEFF is encoded as EF BB BF. Do this
-         //when finding the BF and check the previous two bytes.
-         ei (*p == 0xbf && !binary) {
-            //Find the two bytes before the 0xbf.   If p is at @buf, or @buf + 1, these 
-            //may be in the "prev" string.
-            Byte back1 = p >= buf + 1 ? p[-1] : prevlen >= 1 ? prev[prevlen - 1] : ZERO;
-            Byte back2 = p >= buf + 2 ? p[-2]
-                 : p == buf + 1 && prevlen >= 1 ? prev[prevlen - 1]
-                 : prevlen >= 2 ? prev[prevlen - 2] : ZERO;
-
-            if (back2 == 0xef && back1 == 0xbb) {
-                CS dest = p - 2;
-
-               // Usually a BOM is at the beginning of a file, and so at
-               // the beginning of a line; then we can just step over it.
-               if (start == dest)
-                  start = p + 1;
-               else {
-                  // have to shuffle buf to close gap
-                  int adjust_prevlen = 0;
-
-                  if (dest < buf) {
-                     // must be 1 or 2
-                     adjust_prevlen = (int)(buf - dest);
-                     dest = buf;
-                  }
-                  if (readlen > p - buf + 1)
-                     MEMMOVE(dest, p + 1, readlen - (p - buf) - 1);
-                  readlen -= 3 - adjust_prevlen;
-                  prevlen -= adjust_prevlen;
-                  p = dest - 1;
-               }
-            }
-         }
-      } // for
+      } //for
 
       if (failed || (cnt >= maxline && maxline >= 0) || readlen <= 0)
          break;
@@ -1054,10 +1008,9 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
          // There's part of a line in buf, store it in "prev".
          if (p - start + prevlen >= prevsize) {
 
-            // A common use case is ordinary text files and "prev" gets a
-            // fragment of a line, so the first allocation is made
-            // small, to avoid repeatedly 'allocing' large and
-            // 'reallocing' small.
+            //A common use case is ordinary text files and "prev" gets a
+            //fragment of a line, so the first allocation is made
+            //small, to avoid repeatedly 'allocing' large and 'reallocing' small.
             if (prevsize == 0)
                 prevsize = (long)(p - start);
             else {
@@ -1065,15 +1018,15 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
                 long growmin  = (long)((p - start) * 2 + prevlen);
                 prevsize = grow50pc > growmin ? grow50pc : growmin;
             }
-            // need bigger "prev" buffer
+            //need bigger "prev" buffer
             CS newprev = eeRealloc(prev, prevsize);
             prev = newprev;
          }
-         // Add the line part to end of "prev".
+         //Add the line part to end of "prev".
          MEMMOVE(prev + prevlen, start, p - start);
          prevlen += (long)(p - start);
       }
-   } // while
+   } //while
 
    // For a negative line count use only the lines at the end of the file, free the rest.
    if (!failed && maxline < 0) {
@@ -1106,7 +1059,7 @@ f_readfile(Var* argvars, Var* returnVar) {
 }
 
 pub void
-f_resolve(Var *argvars, Var* returnVar) {
+f_resolve(Arr(Var) argvars, Var* returnVar) {
    CS p = tv_get_string(&argvars[0]);
    CS cpy;
    int len;
@@ -1274,10 +1227,10 @@ f_tempname(Var*, Var* returnVar) {
 
 pub void
 f_writefile(Var* argvars, Var* returnVar){
-   int      binary = false;
-   int      append = false;
-   int      defer = false;
-   int      do_fsync = p_fs;
+   Boole binary = false;
+   int append = false;
+   int defer = false;
+   int do_fsync = p_fs;
    CS fname;
    FILE   *fd;
    int      ret = 0;
@@ -1384,7 +1337,7 @@ f_browsedir(Arr(Var), Var* returnVar){
 
 // "filecopy()" function
 pub void
-f_filecopy(Var *argvars, Var* returnVar){
+f_filecopy(Arr(Var) argvars, Var* returnVar){
    FileStat   st;
 
    returnVar->number = false;
@@ -1431,10 +1384,9 @@ fiExpandAndCopy(NULLABLE CS fname, int force) { // force expansion, even when it
 }
 
 // return true if "fname" exists.
-pub int
+pub Boole
 eeFexists(CS fname){
    FileStat st;
-
    if (stat((char *)fname, &st))
       return false;
    return true;
@@ -1445,10 +1397,10 @@ eeFexists(CS fname){
 pub int
 expand_wildcards_eval(
    Arr(CS) pattern,      // pointer to input pattern
-   Unt         flags,  // EW_DIR, etc.
+   Unt flags,  // EW_DIR, etc.
    OUT ExpandMatch* files
 ){
-   int      ret = FAIL;
+   int ret = FAIL;
    CS eval_pat = NULL;
    CS exp_pat = *pattern;
    CS   ignoredMsg;
@@ -1542,6 +1494,7 @@ expand_wildcards(
 
    return retval;
 }
+
 //Return true if we can expand this backtick thing here.
 private int
 eeBacktick(CS p) {
@@ -1769,7 +1722,6 @@ unix_expandpath(
       qsort((fileList->c) + start_len, matches, sizeof(CS), pstrcmp);
    return matches;
 }
-
 
 //Expand a path into all matching files and/or directories. Handle "*",
 //"?", "[a-z]", "**", etc.
@@ -2463,52 +2415,50 @@ repeat:
    // ":s?pat?foo?" - substitute
    // ":gs?pat?foo?" - global substitute
    if (src[*usedlen] == ':'
-       && (src[*usedlen + 1] == 's'
-      || (src[*usedlen + 1] == 'g' && src[*usedlen + 2] == 's'))
+       && (src[*usedlen + 1] == 's' || (src[*usedlen + 1] == 'g' && src[*usedlen + 2] == 's'))
    ) {
       CS str;
       CS pat;
       CS sub;
-      int sep;
       int didit = false;
 
       CS flags = S"";
       s = src + *usedlen + 2;
       if (src[*usedlen + 1] == 'g') {
-         flags = (CS)"g";
+         flags = S"g";
          ++s;
       }
 
-      sep = *s++;
-      if (sep) {
+      Unt sep = *s++;
+      if (sep != 0) {
          // find end of pattern
          p = firstOccurrence(s, sep);
          if (p) {
             pat = copySubstr(s, p - s);
             if (pat) {
-                s = p + 1;
-                // find end of substitution
-                p = firstOccurrence(s, sep);
-                if (p != NULL) {
-               sub = copySubstr(s, p - s);
-               str = copySubstr(*fnamep, *fnamelen);
-               if (sub != NULL && str != NULL) {
-                   Unt slen;
+               s = p + 1;
+               // find end of substitution
+               p = firstOccurrence(s, sep);
+               if (p) {
+                  sub = copySubstr(s, p - s);
+                  str = copySubstr(*fnamep, *fnamelen);
+                  if (sub && str) {
+                     Unt slen;
 
-                   *usedlen = p + 1 - src;
-                   s = do_string_sub(str, *fnamelen, pat, sub, NULL, flags, &slen);
-                   if (s != NULL) {
-                  *fnamep = s;
-                  *fnamelen = slen;
-                  eeglFree(*bufp);
-                  *bufp = s;
-                  didit = true;
-                   }
+                     *usedlen = p + 1 - src;
+                     s = do_string_sub(str, *fnamelen, pat, sub, NULL, flags, &slen);
+                     if (s) {
+                        *fnamep = s;
+                        *fnamelen = slen;
+                        eeglFree(*bufp);
+                        *bufp = s;
+                        didit = true;
+                     }
+                  }
+                  eeglFree(sub);
+                  eeglFree(str);
                }
-               eeglFree(sub);
-               eeglFree(str);
-                }
-                eeglFree(pat);
+               eeglFree(pat);
             }
           }
           // after using ":s", repeat all the modifiers
@@ -2694,50 +2644,7 @@ typedef struct FileSearchCtx {
    Boole tagFile;
 } FileSearchCtx;
 
-// locally needed functions
-private int checkFirstTimeVisit(Visited **, Text, CS, Unt);
-private void findfileFreeVisitedList(FileSearchCtx* search_ctx_arg);
-private void findfileFreeVisitedList_list(OUT VisitedList **listheadp);
-private void ff_free_visited_list(Visited *vl);
-private VisitedList* ff_get_visited_list(Text, OUT VisitedList **);
-
-private void ff_push(FileSearchCtx *searchCtx, DirSearchStack *stack_ptr);
-private DirSearchStack *ff_pop(FileSearchCtx *searchCtx);
-private void ff_clear(FileSearchCtx *searchCtx);
-private void ff_free_stack_element(DirSearchStack *stack_ptr);
-private DirSearchStack*ff_create_stack_element(CS, Unt, CS, Unt, int, Boole);
-private int ff_path_in_stoplist(CS, int, Text *);
-
-
 private Text fileExpansionS = {NULL, 0};       // used for expanding filenames
-
-#if 0
-//if someone likes findfirst/findnext, here are the functions NOT TESTED!!
-
-private void *ff_fn_search_context = NULL;
-
-pub Byte *
-eeFindfirst(Byte *path, Byte *filename, int level) {
-    ff_fn_search_context =
-   eeFindFile_init(path, filename, NULL, level, true, false,
-      ff_fn_search_context, rel_fname);
-    if (NULL == ff_fn_search_context)
-   return NULL;
-    else
-   return eeFindnext()
-}
-
-pub CS
-eeFindnext(void) {
-    Byte *ret = eeFindFile(ff_fn_search_context);
-
-    if (NULL == ret) {
-   eeFindFile_cleanup(ff_fn_search_context);
-   ff_fn_search_context = NULL;
-    }
-    return ret;
-}
-#endif
 
 //Initialization routine for eeFindFile().
 //
@@ -2831,7 +2738,7 @@ eeFindFile_init(
    }
 
    //Store information on starting dir now if path is relative. If absolute, we do that later
-   if (path[0] == '.' && (path[1] == '/' || path[1] == ZERO) && rel_fname != NULL) {
+   if (path[0] == '.' && (path[1] == '/' || path[1] == ZERO) && rel_fname) {
       int   len = (int)(fiGetShortFiName(rel_fname) - rel_fname);
 
       if (!eeIsAbsName(rel_fname) && len + 1 < MAXPATHL) {
@@ -2904,7 +2811,7 @@ eeFindFile_init(
              walker++;
          dircount++;
 
-       } while (walker != NULL);
+       } while (walker);
 
        tmp = &searchCtx->stopDirs[dircount - 1];
        tmp->c = NULL;
@@ -2918,7 +2825,7 @@ eeFindFile_init(
    // -wildcard_stuff (might be NULL)
    CS wc_part = firstOccurrence(path, '*');
    if (wc_part) {
-      int   llevel;
+      int llevel;
 
       // save the fix part of the path
       searchCtx->fixPath.len = (Unt)(wc_part - path);
@@ -2945,12 +2852,12 @@ eeFindFile_init(
             CS errpt;
             llevel = STRTOL(wc_part, &errpt, 10);
             if (errpt != wc_part && llevel > 0 && llevel < 255)
-                fileExpansionS.c[fileExpansionS.len++] = llevel;
+               fileExpansionS.c[fileExpansionS.len++] = llevel;
             ei (errpt != wc_part && llevel == 0)
-                // restrict is 0 -> remove already added '**'
-                fileExpansionS.len -= 2;
+               // restrict is 0 -> remove already added '**'
+               fileExpansionS.len -= 2;
             else
-                fileExpansionS.c[fileExpansionS.len++] = FF_MAX_STAR_STAR_EXPAND;
+               fileExpansionS.c[fileExpansionS.len++] = FF_MAX_STAR_STAR_EXPAND;
             wc_part = errpt;
             if (*wc_part != ZERO && *wc_part != '/') {
                showErrFmtMsg(_(e_invalid_path_number_must_be_at_end_of_path_or_be_followed_by_str), "/");
@@ -2963,14 +2870,14 @@ eeFindFile_init(
 
       searchCtx->wildcardPath.len = fileExpansionS.len;
       searchCtx->wildcardPath.c = copySubstr(fileExpansionS.c, searchCtx->wildcardPath.len);
-      if (searchCtx->wildcardPath.c == NULL)
-          goto error_return;
+      if (!searchCtx->wildcardPath.c)
+         goto error_return;
     } else {
       searchCtx->fixPath.len = STRLEN(path);
       searchCtx->fixPath.c = copySubstr(path, searchCtx->fixPath.len);
    }
 
-   if (searchCtx->startDir.c == NULL) {
+   if (!searchCtx->startDir.c) {
       // store the fix part as startdir.
       // This is needed if the parameter path is fully qualified.
       searchCtx->startDir.len = searchCtx->fixPath.len;
@@ -2993,7 +2900,8 @@ eeFindFile_init(
        MAXPATHL,
        "%s%s",
        searchCtx->startDir.c,
-       add_sep ? "/" : "");
+       add_sep ? "/" : ""
+   );
 
    {
    Unt bufsize = fileExpansionS.len + searchCtx->fixPath.len + 1;
@@ -3007,8 +2915,9 @@ eeFindFile_init(
       searchCtx->fixPath.c);
    if (mch_isdir(buf)) {
       if (searchCtx->fixPath.len > 0) {
-         add_sep = !after_pathsep(searchCtx->fixPath.c,
-             searchCtx->fixPath.c + searchCtx->fixPath.len);
+         add_sep = !after_pathsep(
+               searchCtx->fixPath.c, searchCtx->fixPath.c + searchCtx->fixPath.len
+         );
          fileExpansionS.len += eeSnprintf(
             fileExpansionS.c + fileExpansionS.len,
             MAXPATHL - fileExpansionS.len,
@@ -3025,10 +2934,10 @@ eeFindFile_init(
          len = (int)(p - searchCtx->fixPath.c) - 1;
          if ((len >= 2
             && STRNCMP(searchCtx->fixPath.c, "..", 2) == 0)
-            && (len == 2 || searchCtx->fixPath.c[2] == '/'))
-         {
-             eeglFree(buf);
-             goto error_return;
+            && (len == 2 || searchCtx->fixPath.c[2] == '/')
+         ) {
+            eeglFree(buf);
+            goto error_return;
          }
 
          add_sep = !after_pathsep(searchCtx->fixPath.c,
@@ -3040,7 +2949,7 @@ eeFindFile_init(
             len,
             searchCtx->fixPath.c,
             add_sep ? "/" : "");
-       }
+      }
 
       if (searchCtx->wildcardPath.c != NULL) {
          Unt   tempsize = (searchCtx->fixPath.len - len)
@@ -3061,7 +2970,8 @@ eeFindFile_init(
    eeglFree(buf);
    }
 
-   DirSearchStack* sptr = ff_create_stack_element(fileExpansionS.c,
+   DirSearchStack* sptr = ff_create_stack_element(
+         fileExpansionS.c,
          fileExpansionS.len,
          searchCtx->wildcardPath.c,
          searchCtx->wildcardPath.len,
@@ -3139,9 +3049,9 @@ eeFindFile_stopdir(CS buf) {
 
    while (*r_ptr != ZERO && *r_ptr != ';') {
       if (r_ptr[0] == '\\' && r_ptr[1] == ';') {
-         // Overwrite the escape char,
-         // use STRLEN(r_ptr) to move the trailing '\0'.
-         if (r_ptr_end == NULL)
+         //Overwrite the escape char,
+         //use STRLEN(r_ptr) to move the trailing '\0'.
+         if (!r_ptr_end)
             r_ptr_end = r_ptr + STRLEN(r_ptr);
          MEMMOVE(r_ptr, r_ptr + 1,
          (Unt)(r_ptr_end - (r_ptr + 1)) + 1);   // +1 for ZERO
@@ -3177,8 +3087,8 @@ eeFindFile_cleanup(FileSearchCtx* ctx) {
 //to leave partly searched directories on the top of the list).
 pub CS
 eeFindFile(FileSearchCtx* search_ctx_arg) {
-   Text   rest_of_wildcards;
-   DirSearchStack   *stackp;
+   Text rest_of_wildcards;
+   DirSearchStack* stackp;
 
    if (!search_ctx_arg)
       return NULL;
@@ -3198,60 +3108,55 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
    for (;;) {
       // downward search loop
       for (;;) {
-          // check if user wants to stop the search
-          ui_breakcheck();
-          if (gotInterruptG)
-         break;
+         // check if user wants to stop the search
+         ui_breakcheck();
+         if (gotInterruptG)
+            break;
 
          // get directory to work on from stack
          stackp = ff_pop(searchCtx);
          if (!stackp)
             break;
 
-          //TODO: decide if we leave this test in
-          //
-          //GOOD: don't search a directory(-tree) twice.
-          //BAD:  - check linked list for every new directory entered.
-          //      - check for double files also done below
-          //
-          //Here we check if we already searched this directory.
-          //We already searched a directory if:
-          //1) The directory is the same.
-          //2) We would use the same wildcard string.
-          //
-          //Good if you have links on same directory via several ways
-          // or you have selfreferences in directories (e.g. SuSE Linux 6.3:
-          // /etc/rc.d/init.d is linked to /etc/rc.d -> endless loop)
-          //
-          //This check is only needed for directories we work on for the
-          //first time (hence stackp->ff_filearray == NULL)
-          if (!(stackp->files.c)
+         //TODO: decide if we leave this test in
+         //
+         //GOOD: don't search a directory(-tree) twice.
+         //BAD:  - check linked list for every new directory entered.
+         //      - check for double files also done below
+         //
+         //Here we check if we already searched this directory.
+         //We already searched a directory if:
+         //1) The directory is the same.
+         //2) We would use the same wildcard string.
+         //
+         //Good if you have links on same directory via several ways
+         // or you have selfreferences in directories (e.g. SuSE Linux 6.3:
+         // /etc/rc.d/init.d is linked to /etc/rc.d -> endless loop)
+         //
+         //This check is only needed for directories we work on for the
+         //first time (hence stackp->ff_filearray == NULL)
+         if (!(stackp->files.c)
              && checkFirstTimeVisit(&searchCtx->dirVisitedList ->ffvl_visited_list,
                 stackp->fixedPathPart,
                 stackp->wildcardPathPart.c,
-                stackp->wildcardPathPart.len) == FAIL)
-          {
-#ifdef FF_VERBOSE
-         if (p_verbose >= 5) {
-             verbose_enter_scroll();
-             smsg("Already Searched: %s (%s)", stackp->fixedPathPart.c, stackp->wildcardPathPart.c);
-             // don't overwrite this either
-             msg_puts("\n");
-             verbose_leave_scroll();
+                stackp->wildcardPathPart.len) == FAIL
+         ) {
+            if (p_verbose >= 5) {
+                verbose_enter_scroll();
+                smsg("Already Searched: %s (%s)", stackp->fixedPathPart.c, stackp->wildcardPathPart.c);
+                // don't overwrite this either
+                msg_puts(S"\n");
+                verbose_leave_scroll();
+            }
+            ff_free_stack_element(stackp);
+            continue;
+         } ei (p_verbose >= 5) {
+            verbose_enter_scroll();
+            smsg("Searching: %s (%s)", stackp->fixedPathPart.c, stackp->wildcardPathPart.c);
+            // don't overwrite this either
+            msg_puts(S"\n");
+            verbose_leave_scroll();
          }
-#endif
-         ff_free_stack_element(stackp);
-         continue;
-          }
-#ifdef FF_VERBOSE
-          ei (p_verbose >= 5) {
-         verbose_enter_scroll();
-         smsg("Searching: %s (%s)", stackp->fixedPathPart.c, stackp->wildcardPathPart.c);
-         // don't overwrite this either
-         msg_puts("\n");
-         verbose_leave_scroll();
-          }
-#endif
 
          // check depth
          if (stackp->depth <= 0) {
@@ -3396,7 +3301,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                //We don't have any wildcards to expand, so we have to check for the final file now
                for (Unt i = stackp->ffs_filearray_cur; i < stackp->files.len; ++i) {
                   if (!strStartsWithUrl(stackp->files.c[i]) && !mch_isdir(stackp->files.c[i]))
-                      continue;   // not a directory
+                     continue;   // not a directory
 
                   // prepare the filename to be checked for existence below
                   Unt len = STRLEN(stackp->files.c[i]);
@@ -3431,14 +3336,11 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                                  )
                               )
                           )
-#ifndef FF_VERBOSE
                          && (checkFirstTimeVisit(
                             &searchCtx->visitedList ->ffvl_visited_list,
                             filePath,
                             S"", 0) == OK)
-#endif
                      ) {
-#ifdef FF_VERBOSE
                         if (checkFirstTimeVisit(
                                &searchCtx->visitedList->ffvl_visited_list,
                                  filePath,
@@ -3449,12 +3351,11 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                               verbose_enter_scroll();
                               smsg("Already: %s", filePath.c);
                               // don't overwrite this either
-                              msg_puts("\n");
+                              msg_puts(S"\n");
                               verbose_leave_scroll();
                            }
                            continue;
                         }
-#endif
 
                         // push dir to examine rest of subdirs later
                         stackp->ffs_filearray_cur = i + 1;
@@ -3472,15 +3373,13 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                               filePath.len -= (p - filePath.c);
                            }
                         }
-#ifdef FF_VERBOSE
                         if (p_verbose >= 5) {
                            verbose_enter_scroll();
                            smsg("HIT: %s", filePath.c);
                            // don't overwrite this either
-                           msg_puts("\n");
+                           msg_puts(S"\n");
                            verbose_leave_scroll();
                         }
-#endif
                         return filePath.c;
                      }
 
@@ -3629,41 +3528,36 @@ ff_free_visited_list(Visited* vl) {
 //Return the already visited list for the given filename. If none is found, allocate a new one.
 private VisitedList*
 ff_get_visited_list(Text filename, OUT VisitedList** listHead) {
-   VisitedList  *retptr = NULL;
+   VisitedList* retptr = NULL;
 
    // check if a visited list for the given filename exists
    if (*listHead) {
       retptr = *listHead;
       while (retptr) {
-          if (fnamecmp(filename.c, retptr->filename) == 0) {
-#ifdef FF_VERBOSE
+         if (fnamecmp(filename.c, retptr->filename) == 0) {
             if (p_verbose >= 5) {
                verbose_enter_scroll();
                smsg("ff_get_visited_list: FOUND list for %s", filename.c);
                // don't overwrite this either
-               msg_puts("\n");
+               msg_puts(S"\n");
                verbose_leave_scroll();
             }
-#endif
             return retptr;
          }
          retptr = retptr->next;
       }
    }
 
-#ifdef FF_VERBOSE
    if (p_verbose >= 5) {
       verbose_enter_scroll();
       smsg("ff_get_visited_list: new list for %s", filename.c);
       // don't overwrite this either
-      msg_puts("\n");
+      msg_puts(S"\n");
       verbose_leave_scroll();
    }
-#endif
 
    //if we reach this we didn't find a list and we have to allocate new list
    retptr = ALLOC_ONE(VisitedList);
-
    retptr->ffvl_visited_list = NULL;
    retptr->filename = copySubstr(filename.c, filename.len);
    retptr->next = *listHead;
@@ -3681,7 +3575,7 @@ ff_get_visited_list(Text filename, OUT VisitedList** listHead) {
 //   '**\20' is equal to '**\24'
 private int
 ff_wc_equal(CS s1, CS s2) {
-   int      i, j;
+   int i, j;
    Unt c1 = ZERO;
    Unt c2 = ZERO;
    int prev1 = ZERO;
@@ -3698,7 +3592,7 @@ ff_wc_equal(CS s1, CS s2) {
       c2 = mb_ptr2char(s2 + j);
 
       if ((c1 != c2) && (prev1 != '*' || prev2 != '*'))
-          return false;
+         return false;
       prev2 = prev1;
       prev1 = c1;
 
@@ -3736,16 +3630,13 @@ checkFirstTimeVisit(Visited** visited_list, Text fname, CS wc_path, Unt wc_pathl
    Visited* vp;
    for (vp = *visited_list; vp != NULL; vp = vp->next) {
       if (
-         !url ? (vp->areDevInoValid && vp->deviceId == st.st_dev
-                       && vp->inodeId == st.st_ino)
-              :
-         fnamecmp(vp->ffv_fname, fileExpansionS.c) == 0
-         )
-      {
-          // are the wildcard parts equal
-          if (ff_wc_equal(vp->wildcardPath, wc_path) == true)
-         // already visited
-         return FAIL;
+         !url ? (vp->areDevInoValid && vp->deviceId == st.st_dev && vp->inodeId == st.st_ino)
+              : fnamecmp(vp->ffv_fname, fileExpansionS.c) == 0
+      ) {
+         // are the wildcard parts equal
+         if (ff_wc_equal(vp->wildcardPath, wc_path) == true)
+            // already visited
+            return FAIL;
       }
    }
 
@@ -3776,9 +3667,9 @@ checkFirstTimeVisit(Visited** visited_list, Text fname, CS wc_path, Unt wc_pathl
 private DirSearchStack *
 ff_create_stack_element(
    CS fix_part,
-   Unt   fix_partlen,
+   Unt fix_partlen,
    CS wc_part,
-   Unt   wc_partlen,
+   Unt wc_partlen,
    int level,
    Boole star_star_empty
 ) {
@@ -5318,8 +5209,6 @@ readfile(
    int file_rewind = false;
    LineNr illegal_byte = 0;   // line nr with illegal byte
    int bad_char_behavior = BAD_REPLACE; // BAD_KEEP, BAD_DROP or character to replace with
-   int converted = false;   // true if conversion done
-   int notconverted = false;   // true if conversion wanted but it wasn't possible
    Pos  orig_start;
    Book* old_curbuf;
    static CS msg_is_a_directory = S"is a directory";
@@ -5944,13 +5833,6 @@ failed:
          buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[long lines split]"));
          c = true;
       }
-      if (notconverted) {
-         buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[NOT converted]"));
-         c = true;
-      } ei (converted) {
-         buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[converted]"));
-         c = true;
-      }
       if (illegal_byte > 0) {
          eeSnprintf(IObuff + buflen, IOSIZE - buflen,
             _("[ILLEGAL BYTE in line %ld]"), (long)illegal_byte);
@@ -6010,11 +5892,11 @@ afterRecovery:
    //for ":autocmd FileReadPost *.gz set bin|'[,']!gunzip" to work.
    curBook->noEolLnum = read_no_eol_lnum;
 
-   // When reloading a buffer put the cursor at the first line that is different.
+   //When reloading a book, put the cursor at the first line that is different.
    if ((flags & READ_KEEP_UNDO) != 0)
       u_find_first_changed();
 
-   // When opening a new file locate undo info and read it.
+   //When opening a new file, locate undo info and read it.
    if (read_undo_file) {
       Byte hash[UNDO_HASH_SIZE];
       sha256_finish(&sha_ctx, hash);
@@ -6651,8 +6533,8 @@ check_timestamps( int      focus) {     // called for GUI focus event
 private int
 move_lines(Book* frombuf, Book* tobuf) {
    Book* tbuf = curBook;
-   int      retval = OK;
-   LineNr   lnum;
+   int retval = OK;
+   LineNr lnum;
    CS p;
 
    // Copy the lines in "frombuf" to "tobuf".
@@ -6688,46 +6570,44 @@ move_lines(Book* frombuf, Book* tobuf) {
 //return 2 if a message has been displayed.
 //return 0 otherwise.
 pub int
-fiCheckBookTimestamp(
-   Book* book
-){
-   FileStat   st;
-   int      stat_res;
-   int      retval = 0;
+fiCheckBookTimestamp(Book* book){
+   FileStat st;
+   int stat_res;
+   int retval = 0;
    CS mesg = NULL;
    CS mesg2 = S"";
-   int      helpmesg = false;
+   int helpmesg = false;
    enum {
       RELOAD_NONE,
       RELOAD_NORMAL,
       RELOAD_DETECT
-   }      reload = RELOAD_NONE;
-   int      can_reload = false;
+   } reload = RELOAD_NONE;
+   int can_reload = false;
    FileOffset   orig_size = book->origSize;
-   int      orig_mode = book->origMode;
+   int orig_mode = book->origMode;
    static int   busy = false;
-   int      n;
-   BookRef   bufref;
+   int n;
+   BookRef bufref;
 
    bookStoreInRef(OUT &bufref, book);
 
    // If there is no file name, the book is not loaded, 'buftype' is
    // set, we are in the middle of a save or being called recursively: ignore this book.
-   if (book->fullFileName == NULL
-       || book->mem.mfile == NULL
+   if (!book->fullFileName
+       || !book->mem.mfile
        || !bt_normal(book)
        || book->isBeingSaved
        || busy
-       || book->term != NULL
-       )
-   return 0;
+       || book->term
+   )
+      return 0;
 
    if (   (book->flags & BF_NOTEDITED) != 0
        && book->modifiedTime != 0
        && ((stat_res = stat((char *)book->fullFileName, &st)) < 0
-      || time_differs(&st, book->modifiedTime, book->modifiedTimeNs)
-      || st.st_size != book->origSize
-      || (int)st.st_mode != book->origMode
+            || time_differs(&st, book->modifiedTime, book->modifiedTimeNs)
+            || st.st_size != book->origSize
+            || (int)st.st_mode != book->origMode
       )
    ) {
       long prev_modifiedTime = book->modifiedTime;
@@ -6746,7 +6626,6 @@ fiCheckBookTimestamp(
       // Don't do anything for a directory.  Might contain the file explorer.
       if (mch_isdir(book->currFileName))
           ;
-
       ei (!doWasBookChanged(book) && stat_res >= 0)
          reload = RELOAD_NORMAL;
       else {
@@ -6786,7 +6665,7 @@ fiCheckBookTimestamp(
          busy = false;
          if (n) {
             if (!bookRefValid(&bufref))
-                emsg(_(e_filechangedshell_autocommand_deleted_buffer));
+               emsg(_(e_filechangedshell_autocommand_deleted_buffer));
             CS s = get_EeglVar_str(VV_FCS_CHOICE);
             if (STRCMP(s, "reload") == 0 && *reason != 'd')
                reload = RELOAD_NORMAL;
@@ -6835,58 +6714,56 @@ fiCheckBookTimestamp(
    if (mesg) {
       CS path = home_replace_save(book, book->currFileName);
       if (path) {
-         Unt  tbufsize;
-
          if (!helpmesg)
             mesg2 = S"";
-         tbufsize = STRLEN(mesg) + STRLEN(path) + 2 + STRLEN(mesg2) + 1; //+2 for "\n" or "; "
+         Unt tbufsize = STRLEN(mesg) + STRLEN(path) + 2 + STRLEN(mesg2) + 1; //+2 for "\n" or "; "
                                                                          // and +1 for ZERO
          CS tbuf = alloc(tbufsize);
          int tbuflen = eeSnprintf(tbuf, tbufsize, mesg, path);
          //Set warningmsg here, before the unimportant and output-specific mesg2 has been appended
          set_EeglVar_string(VV_WARNINGMSG, (CS)tbuf, tbuflen);
          if (can_reload) {
-             if (*mesg2 != ZERO)
-            eeSnprintf(tbuf + tbuflen, tbufsize - tbuflen, "\n%s", mesg2);
-             switch (do_dialog(EE_WARNING, (CS)_("Warning"),
+            if (*mesg2 != ZERO)
+               eeSnprintf(tbuf + tbuflen, tbufsize - tbuflen, "\n%s", mesg2);
+            switch (do_dialog(EE_WARNING, (CS)_("Warning"),
                 (CS)tbuf,
                 (CS)_("&OK\n&Load File\nLoad File &and Options"),
-                1, NULL, true))
-             {
-            case 2:
-                reload = RELOAD_NORMAL;
-                break;
-            case 3:
-                reload = RELOAD_DETECT;
-                break;
-             }
+                1, NULL, true)
+            ) {
+               case 2:
+                  reload = RELOAD_NORMAL;
+                  break;
+               case 3:
+                  reload = RELOAD_DETECT;
+                  break;
+            }
          } ei(stateG > MODE_NORMAL_BUSY || (stateG & MODE_COMMLINE) || already_warned) {
             if (*mesg2 != ZERO)
                eeSnprintf(tbuf + tbuflen, tbufsize - tbuflen, "; %s", mesg2);
             emsg(tbuf);
             retval = 2;
          } else {
-             if (!autocmd_busy) {
-            msg_start();
-            msgPutsDeco(tbuf, getDecoFlags(HLF_E) + MSG_HIST);
-            if (*mesg2 != ZERO)
-                msgPutsDeco(mesg2, getDecoFlags(HLF_W) + MSG_HIST);
-            msg_clr_eos();
-            (void)msg_end();
-            if (emsg_silent == 0 && !in_assert_fails) {
-                out_flush();
-               // give the user some time to think about it
-               ui_delay(1004L, true);
+            if (!autocmd_busy) {
+               msg_start();
+               msgPutsDeco(tbuf, getDecoFlags(HLF_E) + MSG_HIST);
+               if (*mesg2 != ZERO)
+                  msgPutsDeco(mesg2, getDecoFlags(HLF_W) + MSG_HIST);
+               msg_clr_eos();
+               (void)msg_end();
+               if (emsg_silent == 0 && !in_assert_fails) {
+                  out_flush();
+                  // give the user some time to think about it
+                  ui_delay(1004L, true);
 
-                // don't redraw and erase the message
-                redrawCommlineG = false;
+                  // don't redraw and erase the message
+                  redrawCommlineG = false;
+               }
             }
-             }
-             already_warned = true;
+            already_warned = true;
          }
 
-          eeglFree(tbuf);
-          eeglFree(path);
+         eeglFree(tbuf);
+         eeglFree(path);
       }
    }
 
@@ -6928,8 +6805,8 @@ buf_reload(Book* book, int orig_mode, int reload_options){
    BookRef   bufref;
    int      saved = OK;
    AutocommSave   aco;
-   int      flags = READ_NEW;
-   int      prepped = OK;
+   Unt flags = READ_NEW;
+   int prepped = OK;
 
    // Set curPor/curBook for "book" and save some things.
    auCommPrepareBook(&aco, book);
@@ -6947,105 +6824,104 @@ buf_reload(Book* book, int orig_mode, int reload_options){
       prepped = prep_exarg(&invo, book);
 
    if (prepped == OK) {
-   old_cursor = curPor->cursor;
-   old_topline = curPor->topLine;
+      old_cursor = curPor->cursor;
+      old_topline = curPor->topLine;
 
-   if (p_ur < 0 || curBook->mem.lineCount <= p_ur) {
-       // Save all the text, so that the reload can be undone.
-       // Sync first so that this is a separate undo-able action.
-       u_sync(false);
-       saved = u_savecommon(0, curBook->mem.lineCount + 1, 0, true);
-       flags |= READ_KEEP_UNDO;
-   }
-
-   //To behave like when a new file is edited (matters for BufReadPost autocommands) we first need 
-   //to delete the current book contents. But if reading the file fails we should keep
-   //the old contents. Can't use memory only, the file might be too big. Use a hidden book to 
-   //move the book contents to.
-   if (CURBOOK_EMPTY() || saved == FAIL)
-      savebuf = NULL;
-   else {
-      // Allocate a book without putting it in the book list.
-      savebuf = bookNew(NULL, NULL, (LineNr)1, BLN_DUMMY);
-      bookStoreInRef(OUT &bufref, savebuf);
-      if (savebuf != NULL && book == curBook) {
-         // Open the memline.
-         curBook = savebuf;
-         curPor->book = savebuf;
-         saved = ml_open(curBook);
-         curBook = book;
-         curPor->book = book;
+      if (p_ur < 0 || curBook->mem.lineCount <= p_ur) {
+          // Save all the text, so that the reload can be undone.
+          // Sync first so that this is a separate undo-able action.
+          u_sync(false);
+          saved = u_savecommon(0, curBook->mem.lineCount + 1, 0, true);
+          flags |= READ_KEEP_UNDO;
       }
-      if (savebuf == NULL || saved == FAIL || book != curBook || move_lines(book, savebuf) == FAIL) {
-         showErrFmtMsg(_(e_could_not_prepare_for_reloading_str), book->currFileName);
-         saved = FAIL;
-      }
-   }
 
-   if (saved == OK) {
-      int old_msg_silent = msg_silent;
-
-      curBook->flags |= BF_CHECK_RO;   // check for RO again
-      curBook->keepFiletype = true;   // don't detect 'filetype'
-
-      if (readfile(book->fullFileName, book->currFileName, (LineNr)0,
-         (LineNr)0,
-         (LineNr)MAXLNUM, &invo, flags) != OK
-      ) {
-         if (!aborting())
-            showErrFmtMsg(_(e_could_not_reload_str), book->currFileName);
-         if (savebuf != NULL && bookRefValid(&bufref) && book == curBook) {
-            //Put the text back from the save book. First delete any lines that readfile() added.
-            while (!CURBOOK_EMPTY()) {
-               if (ml_delete(book->mem.lineCount) == FAIL)
-                  break;
-            } 
-            (void)move_lines(savebuf, book);
+      //To behave like when a new file is edited (matters for BufReadPost autocommands) we first need 
+      //to delete the current book contents. But if reading the file fails we should keep
+      //the old contents. Can't use memory only, the file might be too big. Use a hidden book to 
+      //move the book contents to.
+      if (CURBOOK_EMPTY() || saved == FAIL)
+         savebuf = NULL;
+      else {
+         // Allocate a book without putting it in the book list.
+         savebuf = bookNew(NULL, NULL, (LineNr)1, BLN_DUMMY);
+         bookStoreInRef(OUT &bufref, savebuf);
+         if (savebuf != NULL && book == curBook) {
+            // Open the memline.
+            curBook = savebuf;
+            curPor->book = savebuf;
+            saved = ml_open(curBook);
+            curBook = book;
+            curPor->book = book;
          }
-      } ei (book == curBook) {  // "book" still valid
-         //Mark the book as unmodified and free undo info.
-         unchanged(book, true);
-         if ((flags & READ_KEEP_UNDO) == 0)
-            invalidateUndoBufferAndFreeBlocks(book);
-         else {
-            // Mark all undo states as changed.
-            u_unchanged(curBook);
+         if (savebuf == NULL || saved == FAIL || book != curBook || move_lines(book, savebuf) == FAIL) {
+            showErrFmtMsg(_(e_could_not_prepare_for_reloading_str), book->currFileName);
+            saved = FAIL;
          }
       }
 
-      msg_silent = old_msg_silent;
-   }
-   eeglFree(invo.comm);
+      if (saved == OK) {
+         int old_msg_silent = msg_silent;
 
-   if (savebuf != NULL && bookRefValid(&bufref))
-       bookWipe(savebuf, false);
+         curBook->flags |= BF_CHECK_RO;   // check for RO again
+         curBook->keepFiletype = true;   // don't detect 'filetype'
 
-   // Invalidate diff info if necessary.
-   diff_invalidate(curBook);
+         if (readfile(book->fullFileName, book->currFileName, (LineNr)0,
+            (LineNr)0,
+            (LineNr)MAXLNUM, &invo, flags) != OK
+         ) {
+            if (!aborting())
+               showErrFmtMsg(_(e_could_not_reload_str), book->currFileName);
+            if (savebuf != NULL && bookRefValid(&bufref) && book == curBook) {
+               //Put the text back from the save book. First delete any lines that readfile() added.
+               while (!CURBOOK_EMPTY()) {
+                  if (ml_delete(book->mem.lineCount) == FAIL)
+                     break;
+               } 
+               (void)move_lines(savebuf, book);
+            }
+         } ei (book == curBook) {  // "book" still valid
+            //Mark the book as unmodified and free undo info.
+            unchanged(book, true);
+            if ((flags & READ_KEEP_UNDO) == 0)
+               invalidateUndoBufferAndFreeBlocks(book);
+            else {
+               // Mark all undo states as changed.
+               u_unchanged(curBook);
+            }
+         }
 
-   // Restore the topline and cursor position and check it (lines may have been removed).
-   if (old_topline > curBook->mem.lineCount)
-      curPor->topLine = curBook->mem.lineCount;
-   else
-      curPor->topLine = old_topline;
-   curPor->cursor = old_cursor;
-   check_cursor();
-   update_topline();
-   curBook->keepFiletype = false;
-   {
-      Portal   *wp;
-      Tab   *t;
-      // Update folds unless they are defined manually.
-      FOR_ALL_TAB_PORTALS(t, wp) {
-         if (wp->book == curPor->book)
-            foldUpdateAll(wp);
-      } 
-   }
-   // If the mode didn't change and @modifiable was set, keep the old value; the user probably used 
-   // the ":view" command. But don't reset it, might have had a read error.
-   if (orig_mode == curBook->origMode)
-       curBook->o.modifiable |= old_ro;
+         msg_silent = old_msg_silent;
+      }
+      eeglFree(invo.comm);
 
+      if (savebuf != NULL && bookRefValid(&bufref))
+          bookWipe(savebuf, false);
+
+      // Invalidate diff info if necessary.
+      diff_invalidate(curBook);
+
+      // Restore the topline and cursor position and check it (lines may have been removed).
+      if (old_topline > curBook->mem.lineCount)
+         curPor->topLine = curBook->mem.lineCount;
+      else
+         curPor->topLine = old_topline;
+      curPor->cursor = old_cursor;
+      check_cursor();
+      update_topline();
+      curBook->keepFiletype = false;
+      {
+         Portal   *wp;
+         Tab   *t;
+         // Update folds unless they are defined manually.
+         FOR_ALL_TAB_PORTALS(t, wp) {
+            if (wp->book == curPor->book)
+               foldUpdateAll(wp);
+         } 
+      }
+      // If the mode didn't change and @modifiable was set, keep the old value; the user probably used 
+      // the ":view" command. But don't reset it, might have had a read error.
+      if (orig_mode == curBook->origMode)
+          curBook->o.modifiable |= old_ro;
    }
 
    // restore curPor/curBook and a few other things
@@ -8091,761 +7967,5 @@ fiBuildSwapOrUndoFname(CS fname, Boole isUndo) {
    r[totalLen + extLen] = ZERO;
    return r;
 }
-
-//}}}
-//{{{xxd (hex dumping of binary data)
-
-private Byte version[] = "xxd 2025-08-08 by Juergen Welse ifgert et al.";
-private Byte osver[] = "";
-
-#define BIN_READ(dummy)  "r"
-#define BIN_WRITE(dummy) "w"
-#define BIN_CREAT(dummy) O_CREAT
-#define BIN_ASSIGN(fp, dummy) fp
-#define PATH_SEP '/'
-
-// open has only two arguments on the Mac
-#if __MWERKS__
-# define OPEN(name, mode, umask) open(name, mode)
-#else
-# define OPEN(name, mode, umask) open(name, mode, umask)
-#endif
-
-#ifndef __P
-# if defined(__STDC__)
-#  define __P(a) a
-# else
-#  define __P(a) ()
-# endif
-#endif
-
-#define TRY_SEEK   /* attempt to use lseek, or skip forward by reading */
-#define COLS 256   /* change here, if you ever need more columns */
-
-//LLEN is the maximum length of a line; other than the visible characters
-//we need to consider also the escape color sequence prologue/epilogue,
-//(11 bytes for each character).
-#define LLEN \
-    (39            /* addr: ⌈log10(ULONG_MAX)⌉ if "-d" flag given. We assume ULONG_MAX = 2**128 */ \
-    + 2            /* ": " */ \
-    + 13 * COLS    /* hex dump with colors */ \
-    + (COLS - 1)   /* whitespace between groups if "-g1" option given and "-c" maxed out */ \
-    + 2            /* whitespace */ \
-    + 12 * COLS    /* ASCII dump with colors */ \
-    + 2)           /* "\n\0" */
-
-//LLEN_NO_COLOR is the maximum length of a line excluding the colors.
-#define LLEN_NO_COLOR \
-    (39         /* addr: ⌈log10(ULONG_MAX)⌉ if "-d" flag given. We assume ULONG_MAX = 2**128 */ \
-    + 2         /* ": " */ \
-    + 9 * COLS  /* hex dump, worst case: bitwise output using -b */ \
-    + 2         /* whitespace */ \
-    + COLS      /* ASCII dump */ \
-    + 2)        /* "\n\0" */
-
-private Byte hexxa[] = "0123456789abcdef0123456789ABCDEF";
-private CS hexx = hexxa;
-
-#define CONDITIONAL_CAPITALIZE(c) (capitalize ? toupper((unsigned char)(c)) : (c))
-
-#define COLOR_PROLOGUE(color) \
-   l_colored[c++] = '\033'; \
-   l_colored[c++] = '['; \
-   l_colored[c++] = '1'; \
-   l_colored[c++] = ';'; \
-   l_colored[c++] = '3'; \
-   l_colored[c++] = (color); \
-   l_colored[c++] = 'm';
-
-#define COLOR_EPILOGUE \
-   l_colored[c++] = '\033'; \
-   l_colored[c++] = '['; \
-   l_colored[c++] = '0'; \
-   l_colored[c++] = 'm';
-
-#define COLOR_RED '1'
-#define COLOR_GREEN '2'
-#define COLOR_YELLOW '3'
-#define COLOR_BLUE '4'
-#define COLOR_WHITE '7'
-
-// the different hextypes known by this program:
-#define HEX_NORMAL         0x00 // no flags set
-#define HEX_POSTSCRIPT     0x01
-#define HEX_CINCLUDE       0x02
-#define HEX_BITS           0x04 // not hex a dump, but bits: 01111001
-#define HEX_LITTLEENDIAN   0x08
-
-//Max. cols binary characters are decoded from the input stream per line.
-//Two adjacent garbage characters after evaluated data delimit valid data.
-//Everything up to the next newline is discarded.
-//
-//The name is historic and came from 'undo type opt h'.
-private int
-huntype(
-  FILE *fpi,
-  FILE *fpo,
-  int cols,
-  int hextype,
-  long base_off
-) {
-  int c, ign_garb = 1, n1 = -1, n2 = 0, n3 = 0, p = cols, b = 0, bcnt = 0;
-  long have_off = 0, want_off = 0;
-
-  rewind(fpi);
-
-  while ((c = getc(fpi)) != EOF) {
-     if (c == '\r')   // Doze style input file?
-        continue;
-
-      //Allow multiple spaces.  This doesn't work when there is normal text after the hex codes in 
-      //the last line that looks like hex, thus only use it for PostScript format.
-      if (hextype == HEX_POSTSCRIPT && (c == ' ' || c == '\n' || c == '\t'))
-         continue;
-
-      if (hextype == HEX_NORMAL || hextype == HEX_POSTSCRIPT) {
-         n3 = n2;
-         n2 = n1;
-
-         n1 = parse_hex_digit(c);
-         if (n1 == -1 && ign_garb)
-            continue;
-      } else {// HEX_BITS
-         n1 = parse_hex_digit(c);
-         if (n1 == -1 && ign_garb)
-            continue;
-
-         if (c >= '0' && c <= '1') {
-            b = ((b << 1) | (c - '0'));
-            ++bcnt;
-         }
-      }
-
-      ign_garb = 0;
-
-      if ((hextype != HEX_POSTSCRIPT) && (p >= cols)) {
-         if (hextype == HEX_NORMAL) {
-            if (n1 < 0) {
-               p = 0;
-               continue;
-            }
-            want_off = (want_off << 4) | n1;
-         } else {/* HEX_BITS */
-            if (n1 < 0) {
-              p = 0;
-              bcnt = 0;
-              continue;
-            }
-            want_off = (want_off << 4) | n1;
-         }
-         continue;
-      }
-
-      if (base_off + want_off != have_off) {
-         if (fflush(fpo) != 0)
-            perror_exit(3);
-         if (fseek(fpo, base_off + want_off - have_off, SEEK_CUR) >= 0)
-            have_off = base_off + want_off;
-         if (base_off + want_off < have_off)
-            errorExit(5, S"Sorry, cannot seek backwards.");
-         for (; have_off < base_off + want_off; have_off++)
-            putc_or_die(0, fpo);
-      }
-
-        if (hextype == HEX_NORMAL || hextype == HEX_POSTSCRIPT) {
-            if (n2 >= 0 && n1 >= 0) {
-               putc_or_die((n2 << 4) | n1, fpo);
-               have_off++;
-               want_off++;
-               n1 = -1;
-               if (!hextype && (++p >= cols))
-                  // skip the rest of the line as garbage
-                  c = skip_to_eol(fpi, c);
-            } ei (n1 < 0 && n2 < 0 && n3 < 0)
-             // already stumbled into garbage, skip line, wait and see
-             c = skip_to_eol(fpi, c);
-      } else { // HEX_BITS
-        if (bcnt == 8) {
-            putc_or_die(b, fpo);
-            have_off++;
-            want_off++;
-            b = 0;
-            bcnt = 0;
-            if (++p >= cols)
-               // skip the rest of the line as garbage
-               c = skip_to_eol(fpi, c);
-          }
-      }
-
-      if (c == '\n') {
-         if (hextype == HEX_NORMAL || hextype == HEX_BITS)
-            want_off = 0;
-         p = cols;
-         ign_garb = 1;
-      }
-   }
-   if (fflush(fpo) != 0)
-      perror_exit(3);
-   fseek(fpo, 0L, SEEK_END);
-   fclose_or_die(fpi, fpo);
-   return 0;
-}
-
-//Print line l with given colors.
-private void
-print_colored_line(FILE* fp, CS l, CS colors) {
-  static Byte l_colored[LLEN + 1];
-
-  if (colors) {
-      int c = 0;
-      if (colors[0]) {
-         COLOR_PROLOGUE(colors[0])
-      }
-      l_colored[c++] = l[0];
-      int i;
-      for (i = 1; l[i]; i++) {
-         if (colors[i] != colors[i-1]) {
-            if (colors[i-1]) {
-               COLOR_EPILOGUE
-            }
-            if (colors[i]) {
-               COLOR_PROLOGUE(colors[i])
-            }
-         }
-         l_colored[c++] = l[i];
-      }
-
-      if (colors[i]) {
-          COLOR_EPILOGUE
-      }
-      l_colored[c++] = '\0';
-
-      fputs_or_die(l_colored, fp);
-   } else
-      fputs_or_die(l, fp);
-}
-
-private void
-exit_with_usage(void) {
-  fprintf(stderr, "Usage:\n       %s [options] [infile [outfile]]\n", pnameP);
-  fprintf(stderr, "    or\n       %s -r [-s [-]offset] [-c cols] [-ps] [infile [outfile]]\n", pnameP);
-  fprintf(stderr, "Options:\n");
-  fprintf(stderr, "    -a          toggle autoskip: A single '*' replaces nul-lines. Default off.\n");
-  fprintf(stderr, "    -b          binary digit dump (incompatible with -ps). Default hex.\n");
-  fprintf(stderr, "    -C          capitalize variable names in C include file style (-i).\n");
-  fprintf(stderr, "    -c cols     format <cols> octets per line. Default 16 (-i: 12, -ps: 30).\n");
-  fprintf(stderr, "    -e          little-endian dump (incompatible with -ps,-i,-r).\n");
-  fprintf(stderr, "    -g bytes    number of octets per group in normal output. Default 2 (-e: 4).\n");
-  fprintf(stderr, "    -h          print this summary.\n");
-  fprintf(stderr, "    -i          output in C include file style.\n");
-  fprintf(stderr, "    -l len      stop after <len> octets.\n");
-  fprintf(stderr, "    -n name     set the variable name used in C include output (-i).\n");
-  fprintf(stderr, "    -o off      add <off> to the displayed file position.\n");
-  fprintf(stderr, "    -ps         output in postscript plain hexdump style.\n");
-  fprintf(stderr, "    -r          reverse operation: convert (or patch) hexdump into binary.\n");
-  fprintf(stderr, "    -r -s off   revert with <off> added to file positions found in hexdump.\n");
-  fprintf(stderr, "    -d          show offset in decimal instead of hex.\n");
-  fprintf(stderr, "    -s %sseek  start at <seek> bytes abs. %sinfile offset.\n",
-        "[+][-]", "(or +: rel.) ");
-  fprintf(stderr, "    -u          use upper case hex letters.\n");
-  fprintf(stderr, "    -R when     colorize the output; <when> can be 'always', 'auto' or 'never'. "
-        "Default: 'auto'.\n"),
-  fprintf(stderr, "    -v          show version: \"%s%s\".\n", version, osver);
-  exit(1);
-}
-
-// Use a macro to allow for different arguments.
-#define FPRINTF_OR_DIE(args) if (fprintf args < 0) perror_exit(3)
-
-private int
-enable_color(void) {
-   return isatty(STDOUT_FILENO);
-}
-
-//Print line l with given colors. If nz is false, xxdline regards the line as a line of
-//zeroes. If there are three or more consecutive lines of zeroes,
-//they are replaced by a single '*' character.
-//
-//If the output ends with more than two lines of zeroes, you
-//should call xxdline again with l being the the last line and nz
-//negative. This ensures that the last line is shown even when it is all zeroes.
-//
-//If nz is always positive, lines are never suppressed.
-private void
-xxdline(FILE* fp, CS l, CS colors, int nz) {
-   static Byte z[LLEN_NO_COLOR + 1];
-   static Byte z_colors[LLEN_NO_COLOR + 1];
-   static Byte zero_seen = 0;
-
-   if (!nz && zero_seen == 1) {
-      STRCPY(z, l);
-      memcpy(z_colors, colors, STRLEN(z));
-   }
-
-   if (nz || !zero_seen++) {
-      if (nz) {
-         if (nz < 0)
-            zero_seen--;
-         if (zero_seen == 2)
-            print_colored_line(fp, z, z_colors);
-         if (zero_seen > 2)
-            fputs_or_die(S"*\n", fp);
-      }
-      if (nz >= 0 || zero_seen > 0)
-         print_colored_line(fp, l, colors);
-
-      if (nz)
-         zero_seen = 0;
-   }
-
-   //If zero_seen > 3, then its exact value doesn't matter, so long as it
-   //remains >3 and incrementing it will not cause overflow.
-   if (zero_seen >= 0x7F)
-      zero_seen = 4;
-}
-
-private Byte
-get_color_char(int e) {
-   if (e > 31 && e < 127)
-      return COLOR_GREEN;
-
-   ei (e == 9 || e == 10 || e == 13)
-      return COLOR_YELLOW;
-   ei (e == 0)
-      return COLOR_WHITE;
-   ei (e == 255)
-      return COLOR_BLUE;
-   else
-      return COLOR_RED;
-   return 0;
-}
-
-pub int
-xxdMain(int argc, char* argv[]) {
-   FILE *fp, *fpo;
-   int c, e, p = 0, relseek = 1, negseek = 0, revert = 0, i, x;
-   int cols = 0, colsgiven = 0, nonzero = 0, autoskip = 0, hextype = HEX_NORMAL;
-   int capitalize = 0, decimal_offset = 0;
-   int octspergrp = -1;   // number of octets grouped in output
-   int grplen;      // total chars per octet group excluding colors 
-   long length = -1, n = 0, seekoff = 0;
-   unsigned long displayoff = 0;
-   static Byte l[LLEN_NO_COLOR + 1];  // static because it may be too big for stack
-   static Byte colors[LLEN_NO_COLOR + 1]; // color array */
-   CS pp;
-   CS varname = NULL;
-   int addrlen = 9;
-   int color = 0;
-   Byte cur_color = 0;
-
-   CS no_color = (CS)getenv("NO_COLOR");
-   if (no_color == NULL || no_color[0] == '\0')
-      color = enable_color();
-
-   pnameP = (CS)argv[0];
-   for (pp = pnameP; *pp; ) {
-      if (*pp++ == PATH_SEP)
-         pnameP = pp;
-   } 
-
-   while (argc >= 2) {
-      pp = (CS)argv[1] + (!STRNCMP(argv[1], "--", 2) && argv[1][2]);
-      if (!STRNCMP(pp, "-a", 2)) autoskip = 1 - autoskip;
-      ei (!STRNCMP(pp, "-b", 2)) hextype |= HEX_BITS;
-      ei (!STRNCMP(pp, "-e", 2)) hextype |= HEX_LITTLEENDIAN;
-      ei (!STRNCMP(pp, "-u", 2)) hexx = hexxa + 16;
-      ei (!STRNCMP(pp, "-p", 2)) hextype |= HEX_POSTSCRIPT;
-      ei (!STRNCMP(pp, "-i", 2)) hextype |= HEX_CINCLUDE;
-      ei (!STRNCMP(pp, "-C", 2)) capitalize = 1;
-      ei (!STRNCMP(pp, "-d", 2)) decimal_offset = 1;
-      ei (!STRNCMP(pp, "-r", 2)) revert++;
-      ei (!STRNCMP(pp, "-v", 2)) {
-         fprintf(stderr, "%s%s\n", version, osver);
-         exit(0);
-      } ei (!STRNCMP(pp, "-c", 2)) {
-         if (pp[2] && !STRNCMP("apitalize", pp + 2, 9))
-            capitalize = 1;
-         ei (pp[2] && STRNCMP("ols", pp + 2, 3)) {
-            colsgiven = 1;
-            cols = (int)STRTOL(pp + 2, NULL, 0);
-         } else {
-            if (!argv[2])
-               exit_with_usage();
-            colsgiven = 1;
-            cols = (int)strtol(argv[2], NULL, 0);
-            argv++;
-            argc--;
-         }
-      } ei (!STRNCMP(pp, "-g", 2)) {
-      if (pp[2] && STRNCMP("roup", pp + 2, 4))
-       octspergrp = (int)STRTOL(pp + 2, NULL, 0);
-     else {
-         if (!argv[2])
-      exit_with_usage();
-         octspergrp = (int)strtol(argv[2], NULL, 0);
-         argv++;
-         argc--;
-       }
-     } ei (!STRNCMP(pp, "-o", 2)) {
-        int reloffset = 0;
-        int negoffset = 0;
-        if (pp[2] && STRNCMP("ffset", pp + 2, 5))
-            displayoff = strtoul((char*)(pp + 2), NULL, 0);
-        else {
-            if (!argv[2])
-               exit_with_usage();
-
-            if (argv[2][0] == '+')
-               reloffset++;
-            if (argv[2][reloffset] == '-')
-               negoffset++;
-
-            if (negoffset)
-               displayoff = ULONG_MAX - strtoul(argv[2] + reloffset+negoffset, NULL, 0) + 1;
-            else
-               displayoff = strtoul(argv[2] + reloffset+negoffset, NULL, 0);
-
-            argv++;
-            argc--;
-         }
-      } ei (!STRNCMP(pp, "-s", 2)) {
-         relseek = 0;
-         negseek = 0;
-         if (pp[2] && STRNCMP("kip", pp+2, 3) && STRNCMP("eek", pp+2, 3)) {
-            if (pp[2] == '+')
-               relseek++;
-            if (pp[2+relseek] == '-')
-               negseek++;
-            seekoff = STRTOL(pp + 2 + relseek + negseek, (char **)NULL, 0);
-          } else {
-            if (!argv[2])
-               exit_with_usage();
-            if (argv[2][0] == '+')
-               relseek++;
-            if (argv[2][relseek] == '-')
-               negseek++;
-            seekoff = strtol(argv[2] + relseek+negseek, (char **)NULL, 0);
-            argv++;
-            argc--;
-         }
-      } ei (!STRNCMP(pp, "-l", 2)) {
-         if (pp[2] && STRNCMP("en", pp + 2, 2))
-            length = STRTOL(pp + 2, NULL, 0);
-         else {
-            if (!argv[2])
-               exit_with_usage();
-            length = strtol(argv[2], (char **)NULL, 0);
-            argv++;
-            argc--;
-         }
-      } ei (!STRNCMP(pp, "-n", 2)) {
-         if (pp[2] && STRNCMP("ame", pp + 2, 3))
-            varname = pp + 2;
-         else {
-            if (!argv[2])
-               exit_with_usage();
-            varname = (CS)argv[2];
-            argv++;
-            argc--;
-         }
-      } ei (!STRNCMP(pp, "-R", 2)) {
-         CS pw = pp + 2;
-         if (pw[0] == ZERO) {
-            pw = (CS)argv[2];
-            argv++;
-            argc--;
-         }
-         if (!pw)
-            exit_with_usage();
-         if (!STRNCMP(pw, "always", 6)) {
-            (void)enable_color();
-            color = 1;
-         } ei (!STRNCMP(pw, "never", 5))
-            color = 0;
-         ei (!STRNCMP(pw, "auto", 4))
-            color = enable_color();
-         else
-            exit_with_usage();
-      } ei (!strcmp(argv[1], "--")) {  // end of options
-         argv++;
-         argc--;
-         break;
-      } ei (pp[0] == '-' && pp[1])   // unknown option
-         exit_with_usage();
-      else
-         break;            // not an option
-
-      argv++;            // advance to next argument
-      argc--;
-   }
-
-   if (hextype != (HEX_CINCLUDE | HEX_BITS)) {
-      // Allow at most one bit to be set in hextype
-      if (hextype & (hextype - 1))
-         errorExit(1, S"only one of -b, -e, -u, -p, -i can be used");
-   }
-
-   if (!colsgiven || (!cols && hextype != HEX_POSTSCRIPT)) {
-      switch (hextype) {
-      case HEX_POSTSCRIPT:   cols = 30; break;
-      case HEX_CINCLUDE:   cols = 12; break;
-      case HEX_CINCLUDE | HEX_BITS:
-      case HEX_BITS:      cols = 6; break;
-      case HEX_NORMAL:
-      case HEX_LITTLEENDIAN:
-      default:         cols = 16; break;
-      }
-   } 
-
-   if (octspergrp < 0) {
-      switch (hextype) {
-      case HEX_CINCLUDE | HEX_BITS:
-      case HEX_BITS:      octspergrp = 1; break;
-      case HEX_NORMAL:      octspergrp = 2; break;
-      case HEX_LITTLEENDIAN:   octspergrp = 4; break;
-      case HEX_POSTSCRIPT:
-      case HEX_CINCLUDE:
-      default:         octspergrp = 0; break;
-      }
-   } 
-
-   if ((hextype == HEX_POSTSCRIPT && cols < 0) 
-        || (hextype != HEX_POSTSCRIPT && cols < 1) 
-        || ((hextype == HEX_NORMAL || hextype == HEX_BITS || hextype == HEX_LITTLEENDIAN)
-                         && (cols > COLS))
-   ) {
-      fprintf(stderr, "%s: invalid number of columns (max. %d).\n", pnameP, COLS);
-      exit(1);
-   }
-
-   if (octspergrp < 1 || octspergrp > cols)
-      octspergrp = cols;
-   ei (hextype == HEX_LITTLEENDIAN && (octspergrp & (octspergrp-1)))
-      errorExit(1, S"number of octets per group must be a power of 2 with -e.");
-
-   if (argc > 3)
-      exit_with_usage();
-
-   if (argc == 1 || (argv[1][0] == '-' && !argv[1][1]))
-      BIN_ASSIGN(fp = stdin, !revert);
-   else {
-      if ((fp = fopen(argv[1], BIN_READ(!revert))) == NULL) {
-         fprintf(stderr,"%s: ", pnameP);
-         perror(argv[1]);
-         return 2;
-      }
-   }
-
-   if (argc < 3 || (argv[2][0] == '-' && !argv[2][1]))
-      BIN_ASSIGN(fpo = stdout, revert);
-   else {
-      int fd;
-      int mode = revert ? O_WRONLY : (O_TRUNC|O_WRONLY);
-
-      if (((fd = OPEN(argv[2], mode | BIN_CREAT(revert), 0666)) < 0) 
-           || (fpo = fdopen(fd, BIN_WRITE(revert))) == NULL
-      ) {
-        fprintf(stderr, "%s: ", pnameP);
-        perror(argv[2]);
-        return 3;
-      }
-      rewind(fpo);
-   }
-
-   if (revert) {
-      switch (hextype) {
-      case HEX_NORMAL:
-      case HEX_POSTSCRIPT:
-      case HEX_BITS:
-         return huntype(fp, fpo, cols, hextype, negseek ? -seekoff : seekoff);
-         break;
-      default:
-         errorExit(-1, S"Sorry, cannot revert this type of hexdump");
-      }
-   } 
-
-   if (seekoff || negseek || !relseek) {
-      if (relseek)
-         e = fseek(fp, negseek ? -seekoff : seekoff, SEEK_CUR);
-      else
-         e = fseek(fp, negseek ? -seekoff : seekoff, negseek ? SEEK_END : SEEK_SET);
-      if (e < 0 && negseek)
-         errorExit(4, S"Sorry, cannot seek.");
-      if (e >= 0)
-         seekoff = ftell(fp);
-      else {
-         long s = seekoff;
-
-         while (s--) {
-            if (getc_or_die(fp) == EOF) {
-               errorExit(4, S"Sorry, cannot seek.");
-            }
-         } 
-      }
-   }
-
-   if (hextype & HEX_CINCLUDE) {
-      // A user-set variable name overrides fp == stdin
-      if (!varname && fp != stdin)
-         varname = (CS)argv[1];
-
-      if (varname) {
-         FPRINTF_OR_DIE((fpo, "unsigned char %s", isdigit((unsigned char)varname[0]) ? "__" : ""));
-         for (e = 0; (c = varname[e]) != 0; e++)
-            putc_or_die(isalnum((unsigned char)c) ? CONDITIONAL_CAPITALIZE(c) : '_', fpo);
-         fputs_or_die(S"[] = {\n", fpo);
-      }
-
-      p = 0;
-      while ((length < 0 || p < length) && (c = getc_or_die(fp)) != EOF) {
-        if ((hextype & HEX_BITS) != 0) {
-            if (p == 0)
-               fputs_or_die(S"  ", fpo);
-            ei (p % cols == 0)
-               fputs_or_die(S",\n  ", fpo);
-            else
-               fputs_or_die(S", ", fpo);
-
-            FPRINTF_OR_DIE((fpo, "0b"));
-            for (int j = 7; j >= 0; j--)
-               putc_or_die((c & (1 << j)) ? '1' : '0', fpo);
-            p++;
-          } else {
-            FPRINTF_OR_DIE(
-               (fpo, 
-                (hexx == hexxa) ? "%s0x%02x" : "%s0X%02X", 
-                   (p % cols) ? ", " : (!p ? "  " : ",\n  "), c)
-            );
-            p++;
-          }
-      }
-
-      if (p)
-         fputs_or_die(S"\n", fpo);
-
-      if (varname != NULL) {
-         fputs_or_die(S"};\n", fpo);
-         FPRINTF_OR_DIE((fpo, "unsigned int %s", isdigit((unsigned char)varname[0]) ? "__" : ""));
-         for (e = 0; (c = varname[e]) != 0; e++)
-            putc_or_die(isalnum((unsigned char)c) ? CONDITIONAL_CAPITALIZE(c) : '_', fpo);
-         FPRINTF_OR_DIE((fpo, "_%s = %d;\n", capitalize ? "LEN" : "len", p));
-      }
-
-      fclose_or_die(fp, fpo);
-      return 0;
-   }
-
-   if (hextype == HEX_POSTSCRIPT) {
-      p = cols;
-      while ((length < 0 || n < length) && (e = getc_or_die(fp)) != EOF) {
-         putc_or_die(hexx[(e >> 4) & 0xf], fpo);
-         putc_or_die(hexx[e & 0xf], fpo);
-         n++;
-         if (cols > 0 && !--p) {
-            putc_or_die('\n', fpo);
-            p = cols;
-         }
-      }
-      if (cols == 0 || p < cols)
-         putc_or_die('\n', fpo);
-      fclose_or_die(fp, fpo);
-      return 0;
-   }
-
-   // hextype: HEX_NORMAL or HEX_BITS or HEX_LITTLEENDIAN 
-   if (hextype != HEX_BITS) {
-      grplen = octspergrp + octspergrp + 1;   /* chars per octet group */
-   } else   // hextype == HEX_BITS
-      grplen = 8 * octspergrp + 1;
-
-   while ((length < 0 || n < length) && (e = getc_or_die(fp)) != EOF) {
-      if (p == 0) {
-         addrlen = SPRINTF(
-            l, decimal_offset ? FMT_ULONG : FMT_ULONG_HEX, ((Ulong)(n + seekoff + displayoff))
-         );
-         for (c = addrlen; c < LLEN_NO_COLOR; l[c++] = ' ')
-            {}
-      }
-      x = hextype == HEX_LITTLEENDIAN ? p ^ (octspergrp-1) : p;
-      c = addrlen + 1 + (grplen * x) / octspergrp;
-      if (hextype == HEX_NORMAL || hextype == HEX_LITTLEENDIAN) {
-         if (color) {
-            cur_color = get_color_char(e);
-            colors[c] = cur_color;
-            colors[c+1] = cur_color;
-         }
-
-         l[c]   = hexx[(e >> 4) & 0xf];
-         l[++c] = hexx[e & 0xf];
-      } else {// hextype == HEX_BITS */
-         for (i = 7; i >= 0; i--)
-            l[c++] = (e & (1 << i)) ? '1' : '0';
-      }
-      if (e)
-         nonzero++;
-         // When changing this update definition of LLEN and LLEN_NO_COLOR above.
-      if (hextype == HEX_LITTLEENDIAN)
-         // last group will be fully used, round up 
-         c = grplen * ((cols + octspergrp - 1) / octspergrp);
-      else
-         c = (grplen * cols - 1) / octspergrp;
-
-      if (hextype == HEX_LITTLEENDIAN)
-         c -= 1;
-
-      c += addrlen + 3 + p;
-      if (color)
-         colors[c] = cur_color;
-      l[c++] = (e > 31 && e < 127) ? e : '.';
-         n++;
-      if (++p == cols) {
-         l[c++] = '\n';
-         l[c] = '\0';
-
-         xxdline(fpo, l, color ? colors : NULL, autoskip ? nonzero : 1);
-         memset(colors, 0, c);
-         nonzero = 0;
-         p = 0;
-      }
-   }
-   if (p) {
-      l[c++] = '\n';
-      l[c] = '\0';
-      if (color) {
-         x = p;
-         if (hextype == HEX_LITTLEENDIAN) {
-            int fill = octspergrp - (p % octspergrp);
-            if (fill == octspergrp) fill = 0;
-
-            c = addrlen + 1 + (grplen * (x - (octspergrp-fill))) / octspergrp;
-
-            for (i = 0; i < fill;i++) {
-               colors[c] = COLOR_RED;
-               l[c++] = ' '; // empty space
-               x++;
-               p++;
-            }
-         }
-
-         if (hextype != HEX_BITS) {
-            c = addrlen + 1 + (grplen * x) / octspergrp;
-            c += cols - p;
-            c += (cols - p) / octspergrp;
-
-            for (i = cols - p; i > 0;i--) {
-               colors[c] = COLOR_RED;
-               l[c++] = ' ';
-            }
-         }
-         xxdline(fpo, l, colors, 1);
-      } else
-         xxdline(fpo, l, NULL, 1);
-   } ei (autoskip)
-      xxdline(fpo, l, color ? colors : NULL, -1);   // last chance to flush out suppressed lines
-
-   fclose_or_die(fp, fpo);
-   return 0;
-}
-
 
 //}}}
