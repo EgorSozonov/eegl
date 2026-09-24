@@ -1519,6 +1519,14 @@ get_literal(int noReduceKeys) {
    return cc;
 }
 
+// flags for insertchar()
+pub
+#define INSCHAR_FORMAT    1   //force formatting
+#define INSCHAR_DO_COM    2   //format comments
+#define INSCHAR_CTRLV     4   //char typed just after CTRL-V
+#define INSCHAR_NO_FEX    8   //don't use 'formatexpr'
+#define INSCHAR_COM_LIST 16   //format comments with list/2nd line indent
+
 // Insert character, taking care of special keys and modMaskG
 private void
 insertRegular(Unt c, Boole allow_modmask, Boole ctrlv) {       // c was typed after CTRL-V
@@ -1549,6 +1557,7 @@ insertRegular(Unt c, Boole allow_modmask, Boole ctrlv) {       // c was typed af
 //stop and defer processing to the "normal" mechanism. '0' and '^' are special, because they can
 //be followed by CTRL-D.
 #define ISSPECIAL(c)   ((c) < ' ' || (c) >= DEL || (c) == '0' || (c) == '^')
+
 
 //"flags": INSCHAR_FORMAT - force formatting
 //      INSCHAR_CTRLV  - char typed just after CTRL-V

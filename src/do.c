@@ -77,6 +77,20 @@ pub
 #define VGR_NOJUMP  2
 #define VGR_FUZZY   4
 
+//Structure used to save the current state.  Used when executing Normal mode
+//commands while in any other mode.
+typedef struct {
+   int save_msg_scroll;
+   int save_restart_edit;
+   int save_msg_didout;
+   int save_State;
+   int save_finish_op;
+   int save_opcount;
+   int save_reg_executing;
+   int save_pending_end_reg_executing;
+   TypeaheadSave   tabuf;
+} SaveState ;
+
 //}}}
 //{{{@@forward decls
 private int linelen(OUT int* has_tab);
@@ -161,6 +175,8 @@ private CS findFnFindFile(CS findarg, int findarg_len, int count);
 private CS get_prevdir(CdScopeKind scope);
 private void mayPrint(Invocation* invo);
 private void close_redir(void);
+private int save_current_state(SaveState* sst);
+private void restore_current_state(SaveState* sst);
 private void tagCmd(Invocation* invo, CS name);
 private void prepare_preview_window(void);
 private void back_to_current_window(Portal *curPor_save);
@@ -10197,7 +10213,7 @@ update_topline_cursor(void) {
 }
 
 //Save the current stateG and go to Normal mode. Return true if the typeahead could be saved.
-pub int
+private int
 save_current_state(SaveState* sst) {
    sst->save_msg_scroll = msg_scroll;
    sst->save_restart_edit = restart_edit;
@@ -10217,7 +10233,7 @@ save_current_state(SaveState* sst) {
    return sst->tabuf.typebuf_valid;
 }
 
-pub void
+private void
 restore_current_state(SaveState* sst) {
    // Restore the previous typeahead.
    restore_typeahead(&sst->tabuf, false);

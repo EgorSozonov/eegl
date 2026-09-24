@@ -16,6 +16,7 @@
 #include "h/draw.types.h"
 #include "h/draw.h"
 #include "h/fileio.h"
+#include "h/insert.types.h"
 #include "h/insert.h"
 #include "h/eval.h"
 #include "h/juggle.h"

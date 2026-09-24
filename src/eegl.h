@@ -990,12 +990,6 @@ typedef Byte Byte;
 #define INDENT_INC   2 //increase indent
 #define INDENT_DEC   3 //decrease indent
 
-// Values for flags argument for findmatchlimit()
-#define FM_BACKWARD  0x01   //search backwards
-#define FM_FORWARD   0x02   //search forwards
-#define FM_BLOCKSTOP 0x04   //stop at start/end of block
-#define FM_SKIPCOMM  0x08   //skip comments
-
 // Values for action argument for bookDo() and closeBook()
 #define DOBOOK_GOTO      0  //go to specified book
 #define DOBOOK_SPLIT     1  //split portal and go to specified book
@@ -1088,13 +1082,6 @@ typedef Byte Byte;
 #define SIN_CHANGED  1   //call changed_bytes() when line changed
 #define SIN_INSERT   2   //insert indent before existing text
 #define SIN_UNDO     4   //save line for undo before changing it
-
-// flags for insertchar()
-#define INSCHAR_FORMAT    1   //force formatting
-#define INSCHAR_DO_COM    2   //format comments
-#define INSCHAR_CTRLV     4   //char typed just after CTRL-V
-#define INSCHAR_NO_FEX    8   //don't use 'formatexpr'
-#define INSCHAR_COM_LIST 16   //format comments with list/2nd line indent
 
 // flags for openLine()
 #define OPENLINE_DELSPACES    0x01 //delete spaces after cursor
@@ -2390,24 +2377,12 @@ struct MatchItem {
 #define CSTACK_LEN   50
 
 // Struct used by those that are using an item in a list.
-typedef struct ListWatch ListWatch;
-typedef struct ListItem ListItem;
-
-struct ListWatch {
-   ListItem* c;   // item being watched
-   ListWatch* next;   // next watcher
-};
-
+declStruct(ListWatch);
+declStruct(ListItem);
 declStruct(ForInfo);
 
-// A list used for saving values of "emsg_silent".  Used by ex_try() to save the
-// value of "emsg_silent" if it was non-zero.  When this is done, the CSF_SILENT flag below is set.
-
-typedef struct EMsgList EMsgList;
-struct EMsgList {
-   int saved_emsg_silent;   // saved value of "emsg_silent"
-   EMsgList* next;         // next element on the list
-};
+//A list used for saving values of "emsg_silent".  Used by ex_try() to save the
+//value of "emsg_silent" if it was non-zero.  When this is done, the CSF_SILENT flag below is set.
 
 // type of getline() last argument
 typedef enum {
@@ -2646,24 +2621,7 @@ typedef struct PropType {
 #define PT_FLAG_COMBINE      4   // combine with syntax highlight
 #define PT_FLAG_OVERRIDE   8   // override any highlight
 
-// Sign group
-typedef struct signgroup_S {
-   int sg_next_sign_id; //next sign id for this group
-   Short sg_refcount;   //number of signs in this group
-   Boole isPopupOnly;    //is this group for popup portals only?
-   Byte sg_name[1];     //sign group name, actually longer
-} SignGroup;
-
-typedef struct SignEntry SignEntry;
-struct SignEntry {
-   int id;      // unique identifier for each placed sign
-   int typeNr;   // typenr of sign
-   int priority;   // priority for highlighting
-   LineNr lnum;   // line number which has this sign
-   SignGroup* group;   // sign group
-   SignEntry* next;   // next entry in a list of signs
-   SignEntry* prev;   // previous entry -- for easy reordering
-};
+declStruct(SignEntry);
 
 // Sign hiliting. Used by the screen refresh routines.
 typedef struct {
@@ -2676,13 +2634,6 @@ typedef struct {
    Short lineNumHiId;
    int priority;
 } SignHilite;
-
-// Macros to get the sign group structure from the group name
-#define SGN_KEY_OFF   offsetof(SignGroup, sg_name)
-#define HI2SG(hi)   ((SignGroup *)((hi)->hi_key - SGN_KEY_OFF))
-
-// Default sign priority for highlighting
-#define SIGN_DEF_PRIO   10
 
 //}}}
 //{{{messages
@@ -3632,22 +3583,21 @@ typedef struct {
 #define SYNFLD_START   0   // use level of item at start of line
 #define SYNFLD_MINIMUM   1   // use lowest local minimum level on line
 
-typedef struct LocationStack LocationStack;
+declStruct(LocationStack);
 
-
-typedef struct Timer Timer;
+declStruct(Timer);
 struct Timer {
    long   id;
    Timer* next;
    Timer* prev;
    ProfTime due;          // when the callback is to be invoked
-   char   tr_firing;       // when TRUE callback is being called
-   char   tr_paused;       // when TRUE callback is not invoked
-   char   tr_keep;       // when TRUE keep timer after it fired
-   int      tr_repeat;       // number of times to repeat, -1 forever
-   long   tr_interval;       // msec
-   Callback   callback;
-   int      tr_emsg_count;
+   char tr_firing;       // when TRUE callback is being called
+   char tr_paused;       // when TRUE callback is not invoked
+   char tr_keep;       // when TRUE keep timer after it fired
+   int tr_repeat;       // number of times to repeat, -1 forever
+   long tr_interval;       // msec
+   Callback callback;
+   int tr_emsg_count;
 };
 
 //}}}
@@ -3669,10 +3619,6 @@ typedef enum {
    POPCLOSE_CLICK
 } PopupClosing;
 
-# define POPUPWIN_DEFAULT_ZINDEX    50
-# define POPUPMENU_ZINDEX      100
-# define POPUPWIN_DIALOG_ZINDEX      200
-# define POPUPWIN_NOTIFICATION_ZINDEX   300
 
 //}}}
 //{{{Book
@@ -4080,6 +4026,7 @@ struct Frame { //:Frame
 
 //}}}
 //{{{portal
+
 // Structure to store last cursor position and topline.  Used by check_lnums() and reset_lnums().
 typedef struct {
    int topLineSave;   // original topline value
@@ -4144,7 +4091,7 @@ typedef struct {
    int mouseRow;  // close popup if mouse moves away
    int mouseMinCol;  // close popup if mouse moves away
    int mouseMaxCol;  // close popup if mouse moves away
-   PopupClosing   close;     // allow closing the popup with the mouse
+   PopupClosing close;     // allow closing the popup with the mouse
 
    List* mask;         // list of lists for "mask"
    CS maskCells; // cached mask cells
@@ -4382,9 +4329,6 @@ typedef struct {
 } ActionArg;
 
 //}}}
-//{{{location lists
-
-//}}}
 //{{{cursor
 
 // values for retval:
@@ -4472,8 +4416,6 @@ struct JsReader {
    int js_cookie_arg;   // can be used by js_fill
 };
 
-// Maximum number of commands from + or -c arguments.
-#define MAX_ARG_CMDS 10
 
 // values for "portalLayout"
 #define WIN_HOR  1 //"-o" horizontally split portals
@@ -4522,20 +4464,6 @@ typedef struct {
    UserFunc   *ll_ufunc;   // The function or NULL
    int      isRoot;   //TRUE if ll_tv is the lval_root, like a plain object/class. ll_tv is variable
 } Lval;
-
-// Structure used to save the current state.  Used when executing Normal mode
-// commands while in any other mode.
-typedef struct {
-   int save_msg_scroll;
-   int save_restart_edit;
-   int save_msg_didout;
-   int save_State;
-   int save_finish_op;
-   int save_opcount;
-   int save_reg_executing;
-   int save_pending_end_reg_executing;
-   TypeaheadSave   tabuf;
-} SaveState;
 
 typedef struct {
    Long prevCount;

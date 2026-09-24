@@ -25,6 +25,7 @@
 #include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/normal.h"
+#include "h/portal.types.h"
 #include "h/portal.h"
 #include "h/regexp.h"
 #include "h/script.h"

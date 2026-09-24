@@ -85,7 +85,7 @@ struct Job {
 
 
 #define FOR_ALL_CHANNELS(ch) \
-    for ((ch) = first_channel; (ch) != NULL; (ch) = (ch)->next)
+    for ((ch) = firstChannelP; (ch) != NULL; (ch) = (ch)->next)
     
 #define FOR_ALL_JOBS(job) \
     for ((job) = firstJobS; (job) != NULL; (job) = (job)->next)
@@ -95,7 +95,7 @@ struct Job {
 private int safe_to_invoke_callback = 0;
 
 // The list of all allocated channels.
-private Channel *first_channel = NULL;
+private Channel *firstChannelP = NULL;
 private int next_ch_id = 0;
 private int ignore_sigtstp = false;
 typedef struct sockaddr_un SockAddrUn;
@@ -345,11 +345,11 @@ add_channel(void) {
       channel->fds[part].ch_timeout = 2000;
    }
 
-   if (first_channel != NULL) {
-      first_channel->prev = channel;
-      channel->next = first_channel;
+   if (firstChannelP != NULL) {
+      firstChannelP->prev = channel;
+      channel->next = firstChannelP;
    }
-   first_channel = channel;
+   firstChannelP = channel;
 
    channel->refCount = 1;
    return channel;
@@ -357,7 +357,7 @@ add_channel(void) {
 
 pub int
 has_any_channel(void){
-   return first_channel != NULL;
+   return firstChannelP != NULL;
 }
 
 // Called when the refcount of a channel is zero.
@@ -420,7 +420,7 @@ channel_free_channel(Channel* channel) {
    if (channel->next)
       channel->next->prev = channel->prev;
    if (channel->prev == NULL)
-      first_channel = channel->next;
+      firstChannelP = channel->next;
    else
       channel->prev->next = channel->next;
    eeglFree(channel);
@@ -485,7 +485,7 @@ free_unused_channels_contents(int copyID, int mask) {
 pub void
 free_unused_channels(int copyID, int mask) {
    Channel* next;
-   for (Channel* ch = first_channel; ch; ch = next) {
+   for (Channel* ch = firstChannelP; ch; ch = next) {
       next = ch->next;
       if (!channel_still_useful(ch) && (ch->copyId & mask) != (copyID & mask))
          //Free the channel struct itself.
@@ -2584,17 +2584,25 @@ is_channel_write_remaining(ChannelFd* intake) {
        : (intake->ch_buf_top <= intake->ch_buf_bot && intake->ch_buf_top <= book->mem.lineCount);
 }
 
-//Add write file descriptors where we are waiting for writing to be possible.
-private void
-channel_fill_wfds(OUT LPollFd* pollFds) {
-   Channel* ch;
-   FOR_ALL_CHANNELS(ch) {
-      ChannelFd* inPart = &ch->fds[PART_IN];
-      if (inPart->fd != INVALID_FD && is_channel_write_remaining(inPart)) {
-         add(OUT pollFds, ((PollFd){inPart->fd, .events = POLLOUT, .revents = 0}));
-      }
+private int
+channel_fill_poll_write(int nfd_in, Arr(PollFd) fds) {
+   int nfd = nfd_in;
+
+   for (Channel* ch = firstChannelP; ch; ch = ch->next) {
+      ChannelFd* in_part = &ch->fds[PART_IN];
+
+      if (in_part->fd != INVALID_FD && (in_part->bookref.c || in_part->ch_writeque.next)) {
+         in_part->ch_poll_idx = nfd;
+         fds[nfd].fd = in_part->ch_fd;
+         fds[nfd].events = POLLOUT;
+         ++nfd;
+      } else
+         in_part->ch_poll_idx = -1;
    }
+   return nfd;
 }
+
+#define MAX_OPEN_CHANNELS 10
 
 //Check for reading from "fd" with "timeout" msec. Return CW_READY when there is something to read.
 //CW_NOT_READY when there is nothing to read. CW_ERROR when there is an error.
@@ -2602,7 +2610,6 @@ private channel_wait_result
 channel_wait(Channel* channel, Socket fd, int timeout) {
    if (timeout > 0)
       ch_log(channel, "Waiting for up to %d msec", timeout);
-   findme;
    TimeVal tval;
    fd_set rfds;
    fd_set wfds;
@@ -2612,15 +2619,14 @@ channel_wait(Channel* channel, Socket fd, int timeout) {
    LPollFd* descriptors;
 cycle:
    //Write lines to a pipe when a pipe can be written to.
-   channel_fill_wfds(OUT descriptors);
-   PollFd pollFd = (PollFd){(int)fd, POLLOUT, 0};
-   int ret = poll(&pollFd, 1, timeout);
-   SOCK_ERRNO;
-   if (ret == -1 && errno == EINTR)
-      goto cycle;
-   if (ret > 0) {
-      if ((descriptors->c[0].revents & POLLIN) != 0)
+   PollFd fds[MAX_OPEN_CHANNELS + 1];
+   fds[0].fd = fd;
+   fds[0].events = POLLIN;
+   int nfd = channel_fill_poll_write(1, fds); 
+   if (poll(&fds, nfd, timeout) > 0) {
+      if ((fds[0].revents & POLLIN) > 0) {
          return CW_READY;
+      }
       channel_write_any_lines();
       goto cycle;
    }
@@ -3363,7 +3369,7 @@ chCheckPollResult(int ret_in, OUT LPollFd* fds) {
 //commands, and during a blocking wait for ch_evalexpr(). Return true when something was done.
 pub int
 channel_parse_messages(void) {
-   Channel* channel = first_channel;
+   Channel* channel = firstChannelP;
    int ret = false;
    int r;
    ChannelFdKind part = PART_SOCK;
@@ -3389,7 +3395,7 @@ channel_parse_messages(void) {
             channel->ch_to_be_closed = (1U << PART_COUNT);
             channel_close_now(channel);
             //channel may have been freed, start over
-            channel = first_channel;
+            channel = firstChannelP;
             continue;
          }
          if (channel->ch_to_be_freed || channel->isBeingKilled) {
@@ -3399,13 +3405,13 @@ channel_parse_messages(void) {
 
             //free the channel and then start over
             channel_free_channel(channel);
-            channel = first_channel;
+            channel = firstChannelP;
             continue;
          }
          if (channel->refCount == 0 && !channel_still_useful(channel)) {
             //channel is no longer useful, free it
             channel_free(channel);
-            channel = first_channel;
+            channel = firstChannelP;
             part = PART_SOCK;
             continue;
          }
@@ -3425,7 +3431,7 @@ channel_parse_messages(void) {
             )
          )
             //channel was freed or something was done, start over
-            channel = first_channel;
+            channel = firstChannelP;
          part = PART_SOCK;
          continue;
       }
@@ -3451,7 +3457,7 @@ channel_parse_messages(void) {
 // Return true if any channel has readahead.  That means we should not block on waiting for input.
 pub int
 channel_any_readahead(void) {
-   Channel* channel = first_channel;
+   Channel* channel = firstChannelP;
    ChannelFdKind part = PART_SOCK;
 
    while (channel) {
@@ -3474,7 +3480,7 @@ set_ref_in_channel(int copyID) {
    Channel* channel;
    Var tv;
 
-   for (channel = first_channel; !abort && channel; channel = channel->next) {
+   for (channel = firstChannelP; !abort && channel; channel = channel->next) {
       if (channel_still_useful(channel)) {
          tv.tag = VAR_CHANNEL;
          tv.channel = channel;

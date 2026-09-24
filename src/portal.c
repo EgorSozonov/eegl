@@ -7806,6 +7806,12 @@ highlightCurrentLine(Portal* po) {
    po->pup.lastCurline = po->cursor.lnum;
 }
 
+pub
+#define POPUPWIN_DEFAULT_ZINDEX       50
+#define POPUPMENU_ZINDEX             100
+#define POPUPWIN_DIALOG_ZINDEX       200
+#define POPUPWIN_NOTIFICATION_ZINDEX 300
+
 // Shared between createPopup() and f_popup_setoptions().
 private int
 apply_general_options(Portal* po, Bag* dict) {

@@ -170,6 +170,28 @@ pub typedef enum {
    LL_ACTION_FREE
 } LocListAction;
 
+// Sign group
+typedef struct signgroup_S {
+   int sg_next_sign_id; //next sign id for this group
+   Short sg_refcount;   //number of signs in this group
+   Boole isPopupOnly;    //is this group for popup portals only?
+   Byte sg_name[1];     //sign group name, actually longer
+} SignGroup;
+
+struct SignEntry {
+   int id;      // unique identifier for each placed sign
+   int typeNr;   // typenr of sign
+   int priority;   // priority for hiliting
+   LineNr lnum;   // line number which has this sign
+   SignGroup* group;   // sign group
+   SignEntry* next;   // next entry in a list of signs
+   SignEntry* prev;   // previous entry -- for easy reordering
+};
+
+// Default sign priority for hiliting
+pub
+#define SIGN_DEF_PRIO   10
+
 //}}}
 #include "h/location.h"
 //{{{@@forward declarations
@@ -8845,6 +8867,10 @@ pub void
 init_signs(void) {
    hash_init(&signGroups); // sign group hash table
 }
+
+// Macros to get the sign group structure from the group name
+#define SGN_KEY_OFF   offsetof(SignGroup, sg_name)
+#define HI2SG(hi)   ((SignGroup *)((hi)->hi_key - SGN_KEY_OFF))
 
 //A new sign in group 'groupname' is added. If the group is not present,
 //create it. Otherwise reference the group.

@@ -29,6 +29,7 @@
 #include "h/portal.h"
 #include "h/regexp.h"
 #include "h/script.h"
+#include "h/search.types.h"
 #include "h/search.h"
 #include "h/strings.h"
 #include "h/term.h"

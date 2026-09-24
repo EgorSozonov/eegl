@@ -48,9 +48,6 @@ Boole letImpl(
 );
 Boole evalLetVarSimple(CS name, Var* newValue);
 int tv_op(Var *tv1, Var *tv2, CS op);
-void* eval_for_line(CS arg, OUT Boole* errp, EvalCtx* evalarg);
-int next_for_item(void *fi_void, CS arg);
-void free_for_info(void *fi_void);
 int op_pending(void);
 void set_context_for_expression(Expand   *xp, CS arg, CommIndex   id);
 int pattern_match(CS pat, CS text, int ic);
@@ -128,7 +125,6 @@ CS do_string_sub(
    Byte* flags,
    Unt* ret_len      // length of returned buffer
 );
-void skipForLines(void *fi_void, EvalCtx *evalarg);
 void evalvars_clear(void);
 int garbage_collect_globvars(int copyID);
 int garbageCollectEeglVars(int copyID);

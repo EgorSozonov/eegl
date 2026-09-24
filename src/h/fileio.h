@@ -161,9 +161,7 @@ CS fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot);
 int eeFgets(CS buf, int size, FILE *fp);
 int eeRename(CS from, CS to);
 int check_timestamps( int      focus);
-int fiCheckBookTimestamp(
-   Book* book
-);
+int fiCheckBookTimestamp(Book* book);
 void buf_reload(Book* book, int orig_mode, int reload_options);
 void buf_store_time(Book *book, FileStat *st, CS);
 void write_lnum_adjust(LineNr offset);

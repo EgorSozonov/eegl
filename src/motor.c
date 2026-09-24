@@ -267,6 +267,10 @@ c_intro(Invocation*){
 #define EDIT_TAG    3       // tag name argument given, use tagname
 #define EDIT_QF     4       // start in quickfix mode
 
+// Maximum number of commands from + or -c arguments.
+pub
+#define MAX_ARG_CMDS 10
+
 // Struct for various parameters passed between main() and other functions.
 pub
 typedef struct {

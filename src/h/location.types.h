@@ -6,3 +6,4 @@ typedef enum {
    LL_ACTION_NEW, // create new location list
    LL_ACTION_FREE
 } LocListAction;
+#define SIGN_DEF_PRIO   10

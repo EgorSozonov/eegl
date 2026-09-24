@@ -1,3 +1,4 @@
+#define MAX_ARG_CMDS 10
 typedef struct {
    int argc;
    Arr(Arr(char)) argv;

@@ -83,6 +83,11 @@ typedef enum {
    ASSERT_OTHER
 } AssertKind;
 
+struct ListWatch {
+   ListItem* c;   // item being watched
+   ListWatch* next;   // next watcher
+};
+
 //}}}
 //{{{@@forward declarations
 private void list_fix_watch(List* l, ListItem* item);

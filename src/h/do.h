@@ -216,8 +216,6 @@ int eeMkdir_emsg(CS name, int prot);
 FILE * doOpenCommandsFile(CS fname, int forceit, CS mode);
 void c_mark(Invocation* invo);
 void update_topline_cursor(void);
-int save_current_state(SaveState* sst);
-void restore_current_state(SaveState* sst);
 void c_normal(Invocation* invo);
 void c_startinsert(Invocation* invo);
 void c_stopinsert(Invocation*);
