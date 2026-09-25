@@ -115,7 +115,7 @@ enum {
 
 typedef struct {
   VTermPos pos;
-  int	   buttons;
+  int      buttons;
 #define MOUSE_BUTTON_LEFT 0x01
 #define MOUSE_BUTTON_MIDDLE 0x02
 #define MOUSE_BUTTON_RIGHT 0x04
@@ -970,11 +970,11 @@ private CS get_separator(int text_width, CS fname);
 private void term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff);
 private int get_row_number(Var *tv, Terminal *term);
 private int initSubtermAndJob(
-	Terminal* term,
-	Var* argvar,
-	Multistring* argv,
-	JobOptions* opt,
-	JobOptions*
+   Terminal* term,
+   Var* argvar,
+   Multistring* argv,
+   JobOptions* opt,
+   JobOptions*
 );
 private int create_pty_only(Terminal* term, JobOptions* opt);
 private void term_free_vterm(Terminal* term);
@@ -1270,10 +1270,10 @@ private keycodes_s keycodes[] = {
 
 private keycodes_s keycodes_fn[] = {
   { KEYCODE_NONE,       0, 0 },   // F0 - shouldn't happen
-  { KEYCODE_SS3,	'P', 0 }, // F1
-  { KEYCODE_SS3,	'Q', 0 }, // F2
-  { KEYCODE_SS3,	'R', 0 }, // F3
-  { KEYCODE_SS3,	'S', 0 }, // F4
+  { KEYCODE_SS3,   'P', 0 }, // F1
+  { KEYCODE_SS3,   'Q', 0 }, // F2
+  { KEYCODE_SS3,   'R', 0 }, // F3
+  { KEYCODE_SS3,   'S', 0 }, // F4
   { KEYCODE_CSINUM, '~', 15 }, // F5
   { KEYCODE_CSINUM, '~', 17 }, // F6
   { KEYCODE_CSINUM, '~', 18 }, // F7
@@ -3860,7 +3860,7 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
    Unt pos = 0;
    CS string_start = NULL;  // init to avoid gcc warning
 
-   vt->in_backspace = 0;		    // Count down with BS key and activate when it reaches 1
+   vt->in_backspace = 0;          // Count down with BS key and activate when it reaches 1
 
    switch(vt->parser.state) {
    case VT_NORMAL:
@@ -5050,11 +5050,11 @@ on_csi(
                vterm_screen_get_cell(state->vt->screen, p, OUT &c0);
                p.col++;
                vterm_screen_get_cell(state->vt->screen, p, OUT &c1);
-               Unt diff = (c1.chars[0] == UNT)		    // double cell?
+               Unt diff = (c1.chars[0] == UNT)          // double cell?
                   ? ((vterm_unicode_is_ambiguous(c0.chars[0]))    // is ambiguous?
                      ? vterm_unicode_width(0x00a1) 
-                     : 1)		    // &ambiwidth
-                  : 1;	
+                     : 1)          // &ambiwidth
+                  : 1;   
                ptr += diff;
             }
             col = ptr + 1;
@@ -5411,7 +5411,7 @@ on_csi(
          //TODO: this only uses the values zero and one. The protocol specifies
          //more values, the progressive enhancement flags.
          vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, "?%du",
-	  					   state->mode.kitty_keyboard);
+                       state->mode.kitty_keyboard);
       break;
 
    case 0x6e: // DSR - ECMA-48 8.3.35
@@ -10668,11 +10668,11 @@ term_send_eof(Channel* ch) {
 // Store the pointers in "term". When "argv" is not NULL then "argvar" is not used. OK or FAIL.
 private int
 initSubtermAndJob(
-	Terminal* term,
-	Var* argvar,
-	Multistring* argv,
-	JobOptions* opt,
-	JobOptions*
+   Terminal* term,
+   Var* argvar,
+   Multistring* argv,
+   JobOptions* opt,
+   JobOptions*
 ) {
    term->tl_arg0_cmd = NULL;
 
@@ -10809,53 +10809,31 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
    int result;
    for (;;) {
       int finished = true; // default is to 'loop' just once
-      TimeVal tv;
-      TimeVal* timePtr;
-      Long towait = msec;
-
-      if (towait >= 0) {
-         tv.tv_sec = towait / 1000;
-         tv.tv_usec = (towait % 1000) * (1000000/1000);
-         timePtr = &tv;
-      } else
-         timePtr = NULL;
-
-      //Select on ready for reading and exceptional condition (end of file).
-      select_eintr:
       
-      PollFd pollFds[2] = {
-         (PollFd){.fd = fd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0},
-         //(PollFd){.fd = wayland_display_fd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0},
-      };
-
-      LPollFd listFds = (LPollFd){.c = pollFds, .len = 2, .cap = 2};
-      channel_select_setup(&listFds, &tv, &timePtr);
+      //each channel may use in, out and err
+      PollFd fds[6 + 3 * MAX_OPEN_CHANNELS];
+      int nfd;
+      int towait = (int)msec;
+      
+      fds[0].fd = fd;
+      fds[0].events = POLLIN;
+      nfd = 1;
+      nfd = channel_poll_setup(nfd, fds, &towait);
+      
       if (interrupted)
          *interrupted = false;
 
-      int ret = poll(pollFds, 1, towait);
-      result = ret > 0 && (pollFds[0].revents & POLLIN) != 0;
-      if (result)
-         --ret;
-      ei (interrupted && ret > 0)
-         *interrupted = true;
+      int ret = poll(fds, nfd, towait);
 
-      if (ret == -1 && errno == EINTR) {
-         //Check whether window has been resized, EINTR may be caused by SIGWINCH.
-         if (doResizeG) {
-            lo("calling handleShellResize() in uiRealWaitForChar()");
-            handleShellResize();
-         }
-
-         //Interrupted by a signal, need to try again. We ignore msec here, because we do want to 
-         //check even after a timeout if characters are available. Needed for reading output of an
-         //external command after the process has finished.
-         goto select_eintr;
-      }
+      result = ret > 0 && (fds[0].revents & POLLIN);
+      if (result == 0 && interrupted && ret > 0)
+          *interrupted = true;
 
       // also call when ret == 0, we may be polling a keep-open channel
       if (ret >= 0)
-         (void)chCheckPollResult(ret, OUT &listFds);
+          chPollCheck(ret, fds);
+      
+      
 
       if (finished || msec == 0)
          break;
@@ -10878,7 +10856,7 @@ private void
 mch_write(CS s, int len) {
    (void)write(1, (char *)s, len);
    if (p_wd)      // Unix is too fast, slow down a bit more
-      uiRealWaitForChar(read_cmd_fd, p_wd, NULL);
+      uiRealWaitForChar(read_cmd_fd, p_wd, null);
 }
 
 //Called when Eegl is going to sleep or execute a shell command. We can't respond to requests for 
@@ -11255,6 +11233,11 @@ waitForCharOrMouse(Long msec, OUT int *interrupted, Boole ignore_input) {
       return 1;
 
    int avail = uiRealWaitForChar(read_cmd_fd, msec, OUT interrupted);
+   
+   if (!avail) {
+      if (!ignore_input && input_available())
+         return 1;
+   }
    return avail;
 }
 

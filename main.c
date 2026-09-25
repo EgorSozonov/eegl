@@ -6,7 +6,9 @@
 #define EXTERN // this makes all the global vars be defined here, see src/eegl.h
 #define MAIN_C // more initialization of globals, see src/eegl.h
 
-#include "eegl.h"
+#include "src/eegl.h"
+#include "src/h/motor.types.h"
+#include "src/h/motor.h"
 
 int 
 main(int argc, char** argv) {

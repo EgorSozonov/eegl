@@ -11,15 +11,19 @@
 #include "h/draw.h"
 #include "h/eval.h"
 #include "h/book.h"
+#include "h/fileio.h"
 #include "h/juggle.h"
 #include "h/memory.types.h"
 #include "h/memory.h"
+#include "h/motor.types.h"
+#include "h/motor.h"
 #include "h/message.h"
 #include "h/normal.types.h"
 #include "h/normal.h"
 #include "h/option.h"
 #include "h/script.h"
 #include "h/strings.h"
+#include "h/tag.h"
 #include "h/term.h"
 #include "h/ui.h"
 
@@ -47,7 +51,6 @@ typedef int waitstatus;
 
 // volatile because it is used in signal handler deathtrap().
 private volatile SigAtomic inMchDelayS = false; // sleeping in mch_delay()
-
 
 // volatile because it is used in signal handler deathtrap().
 private volatile SigAtomic deadlySignalS = 0;      // The signal we caught
@@ -114,6 +117,7 @@ pub
 typedef struct {
    int fd;       // socket/stdin/stdout/stderr, -1 if not used
 
+   int pollIdx;   // used by channel_poll_setup()
    ChannelMode ch_mode;
    JobIoMode ch_io;
    int ch_timeout;   // request timeout in msec
@@ -243,7 +247,7 @@ private void channel_close_in(Channel *channel);
 private void remove_from_writeque(WriteQueue *wq, WriteQueue *entry);
 private void channel_clear_one(Channel *channel, ChannelFdKind part);
 private int is_channel_write_remaining(ChannelFd* intake);
-private void channel_fill_wfds(OUT LPollFd* pollFds);
+private int fillIntake(int nfd_in, Arr(PollFd) fds);
 private channel_wait_result channel_wait(Channel* channel, Socket fd, int timeout);
 private void ch_close_part_on_error(Channel *channel, ChannelFdKind part, int is_err, char *func);
 private void channel_close_now(Channel *channel);
@@ -287,7 +291,7 @@ private void open_pty(int* pty_master_fd, int* pty_slave_fd, Byte** name1, Byte*
 private void catch_sigint(int);
 private void catch_sigusr1(int);
 private void catch_sigpwr(int);
-private void deathtrap(int);
+private void deathtrap(int sigarg);
 private void after_sigcont(void);
 private void sigcont_handler(int);
 private void catch_int_signal(void);
@@ -771,10 +775,10 @@ chaFindBook(CS name, int err, int msg) {
 // Set various properties from an "opt" argument.
 private void
 channel_set_options(Channel* channel, JobOptions* opt) {
-   ChannelFdKind   part;
-   if (opt->set & JO_MODE) {
+   ChannelFdKind part;
+   if ((opt->set & JO_MODE) != 0) {
       for (part = PART_SOCK; part < PART_COUNT; ++part)
-          channel->fds[part].ch_mode = opt->mode;
+         channel->fds[part].ch_mode = opt->mode;
    } 
    if (opt->set & JO_IN_MODE)
       channel->fds[PART_IN].ch_mode = opt->jo_in_mode;
@@ -2585,24 +2589,25 @@ is_channel_write_remaining(ChannelFd* intake) {
 }
 
 private int
-channel_fill_poll_write(int nfd_in, Arr(PollFd) fds) {
+fillIntake(int nfd_in, Arr(PollFd) fds) {
    int nfd = nfd_in;
 
    for (Channel* ch = firstChannelP; ch; ch = ch->next) {
-      ChannelFd* in_part = &ch->fds[PART_IN];
+      ChannelFd* intake = &ch->fds[PART_IN];
 
-      if (in_part->fd != INVALID_FD && (in_part->bookref.c || in_part->ch_writeque.next)) {
-         in_part->ch_poll_idx = nfd;
-         fds[nfd].fd = in_part->ch_fd;
+      if (intake->fd != INVALID_FD && (intake->bookref.c || intake->ch_writeque.next)) {
+         intake->pollIdx = nfd;
+         fds[nfd].fd = intake->fd;
          fds[nfd].events = POLLOUT;
          ++nfd;
       } else
-         in_part->ch_poll_idx = -1;
+         intake->pollIdx = -1;
    }
    return nfd;
 }
 
-#define MAX_OPEN_CHANNELS 10
+pub
+#define MAX_OPEN_CHANNELS 16
 
 //Check for reading from "fd" with "timeout" msec. Return CW_READY when there is something to read.
 //CW_NOT_READY when there is nothing to read. CW_ERROR when there is an error.
@@ -2610,20 +2615,13 @@ private channel_wait_result
 channel_wait(Channel* channel, Socket fd, int timeout) {
    if (timeout > 0)
       ch_log(channel, "Waiting for up to %d msec", timeout);
-   TimeVal tval;
-   fd_set rfds;
-   fd_set wfds;
-
-   tval.tv_sec = timeout / 1000;
-   tval.tv_usec = (timeout % 1000) * 1000;
-   LPollFd* descriptors;
 cycle:
    //Write lines to a pipe when a pipe can be written to.
    PollFd fds[MAX_OPEN_CHANNELS + 1];
    fds[0].fd = fd;
    fds[0].events = POLLIN;
-   int nfd = channel_fill_poll_write(1, fds); 
-   if (poll(&fds, nfd, timeout) > 0) {
+   int nfd = fillIntake(1, fds); 
+   if (poll(fds, nfd, timeout) > 0) {
       if ((fds[0].revents & POLLIN) > 0) {
          return CW_READY;
       }
@@ -2992,7 +2990,7 @@ channel_send(
    Channel* channel,
    ChannelFdKind part,
    CS buf_arg,
-   int     len_arg,
+   int len_arg,
    char* fun
 ) {
    int res;
@@ -3297,66 +3295,27 @@ ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
 #define KEEP_OPEN_TIME 20  // msec
 
 pub int
-channel_select_setup(OUT LPollFd* pollFds, TimeVal* tv, TimeVal** tvp) {
-   Channel* channel;
-   fd_set* rfds = rfds_in;
-   fd_set* wfds = wfds_in;
-   ChannelFdKind part;
-
-   FOR_ALL_CHANNELS(channel) {
-      for (part = PART_SOCK; part < PART_IN; ++part) {
-         PollFd fd = channel->fds[part].fd;
-
-         if (fd.fd == INVALID_FD) {
-            continue;
-         }
-         if (channel->ch_keep_open) {
-            //For unknown reason select() returns immediately for a keep-open channel. 
-            //Instead of adding it to the rfds add a short timeout and check, like polling.
-            //TODO does poll() need this?
-            if (*tvp == NULL || tv->tv_sec > 0 || tv->tv_usec > KEEP_OPEN_TIME * 1000) {
-               *tvp = tv;
-               tv->tv_sec = 0;
-               tv->tv_usec = KEEP_OPEN_TIME * 1000;
-            }
-         } else {
-            add(fd, OUT pollFds);
-         }
-      }
-   }
-
-   channel_fill_wfds(wfds);
-
-   return maxfd;
-}
-
-pub int
-chCheckPollResult(int ret_in, OUT LPollFd* fds) {
+chCheckPollResult(int ret_in, OUT Arr(PollFd) fds) {
    int ret = ret_in;
    Channel* channel;
-   fd_set* rfds = rfds_in;
-   fd_set* wfds = wfds_in;
    ChannelFdKind part;
 
    FOR_ALL_CHANNELS(channel) {
       for (part = PART_SOCK; part < PART_IN; ++part) {
-         PollFd fd = channel->fds[part].fd;
+         int idx = channel->fds[part].pollIdx;
 
-         if (ret > 0 && fd != INVALID_FD && (fd.revents & POLLIN) != 0) {
+         if (ret > 0 && idx != -1 && (fds[idx].revents & POLLIN) != 0) {
             channel_read(channel, part, "chCheckPollResult");
-            remove(fd, fds)
-            FD_CLR(fd, rfds);
             --ret;
-         } ei (fd != INVALID_FD && channel->ch_keep_open) {
+         } ei (channel->fds[part].fd != INVALID_FD && channel->ch_keep_open) {
             //polling a keep-open channel
             channel_read(channel, part, "channel_select_check_keep_open");
          }
       }
 
       ChannelFd* intake = &channel->fds[PART_IN];
-      if (ret > 0 && intake->fd != INVALID_FD && (intake->fd.revents & POLLOUT) != 0) {
-         //Clear the flag first, fd may change in channel_write_input().
-         FD_CLR(intake->fd, wfds);
+      int idx = intake->pollIdx; 
+      if (ret > 0 && idx != INVALID_FD && (fds[idx].revents & POLLOUT) != 0) {
          channel_write_input(channel);
          --ret;
       }
@@ -3712,11 +3671,11 @@ private void deathtrap SIGPROTOARG;
 static void catch_sigusr1 SIGPROTOARG;
 private void catch_sigpwr SIGPROTOARG;
 
-struct SignalInfo {
+typedef struct {
    int sig;   // Signal number, eg. SIGSEGV etc
    char* name;   // Signal name (not Byte!).
    char deadly;   // Catch as a deadly signal?
-};
+} SignalInfo;
 private SignalInfo signalInfos[] = {
     {SIGHUP,       "HUP",   true},
     {SIGQUIT,       "QUIT",   true},
@@ -4263,9 +4222,6 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
             wait_pid = pid;
          } else
             wait_pid = 0;
-
-         //Handle Wayland events such as sending data as the source client.
-         wayland_client_update();
       }
 finished:
       p_more = p_more_save;
@@ -4484,12 +4440,66 @@ open_pty(int* pty_master_fd, int* pty_slave_fd, Byte** name1, Byte** name2) {
    }
 }
 
-pub void
-may_core_dump(void) {
-   if (deadlySignalS != 0) {
-      mch_signal(deadlySignalS, SIG_DFL);
-      kill(getpid(), deadlySignalS);   // Die using the signal we caught
+//Add open channels to the poll struct.
+//Return the adjusted struct index.
+pub int
+channel_poll_setup(int nfd_in, OUT Arr(PollFd) fds_in, OUT int* towait) {
+    int nfd = nfd_in;
+    PollFd* fds = fds_in;
+    ChannelFdKind part;
+
+    for (Channel* channel = firstChannelP; channel; channel = channel->next) {
+      for (part = PART_SOCK; part < PART_IN; ++part) {
+         ChannelFd* ch_part = &channel->fds[part];
+
+         if (ch_part->fd != INVALID_FD) {
+            if (channel->ch_keep_open) {
+               //For unknown reason poll() returns immediately for a
+               //keep-open channel. Instead of adding it to the fds, add
+               //a short timeout and check, like polling.
+               if (*towait < 0 || *towait > KEEP_OPEN_TIME)
+                  *towait = KEEP_OPEN_TIME;
+            } else {
+               ch_part->pollIdx = nfd;
+               fds[nfd].fd = ch_part->fd;
+               fds[nfd].events = POLLIN;
+               nfd++;
+            }
+         } else channel->fds[part].pollIdx = -1;
+      }
    }
+
+   return fillIntake(nfd, fds);
+}
+
+pub int
+chPollCheck(int ret_in, Arr(PollFd) fds) {
+   int ret = ret_in;
+   ChannelFdKind part;
+
+   for (Channel* channel = firstChannelP; channel; channel = channel->next) {
+      int idx;
+      for (part = PART_SOCK; part < PART_IN; ++part) {
+         idx = channel->fds[part].pollIdx;
+
+         if (ret > 0 && idx != -1 && (fds[idx].revents & POLLIN) != 0) {
+            channel_read(channel, part, "chPollCheck");
+            --ret;
+         } else if (channel->fds[part].fd != INVALID_FD && channel->ch_keep_open) {
+            // polling a keep-open channel
+            channel_read(channel, part, "channel_poll_check_keep_open");
+         }
+      }
+
+      ChannelFd* intake = &channel->fds[PART_IN];
+      idx = intake->pollIdx;
+      if (ret > 0 && idx != -1 && (fds[idx].revents & POLLOUT) != 0) {
+         channel_write_input(channel);
+         --ret;
+      }
+   }
+
+   return ret;
 }
 
 //}}}
@@ -4539,8 +4549,8 @@ catch_sigpwr(int) {
 //(partly from Elvis).
 //NOTE: Avoid unsafe functions, such as allocating memory, they can result in a deadlock.
 private void
-deathtrap(int) {
-   static int   entered = 0;       // count the number of times we got here.
+deathtrap(int sigarg) {
+   static int entered = 0;       // count the number of times we got here.
                 // Note: when memory has been corrupted this may get an arbitrary value!
    int      i;
 
@@ -4557,7 +4567,7 @@ deathtrap(int) {
 
    //While in mch_delay() we go to cooked mode to allow a CTRL-C to interrupt us. But in cooked 
    //mode we may also get SIGQUIT, e.g., when pressing CTRL-\, but we don't want Eegl to exit then.
-   if (inMchDelayS && sigarg == SIGQUIT)
+   if ((inMchDelayS && sigarg == SIGQUIT) != 0)
       return;
 
    // When SIGHUP, SIGQUIT, etc. are blocked: postpone the effect and return
@@ -4590,26 +4600,25 @@ deathtrap(int) {
    // This is for opening gdb the moment Eegl crashes.
    // You need to manually adjust the file name and Eegl executable name.
    // Suggested by SungHyun Nam.
-    {
+   {
 # define EE_GDB_FILE "/tmp/eegdb"
 # define EE_NAME PREFIX "/bin/eegl"
    FILE *fp = fopen(VI_GDB_FILE, "w");
-   if (fp)
-   {
-       fprintf(fp,
-          "file %s\n"
-          "attach %d\n"
-          "set height 1000\n"
-          "bt full\n"
-          , EE_NAME, getpid());
-       fclose(fp);
-       system("xterm -e gdb -x "EE_GDB_FILE);
-       unlink(EE_GDB_FILE);
+   if (fp) {
+      fprintf(fp,
+         "file %s\n"
+         "attach %d\n"
+         "set height 1000\n"
+         "bt full\n"
+         , EE_NAME, getpid());
+      fclose(fp);
+      system("xterm -e gdb -x "EE_GDB_FILE);
+      unlink(EE_GDB_FILE);
    }
    }
 #endif
 
-   // try to find the name of this signal
+   //try to find the name of this signal
    for (i = 0; signalInfos[i].sig != -1; i++) {
       if (sigarg == signalInfos[i].sig)
          break;
@@ -4631,16 +4640,16 @@ deathtrap(int) {
       exit(7);
    }
    if (entered == 2) {
-      // No translation, it may call malloc().
+      //No translation, it may call malloc().
       OUT_STR("Eegl: Double signal, exiting\n");
       out_flush();
       exitEegl(1);
    }
 
-   // No translation, it may call malloc().
+   //No translation, it may call malloc().
    sprintf((char *)IObuff, "Eegl: Caught deadly signal %s\r\n", signalInfos[i].name);
 
-   // Preserve files and exit.  This sets the really_exiting flag to prevent calling free().
+   //Preserve files and exit. This sets the really_exiting flag to prevent calling free().
    preserve_exit();
 
    // NOTREACHED
@@ -4655,8 +4664,7 @@ after_sigcont(void) {
    did_check_timestamps = false;
 }
 
-
-//With multi-threading, suspending might not work immediately.  Catch the
+//With multi-threading, suspending might not work immediately. Catch the
 //SIGCONT signal, which will be used as an indication whether the suspending
 //has been done or not.
 //
@@ -4749,6 +4757,15 @@ eeHandleSignal(int sig) {
     }
     return false;
 }
+
+pub void
+may_core_dump(void) {
+   if (deadlySignalS != 0) {
+      mch_signal(deadlySignalS, SIG_DFL);
+      kill(getpid(), deadlySignalS);   // Die using the signal we caught
+   }
+}
+
 //}}}
 //{{{operating system interaction
 
@@ -6333,37 +6350,6 @@ prompt_text(void) {
 }
 
 
-//Prepare for prompt mode: Make sure the last line has the prompt text.
-//Move the cursor to this line.
-pub void
-init_prompt(int cmdchar_todo) {
-   CS prompt = prompt_text();
-   curPor->cursor.lnum = curBook->mem.lineCount;
-   CS text = ml_get_curline();
-   if (STRNCMP(text, prompt, STRLEN(prompt)) != 0) {
-      // prompt is missing, insert it or append a line with it
-      if (*text == ZERO)
-         ml_replace(curBook->mem.lineCount, prompt, true);
-      else
-         ml_append(curBook->mem.lineCount, prompt, 0, false);
-      curPor->cursor.lnum = curBook->mem.lineCount;
-      coladvance((ColNr)MAXCOL);
-      changed_bytes(curBook->mem.lineCount, 0);
-   }
-
-   // Insert always starts after the prompt, allow editing text after it.
-   if (insertStartOrigG.lnum != curPor->cursor.lnum
-               || insertStartOrigG.col != (int)STRLEN(prompt))
-      set_insstart(curPor->cursor.lnum, (int)STRLEN(prompt));
-
-   if (cmdchar_todo == 'A')
-      coladvance((ColNr)MAXCOL);
-   if (curPor->cursor.col < (int)STRLEN(prompt))
-      curPor->cursor.col = (int)STRLEN(prompt);
-   // Make sure the cursor is in a valid position.
-   check_cursor();
-}
-
 // Return true if the cursor is in the editable position of the prompt line.
 pub int
 prompt_curpos_editable(void) {
@@ -6727,7 +6713,7 @@ ch_log_literal(CS lead, Channel* ch, ChannelFdKind part, OUT Text builder) {
 
 pub void
 f_ch_log(Arr(Var) argvars, Var*) {
-   Channel	*channel = NULL;
+   Channel   *channel = NULL;
    CS msg = tv_get_string(&argvars[0]);
    if (argvars[1].tag != VAR_UNKNOWN)
       channel = get_channel_arg(&argvars[1], false, false, 0);

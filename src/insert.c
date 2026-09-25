@@ -340,6 +340,37 @@ char_before_cursor(void) {
    return mb_ptr2char(p - prev_len);
 }
 
+//Prepare for prompt mode: Make sure the last line has the prompt text.
+//Move the cursor to this line.
+pub void
+init_prompt(int cmdchar_todo) {
+   CS prompt = prompt_text();
+   curPor->cursor.lnum = curBook->mem.lineCount;
+   CS text = ml_get_curline();
+   if (STRNCMP(text, prompt, STRLEN(prompt)) != 0) {
+      // prompt is missing, insert it or append a line with it
+      if (*text == ZERO)
+         ml_replace(curBook->mem.lineCount, prompt, true);
+      else
+         ml_append(curBook->mem.lineCount, prompt, 0, false);
+      curPor->cursor.lnum = curBook->mem.lineCount;
+      coladvance((ColNr)MAXCOL);
+      changed_bytes(curBook->mem.lineCount, 0);
+   }
+
+   // Insert always starts after the prompt, allow editing text after it.
+   if (insertStartOrigG.lnum != curPor->cursor.lnum
+               || insertStartOrigG.col != (int)STRLEN(prompt))
+      set_insstart(curPor->cursor.lnum, (int)STRLEN(prompt));
+
+   if (cmdchar_todo == 'A')
+      coladvance((ColNr)MAXCOL);
+   if (curPor->cursor.col < (int)STRLEN(prompt))
+      curPor->cursor.col = (int)STRLEN(prompt);
+   // Make sure the cursor is in a valid position.
+   check_cursor();
+}
+
 //edit(): Start inserting text.
 //
 //"commChar" can be:

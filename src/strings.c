@@ -8,13 +8,14 @@
 #include <strings.h>
 #ifdef FREESTANDING_STRINGS
 #include "base.h"
-#include "h/strings.h"
 #define alloc malloc
 #define eeRealloc realloc
 #define eeglFree(a) if (a) { free(a); }
 #else
 #include "eegl.h"
+#include "h/memory.h"
 #endif
+#include "h/strings.h"
 
 #include <wchar.h>   //for towupper() and towlower()
 #include <wctype.h>  //for towlower()
@@ -23,6 +24,23 @@
 #include <sys/stat.h>
 #include <time.h> // for time()
 
+//{{{types
+
+//An entry such as {0x41,0x5a,1,32} means that Unicode characters in the
+//range from 0x41 to 0x5a inclusive, stepping by 1, are changed to folded/upper/lower by adding 32.
+typedef struct {
+   Unt rangeStart;
+   Unt rangeEnd;
+   int step;
+   int offset;
+} ConvertStruct;
+
+typedef struct {
+   long first;
+   long last;
+} Interval;
+
+//}}}
 //{{{@@forward declarations
 private Unt calculateChunkSize(Unt allocSize);
 private int eeIsBDigit(int c);
@@ -1045,15 +1063,6 @@ utf_strnicmp(CS s1, CS s2, Unt n1, Unt n2){
 
 //The following tables are built by ../runtime/tools/unicode.vim.
 //They must be in numeric order, because we use binary search.
-//An entry such as {0x41,0x5a,1,32} means that Unicode characters in the
-//range from 0x41 to 0x5a inclusive, stepping by 1, are changed to folded/upper/lower by adding 32.
-typedef struct {
-   Unt rangeStart;
-   Unt rangeEnd;
-   int step;
-   int offset;
-} ConvertStruct;
-
 private ConvertStruct foldCase[] = {
    {0x41,0x5a,1,32},
    {0xb5,0xb5,-1,775},
@@ -1323,11 +1332,6 @@ pub int
 caseInsensitiveCompareNChars(CS s1, CS s2, Unt nn) {
    return utf_strnicmp(s1, s2, nn, nn);
 }
-
-typedef struct {
-   long first;
-   long last;
-} Interval;
 
 // Return true if "c" is in the sorted "table[size / sizeof(Interval)]".
 private Boole

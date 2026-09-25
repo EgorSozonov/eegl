@@ -5727,13 +5727,13 @@ EXTERN int   undo_off INIT(= FALSE);       // undo switched off for now
 EXTERN int   global_busy INIT(= 0);       // set when :global is executing
 EXTERN int   listcmd_busy INIT(= FALSE); // set when :argdo, :windo or :bufdo is executing
 EXTERN Byte   last_mode[MODE_MAX_LENGTH] INIT(= "n"); // for ModeChanged event
-EXTERN CS lastCommlineG INIT(= E); // last command line (for ":")
-EXTERN CS repeatCommlineG INIT(= E); // command line for "."
-EXTERN CS newLastCommlineG INIT(= E);   // new value for lastCommlineG
-EXTERN CS autocmd_fname INIT(= E); // fname for <afile> on commline
+EXTERN CS lastCommlineG INIT(= S""); // last command line (for ":")
+EXTERN CS repeatCommlineG INIT(= S""); // command line for "."
+EXTERN CS newLastCommlineG INIT(= S"");   // new value for lastCommlineG
+EXTERN CS autocmd_fname INIT(= S""); // fname for <afile> on commline
 EXTERN int   autocmd_fname_full;        // autocmd_fname is full path
 EXTERN int   autocmd_bufnr INIT(= 0);     // fnum for <abuf> on commline
-EXTERN CS autocmd_match INIT(= E); // name for <amatch> on commline
+EXTERN CS autocmd_match INIT(= S""); // name for <amatch> on commline
 
 EXTERN int   did_cursorhold INIT(= TRUE);  // set when CursorHold triggered
 EXTERN Pos   last_cursormoved         // for CursorMoved event
@@ -8766,6 +8766,8 @@ long elapsed(TimeVal* start_tv);
 typedef struct dirent DirEntry;
 
 #define FNAME_ILLEGAL "\"*?><|" // illegal characters in a file name
+
+void __attribute__((noinline)) __bp(); // breakpoints for debugger
 #define _bp(cond) if (cond) {__bp();}
 #define tConst(literal) (Text){.c = (CS)literal, .len = sizeof(literal) - 1}
 

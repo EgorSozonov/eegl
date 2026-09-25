@@ -27,11 +27,10 @@ int channel_send(
    Channel* channel,
    ChannelFdKind part,
    CS buf_arg,
-   int     len_arg,
+   int len_arg,
    char* fun
 );
-int channel_select_setup(OUT LPollFd* pollFds, TimeVal* tv, TimeVal** tvp);
-int chCheckPollResult(int ret_in, OUT LPollFd* fds);
+int chCheckPollResult(int ret_in, OUT Arr(PollFd) fds);
 int channel_parse_messages(void);
 int channel_any_readahead(void);
 int set_ref_in_channel(int copyID);
@@ -61,11 +60,13 @@ SigHandler mch_signal(int sig, SigHandler func);
 void mch_early_init(void);
 long mch_get_pid(void);
 int mch_process_running(long pid);
-void may_core_dump(void);
+int channel_poll_setup(int nfd_in, OUT Arr(PollFd) fds_in, OUT int* towait);
+int chPollCheck(int ret_in, Arr(PollFd) fds);
 void sig_winch(int);
 void sig_tstp(int);
 void reset_signals(void);
 int eeHandleSignal(int sig);
+void may_core_dump(void);
 int mch_get_uname(uid_t uid, CS s, int len);
 void mch_get_host_name(CS s, int len);
 int chJobGetCopyId(Job* job);
@@ -95,7 +96,6 @@ int job_stop(Job* job, Arr(Var) argvars, CS type);
 void invoke_prompt_callback(void);
 int invoke_prompt_interrupt(void);
 CS prompt_text(void);
-void init_prompt(int cmdchar_todo);
 int prompt_curpos_editable(void);
 void f_prompt_setcallback(Arr(Var) argvars, Var*);
 void f_prompt_setinterrupt(Arr(Var) argvars, Var*);

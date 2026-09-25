@@ -4,6 +4,11 @@
 //## memory.c: low-level functions for managing memory, including the text
 
 #include "eegl.h"
+#include "h/memory.h"
+#include "h/message.h"
+#include "h/motor.types.h"
+#include "h/motor.h"
+#include "h/term.h"
 //#include "h/input.public.h"
 
 #include <sys/resource.h>
@@ -12,17 +17,6 @@
 int fstat(int fd, struct stat* statbuf); // from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 int lstat(const char* restrict, struct stat* restrict);
-
-//when a block with a negative number is flushed to the file, it gets
-//a positive number. Because the reference to the block is still the negative
-//number, we remember the translation to the new positive number in the
-//double linked trans lists. The structure is the same as the hash lists.
-typedef struct {
-   MfHashItem nt_hashitem;      // header for hash table and key
-#define nt_old_bnum nt_hashitem.key   // old, negative, number
-
-   BlockId   nt_new_bnum;      // new, positive, number
-} NrTranslation;
 
 //{{{types
 
@@ -34,6 +28,55 @@ struct MfHashItem {
    MfHashItem* prev;
    BlockId key;
 };
+
+//when a block with a negative number is flushed to the file, it gets
+//a positive number. Because the reference to the block is still the negative
+//number, we remember the translation to the new positive number in the
+//double linked trans lists. The structure is the same as the hash lists.
+typedef struct {
+   MfHashItem nt_hashitem;      // header for hash table and key
+#define nt_old_bnum nt_hashitem.key   // old, negative, number
+   BlockId   nt_new_bnum;      // new, positive, number
+} NrTranslation;
+
+#define B0_FNAME_SIZE_ORG     900   // what it was in older versions
+#define B0_FNAME_SIZE_NOCRYPT 898   // 2 bytes used for other things
+#define B0_FNAME_SIZE_CRYPT   890   // 10 bytes used for other things
+#define B0_UNAME_SIZE          40
+#define B0_HNAME_SIZE          40
+
+//Block 0 holds all info about the swap file.
+//
+//NOTE: DEFINITION OF BLOCK 0 SHOULD NOT CHANGE! It would make all existing swap files unusable!
+//
+//If size of block0 changes anyway, adjust MIN_SWAP_PAGE_SIZE in eegl.h!!
+//
+//This block is built up of single bytes, to make it portable across
+//different machines. b0_magic_* is used to check the byte order and size of
+//variables, because the rest of the swap file is not portable.
+typedef struct {
+   Byte   b0_id[2];   // id for block 0: BLOCK0_ID0 and BLOCK0_ID1,
+            // BLOCK0_ID1_C0, BLOCK0_ID1_C1, etc.
+   Byte   b0_version[10];   // Eegl version string
+   Byte   b0_page_size[4];// number of bytes per page
+   Byte   b0_mtime[4];   // last modification time of file
+   Byte   b0_ino[4];   // inode of b0_fname
+   Byte   b0_pid[4];   // process id of creator (or 0)
+   Byte   b0_uname[B0_UNAME_SIZE]; // name of user (uid if no name)
+   Byte   b0_hname[B0_HNAME_SIZE]; // host name (if it has a name)
+   Byte   b0_fname[B0_FNAME_SIZE_ORG]; // name of file being edited
+   Long   b0_magic_long;   // check for byte order of long
+   int    b0_magic_int;   // check for byte order of int
+   Short  b0_magic_short;   // check for byte order of short
+   Byte   b0_magic_char;   // check for last char
+} Block0;
+
+// argument for updateBlock0()
+typedef enum {
+   UB_FNAME = 0, // update timestamp and filename
+   UB_SAME_DIR,  // update the B0_SAME_DIR flag
+   UB_CRYPT      // update crypt key
+} UpdBlock0;
 
 //for each (previously) used block in the memfile there is one block header.
 //
@@ -75,10 +118,10 @@ pub typedef enum {
    MF_DIRTY_YES_NOSYNC,   // there are dirty blocks, do not sync yet
 } MfDirty;
 
-typedef struct ml_chunksize {
+struct MemChunkSize {
    int mlcs_numlines;
    Long mlcs_totalsize;
-} MemChunkSize;
+};
 
 pub
 struct MemFile {
@@ -103,6 +146,16 @@ struct MemFile {
    Book* book;      // book this memfile is for
 };
 
+typedef enum {
+   SEA_CHOICE_NONE = 0,
+   SEA_CHOICE_READONLY = 1,
+   SEA_CHOICE_EDIT = 2,
+   SEA_CHOICE_RECOVER = 3,
+   SEA_CHOICE_DELETE = 4,
+   SEA_CHOICE_QUIT = 5,
+   SEA_CHOICE_ABORT = 6
+} SeaChoice;
+
 //}}}
 //{{{@@forward declarations
 private void mem_pre_alloc_s(Unt *sizep);
@@ -111,7 +164,7 @@ private void mem_post_alloc(void **pp, Unt size);
 private void mem_pre_free(void **pp);
 private void exit_scroll(void);
 private int ml_check_b0_id(Block0* b0p);
-private void updateBlock0(Book *book, upd_block0_T what);
+private void updateBlock0(Book *book, UpdBlock0 what);
 private void set_b0_fname(Block0 *b0p, Book *book);
 private void set_b0_dir_flag(Block0* b0p, Book* book);
 private int swapfile_process_running(Block0 *b0p, CS swap_fname);
@@ -877,7 +930,6 @@ struct InfoPtr {
 // are to be loaded into memory.
 private int dontReleaseBlocksS = false;
 
-typedef struct Block0 Block0;      // contents of the first block
 typedef struct PointerBlock   PointerBlock; // contents of a pointer block
 typedef struct DataBlock   DataBlock;    // contents of a data block
 typedef struct PtrEntry   PtrEntry;         // block/line-count pair
@@ -943,11 +995,6 @@ struct DataBlock {
 #define INDEX_SIZE  (sizeof(unsigned))       // size of one c entry
 #define HEADER_SIZE (offsetof(DataBlock, c))  // size of data block header
 
-#define B0_FNAME_SIZE_ORG   900   // what it was in older versions
-#define B0_FNAME_SIZE_NOCRYPT   898   // 2 bytes used for other things
-#define B0_FNAME_SIZE_CRYPT   890   // 10 bytes used for other things
-#define B0_UNAME_SIZE      40
-#define B0_HNAME_SIZE      40
 // Restrict the numbers to 32 bits, otherwise most compilers will complain.
 // This won't detect a 64 bit machine that only swaps a byte in the top 32
 // bits, but that is crazy anyway.
@@ -962,32 +1009,6 @@ struct DataBlock {
 //The maximal block size is arbitrary.
 #define MIN_SWAP_PAGE_SIZE 1048
 #define MAX_SWAP_PAGE_SIZE 50000
-
-//Block 0 holds all info about the swap file.
-//
-//NOTE: DEFINITION OF BLOCK 0 SHOULD NOT CHANGE! It would make all existing swap files unusable!
-//
-//If size of block0 changes anyway, adjust MIN_SWAP_PAGE_SIZE in eegl.h!!
-//
-//This block is built up of single bytes, to make it portable across
-//different machines. b0_magic_* is used to check the byte order and size of
-//variables, because the rest of the swap file is not portable.
-struct Block0 {
-   Byte   b0_id[2];   // id for block 0: BLOCK0_ID0 and BLOCK0_ID1,
-            // BLOCK0_ID1_C0, BLOCK0_ID1_C1, etc.
-   Byte   b0_version[10];   // Eegl version string
-   Byte   b0_page_size[4];// number of bytes per page
-   Byte   b0_mtime[4];   // last modification time of file
-   Byte   b0_ino[4];   // inode of b0_fname
-   Byte   b0_pid[4];   // process id of creator (or 0)
-   Byte   b0_uname[B0_UNAME_SIZE]; // name of user (uid if no name)
-   Byte   b0_hname[B0_HNAME_SIZE]; // host name (if it has a name)
-   Byte   b0_fname[B0_FNAME_SIZE_ORG]; // name of file being edited
-   Long   b0_magic_long;   // check for byte order of long
-   int    b0_magic_int;   // check for byte order of int
-   Short  b0_magic_short;   // check for byte order of short
-   Byte   b0_magic_char;   // check for last char
-};
 
 // Note: b0_dirty and b0_flags are put at the end of the file name.
 #define B0_DIRTY   0x55
@@ -1012,14 +1033,7 @@ private LineNr   lowest_marked = 0;
 #define ML_FLUSH     0x02       // flush locked block
 #define ML_SIMPLE(x) ((x) & 0x10)  // DEL, INS or FIND
 
-// argument for updateBlock0()
-typedef enum {
-   UB_FNAME = 0, // update timestamp and filename
-   UB_SAME_DIR,  // update the B0_SAME_DIR flag
-   UB_CRYPT      // update crypt key
-} upd_block0_T;
-
-private void updateBlock0(Book *book, upd_block0_T what);
+private void updateBlock0(Book *book, UpdBlock0 what);
 private void set_b0_fname(Block0 *, Book *book);
 private void set_b0_dir_flag(Block0 *b0p, Book *book);
 private Tyme swapfile_info(CS);
@@ -1325,7 +1339,7 @@ ml_check_b0_id(Block0* b0p) {
 
 // Update the timestamp or the B0_SAME_DIR flag of the .swp file.
 private void
-updateBlock0(Book *book, upd_block0_T what) {
+updateBlock0(Book *book, UpdBlock0 what) {
    MemFile* mfp = book->mem.mfile;
    if (!mfp)
       return;
@@ -3616,16 +3630,6 @@ attention_message(Book* book, CS swapName) {
    commlineRowG = msgRowG;
    --no_wait_return;
 }
-
-typedef enum {
-   SEA_CHOICE_NONE = 0,
-   SEA_CHOICE_READONLY = 1,
-   SEA_CHOICE_EDIT = 2,
-   SEA_CHOICE_RECOVER = 3,
-   SEA_CHOICE_DELETE = 4,
-   SEA_CHOICE_QUIT = 5,
-   SEA_CHOICE_ABORT = 6
-} SeaChoice;
 
 //Trigger the SwapExists autocommands. Return a value for equivalent to do_dialog().
 private SeaChoice 

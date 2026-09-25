@@ -2,6 +2,7 @@ GEN_TYPE_L(PollFd);
 typedef struct {
    int fd;       // socket/stdin/stdout/stderr, -1 if not used
 
+   int pollIdx;   // used by channel_poll_setup()
    ChannelMode ch_mode;
    JobIoMode ch_io;
    int ch_timeout;   // request timeout in msec
@@ -62,3 +63,4 @@ struct Channel {
    Unt refCount;   // reference count
    int copyId;
 };
+#define MAX_OPEN_CHANNELS 16

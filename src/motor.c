@@ -7,8 +7,6 @@
 #include "h/data.types.h"
 #include "h/data.h"
 #include "h/book.h"
-#include "h/input.types.h"
-#include "h/input.h"
 #include "h/channel.types.h"
 #include "h/channel.h"
 #include "h/memory.h"
@@ -20,6 +18,8 @@
 #include "h/fileio.h"
 #include "h/hilite.types.h"
 #include "h/hilite.h"
+#include "h/input.types.h"
+#include "h/input.h"
 #include "h/juggle.h"
 #include "h/location.types.h"
 #include "h/location.h"
@@ -344,24 +344,25 @@ private void set_progpath(CS argv0);
 // Various parameters passed between main() and other functions.
 private MainParams paramsP;
 
+
 private void* virtualBuf = null;      // buffer for setvbuf()
 
 private CS start_dir = NULL;   // current working dir on startup
 
-#ifndef NO_EEGL_MAIN
-private void usage(void);
-private void parseCommandName(MainParams*);
-private void scanCommandLineArgs(MainParams*);
-private void check_tty(MainParams *);
-private void readStdin(void);
-private void createPortals(MainParams *);
-private void editBuffers(MainParams*, CS );
-private void executePreCommands(MainParams*);
-private void exeCommands(MainParams*);
-private void sourceStartupScripts(MainParams*);
-private void check_swap_exists_action(void);
-private void set_progpath(CS argv0);
-#endif
+//#ifndef NO_EEGL_MAIN
+//private void usage(void);
+//private void parseCommandName(MainParams*);
+//private void scanCommandLineArgs(MainParams*);
+//private void check_tty(MainParams *);
+//private void readStdin(void);
+//private void createPortals(MainParams *);
+//private void editBuffers(MainParams*, CS );
+//private void executePreCommands(MainParams*);
+//private void exeCommands(MainParams*);
+//private void sourceStartupScripts(MainParams*);
+//private void check_swap_exists_action(void);
+//private void set_progpath(CS argv0);
+//#endif
 
 // Different types of error messages.
 private CS main_errors[] = {
@@ -1038,8 +1039,8 @@ mainLoop(Boole inCommPort) {  // true when working in the command-line window
    currOperatorG = operPrev;
 }
 
-// Exit properly. This is the only way to exit Eegl after startup has succeeded. We are certain 
-// to exit here, no way to abort it.
+//Exit properly. This is the only way to exit Eegl after startup has succeeded. We are certain 
+//to exit here, no way to abort it.
 pub void
 exitEegl(int exitval) {
    isExitingG = true;
@@ -1659,7 +1660,7 @@ createPortals(MainParams* par) {
       msg_scroll = true;      // scroll message up
       ml_recover(true);
       if (curBook->mem.mfile == NULL) // failed
-          exitEegl(1);
+         exitEegl(1);
    } else {
       //Open a buffer for portals that don't have one yet. Commands in the .vimrc might have loaded 
       //a file or split the window. Watch out for autocommands that delete a portal. Don't execute 
@@ -1674,17 +1675,17 @@ createPortals(MainParams* par) {
             else
                curPor = firstPor;
          } ei (par->portalLayout == WIN_TABS) {
-            if (curtab->next == NULL)
+            if (!curtab->next)
                break;
             gotoTabById(0);
          } else {
-            if (curPor->next == NULL)
+            if (!curPor->next)
                break;
             curPor = curPor->next;
          }
          dorewind = false;
          curBook = curPor->book;
-         if (curBook->mem.mfile == NULL) {
+         if (!curBook->mem.mfile) {
             if (foldLevelStart >= 0)
                curPor->o.foldLevel = foldLevelStart;
             // When getting the ATTENTION prompt here, use a dialog
@@ -1730,8 +1731,8 @@ createPortals(MainParams* par) {
 //already opened the portals.
 private void
 editBuffers(MainParams* par, CS cwd) {        // current working dir
-   int      arg_idx;      // index in argument list
-   int      advance = true;
+   int arg_idx;      // index in argument list
+   int advance = true;
 
    //Don't execute Win/Buf Enter/Leave autocommands here
    ++autocmd_no_enter;
@@ -1756,7 +1757,7 @@ editBuffers(MainParams* par, CS cwd) {        // current working dir
       }
       if (advance) {
          if (par->portalLayout == WIN_TABS) {
-            if (curtab->next == NULL)   // just checking
+            if (!curtab->next)   // just checking
                break;
             gotoTabById(0);
          } else {
@@ -1767,12 +1768,12 @@ editBuffers(MainParams* par, CS cwd) {        // current working dir
       }
       advance = true;
 
-      // Only open the file if there is no file in this window yet (that can
-      // happen when .vimrc contains ":sall").
+      //Only open the file if there is no file in this window yet (that can
+      //happen when .vimrc contains ":sall").
       if (curBook == firstPor->book || curBook->fullFileName == NULL) {
          curPor->argListInd = arg_idx;
-         // Edit file from arg list, if there is one.  When "Quit" selected
-         // at the ATTENTION prompt close the window.
+         //Edit file from arg list, if there is one.  When "Quit" selected
+         //at the ATTENTION prompt close the window.
          swap_exists_did_quit = false;
          (void)startEditingFile(0, 
             arg_idx < GARGCOUNT ? alist_name(&GARGLIST[arg_idx]) : NULL,
@@ -2058,3 +2059,5 @@ set_progpath(CS argv0) {
 }
 
 #endif // NO_EEGL_MAIN
+
+

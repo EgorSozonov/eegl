@@ -1,3 +1,4 @@
+void init_prompt(int cmdchar_todo);
 int edit(Unt commChar, int startln, long count);
 void edit_putchar(int c, Boole needDoHilite);
 void set_insstart(LineNr lnum, int col);
