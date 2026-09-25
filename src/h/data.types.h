@@ -4,6 +4,15 @@
    Unt cap;\
    Arena* a;\
 } L##T;
+#define getRefCount(a) _Generic((a),\
+   Job*: _getRefCount\
+)(a)
+#define incRefCount(a) _Generic((a),\
+   Job*: _incRefCount\
+)(a)
+#define decRefCount(a) _Generic((a),\
+   Job*: _decRefCount\
+)(a)
 #define GEN_add_L(acc, T) p##acc void add_L##T (L##T * l, T newItem) {\
    if (l->len < l->cap) {\
       l->c[l->len] = newItem;\
@@ -36,12 +45,3 @@ p##acc L##T * create_L##T (int initCapacity, Arena* a) {\
       ),\
    CS: eq_CString_CString\
 )(a, b)
-#define getRefCount(a) _Generic((a),\
-   Job*: _getRefCount\
-)(a)
-#define incRefCount(a) _Generic((a),\
-   Job*: _incRefCount\
-)(a)
-#define decRefCount(a) _Generic((a),\
-   Job*: _decRefCount\
-)(a)

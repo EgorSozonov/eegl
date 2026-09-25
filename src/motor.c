@@ -95,7 +95,7 @@ list_version(void) {
             s = S", ";
             msg_outnum((long)first);
             if (first != included_patches[i]) {
-               msg_puts((CS)"-");
+               msg_puts(S"-");
                msg_outnum((long)included_patches[i]);
             }
             first = -1;
@@ -1314,12 +1314,12 @@ parseCommandName(MainParams* par) {
 //{{{ Scan the command line arguments.
 private void
 scanCommandLineArgs(MainParams *par) {
-   int      argc = par->argc;
-   char   **argv = par->argv;
-   int      argv_idx;      // index in argv[n][]
-   int      had_minmin = false;   // found "--" argument
-   int      want_argument;      // option argument with argument
-   int      c;
+   int argc = par->argc;
+   char** argv = par->argv;
+   int argv_idx;      // index in argv[n][]
+   int had_minmin = false;   // found "--" argument
+   int want_argument;      // option argument with argument
+   int c;
    CS text = NULL;
 
    --argc;
@@ -1519,6 +1519,7 @@ scanCommandLineArgs(MainParams *par) {
                break;
             }
             // FALLTHROUGH
+         case 'P':      // "-P {dir}" project mode at dir
          case 'S':      // "-S {file}" execute Vimscript
          case 'i':      // "-i {eeglinfo}" use for eeglinfo
          case 'T':      // "-T {terminal}" terminal name
@@ -1531,7 +1532,7 @@ scanCommandLineArgs(MainParams *par) {
             mainerr(ME_UNKNOWN_OPTION, (CS)argv[0]);
          }
 
-         // Handle option arguments with argument.
+         //Handle option arguments with argument.
          if (want_argument) {
             // Check for garbage immediately after the option letter.
             if (argv[0][argv_idx] != ZERO)
@@ -1568,6 +1569,10 @@ scanCommandLineArgs(MainParams *par) {
                } else
                   par->commands[par->n_commands++] = (CS)argv[0];
                break;
+               
+            case 'P':   // "-P {dir}" project mode at dir
+               projectDirG = (CS)argv[0];
+               break;
 
             case '-':
                if (argv[-1][2] == 'c') {
@@ -1590,7 +1595,7 @@ scanCommandLineArgs(MainParams *par) {
                break;
 
             case 's':   // "-s {scriptin}" read from script file
-               if (scriptin[0] != NULL) {
+               if (scriptin[0]) {
 scripterror:
                   mch_errmsg(_("Attempt to open script file again: \""));
                   mch_errmsg(argv[-1]);
@@ -1637,9 +1642,8 @@ scripterror:
 
             }
          }
-      }
+      } else {
       // File name argument.
-      else {
          argv_idx = -1;       // skip to next argument
 
          // Check for only one type of editing.
@@ -2566,10 +2570,10 @@ put_view(
       if (bookIsHelp(wp->book)) {
          CS curtag = S"";
 
-         // A help book needs some options to be set.
-         // First, create a new empty book with "buftype=help".
-         // Then ":help" will re-use both the book and the portal and set the options, even when
-         // "options" is not in 'sessionoptions'.
+         //A help book needs some options to be set.
+         //First, create a new empty book with "buftype=help".
+         //Then ":help" will re-use both the book and the portal and set the options, even when
+         //"options" is not in 'sessionoptions'.
          if (0 < wp->tagStackInd && wp->tagStackInd <= wp->tagStackLen)
             curtag = wp->tagStack[wp->tagStackInd - 1].tagname;
 

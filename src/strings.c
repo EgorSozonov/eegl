@@ -3780,7 +3780,7 @@ decodeBase64(OUT CS* ret, Text base64) {
    } ei (decodedFromPaddedLen == 2) {
       (*ret)[j] = base64DecodingTableG[base64.c[i++]] << 2;
       (*ret)[j++] += base64DecodingTableG[base64.c[i++]] >> 4; //6 bits from first byte & 2 from snd
-      (*ret)[j] = ((Byte)(base64DecodingTableG[base64.c[i++]] & 16)) << 4; //4 bits from snd and from third
+      (*ret)[j] = (Byte)((base64DecodingTableG[base64.c[i++]] & 16) << 4); //4 bits from snd and from third
       (*ret)[j] += base64DecodingTableG[base64.c[i++]] << 2;
    }
    return true;

@@ -117,9 +117,7 @@ void update_topline_redraw(void);
 void update_topline(void);
 void update_curswant(void);
 void check_cursor_moved(Portal *po);
-void didChangePortalSettingCurPor(void);
-void didChangePortalSetting(Portal *po);
-void didChangePortalSettingBuf(Book *book);
+void didChangePortalSettingBuf(Book* book);
 void didChangePortalSettingAll(void);
 void set_topline(Portal* po, LineNr lnum);
 void changed_cline_bef_curs(void);
@@ -220,63 +218,6 @@ void c_map(Invocation* invo);
 void c_unmap(Invocation* invo);
 void c_mapclear(Invocation* invo);
 void c_abclear(Invocation* invo);
-void copyFoldingState(Portal* wp_from, Portal* wp_to);
-int hasAnyFolding(Portal* po);
-Boole getFolds(LineNr lnum, OUT LineNr *firstp, OUT LineNr *lastp);
-Boole getFoldsPortal(
-   Portal* po,
-   LineNr lnum,
-   LineNr* firstp,
-   LineNr* lastp,
-   int      cache,      // when true: use cached values of portal
-   OUT FoldInfo* infop      // where to store fold info
-);
-int lineFolded(Portal *po, LineNr lnum);
-long foldedCount(Portal* po, LineNr lnum, OUT FoldInfo* infop);
-void closeFold(LineNr lnum, Long count);
-void opFoldRange(
-   LineNr first,
-   LineNr last,
-   Boole opening,   // true to open, false to close
-   Boole recurse,   // true to do it recursively
-   Boole had_visual   // true when Visual selection used
-);
-void openFold(LineNr lnum, Long count);
-void foldOpenCursor(void);
-void newFoldLevel(void);
-void foldCheckClose(void);
-int foldManualAllowed(int create);
-void foldCreate(LineNr start, LineNr end);
-void deleteFold(LineNr start, LineNr end, int recursive, int had_visual);
-void clearFolding(Portal* po);
-void foldUpdate(Portal* po, LineNr top, LineNr bot);
-void foldUpdateAll(Portal* po);
-void normInitFoldForPortal(Portal* newPort);
-int find_wl_entry(Portal* po, LineNr lnum);
-void foldAdjustVisual(void);
-void cloneFoldArrayList(ArrayList* from, ArrayList* to);
-void deleteFoldRecurse(ArrayList *gap);
-void foldMarkAdjust(
-    Portal* po,
-    LineNr line1,
-    LineNr line2,
-    long amount,
-    long amount_after
-);
-CS get_foldtext(
-   Portal* po,
-   LineNr lnum,
-   LineNr lnume,
-   FoldInfo* foldinfo,
-   CS buffer
-);
-void foldMoveRange(ArrayList* gap, LineNr line1, LineNr line2, LineNr dest);
-int put_folds(FILE* fd, Portal* po);
-void f_foldclosed(Arr(Var) argvars, Var* returnVar);
-void f_foldclosedend(Arr(Var) argvars, Var* returnVar);
-void f_foldlevel(Arr(Var) argvars, Var* returnVar);
-void f_foldtext(Arr(Var), Var* returnVar);
-void f_foldtextresult(Arr(Var) argvars, Var* returnVar);
 void init_prompt(int cmdchar_todo);
 int edit(Unt commChar, int startln, long count);
 void edit_putchar(int c, Boole needDoHilite);

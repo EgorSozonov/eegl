@@ -2087,9 +2087,8 @@ eeRegsub_both(
          rsm.sm_maxline = exe.reg_maxline;
          rsm.sm_line_lbr = exe.reg_line_lbr;
 
-         // Although unlikely, it is possible that the expression invokes a
-         // substitute command (it might fail, but still).  Therefore keep
-         // an array of eval results.
+         //Although unlikely, it is possible that the expression invokes a substitute command 
+         //(it might fail, but still). Therefore keep an array of eval results.
          ++nesting;
 
          if (expr) {

@@ -40,11 +40,7 @@ void msg_prt_line(CS s, int list);
 int msg(CS s);
 int verb_msg(CS s);
 int msgDeco(CS s, char flags);
-int msgAndKeep(
-   CS s,
-   char      flags,
-   int      keep)       // true: set msgAfterRedrawG if it doesn't scroll
-;
+int msgAndKeep(CS s, char flags, int keep);
 int smsg0(char const* s, ...);
 int smsgDeco0(char flags, const char *s, ...);
 int smsgDecoKeep0(char flags, const char *s, ...);

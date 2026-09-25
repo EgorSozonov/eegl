@@ -5129,6 +5129,8 @@ typedef sig_atomic_t SigAtomic;
 EXTERN volatile SigAtomic doResizeG INIT(= FALSE);
 EXTERN Unt* tabIndsG INIT(= NULL);
 
+EXTERN CS projectDirG INIT(= null);   //project directory if started in project mode
+
 // Array with size Rows x Columns containing zindex of popups.
 EXTERN Arr(Short) popupMaskG INIT(= NULL);
 EXTERN Arr(Short) popupMaskNextG INIT(= NULL);
