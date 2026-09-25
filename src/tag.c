@@ -20,10 +20,8 @@
 #include "h/hilite.h"
 #include "h/fileio.types.h"
 #include "h/fileio.h"
-#include "h/insert.h"
 #include "h/location.types.h"
 #include "h/location.h"
-#include "h/normal.h"
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/regexp.h"
@@ -33,6 +31,8 @@
 #include "h/tag.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 
 //{{{types
 
@@ -3492,12 +3492,11 @@ cs_usage_msg(csid_e x) {
    (void)showErrFmtMsg(_(e_usage_cscope_str), cs_cmds[(int)x].usage);
 }
 
-enum {
-   EXP_CSCOPE_SUBCMD,  //expand ":cscope" sub-commands
-   EXP_SCSCOPE_SUBCMD, //expand ":scscope" sub-commands
-   EXP_CSCOPE_FIND,    //expand ":cscope find" arguments
-   EXP_CSCOPE_KILL     //expand ":cscope kill" arguments
-} expand_what;
+#define EXP_CSCOPE_SUBCMD  0  //expand ":cscope" sub-commands
+#define EXP_SCSCOPE_SUBCMD 1 //expand ":scscope" sub-commands
+#define EXP_CSCOPE_FIND    2    //expand ":cscope find" arguments
+#define EXP_CSCOPE_KILL    3    //expand ":cscope kill" arguments
+private Unt expandWhatP;
 
 //Function given to expandGeneric() to obtain the cscope command expansion.
 pub CS
@@ -3505,7 +3504,7 @@ get_cscope_name(Expand*, int idx) {
    int current_idx;
    int i;
 
-   switch (expand_what) {
+   switch (expandWhatP) {
    case EXP_CSCOPE_SUBCMD:
       // Complete with sub-commands of ":cscope": add, find, help, kill, reset, show
       return (CS)cs_cmds[idx].name;
@@ -3554,7 +3553,7 @@ set_context_in_cscope_cmd(Expand* xp, CS arg, CommIndex id) {
    // Default: expand subcommands
    xp->context = EXPAND_CSCOPE;
    xp->input = text(arg);
-   expand_what = (id == C_scscope) ? EXP_SCSCOPE_SUBCMD : EXP_CSCOPE_SUBCMD;
+   expandWhatP = (id == C_scscope) ? EXP_SCSCOPE_SUBCMD : EXP_CSCOPE_SUBCMD;
 
    if (*arg == ZERO)
       return;
@@ -3571,9 +3570,9 @@ set_context_in_cscope_cmd(Expand* xp, CS arg, CommIndex id) {
    ei (STRNICMP(arg, "add", p - arg) == 0)
       xp->context = EXPAND_FILES;
    ei (STRNICMP(arg, "kill", p - arg) == 0)
-      expand_what = EXP_CSCOPE_KILL;
+      expandWhatP = EXP_CSCOPE_KILL;
    ei (STRNICMP(arg, "find", p - arg) == 0)
-      expand_what = EXP_CSCOPE_FIND;
+      expandWhatP = EXP_CSCOPE_FIND;
    else
       xp->context = EXPAND_NOTHING;
 }

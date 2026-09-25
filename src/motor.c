@@ -22,14 +22,16 @@
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
-#include "h/normal.h"
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/script.h"
+#include "h/search.h"
 #include "h/strings.h"
 #include "h/tag.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 #include "h/window.h"
 
 #include <sys/stat.h> // for stat, fstat, S_ISDIR
@@ -330,6 +332,7 @@ typedef struct {
 private void list_version(void);
 private void intro_message(int colon);
 private void do_intro_line(int row, CS mesg, int add_version);
+private void init1(OUT MainParams* par);
 private int isSafeNow(void);
 private void earlyArgScan(MainParams* par);
 private int getNumericArg(
@@ -363,7 +366,7 @@ private int ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname);
 private Boole portNeedsToBeSaved(Portal* po);
 private Boole ses_do_frame(Frame* fr);
 private Frame* ses_skipframe(Frame* fr);
-private int createPortals(FILE* fd, Frame* fr);
+private int recreatePortals(FILE* fd, Frame* fr);
 private int portalSizes(FILE* fd, int restore_size, Portal* tab_firstPor);
 private int put_view_curpos(FILE *fd, Portal *wp, char *spaces);
 private int put_view(
@@ -691,7 +694,7 @@ init0(void) {
 }
 
 // Initialization #1 shared by main() and some tests.
-pub void
+private void
 init1(OUT MainParams* par) {
    //Setup to use the current locale (for ctype() and many other things).
    //NOTE: Translated messages with encodings other than latin1 will not work until 
@@ -1729,8 +1732,8 @@ readStdin(void) {
    (void)dup(2);
 }
 
-// Create the requested number of portals and edit buffers in them.
-// Also do recovery if "recoveryModeG" set.
+//Create the requested number of portals and edit books in them.
+//Also do recovery if "recoveryModeG" set.
 private void
 createPortals(MainParams* par) {
    int dorewind;
@@ -2439,7 +2442,7 @@ ses_skipframe(Frame* fr) {
 // split. After the commands the last portal in the frame is the current portal. Return FAIL when 
 // writing the commands to "fd" fails.
 private int
-createPortals(FILE* fd, Frame* fr) {
+recreatePortals(FILE* fd, Frame* fr) {
    if (fr->layout == FR_LEAF)
       return OK;
 
@@ -2467,7 +2470,7 @@ createPortals(FILE* fd, Frame* fr) {
    // Recursively create frames/windows in each window of this column or row.
    frc = ses_skipframe(fr->child);
    while (frc) {
-      createPortals(fd, frc);
+      recreatePortals(fd, frc);
       frc = ses_skipframe(frc->next);
       // Go to next window.
       if (frc && put_line(fd, S"wincmd w") == FAIL)
@@ -2846,7 +2849,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
          || put_eol(fd) == FAIL)
       goto fail;
 
-   // "tabs" is in 'sessionoptions': Similar to createPortals() below, populate the tabs first 
+   // "tabs" is in 'sessionoptions': Similar to recreatePortals() below, populate the tabs first 
    // so later local options won't be copied to the new tabs.
    FOR_ALL_TABS(tp) {
       // Use `bufhidden=wipe` to remove empty "placeholder" books once they are not needed. 
@@ -2906,7 +2909,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
             goto fail;
          if (put_line(fd, S"set splitbelow splitright") == FAIL)
             goto fail;
-         if (createPortals(fd, tab_topframe) == FAIL)
+         if (recreatePortals(fd, tab_topframe) == FAIL)
             goto fail;
          if (put_line(fd, S"let &splitbelow = s:save_splitbelow") == FAIL
                 || put_line(fd, S"let &splitright = s:save_splitright") == FAIL)

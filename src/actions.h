@@ -35,12 +35,12 @@ typedef void (*nv_func_T)(ActionArg *cap);
 #define NV_NCH_ALW  (0x04|NV_NCH) // always get a second char
 #define NV_LANG	    0x08	// second char needs language adjustment
 
-#define NV_SS	    0x10	// may start selection
-#define NV_SSS	    0x20	// may start selection with shift modifier
-#define NV_STS	    0x40	// may stop selection without shift modif.
-#define NV_RL	    0x80	// 'rightleft' modifies command
-#define NV_KEEPREG 0x100	// don't clear regname
-#define NV_NCW	    0x200	// not allowed in command-line window
+#define NV_SS	    0x10	 // may start selection
+#define NV_SSS	    0x20	 // may start selection with shift modifier
+#define NV_STS	    0x40	 // may stop selection without shift modif.
+#define NV_RL	    0x80	 // 'rightleft' modifies command
+#define NV_KEEPREG 0x100 // don't clear regname
+#define NV_NCW	    0x200 // not allowed in command-line window
 
 //Generally speaking, every Normal mode command should either clear any pending operator (with 
 //*clearop*()), or set the motion type variable oap->motion_type.

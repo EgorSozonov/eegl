@@ -4,8 +4,6 @@
 //## strings.c: utility functions for string manipulation 
  
 
-#include <string.h>
-#include <strings.h>
 #ifdef FREESTANDING_STRINGS
 #include "base.h"
 #define alloc malloc
@@ -13,9 +11,13 @@
 #define eeglFree(a) if (a) { free(a); }
 #else
 #include "eegl.h"
+#include "h/data.types.h"
+#include "h/data.h"
 #endif
 #include "h/strings.h"
 
+#include <string.h>
+#include <strings.h>
 #include <wchar.h>   //for towupper() and towlower()
 #include <wctype.h>  //for towlower()
 #include <ctype.h>   //for islower()

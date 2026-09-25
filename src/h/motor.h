@@ -4,7 +4,6 @@ void maybe_intro_message(void);
 void c_intro(Invocation*);
 int libMain(void);
 void init0(void);
-void init1(OUT MainParams* par);
 int appMain(int argc, char** argv);
 int is_not_a_term(void);
 int is_not_a_term_or_gui(void);

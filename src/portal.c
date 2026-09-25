@@ -15,7 +15,6 @@
 #include "h/draw.h"
 #include "h/eval.h"
 #include "h/fileio.h"
-#include "h/insert.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/hilite.types.h"
@@ -23,8 +22,6 @@
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
-#include "h/normal.types.h"
-#include "h/normal.h"
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/search.h"
@@ -33,6 +30,8 @@
 #include "h/tag.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 
 //{{{@@forward declarations
 private Portal * horizNeighbor(Tab* t, Portal* po, Boole left, long count);

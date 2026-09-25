@@ -20,9 +20,7 @@
 #include "h/fileio.h"
 #include "h/hilite.types.h"
 #include "h/hilite.h"
-#include "h/insert.h"
 #include "h/message.h"
-#include "h/normal.h"
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/regexp.h"
@@ -32,6 +30,8 @@
 #include "h/tag.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 
 int fstat(int fd, struct stat* statbuf);
 int stat(const char* restrict path, struct stat* restrict buf);
@@ -493,7 +493,6 @@ private void jumpToFirstMatchAndUpdateDir(
    CS target_dir
 );
 private int vimgrepProcessArgs(Invocation* invo, OUT VimGrepArgs* args);
-private int existing_swapfile(Book* book);
 private int elckGrepFiles(
    LocationStack* stack,
    VimGrepArgs* invos,
@@ -5827,17 +5826,6 @@ vimgrepProcessArgs(Invocation* invo, OUT VimGrepArgs* args) {
    return OK;
 }
 
-// Return true if "book" had an existing swap file, the current swap file does not end in ".swp".
-private int
-existing_swapfile(Book* book) {
-   if (book->mem.mfile != NULL && book->mem.mfile->fName != NULL) {
-      CS fname = book->mem.mfile->fName;
-      Unt len = STRLEN(fname);
-      return fname[len - 1] != 'p' || fname[len - 2] != 'w';
-   }
-   return false;
-}
-
 // Search for a pattern in a list of files and populate the location list with the matches
 private int
 elckGrepFiles(
@@ -5905,13 +5893,13 @@ elckGrepFiles(
             } ei ((commModifierG.cmod_flags & CMOD_HIDE) == 0){
                //When no match was found we don't need to remember the book, wipe it out. If 
                //there was a match and it wasn't the first one or we won't jump there: only unload
-               //the buffer. Ignore 'hidden' here, because it may lead to having too many swap files
+               //the book. Ignore 'hidden' here, because it may lead to having too many swap files
                if (!found_match) {
                   wipeDummyBook(book, dirnameStart);
                   book = NULL;
                } ei (book != *firstMatchBook
-                     || (invos->flags & VGR_NOJUMP)
-                     || existing_swapfile(book)
+                     || (invos->flags & VGR_NOJUMP) != 0
+                     || !bookNoFname(book)
                ) {
                   unloadDummyBook(book, dirnameStart);
                   // Keeping the book, remove the dummy flag.

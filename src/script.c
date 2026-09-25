@@ -16,13 +16,11 @@
 #include "h/fileio.h"
 #include "h/hilite.types.h"
 #include "h/hilite.h"
-#include "h/insert.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
-#include "h/normal.h"
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/regexp.h"
@@ -32,6 +30,8 @@
 #include "h/tag.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 #include "h/window.h"
 
 #define DECLARE_COMMANDS_FLAGS

@@ -286,12 +286,6 @@ first: all
 #C_FLAGS = -g -Wall -Wextra -Wshadow -Wmissing-prototypes -Wpedantic -Wunreachable-code -Wunused-result -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
 #C_FLAGS = -g -O2 -Wall -Wextra -Wshadow -Wmissing-prototypes -Wpedantic -Wunreachable-code -Wno-cast-function-type -Wunused-result -Wno-deprecated-declarations -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
 
-#EFENCE - Electric-Fence malloc debugging: catches memory accesses beyond
-#allocated memory (and makes every malloc()/free() very slow).
-#Electric Fence is free (search ftp sites).
-#You may want to set the EF_PROTECT_BELOW environment variable to check the
-# other side of allocated memory.
-#EXTRA_LIBS = /usr/local/lib/libefence.a
 
 
 # VALGRIND - remove the # to use valgrind for memory leaks and access errors.
@@ -622,11 +616,10 @@ LINT_EXTRA = -D"__attribute__(x)="
 DEPEND_FLAGS =  -DDEPEND $(LINT_FLAGS)
 
 ALL_LIBS = \
-/    $(LIBS) \
-/    $(EXTRA_LIBS) \
-/    $(PROFILE_LIBS) \
-/    $(SANITIZER_LIBS) \
-/    $(LEAK_LIBS)
+    $(LIBS) \
+    $(PROFILE_LIBS) \
+    $(SANITIZER_LIBS) \
+    $(LEAK_LIBS)
 
 # abbreviations
 DEST_BIN = $(DESTDIR)$(BINDIR)
@@ -752,10 +745,9 @@ OBJ_COMMON = \
 
 # The files included by tests are not in OBJ_COMMON.
 OBJ_MAIN = \
-/ $(OBJDIR)/strings.o \
-/ $(OBJDIR)/main.o \
-/ $(OBJDIR)/data.o \
-/ $(OBJDIR)/message.o
+ $(OBJDIR)/strings.o \
+ $(OBJDIR)/main.o \
+ $(OBJDIR)/message.o
 
 OBJ = $(OBJ_COMMON) $(OBJ_MAIN)
 
@@ -867,9 +859,9 @@ src/h/%.h: src/%.c $(BETTERC)
 COMPILE = $(CC) -c $(ALL_FLAGS)
 CClink = $(CC)
 
-# MAIN. LINK the target for normal use or debugging.
-# A shell script is used to try linking without unnecessary libraries.
-$(EEGLTARGET): $(OBJ)
+# MAIN.
+
+$(EEGLTARGET): $(OBJ) ##LINK the target for running or debugging
 / $(CClink) $(LDFLAGS) -o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)
 / @echo "                               "
 / @echo "         .^^~-.                "
@@ -1522,10 +1514,6 @@ clean: testclean
 / -rm -f conftest* *~ auto/link.sed
 / -rm -f tests/opt_test.vim
 / -rm -f $(UNITTEST_TARGETS)
-/ -rm -rf libs/libvterm/.libs libs/libvterm/src/.libs \
-                libs/libvterm/t/.libs libs/libvterm/src/*.o \
-                libs/libvterm/src/*.lo \
-                libs/libvterm/t/*.o libvterm/t/*.lo libvterm/t/harness libvterm/libvterm.la
 / if test -d $(PODIR); then \
 / 	cd $(PODIR); $(MAKE) prefix=$(DESTDIR)$(prefix) clean; \
 / fi

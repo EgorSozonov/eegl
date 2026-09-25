@@ -6,6 +6,29 @@
 #define MESSAGE_FILE      // don't include prototype for smsg()
 
 #include "eegl.h"
+#include "h/data.types.h"
+#include "h/data.h"
+#include "h/book.types.h"
+#include "h/book.h"
+#include "h/do.h"
+#include "h/draw.types.h"
+#include "h/draw.h"
+#include "h/eval.h"
+#include "h/fileio.types.h"
+#include "h/fileio.h"
+#include "h/hilite.types.h"
+#include "h/hilite.h"
+#include "h/input.types.h"
+#include "h/input.h"
+#include "h/message.h"
+#include "h/option.h"
+#include "h/portal.h"
+#include "h/regexp.h"
+#include "h/script.h"
+#include "h/strings.h"
+#include "h/term.h"
+#include "h/ui.h"
+#include "h/window.h"
 
 typedef struct MsgHist MsgHist;
 struct MsgHist {
@@ -37,6 +60,10 @@ private int  verbose_did_open = false;
 
 // Text builder holding one message line, sized up to the longest line ever printed
 private Text longestLineS = (Text){.len = 0, .c = null};
+private Boole emsg_to_channel_log = false;
+private Boole confirm_msg_used = false;
+private CS confirm_msg = null;
+private CS confirm_msg_tail = null;
 
 declStruct(MsgChunk);
 private MsgChunk *lastChunkS = NULL; // last displayed text
@@ -872,11 +899,7 @@ msgDeco(CS s, char flags) {
 }
 
 pub int
-msgAndKeep(
-   CS s,
-   char      flags,
-   int      keep)       // true: set msgAfterRedrawG if it doesn't scroll
-{
+msgAndKeep(CS s, char flags, int keep) {       // true: set msgAfterRedrawG if it doesn't scroll
    static int   entered = 0;
    int      retval;
 
@@ -1209,7 +1232,7 @@ emsgImpl(CS s) {
          emsg_assert_fails_msg = copyStr((CS)s);
          emsg_assert_fails_lnum = SOURCING_LNUM;
          eeglFree(emsg_assert_fails_context);
-         emsg_assert_fails_context = copyStr(SOURCING_NAME == NULL ? E : SOURCING_NAME);
+         emsg_assert_fails_context = copyStr(SOURCING_NAME ? SOURCING_NAME : S"");
       }
 
       // set "v:errmsg", also when using ":silent! cmd"

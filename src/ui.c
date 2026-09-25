@@ -48,13 +48,14 @@
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
-#include "h/normal.h"
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/script.h"
 #include "h/strings.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 #include "h/window.h"
 
 #include <stdarg.h>
@@ -10764,7 +10765,7 @@ preserve_exit(void) {
 
    Book* book;
    FOR_ALL_BOOKS(book) {
-      if (book->mem.mfile && book->mem.mfile->fName != NULL) {
+      if (!bookNoFname(book)) {
          OUT_STR("Eegl: preserving files...\r\n");
          screen_start();       // don't know where cursor is now
          out_flush();

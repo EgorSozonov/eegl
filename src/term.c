@@ -15,11 +15,9 @@
 #include "h/draw.types.h"
 #include "h/draw.h"
 #include "h/eval.h"
-#include "h/insert.h"
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
-#include "h/normal.h"
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/regexp.h"
@@ -27,6 +25,9 @@
 #include "h/strings.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
+
 #include <termcap.h>
 
 typedef struct termios TermIos;

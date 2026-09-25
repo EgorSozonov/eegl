@@ -4,8 +4,21 @@
 //## data.c: core data structures
 
 #include "eegl.h"
-#include "h/data.types.h"
-#include "h/data.h"
+
+//{{{macros
+//{{{list
+
+pub
+#define GEN_TYPE_L(T) typedef struct {\
+   T* c;\
+   Unt len;\
+   Unt cap;\
+   Arena* a;\
+} L##T;
+
+//}}}
+//}}}
+
 #include "h/book.h"
 #include "h/channel.types.h"
 #include "h/channel.h"
@@ -35,19 +48,6 @@ int stat(const char* restrict path, struct stat* restrict buf);
 int lstat(const char* restrict, struct stat* restrict);
 
 
-//{{{macros
-//{{{list
-
-pub
-#define GEN_TYPE_L(T) typedef struct {\
-   T* c;\
-   Unt len;\
-   Unt cap;\
-   Arena* a;\
-} L##T;
-
-//}}}
-//}}}
 //{{{types
 
 // struct used in the array that's given to qsort()
@@ -100,6 +100,7 @@ struct ListWatch {
 };
 
 //}}}
+#include "h/data.h"
 //{{{@@forward declarations
 private void list_fix_watch(List* l, ListItem* item);
 private void registerForGc(List* l);
@@ -276,6 +277,25 @@ private Boole set_ref_in_item_partial(
 );
 private Boole set_ref_in_item_job(Job* job, int copyID, HtStack** ht_stack, ListStack** list_stack);
 private Boole set_ref_in_item_channel(Channel* ch, int copyID, HtStack** ht_stack, ListStack** list_stack);
+//}}}
+//{{{reference counting
+
+//These macros must only be defined for structs where the first value is an Unt holding the refcount
+pub
+#define getRefCount(a) _Generic((a),\
+   Job*: _getRefCount\
+)(a)
+
+pub
+#define incRefCount(a) _Generic((a),\
+   Job*: _incRefCount\
+)(a)
+
+pub
+#define decRefCount(a) _Generic((a),\
+   Job*: _decRefCount\
+)(a)
+
 //}}}
 //{{{list
 
@@ -12350,6 +12370,22 @@ f_json_encode(Arr(Var) argvars, Var* returnVar) {
 //}}}
 //{{{allocations
 
+pub void
+_incRefCount(void* a) {
+   (*((Unt*)a))++;
+}
+
+pub void
+_decRefCount(void* a) {
+   (*((Unt*)a))--;
+}
+
+pub Unt
+_getRefCount(void* a) {
+   return *((Unt*)a);
+}
+
+
 #if defined(MEM_PROFILE)
 
 # define MEM_SIZES  8200
@@ -12386,21 +12422,6 @@ mem_post_alloc(void **pp, Unt size) {
       mem_peak = mem_allocated - mem_freed;
    num_alloc++;
    *pp = (void *)((char *)*pp + sizeof(Unt));
-}
-
-pub void
-_incRefCount(void* a) {
-   (*((Unt*)a))++;
-}
-
-pub void
-_decRefCount(void* a) {
-   (*((Unt*)a))--;
-}
-
-pub Unt
-_getRefCount(void* a) {
-   return *((Unt*)a);
 }
 
 private void
@@ -12862,25 +12883,6 @@ toFullFileName(Text fileName, DirName* dn) {
    theString[dn->len + fileName.len] = ZERO;
    return theString;
 }
-
-//}}}
-//{{{reference counting
-
-//These macros must only be defined for structs where the first value is an Unt holding the refcount
-pub
-#define getRefCount(a) _Generic((a),\
-   Job*: _getRefCount\
-)(a)
-
-pub
-#define incRefCount(a) _Generic((a),\
-   Job*: _incRefCount\
-)(a)
-
-pub
-#define decRefCount(a) _Generic((a),\
-   Job*: _decRefCount\
-)(a)
 
 //}}}
 //{{{garbage collection of variables

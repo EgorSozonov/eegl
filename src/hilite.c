@@ -6192,13 +6192,12 @@ syntax_present(Portal* po) {
        || po->ownSyntax->keywordsIgnoreCase.count > 0);
 }
 
-enum {
-   EXP_SUBCMD,       // expand ":syn" sub-commands
-   EXP_CASE,       // expand ":syn case" arguments
-   EXP_SPELL,       // expand ":syn spell" arguments
-   EXP_SYNC,       // expand ":syn sync" arguments
-   EXP_CLUSTER       // expand ":syn list @cluster" arguments
-} expand_what;
+#define EXP_SUBCMD   0     //expand ":syn" sub-commands
+#define EXP_CASE     1     //expand ":syn case" arguments
+#define EXP_SPELL    2     //expand ":syn spell" arguments
+#define EXP_SYNC     3     //expand ":syn sync" arguments
+#define EXP_CLUSTER  4     //expand ":syn list @cluster" arguments
+private Unt expandWhatP;
 
 // Called when we are done expandin'
 pub void
@@ -6221,7 +6220,7 @@ pub void
 set_context_in_syntax_cmd(Expand *xp, CS arg) {
    // Default: expand subcommands
    xp->context = EXPAND_SYNTAX;
-   expand_what = EXP_SUBCMD;
+   expandWhatP = EXP_SUBCMD;
    xp->input = mbText(arg);
    hiComplIncludeLinkG = 0;
    hiComplIncludeDefaultG = 0;
@@ -6241,15 +6240,15 @@ set_context_in_syntax_cmd(Expand *xp, CS arg) {
    if (*skiptowhite(xp->input.c) != ZERO)
       xp->context = EXPAND_NOTHING;
    ei (STRNICMP(arg, "case", p - arg) == 0)
-      expand_what = EXP_CASE;
+      expandWhatP = EXP_CASE;
    ei (STRNICMP(arg, "spell", p - arg) == 0)
-      expand_what = EXP_SPELL;
+      expandWhatP = EXP_SPELL;
    ei (STRNICMP(arg, "sync", p - arg) == 0)
-      expand_what = EXP_SYNC;
+      expandWhatP = EXP_SYNC;
    ei (STRNICMP(arg, "list", p - arg) == 0) {
       p = skipwhite(p);
       if (*p == '@')
-         expand_what = EXP_CLUSTER;
+         expandWhatP = EXP_CLUSTER;
       else
          xp->context = EXPAND_HILITE_GROUP;
    } ei (   STRNICMP(arg, "keyword", p - arg) == 0
@@ -6264,7 +6263,7 @@ set_context_in_syntax_cmd(Expand *xp, CS arg) {
 // Function given to expandGeneric() to obtain the list syntax names for expansion.
 pub CS
 get_syntax_name(Expand* xp, int idx) {
-   switch (expand_what) {
+   switch (expandWhatP) {
    case EXP_SUBCMD:
       if (idx < 0 || idx >= (int)ARRAY_LENGTH(subcommands))
          return NULL;

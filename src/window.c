@@ -24,15 +24,14 @@
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
-#include "h/normal.types.h"
-#include "h/normal.h"
-#include "h/insert.h"
 #include "h/portal.h"
 #include "h/search.h"
 #include "h/script.h"
 #include "h/strings.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 
 // for shm_open:
 #include <sys/mman.h>
