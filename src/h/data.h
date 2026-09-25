@@ -75,11 +75,11 @@ void f_list2str(Arr(Var) argvars, Var* returnVar);
 void f_sort(Arr(Var) argvars, Var* returnVar);
 void f_uniq(Arr(Var) argvars, Var* returnVar);
 int filter_map_one(
-   Var   *tv,         // original value
-   Var   *expr,       // callback
+   Var*,         // original value
+   Var* expr,       // callback
    FilterMap filtermap,
-   Var   *newtv,       // for map() and mapnew(): new value
-   int      *remp      // for filter(): remove flag
+   Var* newtv,       // for map() and mapnew(): new value
+   int* remp      // for filter(): remove flag
 );
 void f_filter(Arr(Var) argvars, Var* returnVar);
 void f_map(Arr(Var) argvars, Var* returnVar);
@@ -322,7 +322,6 @@ void f_sinh(Arr(Var) argvars, Var* returnVar);
 void f_assert_equal(Arr(Var) argvars, Var* returnVar);
 void f_assert_equalfile(Arr(Var) argvars, Var* returnVar);
 void f_assert_notequal(Arr(Var) argvars, Var* returnVar);
-void f_assert_exception(Arr(Var) argvars, Var* returnVar);
 void f_assert_fails(Arr(Var) argvars, Var* returnVar);
 void f_assert_false(Arr(Var) argvars, Var* returnVar);
 void f_assert_inrange(Arr(Var) argvars, Var* returnVar);
@@ -472,7 +471,7 @@ int eeVarPrintf0(
 );
 void op_format(Operator* oper, int keep_cursor);
 void op_formatexpr(Operator* oper);
-int fex_format(LineNr lnum, long count, int c);
+int fex_format();
 CS copyStr_shellescape(CS string, int do_special, int do_newline);
 CS json_encode(Var* val, int options);
 CS json_encode_nr_expr(int nr, Var* val, int options);

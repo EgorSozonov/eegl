@@ -2707,7 +2707,6 @@ handleControlSequenceIntroducer(
       key_name[0] = (int)KS_EXTRA;
       key_name[1] = (int)KE_IGNORE;
       *slen = csi_len;
-      set_EeglVar_string(VV_TERMBLINKRESP, tp, *slen);
       applyAutocomms(EVENT_TERMRESPONSEALL, S"cursorblink", NULL, false, curBook);
    }
    // Kitty keyboard protocol status response: CSI ? flags u
@@ -2825,7 +2824,6 @@ handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen) {
             key_name[0] = (int)KS_EXTRA;
             key_name[1] = (int)KE_IGNORE;
             *slen = i + 1;
-            set_EeglVar_string(VV_TERMSTYLERESP, tp, *slen);
             applyAutocomms(EVENT_TERMRESPONSEALL, S"cursorshape", NULL, false, curBook);
             break;
          }

@@ -2828,7 +2828,6 @@ computeColumnsForRulerAndCommand(void) {
       shownCommandColG = 1;
    if (rulerColP <= 0)
       rulerColP = 1;
-   set_EeglVar_nr(VV_ECHOSPACE, shownCommandColG - 1);
 }
 
 //Return the width of the 'number' and 'relativenumber' column.

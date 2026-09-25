@@ -2999,41 +2999,6 @@ may_trigger_win_scrolled_resized(void) {
    //triggering the event, if a scroll or resize happens as a side effect
    //then WinScrolled/WinResized is triggered for that later.
    portSnapshotScrollSizes();
-
-   //"curPor" may be different from the actual current portal, make sure it can be restored
-   portalLayout_lock();
-   recursive = true;
-
-   //If both are to be triggered do WinResized first.
-   if (trigger_resize && portalsList) {
-      SaveVEvent  save_v_event;
-      Bag* v_event = get_v_event(&save_v_event);
-
-      if (bagAddList(v_event, S"portals", portalsList) == OK) {
-         bagSetItemsRo(v_event);
-         Byte portId[NUMBUFLEN];
-         eeSnprintf(portId, sizeof(portId), "%d", firstResizedPort->id);
-         applyAutocomms(EVENT_WINRESIZED, portId, portId, false, firstResizedPort->book);
-      }
-      restore_v_event(v_event, &save_v_event);
-   }
-
-   if (trigger_scroll && scroll_dict) {
-      SaveVEvent  save_v_event;
-      Bag* v_event = get_v_event(&save_v_event);
-
-      // Move the entries from scroll_dict to v_event.
-      bagExtend(v_event, scroll_dict, (CS)"move");
-      bagSetItemsRo(v_event);
-      bagUnref(scroll_dict);
-      Byte portId[NUMBUFLEN];
-      eeSnprintf(portId, sizeof(portId), "%d", firstScrollPort->id);
-      applyAutocomms(EVENT_PORTSCROLLED, portId, portId, false, firstScrollPort->book);
-      restore_v_event(v_event, &save_v_event);
-   }
-
-   recursive = false;
-   portalLayout_unlock();
 }
 
 // Close portal "port" in tab "t", which is not the current tab. This may be the last portal in 
@@ -8710,27 +8675,20 @@ get_foldtext(
 
    if (po->o.foldText) {
        Byte dashes[MAX_LEVEL + 2];
-       int level;
        CS p;
 
-       // Set "v:foldstart" and "v:foldend".
-       set_EeglVar_nr(VV_FOLDSTART, lnum);
-       set_EeglVar_nr(VV_FOLDEND, lnume);
-
-       // Set "v:folddashes" to a string of "level" dashes.
-       // Set "v:foldlevel" to "level".
-       level = foldinfo->fi_level;
+       //Set "v:folddashes" to a string of "level" dashes.
+       //Set "v:foldlevel" to "level".
+       int level = foldinfo->fi_level;
        if (level > (int)sizeof(dashes) - 1)
           level = (int)sizeof(dashes) - 1;
        memset(dashes, '-', (Unt)level);
        dashes[level] = ZERO;
-       set_EeglVar_string(VV_FOLDDASHES, dashes, -1);
-       set_EeglVar_nr(VV_FOLDLEVEL, (long)level);
 
        // skip evaluating @foldtext on errors
        if (!got_fdt_error) {
-           Portal   *save_curPor = curPor;
-           ScriptPos  saved_sctx = scriptPosG;
+           Portal* save_curPor = curPor;
+           ScriptPos saved_sctx = scriptPosG;
 
            curPor = po;
            curBook = po->book;
@@ -8749,7 +8707,6 @@ get_foldtext(
       }
       last_lnum = lnum;
       last_wp   = po;
-      set_EeglVar_string(VV_FOLDDASHES, NULL, -1);
 
       if (!anyEmsgG && save_anyEmsgG)
           anyEmsgG = save_anyEmsgG;
@@ -9742,7 +9699,6 @@ foldlevelExpr(FoldLine *flp) {
    Portal* port = curPor;
    curPor = flp->po;
    curBook = flp->po->book;
-   set_EeglVar_nr(VV_LNUM, lnum);
 
    flp->start = 0;
    flp->had_end = flp->end;
@@ -9998,49 +9954,49 @@ f_foldlevel(Arr(Var) argvars, Var* returnVar) {
 
 pub void
 f_foldtext(Arr(Var), Var* returnVar) {
-   LineNr   lnum;
-   CS s;
    CS r;
-   int      len;
-   CS txt;
-   long   count;
+   int len;
 
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
-   LineNr foldstart = (LineNr)get_EeglVar_nr(VV_FOLDSTART);
-   LineNr foldend = (LineNr)get_EeglVar_nr(VV_FOLDEND);
-   CS dashes = get_EeglVar_str(VV_FOLDDASHES);
-   if (foldstart > 0 && foldend <= curBook->mem.lineCount && dashes != NULL) {
-      // Find first non-empty line in the fold.
-      for (lnum = foldstart; lnum < foldend; ++lnum)
-          if (!linewhite(lnum))
+   //TODO re-implement without vimvars
+   int foldstart = 0;
+   int foldend = 10;
+   CS dashes = S"--";
+   if (foldstart <= 0 || foldend > curBook->mem.lineCount || dashes) {
+      return;
+   } 
+   // Find first non-empty line in the fold.
+   LineNr lnum;
+   for (lnum = foldstart; lnum < foldend; ++lnum) {
+      if (!linewhite(lnum))
          break;
+   } 
 
-      // Find interesting text in this line.
-      s = skipwhite(ml_get(lnum));
-      // skip C comment-start
-      if (s[0] == '/' && (s[1] == '*' || s[1] == '/')) {
-         s = skipwhite(s + 2);
-         if (*skipwhite(s) == ZERO && lnum + 1 < (LineNr)get_EeglVar_nr(VV_FOLDEND)) {
-            s = skipwhite(ml_get(lnum + 1));
-            if (*s == '*')
-               s = skipwhite(s + 1);
-         }
+   // Find interesting text in this line.
+   CS s = skipwhite(ml_get(lnum));
+   // skip C comment-start
+   if (s[0] == '/' && (s[1] == '*' || s[1] == '/')) {
+      s = skipwhite(s + 2);
+      if (*skipwhite(s) == ZERO) {
+         s = skipwhite(ml_get(lnum + 1));
+         if (*s == '*')
+            s = skipwhite(s + 1);
       }
-      count = (long)(foldend - foldstart + 1);
-      txt = NGETTEXT("+-%s%3ld line: ", "+-%s%3ld lines: ", count);
-      r = alloc(STRLEN(txt)
-             + STRLEN(dashes)       // for %s
-             + 20          // for %3ld
-             + STRLEN(s));       // concatenated
-      if (r) {
-          SPRINTF(r, txt, dashes, count);
-          len = (int)STRLEN(r);
-          STRCAT(r, s);
-          // remove 'foldmarker' and 'commentstring'
-          foldtext_cleanup(r + len);
-          returnVar->string = r;
-      }
+   }
+   Long count = (long)(foldend - foldstart + 1);
+   CS txt = NGETTEXT("+-%s%3ld line: ", "+-%s%3ld lines: ", count);
+   r = alloc(STRLEN(txt)
+          + STRLEN(dashes)       // for %s
+          + 20          // for %3ld
+          + STRLEN(s));       // concatenated
+   if (r) {
+       SPRINTF(r, txt, dashes, count);
+       len = (int)STRLEN(r);
+       STRCAT(r, s);
+       // remove 'foldmarker' and 'commentstring'
+       foldtext_cleanup(r + len);
+       returnVar->string = r;
    }
 }
 
@@ -15318,14 +15274,8 @@ bexpr_eval(
 
    // Convert portal pointer to number.
    for (Portal* pitm = firstPor; pitm != po; pitm = pitm->next)
-       ++portNr;
+      ++portNr;
 
-   set_EeglVar_nr(VV_BEVAL_BUFNR, (long)po->book->fiNum);
-   set_EeglVar_nr(VV_BEVAL_WINNR, portNr);
-   set_EeglVar_nr(VV_BEVAL_WINID, po->id);
-   set_EeglVar_nr(VV_BEVAL_LNUM, (long)lnum);
-   set_EeglVar_nr(VV_BEVAL_COL, (long)(col + 1));
-   set_EeglVar_string(VV_BEVAL_TEXT, text, -1);
    eeglFree(text);
 
    //Temporarily change the curBook, so that we can determine whether
@@ -15336,8 +15286,7 @@ bexpr_eval(
    ++textlock;
 
    if (bexpr == curBook->o.balloonExpr) {
-      ScriptPos *sp = optGetScriptPos(S"balloonexpr");
-
+      ScriptPos* sp = optGetScriptPos(S"balloonexpr");
       if (sp)
          scriptPosG = *sp;
    } else
@@ -15358,8 +15307,7 @@ bexpr_eval(
    --textlock;
    scriptPosG = save_sctx;
 
-   set_EeglVar_string(VV_BEVAL_TEXT, NULL, -1);
-   if (result != NULL && result[0] != ZERO)
+   if (result && result[0] != ZERO)
       post_balloon(beval, result, NULL);
 
    // The 'balloonexpr' evaluation may show something on the screen that requires a screen update

@@ -2006,30 +2006,6 @@ virtual_active(void) {
    return VIsual_active && VIsual_mode == Ctrl_V;
 }
 
-//Return the dictionary of v:event. Save and clear the value in case it already has items.
-pub Bag *
-get_v_event(SaveVEvent *sve) {
-   Bag* v_event = get_EeglVar_dict(VV_EVENT);
-
-   if (v_event->hashTable.count > 0) {
-      // recursive use of v:event, save, make empty and restore later
-      sve->sve_did_save = true;
-      sve->sve_hashtab = v_event->hashTable;
-      hash_init(&v_event->hashTable);
-   } else
-      sve->sve_did_save = false;
-   return v_event;
-}
-
-pub void
-restore_v_event(Bag* v_event, SaveVEvent* sve) {
-   dict_free_contents(v_event);
-   if (sve->sve_did_save)
-      v_event->hashTable = sve->sve_hashtab;
-   else
-      hash_init(&v_event->hashTable);
-}
-
 //Return the current mode as a string in "buf[MODE_MAX_LENGTH]", ZERO terminated.
 //The first character represents the major mode, the following ones the minor ones.
 pub void
@@ -2110,12 +2086,11 @@ get_mode(CS buf) {
 pub void
 may_trigger_modechanged(void) {
    Bag* v_event;
-   SaveVEvent  save_v_event;
    Byte curr_mode[MODE_MAX_LENGTH];
    Byte pattern_buf[2 * MODE_MAX_LENGTH];
 
-   // Skip this when gotInterruptG is set, the autocommand will not be executed.
-   // Better trigger it next time.
+   //Skip this when gotInterruptG is set, the autocommand will not be executed.
+   //Better trigger it next time.
    if (!has_modechanged() || gotInterruptG)
       return;
 
@@ -2123,7 +2098,6 @@ may_trigger_modechanged(void) {
    if (STRCMP(curr_mode, last_mode) == 0)
       return;
 
-   v_event = get_v_event(&save_v_event);
    (void)bagAddString(v_event, S"new_mode", curr_mode);
    (void)bagAddString(v_event, S"old_mode", last_mode);
    bagSetItemsRo(v_event);
@@ -2133,8 +2107,6 @@ may_trigger_modechanged(void) {
 
    applyAutocomms(EVENT_MODECHANGED, pattern_buf, NULL, false, curBook);
    STRCPY(last_mode, curr_mode);
-
-   restore_v_event(v_event, &save_v_event);
 }
 
 // MODE_VISUAL, MODE_OP_PENDING stateG are never set, they are
@@ -2285,12 +2257,11 @@ getcount:
        aArg->oper->prev_opcount = aArg->opcount;
        aArg->oper->prev_count0 = aArg->count0;
    } ei (aArg->opcount != 0) {
-      // If we're in the middle of an operator (including after entering a
-      // yank buffer with '"') AND we had a count before the operator, then
-      // that count overrides the current value of ca.count0.
-      // What this means effectively, is that actions like "3dw" get turned
-      // into "d3w" which makes things fall into place pretty neatly.
-      // If you give a count before AND after the operator, they are multiplied.
+      //If we're in the middle of an operator (including after entering a yank buffer with '"') 
+      //AND we had a count before the operator, then that count overrides the current value of 
+      //ca.count0. What this means effectively, is that actions like "3dw" get turned into 
+      //"d3w" which makes things fall into place pretty neatly. If you give a count before AND 
+      //after the operator, they are multiplied.
       if (aArg->count0) {
          if (aArg->opcount >= 999999999L / aArg->count0)
             aArg->count0 = 999999999L;
@@ -2300,16 +2271,11 @@ getcount:
          aArg->count0 = aArg->opcount;
    }
 
-   // Always remember the count.  It will be set to zero (on the next call,
-   // above) when there is no pending operator.
-   // When called from main(), save the count for use by the "count" built-in variable.
+   //Always remember the count. It will be set to zero (on the next call,
+   //above) when there is no pending operator.
+   //When called from main(), save the count for use by the "count" built-in variable.
    aArg->opcount = aArg->count0;
    aArg->count1 = (aArg->count0 == 0 ? 1 : aArg->count0);
-
-   // Only set v:count when called from main() and not a stuffed action. Do set it for redo.
-   if (toplevel && readbuf1_empty())
-       set_vcount(aArg->count0, aArg->count1, set_prevcount);
-
    return c;
 }
 
@@ -2766,19 +2732,6 @@ normal_end:
 
    // Save count before an operator for next time.
    opcount = action.opcount;
-}
-
-// Set v:count and v:count1 according to "aArg".
-// Set v:prevcount only when "set_prevcount" is true.
-private void
-setVCountPrevCount(ActionArg* aArg, int *set_prevcount) {
-   long count = aArg->count0;
-
-   // multiply with aArg->opcount the same way as above
-   if (aArg->opcount != 0)
-      count = aArg->opcount * (count == 0 ? 1 : count);
-   set_vcount(count, count == 0 ? 1 : count, *set_prevcount);
-   *set_prevcount = false;  // only set v:prevcount once
 }
 
 // Check if highlighting for Visual mode is possible, give a warning message if not.
@@ -4445,12 +4398,12 @@ nv_colon(ActionArg* aArg) {
       // translate "count:" into ":.,.+(count - 1)"
       stuffcharReadbuff('.');
       if (aArg->count0 > 1) {
-         stuffReadbuff((CS)",.+");
-         stuffnumReadbuff((long)aArg->count0 - 1L);
+         stuffReadbuff(S",.+");
+         stuffnumReadbuff((Long)aArg->count0 - 1L);
       }
    }
 
-   // When typing, don't type below an old message
+   //When typing, don't type below an old message
    if (keyWasTypedG)
       compute_cmdrow();
 
@@ -6523,12 +6476,8 @@ nv_tilde(ActionArg* aArg) {
 // Set v:operator to the characters for "optype".
 private void
 set_op_var(int optype) {
-
-   if (optype == OP_NOP)
-      set_EeglVar_string(VV_OP, NULL, 0);
-   else {
-      Byte opchars[3] = { get_op_char(optype), get_extra_op_char(optype), ZERO};
-      set_EeglVar_string(VV_OP, opchars, -1);
+   if (optype != OP_NOP)
+      Byte opchars[3] = { get_op_char(optype), get_extra_op_char(optype), ZERO };
    }
 }
 
@@ -11138,7 +11087,6 @@ eval_map_expr(MapBlock   *mp, int c) { // ZERO or typed character for abbreviati
    // effects.  Also restore the cursor position.
    ++textlock;
    ++ex_normal_lock;
-   set_EeglVar_char(c);  // set v:char to the typed character
    Pos save_cursor = curPor->cursor;
    int saveMsgCol = msgColG;
    int msgRowSaved = msgRowG;
@@ -12239,18 +12187,13 @@ edit(Unt commChar, int startln, long count){
          ptr = S"v";
       else
          ptr = S"i";
-      set_EeglVar_string(VV_INSERTMODE, ptr, 1);
-      set_EeglVar_string(VV_CHAR, NULL, -1);  // clear v:char
       ins_applyAutocomms(EVENT_INSERTENTER);
-
 
       //Make sure the cursor didn't move. Do call check_cursor_col() in case the text was modified.
       //Since Insert mode was not started yet a call to check_cursor_col() may move the cursor, 
       //especially with the "A" command, thus set stateG to avoid that. Also check that the
       //line number is still valid (lines may have been deleted).
-      //Do not restore if v:char was set to a non-empty string.
       if (!EQUAL_POS(curPor->cursor, save_cursor)
-         && *get_EeglVar_str(VV_CHAR) == ZERO
          && save_cursor.lnum <= curBook->mem.lineCount
       ) {
          int saveState = stateG;
@@ -13451,8 +13394,8 @@ insertchar0(
       if (curBook->o.formatExpr && (flags & INSCHAR_NO_FEX) == 0
          && (force_format || virtcol > (ColNr)textwidth)
       ) {
-         do_internal = (fex_format(curPor->cursor.lnum, 1L, c) != 0);
-         // It may be required to save for undo again, e.g. when setline() was called.
+         do_internal = (fex_format() != 0);
+         //It may be required to save for undo again, e.g. when setline() was called.
          needUndoS = true;
       }
       if (do_internal)
@@ -15597,8 +15540,7 @@ has_compl_option(int dict_opt) {
       if (emsg_silent == 0 && !in_assert_fails)    {
          setcursor();
          out_flush();
-         if (!get_EeglVar_nr(VV_TESTING))
-            ui_delay(2004L, false);
+         ui_delay(2004L, false);
       }
       return false;
    }
@@ -16264,7 +16206,6 @@ ins_compl_allocBag(InsertCompletion *match) {
 private void
 trigger_complete_changed_event(int cur) {
    static Boole recursive = false;
-   SaveVEvent save_v_event;
 
    if (recursive)
       return;
@@ -16272,7 +16213,6 @@ trigger_complete_changed_event(int cur) {
    Bag* item = cur < 0 ? allocBag() : ins_compl_allocBag(compl_curr_match);
    if (!item)
       return;
-   Bag* v_event = get_v_event(&save_v_event);
    bagAddBag(v_event, S"completed_item", item);
    pum_set_event_info(v_event);
    bagSetItemsRo(v_event);
@@ -16282,8 +16222,6 @@ trigger_complete_changed_event(int cur) {
    applyAutocomms(EVENT_COMPLETECHANGED, NULL, NULL, false, curBook);
    textlock--;
    recursive = false;
-
-   restore_v_event(v_event, &save_v_event);
 }
 
 // Helper functions for mergesort_list().
@@ -16915,8 +16853,6 @@ ins_compl_clear(void){
    compl_autocomplete = false;
    compl_from_nonkeyword = false;
    complCountBestS = 0;
-   // clear v:completed_item
-   set_EeglVar_dict(VV_COMPLETED_ITEM, allocBag_lock(VAR_FIXED));
 }
 
 // Return true when Insert completion is active.
@@ -17317,12 +17253,9 @@ set_ctrl_x_mode(Unt c) {
    return false;
 }
 
-// Trigger CompleteDone event and adds relevant information to v:event
+// Trigger CompleteDone event
 private void
 trigger_complete_done_event(int mode, CS word) {
-   SaveVEvent   save_v_event;
-   Bag* v_event = get_v_event(&save_v_event);
-
    mode = mode & ~CTRL_X_WANT_IDENT;
    CS modeStr = (ctrl_x_mode_names[mode]) ? (CS)ctrl_x_mode_names[mode] : null;
 
@@ -17331,8 +17264,6 @@ trigger_complete_done_event(int mode, CS word) {
 
    bagSetItemsRo(v_event);
    ins_applyAutocomms(EVENT_COMPLETEDONE);
-
-   restore_v_event(v_event, &save_v_event);
 }
 
 // Stop insert completion mode
@@ -17749,10 +17680,6 @@ expand_by_function(int type, CS base, Callback* cb) {
       case VAR_BAG:
          matchdict = returnVar.bag;
          break;
-      case VAR_SPECIAL:
-         if (returnVar.number == VVAL_NONE)
-            compl_opt_suppress_empty = true;
-         // FALLTHROUGH
       default:
          emsg(_(e_list_or_number_required));
          clearVar(&returnVar);
@@ -19388,8 +19315,6 @@ ins_compl_delete(void) {
    //TODO: is this sufficient for redrawing?  Redrawing everything causes
    //flicker, thus we can't do that.
    changed_cline_bef_curs();
-   // clear v:completed_item
-   set_EeglVar_dict(VV_COMPLETED_ITEM, allocBag_lock(VAR_FIXED));
 }
 
 //Insert a completion string that contains newlines. The string is split and inserted line by line.
@@ -19462,8 +19387,6 @@ ins_compl_insert(int move_cursor) {
    else
       complUsedMatchS = true;
    Bag *bag = ins_compl_allocBag(compl_shown_match);
-
-   set_EeglVar_dict(VV_COMPLETED_ITEM, bag);
 }
 
 // show the file name for the completion match (if any). Truncate the file name to avoid a wait 

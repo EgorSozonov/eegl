@@ -245,7 +245,6 @@ private int buf_byteidx_to_charidx(Book *book, int lnum, int byteidx);
 private Text expandCurlyBraces(Text braces, Text outer);
 private CS eval_next_line(CS arg, EvalCtx* evalarg);
 private void initGlobalAndSpecialVars(void);
-private void listEeglVars(int *first);
 private void list_script_vars(int *first);
 private CS eval_all_expr_in_str(CS str);
 private int letVars(
@@ -626,7 +625,7 @@ num_modulus(Long n1, Long n2, OUT Boole* failed) {
    return n1 % n2;
 }
 
-// Initialize the global and v: variables.
+// Initialize the global variables.
 pub void
 evalInitGlobals(void) {
    initGlobalAndSpecialVars();
@@ -1672,9 +1671,9 @@ get_lval_dict_item(
          return GLV_FAIL;
    }
 
-   if (lp->ll_di == NULL) {
-      // Can't add "v:" or "a:" variable.
-      if (lp->bag == getEeglVarDict() || &lp->bag->hashTable == get_funccal_args_ht()) {
+   if (!lp->ll_di) {
+      // Can't add "a:" variable.
+      if (&lp->bag->hashTable == get_funccal_args_ht()) {
          showErrFmtMsg(_(e_illegal_variable_name_str), arg.name);
          return GLV_FAIL;
       }
@@ -2358,7 +2357,7 @@ pub int
 tv_op(Var *tv1, Var *tv2, CS op) {
    //Can't do anything with a Funcref or Bag on the right. v:true and friends only work with "..=".
    if (tv2->tag == VAR_FUNC || tv2->tag == VAR_BAG
-      || ((tv2->tag == VAR_BOOL || tv2->tag == VAR_SPECIAL) && *op != '.')
+      || ((tv2->tag == VAR_BOOL) && *op != '.')
    ) {
       showErrFmtMsg(_(e_wrong_variable_type_for_str_equal), op);
       return FAIL;
@@ -2373,7 +2372,6 @@ tv_op(Var *tv1, Var *tv2, CS op) {
    case VAR_FUNC:
    case VAR_PARTIAL:
    case VAR_BOOL:
-   case VAR_SPECIAL:
    case VAR_JOB:
    case VAR_CHANNEL:
        break;
@@ -3466,8 +3464,8 @@ handle_predefined(CS s, int len, Var* returnVar) {
           return OK;
       }
       if (STRNCMP(s, "null", 4) == 0) {
-          returnVar->tag = VAR_SPECIAL;
-          returnVar->number = VVAL_NULL;
+          returnVar->tag = VAR_VOID;
+          returnVar->number = 0;
           return OK;
       }
       break;
@@ -4527,6 +4525,7 @@ echo_string_core(
    case VAR_NUMBER:
    case VAR_UNKNOWN:
    case VAR_ANY:
+   case VAR_BOOL: 
    case VAR_VOID:
       *tofree = NULL;
       r = tv_get_string_buf(tv, numbuf);
@@ -4542,12 +4541,6 @@ echo_string_core(
       eeSnprintf(numbuf, NUMBUFLEN, "%g", tv->floatt);
       r = numbuf;
       break;
-
-   case VAR_BOOL:
-   case VAR_SPECIAL:
-       *tofree = NULL;
-       r = (CS)get_var_special_name(tv->number);
-       break;
 
    }
 
@@ -5124,7 +5117,6 @@ item_copy(
    case VAR_FUNC:
    case VAR_PARTIAL:
    case VAR_BOOL:
-   case VAR_SPECIAL:
    case VAR_JOB:
    case VAR_CHANNEL:
    case VAR_LIST:
@@ -5607,129 +5599,9 @@ private DictItem globvars_var;      // variable used for g:
 private Bag globvardict;      // Dictionary with g: variables
 #define globvarht globvardict.hashTable
 
-//Array to hold the value of v: variables.
-//The value is in a dictitem, so that it can also be used in the v: scope.
-//The reason to use this table anyway is for very quick access to the
-//variables with the VV_ defines.
 
 //values for flags:
 #define VV_RO       2   // read-only
-
-#define VV_NAME(s, t)  (CS)s, {{t, 0, {0}}, 0, 0, {0}}
-
-typedef struct  {
-   CS name;     //name of variable, without v:
-   DictItem16 entry; //value and name for key (max 16 chars!)
-   Boole isReadonly;
-} EeglVar;
-
-private EeglVar eeglVars[EV_LEN] = {
-   // The order here must match the VV_ defines in eegl.h!
-   // Initializing a union does not work, leave tv.c empty to get zero's.
-   {VV_NAME("count",        VAR_NUMBER), true},
-   {VV_NAME("count1",       VAR_NUMBER), true},
-   {VV_NAME("prevcount",    VAR_NUMBER), true},
-   {VV_NAME("errmsg",       VAR_STRING), false},
-   {VV_NAME("warningmsg",   VAR_STRING), false},
-   {VV_NAME("statusmsg",    VAR_STRING), false},
-   {VV_NAME("shell_error",  VAR_NUMBER), true},
-   {VV_NAME("this_session", VAR_STRING), false},
-   {VV_NAME("lnum",         VAR_NUMBER), false},
-   {VV_NAME("termresponse", VAR_STRING), true},
-   {VV_NAME("fname",        VAR_STRING), true},
-   {VV_NAME("lang",         VAR_STRING), true},
-   {VV_NAME("lc_time",      VAR_STRING), true},
-   {VV_NAME("ctype",        VAR_STRING), true},
-   {VV_NAME("fname_in",     VAR_STRING), true},
-   {VV_NAME("fname_out",    VAR_STRING), true},
-   {VV_NAME("fname_new",    VAR_STRING), true},
-   {VV_NAME("fname_diff",   VAR_STRING), true},
-   {VV_NAME("cmdarg",       VAR_STRING), true},
-   {VV_NAME("foldstart",    VAR_NUMBER), false},
-   
-   {VV_NAME("foldend",      VAR_NUMBER), false},
-   {VV_NAME("folddashes",   VAR_STRING), false},
-   {VV_NAME("foldlevel",    VAR_NUMBER), false},
-   {VV_NAME("progname",     VAR_STRING), true},
-   {VV_NAME("servername",   VAR_STRING), true},
-   {VV_NAME("dying",        VAR_NUMBER), true},
-   {VV_NAME("exception",    VAR_STRING), true},
-   {VV_NAME("throwpoint",   VAR_STRING), true},
-   {VV_NAME("register",     VAR_STRING), true},
-   {VV_NAME("cmdbang",      VAR_NUMBER), true},
-   {VV_NAME("insertmode",   VAR_STRING), true},
-   {VV_NAME("val",          VAR_UNKNOWN), true},
-   {VV_NAME("key",          VAR_UNKNOWN), true},
-   {VV_NAME("profiling",    VAR_NUMBER), true},
-   {VV_NAME("fcs_reason",   VAR_STRING), true},
-   {VV_NAME("fcs_choice",   VAR_STRING), false},
-   {VV_NAME("beval_bufnr",  VAR_NUMBER), true},
-   {VV_NAME("beval_winnr",  VAR_NUMBER), true},
-   {VV_NAME("beval_winid",  VAR_NUMBER), true},
-   {VV_NAME("beval_lnum",   VAR_NUMBER), true},
-   
-   {VV_NAME("beval_col",    VAR_NUMBER), true},
-   {VV_NAME("beval_text",   VAR_STRING), true},
-   {VV_NAME("scrollstart",  VAR_STRING), false},
-   {VV_NAME("swapname",     VAR_STRING), true},
-   {VV_NAME("swapchoice",   VAR_STRING), false},
-   {VV_NAME("swapcommand",  VAR_STRING), true},
-   {VV_NAME("char",         VAR_STRING), false},
-   {VV_NAME("mouse_win",    VAR_NUMBER), false},
-   {VV_NAME("mouse_winid",  VAR_NUMBER), false},
-   {VV_NAME("mouse_lnum",   VAR_NUMBER), false},
-   {VV_NAME("mouse_col",    VAR_NUMBER), false},
-   {VV_NAME("operator",     VAR_STRING), true},
-   {VV_NAME("searchforward", VAR_NUMBER), false},
-   {VV_NAME("hlsearch",     VAR_NUMBER), false},
-   {VV_NAME("oldfiles",     VAR_LIST), false},
-   {VV_NAME("windowid",     VAR_NUMBER), true},
-   {VV_NAME("progpath",     VAR_STRING), true},
-   {VV_NAME("completed_item", VAR_BAG), false},
-   {VV_NAME("errors",       VAR_LIST), false},
-   {VV_NAME("false",        VAR_BOOL), true},
-   
-   {VV_NAME("true",         VAR_BOOL), true},
-   {VV_NAME("none",         VAR_SPECIAL), true},
-   {VV_NAME("null",         VAR_SPECIAL), true},
-   {VV_NAME("numbermax",    VAR_NUMBER), true},
-   {VV_NAME("numbermin",    VAR_NUMBER), true},
-   {VV_NAME("numbersize",   VAR_NUMBER), true},
-   {VV_NAME("eegl_did_enter", VAR_NUMBER), true},
-   {VV_NAME("testing",      VAR_NUMBER), false},
-   {VV_NAME("t_number",     VAR_NUMBER), true},
-   {VV_NAME("t_string",     VAR_NUMBER), true},
-   {VV_NAME("t_func",       VAR_NUMBER), true},
-   {VV_NAME("t_list",       VAR_NUMBER), true},
-   {VV_NAME("t_dict",       VAR_NUMBER), true},
-   {VV_NAME("t_float",      VAR_NUMBER), true},
-   {VV_NAME("t_bool",       VAR_NUMBER), true},
-   {VV_NAME("t_none",       VAR_NUMBER), true},
-   {VV_NAME("t_job",        VAR_NUMBER), true},
-   {VV_NAME("t_channel",    VAR_NUMBER), true},
-   {VV_NAME("t_blob",       VAR_NUMBER), true},
-   {VV_NAME("termrfgresp",  VAR_STRING), true},
-   
-   {VV_NAME("termrbgresp",  VAR_STRING), true},
-   {VV_NAME("termu7resp",   VAR_STRING), true},
-   {VV_NAME("termstyleresp", VAR_STRING), true},
-   {VV_NAME("termblinkresp", VAR_STRING), true},
-   {VV_NAME("event",        VAR_BAG), true},
-   {VV_NAME("versionlong",  VAR_NUMBER), true},
-   {VV_NAME("echospace",    VAR_NUMBER), true},
-   {VV_NAME("argv",         VAR_LIST), true},
-   {VV_NAME("collate",      VAR_STRING), true},
-   {VV_NAME("exiting",      VAR_SPECIAL), true},
-   {VV_NAME("colornames",   VAR_BAG), true},
-   {VV_NAME("sizeofint",    VAR_NUMBER), true},
-   {VV_NAME("sizeoflong",   VAR_NUMBER), true},
-   {VV_NAME("sizeofpointer", VAR_NUMBER), true},
-   {VV_NAME("maxcol",       VAR_NUMBER), true},
-   {VV_NAME("t_enum",       VAR_NUMBER), true},
-   {VV_NAME("t_enumvalue",  VAR_NUMBER), true},
-   {VV_NAME("stacktrace",   VAR_LIST), true},
-   {VV_NAME("wayland_display", VAR_STRING), true},
-};
 
 // Type values for type().
 #define VAR_TYPE_NUMBER     0
@@ -5747,113 +5619,17 @@ private EeglVar eeglVars[EV_LEN] = {
 #define VAR_TYPE_ENUM      12
 #define VAR_TYPE_ENUMVALUE 13
 
-private DictItem   currEeglVarS;      // variable used for v:
-private Bag      eeglVarsS;      // Dictionary with v: variables
-#define eeglVarsHt  eeglVarsS.hashTable
-
-private void list_globVars(int *first);
-private void list_buf_vars(int *first);
-private void list_win_vars(int *first);
-private void list_tabVars(int *first);
-private CS list_arg_vars(Invocation* invo, Byte *arg, int *first);
-private CS letOne(
-     CS arg, Var *tv, Boole copy, Unt flags, CS endchars, CS op
-);
-private int do_lock_var(
-      Lval* lp, CommIndex commandId, CS nameEnd, Boole forceIt, int deep
-);
-
-private void list_one_var(DictItem *v, CS prefix, int *first);
-private void list_one_var_a(CS prefix, CS name, int type, CS string, int *first);
 
 // Initialize global and Eegl-special variables
 private void
 initGlobalAndSpecialVars(void) {
-   EeglVar* p;
-
    init_var_dict(&globvardict, &globvars_var, VAR_DEF_SCOPE);
-   
-   init_var_dict(&eeglVarsS, &currEeglVarS, VAR_SCOPE);
-   eeglVarsS.lock = VAR_FIXED;
-
-   for (Unt i = 0; i < EV_LEN; ++i) {
-      p = &eeglVars[i];
-      int nameLen = STRLEN(p->name);
-      if (nameLen > DICTITEM16_KEY_LEN) {
-         internalErrMsg(S"Name too long, increase size of dictitem16_T");
-         exitEegl(1);
-      }
-      STRCPY(p->entry.key, p->name);
-      p->entry.len = nameLen;
-      if (p->isReadonly)
-         p->entry.flags = DI_FLAGS_RO | DI_FLAGS_FIX;
-      else
-         p->entry.flags = DI_FLAGS_FIX;
-
-      // add to v: scope dict, unless the value is not always available
-      if (p->entry.c.tag != VAR_UNKNOWN)
-         hash_add(&eeglVarsHt, (Text){p->entry.key, nameLen}, S"initialization");
-   }
-   set_EeglVar_nr(VV_VERSION, EEGL_VERSION_100);
-   set_EeglVar_nr(VV_VERSIONLONG, EEGL_VERSION_100 * 10000 + highest_patch());
-
-   set_EeglVar_nr(VV_SEARCHFORWARD, 1L);
-   set_EeglVar_nr(VV_HLSEARCH, 1L);
-   set_EeglVar_nr(VV_EXITING, VVAL_NULL);
-   set_EeglVar_dict(VV_COMPLETED_ITEM, allocBag_lock(VAR_FIXED));
-   set_EeglVar_list(VV_ERRORS, list_alloc());
-   set_EeglVar_dict(VV_EVENT, allocBag_lock(VAR_FIXED));
-
-   set_EeglVar_nr(VV_FALSE, VVAL_FALSE);
-   set_EeglVar_nr(VV_TRUE, VVAL_TRUE);
-   set_EeglVar_nr(VV_NONE, VVAL_NONE);
-   set_EeglVar_nr(VV_NULL, VVAL_NULL);
-   set_EeglVar_nr(VV_NUMBERMAX, LONG_MAX);
-   set_EeglVar_nr(VV_NUMBERMIN, LONG_MIN);
-   set_EeglVar_nr(VV_NUMBERSIZE, sizeof(Long) * 8);
-   set_EeglVar_nr(VV_SIZEOFINT, sizeof(int));
-   set_EeglVar_nr(VV_SIZEOFLONG, sizeof(long));
-   set_EeglVar_nr(VV_SIZEOFPOINTER, sizeof(char *));
-   set_EeglVar_nr(VV_MAXCOL, MAXCOL);
-
-   set_EeglVar_nr(VV_TYPE_NUMBER,  VAR_TYPE_NUMBER);
-   set_EeglVar_nr(VV_TYPE_STRING,  VAR_TYPE_STRING);
-   set_EeglVar_nr(VV_TYPE_FUNC,    VAR_TYPE_FUNC);
-   set_EeglVar_nr(VV_TYPE_LIST,    VAR_TYPE_LIST);
-   set_EeglVar_nr(VV_TYPE_DICT,    VAR_TYPE_DICT);
-   set_EeglVar_nr(VV_TYPE_FLOAT,   VAR_TYPE_FLOAT);
-   set_EeglVar_nr(VV_TYPE_BOOL,    VAR_TYPE_BOOL);
-   set_EeglVar_nr(VV_TYPE_NONE,    VAR_TYPE_NONE);
-   set_EeglVar_nr(VV_TYPE_JOB,     VAR_TYPE_JOB);
-   set_EeglVar_nr(VV_TYPE_CHANNEL, VAR_TYPE_CHANNEL);
-   set_EeglVar_nr(VV_TYPE_BLOB,    VAR_TYPE_BLOB);
-   set_EeglVar_nr(VV_TYPE_ENUM,    VAR_TYPE_ENUM);
-   set_EeglVar_nr(VV_TYPE_ENUMVALUE,  VAR_TYPE_ENUMVALUE);
-
-   set_EeglVar_nr(VV_ECHOSPACE,    shownCommandColG - 1);
-
-   set_EeglVar_dict(VV_COLORNAMES, allocBag());
-
-   // Default for v:register is not 0 but '"'.  This is adjusted once the
-   // clipboard has been setup by calling reset_reg_var().
-   set_reg_var(0);
 }
 
 #if defined(EXITFREE)
 // Free all Eegl variables information on exit
 pub void
 evalvars_clear(void) {
-   for (Unt i = 0; i < EV_LEN; ++i) {
-      EeglVar* p = &eeglVars[i];
-      if (p->entry.type == VAR_STRING)
-         EE_CLEAR(p->entry.c.string);
-      ei (p->entry.type == VAR_LIST) {
-         list_unref(p->vList);
-         p->vList = NULL;
-      }
-   }
-   hash_clear(&eeglVarsHt);
-   hash_init(&eeglVarsHt);  // garbage_collect() will access it
 
    //global variables
    vars_clear(&globvarht);
@@ -5869,11 +5645,6 @@ evalvars_clear(void) {
 pub int
 garbage_collect_globvars(int copyID) {
    return setRefInSet(&globvarht, copyID, NULL);
-}
-
-pub int
-garbageCollectEeglVars(int copyID) {
-   return setRefInSet(&eeglVarsHt, copyID, NULL);
 }
 
 pub int
@@ -5906,12 +5677,9 @@ set_internal_string_var(CS name, CS value) {
 }
 
 pub void
-eval_diff(CS origfile, CS newfile, CS outfile){
+eval_diff(CS, CS, CS){
+//TODO re-implement without vimvars
    ScriptPos   saved_sctx = scriptPosG;
-
-   set_EeglVar_string(VV_FNAME_IN, origfile, -1);
-   set_EeglVar_string(VV_FNAME_NEW, newfile, -1);
-   set_EeglVar_string(VV_FNAME_OUT, outfile, -1);
 
    ScriptPos* ctx = optGetScriptPos(S"diffexpr");
    if (ctx)
@@ -5921,20 +5689,13 @@ eval_diff(CS origfile, CS newfile, CS outfile){
    Var* var = evalExprInternal(p_dex, NULL, true);
    freeVar(var);
 
-   set_EeglVar_string(VV_FNAME_IN, NULL, -1);
-   set_EeglVar_string(VV_FNAME_NEW, NULL, -1);
-   set_EeglVar_string(VV_FNAME_OUT, NULL, -1);
    scriptPosG = saved_sctx;
 }
 
 pub void
-eval_patch(CS origfile, CS diffFile, CS outfile) {
+eval_patch(CS, CS, CS) {
+//TODO re-implement without vimvars
    ScriptPos saved_sctx = scriptPosG;
-
-   set_EeglVar_string(VV_FNAME_IN, origfile, -1);
-   set_EeglVar_string(VV_FNAME_DIFF, diffFile, -1);
-   set_EeglVar_string(VV_FNAME_OUT, outfile, -1);
-
    ScriptPos* ctx = optGetScriptPos(S"patchexpr");
    if (ctx)
       scriptPosG = *ctx;
@@ -5945,18 +5706,13 @@ eval_patch(CS origfile, CS diffFile, CS outfile) {
 
    Var* tv = evalExprInternal(p_pex, NULL, true);
    freeVar(tv);
-
-   set_EeglVar_string(VV_FNAME_IN, NULL, -1);
-   set_EeglVar_string(VV_FNAME_DIFF, NULL, -1);
-   set_EeglVar_string(VV_FNAME_OUT, NULL, -1);
    scriptPosG = saved_sctx;
 }
 
-// Evaluate an expression to a list with suggestions.
-// For the "expr:" part of 'spellsuggest'. Return NULL when there is an error.
+//Evaluate an expression to a list with suggestions.
+//For the "expr:" part of 'spellsuggest'. Return NULL when there is an error.
 pub List *
-eval_spell_expr(CS badword, CS expr) {
-   Var   save_val;
+eval_spell_expr(CS , CS expr) {
    Var   returnVar;
    List   *list = NULL;
    Byte   *p = skipwhite(expr);
@@ -5964,9 +5720,6 @@ eval_spell_expr(CS badword, CS expr) {
    ScriptPos   *ctx;
    int      r;
 
-   // Set "v:val" to the bad word.
-   prepareEeglVar(VV_VAL, OUT &save_val);
-   set_EeglVar_string(VV_VAL, badword, -1);
    if (p_verbose == 0)
       ++emsg_off;
    ctx = optGetScriptPos(S"spellsuggest");
@@ -5985,43 +5738,9 @@ eval_spell_expr(CS badword, CS expr) {
 
    if (p_verbose == 0)
       --emsg_off;
-   clearVar(get_EeglVar_tv(VV_VAL));
-   restoreEeglVar(VV_VAL, &save_val);
    scriptPosG = saved_sctx;
 
    return list;
-}
-
-// Prepare v: variable "idx" to be used. Save the current typeval in "save_tv" and clear it. When 
-// not used yet add the variable to the v: hashtable.
-pub void
-prepareEeglVar(int idx, OUT Var* save_tv) {
-   *save_tv = eeglVars[idx].entry.c;
-   eeglVars[idx].entry.c.string = NULL;  // don't free it yet
-   if (eeglVars[idx].entry.c.tag == VAR_UNKNOWN)
-      hash_add(&eeglVarsHt, textOfDi16(&eeglVars[idx].entry), S"prepare eeglvar");
-}
-
-//Restore v: variable "idx" to typeval "save_tv".
-//Note that the v: variable must have been cleared already.
-//When no longer defined, remove the variable from the v: hashtable.
-pub void
-restoreEeglVar(int idx, Var* save_tv) {
-   eeglVars[idx].entry.c = *save_tv;
-   if (eeglVars[idx].entry.c.tag != VAR_UNKNOWN)
-      return;
-
-   EeSetItem* hi = hash_find(&eeglVarsHt, textOfDi16(&eeglVars[idx].entry));
-   if (HASHITEM_EMPTY(hi))
-      internal_error(S"restoreEeglVar()");
-   else
-      hash_remove(&eeglVarsHt, hi, S"restore eeglvar");
-}
-
-// List Eegl variables.
-private void
-listEeglVars(int *first) {
-   list_hashtable_vars(&eeglVarsHt, S"v:", false, first);
 }
 
 // List script-local variables, if there is a script.
@@ -6375,7 +6094,6 @@ c_let(Invocation* invo) {
          list_tabVars(&first);
          list_script_vars(&first);
          list_func_vars(&first);
-         listEeglVars(&first);
       }
       return;
    }
@@ -6704,7 +6422,6 @@ list_arg_vars(Invocation* invo, CS arg, int* first) {
                      case 'b': list_buf_vars(first); break;
                      case 'w': list_win_vars(first); break;
                      case 't': list_tabVars(first); break;
-                     case 'v': listEeglVars(first); break;
                      case 's': list_script_vars(first); break;
                      case 'l': list_func_vars(first); break;
                      default:
@@ -6842,11 +6559,11 @@ letOption(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
       //and the passed value is a function reference, then convert it to
       //the name (string) of the function reference.
       s = tv2string(tv, &tofree, numbuf, 0);
-      if (s == NULL)
-          goto theend;
+      if (!s)
+         goto theend;
    }
    // Avoid setting a string option to the text "v:false" or similar.
-   ei (tv->tag != VAR_BOOL && tv->tag != VAR_SPECIAL) {
+   ei (tv->tag != VAR_BOOL) {
       s = convertVarToStringSingleUse(tv);
       if (!s)
          goto theend;
@@ -7293,7 +7010,6 @@ item_lock(Var *tv, int deep, int lock, int check_refcount) {
    case VAR_FUNC:
    case VAR_PARTIAL:
    case VAR_FLOAT:
-   case VAR_SPECIAL:
    case VAR_JOB:
    case VAR_CHANNEL:
        break;
@@ -7450,25 +7166,9 @@ get_user_var_name(Expand *xp, int idx) {
       return cat_prefix_varname('t', hi->hi_key);
    }
 
-   // v: variables
-   if (vidx < EV_LEN)
-      return cat_prefix_varname('v', (CS)eeglVars[vidx++].name);
-
    EE_CLEAR(varnamebuf);
    varnamebuflen = 0;
    return NULL;
-}
-
-pub char *
-get_var_special_name(int nr) {
-   switch (nr) {
-   case VVAL_FALSE: return "v:false";
-   case VVAL_TRUE:  return "v:true";
-   case VVAL_NULL:  return "v:null";
-   case VVAL_NONE:  return "v:none";
-   }
-   internal_error(S"get_var_special_name()");
-   return "42";
 }
 
 // Return the global variable dictionary
@@ -7483,176 +7183,6 @@ get_globvar_ht(void) {
    return &globvarht;
 }
 
-// Return the v: variable dictionary
-pub Bag*
-getEeglVarDict(void) {
-   return &eeglVarsS;
-}
-
-// Return the index of a v:variable. Negative if not found. Return DI_ flags in "flags".
-pub int
-find_EeglVar(CS name, OUT Unt* flags) {
-   DictItem* di = findVar_in_ht(&eeglVarsHt, 0, mbText(name), true);
-   if (!di)
-      return -1;
-      
-   *flags = di->flags;
-   EeglVar* vv = (EeglVar *)((char *)di - offsetof(EeglVar, entry));
-   return (int)(vv - eeglVars);
-}
-
-
-// Set tag of v: variable to "tag".
-pub void
-set_EeglVar_type(int idx, VarTag tag) {
-   eeglVars[idx].entry.c.tag = tag;
-}
-
-// Set number v: variable to "val".
-// Note that this does not set the type, use set_EeglVar_type() for that.
-pub void
-set_EeglVar_nr(int idx, Long val) {
-   eeglVars[idx].entry.c.number = val;
-}
-
-pub CS
-get_EeglVar_name(int idx) {
-   return eeglVars[idx].name;
-}
-
-// Get Var v: variable value.
-pub Var *
-get_EeglVar_tv(int idx) {
-   return &eeglVars[idx].entry.c;
-}
-
-// Set v: variable to "tv".  Only accepts the same type. Takes over the value of "tv".
-pub int
-set_EeglVar_tv(int idx, Var *tv) {
-   if (eeglVars[idx].entry.c.tag != tv->tag) {
-      emsg(_(e_type_mismatch_for_v_variable));
-      clearVar(tv);
-      return FAIL;
-   }
-   // isReadonly is also checked when compiling, but let's check here as well.
-   if (eeglVars[idx].isReadonly) {
-      showErrFmtMsg(_(e_cannot_change_readonly_variable_str), eeglVars[idx].name);
-      return FAIL;
-   }
-   clearVar(&eeglVars[idx].entry.c);
-   eeglVars[idx].entry.c = *tv;
-   return OK;
-}
-
-// Get number v: variable value.
-pub Long
-get_EeglVar_nr(int idx) {
-   return eeglVars[idx].entry.c.number;
-}
-
-//Get string v: variable value. Use a static buffer, can only be used once.
-//If the String variable has never been set, return an empty string. Never return NULL
-pub CS
-get_EeglVar_str(int idx) {
-   return tv_get_string(&eeglVars[idx].entry.c);
-}
-
-// Get List v: variable value.  Caller must take care of reference count when needed.
-pub List *
-get_EeglVar_list(int idx) {
-   return eeglVars[idx].entry.c.list;
-}
-
-// Get Bag v: variable value.  Caller must take care of reference count when needed.
-pub Bag *
-get_EeglVar_dict(int idx) {
-   return eeglVars[idx].entry.c.bag;
-}
-
-// Set v:char to character "c".
-pub void
-set_EeglVar_char(int c) {
-   Byte buf[MB_MAXBYTES + 1];
-
-   buf[mb_char2bytes(c, buf)] = ZERO;
-   set_EeglVar_string(VV_CHAR, buf, -1);
-}
-
-//Set v:count to "count" and v:count1 to "count1".
-//When "set_prevcount" is true first set v:prevcount from v:count.
-pub void
-set_vcount( long   count, long   count1, int      set_prevcount) {
-   if (set_prevcount)
-      eeglVars[VV_PREVCOUNT].entry.c.number = eeglVars[VV_COUNT].entry.c.number;
-   eeglVars[VV_COUNT].entry.c.number = count;
-   eeglVars[VV_COUNT1].entry.c.number = count1;
-}
-
-// Save variables that might be changed as a side effect.  Used when executing a timer callback.
-pub void
-saveEeglVars(EeglVarsSave* evSave) {
-   evSave->prevCount = eeglVars[VV_PREVCOUNT].entry.c.number;
-   evSave->count = eeglVars[VV_COUNT].entry.c.number;
-   evSave->count1 = eeglVars[VV_COUNT1].entry.c.number;
-}
-
-//Restore variables saved by save_cimVars().
-pub void
-restoreEeglVars(EeglVarsSave* evSave) {
-   eeglVars[VV_PREVCOUNT].entry.c.number = evSave->prevCount;
-   eeglVars[VV_COUNT].entry.c.number = evSave->count;
-   eeglVars[VV_COUNT1].entry.c.number = evSave->count1;
-}
-
-// Set string v: variable to a copy of "val". If 'copy' is false, then set the value.
-pub void
-set_EeglVar_string(int idx, Byte* val, int len) { //length of "val" to use or -1 (whole string)
-   clearVar(&eeglVars[idx].entry.c);
-   eeglVars[idx].entry.c.tag = VAR_STRING;
-   if (val == NULL)
-      eeglVars[idx].entry.c.string = NULL;
-   ei (len == -1)
-      eeglVars[idx].entry.c.string = copyStr(val);
-   else
-      eeglVars[idx].entry.c.string = copySubstr(val, len);
-}
-
-// Set List v: variable to "val".
-pub void
-set_EeglVar_list(int idx, List *val) {
-   clearVar(&eeglVars[idx].entry.c);
-   eeglVars[idx].entry.c.tag = VAR_LIST;
-   eeglVars[idx].entry.c.list = val;
-   if (val)
-      ++val->refCount;
-}
-
-// Set Dictionary v: variable to "val".
-pub void
-set_EeglVar_dict(int idx, Bag *val) {
-   clearVar(&eeglVars[idx].entry.c);
-   eeglVars[idx].entry.c.tag = VAR_BAG;
-   eeglVars[idx].entry.c.bag = val;
-   if (!val)
-      return;
-
-   ++val->refCount;
-   bagSetItemsRo(val);
-}
-
-// Set the v:argv list.
-pub void
-set_argv_var(char **argv, int argc) {
-   List* l = list_alloc();
-   l->lock = VAR_FIXED;
-   for (int i = 0; i < argc; ++i) {
-      if (list_append_string(l, (CS)argv[i], -1) == FAIL)
-          exitEegl(1);
-      l->lv_u.mat.last->c.lock = VAR_FIXED;
-   }
-   set_EeglVar_list(VV_ARGV, l);
-}
-
 // Reset v:register, taking the 'clipboard' setting into account.
 pub void
 reset_reg_var(void) {
@@ -7661,98 +7191,6 @@ reset_reg_var(void) {
    // Adjust the register according to 'clipboard', so that when
    // "unnamed" is present it becomes '*' or '+' instead of '"'.
    clipGetDefaultRegister(OUT &regname);
-   set_reg_var(regname);
-}
-
-// Set v:register if needed.
-pub void
-set_reg_var(int c) {
-   Byte regname;
-   if (c == 0 || c == ' ')
-      regname = '"';
-   else
-      regname = c;
-   // Avoid free/alloc when the value is already right.
-   if (eeglVars[VV_REG].entry.c.string == NULL || eeglVars[VV_REG].entry.c.string[0] != c)
-      set_EeglVar_string(VV_REG, &regname, 1);
-}
-
-//Get or set v:exception.  If "oldval" == NULL, return the current value.
-//Otherwise, restore the value to "oldval" and return NULL.
-//Must always be called in pairs to save and restore v:exception!  Does not take care of memory 
-//allocations.
-pub CS
-v_exception(CS oldval) {
-   if (oldval == NULL)
-      return eeglVars[VV_EXCEPTION].entry.c.string;
-
-   eeglVars[VV_EXCEPTION].entry.c.string = oldval;
-   return NULL;
-}
-
-//Get or set v:throwpoint.  If "oldval" == NULL, return the current value.
-//Otherwise, restore the value to "oldval" and return NULL.
-//Must always be called in pairs to save and restore v:throwpoint!  Does not
-//take care of memory allocations.
-pub CS
-v_throwpoint(CS oldval) {
-   if (!oldval)
-      return eeglVars[VV_THROWPOINT].entry.c.string;
-
-   eeglVars[VV_THROWPOINT].entry.c.string = oldval;
-   return NULL;
-}
-
-//Set v:cmdarg.
-//If "invo" != NULL, use "invo" to generate the value and return the old value.
-//If "oldarg" != NULL, restore the value to "oldarg" and return NULL.
-//Must always be called in pairs!
-pub CS
-set_cmdarg(Invocation* invo, CS oldarg) {
-   Byte   *oldval;
-   Byte   *newval;
-   unsigned   len;
-
-   oldval = eeglVars[VV_CMDARG].entry.c.string;
-   if (invo == NULL) {
-      eeglFree(oldval);
-      eeglVars[VV_CMDARG].entry.c.string = oldarg;
-      return NULL;
-   }
-
-   if (invo->force_bin == FORCE_BIN)
-      len = 6;
-   ei (invo->force_bin == FORCE_NOBIN)
-      len = 8;
-   else
-      len = 0;
-
-   if (invo->read_edit)
-      len += 7;
-
-   if (invo->bad_char != 0)
-      len += 7 + 4;  // " ++bad=" + "keep" or "drop"
-
-   newval = alloc(len + 1);
-
-   if (invo->force_bin == FORCE_BIN)
-      sprintf((char *)newval, " ++bin");
-   ei (invo->force_bin == FORCE_NOBIN)
-      sprintf((char *)newval, " ++nobin");
-   else
-      *newval = ZERO;
-
-   if (invo->read_edit)
-      STRCAT(newval, " ++edit");
-
-   if (invo->bad_char == BAD_KEEP)
-      STRCPY(newval + STRLEN(newval), " ++bad=keep");
-   ei (invo->bad_char == BAD_DROP)
-      STRCPY(newval + STRLEN(newval), " ++bad=drop");
-   ei (invo->bad_char != 0)
-      sprintf((char *)newval + STRLEN(newval), " ++bad=%c", invo->bad_char);
-   eeglVars[VV_CMDARG].entry.c.string = newval;
-   return oldval;
 }
 
 //Get the value of internal variable "name".
@@ -7945,7 +7383,6 @@ findVar_in_ht(
       switch (level) {
       case VAR_SCRIPT: return &SCRIPT_SV(scriptPosG.sid)->sv_var;
       case VAR_GLOBAL: return &globvars_var;
-      case VAR_EEGL: return &currEeglVarS;
       case VAR_BOOK: return &curBook->bookVar;
       case VAR_PORTAL: return &curPor->wVar;
       case VAR_TAB: return &curtab->tabVar;
@@ -8052,7 +7489,6 @@ findVarHashTable(Text name, OUT CS* varname) {
          case 'b': return &curBook->bVars->hashTable;   // book variable
          case 'w': return &curPor->internalVars->hashTable;   // portal variable
          case 't': return &curtab->vars->hashTable;   // tab variable
-         case 'v': return &eeglVarsHt;   // Eegl variable
          case 's':   // script variable
             ht = get_script_local_ht();
             if (ht)
@@ -8214,47 +7650,6 @@ list_one_var_a(
    }
 }
 
-//Addition handling for setting a v: variable.
-//Return true if the variable should be set normally, false if nothing else needs to be done.
-pub int
-before_set_vvar(
-    CS varname,
-    DictItem* di,
-    Var* tv,
-    int copy,
-    int* type_error
-) {
-   if (di->c.tag == VAR_STRING) {
-      EE_CLEAR(di->c.string);
-      if (copy || tv->tag != VAR_STRING) {
-         CS val = tv_get_string(tv);
-
-         //Careful: when assigning to v:errmsg and
-         //tv_get_string() causes an error message the variable will already be set.
-         if (di->c.string == NULL)
-            di->c.string = copyStr(val);
-      } else {
-         // Take over the string to avoid an extra alloc/free.
-         di->c.string = tv->string;
-         tv->string = NULL;
-      }
-      return false;
-   } ei (di->c.tag == VAR_NUMBER) {
-      di->c.number = tv_get_number(tv);
-      if (STRCMP(varname, "searchforward") == 0)
-         set_search_direction(di->c.number ? '/' : '?');
-      ei (STRCMP(varname, "hlsearch") == 0) {
-         hiliteSearchG = di->c.number != 0;
-         redraw_all_later(UPD_SOME_VALID);
-      }
-      return false;
-   } ei (di->c.tag != tv->tag) {
-      *type_error = true;
-      return false;
-   }
-   return true;
-}
-
 //Set variable "name" to "newValue".
 //If the variable already exists, its value is updated. Otherwise the variable is created.
 pub void
@@ -8335,15 +7730,6 @@ setVarImpl(
       }
 
       // existing variable, need to clear the value
-
-      //Handle setting internal v: variables separately where needed to prevent changing the type.
-      int type_error = false;
-      if (ht == &eeglVarsHt && !before_set_vvar(varname, di, tv, copy, &type_error)) {
-         if (type_error)
-            showErrFmtMsg(_(e_setting_v_str_to_value_with_wrong_type), varname);
-         goto failed;
-      }
-
       clearVar(&di->c);
    } else {
       //Item not found, check if a function already exists.
@@ -8357,8 +7743,8 @@ setVarImpl(
       if (check_hashtab_frozen(ht, S"add variable"))
          goto failed;
 
-      //Can't add "v:" or "a:" variable.
-      if (ht == &eeglVarsHt || ht == get_funccal_args_ht()) {
+      //Can't add "a:" variable.
+      if (ht == get_funccal_args_ht()) {
          showErrFmtMsg(_(e_illegal_variable_name_str), name);
          goto failed;
       }
@@ -8629,17 +8015,6 @@ setPortVar(Var* argvars, int off) {
    }
    if (needSwitchPortal)
       portRestore(OUT &switchPort, true);
-}
-
-// Add an assert error to v:errors.
-pub void
-assert_error(ArrayList* gap) {
-   EeglVar* vp = &eeglVars[VV_ERRORS];
-
-   if (vp->entry.c.tag != VAR_LIST || eeglVars[VV_ERRORS].entry.c.list == NULL)
-      // Make sure v:errors is a list.
-      set_EeglVar_list(VV_ERRORS, list_alloc());
-   list_append_string(eeglVars[VV_ERRORS].entry.c.list, gap->c, gap->len);
 }
 
 pub int
@@ -9133,7 +8508,6 @@ private BuiltinFn globalFunctions[] = {
    {S"asin",      1, 1, FEARG_1, &f_asin},
    {S"assert_equal", 2, 3, FEARG_2, &f_assert_equal},
    {S"assert_equalfile", 2, 3, FEARG_1, &f_assert_equalfile},
-   {S"assert_exception", 1, 2, 0, &f_assert_exception},
    {S"assert_fails", 1, 5, FEARG_1, &f_assert_fails},
    {S"assert_false", 1, 2, FEARG_1, &f_assert_false},
    {S"assert_inrange", 3, 4, FEARG_3, &f_assert_inrange},
@@ -10342,7 +9716,6 @@ f_empty(Var* argvars, Var* returnVar) {
       n = argvars[0].bag == NULL || argvars[0].bag->hashTable.count == 0;
       break;
    case VAR_BOOL:
-   case VAR_SPECIAL:
       n = argvars[0].number != VVAL_TRUE;
       break;
 
@@ -11299,8 +10672,8 @@ f_getenv(Var* argvars, Var* returnVar) {
 
    CS p = eeglGetEnv(tv_get_string(&argvars[0]));
    if (!p) {
-      returnVar->tag = VAR_SPECIAL;
-      returnVar->number = VVAL_NULL;
+      returnVar->tag = VAR_VOID;
+      returnVar->number = 0;
       return;
    }
    if (!mustfree)
@@ -11704,9 +11077,7 @@ getreg_get_regname(Arr(Var) argvars) {
       strregname = convertVarToStringSingleUse(&argvars[0]);
       if (!strregname)       // type error; errmsg already given
           return 0;
-   } else
-      // Default to v:register
-      strregname = get_EeglVar_str(VV_REG);
+   }
 
    return *strregname == 0 ? '"' : *strregname;
 }
@@ -12240,28 +11611,6 @@ f_index(Arr(Var) argvars, Var* returnVar) {
       emsg(_(e_list_or_blob_required));
 }
 
-//Evaluate 'expr' with the v:key and v:val arguments and return the result.
-//The expression is expected to return a boolean value.  The caller should set
-//the VV_KEY and VV_VAL vim variables before calling this function.
-pub Boole
-indexof_eval_expr(Var *expr) {
-   Var   argv[3];
-   Var   newtv;
-   Boole error = false;
-
-   argv[0] = *get_EeglVar_tv(VV_KEY);
-   argv[1] = *get_EeglVar_tv(VV_VAL);
-   newtv.tag = VAR_UNKNOWN;
-
-   if (eval_expr_typval(expr, false, argv, 2, &newtv) == FAIL)
-      return false;
-
-   Long found = varGetNumberChk(&newtv, OUT &error);
-   clearVar(&newtv);
-
-   return error ? false : (Boole)found;
-}
-
 //Evaluate 'expr' for each byte in the Blob 'b' starting with the byte at
 //'startidx' and return the index of the byte where 'expr' is true.  Return
 //-1 if 'expr' doesn't evaluate to true for any of the bytes.
@@ -12277,14 +11626,8 @@ indexof_blob(Blob *b, long startidx, Var *expr) {
           startidx = 0;
    }
 
-   set_EeglVar_type(VV_KEY, VAR_NUMBER);
-   set_EeglVar_type(VV_VAL, VAR_NUMBER);
-
    int called_emsg_start = called_emsg;
    for (long idx = startidx; idx < blob_len(b); ++idx) {
-      set_EeglVar_nr(VV_KEY, idx);
-      set_EeglVar_nr(VV_VAL, blob_get(b, idx));
-
       if (indexof_eval_expr(expr))
          return idx;
 
@@ -12301,7 +11644,7 @@ indexof_blob(Blob *b, long startidx, Var *expr) {
 private int
 indexof_list(List *l, long startidx, Var *expr) {
    ListItem* item;
-   long   idx = 0;
+   Long idx = 0;
 
    if (!l)
       return -1;
@@ -12318,15 +11661,9 @@ indexof_list(List *l, long startidx, Var *expr) {
          idx = l->lv_u.mat.cachedInd;
    }
 
-   set_EeglVar_type(VV_KEY, VAR_NUMBER);
-
    int called_emsg_start = called_emsg;
    for ( ; item; item = item->next, ++idx) {
-      set_EeglVar_nr(VV_KEY, idx);
-      copy_tv(OUT get_EeglVar_tv(VV_VAL), &item->c);
-
       Boole found = indexof_eval_expr(expr);
-      clearVar(get_EeglVar_tv(VV_VAL));
 
       if (found)
          return idx;
@@ -12342,8 +11679,6 @@ indexof_list(List *l, long startidx, Var *expr) {
 private void
 f_indexof(Arr(Var) argvars, Var* returnVar) {
    long startidx = 0;
-   Var save_val;
-   Var save_key;
    int save_anyEmsgG;
 
    returnVar->number = -1;
@@ -12363,9 +11698,6 @@ f_indexof(Arr(Var) argvars, Var* returnVar) {
    if (argvars[2].tag == VAR_BAG)
       startidx = bagGetNumber_def(argvars[2].bag, tConst("startidx"), 0);
 
-   prepareEeglVar(VV_VAL, OUT &save_val);
-   prepareEeglVar(VV_KEY, OUT &save_key);
-
    //We reset "anyEmsgG" to be able to detect whether an error occurred
    //during evaluation of the expression.
    save_anyEmsgG = anyEmsgG;
@@ -12376,8 +11708,6 @@ f_indexof(Arr(Var) argvars, Var* returnVar) {
    else
       returnVar->number = indexof_list(argvars[0].list, startidx, &argvars[1]);
 
-   restoreEeglVar(VV_KEY, &save_key);
-   restoreEeglVar(VV_VAL, &save_val);
    anyEmsgG |= save_anyEmsgG;
 }
 
@@ -12581,7 +11911,6 @@ f_len(Arr(Var) argvars, Var* returnVar) {
    case VAR_ANY:
    case VAR_VOID:
    case VAR_BOOL:
-   case VAR_SPECIAL:
    case VAR_FLOAT:
    case VAR_FUNC:
    case VAR_PARTIAL:
@@ -14142,10 +13471,7 @@ f_setenv(Arr(Var) argvars, Var*) {
    Byte   valbuf[NUMBUFLEN];
 
    CS name = tv_get_string_buf(&argvars[0], namebuf);
-   if (argvars[1].tag == VAR_SPECIAL && argvars[1].number == VVAL_NULL)
-      eeUnsetenv(name);
-   else
-      eeSetenv_ext(name, tv_get_string_buf(&argvars[1], valbuf));
+   eeSetenv_ext(name, tv_get_string_buf(&argvars[1], valbuf));
 }
 
 // "setfperm({fname}, {mode})" function
@@ -14649,7 +13975,6 @@ f_type(Arr(Var) argvars, Var* returnVar) {
    case VAR_BAG:    n = VAR_TYPE_DICT; break;
    case VAR_FLOAT:   n = VAR_TYPE_FLOAT; break;
    case VAR_BOOL:     n = VAR_TYPE_BOOL; break;
-   case VAR_SPECIAL: n = VAR_TYPE_NONE; break;
    case VAR_JOB:     n = VAR_TYPE_JOB; break;
    case VAR_CHANNEL: n = VAR_TYPE_CHANNEL; break;
    case VAR_BLOB:    n = VAR_TYPE_BLOB; break;
@@ -15179,8 +14504,6 @@ pub void
 catch_exception(Exception *excp) {
    excp->caught = caught_stack;
    caught_stack = excp;
-   set_EeglVar_string(VV_EXCEPTION, (CS)excp->value, -1);
-   set_EeglVar_list(VV_STACKTRACE, excp->stacktrace);
    if (*excp->throw_name != ZERO) {
       if (excp->throw_lnum != 0)
          eeSnprintf(
@@ -15188,13 +14511,10 @@ catch_exception(Exception *excp) {
          );
       else
          eeSnprintf(IObuff, IOSIZE, "%s", excp->throw_name);
-      set_EeglVar_string(VV_THROWPOINT, IObuff, -1);
-   } else
-      // throw_name not set on an exception from a command that was typed.
-      set_EeglVar_string(VV_THROWPOINT, NULL, -1);
+   }
 
    if (p_verbose >= 13 || debug_break_level > 0) {
-      int   save_msg_silent = msg_silent;
+      int save_msg_silent = msg_silent;
 
       if (debug_break_level > 0)
          msg_silent = false;      // display messages
@@ -15224,25 +14544,16 @@ finish_exception(Exception *excp) {
       internal_error(S"finish_exception()");
    caught_stack = caught_stack->caught;
    if (caught_stack) {
-   set_EeglVar_string(VV_EXCEPTION, (CS)caught_stack->value, -1);
-   set_EeglVar_list(VV_STACKTRACE, caught_stack->stacktrace);
-   if (*caught_stack->throw_name != ZERO) {
-      if (caught_stack->throw_lnum != 0) {
-         eeSnprintf(
-            IObuff, IOSIZE, _("%s, line %ld"), caught_stack->throw_name, 
-            (long)caught_stack->throw_lnum
-         );
-      } else {
-         eeSnprintf(IObuff, IOSIZE, "%s", caught_stack->throw_name);
-      } 
-      set_EeglVar_string(VV_THROWPOINT, IObuff, -1);
-   } else
-      // throw_name not set on an exception from a command that was typed.
-      set_EeglVar_string(VV_THROWPOINT, NULL, -1);
-   } else {
-      set_EeglVar_string(VV_EXCEPTION, NULL, -1);
-      set_EeglVar_string(VV_THROWPOINT, NULL, -1);
-      set_EeglVar_list(VV_STACKTRACE, NULL);
+      if (*caught_stack->throw_name != ZERO) {
+         if (caught_stack->throw_lnum != 0) {
+            eeSnprintf(
+               IObuff, IOSIZE, _("%s, line %ld"), caught_stack->throw_name, 
+               (long)caught_stack->throw_lnum
+            );
+         } else {
+            eeSnprintf(IObuff, IOSIZE, "%s", caught_stack->throw_name);
+         } 
+      }
    }
 
    // Discard the exception, but use the finish message for 'verbose'.

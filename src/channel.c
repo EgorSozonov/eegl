@@ -1871,8 +1871,6 @@ channel_exe_cmd(Channel *channel, ChannelFdKind part, Var *argv) {
       executeCommLine(arg);
       if (do_emsg_silent)
           --emsg_silent;
-      if (called_emsg > called_emsg_before)
-          ch_log(channel, "Command error: '%s'", (char *)get_EeglVar_str(VV_ERRMSG));
    } ei (STRCMP(cmd, "normal") == 0) {
       ch_log(channel, "Executing normal command '%s'", (char *)arg);
       Invocation ea;
@@ -2957,7 +2955,7 @@ commonChannelRead(Var* argvars, Var* returnVar, int raw, int blob) {
          *returnVar = *listtv;
          eeglFree(listtv);
       } else {
-         returnVar->tag = VAR_SPECIAL;
+         returnVar->tag = VAR_VOID;
          returnVar->number = VVAL_NONE;
       }
    }
@@ -4298,7 +4296,6 @@ chCallShell(Text shellComm, Unt opt) {
    //Check the portal size, in case it changed while executing the external command.
    shell_resized_check();
 
-   set_EeglVar_nr(VV_SHELL_ERROR, (long)retval.status);
    return retval;
 }
 
@@ -4567,9 +4564,9 @@ deathtrap(int sigarg) {
    if ((inMchDelayS && sigarg == SIGQUIT) != 0)
       return;
 
-   // When SIGHUP, SIGQUIT, etc. are blocked: postpone the effect and return
-   // here.  This avoids that a non-reentrant function is interrupted, e.g.,
-   // free().  Calling free() again may then cause a crash.
+   //When SIGHUP, SIGQUIT, etc. are blocked: postpone the effect and return here. This avoids that 
+   //a non-reentrant function is interrupted, e.g., free(). Calling free() again may then cause a 
+   //crash.
    if (entered == 0
        && ( sigarg == SIGHUP
          || sigarg == SIGQUIT
@@ -4582,15 +4579,13 @@ deathtrap(int sigarg) {
    )
       return;
 
-   // Remember how often we have been called.
+   //Remember how often we have been called.
    ++entered;
 
-   // Executing autocommands is likely to use more stack space than we have
-   // available in the signal stack.
+   //Executing autocommands is likely to use more stack space than we have
+   //available in the signal stack.
    block_autocmds();
 
-   // Set the v:dying variable.
-   set_EeglVar_nr(VV_DYING, (long)entered);
    v_dying = entered;
 
 #if 0
@@ -4810,7 +4805,6 @@ set_child_environment(
    sprintf((char *)envbuf, "%d", 256);
    setenv("COLORS", (char *)envbuf, 1);
    if (is_terminal) {
-      sprintf((char *)envbuf, "%ld",  (long)get_EeglVar_nr(VV_VERSION));
       setenv("EEGL_TERMINAL", (char *)envbuf, 1);
    }
    setenv("EEGL_SERVERNAME", serverName == NULL ? "" : (char *)serverName, 1);

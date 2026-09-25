@@ -901,15 +901,11 @@ msgDeco(CS s, char flags) {
 pub int
 msgAndKeep(CS s, char flags, int keep) {       // true: set msgAfterRedrawG if it doesn't scroll
    static int   entered = 0;
-   int      retval;
 
    // Skip messages not matching ":filter pattern".
    // Don't filter when there is an error.
    if (!emsg_on_display && message_filtered(s))
       return true;
-
-   if (flags == 0)
-      set_EeglVar_string(VV_STATUSMSG, s, -1);
 
    //It is possible that displaying a messages causes a problem (e.g.,
    //when redrawing the window), which causes another message, etc..   To
@@ -937,7 +933,7 @@ msgAndKeep(CS s, char flags, int keep) {       // true: set msgAfterRedrawG if i
 
    msgOuttransDeco((CS)s, flags);
    msg_clr_eos();
-   retval = msg_end();
+   int retval = msg_end();
 
    if (keep && retval && eeglStrSize((CS)s)
              < (int)(visibleRowsG - commlineRowG - 1) * visibleColsG + shownCommandColG)
@@ -1235,9 +1231,6 @@ emsgImpl(CS s) {
          emsg_assert_fails_context = copyStr(SOURCING_NAME ? SOURCING_NAME : S"");
       }
 
-      // set "v:errmsg", also when using ":silent! cmd"
-      set_EeglVar_string(VV_ERRMSG, (CS)s, -1);
-
       // When using ":silent! cmd", ignore error messages. But do write it to the redirection file
       if (emsg_silent != 0) {
          if (emsg_noredir == 0) {
@@ -1343,7 +1336,6 @@ internalErrMsg(CS s) {
 
    emsgImpl(s);
 #if defined(ABORT_ON_INTERNAL_ERROR)
-   set_EeglVar_string(VV_ERRMSG, (CS)s, -1);
    msg_putchar('\n');  // avoid overwriting the error message
    out_flush();
    abort();
@@ -2866,7 +2858,6 @@ give_warning_with_source(Byte *message, int hl, int with_source) {
    // Don't want a hit-enter prompt here.
    ++no_wait_return;
 
-   set_EeglVar_string(VV_WARNINGMSG, message, -1);
    EE_CLEAR(msgAfterRedrawG);
    if (hl)
       decoAfterRedrawG = getDecoFlags(HLF_W);
@@ -3079,23 +3070,6 @@ msg_show_console_dialog(
 // Increment "msg_scrolled".
 private void
 inc_msg_scrolled(void) {
-   if (*get_EeglVar_str(VV_SCROLLSTART) == ZERO) {
-      Byte* p = SOURCING_NAME;
-      Byte* tofree = NULL;
-      int len;
-
-      // v:scrollstart is empty, set it to the script/function name and line number
-      if (!p)
-         p = (CS)_("Unknown");
-      else {
-         len = (int)STRLEN(p) + 40;
-         tofree = alloc(len);
-         eeSnprintf(tofree, len, _("%s line %ld"), p, (long)SOURCING_LNUM);
-         p = tofree;
-      }
-      set_EeglVar_string(VV_SCROLLSTART, p, -1);
-      eeglFree(tofree);
-   }
    ++msg_scrolled;
    drawSetMustRedraw(UPD_VALID);
 }

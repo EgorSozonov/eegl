@@ -289,7 +289,7 @@ private BlockHeader * ml_find_line(Book *book, LineNr lnum, int action);
 private int ml_add_stack(Book* book);
 private void fixBlockStack(Book* book, int count);
 private void attention_message(Book* book, CS swapName);
-private SeaChoice  do_swapexists(Book* book, CS fname);
+private SeaChoice  do_swapexists(Book* book);
 private CS findSwapName(Book* book, CS old_fname);
 private int b0_magic_wrong(Block0* b0p);
 private int compareFnameWithInode(CS fname_c, CS nameFromSwap, long ino_block0);
@@ -3202,26 +3202,13 @@ attention_message(Book* book, CS swapName) {
 
 //Trigger the SwapExists autocommands. Return a value for equivalent to do_dialog().
 private SeaChoice 
-do_swapexists(Book* book, CS fname) {
-   set_EeglVar_string(VV_SWAPNAME, fname, -1);
-   set_EeglVar_string(VV_SWAPCHOICE, NULL, -1);
+do_swapexists(Book* book) {
 
    //Trigger SwapExists autocommands with <afile> set to the file being
    //edited.  Disallow changing directory here.
    ++allBookLock;
    applyAutocomms(EVENT_SWAPEXISTS, book->currFileName, NULL, false, NULL);
    --allBookLock;
-
-   set_EeglVar_string(VV_SWAPNAME, NULL, -1);
-
-   switch (*get_EeglVar_str(VV_SWAPCHOICE)) {
-   case 'o': return SEA_CHOICE_READONLY;
-   case 'e': return SEA_CHOICE_EDIT;
-   case 'r': return SEA_CHOICE_RECOVER;
-   case 'd': return SEA_CHOICE_DELETE;
-   case 'q': return SEA_CHOICE_QUIT;
-   case 'a': return SEA_CHOICE_ABORT;
-   }
 
    return SEA_CHOICE_NONE;
 }
@@ -3313,7 +3300,7 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
             if (choice == SEA_CHOICE_NONE
                 && swap_exists_action != SEA_NONE
                 && has_autocmd(EVENT_SWAPEXISTS, buf_fname, book))
-            choice = do_swapexists(book, fname);
+            choice = do_swapexists(book);
 
             if (choice == SEA_CHOICE_NONE && swap_exists_action == SEA_READONLY) {
                // always open readonly.
@@ -10797,7 +10784,6 @@ startEditingFile(
    int oldbuf;           // true if using existing book
    int auto_buf = false; // true if autocommands brought us into the book unexpectedly
    CS new_name = NULL;
-   int did_set_swapcommand = false;
    Book* book;
    BookRef bookRef;
    BookRef curBookSaved;
@@ -10876,19 +10862,6 @@ startEditingFile(
    //autocommands freed portal :(
    if (oldPort && !portalIsValid(oldPort))
       oldPort = NULL;
-
-   if ((command || newlnum > (LineNr)0) && *get_EeglVar_str(VV_SWAPCOMMAND) == ZERO) {
-      // Set v:swapcommand for the SwapExists autocommands.
-      Unt len = command ? STRLEN(command) + 3 : 30;
-      CS p = alloc(len);
-      if (command)
-         eeSnprintf(p, len, ":%s\r", command);
-      else
-         eeSnprintf(p, len, "%ldG", (long)newlnum);
-      set_EeglVar_string(VV_SWAPCOMMAND, p, -1);
-      did_set_swapcommand = true;
-      eeglFree(p);
-   }
 
    //If we are starting to edit another file, open a (new) book.
    //Otherwise we re-use the current book.
@@ -11322,8 +11295,6 @@ startEditingFile(
 theend:
    if (did_inc_redrawing_disabled && isRedrawingDisabledG > 0)
       --isRedrawingDisabledG;
-   if (did_set_swapcommand)
-      set_EeglVar_string(VV_SWAPCOMMAND, NULL, -1);
    eeglFree(free_fname);
    return retval;
 }
@@ -11437,33 +11408,25 @@ bookCheckTimestamp(Book* book){
          reload = RELOAD_NORMAL;
       else {
          CS reason;
-         Unt  reasonlen;
 
          if (stat_res < 0) {
             reason = S"deleted";
-            reasonlen = STRLEN_LITERAL("deleted");
          } ei (bookWasChanged(book)) {
             reason = S"conflict";
-            reasonlen = STRLEN_LITERAL("conflict");
          }
          //Check if the file contents really changed to avoid giving a warning when only the 
          //timestamp was set (e.g., checked out of CVS).  Always warn when the buffer was changed.
          ei (orig_size != book->origSize || bookContentsChanged(book)) {
             reason = S"changed";
-            reasonlen = STRLEN_LITERAL("changed");
          } ei (orig_mode != book->origMode) {
             reason = S"mode";
-            reasonlen = STRLEN_LITERAL("mode");
          } else {
             reason = S"time";
-            reasonlen = STRLEN_LITERAL("time");
          }
 
          //Only give the warning if there are no FileChangedShell autocommands.
          //Avoid being called recursively by setting "busy".
          busy = true;
-         set_EeglVar_string(VV_FCS_REASON, reason, (int)reasonlen);
-         set_EeglVar_string(VV_FCS_CHOICE, S"", 0);
          ++allBookLock;
          n = applyAutocomms(
                EVENT_FILECHANGEDSHELL, book->currFileName, book->currFileName, false, book
@@ -11473,15 +11436,7 @@ bookCheckTimestamp(Book* book){
          if (n) {
             if (!bookRefValid(&bufref))
                emsg(_(e_filechangedshell_autocommand_deleted_buffer));
-            CS s = get_EeglVar_str(VV_FCS_CHOICE);
-            if (STRCMP(s, "reload") == 0 && *reason != 'd')
-               reload = RELOAD_NORMAL;
-            ei (STRCMP(s, "edit") == 0)
-               reload = RELOAD_DETECT;
-            ei (STRCMP(s, "ask") == 0)
-               n = false;
-            else
-               return 2;
+            return 2;
          }
          if (!n) {
             if (*reason == 'd') {
@@ -11528,8 +11483,6 @@ bookCheckTimestamp(Book* book){
                                                                          // and +1 for ZERO
          CS tbuf = alloc(tbufsize);
          int tbuflen = eeSnprintf(tbuf, tbufsize, mesg, path);
-         //Set warningmsg here, before the unimportant and output-specific mesg2 has been appended
-         set_EeglVar_string(VV_WARNINGMSG, (CS)tbuf, tbuflen);
          if (can_reload) {
             if (*mesg2 != ZERO)
                eeSnprintf(tbuf + tbuflen, tbufsize - tbuflen, "\n%s", mesg2);

@@ -2022,11 +2022,6 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number) {
    if (cursor_flag == 'h')
       cursor_unsleep();
 
-   set_EeglVar_nr(VV_MOUSE_WIN, 0);
-   set_EeglVar_nr(VV_MOUSE_WINID, 0);
-   set_EeglVar_nr(VV_MOUSE_LNUM, 0);
-   set_EeglVar_nr(VV_MOUSE_COL, 0);
-
    if (n != 0 && (!allow_number || IS_SPECIAL(n) || modMaskG != 0)) {
       Byte temp[10];   // modifier: 3, mbyte-char: 6, ZERO: 1
       int i = 0;
@@ -2053,8 +2048,6 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number) {
          int col = mouseColG;
          Portal* port;
          LineNr   lnum;
-         Portal* wp;
-         int      winnr = 1;
 
          if (row >= 0 && col >= 0) {
             // Find the portal at the mouse coordinates and compute the text position.
@@ -2062,17 +2055,6 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number) {
             if (!port)
                return;
             (void)mouse_comp_pos(port, OUT &row, OUT &col, &lnum, NULL);
-            if (PORTAL_IS_POPUP(port)) {
-               winnr = 0;
-             } else {
-               for (wp = firstPor; wp != port && wp; wp = wp->next) {
-                  ++winnr;
-               }
-            } 
-            set_EeglVar_nr(VV_MOUSE_WIN, winnr);
-            set_EeglVar_nr(VV_MOUSE_WINID, port->id);
-            set_EeglVar_nr(VV_MOUSE_LNUM, lnum);
-            set_EeglVar_nr(VV_MOUSE_COL, col + 1);
          }
       }
    } ei (!allow_number)

@@ -4757,25 +4757,6 @@ get_mess_lang(void) {
    return is_valid_mess_lang(p) ? p : NULL;
 }
 
-//Set the "v:lang" variable according to the current locale setting.
-//Also do "v:lc_time"and "v:ctype".
-pub void
-set_lang_var(void) {
-   CS loc = get_locale_val(LC_CTYPE);
-   set_EeglVar_string(VV_CTYPE, loc, -1);
-
-   // When LC_MESSAGES isn't defined use the value from $LC_MESSAGES, fall
-   // back to LC_CTYPE if it's empty.
-   loc = get_locale_val(LC_MESSAGES);
-   set_EeglVar_string(VV_LANG, loc, -1);
-
-   loc = get_locale_val(LC_TIME);
-   set_EeglVar_string(VV_LC_TIME, loc, -1);
-
-   loc = get_locale_val(LC_COLLATE);
-   set_EeglVar_string(VV_COLLATE, loc, -1);
-}
-
 //Setup to use the current locale (for ctype() and many other things).
 pub void
 init_locale(void) {
@@ -4870,9 +4851,6 @@ c_language(Invocation* invo) {
                set_helplang_default(mname);
             }
          }
-
-         // Set v:lang, v:lc_time, v:collate and v:ctype to the final result.
-         set_lang_var();
       }
    }
 }

@@ -13547,9 +13547,9 @@ get_func_tv(
    FnExe* funcexe)   // various values
 {
    Byte   *argp;
-   int      ret;
-   Var   argvars[MAX_FUNC_ARGS + 1];   // vars for arguments
-   int      argcount = 0;         // number of arguments found
+   int ret;
+   Var argvars[MAX_FUNC_ARGS + 1];   // vars for arguments
+   int argcount = 0;         // number of arguments found
    int evaluate = evalarg == NULL ? false : (evalarg->eval_flags & EVAL_EVALUATE);
 
    argp = *arg;
@@ -13559,21 +13559,9 @@ get_func_tv(
    );
 
    if (ret == OK) {
-      int   i = 0;
-
-      if (get_EeglVar_nr(VV_TESTING)) {
-          // Prepare for calling test_garbagecollect_now(), need to know
-          // what variables are used on the call stack.
-          if (funcargs.ga_itemsize == 0)
-         ga_init2(&funcargs, sizeof(Var *), 50);
-          for (i = 0; i < argcount; ++i)
-         if (ga_grow(&funcargs, 1) == OK)
-             ((Var **)funcargs.c)[funcargs.len++] =
-                             &argvars[i];
-      }
+      int i = 0;
 
       ret = call_func(name, len, returnVar, argcount, argvars, funcexe);
-
       funcargs.len -= i;
    } ei (!aborting() && evaluate) {
       if (argcount == MAX_FUNC_ARGS)
@@ -13582,8 +13570,8 @@ get_func_tv(
          emsg_funcname(e_invalid_arguments_for_function_str, name);
    }
 
-    while (--argcount >= 0)
-   clearVar(&argvars[argcount]);
+   while (--argcount >= 0)
+      clearVar(&argvars[argcount]);
 
    *arg = skipwhite(argp);
    return ret;
@@ -14125,9 +14113,9 @@ call_user_func(
                S"lastline", (Long)funcexe->fe_lastline);
    }
    for (i = 0; i < argcount || i < fp->args.len; ++i) {
-      int       addlocal = false;
-      Var    def_returnVar;
-      int       isdefault = false;
+      int addlocal = false;
+      Var def_returnVar;
+      int isdefault = false;
 
       ai = i - fp->args.len;
       if (ai < 0) {
@@ -14138,7 +14126,7 @@ call_user_func(
 
          // evaluate named argument default expression
          isdefault = ai + fp->defaultArgs.len >= 0
-                && (i >= argcount || (argvars[i].tag == VAR_SPECIAL
+                && (i >= argcount || (argvars[i].tag == VAR_VOID
                   && argvars[i].number == VVAL_NONE));
          if (isdefault) {
             Byte       *default_expr = NULL;
@@ -18344,7 +18332,6 @@ applyAutocommGroup(
    ScriptPos   save_scriptPosG;
    FnCallEntry funccal_entry;
    CS save_cmdarg;
-   long   save_cmdbang;
    static Boole filechangeshell_busy = false;
    int did_save_redobuff = false;
    SaveRedo save_redo;
@@ -18543,11 +18530,8 @@ applyAutocommGroup(
       patcmd.next = active_apc_list;
       active_apc_list = &patcmd;
 
-      // set v:cmdarg (only when there is a matching pattern)
-      save_cmdbang = (long)get_EeglVar_nr(VV_CMDBANG);
       if (invo) {
          save_cmdarg = set_cmdarg(invo, NULL);
-         set_EeglVar_nr(VV_CMDBANG, (long)invo->forceit);
       } else
          save_cmdarg = NULL;   // avoid gcc warning
       retval = true;
@@ -18579,7 +18563,6 @@ applyAutocommGroup(
 
       if (invo) {
          (void)set_cmdarg(NULL, save_cmdarg);
-         set_EeglVar_nr(VV_CMDBANG, save_cmdbang);
       }
       // delete from active_apc_list
       if (active_apc_list == &patcmd)       // just in case
@@ -18660,41 +18643,12 @@ private CS old_termstyleresp = NULL;
 //Can be used recursively, so long as it's symmetric.
 pub void
 block_autocmds(void) {
-   // Remember the value of v:termresponse.
-   if (autocommsBlockedS == 0) {
-      old_termu7resp = get_EeglVar_str(VV_TERMU7RESP);
-      old_termblinkresp = get_EeglVar_str(VV_TERMBLINKRESP);
-      old_termrbgresp = get_EeglVar_str(VV_TERMRBGRESP);
-      old_termrfgresp = get_EeglVar_str(VV_TERMRFGRESP);
-      old_termstyleresp = get_EeglVar_str(VV_TERMSTYLERESP);
-   }
    ++autocommsBlockedS;
 }
 
 pub void
 unblock_autocmds(void) {
    --autocommsBlockedS;
-
-   // When v:termresponse, etc, were set while autocommands were blocked,
-   // trigger the autocommands now.  Esp. useful when executing a shell
-   // command during startup (vimdiff).
-   if (autocommsBlockedS == 0) {
-      if (get_EeglVar_str(VV_TERMU7RESP) != old_termu7resp) {
-          applyAutocomms(EVENT_TERMRESPONSEALL, S"ambiguouswidth", NULL, false, curBook);
-      }
-      if (get_EeglVar_str(VV_TERMBLINKRESP) != old_termblinkresp) {
-          applyAutocomms(EVENT_TERMRESPONSEALL, S"cursorblink", NULL, false, curBook);
-      }
-      if (get_EeglVar_str(VV_TERMRBGRESP) != old_termrbgresp) {
-          applyAutocomms(EVENT_TERMRESPONSEALL, S"background", NULL, false, curBook);
-      }
-      if (get_EeglVar_str(VV_TERMRFGRESP) != old_termrfgresp) {
-          applyAutocomms(EVENT_TERMRESPONSEALL, S"foreground", NULL, false, curBook);
-      }
-      if (get_EeglVar_str(VV_TERMSTYLERESP) != old_termstyleresp) {
-          applyAutocomms(EVENT_TERMRESPONSEALL, S"cursorshape", NULL, false, curBook);
-      }
-   }
 }
 
 pub int

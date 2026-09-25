@@ -4175,19 +4175,18 @@ file_name_in_line(
 }
 
 private CS
-eval_includeexpr(CS ptr, int len) {
+eval_includeexpr(CS, int) {
+//TODO re-implement without vimvars
    if (!curBook->o.includeExpr) {
       return null;
    }
    
    ScriptPos save_sctx = scriptPosG;
 
-   set_EeglVar_string(VV_FNAME, ptr, len);
    scriptPosG = curBook->o.scriptLocs[BOOK_includeExpr];
 
    CS res = eval_to_string_safe(curBook->o.includeExpr, true);
 
-   set_EeglVar_string(VV_FNAME, NULL, 0);
    scriptPosG = save_sctx;
    return res;
 }

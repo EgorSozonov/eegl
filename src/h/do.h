@@ -48,7 +48,6 @@ int prepare_tagpreview(
 void c_smile(Invocation*);
 void c_drop(Invocation* invo);
 CS skipEeglGrepPat(CS p, Byte **s, Unt *flags);
-void c_oldfiles(Invocation* invo);
 void c_listDo(Invocation* invo);
 void c_compiler(Invocation* invo);
 void c_checktime(Invocation* invo);

@@ -837,12 +837,9 @@ do_tag(
 
          // Let the SwapExists event know what tag we are jumping to.
          eeSnprintf(IObuff, IOSIZE, ":ta %s\r", name);
-         set_EeglVar_string(VV_SWAPCOMMAND, IObuff, -1);
 
          // Jump to the desired match.
          Unt i = jumpto_tag(matches.c[cur_match], forceit, type != DT_CSCOPE);
-
-         set_EeglVar_string(VV_SWAPCOMMAND, NULL, -1);
 
          if (i == NOTAGFILE) {
             // File not found: try again with another matching tag
@@ -1299,10 +1296,6 @@ find_tagfunc_tags(
 
    if (result == FAIL)
       return FAIL;
-   if (returnVar.tag == VAR_SPECIAL && returnVar.number == VVAL_NULL) {
-      clearVar(&returnVar);
-      return NOTDONE;
-   }
    if (returnVar.tag != VAR_LIST || !returnVar.list) {
       clearVar(&returnVar);
       emsg(_(e_invalid_return_value_from_tagfunc));

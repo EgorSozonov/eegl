@@ -2047,19 +2047,17 @@ f_uniq(Arr(Var) argvars, Var* returnVar) {
    do_sort_uniq(argvars, returnVar, false);
 }
 
-// Handle one item for map(), filter(), foreach(). Set v:val to "tv". Caller must set v:key.
+// Handle one item for map(), filter(), foreach()
 pub int
 filter_map_one(
-   Var   *tv,         // original value
-   Var   *expr,       // callback
+   Var*,         // original value
+   Var* expr,       // callback
    FilterMap filtermap,
-   Var   *newtv,       // for map() and mapnew(): new value
-   int      *remp      // for filter(): remove flag
+   Var* newtv,       // for map() and mapnew(): new value
+   int* remp      // for filter(): remove flag
 ){
    Var argv[3];
    int retval = FAIL;
-
-   copy_tv(OUT get_EeglVar_tv(VV_VAL), tv);
 
    newtv->tag = VAR_UNKNOWN;
    if (filtermap == FILTERMAP_FOREACH && expr->tag == VAR_STRING) {
@@ -2070,8 +2068,6 @@ filter_map_one(
       goto theend;
    }
 
-   argv[0] = *get_EeglVar_tv(VV_KEY);
-   argv[1] = *get_EeglVar_tv(VV_VAL);
    if (eval_expr_typval(expr, false, argv, 2, newtv) == FAIL)
       goto theend;
    if (filtermap == FILTERMAP_FILTER) {
@@ -2088,7 +2084,6 @@ filter_map_one(
       clearVar(newtv);
    retval = OK;
 theend:
-   clearVar(get_EeglVar_tv(VV_VAL));
    return retval;
 }
 
@@ -2122,8 +2117,6 @@ list_filter_map(
       allocReturnList(returnVar);
       l_ret = returnVar->list;
    }
-   // set_EeglVar_nr() doesn't set the type
-   set_EeglVar_type(VV_KEY, VAR_NUMBER);
 
    if (l->lock == 0)
       l->lock = VAR_LOCKED;
@@ -2145,7 +2138,6 @@ list_filter_map(
       for (idx = 0; idx < len; ++idx) {
          Var tv = (Var){.tag = VAR_NUMBER, .lock = 0, .number = val};
 
-         set_EeglVar_nr(VV_KEY, idx);
          if (filter_map_one(&tv, expr, filtermap, &newtv, &rem) == FAIL)
             break;
          if (anyEmsgG) {
@@ -2172,7 +2164,6 @@ list_filter_map(
          if (filtermap == FILTERMAP_MAP && value_check_lock(li->c.lock, mbText(arg_errmsg), true))
             break;
          nli = li->next;
-         set_EeglVar_nr(VV_KEY, idx);
          if (filter_map_one(&li->c, expr, filtermap, &newtv, &rem) == FAIL)
             break;
          if (anyEmsgG) {
@@ -2238,20 +2229,14 @@ filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
       return;
    }
 
-   // On type errors, the preceding call has already displayed an error message. Avoid a 
-   // misleading error message for an empty string that was not passed as argument.
+   //On type errors, the preceding call has already displayed an error message. Avoid a 
+   //misleading error message for an empty string that was not passed as argument.
    Var* expr = &argvars[1];
    if (expr->tag == VAR_UNKNOWN)
       return;
 
-   Var   save_val;
-   Var   save_key;
-
-   prepareEeglVar(VV_VAL, &save_val);
-   prepareEeglVar(VV_KEY, &save_key);
-
-   // We reset "anyEmsgG" to be able to detect whether an error
-   // occurred during evaluation of the expression.
+   //We reset "anyEmsgG" to be able to detect whether an error
+   //occurred during evaluation of the expression.
    save_anyEmsgG = anyEmsgG;
    anyEmsgG = false;
 
@@ -2263,9 +2248,6 @@ filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
       string_filter_map(tv_get_string(&argvars[0]), filtermap, expr, returnVar);
    else // argvars[0].tag == VAR_LIST
       list_filter_map(argvars[0].list, filtermap, arg_errmsg, expr, returnVar);
-
-   restoreEeglVar(VV_KEY, &save_key);
-   restoreEeglVar(VV_VAL, &save_val);
 
    anyEmsgG |= save_anyEmsgG;
 }
@@ -3100,7 +3082,6 @@ vartype_name(VarTag type) {
    case VAR_UNKNOWN: break;
    case VAR_ANY: return "any";
    case VAR_VOID: return "void";
-   case VAR_SPECIAL: return "special";
    case VAR_BOOL: return "bool";
    case VAR_NUMBER: return "number";
    case VAR_FLOAT: return "float";
@@ -3170,7 +3151,6 @@ freeVar(Var* varp) {
    case VAR_UNKNOWN:
    case VAR_VOID:
    case VAR_BOOL:
-   case VAR_SPECIAL:
        break;
    }
    eeglFree(varp);
@@ -3207,7 +3187,6 @@ clearVar(Var* varp) {
       break;
    case VAR_NUMBER:
    case VAR_BOOL:
-   case VAR_SPECIAL:
       varp->number = 0;
       break;
    case VAR_FLOAT:
@@ -3264,7 +3243,6 @@ convertToBoolOrNumber(
       emsg(_(e_using_dictionary_as_number));
       break;
    case VAR_BOOL:
-   case VAR_SPECIAL:
       return varp->number == VVAL_TRUE ? 1 : 0;
    case VAR_JOB:
        emsg(_(e_using_job_as_number));
@@ -3331,9 +3309,6 @@ convertToDouble(Var* varp, OUT Boole* error) {
        break;
    case VAR_BOOL:
        emsg(_(e_using_boolean_value_as_float));
-       break;
-   case VAR_SPECIAL:
-       emsg(_(e_using_special_value_as_float));
        break;
    case VAR_JOB:
        emsg(_(e_using_job_as_float));
@@ -3878,7 +3853,6 @@ convertVarToString_strict(Var* varp, CS buf, int strict) {
          return varp->string;
       return S"";
    case VAR_BOOL:
-   case VAR_SPECIAL:
       STRCPY(buf, get_var_special_name(varp->number));
       return buf;
    case VAR_BLOB:
@@ -3959,7 +3933,6 @@ copy_tv(OUT Var* to, Var* from) {
    switch (from->tag) {
    case VAR_NUMBER:
    case VAR_BOOL:
-   case VAR_SPECIAL:
       to->number = from->number;
       break;
    case VAR_FLOAT:
@@ -4042,18 +4015,6 @@ daCompareVars(
    if (type_is && tv1->tag != tv2->tag) {
       //For "is" a different type always means false, for "isnot" it means true.
       n1 = (type == EXPR_ISNOT);
-   } ei (((tv1->tag == VAR_SPECIAL && tv1->number == VVAL_NULL)
-      || (tv2->tag == VAR_SPECIAL && tv2->number == VVAL_NULL))
-       && tv1->tag != tv2->tag
-       && (type == EXPR_EQUAL || type == EXPR_NEQUAL)
-   ) {
-      n1 = daCompareVars_null(tv1, tv2);
-      if (n1 == MAYBE) {
-         clearVar(tv1);
-         return FAIL;
-      }
-      if (type == EXPR_NEQUAL)
-         n1 = !n1;
    } ei (tv1->tag == VAR_BLOB || tv2->tag == VAR_BLOB) {
       if (daCompareVars_blob(tv1, tv2, type, &res) == FAIL) {
          clearVar(tv1);
@@ -4193,38 +4154,6 @@ daCompareVars_list(
    }
    *res = val;
    return OK;
-}
-
-
-//Compare v:null with another type.  Return true if the value is NULL.
-pub int
-daCompareVars_null(Var *tv1, Var *tv2) {
-   if ((tv1->tag == VAR_SPECIAL && tv1->number == VVAL_NULL)
-       || (tv2->tag == VAR_SPECIAL && tv2->number == VVAL_NULL)
-   ) {
-      Var   *tv = tv1->tag == VAR_SPECIAL ? tv2 : tv1;
-
-      switch (tv->tag) {
-      case VAR_BLOB: return tv->blob == NULL;
-      case VAR_CHANNEL: return tv->channel == NULL;
-      // TODO: null_class handling
-      case VAR_BAG: return tv->bag == NULL;
-      case VAR_FUNC: return tv->string == NULL;
-      case VAR_JOB: return tv->job == NULL;
-      case VAR_LIST: return tv->list == NULL;
-      case VAR_PARTIAL: return tv->partial == NULL;
-      case VAR_STRING: return tv->string == NULL;
-
-      case VAR_NUMBER: 
-         return tv->number == 0;
-      case VAR_FLOAT: 
-         return tv->floatt == 0.0;
-      default: break;
-      }
-   }
-   // although comparing null with number, float or bool is not very useful
-   // we won't give an error
-    return false;
 }
 
 //Compare "tv1" to "tv2" as blobs according to "type".
@@ -4469,9 +4398,7 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
       return r;
    }
 
-   if (tv1->tag != tv2->tag
-          && ((tv1->tag != VAR_BOOL && tv1->tag != VAR_SPECIAL)
-            || (tv2->tag != VAR_BOOL && tv2->tag != VAR_SPECIAL)))
+   if (tv1->tag != tv2->tag && (tv1->tag != VAR_BOOL || tv2->tag != VAR_BOOL))
       return false;
 
    switch (tv1->tag) {
@@ -4492,7 +4419,6 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
 
    case VAR_NUMBER:
    case VAR_BOOL:
-   case VAR_SPECIAL:
       return tv1->number == tv2->number;
 
    case VAR_STRING:
@@ -4754,7 +4680,6 @@ equal_type(TypeSpec *type1, TypeSpec *type2, int flags) {
    case VAR_UNKNOWN:
    case VAR_ANY:
    case VAR_VOID:
-   case VAR_SPECIAL:
    case VAR_BOOL:
    case VAR_NUMBER:
    case VAR_FLOAT:
@@ -4850,7 +4775,6 @@ tv2bool(Var* tv) {
    case VAR_BAG:
       return tv->bag && tv->bag->hashTable.count > 0;
    case VAR_BOOL:
-   case VAR_SPECIAL:
       return tv->number == VVAL_TRUE ? true : false;
    case VAR_JOB:
       return tv->job != NULL;
@@ -5692,9 +5616,7 @@ bagFilterMap(
                 && (value_check_lock(di->c.lock, errMsg, true)
                   || var_check_ro(di->flags, errMsg, true)))
             break;
-         set_EeglVar_string(VV_KEY, di->key, -1);
          int r = filter_map_one(&di->c, expr, filtermap, &newtv, &rem);
-         clearVar(get_EeglVar_tv(VV_KEY));
          if (r == FAIL || anyEmsgG) {
             clearVar(&newtv);
             break;
@@ -6627,7 +6549,6 @@ assert_equal_common(Arr(Var) argvars, AssertKind assKind) {
       ArrayList   ga;
       prepare_assert_error(&ga);
       fill_assert_error(&ga, &argvars[2], NULL, &argvars[0], &argvars[1], assKind);
-      assert_error(&ga);
       ga_clear(&ga);
       return 1;
    }
@@ -6644,7 +6565,6 @@ assert_match_common(Arr(Var) argvars, AssertKind assKind) {
    if (pat && text && pattern_match(pat, text, false) != (assKind == ASSERT_MATCH)) {
       prepare_assert_error(&ga);
       fill_assert_error(&ga, &argvars[2], NULL, &argvars[0], &argvars[1], assKind);
-      assert_error(&ga);
       ga_clear(&ga);
       return 1;
     }
@@ -6667,7 +6587,6 @@ assert_bool(Arr(Var) argvars, int isTrue) {
       fill_assert_error(&ga, &argvars[1],
          (CS)(isTrue ? "True" : "False"),
          NULL, &argvars[0], ASSERT_OTHER);
-      assert_error(&ga);
       ga_clear(&ga);
       return 1;
    }
@@ -6776,7 +6695,6 @@ assert_equalfile(Arr(Var) argvars) {
          }
          ga_concat(&ga, (CS)"\"");
       }
-      assert_error(&ga);
       ga_clear(&ga);
       return 1;
    }
@@ -6794,28 +6712,6 @@ f_assert_equalfile(Arr(Var) argvars, Var* returnVar) {
 pub void
 f_assert_notequal(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_equal_common(argvars, ASSERT_NOTEQUAL);
-}
-
-//"assert_exception(string[, msg])" function
-pub void
-f_assert_exception(Arr(Var) argvars, Var* returnVar) {
-   ArrayList   ga;
-
-   CS error = convertVarToStringSingleUse(&argvars[0]);
-   if (*get_EeglVar_str(VV_EXCEPTION) == ZERO) {
-      prepare_assert_error(&ga);
-      ga_concat(&ga, (CS)"v:exception is not set");
-      assert_error(&ga);
-      ga_clear(&ga);
-      returnVar->number = 1;
-    } ei (error && strstr((char *)get_EeglVar_str(VV_EXCEPTION), (char *)error) == NULL) {
-      prepare_assert_error(&ga);
-      fill_assert_error(&ga, &argvars[1], NULL, &argvars[0],
-                 get_EeglVar_tv(VV_EXCEPTION), ASSERT_OTHER);
-      assert_error(&ga);
-      ga_clear(&ga);
-      returnVar->number = 1;
-   }
 }
 
 //"assert_fails(cmd [, error[, msg]])" function
@@ -6853,7 +6749,6 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
       prepare_assert_error(&ga);
       ga_concat(&ga, (CS)"command did not fail: ");
       assert_append_cmd_or_arg(&ga, argvars, cmd);
-      assert_error(&ga);
       ga_clear(&ga);
       returnVar->number = 1;
    } ei (argvars[1].tag != VAR_UNKNOWN) {
@@ -6868,8 +6763,8 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
          expected = convertVarToString(&argvars[1], buf);
          error_found = expected == NULL || strstr((char *)actual, (char *)expected) == NULL;
       } ei (argvars[1].tag == VAR_LIST) {
-         List   *list = argvars[1].list;
-         Var   *tv;
+         List* list = argvars[1].list;
+         Var* tv;
 
          if (!list || list->len < 1 || list->len > 2) {
             wrong_arg_msg = e_assert_fails_second_arg;
@@ -6884,8 +6779,6 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
             error_found = true;
             expected_str = expected;
          } ei (list->len == 2) {
-            // make a copy, an error in pattern_match() may free it
-            tofree = actual = copyStr(get_EeglVar_str(VV_ERRMSG));
             tv = &list->lv_u.mat.last->c;
             expected = convertVarToString(tv, buf);
             if (expected == NULL)
@@ -6940,7 +6833,6 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
          );
          ga_concat(&ga, (CS)": ");
          assert_append_cmd_or_arg(&ga, argvars, cmd);
-         assert_error(&ga);
          ga_clear(&ga);
          returnVar->number = 1;
       }
@@ -6960,7 +6852,6 @@ theend:
    lines_left = visibleRowsG;
    EE_CLEAR(emsg_assert_fails_msg);
    eeglFree(tofree);
-   set_EeglVar_string(VV_ERRMSG, NULL, 0);
    if (wrong_arg_msg)
       emsg(_(wrong_arg_msg));
 }
@@ -6986,7 +6877,6 @@ assert_inrange(Arr(Var) argvars) {
          prepare_assert_error(&ga);
          eeSnprintf(expected_str, 200, "range %g - %g,", flower, fupper);
          fill_assert_error(&ga, &argvars[3], expected_str, NULL, &argvars[2], ASSERT_OTHER);
-         assert_error(&ga);
          ga_clear(&ga);
          return 1;
       }
@@ -7001,7 +6891,6 @@ assert_inrange(Arr(Var) argvars) {
          prepare_assert_error(&ga);
          eeSnprintf(expected_str, 200, "range %ld - %ld,", (long)lower, (long)upper);
          fill_assert_error(&ga, &argvars[3], expected_str, NULL, &argvars[2], ASSERT_OTHER);
-         assert_error(&ga);
          ga_clear(&ga);
          return 1;
       }
@@ -7040,7 +6929,6 @@ f_assert_report(Arr(Var) argvars, Var* returnVar) {
    ArrayList   ga;
    prepare_assert_error(OUT &ga);
    ga_concat(&ga, tv_get_string(&argvars[0]));
-   assert_error(&ga);
    ga_clear(&ga);
    returnVar->number = 1;
 }
@@ -7175,7 +7063,6 @@ f_test_refcount(Arr(Var) argvars, Var* returnVar) {
    case VAR_NUMBER:
    case VAR_BOOL:
    case VAR_FLOAT:
-   case VAR_SPECIAL:
    case VAR_STRING:
       break;
 
@@ -7218,11 +7105,7 @@ f_test_refcount(Arr(Var) argvars, Var* returnVar) {
 
 pub void
 f_test_garbagecollect_now(Arr(Var), Var*) {
-   // This is dangerous, any Lists and Dicts used internally may be freed while still in use.
-   if (!get_EeglVar_nr(VV_TESTING))
-      emsg(_(e_calling_test_garbagecollect_now_while_v_testing_is_not_set));
-   else
-      garbage_collect(true);
+   garbage_collect(true);
 }
 
 pub void
@@ -7327,7 +7210,6 @@ check_can_index(Var* var, int evaluate, int verbose) {
          emsg(_(e_using_float_as_string));
       return FAIL;
    case VAR_BOOL:
-   case VAR_SPECIAL:
    case VAR_JOB:
    case VAR_CHANNEL:
    case VAR_UNKNOWN:
@@ -7393,7 +7275,6 @@ eval_index_inner(
    case VAR_PARTIAL:
    case VAR_FLOAT:
    case VAR_BOOL:
-   case VAR_SPECIAL:
    case VAR_JOB:
    case VAR_CHANNEL:
    case VAR_NUMBER:
@@ -7888,7 +7769,6 @@ blob_filter_map(
    Var   tv;
    Long   val;
    Blob   *b_ret;
-   int idx = 0;
    int rem;
    Var newtv;
 
@@ -7906,9 +7786,6 @@ blob_filter_map(
       b_ret = returnVar->blob;
    }
 
-   // set_EeglVar_nr() doesn't set the type
-   set_EeglVar_type(VV_KEY, VAR_NUMBER);
-
    int prev_lock = b->lock;
    if (b->lock == 0)
       b->lock = VAR_LOCKED;
@@ -7917,7 +7794,6 @@ blob_filter_map(
       tv.tag = VAR_NUMBER;
       val = blob_get(b, i);
       tv.number = val;
-      set_EeglVar_nr(VV_KEY, idx);
       if (filter_map_one(&tv, expr, filtermap, &newtv, &rem) == FAIL || anyEmsgG)
          break;
       if (filtermap != FILTERMAP_FOREACH) {
@@ -7936,8 +7812,7 @@ blob_filter_map(
             --i;
          }
       }
-      ++idx;
-    }
+   }
 
    b->lock = prev_lock;
 }
@@ -9186,15 +9061,11 @@ string_filter_map(CS str, FilterMap filtermap, Var* expr, Var* returnVar) {
    Var   tv;
    ArrayList   ga;
    int len = 0;
-   int idx = 0;
    int rem;
    Var newtv;
 
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
-
-   // set_EeglVar_nr() doesn't set the type
-   set_EeglVar_type(VV_KEY, VAR_NUMBER);
 
    ga_init2(&ga, sizeof(char), 80);
    for (p = str; *p != ZERO; p += len) {
@@ -9202,7 +9073,6 @@ string_filter_map(CS str, FilterMap filtermap, Var* expr, Var* returnVar) {
          break;
       len = (int)STRLEN(tv.string);
 
-      set_EeglVar_nr(VV_KEY, idx);
       if (filter_map_one(&tv, expr, filtermap, &newtv, &rem) == FAIL || anyEmsgG) {
          clearVar(&newtv);
          clearVar(&tv);
@@ -9222,8 +9092,6 @@ string_filter_map(CS str, FilterMap filtermap, Var* expr, Var* returnVar) {
 
       clearVar(&newtv);
       clearVar(&tv);
-
-      ++idx;
    }
    ga_append(&ga, ZERO);
    returnVar->string = ga.c;
@@ -11378,20 +11246,14 @@ op_formatexpr(Operator* oper) {
       // When there is no change: need to remove the Visual selection
       drawCurBookLater(UPD_INVERTED);
 
-   if (fex_format(oper->start.lnum, oper->line_count, ZERO) != 0)
+   if (fex_format() != 0)
       // As documented: when 'formatexpr' returns non-zero fall back to internal formatting.
       op_format(oper, false);
 }
 
 pub int
-fex_format(LineNr lnum, long count, int c) {  // character to be inserted
-   ScriptPos   save_sctx = scriptPosG;
-
-   // Set v:lnum to the first line number and v:count to the number of lines.
-   // Set v:char to the character to be inserted (can be ZERO).
-   set_EeglVar_nr(VV_LNUM, lnum);
-   set_EeglVar_nr(VV_COUNT, count);
-   set_EeglVar_char(c);
+fex_format() {  // character to be inserted
+   ScriptPos save_sctx = scriptPosG;
 
    // Make a copy, the option could be changed while calling it.
    CS fex = copyStr(curBook->o.formatExpr);
@@ -11400,7 +11262,6 @@ fex_format(LineNr lnum, long count, int c) {  // character to be inserted
    // Evaluate the function.
    int r = (int)eval_to_number(fex, true);
 
-   set_EeglVar_string(VV_CHAR, NULL, -1);
    eeglFree(fex);
    scriptPosG = save_sctx;
 
@@ -11652,13 +11513,6 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
       switch ((long)val->number) {
          case VVAL_FALSE: ga_concat(gap, S"false"); break;
          case VVAL_TRUE: ga_concat(gap, S"true"); break;
-      }
-      break;
-
-   case VAR_SPECIAL:
-      switch ((long)val->number) {
-      case VVAL_NONE: 
-      case VVAL_NULL: ga_concat(gap, S"null"); break;
       }
       break;
 
@@ -11923,9 +11777,9 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
       }
       return OK;
    }
-   if (res != NULL) {
-      res->tag = VAR_SPECIAL;
-      res->number = VVAL_NONE;
+   if (res) {
+      res->tag = VAR_VOID;
+      res->number = 0;
       ga_clear(&ga);
    }
    return MAYBE;
@@ -12053,9 +11907,9 @@ json_decode_item(JsReader* reader, Var *res) {
          break;
          // FALLTHROUGH
       case ZERO: // empty
-         if (cur_item != NULL) {
-            cur_item->tag = VAR_SPECIAL;
-            cur_item->number = VVAL_NONE;
+         if (cur_item) {
+            cur_item->tag = VAR_VOID;
+            cur_item->number = 0;
          }
          retval = OK;
          break;
@@ -12078,7 +11932,7 @@ json_decode_item(JsReader* reader, Var *res) {
             }
             sp = skipdigits(sp);
             if (*sp == '.' || *sp == 'e' || *sp == 'E') {
-               if (cur_item == NULL) {
+               if (!cur_item) {
                   double f;
                   len = string2float(p, OUT &f, false);
                } else {
@@ -12090,7 +11944,8 @@ json_decode_item(JsReader* reader, Var *res) {
 
                readLongNumber(reader->js_buf + reader->js_used,
                    NULL, &len, 0, // what
-                   &nr, NULL, 0, true, NULL);
+                   &nr, NULL, 0, true, NULL
+               );
                if (len == 0) {
                   showErrFmtMsg(_(e_json_decode_error_at_str), p);
                   retval = FAIL;
@@ -12125,16 +11980,16 @@ json_decode_item(JsReader* reader, Var *res) {
          }
          if (STRNICMP(p, "null", 4) == 0) {
             reader->js_used += 4;
-            if (cur_item != NULL) {
-               cur_item->tag = VAR_SPECIAL;
-               cur_item->number = VVAL_NULL;
+            if (cur_item) {
+               cur_item->tag = VAR_VOID;
+               cur_item->number = 0;
             }
             retval = OK;
             break;
          }
          if (STRNICMP(p, "NaN", 3) == 0) {
             reader->js_used += 3;
-            if (cur_item != NULL) {
+            if (cur_item) {
                 cur_item->tag = VAR_FLOAT;
                 cur_item->floatt = NAN;
             }
@@ -12143,7 +11998,7 @@ json_decode_item(JsReader* reader, Var *res) {
          }
          if (STRNICMP(p, "-Infinity", 9) == 0) {
             reader->js_used += 9;
-            if (cur_item != NULL) {
+            if (cur_item) {
                cur_item->tag = VAR_FLOAT;
                cur_item->floatt = -INFINITY;
             }
@@ -12284,11 +12139,11 @@ json_decode_item(JsReader* reader, Var *res) {
       }
    }
 
-   // Get here when parsing failed.
-   if (res != NULL) {
+   //Get here when parsing failed.
+   if (res) {
       clearVar(res);
-      res->tag = VAR_SPECIAL;
-      res->number = VVAL_NONE;
+      res->tag = VAR_VOID;
+      res->number = 0;
    }
    showErrFmtMsg(_(e_json_decode_error_at_str), p);
 
@@ -13017,7 +12872,6 @@ garbage_collect(int testing) {
 
     // v: vars
     abort = abort 
-      || garbageCollectEeglVars(copyID)
       // callbacks in books
       || setRefInBooks(copyID)
       // @completefunc, @omnifunc and @thesaurusfunc callbacks
@@ -13351,7 +13205,6 @@ set_ref_in_item(Var* tv, int copyID, HtStack** ht_stack, ListStack** list_stack)
    case VAR_ANY:
    case VAR_VOID:
    case VAR_BOOL:
-   case VAR_SPECIAL:
    case VAR_NUMBER:
    case VAR_FLOAT:
    case VAR_STRING:

@@ -40,8 +40,6 @@ int current_quote(
    int quotechar   // Quote character
 );
 int virtual_active(void);
-Bag * get_v_event(SaveVEvent *sve);
-void restore_v_event(Bag* v_event, SaveVEvent* sve);
 void get_mode(CS buf);
 void may_trigger_modechanged(void);
 int get_real_state(void);

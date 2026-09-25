@@ -71,7 +71,6 @@ void optSetStringOptionDirectInBook(
    int set_sid
 );
 CS get_mess_lang(void);
-void set_lang_var(void);
 void init_locale(void);
 void c_language(Invocation* invo);
 void free_locales(void);

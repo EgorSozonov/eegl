@@ -2877,7 +2877,6 @@ typedef enum {
    VAR_ANY,      // used for "any" type
    VAR_VOID,      // no value (function not returning anything)
    VAR_BOOL,      // "v_number" is used: VVAL_TRUE or VVAL_FALSE
-   VAR_SPECIAL,   // "v_number" is used: VVAL_NULL or VVAL_NONE
    VAR_NUMBER,      // "v_number" is used
    VAR_FLOAT,      // "v_float" is used
    VAR_STRING,      // "v_string" is used
@@ -2934,8 +2933,7 @@ typedef enum {
    VAR_PORTAL,
    VAR_TAB,
    VAR_SCRIPT, // To delete
-   VAR_LOCAL,
-   VAR_EEGL
+   VAR_LOCAL
 } VarLevel;
 
 // Values for "dv_scope".
@@ -4466,12 +4464,6 @@ typedef struct {
    int      isRoot;   //TRUE if ll_tv is the lval_root, like a plain object/class. ll_tv is variable
 } Lval;
 
-typedef struct {
-   Long prevCount;
-   Long count;
-   Long count1;
-} EeglVarsSave;
-
 // Scope for changing directory
 typedef enum {
    CDSCOPE_GLOBAL,   // :cd
@@ -4761,113 +4753,9 @@ typedef enum {
 #define MOUSE_MAY_STOP_VIS 0x10 //may stop Visual mode
 #define MOUSE_RELEASED     0x20 //button was released
 
-// Defines for Eegl variables. These must match eval.c:eeglVars[]!
-#define VV_COUNT          0
-#define VV_COUNT1         1
-#define VV_PREVCOUNT      2
-#define VV_ERRMSG         3
-#define VV_WARNINGMSG     4
-#define VV_STATUSMSG      5
-#define VV_SHELL_ERROR    6
-#define VV_THIS_SESSION   7
-#define VV_VERSION        8
-#define VV_LNUM           9
-#define VV_FNAME         10
-#define VV_LANG          11
-#define VV_LC_TIME       12
-#define VV_CTYPE         13
-#define VV_FNAME_IN      14
-#define VV_FNAME_OUT     15
-#define VV_FNAME_NEW     16
-#define VV_FNAME_DIFF    17
-#define VV_CMDARG        18
-#define VV_FOLDSTART     19
-#define VV_FOLDEND       20
-#define VV_FOLDDASHES    21
-#define VV_FOLDLEVEL     22
-#define VV_PROGNAME      23
-#define VV_SEND_SERVER   24
-#define VV_DYING         25
-#define VV_EXCEPTION     26
-#define VV_THROWPOINT    27
-#define VV_REG           28
-#define VV_CMDBANG       29
-#define VV_INSERTMODE    30
-#define VV_VAL           31
-#define VV_KEY           32
-#define VV_PROFILING     33
-#define VV_FCS_REASON    34
-#define VV_FCS_CHOICE    35
-#define VV_BEVAL_BUFNR   36
-#define VV_BEVAL_WINNR   37
-#define VV_BEVAL_WINID   38
-#define VV_BEVAL_LNUM    39
-#define VV_BEVAL_COL     40
-#define VV_BEVAL_TEXT    41
-#define VV_SCROLLSTART   42
-#define VV_SWAPNAME      43
-#define VV_SWAPCHOICE    44
-#define VV_SWAPCOMMAND   45
-#define VV_CHAR          46
-#define VV_MOUSE_WIN     47
-#define VV_MOUSE_WINID   48
-#define VV_MOUSE_LNUM    49
-#define VV_MOUSE_COL     50
-#define VV_OP            51
-#define VV_SEARCHFORWARD 52
-#define VV_HLSEARCH      53
-#define VV_OLDFILES      54
-#define VV_WINDOWID      55
-#define VV_PROGPATH      56
-#define VV_COMPLETED_ITEM 57
-#define VV_ERRORS        58
-#define VV_FALSE         59 
-#define VV_TRUE          60
-#define VV_NONE          61
-#define VV_NULL          62
-#define VV_NUMBERMAX     63
-#define VV_NUMBERMIN     64
-#define VV_NUMBERSIZE    65
-#define VV_EE_DID_ENTER  66
-#define VV_TESTING       67
-#define VV_TYPE_NUMBER   68
-#define VV_TYPE_STRING   69
-#define VV_TYPE_FUNC     70
-#define VV_TYPE_LIST     71
-#define VV_TYPE_DICT     72
-#define VV_TYPE_FLOAT    73
-#define VV_TYPE_BOOL     74
-#define VV_TYPE_NONE     75
-#define VV_TYPE_JOB      76
-#define VV_TYPE_CHANNEL  77
-#define VV_TYPE_BLOB     78
-#define VV_TERMRFGRESP   79
-#define VV_TERMRBGRESP   80
-#define VV_TERMU7RESP    81
-#define VV_TERMSTYLERESP 82
-#define VV_TERMBLINKRESP 83
-#define VV_EVENT         84
-#define VV_VERSIONLONG   85
-#define VV_ECHOSPACE     86
-#define VV_ARGV          87
-#define VV_COLLATE       88
-#define VV_EXITING       89
-#define VV_COLORNAMES    90
-#define VV_SIZEOFINT     91
-#define VV_SIZEOFLONG    92
-#define VV_SIZEOFPOINTER 93
-#define VV_MAXCOL        94
-#define VV_TYPE_ENUM     95
-#define VV_TYPE_ENUMVALUE 96
-#define VV_STACKTRACE    97
-#define VV_WAYLAND_DISPLAY 98
-#define EV_LEN           99 // number of v: vars
-
-// used for v_number in VAR_BOOL and VAR_SPECIAL
+// used for v_number in VAR_BOOL
 #define VVAL_FALSE  0L   // VAR_BOOL
 #define VVAL_TRUE   1L   // VAR_BOOL
-#define VVAL_NONE   2L   // VAR_SPECIAL
-#define VVAL_NULL   3L   // VAR_SPECIAL
 
 // There are five history tables:
 #define HIST_CMD     0   // colon commands

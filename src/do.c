@@ -50,8 +50,6 @@ private Boole anySyntaxEmsgS; // anyEmsgG set because of a syntax error
 typedef struct {
    int force_abort;
    Exception* caught_stack;
-   CS vv_exception;
-   CS vv_throwpoint;
    int anyEmsgG;
    int gotInterruptG;
    int did_throw;
@@ -3846,67 +3844,6 @@ skipEeglGrepPat(CS p, Byte **s, Unt *flags) {
    return skipEeglGrepPat_ext(p, s, flags, NULL, NULL);
 }
 
-// List v:oldfiles in a nice way.
-pub void
-c_oldfiles(Invocation* invo) {
-   List* l = get_EeglVar_list(VV_OLDFILES);
-   if (!l) {
-      msg(_("No old files"));
-      return;
-   }
-   
-   int nr = 0;
-   // for a single filtered match, remember the number
-   // so we can jump directly to it without prompting
-   int matches = -1;
-
-   msg_start();
-   msg_scroll = true;
-   for (ListItem* li = l->first; li && !gotInterruptG; li = li->next) {
-      ++nr;
-      CS fname = tv_get_string(&li->c);
-      if (!message_filtered(fname)) {
-         if (matches < 0)
-            matches = nr;
-         else
-            matches = 0;
-         msg_outnum((long)nr);
-         msg_puts(S": ");
-         msg_outtrans(fname);
-         msg_clr_eos();
-         msg_putchar('\n');
-         out_flush();       // output one line at a time
-         ui_breakcheck();
-      }
-   }
-
-   // Assume "gotInterruptG" was set to truncate the listing.
-   gotInterruptG = false;
-
-   if (commModifierG.cmod_flags & CMOD_BROWSE) {
-      quitMoreG = false;
-      // we only need to prompt if there is more than 1 match
-      if (matches > 0) {
-         nr = matches;
-         // msg_putchar above sets needs_wait_return
-         need_wait_return = false;
-      } else
-         nr = prompt_for_number(false);
-      msg_starthere();
-      if (nr > 0) {
-         CS p = list_find_str(get_EeglVar_list(VV_OLDFILES), (long)nr);
-         if (p) {
-            p = doExpandEnvInMultiplePaths(p);
-            invo->arg = p;
-            invo->id = C_edit;
-            commModifierG.cmod_flags &= ~CMOD_BROWSE;
-            do_exedit(invo, NULL);
-            eeglFree(p);
-         }
-      }
-   }
-}
-
 //":argdo", ":windo", ":bufdo", ":tabdo", ":ldo"
 pub void
 c_listDo(Invocation* invo) {
@@ -4538,8 +4475,6 @@ private void
 saveDbgStuff(DebugStuff* dsp) {
    dsp->force_abort   = force_abort;      force_abort = false;
    dsp->caught_stack   = caught_stack;      caught_stack = NULL;
-   dsp->vv_exception   = v_exception(NULL);
-   dsp->vv_throwpoint   = v_throwpoint(NULL);
 
    // Necessary for debugging an inactive ":catch", ":finally", ":endtry"
    dsp->anyEmsgG     = anyEmsgG;      anyEmsgG     = false;
@@ -4554,8 +4489,6 @@ restore_DebugStuff(DebugStuff* dsp) {
    suppress_errthrow = false;
    force_abort = dsp->force_abort;
    caught_stack = dsp->caught_stack;
-   (void)v_exception(dsp->vv_exception);
-   (void)v_throwpoint(dsp->vv_throwpoint);
    anyEmsgG = dsp->anyEmsgG;
    gotInterruptG = dsp->gotInterruptG;
    did_throw = dsp->did_throw;
@@ -9006,14 +8939,7 @@ post_chdir(CdScopeKind scope) {
 // Trigger DirChangedPre for "acmd_fname" with directory "new_dir".
 pub void
 trigger_DirChangedPre(CS acmd_fname, CS new_dir) {
-   Bag       *v_event;
-   SaveVEvent  save_v_event;
-
-   v_event = get_v_event(&save_v_event);
-   (void)bagAddString(v_event, S"directory", new_dir);
-   bagSetItemsRo(v_event);
    applyAutocomms(EVENT_DIRCHANGEDPRE, acmd_fname, new_dir, false, curBook);
-   restore_v_event(v_event, &save_v_event);
 }
 
 //Change directory function used by :cd/:tcd/:lcd commands and the
@@ -10273,11 +10199,6 @@ evalVars(
                *usedlen = off + 1;
                return NULL;
             }
-            result = list_find_str(get_EeglVar_list(VV_OLDFILES), (long)i);
-            if (!result) {
-               *errorMsg = S"";
-               return NULL;
-            }
          } else {
             if (i == 0 && src[off + 1] == '<' && *usedlen > off + 1)
                *usedlen = off + 1;
@@ -10565,7 +10486,6 @@ c_filetype(Invocation* invo) {
 pub void
 setHlsearch(Boole flag) {
    hiliteSearchG = flag;
-   set_EeglVar_nr(VV_HLSEARCH, hiliteSearchG && p_hls);
 }
 
 // ":nohlsearch"
@@ -13512,7 +13432,6 @@ change_warning(int col) {
       msgColG = col;
    msg_source(getDecoFlags(HLF_W));
    msgPutsDeco(_(w_readonly), getDecoFlags(HLF_W) | MSG_HIST);
-   set_EeglVar_string(VV_WARNINGMSG, (CS)_(w_readonly), -1);
    msg_clr_eos();
    (void)msg_end();
    if (msg_silent == 0 && !silentModeG
@@ -18946,7 +18865,6 @@ check_due_timer(void) {
          Unt mustRedrawSaved = mustRedrawG;
          int save_ex_pressedreturn = get_pressedreturn();
          int save_may_garbage_collect = may_garbage_collect;
-         EeglVarsSave   vvsave;
          ExceptionState estate;
 
          exception_state_save(&estate);
@@ -18960,7 +18878,6 @@ check_due_timer(void) {
          mustRedrawG = 0;
          may_garbage_collect = false;
          exception_state_clear();
-         saveEeglVars(&vvsave);
 
          // Invoke the callback.
          timer->tr_firing = true;
@@ -18977,7 +18894,6 @@ check_due_timer(void) {
          anyEmsgG = save_anyEmsgG;
          called_emsg = save_called_emsg;
          exception_state_restore(&estate);
-         restoreEeglVars(&vvsave);
          if (mustRedrawG != 0)
             need_drawUpdateScreen = true;
          mustRedrawG = mustRedrawG > mustRedrawSaved ? mustRedrawG : mustRedrawSaved;
@@ -20755,7 +20671,6 @@ get_expr_indent(void) {
    Pos save_pos = curPor->cursor;
    ColNr save_curswant = curPor->cursWant;
    Boole save_set_curswant = curPor->setCursWant;
-   set_EeglVar_nr(VV_LNUM, curPor->cursor.lnum);
    ++textlock;
    scriptPosG = curBook->o.scriptLocs[BOOK_indentExpr];
 

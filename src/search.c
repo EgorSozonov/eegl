@@ -44,7 +44,6 @@ typedef struct searchstat {
 //{{{@@forward declarations
 private void save_incsearch_state(void);
 private void restore_incsearch_state(void);
-private void set_vv_searchforward(void);
 private int first_submatch(RegMultilineMatch *rp);
 private int check_prevcol(
    CS linep,
@@ -316,7 +315,6 @@ restore_search_patterns(void) {
       eeglFree(prevSearchPatternsP[i].pat.c);
       prevSearchPatternsP[i] = saved_spats[i];
    }
-   set_vv_searchforward();
    eeglFree(mrPatternP.c);
    mrPatternP = mrPatternSaved;
    last_idx = saved_spats_last_idx;
@@ -376,7 +374,6 @@ restore_last_search_pattern(void) {
    eeglFree(prevSearchPatternsP[RE_SEARCH].pat.c);
    prevSearchPatternsP[RE_SEARCH] = saved_last_search_spat;
    saved_last_search_spat.pat = (Text){NULL, 0};
-   set_vv_searchforward();
    last_idx = saved_last_idx;
    setHlsearch(savedHlsearch);
 }
@@ -500,7 +497,6 @@ last_search_pat(void) {
 pub void
 reset_search_dir(void) {
    prevSearchPatternsP[0].off.dir = '/';
-   set_vv_searchforward();
 }
 
 //Set the last search pattern.  For ":let @/ =" and eeglinfo.
@@ -523,7 +519,6 @@ set_last_search_pat(
    prevSearchPatternsP[idx].magic = magic;
    prevSearchPatternsP[idx].no_scs = false;
    prevSearchPatternsP[idx].off.dir = '/';
-   set_vv_searchforward();
    prevSearchPatternsP[idx].off.line = false;
    prevSearchPatternsP[idx].off.end = false;
    prevSearchPatternsP[idx].off.off = 0;
@@ -935,11 +930,6 @@ set_search_direction(int cdir) {
    prevSearchPatternsP[0].off.dir = cdir;
 }
 
-private void
-set_vv_searchforward(void) {
-   set_EeglVar_nr(VV_SEARCHFORWARD, (long)(prevSearchPatternsP[0].off.dir == '/'));
-}
-
 //Return the number of the first subpat that matched. Return zero if none of them matched.
 private int
 first_submatch(RegMultilineMatch *rp) {
@@ -1009,7 +999,6 @@ do_search(
       dirc = prevSearchPatternsP[0].off.dir;
    else {
       prevSearchPatternsP[0].off.dir = dirc;
-      set_vv_searchforward();
    }
    if (options & SEARCH_REV) {
       if (dirc == '/')

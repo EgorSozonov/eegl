@@ -10238,8 +10238,8 @@ f_term_getcursor(Var* argvars, Var* returnVar) {
 pub void
 f_term_getjob(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getjob()");
-   if (book == NULL) {
-      returnVar->tag = VAR_SPECIAL;
+   if (!book) {
+      returnVar->tag = VAR_NUM;
       returnVar->number = VVAL_NULL;
       return;
    }

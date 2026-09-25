@@ -515,9 +515,6 @@ libMain(void) {
       read_eeglinfo(NULL, EIF_WANT_INFO | EIF_GET_OLDFILES);
       TIME_MSG("reading eeglinfo");
    }
-   // It's better to make v:oldfiles an empty list than NULL.
-   if (get_EeglVar_list(VV_OLDFILES) == NULL)
-      {   set_EeglVar_list(VV_OLDFILES, list_alloc()); }
 
    //"-q errorfile": Load the error file now.
    //If the error file can't be read, exit before doing anything else.
@@ -581,9 +578,6 @@ libMain(void) {
    createPortals(&paramsP);
    TIME_MSG("opening buffers");
 
-   // clear v:swapcommand
-   set_EeglVar_string(VV_SWAPCOMMAND, NULL, -1);
-
    applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
    TIME_MSG("BufEnter autocommands");
    setpcmark();
@@ -638,7 +632,6 @@ libMain(void) {
    //'autochdir' has been postponed
    DO_AUTOCHDIR;
 
-   set_EeglVar_nr(VV_EE_DID_ENTER, 1L);
    applyAutocomms(EVENT_EEGLENTER, NULL, NULL, false, curBook);
    TIME_MSG("EeglEnter autocommands");
 
@@ -733,12 +726,6 @@ init1(OUT MainParams* par) {
 
    alist_init(&argListG);   // Init the argument list to empty.
    argListG.id = 0;
-
-   // set v:lang and v:ctype
-   set_lang_var();
-
-   // set v:argv
-   set_argv_var(par->argv, par->argc);
 
    init_signs();
    
@@ -1148,9 +1135,6 @@ exitEegl(int exitval) {
    isExitingG = true;
    lo("Exiting...");
 
-   set_EeglVar_type(VV_EXITING, VAR_NUMBER);
-   set_EeglVar_nr(VV_EXITING, exitval);
-
    //Position the cursor on the last screen line, below all the text
    if (!is_not_a_term_or_gui())
       windgoto((int)visibleRowsG - 1, 0);
@@ -1294,7 +1278,6 @@ parseCommandName(MainParams* par) {
 
    initstr = fiGetShortFiName((CS)par->argv[0]);
 
-   set_EeglVar_string(VV_PROGNAME, initstr, -1);
    set_progpath((CS)par->argv[0]);
 
    if (STRNICMP(initstr, "view", 4) == 0) {
@@ -1684,7 +1667,6 @@ scripterror:
    if (par->n_commands > 0) {
       text = alloc(STRLEN(par->commands[0]) + 3);
       sprintf((char *)text, ":%s\r", par->commands[0]);
-      set_EeglVar_string(VV_SWAPCOMMAND, text, -1);
       eeglFree(text);
    }
 }
@@ -1694,7 +1676,7 @@ scripterror:
 // Print a warning if stdout is not a terminal.
 private void
 check_tty(MainParams* par) {
-   int      input_isatty;      // is active input a terminal?
+   int input_isatty;      // is active input a terminal?
 
    input_isatty = mch_input_isatty();
    if (par->want_full_screen && (!stdout_isatty || !input_isatty) && !par->not_a_term) {
@@ -2160,8 +2142,6 @@ set_progpath(CS argv0) {
          && fiGetShortFiName(val) != val && eeFullFileName(val, OUT buf, MAXPATHL, true) != FAIL
    )
       val = buf;
-
-   set_EeglVar_string(VV_PROGPATH, val, -1);
 }
 
 #endif // NO_EEGL_MAIN
@@ -3124,12 +3104,6 @@ c_mkrc(Invocation* invo) {
 
    if (failed)
       emsg(_(e_error_while_writing));
-   ei (invo->id == C_mksession) {
-      // successful session write - set this_session var
-      Byte tbuf[MAXPATHL];
-      if (eeFullFileName(fname, tbuf, MAXPATHL, false) == OK)
-         set_EeglVar_string(VV_THIS_SESSION, tbuf, -1);
-   }
 theEnd:
 
    eeglFree(viewFile);
@@ -4115,7 +4089,6 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
          case 'D': type = VAR_BAG; break;
          case 'L': type = VAR_LIST; break;
          case 'B': type = VAR_BLOB; break;
-         case 'X': type = VAR_SPECIAL; break;
          }
 
          tab = firstOccurrence(tab, '\t');
@@ -4127,8 +4100,6 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
                (void)string2float(tab + 1, OUT &tv.floatt, false);
             else {
                tv.number = atol((char *)tab + 1);
-               if (type == VAR_SPECIAL && (tv.number == VVAL_FALSE || tv.number == VVAL_TRUE))
-                  tv.tag = VAR_BOOL;
             }
             if (type == VAR_BAG || type == VAR_LIST) {
                Var *etv = eval_expr(tv.string, NULL);
@@ -4217,7 +4188,6 @@ write_eeglinfo_varlist(FILE* fp) {
             }
             case VAR_BLOB:    s = S"BLO"; break;
             case VAR_BOOL:    s = S"XPL"; break;  // backwards compat.
-            case VAR_SPECIAL: s = S"XPL"; break;
 
             case VAR_UNKNOWN:
             case VAR_ANY:
@@ -4229,7 +4199,7 @@ write_eeglinfo_varlist(FILE* fp) {
                continue;
             }
             fprintf(fp, "!%s\t%s\t", this_var->key, s);
-            if (this_var->c.tag == VAR_BOOL || this_var->c.tag == VAR_SPECIAL) {
+            if (this_var->c.tag == VAR_BOOL) {
                // do not use "v:true" but "1"
                sprintf((char *)numbuf, "%ld", (long)this_var->c.number);
                p = numbuf;
@@ -4965,7 +4935,6 @@ copy_eeglinfo_marks(
 
    if (fp_out == NULL && (flags & (EIF_GET_OLDFILES | EIF_FORCEIT))) {
       list = list_alloc();
-      set_EeglVar_list(VV_OLDFILES, list);
    }
 
    num_marked_files = get_eeglinfo_parameter('\'');
