@@ -10,7 +10,6 @@
 #include "h/book.h"
 #include "h/input.types.h"
 #include "h/input.h"
-#include "h/memory.h"
 #include "h/diff.h"
 #include "h/do.h"
 #include "h/draw.types.h"
@@ -19,13 +18,11 @@
 #include "h/fileio.h"
 #include "h/hilite.h"
 #include "h/insert.h"
-#include "h/juggle.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
 #include "h/normal.h"
 #include "h/option.h"
-#include "h/persist.h"
 #include "h/portal.h"
 #include "h/regexp.h"
 #include "h/script.h"
@@ -1664,7 +1661,7 @@ showoneopt(Option* o, SetScope setScope) {   // OPT_LOCAL or OPT_GLOBAL
 
    // for @modified' we also need to check if 'ff' changed.
    if (o->defaultValue.tag == OPTION_BOOLE
-         && (ref.boole == &curBook->wasModified ? !doWasCurBookChanged() : !(*(ref.boole)))
+         && (ref.boole == &curBook->wasModified ? !bookWasChanged(curBook) : !(*(ref.boole)))
    )
       msg_puts(S"no");
    ei ((o->defaultValue.tag == OPTION_BOOLE) && !(*(ref.boole)))
@@ -2062,7 +2059,7 @@ did_set_undofile(OptionChange* cha) {
       //Try to read in the undofile, if one exists, the buffer wasn't changed and the buffer was 
       //loaded
       if ((curBook == saveCurBook || (cha->setScope == SET_GLOBAL))
-         && !doWasCurBookChanged() && curBook->mem.mfile != NULL
+         && !bookWasChanged(curBook) && curBook->mem.mfile
       ){
          u_compute_hash(OUT hash);
          u_read_undo(NULL, hash, curBook->currFileName);

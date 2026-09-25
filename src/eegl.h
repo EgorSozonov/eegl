@@ -1587,6 +1587,7 @@ typedef int Socket;
 
 
 // The following are actual variables for the options
+
 EXTERN Boole p_asd;     // @autoshelldir
 EXTERN CS p_tsrfu; // @thesaurusfunc
 EXTERN Boole p_aw;      // @autowrite
@@ -5097,6 +5098,8 @@ EXTERN long visibleRowsG         // nr of rows in the screen
 #endif
 ;
 EXTERN long visibleColsG INIT(= 80);   // nr of columns in the screen
+
+EXTERN CS username INIT(= null); // cached result of mch_get_user_name()
 
 EXTERN CS termCodesG[]; //current terminal output strings, defined in term.c
 //Contains currently used terminal codes (strings used to communicate with the terminal).

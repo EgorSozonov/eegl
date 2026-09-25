@@ -9,7 +9,6 @@
 #include "h/book.h"
 #include "h/input.types.h"
 #include "h/input.h"
-#include "h/memory.h"
 #include "h/diff.h"
 #include "h/do.h"
 #include "h/draw.types.h"
@@ -21,7 +20,6 @@
 #include "h/location.h"
 #include "h/hilite.types.h"
 #include "h/hilite.h"
-#include "h/juggle.h"
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
@@ -629,7 +627,7 @@ newPortal:
    case 'W':
       CHECK_COMMPORT;
       if (ONLY_ONE_PORTAL && prenum != 1)   // just one portal
-          beep_flush();
+          inpFlushIfNotSilent();
       else {
          if (prenum) {        // go to specified portal
             for (po = firstPor; --prenum > 0; ) {
@@ -725,7 +723,7 @@ newPortal:
    case 'p':
    case Ctrl_P:
       if (!portalIsValid(prevPor))
-          beep_flush();
+          inpFlushIfNotSilent();
       else
           gotoPortal(prevPor);
       break;
@@ -759,7 +757,7 @@ newPortal:
     case 'L':
       CHECK_COMMPORT;
       if (ONLY_ONE_PORTAL)
-          beep_flush();
+          inpFlushIfNotSilent();
       else {
           int dir = ((nchar == 'H' || nchar == 'L') ? WSP_VERT : 0)
              | ((nchar == 'H' || nchar == 'K') ? WSP_TOP : WSP_BOT);
@@ -951,16 +949,16 @@ portGotoFile:
 
       case TAB:       // CTRL-W g<Tab>: go to last used tab
          if (goto_tabpage_lastused() == FAIL)
-            beep_flush();
+            inpFlushIfNotSilent();
          break;
 
       default:
-         beep_flush();
+         inpFlushIfNotSilent();
          break;
       }
       break;
 
-    default:   beep_flush();
+    default:   inpFlushIfNotSilent();
       break;
    }
 }
@@ -1725,11 +1723,11 @@ exchangePortal(long prenum) {
    if (portErrorIfPopup(true))
       return;
    if (ONLY_ONE_PORTAL) {      // just one portal
-      beep_flush();
+      inpFlushIfNotSilent();
       return;
    }
    if (text_or_buf_locked()) {
-      beep_flush();
+      inpFlushIfNotSilent();
       return;
    }
 
@@ -1802,7 +1800,7 @@ rotatePortals(int upwards, int count) {
    int n;
 
    if (ONLY_ONE_PORTAL) {     // nothing to do
-      beep_flush();
+      inpFlushIfNotSilent();
       return;
    }
 
@@ -4220,7 +4218,7 @@ gotoTabById(int n) {
    // If there is only one it can't work.
    if (firstTabG->next == NULL) {
       if (n > 1)
-         beep_flush();
+         inpFlushIfNotSilent();
       return;
    }
 
@@ -4246,7 +4244,7 @@ gotoTabById(int n) {
       // Go to tab "n".
       t = getTab(n);
       if (!t) {
-          beep_flush();
+          inpFlushIfNotSilent();
           return;
       }
    }
@@ -4354,7 +4352,7 @@ gotoPortal(Portal* po) {
       return;
    }
    if (text_or_buf_locked()) {
-      beep_flush();
+      inpFlushIfNotSilent();
       return;
    }
 
@@ -10994,7 +10992,7 @@ setPopupTitle(Portal* po) {
    Byte dirname[MAXPATHL];
 
    mch_dirname(dirname, MAXPATHL);
-   shorten_buf_fname(po->book, dirname, false);
+   bookShortenName(po->book, dirname, false);
 
    eeglFree(po->pup.title);
    Unt len = STRLEN(po->book->currFileName) + 3;

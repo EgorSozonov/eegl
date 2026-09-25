@@ -333,6 +333,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] remove dependency on libattr - migrate to glibc 
 [ ] Frozen options mode? (options cannot be changed after the init script)
 [+] Transition to pure 256-color palette and removal of double-width symbols
+[ ] Project dir and src dir settings at command line (-P and -Psrc options)
 [ ] Replace VimScript with Eyr
 [ ] @errorformat is unsuitable for an option: it should be per-filetype. We need a new event type
    to control via autocommands: the IsCodeChange. Scratch buffers are created with isCode = false. 

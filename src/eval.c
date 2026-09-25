@@ -15,20 +15,15 @@
 #include "h/input.types.h"
 #include "h/input.h"
 #include "h/hilite.h"
-#include "h/memory.types.h"
-#include "h/memory.h"
 #include "h/eval.h"
 #include "h/diff.h"
 #include "h/fileio.types.h"
 #include "h/fileio.h"
-#include "h/insert.h"
-#include "h/juggle.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
-#include "h/normal.h"
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/regexp.h"
@@ -39,6 +34,8 @@
 #include "h/term.h"
 #include "h/ui.h"
 #include "h/window.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 
 #define USING_FLOAT_STUFF
 //{{{types
@@ -498,7 +495,6 @@ private void f_submatch(Arr(Var) argvars, Var* returnVar);
 private void f_substitute(Arr(Var) argvars, Var* returnVar);
 private void f_swapfilelist(Arr(Var), Var* returnVar);
 private void f_swapinfo(Arr(Var) argvars, Var* returnVar);
-private void f_swapname(Arr(Var) argvars, Var* returnVar);
 private void f_synID(Arr(Var) argvars, Var* returnVar);
 private void f_synstack(Arr(Var) argvars, Var* returnVar);
 private void f_tabpagebuflist(Arr(Var) argvars, Var* returnVar);
@@ -4581,7 +4577,7 @@ private int
 buf_byteidx_to_charidx(Book *book, int lnum, int byteidx) {
    int count;
 
-   if (!book || book->mem.mfile == NULL)
+   if (!book || bookNoMemfile(book))
       return -1;
 
    if (lnum > book->mem.lineCount)
@@ -4775,7 +4771,7 @@ list2fpos(
    if (charcol) {
       // Get the text for the specified line in a loaded book
       Book* book = bookFindFileByBookNr(fnump == NULL ? curBook->fiNum : *fnump);
-      if (book == NULL || book->mem.mfile == NULL)
+      if (!book || bookNoMemfile(book))
           return FAIL;
 
       n = bookCharidxToByteidx(book, posp->lnum == 0 ? curPor->cursor.lnum : posp->lnum, n) + 1;
@@ -11407,7 +11403,6 @@ getregionpos(
    Operator   *oper
 ){
    int fnum1 = -1, fnum2 = -1;
-   Book* findbuf;
    Byte default_type[] = "v";
    int block_width = 0;
 
@@ -11449,35 +11444,35 @@ getregionpos(
       return FAIL;
    }
 
-   findbuf = fnum1 != 0 ? bookFindFileByBookNr(fnum1) : curBook;
-   if (findbuf == NULL || findbuf->mem.mfile == NULL) {
+   Book* findBook = fnum1 != 0 ? bookFindFileByBookNr(fnum1) : curBook;
+   if (!findBook || bookNoMemfile(findBook)) {
       emsg(_(e_buffer_is_not_loaded));
       return FAIL;
    }
 
-   if (p1->lnum < 1 || p1->lnum > findbuf->mem.lineCount) {
+   if (p1->lnum < 1 || p1->lnum > findBook->mem.lineCount) {
       showErrFmtMsg(_(e_invalid_line_number_nr), p1->lnum);
       return FAIL;
    }
    if (p1->col == MAXCOL)
-      p1->col = memGetBookLen(findbuf, p1->lnum) + 1;
-   ei (p1->col < 1 || p1->col > memGetBookLen(findbuf, p1->lnum) + 1) {
+      p1->col = memGetBookLen(findBook, p1->lnum) + 1;
+   ei (p1->col < 1 || p1->col > memGetBookLen(findBook, p1->lnum) + 1) {
       showErrFmtMsg(_(e_invalid_column_number_nr), p1->col);
       return FAIL;
    }
 
-   if (p2->lnum < 1 || p2->lnum > findbuf->mem.lineCount) {
+   if (p2->lnum < 1 || p2->lnum > findBook->mem.lineCount) {
       showErrFmtMsg(_(e_invalid_line_number_nr), p2->lnum);
       return FAIL;
    }
    if (p2->col == MAXCOL)
-      p2->col = memGetBookLen(findbuf, p2->lnum) + 1;
-   ei (p2->col < 1 || p2->col > memGetBookLen(findbuf, p2->lnum) + 1) {
+      p2->col = memGetBookLen(findBook, p2->lnum) + 1;
+   ei (p2->col < 1 || p2->col > memGetBookLen(findBook, p2->lnum) + 1) {
       showErrFmtMsg(_(e_invalid_column_number_nr), p2->col);
       return FAIL;
    }
 
-   curBook = findbuf;
+   curBook = findBook;
    curPor->book = curBook;
    virtual_op = virtual_active();
 
@@ -11551,7 +11546,7 @@ f_getregion(Arr(Var) argvars, Var* returnVar) {
       } ei (p1.lnum < lnum && lnum < p2.lnum)
          akt = copyStr(ml_get(lnum));
       else {
-         jugCharwiseBlockPrep(p1, p2, &bd, lnum, inclusive);
+         doCharwiseBlockPrep(p1, p2, &bd, lnum, inclusive);
          akt = block_def2str(&bd);
       }
 
@@ -11641,7 +11636,7 @@ f_getregionpos(Arr(Var) argvars, Var* returnVar) {
          if (region_type == MBLOCK)
             block_prep(&oa, OUT &bd, lnum, false);
          else
-            jugCharwiseBlockPrep(p1, p2, &bd, lnum, inclusive);
+            doCharwiseBlockPrep(p1, p2, &bd, lnum, inclusive);
 
          if (bd.is_oneChar) { // selection entirely inside one char
             if (region_type == MBLOCK) {
@@ -14545,18 +14540,6 @@ private void
 f_swapinfo(Arr(Var) argvars, Var* returnVar) {
    allocReturnDict(returnVar);
    get_b0_dict(tv_get_string(argvars), returnVar->bag);
-}
-
-// "swapname(expr)" function
-private void
-f_swapname(Arr(Var) argvars, Var* returnVar) {
-   returnVar->tag = VAR_STRING;
-
-   Book* book = daGetBook(&argvars[0], false);
-   if (book == NULL || book->mem.mfile == NULL || book->mem.mfile->fName == NULL)
-      returnVar->string = NULL;
-   else
-      returnVar->string = copyStr(book->mem.mfile->fName);
 }
 
 // "synID(lnum, col, trans)" function

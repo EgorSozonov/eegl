@@ -82,7 +82,6 @@ int skip_showmode(void);
 int showmode(void);
 void unshowmode(int force);
 void clearmode(void);
-void drawGetTranslatedBookName(Book* book);
 Unt statusLineNextChar(OUT Decoration* deco, Portal* po);
 int redrawing(void);
 int messaging(void);

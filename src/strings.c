@@ -13,7 +13,6 @@
 #define eeglFree(a) if (a) { free(a); }
 #else
 #include "eegl.h"
-#include "h/memory.h"
 #endif
 #include "h/strings.h"
 

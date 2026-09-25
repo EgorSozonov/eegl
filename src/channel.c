@@ -12,20 +12,17 @@
 #include "h/eval.h"
 #include "h/book.h"
 #include "h/fileio.h"
-#include "h/juggle.h"
-#include "h/memory.types.h"
-#include "h/memory.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/message.h"
-#include "h/normal.types.h"
-#include "h/normal.h"
 #include "h/option.h"
 #include "h/script.h"
 #include "h/strings.h"
 #include "h/tag.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -202,7 +199,7 @@ private int channel_connect(
 );
 private Channel* channel_open_unix(CS path);
 private void setCallback(Callback* cbp, Callback* callback);
-private void prepare_buffer(Book* book);
+private void prepareBookForWriting(Book* book);
 private Book* chaFindBook(CS name, int err, int msg);
 private void channel_set_options(Channel* channel, JobOptions* opt);
 private Channel * channel_open_func(Arr(Var) argvars);
@@ -728,7 +725,7 @@ setCallback(Callback* cbp, Callback* callback) {
 
 // Prepare book "book" for writing channel output to.
 private void
-prepare_buffer(Book* book) {
+prepareBookForWriting(Book* book) {
    Book* curBookSaved = curBook;
 
    optsCopyToBook(book, BCO_ENTER);
@@ -759,7 +756,7 @@ chaFindBook(CS name, int err, int msg) {
    book = bookNew(!name || *name == ZERO ? NULL : name, NULL, (LineNr)0, BLN_LISTED | BLN_NEW);
    if (!book)
       return NULL;
-   prepare_buffer(book);
+   prepareBookForWriting(book);
 
    curBook = book;
    if (msg) {
@@ -844,8 +841,8 @@ channel_set_options(Channel* channel, JobOptions* opt) {
             ch_log(channel, "writing out to book '%s'", book->fullFileName);
             bookStoreInRef(OUT &channel->fds[PART_OUT].bookref, book);
             // if the buffer was deleted or unloaded resurrect it
-            if (book->mem.mfile == NULL)
-                prepare_buffer(book);
+            if (bookNoMemfile(book))
+               prepareBookForWriting(book);
          }
       }
     }
@@ -879,11 +876,11 @@ channel_set_options(Channel* channel, JobOptions* opt) {
          if ((IMMUTABLE) && !channel->fds[PART_ERR].ch_nomodifiable) {
             emsg(_(e_cannot_make_changes_modifiable_is_off));
          } else {
-            ch_log(channel, "writing err to buffer '%s'", book->fullFileName);
+            ch_log(channel, "writing err to book '%s'", book->fullFileName);
             bookStoreInRef(OUT &channel->fds[PART_ERR].bookref, book);
-            // if the buffer was deleted or unloaded resurrect it
-            if (book->mem.mfile == NULL)
-                prepare_buffer(book);
+            //if the book was deleted or unloaded, resurrect it
+            if (bookNoMemfile(book))
+                prepareBookForWriting(book);
          }
       }
    }
@@ -893,7 +890,7 @@ channel_set_options(Channel* channel, JobOptions* opt) {
    channel->fds[PART_IN].ch_io = opt->ioMode[PART_IN];
 }
 
-// Implement ch_open().
+//Implement ch_open().
 private Channel *
 channel_open_func(Arr(Var) argvars) {
    JobOptions opt;
@@ -2110,7 +2107,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
    } 
 
    Book* book = fdData->bookref.c;
-   if (book && (!bookRefValid(&fdData->bookref) || book->mem.mfile == NULL)) {
+   if (book && (!bookRefValid(&fdData->bookref) || bookNoMemfile(book))) {
       // book was wiped out or unloaded
       ch_log(channel, "%s book has been wiped out", chanFdNames[part]);
       fdData->bookref.c = NULL;

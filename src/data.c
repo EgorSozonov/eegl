@@ -9,20 +9,31 @@
 #include "h/book.h"
 #include "h/channel.types.h"
 #include "h/channel.h"
-#include "h/memory.types.h"
 #include "h/input.types.h"
 #include "h/input.h"
 #include "h/do.h"
 #include "h/draw.types.h"
 #include "h/draw.h"
 #include "h/eval.h"
-#include "h/insert.h"
-#include "h/memory.h"
+#include "h/location.types.h"
+#include "h/location.h"
 #include "h/message.h"
+#include "h/motor.types.h"
+#include "h/motor.h"
 #include "h/portal.h"
 #include "h/script.h"
 #include "h/strings.h"
+#include "h/tag.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
+
+#include <sys/resource.h>
+
+int fstat(int fd, struct stat* statbuf); // from sys/stat.h
+int stat(const char* restrict path, struct stat* restrict buf);
+int lstat(const char* restrict, struct stat* restrict);
+
 
 //{{{macros
 //{{{list
@@ -240,6 +251,31 @@ private void json_skip_white(JsReader* reader);
 private int json_decode_string(JsReader* reader, Var* res, int quote);
 private int json_decode_item(JsReader* reader, Var *res);
 private int json_decode_all(OUT Var* res, JsReader* reader);
+private void mem_pre_alloc_s(Unt *sizep);
+private void mem_pre_alloc_l(Unt *sizep);
+private void mem_post_alloc(void **pp, Unt size);
+private void mem_pre_free(void **pp);
+private int free_unref_items(int copyID);
+private Boole set_ref_in_item_dict(
+   Bag* bag,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
+);
+private Boole set_ref_in_item_list(
+   OUT List* ll,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
+);
+private Boole set_ref_in_item_partial(
+   PartiallyApplied* pt,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
+);
+private Boole set_ref_in_item_job(Job* job, int copyID, HtStack** ht_stack, ListStack** list_stack);
+private Boole set_ref_in_item_channel(Channel* ch, int copyID, HtStack** ht_stack, ListStack** list_stack);
 //}}}
 //{{{list
 
@@ -12311,4 +12347,1018 @@ f_json_encode(Arr(Var) argvars, Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = json_encode(argvars, 0);
 }
+//}}}
+//{{{allocations
+
+#if defined(MEM_PROFILE)
+
+# define MEM_SIZES  8200
+private Ulong mem_allocs[MEM_SIZES];
+private Ulong mem_frees[MEM_SIZES];
+private Ulong mem_allocated;
+private Ulong mem_freed;
+private Ulong mem_peak;
+private Ulong num_alloc;
+private Ulong num_freed;
+
+private void
+mem_pre_alloc_s(Unt *sizep) {
+    *sizep += sizeof(Unt);
+}
+
+private void
+mem_pre_alloc_l(Unt *sizep) {
+   *sizep += sizeof(Unt);
+}
+
+private void
+mem_post_alloc(void **pp, Unt size) {
+   if (*pp == NULL)
+      return;
+   size -= sizeof(Unt);
+   *(Ulong *)*pp = size;
+   if (size <= MEM_SIZES-1)
+      mem_allocs[size-1]++;
+   else
+      mem_allocs[MEM_SIZES-1]++;
+   mem_allocated += size;
+   if (mem_allocated - mem_freed > mem_peak)
+      mem_peak = mem_allocated - mem_freed;
+   num_alloc++;
+   *pp = (void *)((char *)*pp + sizeof(Unt));
+}
+
+pub void
+_incRefCount(void* a) {
+   (*((Unt*)a))++;
+}
+
+pub void
+_decRefCount(void* a) {
+   (*((Unt*)a))--;
+}
+
+pub Unt
+_getRefCount(void* a) {
+   return *((Unt*)a);
+}
+
+private void
+mem_pre_free(void **pp) {
+   Ulong size;
+
+   *pp = (void *)((char *)*pp - sizeof(Unt));
+   size = *(Unt *)*pp;
+   if (size <= MEM_SIZES-1)
+      mem_frees[size-1]++;
+   else
+      mem_frees[MEM_SIZES-1]++;
+   mem_freed += size;
+   num_freed++;
+}
+
+// called on exit via atexit()
+pub void
+eeMemProfileDump(void) {
+   int i, j;
+
+   printf("\r\n");
+   j = 0;
+   for (i = 0; i < MEM_SIZES - 1; i++) {
+      if (mem_allocs[i] == 0 && mem_frees[i] == 0)
+         continue;
+
+      if (mem_frees[i] > mem_allocs[i])
+         printf("\r\n%s", _("ERROR: "));
+      printf("[%4d / %4lu-%-4lu] ", i + 1, mem_allocs[i], mem_frees[i]);
+      j++;
+      if (j > 3) {
+         j = 0;
+         printf("\r\n");
+      }
+   }
+
+    i = MEM_SIZES - 1;
+   if (mem_allocs[i]) {
+   printf("\r\n");
+   if (mem_frees[i] > mem_allocs[i])
+       puts(_("ERROR: "));
+   printf("[>%d / %4lu-%-4lu]", i, mem_allocs[i], mem_frees[i]);
+    }
+
+    printf(_("\n[bytes] total alloc-freed %lu-%lu, in use %lu, peak use %lu\n"),
+       mem_allocated, mem_freed, mem_allocated - mem_freed, mem_peak);
+    printf(_("[calls] total re/malloc()'s %lu, total free()'s %lu\n\n"),
+       num_alloc, num_freed);
+}
+
+#endif // MEM_PROFILE
+
+pub int
+alloc_does_fail(Unt size) {
+   if (alloc_fail_countdown == 0) {
+      if (--alloc_fail_repeat <= 0)
+          alloc_fail_id = 0;
+      do_outofmem_msg(size);
+      return true;
+   }
+   --alloc_fail_countdown;
+   return false;
+}
+
+// Some memory is reserved for error messages and for being able to
+// call mf_release_all(), which needs some memory for mf_trans_add().
+#define KEEP_ROOM (2 * 8192L)
+#define KEEP_ROOM_KB (KEEP_ROOM / 1024L)
+
+//The normal way to allocate memory. Handles an out-of-memory situation
+//as well as possible, exit the process with cleanup when that doesn't help.
+//This means the return value doesn't need to be checked for null.
+pub void *
+alloc(Unt size) {
+   return lalloc(size, true);
+}
+
+//Try to make a big allocation. Quietly return null if unsucessful.
+pub void*
+tryBigAlloc(Unt size) {
+   static int releasing = false;  // don't do mf_release_all() recursive
+
+#ifdef MEM_PROFILE
+   //Safety check for allocating zero bytes
+   if (size == 0) {
+      //Don't hide this message
+      emsg_silent = 0;
+      internalErrMsg(e_internal_error_lalloc_zero);
+      return NULL;
+   }
+
+   mem_pre_alloc_l(&size);
+#endif
+
+   //Loop when out of memory: Try to release some memfile blocks and
+   //if some blocks are released call malloc again.
+   void   *p;          // pointer to new storage space
+   for (;;) {
+      if ((p = malloc(size)) != NULL) {
+         // 1. No check for available memory: Just return.
+         goto success;
+      }
+      //Remember that mf_release_all() is being called to avoid an endless
+      //loop, because mf_release_all() may call alloc() recursively.
+      if (releasing)
+         break;
+      releasing = true;
+
+      clear_sb_text(true);         // free any scrollback text
+      int try_again = mf_release_all(); // release as many blocks as possible
+
+      releasing = false;
+      if (!try_again)
+         break;
+   }
+
+success:
+#ifdef MEM_PROFILE
+   mem_post_alloc(&p, size);
+#endif
+   return p;
+}
+
+// alloc() with an ID for alloc_fail().
+pub void *
+alloc_id(Unt size, AllocId id) {
+   if (alloc_fail_id == id && alloc_does_fail(size))
+      return NULL;
+   return lalloc(size, true);
+}
+
+// Allocate memory and set all bytes to zero.
+pub void *
+allocZeroed(Unt size) {
+   void* p = lalloc(size, true);
+   (void)memset(p, 0, size);
+   return p;
+}
+
+// Same as allocZeroed() but with allocation id for testing
+pub void *
+allocZeroed_id(Unt size, AllocId id) {
+   if (alloc_fail_id == id && alloc_does_fail(size))
+      return NULL;
+   return allocZeroed(size);
+}
+
+// Allocate memory like lalloc() and set all bytes to zero.
+pub void *
+lallocZeroed(Unt size, Boole message){
+   void* p = lalloc(size, message);
+   if (p)
+      (void)memset(p, 0, size);
+   return p;
+}
+
+// Low-level memory allocation function. This is used often, KEEP IT FAST!
+pub void *
+lalloc(Unt size, Boole message) {
+   static int   releasing = false;  // don't do mf_release_all() recursive
+
+#ifdef MEM_PROFILE
+   // Safety check for allocating zero bytes
+   if (size == 0) {
+      // Don't hide this message
+      emsg_silent = 0;
+      internalErrMsg(e_internal_error_lalloc_zero);
+      return NULL;
+   }
+
+   mem_pre_alloc_l(&size);
+#endif
+
+   //Loop when out of memory: Try to release some memfile blocks and
+   //if some blocks are released call malloc again.
+   void* p;          // pointer to new storage space
+   for (;;) {
+      if ((p = malloc(size)) != NULL) {
+         // 1. No check for available memory: Just return.
+         goto success;
+      }
+      //Remember that mf_release_all() is being called to avoid an endless
+      //loop, because mf_release_all() may call alloc() recursively.
+      if (releasing)
+          break;
+      releasing = true;
+
+      clear_sb_text(true);         // free any scrollback text
+      int try_again = mf_release_all(); // release as many blocks as possible
+
+      releasing = false;
+      if (!try_again)
+         break;
+   }
+
+   if (message && p)
+      do_outofmem_msg(size);
+   mch_exit(2);
+   
+success:
+#ifdef MEM_PROFILE
+   mem_post_alloc(&p, size);
+#endif
+   return p;
+}
+
+// lalloc() with an ID for alloc_fail().
+pub void *
+lalloc_id(Unt size, int message, AllocId id) {
+   if (alloc_fail_id == id && alloc_does_fail(size))
+      return NULL;
+   return (lalloc(size, message));
+}
+
+#if defined(MEM_PROFILE)
+
+// realloc() with memory profiling.
+pub void *
+memReallocWithProfiling(void *ptr, Unt size) {
+   void *p;
+
+   mem_pre_free(&ptr);
+   mem_pre_alloc_s(&size);
+
+   p = realloc(ptr, size);
+
+   mem_post_alloc(&p, size);
+
+   return p;
+}
+
+#endif
+
+//Avoid repeating the error message many times (they take 1 second each).
+//Did_outofmem_msg is reset when a character is read.
+pub void
+do_outofmem_msg(Unt size) {
+   if (did_outofmem_msg)
+      return;
+
+   //Don't hide this message
+   emsg_silent = 0;
+
+   //Must come first to avoid coming back here when printing the error
+   //message fails, e.g. when setting v:errmsg.
+   did_outofmem_msg = true;
+
+   showErrFmtMsg(_(e_out_of_memory_allocating_nr_bytes), (Ulong)size);
+
+   if (starting == NO_SCREEN)
+      //Not even finished with initializations and already out of
+      //memory?  Then nothing is going to work, exit.
+      mch_exit(123);
+}
+
+
+#if defined(EXITFREE)
+
+//Free everything that we allocated. Can be used to detect memory leaks, e.g., with ccmalloc.
+//NOTE: This is tricky!  Things are freed that functions depend on.  Don't be
+//surprised if Eegl crashes...
+//Some things can't be freed, esp. things local to a library function.
+pub void
+free_all_mem(void) {
+   //When we cause a crash here it is caught and Eegl tries to exit cleanly.
+   //Don't try freeing everything again.
+   if (entered_free_all_mem)
+      return;
+      
+   entered_free_all_mem = true;
+   // Don't want to trigger autocommands from here on.
+   block_autocmds();
+
+   // Close all tabs and portals. Reset 'equalalways' to avoid redraws.
+   p_ea = false;
+   if (firstTabG != NULL && firstTabG->next != NULL)
+      executeCommLine(S"tabonly!");
+   if (!ONLY_ONE_PORTAL)
+      executeCommLine(S"only!");
+
+   // Free all spell info.
+   spell_free_all();
+
+   ui_remove_balloon();
+   if (curPor)
+      close_all_popups(true);
+
+   // Clear user commands (before deleting books).
+   ex_comclear(NULL);
+
+   // When exiting from mainerr_arg_missing curBook has not been initialized, and not much else
+   if (curBook) {
+      // Clear menus.
+      executeCommLine(S"aunmenu *");
+      executeCommLine(S"tlunmenu *");
+      executeCommLine(S"menutranslate clear");
+      // Clear mappings, abbreviations, breakpoints.
+      executeCommLine(S"lmapclear");
+      executeCommLine(S"xmapclear");
+      executeCommLine(S"mapclear");
+      executeCommLine(S"mapclear!");
+      executeCommLine(S"abclear");
+      executeCommLine(S"breakdel *");
+   }
+
+   free_findfile();
+
+   // Obviously named calls.
+   free_all_autocmds();
+   clear_termcodes();
+   free_all_marks();
+   alist_clear(&argListG);
+   free_homedir();
+   free_users();
+   free_search_patterns();
+   free_old_sub();
+   free_last_insert();
+   free_insexpand_stuff();
+   free_prev_shellcmd();
+   free_regexp_stuff();
+   free_tag_stuff();
+   free_xim_stuff();
+   free_cd_dir();
+   free_signs();
+   set_expr_line(NULL, NULL);
+   if (curtab)
+      diff_clear(curtab);
+   clear_sb_text(true);         // free any scrollback text
+
+   // Free some global vars.
+   eeglFree(username);
+   eeglFree(lastCommlineG);
+   eeglFree(newLastCommlineG);
+   set_keep_msg(NULL, 0);
+
+   // Clear commline history.
+   p_hi = 0;
+   init_history();
+   clear_global_prop_types();
+
+   free_quickfix();
+
+   // Close all script inputs.
+   close_all_scripts();
+
+   if (curPor)
+      //Destroy all portals. Must come before freeing books.
+      portFreeAll();
+
+   //Free all option values. Must come after closing portals.
+   optFreeAllOptions();
+
+   //Free all books. Reset 'autochdir' to avoid accessing things that were freed already.
+   Book* book;
+   for (book = firstBook; book; ) {
+      BookRef    bufref;
+      bookStoreInRef(OUT &bufref, book);
+      Book* nextBook = book->next;
+      bookClose(NULL, book, DOBUF_WIPE, false, false);
+      if (bookRefValid(&bufref))
+         book = nextBook;   // didn't work, try next one
+      else
+         book = firstBook;
+   }
+
+   // Clear registers.
+   clear_registers();
+   ResetRedobuff();
+   ResetRedobuff();
+
+   // hilite info
+   freeHilites();
+
+   reset_last_sourcing();
+
+   if (firstTabG) {
+      freeTab(firstTabG);
+      firstTabG = NULL;
+   }
+
+   // Machine-specific free.
+   mch_free_mem();
+
+   // message history
+   for (;;) {
+      if (delete_first_msg() == FAIL)
+          break;
+   } 
+
+   channel_free_all();
+   timer_free_all();
+   // must be after channel_free_all() with unrefs partials
+   eval_clear();
+   // must be after eval_clear() with unrefs jobs
+   job_free_all();
+
+   free_termoptions();
+   free_cur_term();
+
+   // screenlines (can't display anything now!)
+   free_screenlines();
+
+   clear_hl_tables();
+
+   eeglFree(IObuff);
+   eeglFree(nameBuffG);
+   check_quickfix_busy();
+   free_resub_eval_result();
+   free_vbuf();
+}
+#endif
+
+// Copy "p[len]" into allocated memory, ignoring ZERO characters.
+pub CS
+eeMemsave(Byte *p, Unt len) {
+   Byte *ret = alloc(len);
+   MEMMOVE(ret, p, len);
+   return ret;
+}
+
+//Replacement for free() that ignores NULL pointers. Also skip free() when exiting for sure, this
+//helps when we caught a deadly signal that was caused by a crash in free().
+//If you want to set NULL after calling this function, you should use EE_CLEAR() instead.
+pub void
+eeglFree(void* x) {
+   if (x && !really_exiting) {
+#ifdef MEM_PROFILE
+      mem_pre_free(&x);
+#endif
+      free(x);
+   }
+}
+
+pub void
+eeglFreeString(CS x) {
+   if (x && *x != ZERO && !really_exiting) {
+#ifdef MEM_PROFILE
+      mem_pre_free(&x);
+#endif
+      free(x);
+   }
+}
+
+#if defined(EXITFREE)
+
+pub void
+mch_free_mem(void){
+   EE_CLEAR(signal_stack);
+}
+#endif
+
+// Copy full dir name to an allocation outside the arena & glue a file name to its end.
+pub CS
+toFullFileName(Text fileName, DirName* dn) {
+   CS theString = alloc(dn->len + fileName.len + 1);
+   memcpy(theString, dn->c, dn->len);
+   memcpy(theString + dn->len, fileName.c, fileName.len);
+   theString[dn->len + fileName.len] = ZERO;
+   return theString;
+}
+
+//}}}
+//{{{reference counting
+
+//These macros must only be defined for structs where the first value is an Unt holding the refcount
+pub
+#define getRefCount(a) _Generic((a),\
+   Job*: _getRefCount\
+)(a)
+
+pub
+#define incRefCount(a) _Generic((a),\
+   Job*: _incRefCount\
+)(a)
+
+pub
+#define decRefCount(a) _Generic((a),\
+   Job*: _decRefCount\
+)(a)
+
+//}}}
+//{{{garbage collection of variables
+
+// structure used for explicit stack while garbage collecting hash tables
+struct HtStack {
+   EeSet* ht;
+   HtStack* prev;
+};
+
+// structure used for explicit stack while garbage collecting lists
+struct ListStack{
+   List* list;
+   ListStack* prev;
+};
+
+// When recursively copying lists and dicts we need to remember which ones we
+// have done to avoid endless recursiveness.  This unique ID is used for that.
+// The last bit is used for previous_funccal, ignored when comparing.
+private int current_copyID = 0;
+
+private int free_unref_items(int copyID);
+
+// Return the next (unique) copy ID. Used for serializing nested structures.
+pub int
+get_copyID(void) {
+   current_copyID += COPYID_INC;
+   return current_copyID;
+}
+
+// Garbage collection for lists and dictionaries.
+//
+// We use reference counts to be able to free most items right away when they
+// are no longer used.  But for composite items it's possible that it becomes
+// unused while the reference count is > 0: When there is a recursive
+// reference.  Example:
+//   :let l = [1, 2, 3]
+//   :let d = {9: l}
+//   :let l[1] = d
+//
+// Since this is quite unusual we handle this with garbage collection: every
+// once in a while find out which lists and dicts are not referenced from any
+// variable.
+//
+// Here is a good reference text about garbage collection (refers to Python
+// but it applies to all reference-counting mechanisms):
+//   http://python.ca/nas/python/gc/
+
+// Perform garbage collection for lists and dicts.
+// When "testing" is true this is called from test_garbagecollect_now().
+// Return true if some memory was freed.
+pub int
+garbage_collect(int testing) {
+   int copyID;
+   int abort = false;
+   Book* book;
+   Portal* wp;
+   int did_free = false;
+   Tab* tab;
+
+   if (!testing) {
+      // Only do this once.
+      want_garbage_collect = false;
+      may_garbage_collect = false;
+      garbage_collect_at_exit = false;
+   }
+
+   // The execution stack can grow big, limit the size.
+   if (exestack.cap - exestack.len > 500) {
+      Unt new_len;
+      Byte* pp;
+
+      // Keep 150% of the current size, with a minimum of the growth size.
+      int n = exestack.len / 2;
+      if (n < exestack.ga_growsize)
+         n = exestack.ga_growsize;
+
+      // Don't make it bigger though.
+      if (exestack.len + n < exestack.cap) {
+         new_len = (Unt)exestack.ga_itemsize * (exestack.len + n);
+         pp = eeRealloc(exestack.c, new_len);
+         exestack.cap = exestack.len + n;
+         exestack.c = pp;
+      }
+   }
+
+   // We advance by two because we add one for items referenced through previous_funccal.
+   copyID = get_copyID();
+
+   //1. Go through all accessible variables and mark all lists and dicts with copyID.
+
+   //Don't free variables in the previous_funccal list unless they are only
+   //referenced through previous_funccal.  This must be first, because if
+   //the item is referenced elsewhere the funccal must not be freed.
+   abort = abort || set_ref_in_previous_funccal(copyID)
+                 //script-local variables
+                 || garbage_collect_scriptvars(copyID);
+
+   //book-local variables
+   FOR_ALL_BOOKS(book) {
+      abort = abort || set_ref_in_item(&book->bookVar.c, copyID, NULL, NULL);
+   } 
+
+   //portal-local variables
+   FOR_ALL_TAB_PORTALS(tab, wp)
+      abort = abort || set_ref_in_item(&wp->wVar.c, copyID,  NULL, NULL);
+   //portal-local variables in autocmd portals
+   for (Unt i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
+      if (autoCommPortG[i].port) {
+         abort = abort || set_ref_in_item( &autoCommPortG[i].port->wVar.c, copyID, NULL, NULL);
+      } 
+   } 
+   FOR_ALL_POPUPPORTS(wp)
+      abort = abort || set_ref_in_item(&wp->wVar.c, copyID, NULL, NULL);
+   FOR_ALL_TABS(tab) {
+      FOR_ALL_POPUPPORTS_IN_TAB(tab, wp)
+         abort = abort || set_ref_in_item(&wp->wVar.c, copyID, NULL, NULL);
+   } 
+
+   // tab-local variables
+   FOR_ALL_TABS(tab) {
+      abort = abort || set_ref_in_item(&tab->tabVar.c, copyID, NULL, NULL);
+   }
+   // global variables
+   abort = abort || garbage_collect_globvars(copyID)
+      // function-local variables
+      || set_ref_in_call_stack(copyID)
+      // named functions (matters for closures)
+      || set_ref_in_functions(copyID)
+      // function call arguments, if v:testing is set.
+      || set_ref_in_func_args(copyID);
+
+    // v: vars
+    abort = abort 
+      || garbageCollectEeglVars(copyID)
+      // callbacks in books
+      || setRefInBooks(copyID)
+      // @completefunc, @omnifunc and @thesaurusfunc callbacks
+      || set_ref_in_insexpand_funcs(copyID)
+      // @operatorfunc callback
+      || set_ref_in_opfunc(copyID)
+      // @tagfunc callback
+      || set_ref_in_tagfunc(copyID)
+      // @findfunc callback
+      || set_ref_in_findfunc(copyID);
+
+    abort = abort 
+      || set_ref_in_channel(copyID)
+      || set_ref_in_job(copyID)
+      || set_ref_in_timer(copyID)
+      || llSetRef(copyID)
+      || set_ref_in_term(copyID)
+      || set_ref_in_popups(copyID);
+
+   if (!abort) {
+      // 2. Free lists and dictionaries that are not referenced.
+      did_free = free_unref_items(copyID);
+
+      // 3. Check if any funccal can be freed now. This may call us back recursively.
+      free_unref_funccal(copyID, testing);
+   } ei (p_verbose > 0) {
+      verb_msg(_("Not enough memory to set references, garbage collection aborted!"));
+   }
+
+   return did_free;
+}
+
+// Free lists, dictionaries, channels and jobs that are no longer referenced.
+private int
+free_unref_items(int copyID) {
+
+   // Let all "free" functions know that we are here.  This means no
+   // dictionaries, lists, channels or jobs are to be freed, because we will do that here.
+   in_free_unref_items = true;
+
+   // PASS 1: free the contents of the items.  We don't free the items
+   // themselves yet, so that it is possible to decrement refcount counters
+
+   // Go through the list of dicts and free items without this copyID.
+   int did_free = dict_free_nonref(copyID);
+
+   // Go through the list of lists and free items without this copyID.
+   did_free |= list_free_nonref(copyID);
+
+   // Go through the list of jobs and free items without the copyID. This
+   // must happen before doing channels, because jobs refer to channels, but
+   // the reference from the channel to the job isn't tracked.
+   did_free |= free_unused_jobs_contents(copyID, COPYID_MASK);
+
+   // Go through the list of channels and free items without the copyID.
+   did_free |= free_unused_channels_contents(copyID, COPYID_MASK);
+
+   // PASS 2: free the items themselves.
+   dict_free_items(copyID);
+   list_free_items(copyID);
+
+   // Go through the list of jobs and free items without the copyID. This
+   // must happen before doing channels, because jobs refer to channels, but
+   // the reference from the channel to the job isn't tracked.
+   free_unused_jobs(copyID, COPYID_MASK);
+
+   // Go through the list of channels and free items without the copyID.
+   free_unused_channels(copyID, COPYID_MASK);
+
+   in_free_unref_items = false;
+
+   return did_free;
+}
+
+//Mark all lists and dicts referenced through EeSet "eeset" with "copyID".
+//"list_stack" is used to add lists to be marked.  Can be NULL.
+//
+//Return true if setting references failed somehow.
+pub int
+setRefInSet(EeSet* eeset, int copyID, ListStack** list_stack) {
+   int      todo;
+   int      abort = false;
+   EeSetItem* hi;
+   EeSet   *cur_ht;
+   HtStack   *ht_stack = NULL;
+   HtStack   *tempitem;
+
+   cur_ht = eeset;
+   for (;;) {
+      if (!abort) {
+         // Mark each item in the hashtab.  If the item contains a hashtab
+         // it is added to ht_stack, if it contains a list it is added to list_stack.
+         todo = (int)cur_ht->count;
+         FOR_ALL_HASHTAB_ITEMS(cur_ht, hi, todo) {
+            if (!HASHITEM_EMPTY(hi)) {
+               --todo;
+               abort = abort || set_ref_in_item(&HI2DI(hi)->c, copyID, &ht_stack, list_stack);
+            }
+         }
+      }
+
+      if (ht_stack == NULL)
+         break;
+
+      // take an item from the stack
+      cur_ht = ht_stack->ht;
+      tempitem = ht_stack;
+      ht_stack = ht_stack->prev;
+      free(tempitem);
+   }
+
+   return abort;
+}
+
+// Mark a list and its items with "copyID". Return true if setting references failed somehow.
+pub int
+set_ref_in_list(List *ll, int copyID) {
+   if (ll && ll->copyId != copyID) {
+      ll->copyId = copyID;
+      return set_ref_in_list_items(ll, copyID, NULL);
+   }
+   return false;
+}
+
+//Mark all lists and dicts referenced through list "l" with "copyID".
+//"ht_stack" is used to add hashtabs to be marked.  Can be NULL.
+//
+//Return true if setting references failed somehow.
+pub int
+set_ref_in_list_items(List* l, int copyID, HtStack** ht_stack) {
+   ListItem    *li;
+   int       abort = false;
+   List    *cur_l;
+   ListStack *list_stack = NULL;
+   ListStack *tempitem;
+
+   cur_l = l;
+   for (;;) {
+      if (!abort && cur_l->first != &range_list_item)
+         // Mark each item in the list.  If the item contains a hashtab
+         // it is added to ht_stack, if it contains a list it is added to list_stack.
+         for (li = cur_l->first; !abort && li != NULL; li = li->next)
+            abort = abort || set_ref_in_item(&li->c, copyID, ht_stack, &list_stack);
+      if (list_stack == NULL)
+         break;
+
+      // take an item from the stack
+      cur_l = list_stack->list;
+      tempitem = list_stack;
+      list_stack = list_stack->prev;
+      free(tempitem);
+   }
+
+   return abort;
+}
+
+// Mark the partial in callback 'cb' with "copyID".
+pub Boole
+memSetRefInCallback(Callback* cb, int copyID) {
+   if (!cb || !cb->name || *cb->name == ZERO || cb->cb_partial == NULL)
+      return false;
+
+   Var tv;
+   tv.tag = VAR_PARTIAL;
+   tv.partial = cb->cb_partial;
+   return set_ref_in_item(&tv, copyID, NULL, NULL);
+}
+
+// Mark the dict "dd" with "copyID". Also see set_ref_in_item().
+private Boole
+set_ref_in_item_dict(
+   Bag* bag,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
+){
+   if (!bag || bag->copyId == copyID)
+      return false;
+
+   // Didn't see this bag yet.
+   bag->copyId = copyID;
+   if (!ht_stack)
+      return setRefInSet(&bag->hashTable, copyID, list_stack);
+
+   HtStack *newitem = ALLOC_ONE(HtStack);
+   newitem->ht = &bag->hashTable;
+   newitem->prev = *ht_stack;
+   *ht_stack = newitem;
+
+   return false;
+}
+
+// Mark the list "ll" with "copyID". Also see set_ref_in_item().
+private Boole
+set_ref_in_item_list(
+   OUT List* ll,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
+) {
+   if (!ll || ll->copyId == copyID)
+      return false;
+
+   // Didn't see this list yet.
+   ll->copyId = copyID;
+   if (!list_stack)
+      return set_ref_in_list_items(ll, copyID, ht_stack);
+
+   ListStack *newitem = ALLOC_ONE(ListStack);
+   if (newitem == NULL)
+      return true;
+
+   newitem->list = ll;
+   newitem->prev = *list_stack;
+   *list_stack = newitem;
+
+   return false;
+}
+
+// Mark the partial "pt" with "copyID". Also see set_ref_in_item().
+private Boole
+set_ref_in_item_partial(
+   PartiallyApplied* pt,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
+) {
+   if (!pt)
+      return false;
+
+   int abort = set_ref_in_func(pt->name, pt->fn, copyID);
+
+   if (pt->self) {
+      Var dtv;
+      dtv.tag = VAR_BAG;
+      dtv.bag = pt->self;
+      set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
+   }
+
+
+   for (int i = 0; i < pt->argc; ++i)
+      abort = abort || set_ref_in_item(&pt->argv[i], copyID, ht_stack, list_stack);
+
+   return abort;
+}
+
+// Mark the job "pt" with "copyID". Also see set_ref_in_item().
+private Boole
+set_ref_in_item_job(Job* job, int copyID, HtStack** ht_stack, ListStack** list_stack) {
+   if (!job || chJobGetCopyId(job) == copyID)
+      return false;
+
+   chJobSetCopyId(job, copyID);
+   Var dtv;
+   if (chJobGetChannel(job)) {
+      dtv.tag = VAR_CHANNEL;
+      dtv.channel = chJobGetChannel(job);
+      set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
+   }
+   if (chJobGetExitCb(job).cb_partial != NULL) {
+      dtv.tag = VAR_PARTIAL;
+      dtv.partial = chJobGetExitCb(job).cb_partial;
+      set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
+   }
+
+   return false;
+}
+
+// Mark the channel "ch" with "copyID". Also see set_ref_in_item().
+private Boole
+set_ref_in_item_channel(Channel* ch, int copyID, HtStack** ht_stack, ListStack** list_stack) {
+   Var    dtv;
+
+   if (!ch || ch->copyId == copyID)
+      return false;
+
+   ch->copyId = copyID;
+   for (ChannelFdKind part = PART_SOCK; part < PART_COUNT; ++part) {
+      for (JsonQ *jq = ch->fds[part].ch_json_head.jq_next; jq; jq = jq->jq_next)
+         set_ref_in_item(jq->jq_value, copyID, ht_stack, list_stack);
+      for (CbNode *cq = ch->fds[part].ch_cb_head.cq_next; cq != NULL; cq = cq->cq_next)
+         if (cq->cq_callback.cb_partial != NULL) {
+            dtv.tag = VAR_PARTIAL;
+            dtv.partial = cq->cq_callback.cb_partial;
+            set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
+         }
+      if (ch->fds[part].ch_callback.cb_partial != NULL) {
+         dtv.tag = VAR_PARTIAL;
+         dtv.partial = ch->fds[part].ch_callback.cb_partial;
+         set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
+      }
+   }
+   if (ch->ch_callback.cb_partial != NULL) {
+      dtv.tag = VAR_PARTIAL;
+      dtv.partial = ch->ch_callback.cb_partial;
+      set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
+   }
+   if (ch->ch_close_cb.cb_partial != NULL) {
+      dtv.tag = VAR_PARTIAL;
+      dtv.partial = ch->ch_close_cb.cb_partial;
+      set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
+   }
+
+   return false;
+}
+
+// Mark all lists, dicts and other container types referenced through Var "tv" with "copyID".
+// "list_stack" is used to add lists to be marked. May be NULL.
+// "ht_stack" is used to add hashtabs to be marked. May be NULL.
+//
+// Return true if setting references failed somehow.
+pub int
+set_ref_in_item(Var* tv, int copyID, HtStack** ht_stack, ListStack** list_stack){
+   Boole abort = false;
+
+   switch (tv->tag) {
+   case VAR_BAG:
+      return set_ref_in_item_dict(tv->bag, copyID, ht_stack, list_stack);
+   case VAR_LIST: return set_ref_in_item_list(tv->list, copyID, ht_stack, list_stack);
+   case VAR_FUNC: abort = set_ref_in_func(tv->string, NULL, copyID); break;
+   case VAR_PARTIAL:
+       return set_ref_in_item_partial(tv->partial, copyID, ht_stack, list_stack);
+
+   case VAR_JOB:
+       return set_ref_in_item_job(tv->job, copyID, ht_stack, list_stack);
+
+   case VAR_CHANNEL:
+       return set_ref_in_item_channel(tv->channel, copyID, ht_stack, list_stack);
+
+   case VAR_UNKNOWN:
+   case VAR_ANY:
+   case VAR_VOID:
+   case VAR_BOOL:
+   case VAR_SPECIAL:
+   case VAR_NUMBER:
+   case VAR_FLOAT:
+   case VAR_STRING:
+   case VAR_BLOB:
+       // Types that do not contain any other item
+       break;
+   }
+
+   return abort;
+}
+
 //}}}

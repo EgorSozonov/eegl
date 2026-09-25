@@ -15,7 +15,6 @@
 #include "h/draw.types.h"
 #include "h/draw.h"
 #include "h/eval.h"
-#include "h/memory.h"
 #include "h/message.h"
 #include "h/hilite.types.h"
 #include "h/hilite.h"

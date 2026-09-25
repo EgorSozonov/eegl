@@ -1,3 +1,81 @@
+int get_user_name(CS builder, int len);
+int ml_open(Book *book);
+void ml_setname(Book* book);
+void memOpenSwapFiles(void);
+void memOpenSwapFile(Book* book);
+void check_need_swap(int newfile) ;
+void ml_close(Book* book, Boole del_file);
+void ml_close_all(Boole del_file);
+void ml_close_notmod(void);
+void ml_timestamp(Book* book);
+void ml_recover(Boole checkext);
+void get_b0_dict(CS fname, Bag *bag);
+void ml_sync_all(int check_file, int check_char);
+void ml_preserve(Book* book, int message);
+CS ml_get(LineNr lnum);
+CS ml_get_pos(Pos* pos);
+CS ml_get_curline(void);
+CS ml_get_cursor(void);
+ColNr ml_get_len(LineNr lnum);
+ColNr ml_get_pos_len(Pos *pos);
+ColNr ml_get_curline_len(void);
+ColNr ml_get_cursor_len(void);
+ColNr memGetBookLen(Book* book, LineNr lnum);
+CS memGetLine(Book* book, LineNr lnum, Boole willChange);
+int ml_line_alloced(void);
+int ml_append(
+   LineNr lnum, // append after this line (can be 0)
+   CS newContent, // text of the new line
+   ColNr len, // number of bytes to copy, or if 0 - will be replaced by strlen(newContent), 
+   int   newfile // flag, see above
+);
+int ml_append_flags(
+   LineNr   lnum,      // append after this line (can be 0)
+   CS newContent,      // text of the new line
+   ColNr   len,        // length of new line, including ZERO, or 0
+   Unt      flags      // ML_APPEND_ values
+);
+int memAppendBook(
+   Book* book,
+   LineNr lnum,  // append after this line (can be 0)
+   CS line,      // text of the new line
+   ColNr len,    // length of new line, including ZERO, or 0
+   int newfile  // flag, see above
+);
+int ml_replace(LineNr lnum, CS line, int copy);
+int ml_replace_len(
+   LineNr lnum,
+   CS line_arg,
+   ColNr len_arg,
+   int has_props,
+   int copy
+);
+int ml_delete(LineNr lnum);
+int ml_deleteBufLine(Book* book, LineNr lnum);
+int ml_delete_flags(LineNr lnum, int flags);
+void ml_setmarked(LineNr lnum);
+LineNr ml_firstmarked(void);
+void ml_clearmarked(void);
+void ml_setflags(Book* book);
+long ml_find_line_or_offset(Book* book, LineNr lnum, long *offp);
+void goto_byte(long cnt);
+CS memMakePercentSwapName(CS dir, CS dir_end, CS name);
+MemFile * mf_open(CS fname, Unt flags);
+int mf_open_file(MemFile* mfp, CS fname);
+void mf_close(MemFile* mfp, int del_file);
+void mf_close_file(Book* book, int getlines);
+void mf_new_page_size(MemFile* mfp, unsigned new_size);
+BlockHeader * mf_new(MemFile* mfp, int negative, int page_count);
+BlockHeader * mf_get(MemFile* mfp, BlockId nr, int page_count);
+void mf_put(MemFile* mfp, BlockHeader* hp, int dirty, int infile);
+void mf_free(MemFile* mfp, BlockHeader* hp);
+int mf_sync(MemFile* mfp, Unt flags);
+void mf_set_dirty(MemFile* mfp);
+int mf_release_all(void);
+BlockId mf_trans_del(MemFile* mfp, BlockId old_nr);
+void mf_set_ffname(MemFile* mfp);
+void mf_fullname(MemFile* mfp);
+int mf_need_trans(MemFile* mfp);
 Boole setRefInBooks(int copyID);
 Book* bookFindByName(CS name, Boole curtab_only);
 Book* findBook(Var* avar);
@@ -205,6 +283,28 @@ Boole bookContentsChanged(Book* book);
 void bookWipe(Book* book, int aucmd);
 void printMsgWithWrap(CS s);
 int bookCompare(const void* s0, const void* s1);
+Boole bookWasChanged(Book* book);
+Boole bookWasChangedNotTerm(Book* book);
+void drawGetTranslatedBookName(Book* book);
+int startEditingFile(
+   int fnum,
+   CS fullFName,
+   CS sfname,
+   Invocation* invo,         // can be NULL!
+   LineNr newlnum,
+   Unt flags,
+   Portal* oldPort
+);
+void c_swapname(Invocation*);
+Boole bookNoMemfile(Book* b);
+Boole bookNoFname(Book* book);
+CS bookGetSwapName(Book* book);
+void f_swapname(Arr(Var) argvars, Var* returnVar);
+int bookCheckTimestamp(Book* book);
+void bookShortenName(Book* book, CS dirname, int force);
+void shorten_fnames(Boole force);
+int bookGetFd(Book* b);
+void bookSetDirtyFlag(Book* book);
 CS new_file_message(void);
 int bookWrite(
    Book* book,

@@ -682,15 +682,10 @@ BASIC_SRC_NO_DIR = \
 / fileio.c \
 / hilite.c \
 / input.c \
-/ insert.c \
-/ juggle.c \
 / location.c \
-/ memory.c \
 / message.c \
 / motor.c \
-/ normal.c \
 / option.c \
-/ persist.c \
 / portal.c \
 / regexp.c \
 / script.c \
@@ -699,6 +694,7 @@ BASIC_SRC_NO_DIR = \
 / tag.c \
 / term.c \
 / ui.c \
+/ wheel.c \
    window.c
 
 BASIC_SRC = $(addprefix src/, $(BASIC_SRC_NO_DIR))
@@ -740,13 +736,9 @@ OBJ_COMMON = \
  $(OBJDIR)/fileio.o \
  $(OBJDIR)/hilite.o \
  $(OBJDIR)/input.o \
- $(OBJDIR)/insert.o \
- $(OBJDIR)/juggle.o \
  $(OBJDIR)/location.o \
  $(OBJDIR)/motor.o \
- $(OBJDIR)/normal.o \
  $(OBJDIR)/option.o \
- $(OBJDIR)/persist.o \
  $(OBJDIR)/portal.o \
  $(OBJDIR)/regexp.o \
  $(OBJDIR)/script.o \
@@ -754,6 +746,7 @@ OBJ_COMMON = \
  $(OBJDIR)/tag.o \
  $(OBJDIR)/term.o \
  $(OBJDIR)/ui.o \
+ $(OBJDIR)/wheel.o \
  $(OBJDIR)/window.o \
  $(CHANNEL_OBJ)
 
@@ -761,14 +754,14 @@ OBJ_COMMON = \
 OBJ_MAIN = \
 / $(OBJDIR)/strings.o \
 / $(OBJDIR)/main.o \
-/ $(OBJDIR)/memory.o \
+/ $(OBJDIR)/data.o \
 / $(OBJDIR)/message.o
 
 OBJ = $(OBJ_COMMON) $(OBJ_MAIN)
 
 OBJ_JSON_TEST = \
 / $(OBJDIR)/strings.o \
-/ $(OBJDIR)/memory.o \
+/ $(OBJDIR)/data.o \
 / $(OBJDIR)/message.o \
 / $(OBJDIR)/json_test.o
 
@@ -776,7 +769,7 @@ JSON_TEST_OBJ = $(OBJ_COMMON) $(OBJ_JSON_TEST)
 
 OBJ_KWORD_TEST = \
 / $(OBJDIR)/strings.o \
-/ $(OBJDIR)/memory.o \
+/ $(OBJDIR)/data.o \
 / $(OBJDIR)/message.o \
 / $(OBJDIR)/kword_test.o
 
@@ -793,7 +786,7 @@ MEMFILE_TEST_OBJ = $(OBJ_COMMON) $(OBJ_MEMFILE_TEST)
 OBJ_MESSAGE_TEST = \
 / $(OBJDIR)/strings.o \
 / $(OBJDIR)/strings.o \
-/ $(OBJDIR)/memory.o \
+/ $(OBJDIR)/data.o \
 / $(OBJDIR)/message_test.o
 
 MESSAGE_TEST_OBJ = $(OBJ_COMMON) $(OBJ_MESSAGE_TEST)
@@ -819,18 +812,13 @@ PRO_AUTO = \
 / fileio.h \
 / hilite.h \
 / input.h \
-/ insert.h \
-/ juggle.h \
 / list.h \
 / location.h \
 / mark.h \
-/ memory.h \
 / message.h \
 / motor.h \
-/ normal.h \
 / option.h \
 / unix.h \
-/ persist.h \
 / portal.h \
 / regexp.h \
 / script.h \
@@ -840,6 +828,7 @@ PRO_AUTO = \
 / tag.h \
 / term.h \
 / ui.h \
+/ wheel.h \
 / window.h
 
 # Default target is making the executable and tools
@@ -1625,19 +1614,13 @@ $(OBJDIR)/input.o: src/input.c src/eegl.h \
  src/commands.h
 $(OBJDIR)/hilite.o: src/hilite.c src/eegl.h \
  src/commands.h
-$(OBJDIR)/insert.o: src/insert.c src/eegl.h \
- src/commands.h
-$(OBJDIR)/juggle.o: src/juggle.c src/eegl.h \
- src/commands.h
 $(OBJDIR)/location.o: src/location.c src/eegl.h \
  src/commands.h
 $(OBJDIR)/motor.o: src/motor.c src/eegl.h \
  src/commands.h
-$(OBJDIR)/memory.o: src/memory.c src/eegl.h \
- src/commands.h
 $(OBJDIR)/message.o: src/message.c src/eegl.h \
  src/commands.h
-$(OBJDIR)/normal.o: src/normal.c src/eegl.h \
+$(OBJDIR)/wheel.o: src/wheel.c src/eegl.h \
  src/commands.h src/actions.h src/indices/actions.h
 $(OBJDIR)/option.o: src/option.c src/eegl.h \
  src/commands.h
@@ -1648,8 +1631,6 @@ $(OBJDIR)/regexp.o: src/regexp.c src/eegl.h \
 $(OBJDIR)/script.o: src/script.c src/eegl.h \
  src/commands.h
 $(OBJDIR)/search.o: src/search.c src/eegl.h \
- src/commands.h
-$(OBJDIR)/persist.o: src/persist.c src/eegl.h \
  src/commands.h
 $(OBJDIR)/strings.o: src/strings.c src/eegl.h \
  src/commands.h src/base.h
@@ -1668,7 +1649,7 @@ $(OBJDIR)/json_test.o: src/json_test.c src/main.c src/eegl.h \
 $(OBJDIR)/kword_test.o: src/kword_test.c src/main.c src/eegl.h \
  src/commands.h src/strings.c
 $(OBJDIR)/memfile_test.o: src/memfile_test.c src/main.c src/eegl.h \
- src/commands.h src/memory.c
+ src/commands.h src/data.c
 $(OBJDIR)/message_test.o: src/message_test.c src/main.c src/eegl.h \
  src/commands.h src/message.c
 $(OBJDIR)/channel.o: src/channel.c src/eegl.h 

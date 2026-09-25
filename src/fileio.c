@@ -12,8 +12,6 @@
 #include "h/input.types.h"
 #include "h/input.h"
 #include "h/do.h"
-#include "h/memory.types.h"
-#include "h/memory.h"
 #include "h/diff.h"
 #include "h/draw.types.h"
 #include "h/draw.h"
@@ -21,14 +19,10 @@
 #include "h/fileio.h"
 #include "h/hilite.types.h"
 #include "h/hilite.h"
-#include "h/insert.h"
-#include "h/juggle.h"
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
-#include "h/normal.h"
 #include "h/option.h"
-#include "h/persist.h"
 #include "h/portal.h"
 #include "h/regexp.h"
 #include "h/script.h"
@@ -36,6 +30,8 @@
 #include "h/tag.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 
 #include <sys/stat.h> // for stat, fstat etc
 
@@ -5453,8 +5449,8 @@ readfile(
          goto theend;
       }
       //Set swap file protection bits after creating it.
-      if (swap_mode > 0 && curBook->mem.mfile != NULL && curBook->mem.mfile->fName != NULL) {
-         CS swap_fname = curBook->mem.mfile->fName;
+      if (swap_mode > 0 && !bookNoFname(curBook)) {
+         CS swap_fname = bookGetSwapName(curBook);
 
          //If the group-read bit is set but not the world-read bit, then the group must be equal 
          //to the group of the original file.  If we can't make that happen then reset the 
@@ -5465,7 +5461,7 @@ readfile(
 
             if (stat((char *)swap_fname, &swap_st) >= 0
                   && st.st_gid != swap_st.st_gid
-                  && fchown(curBook->mem.mfile->fd, -1, st.st_gid) == -1
+                  && fchown(bookGetFd(curBook), -1, st.st_gid) == -1
             )
                swap_mode &= 0600;
          }
@@ -5931,9 +5927,7 @@ afterRecovery:
       retval = OK;
 
 theend:
-   if (curBook->mem.mfile != NULL && curBook->mem.mfile->mf_dirty == MF_DIRTY_YES_NOSYNC)
-      // OK to sync the swap file now
-      curBook->mem.mfile->mf_dirty = MF_DIRTY_YES;
+   bookSetDirtyFlag(curBook);
 
    return retval;
 }
@@ -6186,49 +6180,6 @@ shorten_fname(CS full_path, CS dir_name){
    return p;
 }
 
-//Shorten filename of a book.
-//When "force" is true: Use full path from now on for files currently being
-//edited, both for file name and swap file name.  Try to shorten the file
-//names a bit, if safe to do so.
-//When "force" is false: Only try to shorten absolute file names.
-//For books that have buftype "nofile" or "scratch": never change the file name.
-pub void
-shorten_buf_fname(Book* book, CS dirname, int force) {
-   if (book->currFileName
-       && !bt_nofilename(book)
-       && !strStartsWithUrl(book->currFileName)
-       && (force || book->shortFileName == NULL || !strIsRelative(book->shortFileName))
-   ) {
-      if (book->shortFileName != book->fullFileName)
-         EE_CLEAR(book->shortFileName);
-      CS p = shorten_fname(book->fullFileName, dirname);
-      if (p) {
-         book->shortFileName = copyStr(p);
-         book->currFileName = book->shortFileName;
-      }
-      if (!p || book->currFileName == NULL)
-         book->currFileName = book->fullFileName;
-   }
-}
-
-// Shorten filenames for all books.
-pub void
-shorten_fnames(Boole force){
-   Byte dirname[MAXPATHL];
-
-   mch_dirname(dirname, MAXPATHL);
-   Book* book;
-   FOR_ALL_BOOKS(book) {
-      shorten_buf_fname(book, dirname, force);
-
-      // Always make the swap file name a full path, a "nofile" book may also have a swap file
-      mf_fullname(book->mem.mfile);
-   }
-   status_redraw_all();
-   needRedrawTabpanelG = true;
-   popup_update_preview_title();
-}
-
 //Add extension to file name - change path/fo.o.h to path/fo.o.h.ext
 //
 //Assumed that fname is a valid name found in the filesystem we assure that the return value is a 
@@ -6467,7 +6418,6 @@ eeCopyfile(CS from, CS to){
    return OK;
 }
 
-private int already_warned = false;
 
 //{{{book work
 
@@ -6476,7 +6426,7 @@ private int already_warned = false;
 //command is being executed, a mapping is being executed or an autocommand is busy.
 //Return true if some message was written (screen should be redrawn and cursor positioned).
 pub int
-check_timestamps( int      focus) {     // called for GUI focus event
+check_timestamps(int focus) {     // called for GUI focus event
    Book* book;
    int      didit = 0;
    int      n;
@@ -6500,14 +6450,13 @@ check_timestamps( int      focus) {     // called for GUI focus event
    else {
       ++no_wait_return;
       did_check_timestamps = true;
-      already_warned = false;
       FOR_ALL_BOOKS(book) {
          // Only check books in a portal.
          if (book->countPortals > 0) {
             BookRef bufref;
 
             bookStoreInRef(OUT &bufref, book);
-            n = fiCheckBookTimestamp(book);
+            n = bookCheckTimestamp(book);
             if (didit < n)
                 didit = n;
             if (n > 0 && !bookRefValid(&bufref)) {
@@ -6561,234 +6510,6 @@ move_lines(Book* frombuf, Book* tobuf) {
    }
 
    curBook = tbuf;
-   return retval;
-}
-
-//Check if book "book" has been changed.
-//Also check if the file for a new book unexpectedly appeared.
-//return 1 if a changed book was found.
-//return 2 if a message has been displayed.
-//return 0 otherwise.
-pub int
-fiCheckBookTimestamp(Book* book){
-   FileStat st;
-   int stat_res;
-   int retval = 0;
-   CS mesg = NULL;
-   CS mesg2 = S"";
-   int helpmesg = false;
-   enum {
-      RELOAD_NONE,
-      RELOAD_NORMAL,
-      RELOAD_DETECT
-   } reload = RELOAD_NONE;
-   int can_reload = false;
-   FileOffset   orig_size = book->origSize;
-   int orig_mode = book->origMode;
-   static int   busy = false;
-   int n;
-   BookRef bufref;
-
-   bookStoreInRef(OUT &bufref, book);
-
-   // If there is no file name, the book is not loaded, 'buftype' is
-   // set, we are in the middle of a save or being called recursively: ignore this book.
-   if (!book->fullFileName
-       || !book->mem.mfile
-       || !bt_normal(book)
-       || book->isBeingSaved
-       || busy
-       || book->term
-   )
-      return 0;
-
-   if (   (book->flags & BF_NOTEDITED) != 0
-       && book->modifiedTime != 0
-       && ((stat_res = stat((char *)book->fullFileName, &st)) < 0
-            || time_differs(&st, book->modifiedTime, book->modifiedTimeNs)
-            || st.st_size != book->origSize
-            || (int)st.st_mode != book->origMode
-      )
-   ) {
-      long prev_modifiedTime = book->modifiedTime;
-
-      retval = 1;
-
-      // set modifiedTime to stop further warnings (e.g., when executing FileChangedShell autocmd)
-      if (stat_res < 0) {
-         // Check the file again later to see if it re-appears.
-         book->modifiedTime = -1;
-         book->origSize = 0;
-         book->origMode = 0;
-      } else
-         buf_store_time(book, &st, book->fullFileName);
-
-      // Don't do anything for a directory.  Might contain the file explorer.
-      if (mch_isdir(book->currFileName))
-          ;
-      ei (!doWasBookChanged(book) && stat_res >= 0)
-         reload = RELOAD_NORMAL;
-      else {
-         CS reason;
-         Unt  reasonlen;
-
-         if (stat_res < 0) {
-            reason = S"deleted";
-            reasonlen = STRLEN_LITERAL("deleted");
-         } ei (doWasBookChanged(book)) {
-            reason = S"conflict";
-            reasonlen = STRLEN_LITERAL("conflict");
-         }
-         //Check if the file contents really changed to avoid giving a warning when only the 
-         //timestamp was set (e.g., checked out of CVS).  Always warn when the buffer was changed.
-         ei (orig_size != book->origSize || bookContentsChanged(book)) {
-            reason = S"changed";
-            reasonlen = STRLEN_LITERAL("changed");
-         } ei (orig_mode != book->origMode) {
-            reason = S"mode";
-            reasonlen = STRLEN_LITERAL("mode");
-         } else {
-            reason = S"time";
-            reasonlen = STRLEN_LITERAL("time");
-         }
-
-         //Only give the warning if there are no FileChangedShell autocommands.
-         //Avoid being called recursively by setting "busy".
-         busy = true;
-         set_EeglVar_string(VV_FCS_REASON, reason, (int)reasonlen);
-         set_EeglVar_string(VV_FCS_CHOICE, S"", 0);
-         ++allBookLock;
-         n = applyAutocomms(
-               EVENT_FILECHANGEDSHELL, book->currFileName, book->currFileName, false, book
-         );
-         --allBookLock;
-         busy = false;
-         if (n) {
-            if (!bookRefValid(&bufref))
-               emsg(_(e_filechangedshell_autocommand_deleted_buffer));
-            CS s = get_EeglVar_str(VV_FCS_CHOICE);
-            if (STRCMP(s, "reload") == 0 && *reason != 'd')
-               reload = RELOAD_NORMAL;
-            ei (STRCMP(s, "edit") == 0)
-               reload = RELOAD_DETECT;
-            ei (STRCMP(s, "ask") == 0)
-               n = false;
-            else
-               return 2;
-         }
-         if (!n) {
-            if (*reason == 'd') {
-               // Only give the message once.
-               if (prev_modifiedTime != -1)
-                  mesg = _(e_file_str_no_longer_available);
-            } else {
-               helpmesg = true;
-               can_reload = true;
-               if (reason[2] == 'n') {
-                  mesg = _("W12: Warning: File \"%s\" has changed and the buffer was changed in Eegl as well");
-                  mesg2 = _("See \":help W12\" for more info.");
-               } ei (reason[1] == 'h') {
-                  mesg = _("W11: Warning: File \"%s\" has changed since editing started");
-                  mesg2 = _("See \":help W11\" for more info.");
-               } ei (*reason == 'm') {
-                  mesg = _("W16: Warning: Mode of file \"%s\" has changed since editing started");
-                  mesg2 = _("See \":help W16\" for more info.");
-               } else {
-                  // Only timestamp changed, store it to avoid a warning in check_mtime() later.
-                  book->readTime = book->modifiedTime;
-                  book->readTimeNs = book->modifiedTimeNs;
-               }
-            }
-         }
-      }
-
-   } ei ((book->flags & BF_NEW) != 0 && (book->flags & BF_NEW_W) == 0 
-         && eeFexists(book->fullFileName)
-   ) {
-      retval = 1;
-      mesg = _("W13: Warning: File \"%s\" has been created after editing started");
-      book->flags |= BF_NEW_W;
-      can_reload = true;
-   }
-
-   if (mesg) {
-      CS path = home_replace_save(book, book->currFileName);
-      if (path) {
-         if (!helpmesg)
-            mesg2 = S"";
-         Unt tbufsize = STRLEN(mesg) + STRLEN(path) + 2 + STRLEN(mesg2) + 1; //+2 for "\n" or "; "
-                                                                         // and +1 for ZERO
-         CS tbuf = alloc(tbufsize);
-         int tbuflen = eeSnprintf(tbuf, tbufsize, mesg, path);
-         //Set warningmsg here, before the unimportant and output-specific mesg2 has been appended
-         set_EeglVar_string(VV_WARNINGMSG, (CS)tbuf, tbuflen);
-         if (can_reload) {
-            if (*mesg2 != ZERO)
-               eeSnprintf(tbuf + tbuflen, tbufsize - tbuflen, "\n%s", mesg2);
-            switch (do_dialog(EE_WARNING, (CS)_("Warning"),
-                (CS)tbuf,
-                (CS)_("&OK\n&Load File\nLoad File &and Options"),
-                1, NULL, true)
-            ) {
-               case 2:
-                  reload = RELOAD_NORMAL;
-                  break;
-               case 3:
-                  reload = RELOAD_DETECT;
-                  break;
-            }
-         } ei(stateG > MODE_NORMAL_BUSY || (stateG & MODE_COMMLINE) || already_warned) {
-            if (*mesg2 != ZERO)
-               eeSnprintf(tbuf + tbuflen, tbufsize - tbuflen, "; %s", mesg2);
-            emsg(tbuf);
-            retval = 2;
-         } else {
-            if (!autocmd_busy) {
-               msg_start();
-               msgPutsDeco(tbuf, getDecoFlags(HLF_E) + MSG_HIST);
-               if (*mesg2 != ZERO)
-                  msgPutsDeco(mesg2, getDecoFlags(HLF_W) + MSG_HIST);
-               msg_clr_eos();
-               (void)msg_end();
-               if (emsg_silent == 0 && !in_assert_fails) {
-                  out_flush();
-                  // give the user some time to think about it
-                  ui_delay(1004L, true);
-
-                  // don't redraw and erase the message
-                  redrawCommlineG = false;
-               }
-            }
-            already_warned = true;
-         }
-
-         eeglFree(tbuf);
-         eeglFree(path);
-      }
-   }
-
-   if (reload != RELOAD_NONE) {
-      // Reload the book.
-      buf_reload(book, orig_mode, reload == RELOAD_DETECT);
-      if (book->o.undoFile && book->fullFileName != NULL) {
-         Byte hash[UNDO_HASH_SIZE];
-         Book* save_curbuf = curBook;
-
-         // Any existing undo file is unusable, write it now.
-         curBook = book;
-         u_compute_hash(OUT hash);
-         u_write_undo(NULL, false, book, hash);
-         curBook = save_curbuf;
-      }
-   }
-
-   // Trigger FileChangedShell when the file was changed in any way.
-   if (bookRefValid(&bufref) && retval != 0) {
-      (void)applyAutocomms(
-            EVENT_FILECHANGEDSHELLPOST, book->currFileName, book->currFileName, false, book
-      );
-   } 
-
    return retval;
 }
 

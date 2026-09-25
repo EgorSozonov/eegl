@@ -9,7 +9,6 @@
 #include "h/book.h"
 #include "h/input.types.h"
 #include "h/input.h"
-#include "h/memory.h"
 #include "h/diff.h"
 #include "h/do.h"
 #include "h/draw.h"
@@ -17,14 +16,11 @@
 #include "h/fileio.h"
 #include "h/hilite.types.h"
 #include "h/hilite.h"
-#include "h/insert.h"
-#include "h/juggle.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
-#include "h/normal.h"
 #include "h/portal.types.h"
 #include "h/portal.h"
 #include "h/regexp.h"
@@ -33,6 +29,8 @@
 #include "h/strings.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 #include "h/window.h"
 
 //used for @hlsearch hilite matching
@@ -2767,19 +2765,6 @@ recording_mode(char flags) {
    msgPutsDeco(s, flags);
 }
 
-//Get buffer name for "book" into nameBuffG[].
-//Take care of special book names and translate special characters.
-pub void
-drawGetTranslatedBookName(Book* book) {
-   if (bookSpName(book))
-      copySubstrToAllocation(nameBuffG, (Text){bookSpName(book), MAXPATHL - 1});
-   ei (book && book->kind == BOOK_HELP) { 
-      strPrintShortName(book->currFileName, nameBuffG, MAXPATHL);
-   } else
-      home_replace(book->currFileName, nameBuffG, MAXPATHL, true);
-   trans_characters(nameBuffG, MAXPATHL);
-}
-
 // Get the character to use in a status line. Write its decorations into "*deco"
 pub Unt
 statusLineNextChar(OUT Decoration* deco, Portal* po) {
@@ -3227,7 +3212,7 @@ check_chars_options(CS newVal) {
 //check_cursor() to move the cursor into the visible part of the portal, and
 //call redraw_later(UPD_VALID) to have the portal displayed by drawUpdateScreen() later.
 //
-//Commands that change text in the buffer must call changed_bytes() or changed_lines() to mark the 
+//Commands that change text in the buffer must call changed_bytes() or doChangedLines() to mark the 
 //area that changed and will require updating later. The main loop will call drawUpdateScreen(), 
 //which will update each portal that shows the changed buffer. This assumes text above the change
 //can remain displayed as it is.  Text after the change may need updating for scrolling, folding 
@@ -3284,7 +3269,7 @@ drawUpdateScreen(Unt type_arg) {
    // Before updating the screen, notify any listeners of changed text.
    Book* book;
    FOR_ALL_BOOKS(book)
-      jugInvokeListenersOnChangedText(book);
+      doInvokeListenersOnChangedText(book);
    }
 
    // May have postponed updating diffs.
@@ -3510,7 +3495,7 @@ redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
 
       if ((bookIsHelp(po->book)
              || po->isPreview
-             || doWasBookChanged(po->book)
+             || bookWasChanged(po->book)
              || !po->book->o.modifiable)
          && plen < MAXPATHL - 1
       ){
@@ -3521,7 +3506,7 @@ redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
          plen += eeSnprintf(p + plen, MAXPATHL - plen, "%s", _("[Help]"));
       if (po->isPreview)
          plen += eeSnprintf(p + plen, MAXPATHL - plen, "%s", _("[Preview]"));
-      if (doWasBookChanged(po->book) && !bt_terminal(po->book)) {
+      if (bookWasChanged(po->book) && !bt_terminal(po->book)) {
          plen += eeSnprintf(p + plen, MAXPATHL - plen, "[+]");
       } 
       if (!po->book->o.modifiable)

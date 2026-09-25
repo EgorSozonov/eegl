@@ -1246,7 +1246,7 @@ emsgImpl(CS s) {
       if (global_busy)      // break :global command
          ++global_busy;
 
-      flush_buffers(FLUSH_MINIMAL);  // flush internal buffers
+      inpFlushBuffers(FLUSH_MINIMAL);  // flush internal buffers
       ++anyEmsgG;            // flag for DoOneCmd()
       ++uncaught_emsg;
    }

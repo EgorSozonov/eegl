@@ -29,15 +29,6 @@ int getfile(
    LineNr lnum,
    Boole forceit
 );
-int startEditingFile(
-   int fnum,
-   CS fullFName,
-   CS sfname,
-   Invocation* invo,         // can be NULL!
-   LineNr newlnum,
-   Unt flags,
-   Portal* oldPort
-);
 void c_append(Invocation* invo);
 void c_change(Invocation* invo);
 void c_z(Invocation* invo);
@@ -181,7 +172,6 @@ void c_find(Invocation* invo);
 void c_open(Invocation* invo);
 void c_edit(Invocation* invo);
 void do_exedit(Invocation* invo, Portal* old_curPor);
-void c_swapname(Invocation*);
 void c_syncbind(Invocation*);
 void c_read(Invocation* invo);
 void free_cd_dir(void);
@@ -292,9 +282,186 @@ void u_update_save_nr(Book* book);
 void invalidateUndoBufferAndFreeBlocks(Book* book);
 void u_clearline(void);
 void u_undoline(void);
-Boole doWasBookChanged(Book* book);
-Boole doWasAnyBookChanged(void);
-int doWasCurBookChanged(void);
 void f_undofile(Var* argvars, Var* returnVar);
 void u_undofile_reset_and_delete(Book* book);
 void f_undotree(Var* argvars, Var* returnVar);
+void change_warning(int col);
+void changed(void);
+void doOnChangeToText(void);
+int trim_to_int(Long x);
+void f_listener_add(Arr(Var) argVars, OUT Var* returnVar);
+void f_listener_flush(Arr(Var) argVars, OUT Var*);
+void f_listener_remove(Arr(Var) argVars, OUT Var* returnVar);
+void may_doInvokeListenersOnChangedText(Book* book, LineNr lnum, LineNr lnume, int added);
+void doInvokeListenersOnChangedText(Book* book);
+void remove_listeners(Book* book);
+void changed_bytes(LineNr lnum, ColNr col);
+void inserted_bytes(LineNr lnum, ColNr col, int added);
+void appended_lines(LineNr lnum, long count);
+void appended_lines_mark(LineNr lnum, long count);
+void deleted_lines(LineNr lnum, long count);
+void deleted_lines_mark(LineNr lnum, long count);
+void doChangedLinesBook(
+   Book* book,
+   LineNr lnum,       // first line with change
+   LineNr lnume,       // line below last changed line
+   long xtra       // number of extra lines (negative when deleting)
+);
+void doChangedLines(
+   LineNr lnum,    // first line with change
+   ColNr col,      // column in first line with change
+   LineNr lnume,   // line below last changed line
+   long xtra       // number of extra lines (negative when deleting)
+);
+void unchanged(Book* book, int always_inc_changedtick);
+void ins_bytes(CS p);
+void ins_bytes_len(CS p, int len);
+void insertChar(Unt c);
+void replaceChar(Unt c);
+void opInsertCharBytes(CS targetLine, int charlen, Boole replace);
+void ins_str(CS s, Unt slen);
+int del_char(Boole fixpos);
+int del_chars(long count, Boole fixpos);
+int del_bytes(Long   count, Boole fixpos_arg, int      use_delcombine);
+int insertLine(Unt      dir);
+int get_leader_len(CS line, Byte** flags, int backward, int include_space);
+int openLine(
+   Unt flags,
+   int second_line_indent
+);
+int truncate_line(int fixpos);
+void del_lines(long nlines,   int undo);
+Unt get_op_type(Unt char1, Unt char2);
+Boole op_is_change(int op);
+int get_op_char(int optype);
+int get_extra_op_char(int optype);
+void op_shift(Operator *oper, int curs_top, int amount);
+void shift_line(
+   int   left,         // true if shift is to the left
+   int   round,         // true if new indent is to be to a tabstop
+   int   amount,         // Number of shifts
+   Boole   call_changed_bytes)   // call changed_bytes()
+;
+Unt gchar_pos(Pos *pos);
+Unt gchar_cursor(void);
+int op_delete(Operator* oper);
+Boole swapchar(Unt opTy, Pos* pos);
+void op_insert(Operator *oper, long count1);
+int op_change(Operator *oper);
+void adjust_cursor_eol(void);
+CS skip_comment(CS line, Boole process, Boole include_space, OUT Boole* is_comment);
+int doJoinLinesUnderCursor(
+   long count,
+   Boole insert_space,
+   Boole save_undo,
+   Boole use_formatoptions,
+   Boole setmark
+);
+void block_prep(
+   Operator* oper,
+   OUT BlockDef* bdp,
+   LineNr lnum,
+   Boole is_del
+);
+void doCharwiseBlockPrep(
+   Pos start,
+   Pos end,
+   BlockDef* bdp,
+   LineNr lnum,
+   int inclusive
+);
+void op_addsub(
+   Operator* oper,
+   LineNr prenum1,       // Amount of add/subtract
+   int g_cmd          // was g<c-a>/g<c-x>
+);
+void doClearOpArg(Operator *oper);
+void cursor_pos_info(Bag* dict);
+CS did_set_operatorfunc(OptionChange *cha);
+void opsFreeOperatorFnOption(void);
+int set_ref_in_opfunc(int copyID);
+void doExecuteVisualOperator(ActionArg* cap, int old_col, int clipbYank);
+Tyme eeTime(void);
+CS get_ctime(Tyme thetime, int add_newline);
+void f_localtime(Arr(Var), OUT Var* returnVar);
+void f_reltime(Arr(Var) argVars, OUT Var* returnVar);
+void f_reltimefloat(Arr(Var) argVars, OUT Var* returnVar);
+void f_reltimestr(Arr(Var) argVars, OUT Var* returnVar);
+void f_strftime(Arr(Var) argVars, OUT Var* returnVar);
+void f_strptime(Var* argVars, Var* returnVar);
+long proftime_time_left(ProfTime *due, ProfTime *now);
+Timer* create_timer(long msec, int repeat);
+void timer_start(Timer *timer);
+long check_due_timer(void);
+void stop_timer(Timer *timer);
+int set_ref_in_timer(int copyID);
+int timer_valid(Timer *timer);
+void timer_free_all(void);
+void f_timer_info(Arr(Var) argVars, OUT Var* returnVar);
+void f_timer_pause(Arr(Var) argVars, OUT Var*);
+void f_timer_start(Arr(Var) argVars, OUT Var* returnVar);
+void f_timer_stop(Arr(Var) argVars, OUT Var*);
+void f_timer_stopall(Arr(Var), OUT Var*);
+void time_push(void *tv_rel, void *tv_start);
+void time_pop(void   *tp);
+void time_msg(
+   CS mesg,
+   void* tv_start  // only for scriptRunFile: start time; actually (TimeVal *)
+);
+Tyme get8ctime(FILE *fd);
+int put_time(FILE *fd, Tyme the_time);
+void time_to_bytes(Tyme the_time, CS buf);
+void add_time(CS buf, Unt buflen, Tyme tt);
+void profile_start(ProfTime *tm);
+void profile_setlimit(long msec, ProfTime *tm);
+int profile_passed_limit(ProfTime *tm);
+void profile_end(ProfTime *tm);
+void profile_sub(ProfTime *tm, ProfTime *tm2);
+void profile_zero(ProfTime *tm);
+CS profile_msg(ProfTime *tm);
+long elapsed(TimeVal *start_tv);
+void stop_timeout(void);
+volatile sig_atomic_t * start_timeout(long msec);
+void delete_timer(void);
+void stop_timeout(void);
+volatile sig_atomic_t* start_timeout(long msec);
+int getviscol(void);
+int coladvance_force(ColNr wcol);
+int coladvance(ColNr wantcol);
+int getvpos(Pos *pos, ColNr wantcol);
+int inc_cursor(void);
+int inc(Pos *lp);
+int incl(Pos *lp);
+int dec_cursor(void);
+int dec(Pos *lp);
+int decl(Pos *lp);
+void check_pos(Book* book, Pos *pos);
+long get_sw_value(Book *book);
+int get_indent(void);
+int get_indent_lnum(LineNr lnum);
+int get_indent_buf(Book* book, LineNr lnum);
+int set_indent(
+   int      size,          // measured in spaces
+   int      flags
+);
+int get_number_indent(LineNr lnum);
+int getBreakindentForPort(Portal* po, CS line);
+int inindent(int extra);
+void op_reindent(Operator *oper, int (*how)(void));
+int preprocs_left(void);
+int may_do_si(void);
+void doTrySmartIndent(int c);
+void opChangeIndent(
+   int type,
+   int amount,
+   int round,
+   Boole call_changed_bytes // call changed_bytes()
+);
+void c_retab(Invocation *eap);
+int get_expr_indent(void);
+Boole doIsIndentationExpressionBased(void);
+void fix_indent(void);
+void f_indent(Arr(Var) argVars, OUT Var* returnVar);
+int is_pos_in_string(CS line, ColNr col);
+Pos* find_start_comment(int ind_maxcomment)  ;
+void do_expr_indent(void);

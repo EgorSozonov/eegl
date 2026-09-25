@@ -13,7 +13,6 @@
 #include "h/location.h"
 #include "h/hilite.types.h"
 #include "h/hilite.h"
-#include "h/memory.h"
 #include "h/window.h"
 #include "h/do.h"
 #include "h/draw.types.h"
@@ -22,7 +21,6 @@
 #include "h/fileio.h"
 #include "h/input.types.h"
 #include "h/input.h"
-#include "h/juggle.h"
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
@@ -973,7 +971,7 @@ op_yank(Operator *opArg, int deleting, Boole mess) {
 
                 // check for read-only register
    if (opArg->regname != 0 && !valid_yank_reg(opArg->regname, true)) {
-      beep_flush();
+      inpFlushIfNotSilent();
       return FAIL;
    }
    if (opArg->regname == '_')       // black hole: nothing to do
@@ -1043,7 +1041,7 @@ op_yank(Operator *opArg, int deleting, Boole mess) {
       case MCHAR: {
             int tmp;
 
-            jugCharwiseBlockPrep(opArg->start, opArg->end, &bd, lnum, opArg->inclusive);
+            doCharwiseBlockPrep(opArg->start, opArg->end, &bd, lnum, opArg->inclusive);
 
             // make sure bd.textlen is not longer than the text
             tmp = (int)STRLEN(bd.textstart);
@@ -1541,7 +1539,7 @@ do_put(
             curPor->cursor.col += bd.startspaces;
       }
 
-      changed_lines(lnum, 0, curPor->cursor.lnum, nr_lines);
+      doChangedLines(lnum, 0, curPor->cursor.lnum, nr_lines);
 
       // Set '[ mark.
       curBook->opStart = curPor->cursor;
@@ -1767,13 +1765,13 @@ do_put(
 
          // note changed text for displaying and folding
          if (y_type == MCHAR)
-            changed_lines(curPor->cursor.lnum, col, curPor->cursor.lnum + 1, nr_lines);
+            doChangedLines(curPor->cursor.lnum, col, curPor->cursor.lnum + 1, nr_lines);
          else
-            changed_lines(curBook->opStart.lnum, 0, curBook->opStart.lnum, nr_lines);
+            doChangedLines(curBook->opStart.lnum, 0, curBook->opStart.lnum, nr_lines);
          if (y_current_used != NULL && (y_current_used != y_current
                        || y_current->y_array != y_array)
          ) {
-            //Something invoked through changed_lines() has changed the
+            //Something invoked through doChangedLines() has changed the
             //yank buffer, e.g. a GUI clipboard callback.
             emsg(_(e_yank_register_changed_while_using_it));
             goto end;
@@ -2490,7 +2488,7 @@ copyToClipboard() {
    int old_visual_mode = VIsual_mode;
    
    Operator oa;
-   clear_oparg(&oa);
+   doClearOpArg(&oa);
    oa.regname = '*';
    oa.opTy = OP_YANK;
    
@@ -2500,7 +2498,7 @@ copyToClipboard() {
    ca.cmdchar = 'y';
    ca.count1 = 1;
    ca.retval = CA_NO_ADJ_OP_END;
-   jugExecuteVisualOperator(&ca, 0, true);
+   doExecuteVisualOperator(&ca, 0, true);
 
    // restore things
    set_y_previous(old_y_previous);

@@ -19,3 +19,18 @@ void exitEegl(int exitval);
 void mainerr_arg_missing(CS str);
 CS mainProgramVersion();
 void __attribute__((noinline)) __bp();
+void mch_exit(int r);
+CS get_users(Expand*, int idx);
+int match_user(CS name);
+void free_homedir(void);
+void free_users(void);
+void c_mkrc(Invocation* invo);
+int put_eol(FILE *fd);
+int put_line(FILE *fd, CS s);
+int get_eeglinfo_parameter(int type);
+void check_marks_read(void);
+int read_eeglinfo(
+   CS file,       // file name or NULL to use default name
+   Unt flags       // EIF_WANT_INFO et al.
+);
+void write_eeglinfo(CS file, Boole forceit);

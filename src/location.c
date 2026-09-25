@@ -11,8 +11,6 @@
 #include "h/input.h"
 #include "h/channel.types.h"
 #include "h/channel.h"
-#include "h/memory.types.h"
-#include "h/memory.h"
 #include "h/diff.h"
 #include "h/do.types.h"
 #include "h/do.h"
@@ -23,7 +21,6 @@
 #include "h/hilite.types.h"
 #include "h/hilite.h"
 #include "h/insert.h"
-#include "h/juggle.h"
 #include "h/message.h"
 #include "h/normal.h"
 #include "h/option.h"
@@ -4429,7 +4426,7 @@ addLine(
             ){
                if (*dirname == ZERO)
                   mch_dirname(dirname, MAXPATHL);
-               shorten_buf_fname(errBook, dirname, false);
+               bookShortenName(errBook, dirname, false);
             }
             if (lline->fName == NULL)
                ga_concat(gap, errBook->currFileName);
@@ -5871,7 +5868,7 @@ elckGrepFiles(
 
       Book* book = booklistFindByNameExpandingLinks(invos->fnames[fi]);
       int using_dummy;
-      if (!book || book->mem.mfile == NULL) {
+      if (!book || bookNoMemfile(book)) {
          //Remember that a book with this name already exists.
          duplicate_name = (book != NULL);
          using_dummy = true;
@@ -7194,7 +7191,7 @@ processCbookArgs(Invocation* invo, OUT Book** outBook, LineNr* line1, LineNr* li
       return FAIL;
    }
 
-   if (book->mem.mfile == NULL) {
+   if (bookNoMemfile(book)) {
       emsg(_(e_buffer_is_not_loaded));
       return FAIL;
    }

@@ -19,21 +19,19 @@
 #include "h/do.h"
 #include "h/draw.types.h"
 #include "h/draw.h"
-#include "h/memory.h"
 #include "h/fileio.h"
 #include "h/diff.h"
 #include "h/eval.h"
-#include "h/juggle.h"
 #include "h/hilite.types.h"
 #include "h/hilite.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
-#include "h/normal.h"
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/script.h"
 #include "h/strings.h"
+#include "h/wheel.h"
 
 int stat(const char* restrict path, struct stat* restrict buf); // from sys/stat.h
 
@@ -394,8 +392,8 @@ private void try_possible_paths(
     const int      *diff_len,
     const Unt   ndiffs,
     const MmFile   **diff_blk,
-    int         iwhite)
-;
+    int         iwhite
+);
 private Unt unwrap_indexes(const int *values, const int *diff_len, const Unt ndiffs);
 private void populate_tensor(
     int         *df_iters,
@@ -772,8 +770,8 @@ try_possible_paths(
     const int      *diff_len,
     const Unt   ndiffs,
     const MmFile   **diff_blk,
-    int         iwhite)
-{
+    int         iwhite
+) {
    if (path_idx == npaths) {
       if ((*choice) > 0) {
           int from_vals[LN_MAX_BUFS] = { 0 };
@@ -1707,7 +1705,7 @@ diff_try_update(DiffIo* dio, int iOrig, NULLABLE Invocation* invo) {
       for (Unt iNew = iOrig; iNew < DB_COUNT; ++iNew) {
          book = curtab->diffbuf[iNew];
          if (bookIsValid(book))
-            fiCheckBookTimestamp(book);
+            bookCheckTimestamp(book);
       }
    }
 
@@ -1770,7 +1768,7 @@ diff_try_update(DiffIo* dio, int iOrig, NULLABLE Invocation* invo) {
       // Make a difference between the first book and every other.
       for (Unt iNew = iOrig + 1; iNew < DB_COUNT; ++iNew) {
          book = curtab->diffbuf[iNew];
-         if (!book || book->mem.mfile == NULL)
+         if (!book || bookNoMemfile(book))
             continue; // skip book that isn't loaded
 
          lnum_start = anchorInd == 0 ? 1 : anchors[iNew][anchorInd - 1];
@@ -3623,22 +3621,22 @@ diff_find_change_inline_diff(DiffBlock* dp) {
    Book   *(orig_diffbuf[DB_COUNT]);
    memcpy(orig_diffbuf, curtab->diffbuf, sizeof(orig_diffbuf));
 
-   // Buffers to populate mmfile 1/2 that would be passed to xdiff as memory
-   // files. Use a grow array as it is not obvious how much exact space we need.
+   //Buffers to populate mmfile 1/2 that would be passed to xdiff as memory
+   //files. Use a grow array as it is not obvious how much exact space we need.
    ga_init2(&file1_str, 1, 1024);
    ga_init2(&file2_str, 1, 1024);
 
-   // Line map to map from generated mmfiles' line numbers back to original
-   // diff blocks' locations. Need this even for char diff because not all
-   // characters are 1-byte long / ASCII.
+   //Line map to map from generated mmfiles' line numbers back to original
+   //diff blocks' locations. Need this even for char diff because not all
+   //characters are 1-byte long / ASCII.
    for (int i = 0; i < DB_COUNT; i++)
       ga_init2(&linemap[i], sizeof(LinemapEntry), 128);
 
    for (int i = 0; i < DB_COUNT; i++) {
       dio.dio_diff.dout_ga.len = 0;
 
-      Book *book = curtab->diffbuf[i];
-      if (book == NULL || book->mem.mfile == NULL)
+      Book* book = curtab->diffbuf[i];
+      if (!book || bookNoMemfile(book))
          continue; // skip book that isn't loaded
 
       if (dp->count[i] == 0) {
@@ -4285,7 +4283,7 @@ c_diffgetput(Invocation* invo) {
                   curPor->cursor.lnum = lnum;
             }
          }
-         changed_lines(lnum, 0, lnum + count, (long)added);
+         doChangedLines(lnum, 0, lnum + count, (long)added);
 
          if (dfree) {
             // Diff is deleted, update folds in other portals.

@@ -43,17 +43,13 @@
 #include "h/fileio.h"
 #include "h/hilite.types.h"
 #include "h/hilite.h"
-#include "h/juggle.h"
 #include "h/location.types.h"
 #include "h/location.h"
-#include "h/memory.types.h"
-#include "h/memory.h"
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/normal.h"
 #include "h/option.h"
-#include "h/persist.h"
 #include "h/portal.h"
 #include "h/script.h"
 #include "h/strings.h"
@@ -12060,8 +12056,10 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
 
    modified = false;
    for (countPortals = 0; tapa->po; tapa->po = tapa->po->next, ++countPortals) {
-      if (doWasBookChanged(tapa->po->book))
+      if (bookWasChanged(tapa->po->book)) {
          modified = true;
+         break;
+      } 
    } 
    Decoration defaultDeco = getFullDecoration(0);
 

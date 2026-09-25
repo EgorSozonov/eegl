@@ -9,7 +9,6 @@
 #include "h/book.h"
 #include "h/input.types.h"
 #include "h/input.h"
-#include "h/memory.h"
 #include "h/eval.h"
 #include "h/do.h"
 #include "h/draw.types.h"
@@ -18,7 +17,6 @@
 #include "h/hilite.types.h"
 #include "h/hilite.h"
 #include "h/insert.h"
-#include "h/juggle.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
@@ -26,7 +24,6 @@
 #include "h/motor.h"
 #include "h/normal.h"
 #include "h/option.h"
-#include "h/persist.h"
 #include "h/portal.h"
 #include "h/regexp.h"
 #include "h/search.h"
@@ -3387,7 +3384,7 @@ nextwild(
    }
 
    if (xp->context == EXPAND_UNSUCCESSFUL) {
-      beep_flush();
+      inpFlushIfNotSilent();
       return OK;  // Something illegal on command line
    }
    if (xp->context == EXPAND_NOTHING) {
@@ -3477,7 +3474,7 @@ nextwild(
       return FAIL;
 
    if (xp->files.len == UNT && !p)
-      beep_flush();
+      inpFlushIfNotSilent();
    ei (xp->files.len == 1 && !(options & WILD_KEEP_SOLE_ITEM))
       // free expanded pattern
       (void)expandWildcard(OUT xp, NULL, NULL, 0, WILD_FREE);
@@ -3885,7 +3882,7 @@ expandOne_start(int mode, OUT Expand* xp, CS str, Unt options){
             if (!(options & WILD_SILENT))
                emsg(_(e_too_many_file_names));
             ei (!(options & WILD_NO_BEEP))
-               beep_flush();
+               inpFlushIfNotSilent();
          }
          if (!(non_suf_match != 1 && mode == WILD_EXPAND_FREE))
             ss = copyStr(xp->files.c[0]);
@@ -5493,7 +5490,7 @@ expandCommline(
    Unt options = WILD_ADD_SLASH|WILD_SILENT;
 
    if (xp->context == EXPAND_UNSUCCESSFUL) {
-      beep_flush();
+      inpFlushIfNotSilent();
       return EXPAND_UNSUCCESSFUL;  // Something illegal on command line
    }
    if (xp->context == EXPAND_NOTHING) {
@@ -8245,7 +8242,7 @@ cmdline_handle_ctrl_bsl(int c, int *gotesc) {
          eeglFree(p);
           }
       }
-      beep_flush();
+      inpFlushIfNotSilent();
       gotInterruptG = false;   // don't abandon the command line
       anyEmsgG = false;
       emsg_on_display = false;
@@ -8480,7 +8477,7 @@ cmdline_insert_reg(int *gotesc) {
    new_cmdpos = -1;
    if (c == '=') {
       if (commInfo.cmdfirstc == '=') { // can't do this recursively
-         beep_flush();
+         inpFlushIfNotSilent();
          c = ESC;
       } else
          c = get_expr_register();
@@ -8675,7 +8672,7 @@ cmdline_browse_history(
       res = COMMLINE_CHANGED;
       goto done;
    }
-   beep_flush();
+   inpFlushIfNotSilent();
    res = COMMLINE_UNCHANGED;
 
 done:
@@ -10482,7 +10479,7 @@ openCommPort(void) {
    // Can't do this when text or buffer is locked.
    // Can't do this recursively. Can't do it when typing a password.
    if (text_or_buf_locked() || commPortTypeG != 0) {
-      beep_flush();
+      inpFlushIfNotSilent();
       return K_IGNORE;
    }
    
@@ -10503,7 +10500,7 @@ openCommPort(void) {
 
    // Create a portal into the command line buffer.
    if (splitPortal((int)p_cwh, WSP_BOT) == FAIL) {
-      beep_flush();
+      inpFlushIfNotSilent();
       ga_clear(&portSizes);
       return K_IGNORE;
    }
@@ -10514,7 +10511,7 @@ openCommPort(void) {
        || !bookRefValid(&oldBook)
        || oldPort->book != oldBook.c
    ) {
-      beep_flush();
+      inpFlushIfNotSilent();
       ga_clear(&portSizes);
       return Ctrl_C;
    }
@@ -10546,7 +10543,7 @@ openCommPort(void) {
 
       commPortTypeG = 0;
       commPortPortG = NULL;
-      beep_flush();
+      inpFlushIfNotSilent();
       ga_clear(&portSizes);
       return Ctrl_C;
    }
@@ -17971,8 +17968,8 @@ c_doautoall(Invocation* invo) {
    //for a moment. This gives problems when the autocommands make changes to the list of buffers 
    //or portals...
    FOR_ALL_BOOKS(book) {
-      // Only do loaded buffers and skip the current buffer, it's done last.
-      if (book->mem.mfile == NULL || book == curBook)
+      // Only do loaded books and skip the current buffer, it's done last.
+      if (bookNoMemfile(book) || book == curBook)
          continue;
 
       // Find a portal into this buffer and save some values.

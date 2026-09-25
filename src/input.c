@@ -10,28 +10,25 @@
 #include "h/channel.types.h"
 #include "h/channel.h"
 #include "h/book.h"
-#include "h/memory.h"
 #include "h/diff.h"
 #include "h/do.h"
 #include "h/draw.types.h"
 #include "h/draw.h"
 #include "h/fileio.h"
-#include "h/insert.types.h"
-#include "h/insert.h"
 #include "h/eval.h"
-#include "h/juggle.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
-#include "h/normal.h"
 #include "h/portal.h"
 #include "h/script.h"
 #include "h/search.h"
 #include "h/strings.h"
 #include "h/term.h"
 #include "h/ui.h"
+#include "h/wheel.types.h"
+#include "h/wheel.h"
 #include "h/window.h"
 
 // These buffers are used for storing:
@@ -66,7 +63,7 @@ private int block_redo = false;
 
 private int keyNoremapG = 0;       // remapping flags
 
-// Variables used by vGetOrPeek() and flush_buffers().
+// Variables used by vGetOrPeek() and inpFlushBuffers().
 //
 // [     mappedLen    | - -unmapped- -]
 // [ -invalid- | validLen | ZERO ]
@@ -130,7 +127,7 @@ typedef enum {
    mrNoMatch  // no matching mapping, get char
 } MapResult;
 
-// Argument for flush_buffers().
+// Argument for inpFlushBuffers().
 pub typedef enum {
    FLUSH_MINIMAL,
    FLUSH_TYPEAHEAD,   // flush current typebuf contents
@@ -609,7 +606,7 @@ typeahead_noflush(int c) {
 //typeahead buffer (used in case of an error). If "flush_typeahead" is true,
 //flush all typeahead characters (used when interrupted by a CTRL-C).
 pub void
-flush_buffers(FlushBuffers flush_typeahead) {
+inpFlushBuffers(FlushBuffers flush_typeahead) {
    initTypebuf();
 
    start_stuff();
@@ -647,6 +644,14 @@ flush_buffers(FlushBuffers flush_typeahead) {
    typeBufG.noAbbrCnt = 0;
    if (++typeBufG.changeCnt == 0)
       typeBufG.changeCnt = 1;
+}
+
+//flush map and typeahead buffers and give a warning for an error
+pub void
+inpFlushIfNotSilent(void) {
+   if (emsg_silent == 0) {
+      inpFlushBuffers(FLUSH_MINIMAL);
+   }
 }
 
 // The previous contents of the redo buffer is kept in old_redobuffer.
@@ -1096,7 +1101,7 @@ insertIntoTypebuf(
       extra = addlen + newoff + 4 * (MAXMAPLEN + 4);
       if (typeBufG.validLen > 2147483647 - extra) {
          // string is getting too long for a 32 bit int
-         emsg(_(e_command_too_complex));    // also calls flush_buffers
+         emsg(_(e_command_too_complex));    // also calls inpFlushBuffers
          setcursor();
          return FAIL;
       }
@@ -1509,7 +1514,7 @@ openscript(CS name, Boole directly) {
       stateG = MODE_NORMAL;
       msg_scroll = false;   // no msg scrolling in Normal mode
       restart_edit = 0;   // don't go to Insert mode
-      clear_oparg(&oper);
+      doClearOpArg(&oper);
       finish_op = false;
 
       int oldcurscript = curscript;
@@ -2530,7 +2535,7 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
             redrawCommline();
          else
             setcursor();
-         flush_buffers(FLUSH_MINIMAL);
+         inpFlushBuffers(FLUSH_MINIMAL);
          *mapdepth = 0;   // for next one
          *foundKeylen = fin.keylen;
          return mrFail;
@@ -2777,7 +2782,7 @@ vGetOrPeek(Boole advance) {
                   } else {
                      specialChar = Ctrl_C;
                   }
-                  flush_buffers(FLUSH_INPUT);   // flush all typeahead
+                  inpFlushBuffers(FLUSH_INPUT);   // flush all typeahead
 
                   if (advance) {
                      // Also record this character, it might be needed to get out of Insert mode.
@@ -3528,7 +3533,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
                if (curPor->cursor.lnum == first_line)
                   indent = get_indent();
                else {
-                 if (jugIsIndentationExpressionBased()) {
+                 if (doIsIndentationExpressionBased()) {
                      indent = curBook->o.indentExpr ? get_expr_indent() : get_indent();
                  } else
                      indent = get_indent();
@@ -3591,8 +3596,8 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
                }
             }
             curPor->cursor.lnum--;
-            if (jugJoinLinesUnderCursor(2, true, false, false, false) == FAIL) {
-               beep_flush();
+            if (doJoinLinesUnderCursor(2, true, false, false, false) == FAIL) {
+               inpFlushIfNotSilent();
                break;
             }
             first_par_line = false;
@@ -4891,7 +4896,7 @@ ins_mousescroll(int dir) {
    ActionArg   cap;
    Operator   oa;
    CLEAR_FIELD(cap);
-   clear_oparg(&oa);
+   doClearOpArg(&oa);
    cap.oper = &oa;
    cap.arg = dir;
 
