@@ -24,7 +24,6 @@
 #include "h/motor.h"
 #include "h/option.h"
 #include "h/portal.h"
-#include "h/search.h"
 #include "h/script.h"
 #include "h/strings.h"
 #include "h/tag.h"
@@ -348,8 +347,8 @@ private void bexpr_eval(
    BalloonEval* beval,
    CS bexpr,
    Portal* po,
-   LineNr lnum,
-   int col,
+   LineNr,
+   int,
    CS text
 );
 //}}}
@@ -15261,20 +15260,20 @@ bexpr_eval(
    BalloonEval* beval,
    CS bexpr,
    Portal* po,
-   LineNr lnum,
-   int col,
+   LineNr,
+   int,
    CS text
 ) {
-   long   portNr = 0;
+   //Long portNr = 0;
    Book* curBookSaved;
    static CS result = NULL;
-   Unt   len;
+   Unt len;
 
-   ScriptPos   save_sctx = scriptPosG;
+   ScriptPos save_sctx = scriptPosG;
 
    // Convert portal pointer to number.
-   for (Portal* pitm = firstPor; pitm != po; pitm = pitm->next)
-      ++portNr;
+   //for (Portal* pitm = firstPor; pitm != po; pitm = pitm->next)
+   //   ++portNr;
 
    eeglFree(text);
 

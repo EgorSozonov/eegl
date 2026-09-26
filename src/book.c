@@ -40,7 +40,6 @@
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/regexp.h"
-#include "h/search.h"
 #include "h/strings.h"
 #include "h/script.h"
 #include "h/term.h"
@@ -11408,7 +11407,6 @@ bookCheckTimestamp(Book* book){
          reload = RELOAD_NORMAL;
       else {
          CS reason;
-
          if (stat_res < 0) {
             reason = S"deleted";
          } ei (bookWasChanged(book)) {
@@ -11440,7 +11438,7 @@ bookCheckTimestamp(Book* book){
          }
          if (!n) {
             if (*reason == 'd') {
-               // Only give the message once.
+               //Only give the message once.
                if (prev_modifiedTime != -1)
                   mesg = _(e_file_str_no_longer_available);
             } else {

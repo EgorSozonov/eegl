@@ -24,7 +24,6 @@
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/regexp.h"
-#include "h/search.h"
 #include "h/script.h"
 #include "h/strings.h"
 #include "h/tag.h"
@@ -539,7 +538,7 @@ private int applyAutocommGroup(
    Boole force,     // when true, ignore autocmd_busy
    Unt group,       // group ID, or AUGROUP_ALL
    Book* book,      // book for <abuf>
-   Invocation* invo // command arguments
+   Invocation*      // command arguments
 );
 private void auto_next_pat(AutoPatComm* apc, int stop_at_last);
 private ScriptPos* acp_scriptCtx(AutoPatComm *acp);
@@ -14127,7 +14126,7 @@ call_user_func(
          // evaluate named argument default expression
          isdefault = ai + fp->defaultArgs.len >= 0
                 && (i >= argcount || (argvars[i].tag == VAR_VOID
-                  && argvars[i].number == VVAL_NONE));
+                  && argvars[i].number == 0));
          if (isdefault) {
             Byte       *default_expr = NULL;
 
@@ -18314,7 +18313,7 @@ applyAutocommGroup(
    Boole force,     // when true, ignore autocmd_busy
    Unt group,       // group ID, or AUGROUP_ALL
    Book* book,      // book for <abuf>
-   Invocation* invo // command arguments
+   Invocation*      // command arguments
 ){
    CS sfname = NULL;   // short file name
    CS tail;
@@ -18331,7 +18330,6 @@ applyAutocommGroup(
    AutoPat   *ap;
    ScriptPos   save_scriptPosG;
    FnCallEntry funccal_entry;
-   CS save_cmdarg;
    static Boole filechangeshell_busy = false;
    int did_save_redobuff = false;
    SaveRedo save_redo;
@@ -18530,10 +18528,6 @@ applyAutocommGroup(
       patcmd.next = active_apc_list;
       active_apc_list = &patcmd;
 
-      if (invo) {
-         save_cmdarg = set_cmdarg(invo, NULL);
-      } else
-         save_cmdarg = NULL;   // avoid gcc warning
       retval = true;
       // mark the last pattern, to avoid an endless loop when more patterns
       // are added when executing autocommands
@@ -18561,9 +18555,6 @@ applyAutocommGroup(
          // restore cursor and topline, unless they were changed
          reset_lnums();
 
-      if (invo) {
-         (void)set_cmdarg(NULL, save_cmdarg);
-      }
       // delete from active_apc_list
       if (active_apc_list == &patcmd)       // just in case
           active_apc_list = patcmd.next;
@@ -18632,12 +18623,6 @@ BYPASS_AU:
 
    return retval;
 }
-
-private CS old_termu7resp = NULL;
-private CS old_termblinkresp = NULL;
-private CS old_termrbgresp = NULL;
-private CS old_termrfgresp = NULL;
-private CS old_termstyleresp = NULL;
 
 //Block triggering autocommands until unblock_autocmd() is called.
 //Can be used recursively, so long as it's symmetric.

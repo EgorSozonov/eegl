@@ -8835,10 +8835,9 @@ term_after_channel_closed(Terminal* term) {
          } else
             // If this is the last normal portal: exit Eegl.
             if (term->book->countPortals > 0 && onlyOnePortal()) {
-               Invocation ea;
-
-               CLEAR_FIELD(ea);
-               c_quit(&ea);
+               Invocation invo;
+               CLEAR_FIELD(invo);
+               c_quit(&invo);
                return true;
             }
 
@@ -10239,8 +10238,8 @@ pub void
 f_term_getjob(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getjob()");
    if (!book) {
-      returnVar->tag = VAR_NUM;
-      returnVar->number = VVAL_NULL;
+      returnVar->tag = VAR_VOID;
+      returnVar->number = 0;
       return;
    }
 

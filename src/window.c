@@ -25,7 +25,6 @@
 #include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/portal.h"
-#include "h/search.h"
 #include "h/script.h"
 #include "h/strings.h"
 #include "h/term.h"
@@ -861,12 +860,9 @@ yank_do_autocmd(Operator* opArg, YankReg *reg) {
    static int recursive = false;
    Byte buf[NUMBUFLEN + 2];
    long reglen = 0;
-   SaveVEvent save_v_event;
 
    if (recursive)
       return;
-
-   Bag* v_event = get_v_event(&save_v_event);
 
    List* list = list_alloc();
 
@@ -874,21 +870,15 @@ yank_do_autocmd(Operator* opArg, YankReg *reg) {
    for (int n = 0; n < reg->y_size; n++)
       list_append_string(list, reg->y_array[n].c, -1);
    list->lock = VAR_FIXED;
-   (void)bagAddList(v_event, S"regcontents", list);
 
    // register name or empty string for unnamed operation
    buf[0] = (Byte)opArg->regname;
    buf[1] = ZERO;
-   (void)bagAddString(v_event, S"regname", buf);
-
-   // motion type: inclusive or exclusive
-   (void)bagAdd_bool(v_event, S"inclusive", opArg->inclusive);
 
    // kind of operation (yank, delete, change)
    buf[0] = get_op_char(opArg->opTy);
    buf[1] = get_extra_op_char(opArg->opTy);
    buf[2] = ZERO;
-   (void)bagAddString(v_event, S"operator", buf);
 
    // register type
    buf[0] = ZERO;
@@ -900,22 +890,12 @@ yank_do_autocmd(Operator* opArg, YankReg *reg) {
       eeSnprintf(buf, sizeof(buf), "%c%ld", Ctrl_V, reglen + 1);
       break;
    }
-   (void)bagAddString(v_event, S"regtype", buf);
-
-   // selection type - visual or not
-   (void)bagAdd_bool(v_event, S"visual", opArg->is_VIsual);
-
-   // Lock the dictionary and its keys
-   bagSetItemsRo(v_event);
 
    recursive = true;
    textlock++;
    applyAutocomms(EVENT_TEXTYANKPOST, NULL, NULL, false, curBook);
    textlock--;
    recursive = false;
-
-   // Empty the dictionary, v:event is still valid
-   restore_v_event(v_event, &save_v_event);
 }
 
 // set all the yank registers to empty (called from main())

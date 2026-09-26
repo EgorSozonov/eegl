@@ -265,7 +265,7 @@
 [-] @shellpipe p_sp
 [-] @shelltemp p_stmp
 [-] @mkspellmem, p_msm
-[ ] Vimvars
+[-] Vimvars
 [ ] s: variables
 [ ] need_highlight_changed?
 [ ] p_writeany

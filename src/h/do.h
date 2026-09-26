@@ -379,7 +379,7 @@ void cursor_pos_info(Bag* dict);
 CS did_set_operatorfunc(OptionChange *cha);
 void opsFreeOperatorFnOption(void);
 int set_ref_in_opfunc(int copyID);
-void doExecuteVisualOperator(ActionArg* cap, int old_col, int clipbYank);
+void doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank);
 Tyme eeTime(void);
 CS get_ctime(Tyme thetime, int add_newline);
 void f_localtime(Arr(Var), OUT Var* returnVar);

@@ -36,7 +36,7 @@ typedef sigset_t SignalSet;
 
 #define EXEC_FAILED 122 //Exit code when shell didn't execute. Don't use
                          //127, some shells use that already
-#define OPEN_NULL_FAILED 123 // Exit code if /dev/null can't be opened
+#define OPEN_NULL_FAILED 123 //Exit code if /dev/null can't be opened
 
 #define SIGSET_DECL(set) SignalSet set;
 #define BLOCK_SIGNALS(set) block_signals(set)
@@ -46,11 +46,11 @@ private int dontCheckJobEndedP = 0;
 
 typedef int waitstatus;
 
-// volatile because it is used in signal handler deathtrap().
-private volatile SigAtomic inMchDelayS = false; // sleeping in mch_delay()
+//volatile because it is used in signal handler deathtrap().
+private volatile SigAtomic inMchDelayS = false; //sleeping in mch_delay()
 
-// volatile because it is used in signal handler deathtrap().
-private volatile SigAtomic deadlySignalS = 0;      // The signal we caught
+//volatile because it is used in signal handler deathtrap().
+private volatile SigAtomic deadlySignalS = 0;      //The signal we caught
 
 #define SOCK_ERRNO
 #define sock_write(sd, buf, len) write(sd, buf, len)
@@ -60,7 +60,7 @@ private volatile SigAtomic deadlySignalS = 0;      // The signal we caught
 #define fd_write(sd, buf, len) write(sd, buf, len)
 #define fd_close(sd) close(sd)
 
-// Structure to hold info about an async shell Job
+//Structure to hold info about an async shell Job
 struct Job {
    Unt refCount; //reference count
    Job* next;
@@ -90,18 +90,18 @@ struct Job {
 #define FOR_ALL_JOBS(job) \
     for ((job) = firstJobS; (job) != NULL; (job) = (job)->next)
 
-// Whether we are inside channel_parse_messages() or another situation where it
-// is safe to invoke callbacks.
+//Whether we are inside channel_parse_messages() or another situation where it
+//is safe to invoke callbacks.
 private int safe_to_invoke_callback = 0;
 
-// The list of all allocated channels.
+//The list of all allocated channels.
 private Channel *firstChannelP = NULL;
 private int next_ch_id = 0;
 private int ignore_sigtstp = false;
 typedef struct sockaddr_un SockAddrUn;
 typedef struct sockaddr SockAddr;
 
-#define LOG_ALWAYS 9// must be different from true and false
+#define LOG_ALWAYS 9//must be different from true and false
 
 
 pub GEN_TYPE_L(PollFd);
@@ -109,39 +109,39 @@ generic(2) GEN_add_L(rivate, PollFd)
 
 //{{{types
 
-// The per-fd info for a channel.
+//The per-fd info for a channel.
 pub
 typedef struct {
-   int fd;       // socket/stdin/stdout/stderr, -1 if not used
+   int fd;       //socket/stdin/stdout/stderr, -1 if not used
 
-   int pollIdx;   // used by channel_poll_setup()
+   int pollIdx;   //used by channel_poll_setup()
    ChannelMode ch_mode;
    JobIoMode ch_io;
-   int ch_timeout;   // request timeout in msec
+   int ch_timeout;   //request timeout in msec
 
-   ReadChunk head;   // header for circular raw read queue
-   JsonQ ch_json_head;   // header for circular json read queue
-   ArrayList ch_block_ids;   // list of IDs that channel_read_json_block() is waiting for
-   // When ch_wait_len is non-zero use deadline to wait for incomplete message to be complete. 
-   // The value is the length of the incomplete message when the deadline was set.  If it gets 
-   // longer (something was received) the deadline is reset.
+   ReadChunk head;   //header for circular raw read queue
+   JsonQ ch_json_head;   //header for circular json read queue
+   ArrayList ch_block_ids;   //list of IDs that channel_read_json_block() is waiting for
+   //When ch_wait_len is non-zero use deadline to wait for incomplete message to be complete. 
+   //The value is the length of the incomplete message when the deadline was set.  If it gets 
+   //longer (something was received) the deadline is reset.
    Unt ch_wait_len;
    TimeVal deadline;
-   int ch_block_write; // for testing: 0 when not used, -1 when write
-                       // does not block, 1 simulate blocking
-   int ch_nonblocking; // write() is non-blocking
-   WriteQueue ch_writeque;   // header for write queue
+   int ch_block_write; //for testing: 0 when not used, -1 when write
+                       //does not block, 1 simulate blocking
+   int ch_nonblocking; //write() is non-blocking
+   WriteQueue ch_writeque;   //header for write queue
 
-   CbNode ch_cb_head;   // dummy node for per-request callbacks
+   CbNode ch_cb_head;   //dummy node for per-request callbacks
    void (*nativeCb)(Arr(Byte));
-   Callback ch_callback;   // call when a msg is not handled
+   Callback ch_callback;   //call when a msg is not handled
 
-   BookRef bookref;   // book to read from or write to
-   int ch_nomodifiable; // TRUE when book can be not 'modifiable'
-   int ch_nomod_error;   // TRUE when e_modifiable was given
-   int ch_buf_append;   // write appended lines instead top-bot
-   LineNr ch_buf_top;   // next line to send
-   LineNr ch_buf_bot;   // last line to send
+   BookRef bookref;   //book to read from or write to
+   int ch_nomodifiable; //TRUE when book can be not 'modifiable'
+   int ch_nomod_error;   //TRUE when e_modifiable was given
+   int ch_buf_append;   //write appended lines instead top-bot
+   LineNr ch_buf_top;   //next line to send
+   LineNr ch_buf_bot;   //last line to send
 } ChannelFd;
 
 pub
@@ -149,32 +149,32 @@ struct Channel {
    Channel* next;
    Channel* prev;
 
-   int id;      // ID of the channel
-   int lastMsgId;   // ID of the last message
+   int id;      //ID of the channel
+   int lastMsgId;   //ID of the last message
    CS socketName;      //Unix domain socket name
-   ChannelFd fds[PART_COUNT]; // info for socket, out, err and in
-   int writeTextMode; // write book lines with CR, not NL
+   ChannelFd fds[PART_COUNT]; //info for socket, out, err and in
+   int writeTextMode; //write book lines with CR, not NL
 
-   Boole ch_to_be_closed; // bitset of readable fds to be closed.
-            // When all readable fds have been closed, set to (1 << PART_COUNT).
-   Boole ch_to_be_freed; // When TRUE, channel must be freed when it's safe to invoke callbacks
+   Boole ch_to_be_closed; //bitset of readable fds to be closed.
+            //When all readable fds have been closed, set to (1 << PART_COUNT).
+   Boole ch_to_be_freed; //When TRUE, channel must be freed when it's safe to invoke callbacks
    int error;   //When TRUE an error was reported.  Avoids giving pages full of error 
                 //messages when the other side has exited, only mention the first error 
                 //until the connection works again.
 
-   Callback ch_callback;   // call when any msg is not handled
-   Callback ch_close_cb;   // call when channel is closed
+   Callback ch_callback;   //call when any msg is not handled
+   Callback ch_close_cb;   //call when channel is closed
    int ch_drop_never;
-   int ch_keep_open;   // do not close on read error
+   int ch_keep_open;   //do not close on read error
    int ch_nonblock;
 
-   Job* job;   // Job that uses this channel; this does not count as a reference to avoid a 
-                  // circular reference, the job refers to the channel.
-   int ch_job_killed;   // TRUE when there was a job and it was killed or we know it died.
-   int ch_anonymous_pipe;  // ConPTY
-   int isBeingKilled;       // TerminateJobObject() was called
+   Job* job;   //Job that uses this channel; this does not count as a reference to avoid a 
+                  //circular reference, the job refers to the channel.
+   int ch_job_killed;   //TRUE when there was a job and it was killed or we know it died.
+   int ch_anonymous_pipe;  //ConPTY
+   int isBeingKilled;       //TerminateJobObject() was called
 
-   Unt refCount;   // reference count
+   Unt refCount;   //reference count
    int copyId;
 };
 
@@ -331,8 +331,8 @@ private void ch_log_literal(CS lead, Channel* ch, ChannelFdKind part, OUT Text b
 //{{{auxiliary
 
 
-// Allocate a new channel. The refcount is set to 1.
-// The channel isn't actually used until it is opened.
+//Allocate a new channel. The refcount is set to 1.
+//The channel isn't actually used until it is opened.
 pub Channel*
 add_channel(void) {
    ChannelFdKind   part;
@@ -361,28 +361,28 @@ has_any_channel(void){
    return firstChannelP != NULL;
 }
 
-// Called when the refcount of a channel is zero.
-// Return true if "channel" has a callback and the associated job wasn't killed.
+//Called when the refcount of a channel is zero.
+//Return true if "channel" has a callback and the associated job wasn't killed.
 pub int
 channel_still_useful(Channel *channel) {
    int has_sock_msg;
    int   has_out_msg;
    int   has_err_msg;
 
-   // If the job was killed the channel is not expected to work anymore.
+   //If the job was killed the channel is not expected to work anymore.
    if (channel->isBeingKilled && channel->job == NULL)
       return false;
 
-   // If there is a close callback it may still need to be invoked.
+   //If there is a close callback it may still need to be invoked.
    if (channel->ch_close_cb.name != NULL)
       return true;
 
-   // If reading from or a book it's still useful.
+   //If reading from or a book it's still useful.
    if (channel->fds[PART_IN].bookref.c != NULL)
       return true;
 
-   // If there is no callback then nobody can get readahead.  If the fd is
-   // closed and there is no readahead then the callback won't be called.
+   //If there is no callback then nobody can get readahead.  If the fd is
+   //closed and there is no readahead then the callback won't be called.
    has_sock_msg = channel->fds[PART_SOCK].fd != INVALID_FD
       || channel->fds[PART_SOCK].head.next != NULL
       || channel->fds[PART_SOCK].ch_json_head.jq_next != NULL;
@@ -401,13 +401,13 @@ channel_still_useful(Channel *channel) {
           && has_err_msg);
 }
 
-// Return true if "channel" is closeable (i.e. all readable fds are closed).
+//Return true if "channel" is closeable (i.e. all readable fds are closed).
 pub int
 channel_can_close(Channel* channel) {
    return channel->ch_to_be_closed == 0;
 }
 
-// Close a channel and free all its resources. The "channel" pointer remains valid.
+//Close a channel and free all its resources. The "channel" pointer remains valid.
 private void
 channel_free_contents(Channel* channel) {
    channel_close(channel, true);
@@ -415,7 +415,7 @@ channel_free_contents(Channel* channel) {
    ch_log(channel, "Freeing channel");
 }
 
-// Unlink "channel" from the list of channels and free it.
+//Unlink "channel" from the list of channels and free it.
 private void
 channel_free_channel(Channel* channel) {
    if (channel->next)
@@ -440,9 +440,9 @@ channel_free(Channel* channel) {
    }
 }
 
-// Close a channel and free all its resources if there is no further action
-// possible, there is no callback to be invoked or the associated job was
-// killed. Return true if the channel was freed.
+//Close a channel and free all its resources if there is no further action
+//possible, there is no callback to be invoked or the associated job was
+//killed. Return true if the channel was freed.
 private int
 channel_may_free(Channel *channel) {
    if (!channel_still_useful(channel)) {
@@ -466,7 +466,7 @@ pub int
 free_unused_channels_contents(int copyID, int mask) {
    int did_free = false;
 
-   // This is invoked from the garbage collector, which only runs at a safe point.
+   //This is invoked from the garbage collector, which only runs at a safe point.
    ++safe_to_invoke_callback;
 
    Channel* ch;
@@ -495,7 +495,7 @@ free_unused_channels(int copyID, int mask) {
 }
 
 //"flags": MCH_DELAY_IGNOREINPUT - don't read input
-//      MCH_DELAY_SETTMODE - use termSetMode() even for short delays
+//     MCH_DELAY_SETTMODE - use termSetMode() even for short delays
 pub void
 mch_delay(long msec, int flags) {
    TermInputMode old_tmode;
@@ -529,7 +529,7 @@ mch_delay(long msec, int flags) {
 }
 
 
-// We need to call connect() again after connect() failed.
+//We need to call connect() again after connect() failed.
 private int
 channel_connect(
    Channel* channel, 
@@ -550,7 +550,7 @@ channel_connect(
       }
 
       if (*waittime >= 0) {
-         // Make connect() non-blocking.
+         //Make connect() non-blocking.
          if (fcntl(sd, F_SETFL, O_NONBLOCK) < 0) {
             SOCK_ERRNO;
             ch_error(channel, "channel_connect: Connect failed with errno %d", errno);
@@ -559,12 +559,12 @@ channel_connect(
          }
       }
 
-      // Try connecting to the server.
+      //Try connecting to the server.
       ch_log(channel, "Connecting...");
 
       int ret = connect(sd, server_addr, server_addrlen);
       if (ret == 0)
-         // The connection could be established.
+         //The connection could be established.
          break;
 
       SOCK_ERRNO;
@@ -631,7 +631,7 @@ channel_connect(
          }
 
          if ((pollFd.revents & POLLOUT) != 0 && so_error == 0)
-            // Did not detect an error, connection is established.
+            //Did not detect an error, connection is established.
             break;
 
          gettimeofday(&end_tv, NULL);
@@ -656,7 +656,7 @@ channel_connect(
                *waittime = 1;
             continue;
          }
-         // we were interrupted, behave as if timed out
+         //we were interrupted, behave as if timed out
       }
 
       //We timed out.
@@ -723,7 +723,7 @@ setCallback(Callback* cbp, Callback* callback) {
       cbp->name = NULL;
 }
 
-// Prepare book "book" for writing channel output to.
+//Prepare book "book" for writing channel output to.
 private void
 prepareBookForWriting(Book* book) {
    Book* curBookSaved = curBook;
@@ -737,8 +737,8 @@ prepareBookForWriting(Book* book) {
    curBook = curBookSaved;
 }
 
-// Find a buffer matching "name" or create a new one.
-// Return NULL if there is something very wrong (error already reported).
+//Find a buffer matching "name" or create a new one.
+//Return NULL if there is something very wrong (error already reported).
 private Book*
 chaFindBook(CS name, int err, int msg) {
    Book* book = NULL;
@@ -769,7 +769,7 @@ chaFindBook(CS name, int err, int msg) {
    return book;
 }
 
-// Set various properties from an "opt" argument.
+//Set various properties from an "opt" argument.
 private void
 channel_set_options(Channel* channel, JobOptions* opt) {
    ChannelFdKind part;
@@ -817,7 +817,7 @@ channel_set_options(Channel* channel, JobOptions* opt) {
    if ((opt->set & JO_OUT_IO) && opt->ioMode[PART_OUT] == JIO_BUFFER) {
       Book *book;
 
-      // writing output to a buffer. Default mode is NL.
+      //writing output to a buffer. Default mode is NL.
       if (!(opt->set & JO_OUT_MODE))
          channel->fds[PART_OUT].ch_mode = CH_MODE_NL;
       if (opt->set & JO_OUT_BUF) {
@@ -840,7 +840,7 @@ channel_set_options(Channel* channel, JobOptions* opt) {
          } else {
             ch_log(channel, "writing out to book '%s'", book->fullFileName);
             bookStoreInRef(OUT &channel->fds[PART_OUT].bookref, book);
-            // if the buffer was deleted or unloaded resurrect it
+            //if the buffer was deleted or unloaded resurrect it
             if (bookNoMemfile(book))
                prepareBookForWriting(book);
          }
@@ -854,7 +854,7 @@ channel_set_options(Channel* channel, JobOptions* opt) {
    ) {
       Book* book;
 
-      // writing err to a buffer. Default mode is NL.
+      //writing err to a buffer. Default mode is NL.
       if (!(opt->set & JO_ERR_MODE))
          channel->fds[PART_ERR].ch_mode = CH_MODE_NL;
       if (opt->ioMode[PART_ERR] == JIO_OUT)
@@ -911,7 +911,7 @@ channel_open_func(Arr(Var) argvars) {
       return null;
    } 
 
-   // parse options
+   //parse options
    CLEAR_POINTER(&opt);
    opt.mode = CH_MODE_JSON;
    opt.jo_timeout = 2000;
@@ -942,8 +942,8 @@ ch_close_part(Channel *channel, ChannelFdKind part) {
    if (part == PART_SOCK)
       sock_close(*fd);
    else {
-      // When using a pty the same FD is set on multiple parts, only
-      // close it when the last reference is closed.
+      //When using a pty the same FD is set on multiple parts, only
+      //close it when the last reference is closed.
       if ((part == PART_IN || channel->fds[PART_IN].fd != *fd)
          && (part == PART_OUT || channel->fds[PART_OUT].fd != *fd)
          && (part == PART_ERR || channel->fds[PART_ERR].fd != *fd)
@@ -953,7 +953,7 @@ ch_close_part(Channel *channel, ChannelFdKind part) {
    }
    *fd = INVALID_FD;
 
-   // channel is closed, may want to end the job if it was the last
+   //channel is closed, may want to end the job if it was the last
    channel->ch_to_be_closed &= ~(1U << part);
 }
 
@@ -962,7 +962,7 @@ channel_set_pipes(Channel *channel, Socket in, Socket out, Socket err) {
    if (in != INVALID_FD) {
       ch_close_part(channel, PART_IN);
       channel->fds[PART_IN].fd = in;
-      // Do not end the job when all output channels are closed, wait until the job ended.
+      //Do not end the job when all output channels are closed, wait until the job ended.
       if (mch_isatty(in))
          channel->ch_to_be_closed |= (1U << PART_IN);
    }
@@ -978,8 +978,8 @@ channel_set_pipes(Channel *channel, Socket in, Socket out, Socket err) {
    }
 }
 
-// Set the job the channel is associated with and associated options.
-// This does not keep a refcount, when the job is freed job is cleared.
+//Set the job the channel is associated with and associated options.
+//This does not keep a refcount, when the job is freed job is cleared.
 pub void
 channel_set_job(Channel* channel, Job* job, JobOptions* options) {
    channel->job = job;
@@ -1009,7 +1009,7 @@ channel_set_job(Channel* channel, Job* job, JobOptions* options) {
       intake->ch_buf_bot = intake->bookref.c->mem.lineCount;
 }
 
-// Set the callback for "channel"/"part" for the response with "id".
+//Set the callback for "channel"/"part" for the response with "id".
 private void
 channel_set_req_callback(Channel* channel, ChannelFdKind part, Callback* callback, int id) {
    CbNode* head = &channel->fds[part].ch_cb_head;
@@ -1035,7 +1035,7 @@ write_buf_line(Book* book, LineNr lnum, Channel* channel) {
    int len = memGetBookLen(book, lnum);
    int i;
 
-   // Need to make a copy to be able to append a NL.
+   //Need to make a copy to be able to append a NL.
    CS p = alloc(len + 2);
    memcpy((char *)p, (char *)line, len);
 
@@ -1054,15 +1054,15 @@ write_buf_line(Book* book, LineNr lnum, Channel* channel) {
    eeglFree(p);
 }
 
-// true if "channel" can be written to. * false if the input is closed or the write would block.
+//true if "channel" can be written to. * false if the input is closed or the write would block.
 private int
 can_write_buf_line(Channel* channel) {
    ChannelFd* intake = &channel->fds[PART_IN];
 
    if (intake->fd == INVALID_FD)
-      return false;  // pipe was closed
+      return false;  //pipe was closed
 
-   // for testing: block every other attempt to write
+   //for testing: block every other attempt to write
    if (intake->ch_block_write == 1)
       intake->ch_block_write = -1;
    ei (intake->ch_block_write == -1)
@@ -1088,7 +1088,7 @@ can_write_buf_line(Channel* channel) {
    return true;
 }
 
-// Write any book lines to the input channel.
+//Write any book lines to the input channel.
 pub void
 channel_write_in(Channel* channel) {
    ChannelFd* intake = &channel->fds[PART_IN];
@@ -1097,7 +1097,7 @@ channel_write_in(Channel* channel) {
    if (!book || intake->ch_buf_append)
       return;
    if (!bookRefValid(&intake->bookref) || !book->mem.mfile) {
-      // book was wiped out or unloaded
+      //book was wiped out or unloaded
       ch_log(channel, "input book has been wiped out");
       intake->bookref.c = NULL;
       return;
@@ -1122,7 +1122,7 @@ channel_write_in(Channel* channel) {
 
    intake->ch_buf_top = lnum;
    if (lnum > book->mem.lineCount || lnum > intake->ch_buf_bot) {
-      // Send CTRL-D to close stdin
+      //Send CTRL-D to close stdin
       if (channel->job)
          term_send_eof(channel);
 
@@ -1130,13 +1130,13 @@ channel_write_in(Channel* channel) {
       intake->bookref.c = NULL;
       ch_log(channel, "Finished writing all lines to channel");
 
-      // Close the pipe/socket, so that the other side gets EOF.
+      //Close the pipe/socket, so that the other side gets EOF.
       ch_close_part(channel, PART_IN);
    } else
       ch_log(channel, "Still %ld more lines to write", (long)(book->mem.lineCount - lnum + 1));
 }
 
-// Handle book "book" being freed, remove it from any channels.
+//Handle book "book" being freed, remove it from any channels.
 pub void
 chaFreeBook(Book* book) {
    Channel* channel;
@@ -1153,7 +1153,7 @@ chaFreeBook(Book* book) {
    } 
 }
 
-// Write any lines waiting to be written to "channel".
+//Write any lines waiting to be written to "channel".
 private void
 channel_write_input(Channel* channel) {
    ChannelFd* intake = &channel->fds[PART_IN];
@@ -1168,7 +1168,7 @@ channel_write_input(Channel* channel) {
     }
 }
 
-// Write any lines waiting to be written to a channel.
+//Write any lines waiting to be written to a channel.
 pub void
 channel_write_any_lines(void) {
    Channel* channel;
@@ -1177,13 +1177,13 @@ channel_write_any_lines(void) {
    } 
 }
 
-// Write appended lines above the last one in "book" to the channel.
+//Write appended lines above the last one in "book" to the channel.
 pub void
 channel_write_new_lines(Book* book) {
    Channel* channel;
    int found_one = false;
 
-   // There could be more than one channel for the buffer, loop over all of them.
+   //There could be more than one channel for the buffer, loop over all of them.
    FOR_ALL_CHANNELS(channel) {
       ChannelFd* intake = &channel->fds[PART_IN];
       LineNr    lnum;
@@ -1191,7 +1191,7 @@ channel_write_new_lines(Book* book) {
 
       if (intake->bookref.c == book && intake->ch_buf_append) {
          if (intake->fd == INVALID_FD)
-            continue;  // pipe was closed
+            continue;  //pipe was closed
          found_one = true;
          for (lnum = intake->ch_buf_bot; lnum < book->mem.lineCount; ++lnum) {
             if (!can_write_buf_line(channel))
@@ -1214,7 +1214,7 @@ channel_write_new_lines(Book* book) {
       book->writeToChannel = false;
 }
 
-// Invoke the "callback" on channel "channel". This does not redraw but sets channel_need_redraw;
+//Invoke the "callback" on channel "channel". This does not redraw but sets channel_need_redraw;
 private void
 invoke_callback(Channel* channel, Callback* callback, Var* argv) {
    if (safe_to_invoke_callback == 0)
@@ -1229,7 +1229,7 @@ invoke_callback(Channel* channel, Callback* callback, Var* argv) {
    channel_need_redraw = true;
 }
 
-// Return the first node from "channel"/"part" without removing it. Return NULL if there is nothing.
+//Return the first node from "channel"/"part" without removing it. Return NULL if there is nothing.
 pub ReadChunk *
 channel_peek(Channel *channel, ChannelFdKind part) {
     ReadChunk *head = &channel->fds[part].head;
@@ -1237,8 +1237,8 @@ channel_peek(Channel *channel, ChannelFdKind part) {
     return head->next;
 }
 
-// Return a pointer to the first NL in "node".
-// Skip over ZERO characters. Return NULL if there is no NL.
+//Return a pointer to the first NL in "node".
+//Skip over ZERO characters. Return NULL if there is no NL.
 pub CS
 channel_first_nl(ReadChunk* node) {
    CS buffer = node->c;
@@ -1249,8 +1249,8 @@ channel_first_nl(ReadChunk* node) {
    return NULL;
 }
 
-// Return the first buffer from channel "channel"/"part" and remove it.
-// The caller owns it. Return NULL if there is nothing.
+//Return the first buffer from channel "channel"/"part" and remove it.
+//The caller owns it. Return NULL if there is nothing.
 private CS
 channel_get(Channel* channel, ChannelFdKind part, int *outlen) {
    ReadChunk* head = &channel->fds[part].head;
@@ -1260,7 +1260,7 @@ channel_get(Channel* channel, ChannelFdKind part, int *outlen) {
       return NULL;
    if (outlen)
       *outlen += node->len;
-   // dispose of the node but keep the buffer
+   //dispose of the node but keep the buffer
    CS p = node->c;
    head->next = node->next;
    if (!node->next)
@@ -1271,14 +1271,14 @@ channel_get(Channel* channel, ChannelFdKind part, int *outlen) {
    return p;
 }
 
-// Return the whole buffer contents concatenated for "channel"/"part". Replace ZERO bytes with NL.
+//Return the whole buffer contents concatenated for "channel"/"part". Replace ZERO bytes with NL.
 private CS
 channel_get_all(Channel *channel, ChannelFdKind part, int *outlen) {
    ReadChunk* head = &channel->fds[part].head;
    ReadChunk* node;
    Ulong  len = 0;
 
-   // Concatenate everything into one buffer.
+   //Concatenate everything into one buffer.
    for (node = head->next; node; node = node->next)
       len += node->len;
    CS res = alloc(len + 1);
@@ -1289,35 +1289,35 @@ channel_get_all(Channel *channel, ChannelFdKind part, int *outlen) {
    }
    *p = ZERO;
 
-   // Free all buffers
+   //Free all buffers
    do {
       p = channel_get(channel, part, NULL);
       eeglFree(p);
    } while (p);
 
    if (outlen) {
-      // Returning the length, keep ZERO characters.
+      //Returning the length, keep ZERO characters.
       *outlen += len;
       return res;
    }
 
-   // Turn all ZERO into newlines, so that the result can be used as a string.
+   //Turn all ZERO into newlines, so that the result can be used as a string.
    p = res;
    while (p < res + len) {
       if (*p == ZERO)
          *p = NL;
       ei (*p == 0x1b) {
-         // crush the escape sequence OSC 0/1/2: ESC ]0;
+         //crush the escape sequence OSC 0/1/2: ESC ]0;
          if (p + 3 < res + len
             && p[1] == ']'
             && (p[2] == '0' || p[2] == '1' || p[2] == '2')
             && p[3] == ';'
          ) {
-            // '\a' becomes a NL
+            //'\a' becomes a NL
             while (p < res + (len - 1) && *p != '\a')
                ++p;
-            // BEL is zero width characters, suppress display mistake
-            // ConPTY (after 10.0.18317) requires advance checking
+            //BEL is zero width characters, suppress display mistake
+            //ConPTY (after 10.0.18317) requires advance checking
             if (p[-1] == ZERO)
                p[-1] = 0x07;
          }
@@ -1377,7 +1377,7 @@ channel_collapse(Channel *channel, ChannelFdKind part, int want_nl) {
    *p = ZERO;
    node->len = (Ulong)(p - newbuf);
 
-   // dispose of the collapsed nodes and their buffers
+   //dispose of the collapsed nodes and their buffers
    for (n = node->next; n != last_node; ) {
       n = n->next;
       eeglFree(n->prev);
@@ -1391,20 +1391,20 @@ channel_collapse(Channel *channel, ChannelFdKind part, int want_nl) {
    return OK;
 }
 
-// Store "buf[len]" on "channel"/"part".
-// When "prepend" is true put in front, otherwise append at the end. Return OK or FAIL.
+//Store "buf[len]" on "channel"/"part".
+//When "prepend" is true put in front, otherwise append at the end. Return OK or FAIL.
 private int
 saveMsg(Channel* channel, ChannelFdKind part, CS msg, int len, int prepend, CS logLead) {
    ReadChunk *head = &channel->fds[part].head;
    Byte  *p;
    int       i;
    ReadChunk* node = ALLOC_ONE(ReadChunk);
-   // A ZERO is added at the end, because netbeans code expects that.
-   // Otherwise a ZERO may appear inside the text.
+   //A ZERO is added at the end, because netbeans code expects that.
+   //Otherwise a ZERO may appear inside the text.
    node->c = alloc(len + 1);
 
    if (channel->fds[part].ch_mode == CH_MODE_NL) {
-      // Drop any CR before a newline.
+      //Drop any CR before a newline.
       p = node->c;
       for (i = 0; i < len; ++i) {
          if (msg[i] != ENTER || i + 1 >= len || msg[i + 1] != NL)
@@ -1419,7 +1419,7 @@ saveMsg(Channel* channel, ChannelFdKind part, CS msg, int len, int prepend, CS l
    }
 
    if (prepend) {
-      // prepend node to the head of the queue
+      //prepend node to the head of the queue
       node->next = head->next;
       node->prev = NULL;
       if (head->next == NULL)
@@ -1428,7 +1428,7 @@ saveMsg(Channel* channel, ChannelFdKind part, CS msg, int len, int prepend, CS l
          head->next->prev = node;
       head->next = node;
    } else {
-      // append node to the tail of the queue
+      //append node to the tail of the queue
       node->next = NULL;
       node->prev = head->prev;
       if (head->prev == NULL)
@@ -1444,7 +1444,7 @@ saveMsg(Channel* channel, ChannelFdKind part, CS msg, int len, int prepend, CS l
    return OK;
 }
 
-// Try to fill the buffer of "reader". Returns false when nothing was added.
+//Try to fill the buffer of "reader". Returns false when nothing was added.
 private int
 channel_fill(JsReader* reader) {
    Channel* channel = (Channel *)reader->js_cookie;
@@ -1458,7 +1458,7 @@ channel_fill(JsReader* reader) {
 
    int keeplen = reader->js_end - reader->js_buf;
    if (keeplen > 0) {
-      // Prepend unused text.
+      //Prepend unused text.
       addlen = (int)STRLEN(next);
       p = alloc(keeplen + addlen + 1);
       MEMMOVE(p, reader->js_buf, keeplen);
@@ -1472,21 +1472,21 @@ channel_fill(JsReader* reader) {
     return true;
 }
 
-// Process the HTTP header in a Language Server Protocol (LSP) message.
+//Process the HTTP header in a Language Server Protocol (LSP) message.
 //
-// The message format is described in the LSP specification:
-// https://microsoft.github.io/language-server-protocol/specification
+//The message format is described in the LSP specification:
+//https://microsoft.github.io/language-server-protocol/specification
 //
-// It has the following two fields:
+//It has the following two fields:
 //
-//   Content-Length: ...
-//   Content-Type: application/vscode-jsonrpc; charset=utf-8
+//  Content-Length: ...
+//  Content-Type: application/vscode-jsonrpc; charset=utf-8
 //
-// Each field ends with "\r\n". The header ends with an additional "\r\n".
+//Each field ends with "\r\n". The header ends with an additional "\r\n".
 //
-// Return OK if a valid header is received and FAIL if some fields in the
-// header are not correct. Return MAYBE if a partial header is received and
-// need to wait for more data to arrive.
+//Return OK if a valid header is received and FAIL if some fields in the
+//header are not correct. Return MAYBE if a partial header is received and
+//need to wait for more data to arrive.
 private int
 channel_process_lsp_http_hdr(JsReader* reader) {
    Byte   *line_start;
@@ -1495,55 +1495,55 @@ channel_process_lsp_http_hdr(JsReader* reader) {
    int      payload_len = -1;
    Unt   jsbuf_len;
 
-   // We find the end once, to avoid calling strlen() many times.
+   //We find the end once, to avoid calling strlen() many times.
    jsbuf_len = (Unt)STRLEN(reader->js_buf);
    reader->js_end = reader->js_buf + jsbuf_len;
 
    p = reader->js_buf;
 
-   // Process each line in the header till an empty line is read (header separator).
+   //Process each line in the header till an empty line is read (header separator).
    while (true) {
       line_start = p;
       while (*p != ZERO && *p != '\n')
          p++;
-      if (*p == ZERO)         // partial header
+      if (*p == ZERO)         //partial header
          return MAYBE;
       p++;
 
-      // process the content length field (if present)
+      //process the content length field (if present)
       if ((p - line_start > 16) && STRNICMP(line_start, "Content-Length: ", 16) == 0) {
          errno = 0;
          payload_len = strtol((char *)line_start + 16, NULL, 10);
          if (errno == ERANGE || payload_len < 0)
-            // invalid length, discard the payload
+            //invalid length, discard the payload
             return FAIL;
       }
 
       if ((p - line_start) == 2 && line_start[0] == '\r' &&
          line_start[1] == '\n')
-         // reached the empty line
+         //reached the empty line
          break;
    }
 
    if (payload_len == -1)
-      // Content-Length field is not present in the header
+      //Content-Length field is not present in the header
       return FAIL;
 
    hdr_len = p - reader->js_buf;
 
-    // if the entire payload is not received, wait for more data to arrive
+    //if the entire payload is not received, wait for more data to arrive
    if (jsbuf_len < hdr_len + payload_len)
       return MAYBE;
 
    reader->js_used += hdr_len;
-   // recalculate the end based on the length read from the header.
+   //recalculate the end based on the length read from the header.
    reader->js_end = reader->js_buf + hdr_len + payload_len;
 
    return OK;
 }
 
-// Use the read buffer of "channel"/"part" and parse a JSON message that is
-// complete.  The messages are added to the queue. Return true if there is more to read.
+//Use the read buffer of "channel"/"part" and parse a JSON message that is
+//complete.  The messages are added to the queue. Return true if there is more to read.
 private int
 channel_parse_json(Channel* channel, ChannelFdKind part) {
    Var   listtv;
@@ -1565,17 +1565,17 @@ channel_parse_json(Channel* channel, ChannelFdKind part) {
    if (chanpart->ch_mode == CH_MODE_LSP)
       status = channel_process_lsp_http_hdr(&reader);
 
-   // When a message is incomplete we wait for a short while for more to
-   // arrive.  After the delay drop the input, otherwise a truncated string
-   // or list will make us hang.
-   // Do not generate error messages, they will be written in a channel log.
+   //When a message is incomplete we wait for a short while for more to
+   //arrive.  After the delay drop the input, otherwise a truncated string
+   //or list will make us hang.
+   //Do not generate error messages, they will be written in a channel log.
    if (status == OK) {
       ++emsg_silent;
       status = json_decode(OUT &listtv, &reader);
       --emsg_silent;
    }
    if (status == OK) {
-      // Only accept the response when it is a list with at least two items.
+      //Only accept the response when it is a list with at least two items.
       if (chanpart->ch_mode == CH_MODE_LSP && listtv.tag != VAR_BAG) {
          ch_error(channel, "Did not receive a LSP dict, discarding");
          clearVar(&listtv);
@@ -1616,8 +1616,8 @@ channel_parse_json(Channel* channel, ChannelFdKind part) {
       Unt buflen = STRLEN(reader.js_buf);
 
       if (chanpart->ch_wait_len < buflen) {
-         // First time encountering incomplete message or after receiving
-         // more (but still incomplete): set a deadline of 100 msec.
+         //First time encountering incomplete message or after receiving
+         //more (but still incomplete): set a deadline of 100 msec.
          ch_log(channel,
             "Incomplete message (%d bytes) - wait 100 msec for more",
             (int)buflen);
@@ -1655,7 +1655,7 @@ channel_parse_json(Channel* channel, ChannelFdKind part) {
       ret = false;
       chanpart->ch_wait_len = 0;
    } ei (reader.js_buf[reader.js_used] != ZERO) {
-      // Put the unread part back into the channel.
+      //Put the unread part back into the channel.
       saveMsg(channel, part, reader.js_buf + reader.js_used,
             (int)(reader.js_end - reader.js_buf) - reader.js_used, true, NULL);
       ret = status == MAYBE ? false: true;
@@ -1666,7 +1666,7 @@ channel_parse_json(Channel* channel, ChannelFdKind part) {
    return ret;
 }
 
-// Remove "node" from the queue that it is in.  Does not free it.
+//Remove "node" from the queue that it is in.  Does not free it.
 private void
 remove_cb_node(CbNode* head, CbNode* node) {
    if (node->cq_prev == NULL)
@@ -1679,8 +1679,8 @@ remove_cb_node(CbNode* head, CbNode* node) {
       node->cq_next->cq_prev = node->cq_prev;
 }
 
-// Remove "node" from the queue that it is in and free it.
-// Caller should have freed or used node->jq_value.
+//Remove "node" from the queue that it is in and free it.
+//Caller should have freed or used node->jq_value.
 private void
 remove_json_node(JsonQ* head, JsonQ* node) {
    if (!node->jq_prev)
@@ -1694,7 +1694,7 @@ remove_json_node(JsonQ* head, JsonQ* node) {
    eeglFree(node);
 }
 
-// Add "id" to the list of JSON message IDs we are waiting on.
+//Add "id" to the list of JSON message IDs we are waiting on.
 private void
 channel_add_block_id(ChannelFd* chanpart, int id) {
    ArrayList* gap = &chanpart->ch_block_ids;
@@ -1707,7 +1707,7 @@ channel_add_block_id(ChannelFd* chanpart, int id) {
    }
 }
 
-// Remove "id" from the list of JSON message IDs we are waiting on.
+//Remove "id" from the list of JSON message IDs we are waiting on.
 private void
 channel_remove_block_id(ChannelFd* chanpart, int id) {
    ArrayList* gap = &chanpart->ch_block_ids;
@@ -1725,7 +1725,7 @@ channel_remove_block_id(ChannelFd* chanpart, int id) {
    internalErrFmtMsg("channel_remove_block_id(): cannot find id %d", id);
 }
 
-// Return true if "id" is in the list of JSON message IDs we are waiting on.
+//Return true if "id" is in the list of JSON message IDs we are waiting on.
 private int
 channel_has_block_id(ChannelFd* chanpart, int id) {
    ArrayList   *gap = &chanpart->ch_block_ids;
@@ -1736,10 +1736,10 @@ channel_has_block_id(ChannelFd* chanpart, int id) {
    return false;
 }
 
-// Get a message from the JSON queue for channel "channel". When "id" is positive it must match 
-// the first number in the list. When "id" is zero or negative jut get the first message. But not 
-// one in the ch_block_ids list. When "without_callback" is true also get messages that were 
-// pushed back. Return OK when found and return the value in "returnVar". FAIL otherwise.
+//Get a message from the JSON queue for channel "channel". When "id" is positive it must match 
+//the first number in the list. When "id" is zero or negative jut get the first message. But not 
+//one in the ch_block_ids list. When "without_callback" is true also get messages that were 
+//pushed back. Return OK when found and return the value in "returnVar". FAIL otherwise.
 private int
 channel_get_json(
    Channel   *channel,
@@ -1760,18 +1760,18 @@ channel_get_json(
          CHECK_LIST_MATERIALIZE(l);
          tv = &l->first->c;
       } else {
-         // LSP message payload is a JSON-RPC dict. For RPC requests and responses, the 'id' 
-         // item will be present. For notifications, it will not be present.
+         //LSP message payload is a JSON-RPC dict. For RPC requests and responses, the 'id' 
+         //item will be present. For notifications, it will not be present.
          if (id > 0) {
             if (item->jq_value->tag != VAR_BAG)
                goto nextitem;
             Bag* d = item->jq_value->bag;
             if (!d)
                goto nextitem;
-            // When looking for a response message from the LSP server,
-            // ignore new LSP request and notification messages.  LSP
-            // request and notification messages have the "method" field in
-            // the header and the response messages do not have this field.
+            //When looking for a response message from the LSP server,
+            //ignore new LSP request and notification messages.  LSP
+            //request and notification messages have the "method" field in
+            //the header and the response messages do not have this field.
             if (bagHasKey(d, tConst("method")))
                 goto nextitem;
             DictItem* di = bagFind(d, tConst("id"));
@@ -1800,8 +1800,8 @@ channel_get_json(
    return FAIL;
 }
 
-// Put back "returnVar" into the JSON queue, there was no callback for it.
-// Take over the values in "returnVar".
+//Put back "returnVar" into the JSON queue, there was no callback for it.
+//Take over the values in "returnVar".
 private void
 channel_push_json(Channel* channel, ChannelFdKind part, Var* returnVar) {
    JsonQ* head = &channel->fds[part].ch_json_head;
@@ -1809,10 +1809,10 @@ channel_push_json(Channel* channel, ChannelFdKind part, Var* returnVar) {
    JsonQ* newitem;
 
    if (head->jq_prev != NULL && head->jq_prev->jq_no_callback)
-      // last item was pushed back, append to the end
+      //last item was pushed back, append to the end
       item = NULL;
    else while (item != NULL && item->jq_no_callback)
-      // append after the last item that was pushed back
+      //append after the last item that was pushed back
       item = item->jq_next;
 
    newitem = ALLOC_ONE(JsonQ);
@@ -1821,7 +1821,7 @@ channel_push_json(Channel* channel, ChannelFdKind part, Var* returnVar) {
    newitem->jq_no_callback = false;
    *newitem->jq_value = *returnVar;
    if (!item) {
-      // append to the end
+      //append to the end
       newitem->jq_prev = head->jq_prev;
       head->jq_prev = newitem;
       newitem->jq_next = NULL;
@@ -1830,7 +1830,7 @@ channel_push_json(Channel* channel, ChannelFdKind part, Var* returnVar) {
       else
           newitem->jq_prev->jq_next = newitem;
    } else {
-      // append after "item"
+      //append after "item"
       newitem->jq_prev = item;
       newitem->jq_next = item->jq_next;
       item->jq_next = newitem;
@@ -1843,9 +1843,9 @@ channel_push_json(Channel* channel, ChannelFdKind part, Var* returnVar) {
 
 #define CH_JSON_MAX_ARGS 4
 
-// Execute a command received over "channel"/"part"
-// "argv[0]" is the command string.
-// "argv[1]" etc. have further arguments, type is VAR_UNKNOWN if missing.
+//Execute a command received over "channel"/"part"
+//"argv[0]" is the command string.
+//"argv[1]" etc. have further arguments, type is VAR_UNKNOWN if missing.
 private void
 channel_exe_cmd(Channel *channel, ChannelFdKind part, Var *argv) {
    CS cmd = argv[0].string;
@@ -1856,29 +1856,27 @@ channel_exe_cmd(Channel *channel, ChannelFdKind part, Var *argv) {
       return;
    }
    CS arg = argv[1].string;
-   if (arg == NULL)
-      arg = (CS)"";
+   if (!arg)
+      arg = S"";
 
    if (STRCMP(cmd, "ex") == 0) {
-      int   called_emsg_before = called_emsg;
-      Byte   *p = arg;
-      int   do_emsg_silent;
+      CS p = arg;
 
       ch_log(channel, "Executing command '%s'", (char *)arg);
-      do_emsg_silent = !checkforcmd(&p, S"echoerr", 5);
-      if (do_emsg_silent)
-          ++emsg_silent;
+      int do_emsg_silent = !checkforcmd(&p, S"echoerr", 5);
+      if (do_emsg_silent != 0)
+         ++emsg_silent;
       executeCommLine(arg);
-      if (do_emsg_silent)
+      if (do_emsg_silent != 0)
           --emsg_silent;
    } ei (STRCMP(cmd, "normal") == 0) {
       ch_log(channel, "Executing normal command '%s'", (char *)arg);
-      Invocation ea;
-      CLEAR_FIELD(ea);
-      ea.arg = arg;
-      ea.addr_count = 0;
-      ea.forceit = true; // no mapping
-      c_normal(&ea);
+      Invocation invo;
+      CLEAR_FIELD(invo);
+      invo.arg = arg;
+      invo.addr_count = 0;
+      invo.forceit = true; //no mapping
+      c_normal(&invo);
    } ei (STRCMP(cmd, "redraw") == 0) {
       ch_log(channel, "redraw");
       redraw_cmd(*arg != ZERO);
@@ -1903,7 +1901,7 @@ channel_exe_cmd(Channel *channel, ChannelFdKind part, Var *argv) {
          Var   err_tv;
          Byte   *json = NULL;
 
-         // Don't pollute the display with errors. Do generate the errors so that try/catch works.
+         //Don't pollute the display with errors. Do generate the errors so that try/catch works.
          ++emsg_silent;
          if (!is_call) {
             ch_log(channel, "Evaluating expression '%s'", (char *)arg);
@@ -1920,8 +1918,8 @@ channel_exe_cmd(Channel *channel, ChannelFdKind part, Var *argv) {
             if (tv)
                json = json_encode_nr_expr(id, tv, JSON_NL);
             if (tv == NULL || (json != NULL && *json == ZERO)) {
-               // If evaluation failed or the result can't be encoded
-               // then return the string "ERROR".
+               //If evaluation failed or the result can't be encoded
+               //then return the string "ERROR".
                eeglFree(json);
                err_tv.tag = VAR_STRING;
                err_tv.string = (CS)"ERROR";
@@ -1945,12 +1943,12 @@ channel_exe_cmd(Channel *channel, ChannelFdKind part, Var *argv) {
       showErrFmtMsg(_(e_received_unknown_command_str), cmd);
    } }
 
-// Invoke the callback at "cbhead". Does not redraw but sets channel_need_redraw.
+//Invoke the callback at "cbhead". Does not redraw but sets channel_need_redraw.
 private void
 invoke_one_time_callback(Channel* channel, CbNode* cbhead, CbNode* item, Var* argv) {
    ch_log(channel, "Invoking one-time callback %s", (char *)item->cq_callback.name);
-   // Remove the item from the list first, if the callback
-   // invokes ch_close() the list will be cleared.
+   //Remove the item from the list first, if the callback
+   //invokes ch_close() the list will be cleared.
    remove_cb_node(cbhead, item);
    invoke_callback(channel, &item->cq_callback, argv);
    evFreeCallback(&item->cq_callback);
@@ -1974,18 +1972,18 @@ appendToBook(Book* book, CS msg, Channel* channel, ChannelFdKind part) {
       return;
    }
 
-   // If the book is also used as input insert above the last line. Don't write these lines.
+   //If the book is also used as input insert above the last line. Don't write these lines.
    if (save_write_to) {
       --lnum;
       book->writeToChannel = false;
    }
 
-   // Append to the book
+   //Append to the book
    ch_log(channel, "appending line %d to book %s", (int)lnum + 1 - empty, book->currFileName);
 
    book->o.modifiable = true;
 
-   // Set curBook to "book", temporarily.
+   //Set curBook to "book", temporarily.
    auCommPrepareBook(&aco, book);
    if (curBook != book) {
       //Could not find a portal into this book, the following might cause trouble, better bail out.
@@ -1993,18 +1991,18 @@ appendToBook(Book* book, CS msg, Channel* channel, ChannelFdKind part) {
    }
 
    u_sync(true);
-   // ignore undo failure, undo is not very useful here
+   //ignore undo failure, undo is not very useful here
    (void)u_save(lnum - empty, lnum + 1);
 
    if (empty) {
-      // The book is empty, replace the first (dummy) line.
+      //The book is empty, replace the first (dummy) line.
       ml_replace(lnum, msg, true);
       lnum = 0;
    } else
       ml_append(lnum, msg, 0, false);
    appended_lines_mark(lnum, 1L);
 
-   // reset notion of book
+   //reset notion of book
    auCommRestoreBook(&aco);
 
    if (fds->ch_nomodifiable) {
@@ -2021,8 +2019,8 @@ appendToBook(Book* book, CS msg, Channel* channel, ChannelFdKind part) {
                    ? wp->cursor.lnum == lnum + 1
                    : (wp->cursor.lnum == lnum && wp->cursor.col == 0);
 
-            // If the cursor is at or above the new line, move it one line
-            // down.  If the topline is outdated update it now.
+            //If the cursor is at or above the new line, move it one line
+            //down.  If the topline is outdated update it now.
             if (move_cursor || wp->topLine > book->mem.lineCount) {
                Portal *save_curPor = curPor;
 
@@ -2043,7 +2041,7 @@ appendToBook(Book* book, CS msg, Channel* channel, ChannelFdKind part) {
    if (save_write_to) {
       Channel *ch;
 
-      // Find channels reading from this book and adjust their next-to-read line number.
+      //Find channels reading from this book and adjust their next-to-read line number.
       book->writeToChannel = true;
       FOR_ALL_CHANNELS(ch) {
          ChannelFd  *intake = &ch->fds[PART_IN];
@@ -2063,16 +2061,16 @@ drop_messages(Channel* channel, ChannelFdKind part) {
    }
 }
 
-// true if for "channel" / "part" ch_json_head should be used.
+//true if for "channel" / "part" ch_json_head should be used.
 private int
 channel_use_json_head(Channel* channel, ChannelFdKind part) {
    ChannelMode   ch_mode = channel->fds[part].ch_mode;
    return ch_mode == CH_MODE_JSON || ch_mode == CH_MODE_LSP;
 }
 
-// Invoke a callback for "channel"/"part" if needed. This does not redraw but sets 
-// channel_need_redraw when redraw is needed. Return true when a message was handled, there might 
-// be another one.
+//Invoke a callback for "channel"/"part" if needed. This does not redraw but sets 
+//channel_need_redraw when redraw is needed. Return true when a message was handled, there might 
+//be another one.
 private int
 may_invoke_callback(Channel* channel, ChannelFdKind part) {
    Byte* msg = NULL;
@@ -2086,13 +2084,13 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
    Callback* callback = NULL;
    Byte* p;
 
-   // Use a message-specific callback, part callback or channel callback
+   //Use a message-specific callback, part callback or channel callback
    for (cbitem = cbhead->cq_next; cbitem != NULL; cbitem = cbitem->cq_next) {
       if (cbitem->cq_seq_nr == 0)
           break;
    } 
    
-   void (*nativeCallback)(Arr(Byte)) = NULL; // if non-null, overtakes non-native callbacks
+   void (*nativeCallback)(Arr(Byte)) = NULL; //if non-null, overtakes non-native callbacks
    if (fdData->nativeCb != NULL) {
       nativeCallback = fdData->nativeCb;
    } else {
@@ -2106,7 +2104,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
 
    Book* book = fdData->bookref.c;
    if (book && (!bookRefValid(&fdData->bookref) || bookNoMemfile(book))) {
-      // book was wiped out or unloaded
+      //book was wiped out or unloaded
       ch_log(channel, "%s book has been wiped out", chanFdNames[part]);
       fdData->bookref.c = NULL;
       book = NULL;
@@ -2116,14 +2114,14 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
       ListItem* item;
       int      argc = 0;
 
-      // Get any json message in the queue.
+      //Get any json message in the queue.
       if (channel_get_json(channel, part, -1, false, &listtv) == FAIL) {
          if (ch_mode == CH_MODE_LSP)
-            // In the "lsp" mode, the http header and the json payload may
-            // be received in multiple messages. So concatenate all the received messages.
+            //In the "lsp" mode, the http header and the json payload may
+            //be received in multiple messages. So concatenate all the received messages.
             (void)channel_collapse(channel, part, false);
 
-         // Parse readahead, return when there is still no message.
+         //Parse readahead, return when there is still no message.
          channel_parse_json(channel, part);
          if (channel_get_json(channel, part, -1, false, &listtv) == FAIL)
             return false;
@@ -2149,7 +2147,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
             argv[argc++].tag = VAR_UNKNOWN;
 
          if (argv[0].tag == VAR_STRING) {
-            // ["cmd", arg] or ["cmd", arg, arg] or ["cmd", arg, arg, arg]
+            //["cmd", arg] or ["cmd", arg, arg] or ["cmd", arg, arg, arg]
             channel_exe_cmd(channel, part, argv);
             freeVar(listtv);
             return true;
@@ -2163,12 +2161,12 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
          seq_nr = argv[0].number;
       }
    } ei (channel_peek(channel, part) == NULL) {
-      // nothing to read on RAW or NL channel
+      //nothing to read on RAW or NL channel
       return false;
    }  else {
-      // If there is no callback or book, drop the message.
+      //If there is no callback or book, drop the message.
       if (!nativeCallback && !callback && !book) {
-         // If there is a close callback it may use ch_read() to get the messages.
+         //If there is a close callback it may use ch_read() to get the messages.
          if (channel->ch_close_cb.name == NULL && !channel->ch_drop_never)
             drop_messages(channel, part);
          return false;
@@ -2178,8 +2176,8 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
          CS nl = NULL;
          ReadChunk *node;
 
-         // See if we have a message ending in NL in the first book.  If
-         // not try to concatenate the first and the second book.
+         //See if we have a message ending in NL in the first book.  If
+         //not try to concatenate the first and the second book.
          while (true) {
             node = channel_peek(channel, part);
             nl = channel_first_nl(node);
@@ -2188,27 +2186,27 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
             if (channel_collapse(channel, part, true) == FAIL) {
                if (fdData->fd == INVALID_FD && node->len > 0)
                   break;
-               return false; // incomplete message
+               return false; //incomplete message
             }
          }
          CS buf = node->c;
 
-         // Convert ZERO to NL, the internal representation.
+         //Convert ZERO to NL, the internal representation.
          for (p = buf; (nl == NULL || p < nl) && p < buf + node->len; ++p) {
             if (*p == ZERO)
                *p = NL;
          } 
 
          if (nl == NULL) {
-            // get the whole buffer, drop the NL
+            //get the whole buffer, drop the NL
             msg = channel_get(channel, part, NULL);
          } ei (nl + 1 == buf + node->len) {
-            // get the whole buffer
+            //get the whole buffer
             msg = channel_get(channel, part, NULL);
             *nl = ZERO;
          } else {
-            // Copy the message into allocated memory (excluding the NL)
-            // and remove it from the buffer (including the NL).
+            //Copy the message into allocated memory (excluding the NL)
+            //and remove it from the buffer (including the NL).
             msg = copySubstr(buf, nl - buf);
             channel_consume(channel, part, (int)(nl - buf) + 1);
          }
@@ -2219,7 +2217,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
       }
 
       if (msg == NULL)
-         return false; // out of memory (and avoids Coverity warning)
+         return false; //out of memory (and avoids Coverity warning)
 
       argv[1].tag = VAR_STRING;
       argv[1].string = msg;
@@ -2227,11 +2225,11 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
 
    Boole called_otc = false; //one-time callbackup
    if (seq_nr > 0) {
-      // JSON or LSP mode: invoke the one-time callback with the matching nr
+      //JSON or LSP mode: invoke the one-time callback with the matching nr
       int lsp_req_msg = false;
 
-      // Don't use a LSP server request message with the same sequence number
-      // as the client request message as the response message.
+      //Don't use a LSP server request message with the same sequence number
+      //as the client request message as the response message.
       if (ch_mode == CH_MODE_LSP && argv[1].tag == VAR_BAG 
             && bagHasKey(argv[1].bag, tConst("method"))) {
          lsp_req_msg = true;
@@ -2266,7 +2264,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
    } ei (nativeCallback != NULL || callback != NULL || book != NULL) {
       if (book) {
          if (msg == NULL)
-            // JSON or JS mode: re-encode the message.
+            //JSON or JS mode: re-encode the message.
             msg = json_encode(listtv, ch_mode);
          if (msg != NULL) {
             if (book->term != NULL)
@@ -2281,7 +2279,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
          if (cbitem)
             invoke_one_time_callback(channel, cbhead, cbitem, argv);
          else {
-            // invoke the channel callback
+            //invoke the channel callback
             ch_log(channel, "Invoking channel callback %s", (char *)callback->name);
             invoke_callback(channel, callback, argv);
          }
@@ -2296,7 +2294,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
    return true;
 }
 
-// Return true when channel "channel" is open for writing to. false for invalid "channel".
+//Return true when channel "channel" is open for writing to. false for invalid "channel".
 //TODO delete
 private int
 channel_can_write_to(Channel* channel) {
@@ -2304,7 +2302,7 @@ channel_can_write_to(Channel* channel) {
       && (channel->fds[PART_SOCK].fd != INVALID_FD || channel->fds[PART_IN].fd != INVALID_FD);
 }
 
-// Return true when channel "channel" is open for reading or writing. false for invalid "channel".
+//Return true when channel "channel" is open for reading or writing. false for invalid "channel".
 pub int
 channel_is_open(Channel *channel) {
     return channel != NULL && (channel->fds[PART_SOCK].fd != INVALID_FD
@@ -2313,15 +2311,15 @@ channel_is_open(Channel *channel) {
            || channel->fds[PART_ERR].fd != INVALID_FD);
 }
 
-// Return a pointer indicating the readahead.  Can only be compared between
-// calls.  Returns NULL if there is no readahead.
+//Return a pointer indicating the readahead.  Can only be compared between
+//calls.  Returns NULL if there is no readahead.
 private void *
 channel_readahead_pointer(Channel* channel, ChannelFdKind part) {
    if (channel_use_json_head(channel, part)) {
       JsonQ   *head = &channel->fds[part].ch_json_head;
 
       if (head->jq_next == NULL)
-          // Parse json from readahead, there might be a complete message to process.
+          //Parse json from readahead, there might be a complete message to process.
           channel_parse_json(channel, part);
 
       return head->jq_next;
@@ -2329,14 +2327,14 @@ channel_readahead_pointer(Channel* channel, ChannelFdKind part) {
    return channel_peek(channel, part);
 }
 
-// true if "channel" has JSON or other typeahead.
+//true if "channel" has JSON or other typeahead.
 private int
 channel_has_readahead(Channel *channel, ChannelFdKind part) {
    return channel_readahead_pointer(channel, part) != NULL;
 }
 
-// Return a string indicating the status of the channel.
-// If "req_part" is not negative check that part.
+//Return a string indicating the status of the channel.
+//If "req_part" is not negative check that part.
 private CS
 channel_status(Channel *channel, int req_part) {
    ChannelFdKind part;
@@ -2373,7 +2371,7 @@ channel_status(Channel *channel, int req_part) {
 private void
 channel_part_info(Channel* channel, Bag* bag, CS name, ChannelFdKind part) {
    ChannelFd* chanpart = &channel->fds[part];
-   Byte namebuf[20];  // longest is "sock_timeout"
+   Byte namebuf[20];  //longest is "sock_timeout"
    CS s = S"";
 
    copySubstrToAllocation(namebuf, (Text){name, 4});
@@ -2430,8 +2428,8 @@ channelInfoIntoDict(Channel *channel, OUT Bag *dict) {
    }
 }
 
-// Close channel "channel".
-// Trigger the close callback if "invoke_close_cb" is true. Does not clear the buffers.
+//Close channel "channel".
+//Trigger the close callback if "invoke_close_cb" is true. Does not clear the buffers.
 private void
 channel_close(Channel *channel, int invoke_close_cb) {
     ch_log(channel, "Closing channel");
@@ -2444,9 +2442,9 @@ channel_close(Channel *channel, int invoke_close_cb) {
    if (invoke_close_cb) {
       ChannelFdKind   part;
 
-      // let the terminal know it is closing to avoid getting stuck
+      //let the terminal know it is closing to avoid getting stuck
       term_channel_closing(channel);
-      // Invoke callbacks and flush buffers before the close callback.
+      //Invoke callbacks and flush buffers before the close callback.
       if (channel->ch_close_cb.name != NULL)
          ch_log(channel, "Invoking callbacks and flushing buffers before closing");
       for (part = PART_SOCK; part < PART_IN; ++part) {
@@ -2465,7 +2463,7 @@ channel_close(Channel *channel, int invoke_close_cb) {
          Var argv[1];
          Var returnVar;
 
-         // Increment the refcount to avoid the channel being freed halfway.
+         //Increment the refcount to avoid the channel being freed halfway.
          ++channel->refCount;
          ch_log(channel, "Invoking close callback %s", (char *)channel->ch_close_cb.name);
          argv[0].tag = VAR_CHANNEL;
@@ -2474,7 +2472,7 @@ channel_close(Channel *channel, int invoke_close_cb) {
          clearVar(&returnVar);
          channel_need_redraw = true;
 
-          // the callback is only called once
+          //the callback is only called once
           evFreeCallback(&channel->ch_close_cb);
 
           if (channel_need_redraw) {
@@ -2483,7 +2481,7 @@ channel_close(Channel *channel, int invoke_close_cb) {
           }
 
           if (!channel->ch_drop_never) {
-             // any remaining messages are useless now
+             //any remaining messages are useless now
              for (part = PART_SOCK; part < PART_IN; ++part)
                  drop_messages(channel, part);
           } 
@@ -2495,7 +2493,7 @@ channel_close(Channel *channel, int invoke_close_cb) {
    term_channel_closed(channel);
 }
 
-// Close the "in" part channel "channel".
+//Close the "in" part channel "channel".
 private void
 channel_close_in(Channel *channel) {
    ch_close_part(channel, PART_IN);
@@ -2512,7 +2510,7 @@ remove_from_writeque(WriteQueue *wq, WriteQueue *entry) {
     eeglFree(entry);
 }
 
-// Clear the read buffer on "channel"/"part".
+//Clear the read buffer on "channel"/"part".
 private void
 channel_clear_one(Channel *channel, ChannelFdKind part) {
     ChannelFd *fds = &channel->fds[part];
@@ -2542,7 +2540,7 @@ channel_clear_one(Channel *channel, ChannelFdKind part) {
       remove_from_writeque(&fds->ch_writeque, fds->ch_writeque.next);
 }
 
-// Clear all the read buffers on "channel".
+//Clear all the read buffers on "channel".
 pub void
 channel_clear(Channel* channel) {
    ch_log(channel, "Clearing channel");
@@ -2566,10 +2564,10 @@ channel_free_all(void) {
 }
 #endif
 
-// Book size for reading incoming messages.
+//Book size for reading incoming messages.
 #define MAXMSGSIZE 4096
 
-// Check if there are remaining data that should be written for "intake".
+//Check if there are remaining data that should be written for "intake".
 private int
 is_channel_write_remaining(ChannelFd* intake) {
    Book* book = intake->bookref.c;
@@ -2631,16 +2629,16 @@ ch_close_part_on_error(Channel *channel, ChannelFdKind part, int is_err, char *f
    char   msg[] = "%s(): Read %s from fds[%d], closing";
 
    if (is_err)
-      // Do not call emsg(), most likely the other end just exited.
+      //Do not call emsg(), most likely the other end just exited.
       ch_error(channel, msg, func, "error", part);
    else
       ch_log(channel, msg, func, "EOF", part);
 
 
-   // When reading is not possible close this part of the channel.  Don't
-   // close the channel yet, there may be something to read on another part.
-   // When stdout and stderr use the same FD we get the error only on one of
-   // them, also close the other.
+   //When reading is not possible close this part of the channel.  Don't
+   //close the channel yet, there may be something to read on another part.
+   //When stdout and stderr use the same FD we get the error only on one of
+   //them, also close the other.
    if (part == PART_OUT || part == PART_ERR) {
       ChannelFdKind other = part == PART_OUT ? PART_ERR : PART_OUT;
 
@@ -2656,8 +2654,8 @@ channel_close_now(Channel *channel) {
    channel_close(channel, true);
 }
 
-// Read from channel "channel" for as long as there is something to read. "part" is PART_SOCK, 
-// PART_OUT or PART_ERR. The data is put in the read queue.  No callbacks are invoked here.
+//Read from channel "channel" for as long as there is something to read. "part" is PART_SOCK, 
+//PART_OUT or PART_ERR. The data is put in the read queue.  No callbacks are invoked here.
 private void
 channel_read(Channel *channel, ChannelFdKind part, char *func) {
    static CS buf = NULL;
@@ -2672,7 +2670,7 @@ channel_read(Channel *channel, ChannelFdKind part, char *func) {
    }
    use_socket = fd == channel->fds[PART_SOCK].fd;
 
-   // Allocate a buffer to read into.
+   //Allocate a buffer to read into.
    if (!buf) {
       buf = alloc(MAXMSGSIZE);
    }
@@ -2687,23 +2685,23 @@ channel_read(Channel *channel, ChannelFdKind part, char *func) {
       else
          len = fd_read(fd, (char *)buf, MAXMSGSIZE);
       if (len <= 0)
-         break;   // error or nothing more to read
+         break;   //error or nothing more to read
 
-      // Store the read message in the queue.
+      //Store the read message in the queue.
       saveMsg(channel, part, buf, len, false, S"RECV ");
       readlen += len;
    }
 
-   // Reading a disconnection (readlen == 0), or an error.
+   //Reading a disconnection (readlen == 0), or an error.
    if (readlen <= 0) {
       if (!channel->ch_keep_open)
          ch_close_part_on_error(channel, part, (len < 0), func);
    }
 }
 
-// Read from RAW or NL "channel"/"part".  Blocks until there is something to read or the timeout 
-// expires. When "raw" is true don't block waiting on a NL. Does not trigger timers or handle 
-// messages. Return what was read in allocated memory. NULL in case of error or timeout.
+//Read from RAW or NL "channel"/"part".  Blocks until there is something to read or the timeout 
+//expires. When "raw" is true don't block waiting on a NL. Does not trigger timers or handle 
+//messages. Return what was read in allocated memory. NULL in case of error or timeout.
 private CS
 channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, int *outlen){
    CS buf;
@@ -2720,17 +2718,17 @@ channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, i
       node = channel_peek(channel, part);
       if (node != NULL) {
           if (mode == CH_MODE_RAW || (mode == CH_MODE_NL && channel_first_nl(node) != NULL))
-            // got a complete message
+            //got a complete message
             break;
          if (channel_collapse(channel, part, mode == CH_MODE_NL) == OK)
             continue;
-         // If not blocking or nothing more is coming then return what we
-         // have.
+         //If not blocking or nothing more is coming then return what we
+         //have.
          if (raw || fd == INVALID_FD)
             break;
       }
 
-      // Wait for up to the channel timeout.
+      //Wait for up to the channel timeout.
       if (fd == INVALID_FD)
          return NULL;
       if (channel_wait(channel, fd, timeout) != CW_READY) {
@@ -2740,28 +2738,28 @@ channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, i
       channel_read(channel, part, "channel_read_block");
    }
 
-    // We have a complete message now.
+    //We have a complete message now.
    if (mode == CH_MODE_RAW || outlen != NULL) {
       msg = channel_get_all(channel, part, outlen);
    } else {
       buf = node->c;
       nl = channel_first_nl(node);
 
-      // Convert ZERO to NL, the internal representation.
+      //Convert ZERO to NL, the internal representation.
       for (CS p = buf; (nl == NULL || p < nl) && p < buf + node->len; ++p) {
          if (*p == ZERO)
             *p = NL;
       } 
 
       if (!nl) {
-         // must be a closed channel with missing NL
+         //must be a closed channel with missing NL
          msg = channel_get(channel, part, NULL);
       } ei (nl + 1 == buf + node->len) {
-         // get the whole buffer
+         //get the whole buffer
          msg = channel_get(channel, part, NULL);
          *nl = ZERO;
       } else {
-         // Copy the message into allocated memory and remove it from the buffer.
+         //Copy the message into allocated memory and remove it from the buffer.
          msg = copySubstr(buf, nl - buf);
          channel_consume(channel, part, (int)(nl - buf) + 1);
       }
@@ -2773,16 +2771,16 @@ channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, i
 
 private int channel_blocking_wait = 0;
 
-// Return true if in a blocking wait that might trigger callbacks.
+//Return true if in a blocking wait that might trigger callbacks.
 pub int
 channel_in_blocking_wait(void) {
    return channel_blocking_wait > 0;
 }
 
-// Read one JSON message with ID "id" from "channel"/"part" and store the result in "returnVar".
-// When "id" is -1 accept any message;
-// Blocks until the message is received or the timeout is reached.
-// In corner cases this can be called recursively, that is why ch_block_ids is * a list.
+//Read one JSON message with ID "id" from "channel"/"part" and store the result in "returnVar".
+//When "id" is -1 accept any message;
+//Blocks until the message is received or the timeout is reached.
+//In corner cases this can be called recursively, that is why ch_block_ids is * a list.
 private int
 channel_read_json_block(
    Channel* channel,
@@ -2806,14 +2804,14 @@ channel_read_json_block(
 
    for (;;) {
       if (mode == CH_MODE_LSP)
-          // In the "lsp" mode, the http header and the json payload may be
-          // received in multiple messages. So concatenate all the received
-          // messages.
+          //In the "lsp" mode, the http header and the json payload may be
+          //received in multiple messages. So concatenate all the received
+          //messages.
           (void)channel_collapse(channel, part, false);
 
       more = channel_parse_json(channel, part);
 
-      // search for message "id"
+      //search for message "id"
       if (channel_get_json(channel, part, id, true, returnVar) == OK) {
           ch_log(channel, "Received JSON for id %d", id);
           retval = OK;
@@ -2824,17 +2822,17 @@ channel_read_json_block(
          void *prev_readahead_ptr = channel_readahead_pointer(channel, part);
          void *readahead_ptr;
 
-         // Handle any other messages in the queue.  If done some more messages may have arrived.
+         //Handle any other messages in the queue.  If done some more messages may have arrived.
          if (channel_parse_messages())
             continue;
 
-         // channel_parse_messages() may fill the queue with new data to process.  Only loop when 
-         // the readahead changed, otherwise we would busy-loop.
+         //channel_parse_messages() may fill the queue with new data to process.  Only loop when 
+         //the readahead changed, otherwise we would busy-loop.
          readahead_ptr = channel_readahead_pointer(channel, part);
          if (readahead_ptr != NULL && readahead_ptr != prev_readahead_ptr)
             continue;
 
-         // Wait for up to the timeout. If there was an incomplete message use the deadline for that
+         //Wait for up to the timeout. If there was an incomplete message use the deadline for that
          timeout = timeout_arg;
          if (chanpart->ch_wait_len > 0) { {
              TimeVal now_tv;
@@ -2844,7 +2842,7 @@ channel_read_json_block(
                         + 1;
          }
          if (timeout < 0) {
-             // Something went wrong, channel_parse_json() didn't discard message.  Cancel waiting.
+             //Something went wrong, channel_parse_json() didn't discard message.  Cancel waiting.
              chanpart->ch_wait_len = 0;
              timeout = timeout_arg;
          } ei (timeout > timeout_arg)
@@ -2868,11 +2866,11 @@ channel_read_json_block(
    return retval;
 }
 
-// Get the channel from the argument.
-// Returns NULL if the handle is invalid.
-// When "check_open" is true check that the channel can be used.
-// When "reading" is true "check_open" considers typeahead useful.
-// "part" is used to check typeahead, when PART_COUNT use the default part.
+//Get the channel from the argument.
+//Returns NULL if the handle is invalid.
+//When "check_open" is true check that the channel can be used.
+//When "reading" is true "check_open" considers typeahead useful.
+//"part" is used to check typeahead, when PART_COUNT use the default part.
 pub Channel *
 get_channel_arg(Var* tv, int check_open, int reading, ChannelFdKind part) {
    Channel* channel = NULL;
@@ -2900,28 +2898,27 @@ get_channel_arg(Var* tv, int check_open, int reading, ChannelFdKind part) {
    return channel;
 }
 
-// Common for ch_read() and ch_readraw().
+//Common for ch_read() and ch_readraw().
 private void
 commonChannelRead(Var* argvars, Var* returnVar, int raw, int blob) {
-   Channel   *channel;
-   ChannelFdKind   part = PART_COUNT;
-   JobOptions   opt;
+   ChannelFdKind part = PART_COUNT;
    int id = -1;
    Var* listtv = NULL;
 
-   // return an empty string by default
+   //return an empty string by default
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 
+   JobOptions opt;
    CLEAR_POINTER(OUT &opt);
    if (get_job_options(&argvars[1], OUT &opt, JO_TIMEOUT + JO_PART + JO_ID, 0) == FAIL)
       goto theend;
 
-   if (opt.set & JO_PART)
-   part = opt.part;
-    channel = get_channel_arg(&argvars[0], true, true, part);
-   if (channel == NULL)
-   goto theend;
+   if ((opt.set & JO_PART) != 0)
+      part = opt.part;
+   Channel* channel = get_channel_arg(&argvars[0], true, true, part);
+   if (!channel)
+      goto theend;
 
    if (part == PART_COUNT)
       part = channel_part_read(channel);
@@ -2931,11 +2928,10 @@ commonChannelRead(Var* argvars, Var* returnVar, int raw, int blob) {
       timeout = opt.jo_timeout;
 
    if (blob) {
-      int       outlen = 0;
+      int outlen = 0;
       Arr(Byte) channelContent = channel_read_block(channel, part, timeout, true, &outlen);
-      if (channelContent != NULL) {
-         Blob   *blob = blob_alloc();
-
+      if (channelContent) {
+         Blob* blob = blob_alloc();
          blob->c.len = outlen;
          if (ga_grow(&blob->c, outlen) == FAIL)
             blob_free(blob);
@@ -2948,7 +2944,7 @@ commonChannelRead(Var* argvars, Var* returnVar, int raw, int blob) {
    } ei (raw || mode == CH_MODE_RAW || mode == CH_MODE_NL)
       returnVar->string = channel_read_block(channel, part, timeout, raw, NULL);
    else {
-      if (opt.set & JO_ID)
+      if ((opt.set & JO_ID) != 0)
          id = opt.id;
       channel_read_json_block(channel, part, timeout, id, &listtv);
       if (listtv) {
@@ -2956,7 +2952,7 @@ commonChannelRead(Var* argvars, Var* returnVar, int raw, int blob) {
          eeglFree(listtv);
       } else {
          returnVar->tag = VAR_VOID;
-         returnVar->number = VVAL_NONE;
+         returnVar->number = 0;
       }
    }
 
@@ -2965,21 +2961,21 @@ theend:
 }
 
 
-// Set "channel"/"part" to non-blocking. Only works for sockets and pipes.
+//Set "channel"/"part" to non-blocking. Only works for sockets and pipes.
 pub void
 channel_set_nonblock(Channel *channel, ChannelFdKind part) {
    ChannelFd* fds = &channel->fds[part];
-   int      fd = fds->fd;
 
-   if (fd == INVALID_FD)
+   if (fds->fd == INVALID_FD)
       return;
 
+   int fd = fds->fd;
    (void)fcntl(fd, F_SETFL, O_NONBLOCK);
    fds->ch_nonblocking = true;
 }
 
-// Write "buf" (ZERO terminated string) to "channel"/"part".
-// When "fun" is not NULL an error message might be given. Return FAIL or OK.
+//Write "buf" (ZERO terminated string) to "channel"/"part".
+//When "fun" is not NULL an error message might be given. Return FAIL or OK.
 pub int
 channel_send(
    Channel* channel,
@@ -2994,7 +2990,7 @@ channel_send(
 
    Socket fd = fds->fd;
    if (fd == INVALID_FD) {
-      if (!channel->error && fun != NULL) {
+      if (!channel->error && fun) {
          ch_error(channel, "%s(): write while not connected", fun);
          showErrFmtMsg(_(e_str_write_while_not_connected), fun);
       }
@@ -3016,10 +3012,10 @@ channel_send(
       int len;
 
       if (wq->next) {
-          // first write what was queued
-          buf = wq->next->wq_ga.c;
-          len = wq->next->wq_ga.len;
-          did_use_queue = true;
+         //first write what was queued
+         buf = wq->next->wq_ga.c;
+         len = wq->next->wq_ga.len;
+         did_use_queue = true;
       } else {
          if (len_arg == 0)
             //nothing to write, called from chCheckPollResult()
@@ -3034,7 +3030,7 @@ channel_send(
          res = fd_write(fd, (char *)buf, len);
       }
       if (res < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
-         res = 0; // nothing got written
+         res = 0; //nothing got written
 
       if (res >= 0 && fds->ch_nonblocking) {
          WriteQueue* entry = wq->next;
@@ -3042,19 +3038,19 @@ channel_send(
          if (did_use_queue)
             ch_log(channel, "Sent %d bytes now", res);
          if (res == len) {
-            // Wrote all the buf[len] bytes.
+            //Wrote all the buf[len] bytes.
             if (entry) {
-               // Remove the entry from the write queue.
+               //Remove the entry from the write queue.
                remove_from_writeque(wq, entry);
                continue;
             }
             if (did_use_queue)
                ch_log(channel, "Write queue empty");
          }  else {
-            // Wrote only buf[res] bytes, can't write more now.
+            //Wrote only buf[res] bytes, can't write more now.
             if (entry != NULL) {
                if (res > 0) {
-                  // Remove the bytes that were written.
+                  //Remove the bytes that were written.
                   MEMMOVE(entry->wq_ga.c, (char *)entry->wq_ga.c + res, len - res);
                   entry->wq_ga.len -= res;
                }
@@ -3070,8 +3066,7 @@ channel_send(
             //4000 bytes.
             if (wq->prev && wq->prev->wq_ga.len + len < 4000) {
                WriteQueue *last = wq->prev;
-
-               // append to the last entry
+               //append to the last entry
                if (len > 0 && ga_grow(&last->wq_ga, len) == OK) {
                   MEMMOVE((char *)last->wq_ga.c + last->wq_ga.len, buf, len);
                   last->wq_ga.len += len;
@@ -3106,11 +3101,11 @@ channel_send(
 
       channel->error = false;
       return OK;
-    }
+   }
 }
 
-// Common for "ch_sendexpr()" and "ch_sendraw()". Return the channel if the caller should read the 
-// response. Sets "part_read" to the read fd. Otherwise returns NULL.
+//Common for "ch_sendexpr()" and "ch_sendraw()". Return the channel if the caller should read the 
+//response. Sets "part_read" to the read fd. Otherwise returns NULL.
 private Channel*
 send_common(
    Var* argvars,
@@ -3132,9 +3127,9 @@ send_common(
    if (get_job_options(&argvars[2], OUT opt, JO_CALLBACK + JO_TIMEOUT, 0) == FAIL)
       return NULL;
 
-   // Set the callback. An empty callback means no callback and not reading
-   // the response. With "ch_evalexpr()" and "ch_evalraw()" a callback is not
-   // allowed.
+   //Set the callback. An empty callback means no callback and not reading
+   //the response. With "ch_evalexpr()" and "ch_evalraw()" a callback is not
+   //allowed.
    if (opt->jo_callback.name && *opt->jo_callback.name != ZERO) {
       if (eval) {
          showErrFmtMsg(_(e_cannot_use_callback_with_str), fun);
@@ -3148,7 +3143,7 @@ send_common(
    return NULL;
 }
 
-// common for "ch_evalexpr()" and "ch_sendexpr()"
+//common for "ch_evalexpr()" and "ch_sendexpr()"
 private void
 ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
    CS text;
@@ -3159,7 +3154,7 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
    int timeout;
    int callback_present = false;
 
-   // return an empty string by default
+   //return an empty string by default
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 
@@ -3175,7 +3170,7 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
    }
 
    if (ch_mode == CH_MODE_LSP) {
-      // return an empty dict by default
+      //return an empty dict by default
       allocReturnDict(returnVar);
 
       if (check_for_dict_arg(argvars, 1) == FAIL)
@@ -3184,7 +3179,7 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
       Bag* d = argvars[1].bag;
       DictItem* di = bagFind(d, tConst("id"));
       if (di && di->c.tag != VAR_NUMBER) {
-          // only number type is supported for the 'id' item
+          //only number type is supported for the 'id' item
           showErrFmtMsg(_(e_invalid_value_for_argument_str), "id");
           return;
       }
@@ -3193,16 +3188,16 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
          callback_present = true;
 
       if (eval || callback_present) {
-         // When evaluating an expression or sending an expression with a
-         // callback, always assign a generated ID
+         //When evaluating an expression or sending an expression with a
+         //callback, always assign a generated ID
          id = ++channel->lastMsgId;
          if (di == NULL)
             bagAddNumber(d, (CS)"id", id);
          else
             di->c.number = id;
       } else {
-         // When sending an expression, if the message has an 'id' item,
-         // then use it.
+         //When sending an expression, if the message has an 'id' item,
+         //then use it.
          id = 0;
          if (di)
             id = di->c.number;
@@ -3229,7 +3224,7 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
       if (channel_read_json_block(channel, part_read, timeout, id, &listtv) == OK) {
          if (ch_mode == CH_MODE_LSP) {
             *returnVar = *listtv;
-            // Change the type to avoid the value being freed.
+            //Change the type to avoid the value being freed.
             listtv->tag = VAR_NUMBER;
             freeVar(listtv);
          } else {
@@ -3253,7 +3248,7 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
    }
 }
 
-// common for "ch_evalraw()" and "ch_sendraw()"
+//common for "ch_evalraw()" and "ch_sendraw()"
 private void
 ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
    Byte buf[NUMBUFLEN];
@@ -3263,7 +3258,7 @@ ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
    JobOptions opt;
    int timeout;
 
-   // return an empty string by default
+   //return an empty string by default
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 
@@ -3287,7 +3282,7 @@ ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
    free_job_options(&opt);
 }
 
-#define KEEP_OPEN_TIME 20  // msec
+#define KEEP_OPEN_TIME 20  //msec
 
 pub int
 chCheckPollResult(int ret_in, OUT Arr(PollFd) fds) {
@@ -3408,7 +3403,7 @@ channel_parse_messages(void) {
    return ret;
 }
 
-// Return true if any channel has readahead.  That means we should not block on waiting for input.
+//Return true if any channel has readahead.  That means we should not block on waiting for input.
 pub int
 channel_any_readahead(void) {
    Channel* channel = firstChannelP;
@@ -3427,7 +3422,7 @@ channel_any_readahead(void) {
    return false;
 }
 
-// Mark references to lists used in channels.
+//Mark references to lists used in channels.
 pub int
 set_ref_in_channel(int copyID) {
    int abort = false;
@@ -3460,7 +3455,7 @@ channel_part_read(Channel* channel) {
    return PART_SOCK;
 }
 
-// Return the mode of "channel"/"part" If "channel" is invalid returns CH_MODE_JSON.
+//Return the mode of "channel"/"part" If "channel" is invalid returns CH_MODE_JSON.
 private ChannelMode
 channel_get_mode(Channel* channel, ChannelFdKind part) {
    if (!channel)
@@ -3468,7 +3463,7 @@ channel_get_mode(Channel* channel, ChannelFdKind part) {
    return channel->fds[part].ch_mode;
 }
 
-// The timeout of "channel"/"part"
+//The timeout of "channel"/"part"
 private int
 channel_get_timeout(Channel *channel, ChannelFdKind part) {
    return channel->fds[part].ch_timeout;
@@ -3605,7 +3600,7 @@ f_ch_status(Arr(Var) argvars, Var* returnVar) {
    JobOptions opt;
    int part = -1;
 
-   // return an empty string by default
+   //return an empty string by default
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 
@@ -3620,8 +3615,8 @@ f_ch_status(Arr(Var) argvars, Var* returnVar) {
    returnVar->string = copyStr(channel_status(channel, part));
 }
 
-// Get a string with information about the channel in "varp" into "builder".
-// "builder" must be at least NUMBUFLEN long.
+//Get a string with information about the channel in "varp" into "builder".
+//"builder" must be at least NUMBUFLEN long.
 pub void
 channel_to_string_buf(OUT CS builder, Var* varp) {
    Channel *channel = varp->channel;
@@ -3633,11 +3628,11 @@ channel_to_string_buf(OUT CS builder, Var* varp) {
       eeSnprintf(builder, NUMBUFLEN, "channel %s", status);
 }
 
-// Build "argv[argc]" from the list "l".
-// "argv[argc]" is set to NULL; Return FAIL when out of memory.
+//Build "argv[argc]" from the list "l".
+//"argv[argc]" is set to NULL; Return FAIL when out of memory.
 private int
 build_argv_from_list(List *l, Byte*** argv, int *argc) {
-   // Pass argv[] to chCallShell().
+   //Pass argv[] to chCallShell().
    *argv = ALLOC_MULT(CS, l->len + 1);
    *argc = 0;
    ListItem* li;
@@ -3667,9 +3662,9 @@ static void catch_sigusr1 SIGPROTOARG;
 private void catch_sigpwr SIGPROTOARG;
 
 typedef struct {
-   int sig;   // Signal number, eg. SIGSEGV etc
-   char* name;   // Signal name (not Byte!).
-   char deadly;   // Catch as a deadly signal?
+   int sig;   //Signal number, eg. SIGSEGV etc
+   char* name;   //Signal name (not Byte!).
+   char deadly;   //Catch as a deadly signal?
 } SignalInfo;
 private SignalInfo signalInfos[] = {
     {SIGHUP,       "HUP",   true},
@@ -3681,17 +3676,17 @@ private SignalInfo signalInfos[] = {
     {SIGBUS,       "BUS",   true},
     {SIGSEGV,       "SEGV",   true},
     {SIGSYS,       "SYS",   true},
-    {SIGALRM,       "ALRM",   false},   // Perl's alarm() can trigger it
+    {SIGALRM,       "ALRM",   false},   //Perl's alarm() can trigger it
     {SIGTERM,       "TERM",   true},
     {SIGVTALRM,       "VTALRM",   true},
 #if !defined(WE_ARE_PROFILING)
-    // With profiling this makes Eegl exit. WE_ARE_PROFILING is defined in Makefile.
+    //With profiling this makes Eegl exit. WE_ARE_PROFILING is defined in Makefile.
     {SIGPROF,       "PROF",   true},
 #endif
     {SIGXCPU,       "XCPU",   true},
     {SIGXFSZ,       "XFSZ",   true},
     {SIGUSR1,       "USR1",   false},
-    // Used for sysmouse handling
+    //Used for sysmouse handling
     {SIGUSR2,       "USR2",   true},
     {SIGPIPE,       "PIPE",   false},
     {-1,       "Unknown!", false}
@@ -3704,60 +3699,17 @@ private SignalInfo signalInfos[] = {
 //This helps when we run out of stack space, which causes a SIGSEGV.  The
 //signal handler then must run on another stack, since the normal stack is completely full.
 
-private stack_t sigstk;         // for sigaltstack()
-
-#if (defined(HAVE_SETJMP_H) && ((defined(FEAT_X11))))
-# define USING_SETJMP 1
-
-// argument to SETJMP()
-private JMP_BUF lc_jump_env;
-
-// Caught signal number, 0 when no signal was caught. Volatile because it is used in signal handlers
-private volatile SigAtomic lc_signal;
-
-// true when lc_jump_env is valid. Volatile because it is used in signal handler deathtrap().
-private volatile SigAtomic lc_active = false;
-
-//A simplistic version of setjmp() that only allows one level of using.
-//Used to protect areas where we could crash.
-//Don't call twice before calling mch_endjmp()!.
-//
-//Usage:
-//  mch_startjmp();
-//  if (SETJMP(lc_jump_env) != 0) {
-//     mch_didjmp();
-//     emsg("crash!");
-//  } else {
-//     do_the_work;
-//     mch_endjmp();
-//  }
-//Note: Can't move SETJMP() here, because a function calling setjmp() must
-//not return before the saved environment is used.
-//Returns OK for normal return, FAIL when the protected code caused a
-//problem and LONGJMP() was used.
-
-//private void
-//mch_startjmp(void) {
-//   lc_signal = 0;
-//   lc_active = true;
-//}
-//
-//private void
-//mch_endjmp(void) {
-//   lc_active = false;
-//}
-
-#endif
+private stack_t sigstk;         //for sigaltstack()
 
 //Get a size of signal stack. Preference (if available): sysconf > SIGSTKSZ > guessed size
 private long int get_signal_stack_size(void) {
    long int size = -1;
 
-   // return size only if sysconf doesn't return an error
+   //return size only if sysconf doesn't return an error
    if ((size = sysconf(_SC_SIGSTKSZ)) > -1)
       return size;
 
-   // if sysconf() isn't available or gives error, return SIGSTKSZ if defined
+   //if sysconf() isn't available or gives error, return SIGSTKSZ if defined
    return SIGSTKSZ;
 }
 
@@ -3774,10 +3726,10 @@ set_signals(void) {
    //WINDOW CHANGE signal is handled with sig_winch().
    mch_signal(SIGWINCH, sig_winch);
 
-   // See mch_init() for the conditions under which we ignore SIGTSTP.
-   // In the GUI default TSTP processing is OK.
-   // Checking both gui.in_use and gui.starting because gui.in_use is not set
-   // at this point (set after menus are displayed), but gui.starting is set.
+   //See mch_init() for the conditions under which we ignore SIGTSTP.
+   //In the GUI default TSTP processing is OK.
+   //Checking both gui.in_use and gui.starting because gui.in_use is not set
+   //at this point (set after menus are displayed), but gui.starting is set.
    mch_signal(SIGTSTP, ignore_sigtstp ? SIG_IGN : sig_tstp);
    mch_signal(SIGCONT, sigcont_handler);
    //We want to ignore breaking of PIPEs.
@@ -3833,7 +3785,7 @@ block_signals(SignalSet* set) {
    for (int i = 0; signalInfos[i].sig != -1; i++)
       sigaddset(&newset, signalInfos[i].sig);
 
-   // SIGCONT isn't in the list, because its default action is ignore
+   //SIGCONT isn't in the list, because its default action is ignore
    sigaddset(&newset, SIGCONT);
    sigprocmask(SIG_BLOCK, &newset, set);
 }
@@ -3843,7 +3795,7 @@ unblock_signals(SignalSet* set) {
    sigprocmask(SIG_SETMASK, set, NULL);
 }
 
-// Send SIGINT to a child process if "c" is an interrupt character.
+//Send SIGINT to a child process if "c" is an interrupt character.
 private void
 may_send_sigint(Unt c, ProId pid, ProId wpid) {
    if (c == Ctrl_C || c == extraInterruptCharG) {
@@ -3853,7 +3805,7 @@ may_send_sigint(Unt c, ProId pid, ProId wpid) {
    }
 }
 
-// Wait for process "child" to end. Return "child" if it exited properly, <= 0 on error.
+//Wait for process "child" to end. Return "child" if it exited properly, <= 0 on error.
 private ProId
 wait4pid(ProId child, waitstatus *status) {
    ProId wait_pid = 0;
@@ -3892,7 +3844,7 @@ writeFromCurBookToShell(int fromShell, int toShell) {
       if (lplen == 0)
          len = 0;
       ei (lp[written] == NL)
-         // NL -> ZERO translation
+         //NL -> ZERO translation
          len = write(toShell, "", (Unt)1);
       else {
          CS s = firstOccurrence(lp + written, NL);
@@ -3903,14 +3855,14 @@ writeFromCurBookToShell(int fromShell, int toShell) {
          );
       }
       if (len == (int)(lplen - written)) {
-         // Finished a line, add a NL, unless this line should not have one.
+         //Finished a line, add a NL, unless this line should not have one.
          if (lnum != curBook->opEnd.lnum
                || (lnum != curBook->noEolLnum && (lnum != curBook->mem.lineCount))
          )
              (void)write(toShell, "\n", (Unt)1);
          ++lnum;
          if (lnum > curBook->opEnd.lnum) {
-            // finished all the lines, close pipe
+            //finished all the lines, close pipe
             close(toShell);
             break;
          }
@@ -3924,31 +3876,31 @@ writeFromCurBookToShell(int fromShell, int toShell) {
 
 //Don't use system(), use fork()/exec().
 private PolyWithStatus
-callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
+callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
    TermInputMode tmode = cur_tmode;
    ProId wpid = 0;
    ProId wait_pid = 0;
    int status = -1;
-   int pty_master_fd = -1; // for pty's
-   int pipeToShell[2];      // for pipes
+   int pty_master_fd = -1; //for pty's
+   int pipeToShell[2];      //for pipes
    int pipeFromShell[2];
-   Boole did_termSetMode = false;   // termSetMode(TMODE_RAW) called
+   Boole did_termSetMode = false;   //termSetMode(TMODE_RAW) called
    PolyWithStatus retVal = {};
 
    out_flush();
    if ((opt & SHELL_COOKED) != 0)
-      termSetMode(TMODE_COOK);      // set to normal mode
+      termSetMode(TMODE_COOK);      //set to normal mode
    if (tmode == TMODE_RAW)
-      // The shell may have messed with the mode, always set it later.
+      //The shell may have messed with the mode, always set it later.
       cur_tmode = TMODE_UNKNOWN;
    Multistring argv = chBuildArgv(cmd);
    _bp(true);
 
    if ((opt & (SHELL_READ|SHELL_WRITE)) != 0) {
       Boole pipeError = (pipe(pipeToShell) < 0);
-      if (!pipeError) {            // pipe create OK
+      if (!pipeError) {            //pipe create OK
          pipeError = (pipe(pipeFromShell) < 0);
-         if (pipeError) {            // pipe create failed
+         if (pipeError) {            //pipe create failed
             close(pipeToShell[0]);
             close(pipeToShell[1]);
          }
@@ -3962,7 +3914,7 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
 
    SIGSET_DECL(curset)
    BLOCK_SIGNALS(&curset);
-   ProId pid = fork();   // maybe we should use vfork()
+   ProId pid = fork();   //maybe we should use vfork()
    if (pid == -1) {
       UNBLOCK_SIGNALS(&curset);
 
@@ -4001,9 +3953,9 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
          //which is nothing too serious. If the open() or dup() failed we'd just do the same 
          //thing ourselves anyway -- webb
          if (fd >= 0) {
-            (void)dup(fd); // To replace stdin  (fd 0)
-            (void)dup(fd); // To replace stdout (fd 1)
-            (void)dup(fd); // To replace stderr (fd 2)
+            (void)dup(fd); //To replace stdin  (fd 0)
+            (void)dup(fd); //To replace stdout (fd 1)
+            (void)dup(fd); //To replace stderr (fd 2)
 
             //Don't need this now that we've duplicated it
             close(fd);
@@ -4019,7 +3971,7 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
          (void)dup(pipeToShell[0]);
          close(pipeToShell[0]);
 
-         // set up stdout for the child
+         //set up stdout for the child
          close(pipeFromShell[0]);
          close(1);
          (void)dup(pipeFromShell[1]);
@@ -4031,8 +3983,8 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
       //Call _exit() instead of exit() to avoid closing the connection
       //to the Wayland server (esp. with GTK, which uses atexit()).
       execvp((char*)argv.c[0], (char**)argv.c);
-      _exit(EXEC_FAILED);       // exec failed, return failure code
-   } else {        // parent
+      _exit(EXEC_FAILED);       //exec failed, return failure code
+   } else {        //parent
       //While child is running, ignore terminating signals.
       //But do catch CTRL-C, so that "gotInterruptG" is set.
       catch_signals(SIG_IGN, SIG_ERR);
@@ -4041,11 +3993,11 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
       ++dontCheckJobEndedP;
       
       //Pipe stdin/stdout to/from the external command.
-# define BUFLEN 100      // length for buffer, pseudo tty limit is 128
+# define BUFLEN 100      //length for buffer, pseudo tty limit is 128
       Byte buffer[BUFLEN + 1];
-      int buffer_off = 0;   // valid bytes in buffer[]
-      Byte ta_buf[BUFLEN + 1];   // TypeAHead
-      int typeAheadLen = 0;      // valid bytes in ta_buf[]
+      int buffer_off = 0;   //valid bytes in buffer[]
+      Byte ta_buf[BUFLEN + 1];   //TypeAHead
+      int typeAheadLen = 0;      //valid bytes in ta_buf[]
       int len;
 
       close(pipeToShell[0]);
@@ -4065,16 +4017,16 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
       Boole p_more_save = p_more;
       p_more = false;
       Unt modeSaved = stateG;
-      stateG = MODE_EXTERNCMD;   // don't redraw at window resize
+      stateG = MODE_EXTERNCMD;   //don't redraw at window resize
 
-      // Fork a process that will write the lines to the external program.
+      //Fork a process that will write the lines to the external program.
       if ((opt & SHELL_WRITE) != 0) { 
          if ((wpid = fork()) == -1) {
             msg_puts(_("\nCannot fork\n"));
-         } ei (wpid == 0) { // child
+         } ei (wpid == 0) { //child
             writeFromCurBookToShell(fromShell, toShell);
             _exit(0);
-         } else { // parent
+         } else { //parent
             close(toShell);
             toShell = -1;
          }
@@ -4099,7 +4051,7 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
              && (typeAheadLen > 0 || unreadCnt > 4)
          ){
             if (typeAheadLen == 0) {
-               // Get extra characters when we don't have any. Reset the counter and timer.
+               //Get extra characters when we don't have any. Reset the counter and timer.
                unreadCnt = 0;
                ELAPSED_INIT(start_tv);
                len = ui_inchar(ta_buf, BUFLEN, 10L, 0);
@@ -4118,7 +4070,7 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
                   }
                }
 
-               // Remove Eegl-specific codes from the input.
+               //Remove Eegl-specific codes from the input.
                len = term_replace_keycodes(ta_buf, typeAheadLen, len);
 
                //For pipes: echo the typed characters. For a pty this does not seem to work.
@@ -4151,7 +4103,7 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
          }
 
          if (gotInterruptG) {
-            // CTRL-C sends a signal to the child, we ignore it ourselves
+            //CTRL-C sends a signal to the child, we ignore it ourselves
             kill(-pid, SIGINT);
             if (wpid > 0)
                kill(wpid, SIGINT);
@@ -4167,7 +4119,7 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
             len = fiReadEintr(
                   fromShell, OUT buffer + buffer_off, (Unt)(BUFLEN - buffer_off)
             );
-            if (len <= 0)          // end of file or error
+            if (len <= 0)          //end of file or error
                goto finished;
 
             unreadCnt = 0;
@@ -4197,8 +4149,8 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
             }
          }
 
-         // If we already detected the child has finished, continue
-         // reading output for a short while.  Some text may be buffered.
+         //If we already detected the child has finished, continue
+         //reading output for a short while.  Some text may be buffered.
          if (wait_pid == pid) {
             if (unreadCnt < 5)
                continue;
@@ -4277,7 +4229,7 @@ skipIfError:
    return retVal;
 }
 
-// Call shell. Call chCallShell
+//Call shell. Call chCallShell
 pub PolyWithStatus
 chCallShell(Text shellComm, Unt opt) {
    if (p_verbose > 3) {
@@ -4318,11 +4270,11 @@ mch_create_pty_channel(Job* job, JobOptions* options) {
    }
    if (job->ttyOut != NULL)
       ch_log(channel, "using pty %s on fd %d", job->ttyOut, pty_master_fd);
-   job->channel = channel;  // refcount was set by add_channel()
+   job->channel = channel;  //refcount was set by add_channel()
    channel->ch_keep_open = true;
 
-   // Only set the pty_master_fd for stdout, do not duplicate it for stderr,
-   // it only needs to be read once.
+   //Only set the pty_master_fd for stdout, do not duplicate it for stderr,
+   //it only needs to be read once.
    channel_set_pipes(channel, pty_master_fd, pty_master_fd, INVALID_FD);
    channel_set_job(channel, job, options);
    return OK;
@@ -4339,7 +4291,7 @@ chBreakcheck(Boole force) {
 
 pub SigHandler
 mch_signal(int sig, SigHandler func) {
-   // Modern implementation: use sigaction().
+   //Modern implementation: use sigaction().
    SignalAction sa, old;
    SignalSet curset;
 
@@ -4393,14 +4345,14 @@ mch_get_pid(void) {
 //return true if process "pid" is still running
 pub int
 mch_process_running(long pid) {
-   // If there is no error the process must be running.
+   //If there is no error the process must be running.
    if (kill(pid, 0) == 0)
       return true;
-   // If the error is ESRCH then the process is not running.
+   //If the error is ESRCH then the process is not running.
    if (errno == ESRCH)
       return false;
-   // If the process is running and owned by another user we get EPERM.  With
-   // other errors the process might be running, assuming it is then.
+   //If the process is running and owned by another user we get EPERM.  With
+   //other errors the process might be running, assuming it is then.
    return true;
 }
 
@@ -4416,7 +4368,7 @@ open_pty(int* pty_master_fd, int* pty_slave_fd, Byte** name1, Byte** name2) {
       *name2 = NULL;
 
    char* tty_name;
-   *pty_master_fd = openpty(&tty_name);       // open pty
+   *pty_master_fd = openpty(&tty_name);       //open pty
    if (*pty_master_fd < 0)
       return;
 
@@ -4480,7 +4432,7 @@ chPollCheck(int ret_in, Arr(PollFd) fds) {
             channel_read(channel, part, "chPollCheck");
             --ret;
          } else if (channel->fds[part].fd != INVALID_FD && channel->ch_keep_open) {
-            // polling a keep-open channel
+            //polling a keep-open channel
             channel_read(channel, part, "channel_poll_check_keep_open");
          }
       }
@@ -4504,7 +4456,7 @@ chPollCheck(int ret_in, Arr(PollFd) fds) {
 //Let me try it with a few tricky defines from my own osdef.h   (jw).
 pub void
 sig_winch(int) {
-   // this is not required on all systems, but it doesn't hurt anybody
+   //this is not required on all systems, but it doesn't hurt anybody
    mch_signal(SIGWINCH, sig_winch);
    doResizeG = true;
 }
@@ -4516,21 +4468,21 @@ sig_tstp(int) {
 
 private void
 catch_sigint(int) {
-   // this is not required on all systems, but it doesn't hurt anybody
+   //this is not required on all systems, but it doesn't hurt anybody
    mch_signal(SIGINT, catch_sigint);
    gotInterruptG = true;
 }
 
 private void
 catch_sigusr1(int) {
-    // this is not required on all systems, but it doesn't hurt anybody
+    //this is not required on all systems, but it doesn't hurt anybody
     mch_signal(SIGUSR1, catch_sigusr1);
     got_sigusr1 = true;
 }
 
 private void
 catch_sigpwr(int) {
-   // this is not required on all systems, but it doesn't hurt anybody
+   //this is not required on all systems, but it doesn't hurt anybody
    mch_signal(SIGPWR, catch_sigpwr);
    //I'm not sure we get the SIGPWR signal when the system is really going down or when the 
    //batteries are almost empty. Just preserve the swap files and don't exit, that can't do any 
@@ -4544,20 +4496,9 @@ catch_sigpwr(int) {
 //NOTE: Avoid unsafe functions, such as allocating memory, they can result in a deadlock.
 private void
 deathtrap(int sigarg) {
-   static int entered = 0;       // count the number of times we got here.
-                // Note: when memory has been corrupted this may get an arbitrary value!
-   int      i;
-
-#if defined(USING_SETJMP)
-   //Catch a crash in protected code.
-   //Restores the environment saved in lc_jump_env, which looks like SETJMP() returns 1.
-   if (lc_active) {
-      lc_signal = sigarg;
-      lc_active = false;   // don't jump again
-      LONGJMP(lc_jump_env, 1);
-      // NOTREACHED
-   }
-#endif
+   static int entered = 0;       //count the number of times we got here.
+                //Note: when memory has been corrupted this may get an arbitrary value!
+   int i;
 
    //While in mch_delay() we go to cooked mode to allow a CTRL-C to interrupt us. But in cooked 
    //mode we may also get SIGQUIT, e.g., when pressing CTRL-\, but we don't want Eegl to exit then.
@@ -4589,9 +4530,9 @@ deathtrap(int sigarg) {
    v_dying = entered;
 
 #if 0
-   // This is for opening gdb the moment Eegl crashes.
-   // You need to manually adjust the file name and Eegl executable name.
-   // Suggested by SungHyun Nam.
+   //This is for opening gdb the moment Eegl crashes.
+   //You need to manually adjust the file name and Eegl executable name.
+   //Suggested by SungHyun Nam.
    {
 # define EE_GDB_FILE "/tmp/eegdb"
 # define EE_NAME PREFIX "/bin/eegl"
@@ -4617,7 +4558,7 @@ deathtrap(int sigarg) {
    } 
    deadlySignalS = sigarg;
 
-   fullScreenG = false; // don't write messages to the UI, it might be part of the problem...
+   fullScreenG = false; //don't write messages to the UI, it might be part of the problem...
    //If something goes wrong after entering here, we may get here again.
    //When this happens, give a message and try to exit nicely (resetting the terminal mode, etc.)
    //When this happens twice, just exit, don't even try to give a message,
@@ -4625,7 +4566,7 @@ deathtrap(int sigarg) {
    //When this still happens again (or memory was corrupted in such a way
    //that "entered" was clobbered) use _exit(), don't try freeing resources.
    if (entered >= 3) {
-      reset_signals();   // don't catch any signals anymore
+      reset_signals();   //don't catch any signals anymore
       may_core_dump();
       if (entered >= 4)
          _exit(8);
@@ -4644,10 +4585,10 @@ deathtrap(int sigarg) {
    //Preserve files and exit. This sets the really_exiting flag to prevent calling free().
    preserve_exit();
 
-   // NOTREACHED
+   //NOTREACHED
 }
 
-//Invoked after receiving SIGCONT.  We don't know what happened while
+//Invoked after receiving SIGCONT. We don't know what happened while
 //sleeping, deal with part of that.
 private void
 after_sigcont(void) {
@@ -4657,8 +4598,7 @@ after_sigcont(void) {
 }
 
 //With multi-threading, suspending might not work immediately. Catch the
-//SIGCONT signal, which will be used as an indication whether the suspending
-//has been done or not.
+//SIGCONT signal, which will be used as an indication whether the suspending has been done or not.
 //
 //On Linux, signal is not always handled immediately either.
 //See https://bugs.launchpad.net/bugs/291373
@@ -4671,9 +4611,9 @@ private void sigcont_handler SIGPROTOARG;
 //signal handler for SIGCONT
 private void
 sigcont_handler(int) {
-   // We didn't suspend ourselves, assume we were stopped by a SIGSTOP signal (which can't 
-   // be intercepted) and get a SIGCONT. Need to get back to a sane mode. We should redraw, but 
-   // we can't really do that in a signal handler, do a redraw later.
+   //We didn't suspend ourselves, assume we were stopped by a SIGSTOP signal (which can't 
+   //be intercepted) and get a SIGCONT. Need to get back to a sane mode. We should redraw, but 
+   //we can't really do that in a signal handler, do a redraw later.
    after_sigcont();
    redraw_later(UPD_CLEAR);
    cursor_on_force();
@@ -4691,7 +4631,7 @@ catch_int_signal(void) {
 pub void
 reset_signals(void) {
    catch_signals(SIG_DFL, SIG_DFL);
-   // SIGCONT isn't in the list, because its default action is ignore
+   //SIGCONT isn't in the list, because its default action is ignore
    mch_signal(SIGCONT, SIG_DFL);
 }
 
@@ -4701,13 +4641,13 @@ catch_signals(void (*func_deadly)(int), void (*func_other)(int)) {
       if (signalInfos[i].deadly) {
          SignalAction sa;
 
-         // Setup to use the alternate stack for the signal function.
+         //Setup to use the alternate stack for the signal function.
          sa.sa_handler = func_deadly;
          sigemptyset(&sa.sa_mask);
          sa.sa_flags = 0;
          sigaction(signalInfos[i].sig, &sa, NULL);
       } ei (func_other != SIG_ERR) {
-         // Deal with non-deadly signals.
+         //Deal with non-deadly signals.
          mch_signal(
             signalInfos[i].sig, 
             signalInfos[i].sig == SIGTSTP && ignore_sigtstp ? SIG_IGN : func_other
@@ -4741,10 +4681,10 @@ eeHandleSignal(int sig) {
 
    default:
       if (!blocked)
-         return true;   // exit!
+         return true;   //exit!
       got_signal = sig;
       if (sig != SIGPWR)
-         gotInterruptG = true;    // break any loops
+         gotInterruptG = true;    //break any loops
       break;
     }
     return false;
@@ -4754,7 +4694,7 @@ pub void
 may_core_dump(void) {
    if (deadlySignalS != 0) {
       mch_signal(deadlySignalS, SIG_DFL);
-      kill(getpid(), deadlySignalS);   // Die using the signal we caught
+      kill(getpid(), deadlySignalS);   //Die using the signal we caught
    }
 }
 
@@ -4764,14 +4704,13 @@ may_core_dump(void) {
 //Insert user name for "uid" in s[len]. Return OK if a name found.
 pub int
 mch_get_uname(uid_t uid, CS s, int len) {
-   struct passwd   *pw;
-
+   struct passwd* pw;
    if ((pw = getpwuid(uid)) != NULL && pw->pw_name != NULL && *(pw->pw_name) != ZERO) {
       copySubstrToAllocation(s, (Text){(CS)pw->pw_name, len - 1});
       return OK;
    }
-   sprintf((char *)s, "%d", (int)uid);       // assumes s is long enough
-   return FAIL;             // a number is not a name
+   sprintf((char *)s, "%d", (int)uid);       //assumes s is long enough
+   return FAIL;             //a number is not a name
 }
 
 //Insert host name is s[len].
@@ -4785,7 +4724,7 @@ mch_get_host_name(CS s, int len) {
       copySubstrToAllocation(s, (Text){(CS)vutsname.nodename, len - 1});
 }
 
-// Set the environment for a child process.
+//Set the environment for a child process.
 private void
 set_child_environment(
    long rows,
@@ -4793,7 +4732,7 @@ set_child_environment(
    CS term,
    int is_terminal
 ) {
-   char   envbuf[50];
+   char envbuf[50];
 
    setenv("TERM", (char*)term, 1);
    sprintf((char *)envbuf, "%ld", rows);
@@ -4860,9 +4799,9 @@ chJobGetTty(Job* job, Boole out) {
 private void
 mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
    ProId   pid;
-   int fd_in[2] = {-1, -1};   // for stdin
-   int fd_out[2] = {-1, -1};   // for stdout
-   int fd_err[2] = {-1, -1};   // for stderr
+   int fd_in[2] = {-1, -1};   //for stdin
+   int fd_out[2] = {-1, -1};   //for stdout
+   int fd_err[2] = {-1, -1};   //for stderr
    int pty_master_fd = -1;
    int pty_slave_fd = -1;
    Channel* channel = NULL;
@@ -4879,7 +4818,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
    if (use_out_for_err && use_null_for_out)
       use_null_for_err = true;
 
-   // default is to fail
+   //default is to fail
    job->status = JOB_FAILED;
 
    if (options->jo_pty
@@ -4889,8 +4828,8 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       open_pty(&pty_master_fd, &pty_slave_fd, &job->ttyOut, &job->ttyIn);
    } 
 
-   // TODO: without the channel feature connect the child to /dev/null?
-   // Open pipes for stdin, stdout, stderr.
+   //TODO: without the channel feature connect the child to /dev/null?
+   //Open pipes for stdin, stdout, stderr.
    if (use_file_for_in) {
       CS fname = options->name[PART_IN];
 
@@ -4925,8 +4864,8 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
          goto failed;
       }
    }
-   // only create a pipe for the error fd, when either a callback has been setup
-   // or pty is not used (e.g. terminal uses pty by default)
+   //only create a pipe for the error fd, when either a callback has been setup
+   //or pty is not used (e.g. terminal uses pty by default)
    ei (!use_out_for_err && !use_null_for_err
          && (pty_master_fd < 0 || (options->set & JO_ERR_CALLBACK)) && pipe(fd_err) < 0) {
       goto failed;
@@ -4946,9 +4885,9 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
    }
 
    BLOCK_SIGNALS(&curset);
-   pid = fork();   // maybe we should use vfork()
+   pid = fork();   //maybe we should use vfork()
    if (pid == -1) {
-      // failed to fork
+      //failed to fork
       UNBLOCK_SIGNALS(&curset);
       goto failed;
    }
@@ -4956,12 +4895,12 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       int   null_fd = -1;
       int   stderr_works = true;
 
-      // child
-      reset_signals();      // handle signals normally
+      //child
+      reset_signals();      //handle signals normally
       UNBLOCK_SIGNALS(&curset);
 
       if (ch_log_active())
-         // close the log file in the child
+         //close the log file in the child
          ch_logfile(S"", S"");
 
       //Create our own process group, so that the child and all its
@@ -5010,13 +4949,13 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       }
 
       if (pty_slave_fd >= 0) {
-         // push stream discipline modules
+         //push stream discipline modules
          setup_slavepty(pty_slave_fd);
-         // Try to become controlling tty (probably doesn't work, unless run by root)
+         //Try to become controlling tty (probably doesn't work, unless run by root)
          ioctl(pty_slave_fd, TIOCSCTTY, (char *)NULL);
       }
 
-      // set up stdin for the child
+      //set up stdin for the child
       close(0);
       if (use_null_for_in && null_fd >= 0)
          (void)dup(null_fd);
@@ -5025,7 +4964,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       else
          (void)dup(fd_in[0]);
 
-      // set up stderr for the child
+      //set up stderr for the child
       close(2);
       if (use_null_for_err && null_fd >= 0) {
          (void)dup(null_fd);
@@ -5037,7 +4976,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       else
          (void)dup(fd_err[1]);
 
-      // set up stdout for the child
+      //set up stdout for the child
       close(1);
       if (use_null_for_out && null_fd >= 0)
          (void)dup(null_fd);
@@ -5059,8 +4998,8 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       if (fd_err[1] >= 0)
          close(fd_err[1]);
       if (pty_master_fd >= 0) {
-         close(pty_master_fd); // not used in the child
-         close(pty_slave_fd);  // was duped above
+         close(pty_master_fd); //not used in the child
+         close(pty_slave_fd);  //was duped above
       }
 
       if (null_fd >= 0)
@@ -5069,7 +5008,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       if (options->currentWorkingDir && mch_chdir(options->currentWorkingDir) != 0)
          _exit(EXEC_FAILED);
 
-      // See above for type of argv.
+      //See above for type of argv.
       execvp((char*)argv[0], (char**)argv);
 
       if (stderr_works)
@@ -5078,19 +5017,19 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       //calling free_all_mem() here causes problems. Ignore valgrind
       //reporting possibly leaked memory.
 # endif
-      _exit(EXEC_FAILED);       // exec failed, return failure code
+      _exit(EXEC_FAILED);       //exec failed, return failure code
    }
 
-   // parent
+   //parent
    UNBLOCK_SIGNALS(&curset);
 
    job->pid = pid;
    job->status = JOB_STARTED;
-   job->channel = channel;  // refcount was set above
+   job->channel = channel;  //refcount was set above
 
    if (pty_master_fd >= 0)
-      close(pty_slave_fd); // not used in the parent
-   // close child stdin, stdout and stderr
+      close(pty_slave_fd); //not used in the parent
+   //close child stdin, stdout and stderr
    if (fd_in[0] >= 0)
       close(fd_in[0]);
    if (fd_out[1] >= 0)
@@ -5108,8 +5047,8 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       if (!(use_file_for_out || use_null_for_out))
          out_fd = fd_out[0] >= 0 ? fd_out[0] : pty_master_fd;
 
-      // When using pty_master_fd only set it for stdout, do not duplicate
-      // it for stderr, it only needs to be read once.
+      //When using pty_master_fd only set it for stdout, do not duplicate
+      //it for stderr, it only needs to be read once.
       if (!(use_out_for_err || use_file_for_err || use_null_for_err)) {
          if (fd_err[0] >= 0)
             err_fd = fd_err[0];
@@ -5130,7 +5069,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
          close(pty_master_fd);
    }
 
-   // success!
+   //success!
    return;
 
 failed:
@@ -5162,12 +5101,12 @@ mch_job_status(Job* job) {
    if (wait_pid == -1) {
       int waitpid_errno = errno;
       if (waitpid_errno == ECHILD && mch_process_running(job->pid))
-          // The process is alive, but it was probably reparented (for
-          // example by ptrace called by a debugger like lldb or gdb).
-          // Note: This assumes that process IDs are not reused.
+          //The process is alive, but it was probably reparented (for
+          //example by ptrace called by a debugger like lldb or gdb).
+          //Note: This assumes that process IDs are not reused.
           return S"run";
 
-      // process must have exited
+      //process must have exited
       if (job->status < JOB_ENDED)
          ch_log(job->channel, "Job no longer exists: %s", strerror(waitpid_errno));
       goto return_dead;
@@ -5175,7 +5114,7 @@ mch_job_status(Job* job) {
    if (wait_pid == 0)
       return S"run";
    if (WIFEXITED(status)) {
-      // LINTED avoid "bitwise operation on signed value"
+      //LINTED avoid "bitwise operation on signed value"
       job->exitVal = WEXITSTATUS(status);
       if (job->status < JOB_ENDED)
          ch_log(job->channel, "Job exited with %d", job->exitVal);
@@ -5219,9 +5158,9 @@ mch_signal_job(Job* job, CS how) {
    else
       return FAIL;
 
-   // Never kill ourselves!
+   //Never kill ourselves!
    if (job->pid != 0) {
-      // TODO: have an option to only kill the process, not the group?
+      //TODO: have an option to only kill the process, not the group?
       kill(-job->pid, sig);
       kill(job->pid, sig);
    }
@@ -5235,19 +5174,19 @@ private Job *
 mch_detect_ended_job(Job* job_list) {
    int status = -1;
 
-   // Do not do this when waiting for a shell command to finish, we would get
-   // the exit value here (and discard it), the exit value obtained there would then be wrong.
+   //Do not do this when waiting for a shell command to finish, we would get
+   //the exit value here (and discard it), the exit value obtained there would then be wrong.
    if (dontCheckJobEndedP > 0)
       return NULL;
 
    ProId wait_pid = waitpid(-1, &status, WNOHANG);
    if (wait_pid <= 0)
-      // no process ended
+      //no process ended
       return NULL;
    for (Job* job = job_list; job; job = job->next) {
       if (job->pid == wait_pid) {
          if (WIFEXITED(status))
-            // LINTED avoid "bitwise operation on signed value"
+            //LINTED avoid "bitwise operation on signed value"
             job->exitVal = WEXITSTATUS(status);
          ei (WIFSIGNALED(status)) {
             job->exitVal = -1;
@@ -5315,7 +5254,7 @@ unref_job_callback(Callback *cb) {
    }
 }
 
-// Free any members of a JobOptions.
+//Free any members of a JobOptions.
 pub void
 free_job_options(JobOptions* opt) {
    unref_job_callback(&opt->jo_callback);
@@ -5328,7 +5267,7 @@ free_job_options(JobOptions* opt) {
       bagUnref(opt->env);
 }
 
-// Get the PART_ number from the first character of an option name.
+//Get the PART_ number from the first character of an option name.
 private int
 part_from_char(int c) {
    return c == 'i' ? PART_IN : c == 'o' ? PART_OUT: PART_ERR;
@@ -5337,7 +5276,7 @@ part_from_char(int c) {
 //Clear the data related to "job".
 pub void
 mch_clear_job(Job* job) {
-   // call waitpid because child process may become zombie
+   //call waitpid because child process may become zombie
    (void)waitpid(job->pid, NULL, WNOHANG);
 }
 
@@ -5555,7 +5494,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             opt->set1 |= JO2_TERM_OPENCMD;
             CS p = opt->jo_term_opencmd = convertVarToString(item, opt->jo_term_opencmd_buf);
             if (p) {
-               // Must have %d and no other %.
+               //Must have %d and no other %.
                p = firstOccurrence(p, '%');
                if (p && (p[1] != 'd' || firstOccurrence(p + 2, '%') != NULL))
                   p = NULL;
@@ -5655,7 +5594,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                showErrFmtMsg(_(e_invalid_value_for_argument_str), "tty_type");
                return FAIL;
             }
-            // Allow empty string, "winpty", "conpty".
+            //Allow empty string, "winpty", "conpty".
             if (!(*p == ZERO || STRCMP(p, "winpty") == 0 || STRCMP(p, "conpty") == 0)) {
                showErrFmtMsg(_(e_invalid_value_for_argument_str), "tty_type");
                return FAIL;
@@ -5794,7 +5733,7 @@ job_free_contents(Job* job) {
    }
 }
 
-// Remove "job" from the list of jobs.
+//Remove "job" from the list of jobs.
 private void
 job_unlink(Job* job) {
    if (job->next)
@@ -5822,7 +5761,7 @@ job_free(Job* job) {
 
 private Arr(Job) jobs_to_free = NULL;
 
-// Put "job" on a list to be freed later, when it's no longer referenced.
+//Put "job" on a list to be freed later, when it's no longer referenced.
 private void
 job_free_later(Job* job) {
    job_unlink(job);
@@ -5853,27 +5792,27 @@ job_free_all(void) {
 }
 #endif
 
-// true if we need to check if the process of "job" has ended.
+//true if we need to check if the process of "job" has ended.
 private int
 job_need_end_check(Job* job) {
    return job->status == JOB_STARTED && (job->jv_stoponexit || job->exitCb.name);
 }
 
-// true if the channel of "job" is still useful.
+//true if the channel of "job" is still useful.
 private int
 job_channel_still_useful(Job* job) {
    return job->channel != NULL && channel_still_useful(job->channel);
 }
 
-// true if the channel of "job" is closeable.
+//true if the channel of "job" is closeable.
 private int
 job_channel_can_close(Job* job) {
    return job->channel != NULL && channel_can_close(job->channel);
 }
 
-// Return true if the job should not be freed yet.  Do not free the job when
-// it has not ended yet and there is a "stoponexit" flag, an exit callback
-// or when the associated channel will do something with the job output.
+//Return true if the job should not be freed yet.  Do not free the job when
+//it has not ended yet and there is a "stoponexit" flag, an exit callback
+//or when the associated channel will do something with the job output.
 private int
 job_still_useful(Job* job) {
     return job_need_end_check(job) || job_channel_still_useful(job);
@@ -5888,21 +5827,21 @@ job_cleanup(Job* job) {
    if (job->status != JOB_ENDED)
       return;
 
-   // Ready to cleanup the job.
+   //Ready to cleanup the job.
    job->status = JOB_FINISHED;
 
-   // When only channel-in is kept open, close explicitly.
+   //When only channel-in is kept open, close explicitly.
    if (job->channel)
       ch_close_part(job->channel, PART_IN);
 
-   if (job->nativeCb) { // call the native callback first
+   if (job->nativeCb) { //call the native callback first
       (*job->nativeCb)();
    }
-   if (job->exitCb.name) { // call the script callback
+   if (job->exitCb.name) { //call the script callback
       Var argv[3];
       Var returnVar;
 
-      // Invoke the exit callback. Make sure the refcount is > 0.
+      //Invoke the exit callback. Make sure the refcount is > 0.
       
       ch_log(job->channel, "Invoking exit callback %s", job->exitCb.name);
       incRefCount(job);
@@ -5928,7 +5867,7 @@ job_cleanup(Job* job) {
       job_free_later(job);
 }
 
-// Mark references in jobs that are still useful.
+//Mark references in jobs that are still useful.
 pub int
 set_ref_in_job(int copyID) {
    int abort = false;
@@ -5944,7 +5883,7 @@ set_ref_in_job(int copyID) {
    return abort;
 }
 
-// Dereference "job".  Note that after this "job" may have been freed.
+//Dereference "job".  Note that after this "job" may have been freed.
 pub void
 job_unref(Job* job) {
    if (!job || --job->refCount > 0)
@@ -5975,8 +5914,8 @@ free_unused_jobs_contents(int copyID, int mask) {
 
    FOR_ALL_JOBS(job) {
       if ((job->copyId & mask) != (copyID & mask) && !job_still_useful(job)) {
-         // Free the channel and ordinary items it contains, but don't
-         // recurse into Lists, Dictionaries etc.
+         //Free the channel and ordinary items it contains, but don't
+         //recurse into Lists, Dictionaries etc.
          job_free_contents(job);
          did_free = true;
       }
@@ -5991,13 +5930,13 @@ free_unused_jobs(int copyID, int mask) {
    for (Job* job = firstJobS; job; job = job_next) {
       job_next = job->next;
       if ((job->copyId & mask) != (copyID & mask) && !job_still_useful(job)) {
-         // Free the job struct itself.
+         //Free the job struct itself.
          job_free_job(job);
       }
    }
 }
 
-// Allocate a job. Sets the refcount to one and sets options default.
+//Allocate a job. Sets the refcount to one and sets options default.
 pub Job *
 job_alloc(void) {
    Job* job = ALLOC_CLEAR_ONE(Job);
@@ -6031,7 +5970,7 @@ job_set_options(Job* job, JobOptions* opt) {
    }
 }
 
-// Called when Eegl is exiting: kill all jobs that have the "stoponexit" flag.
+//Called when Eegl is exiting: kill all jobs that have the "stoponexit" flag.
 pub void
 job_stop_on_exit(void) {
    Job* job;
@@ -6042,8 +5981,8 @@ job_stop_on_exit(void) {
    } 
 }
 
-// Return true when there is any job that has an exit callback and might exit,
-// which means job_check_ended() should be called more often.
+//Return true when there is any job that has an exit callback and might exit,
+//which means job_check_ended() should be called more often.
 pub int
 has_pending_job(void) {
    Job* job;
@@ -6061,27 +6000,27 @@ has_pending_job(void) {
 
 #define MAX_CHECK_ENDED 8
 
-// Called once in a while: check if any jobs that seem useful have ended. true if a job did end.
+//Called once in a while: check if any jobs that seem useful have ended. true if a job did end.
 pub int
 job_check_ended(void) {
    int did_end = false;
 
-   // be quick if there are no jobs to check
+   //be quick if there are no jobs to check
    if (!firstJobS)
       return did_end;
 
    for (int i = 0; i < MAX_CHECK_ENDED; ++i) {
-      // NOTE: mch_detect_ended_job() must only return a job of which the
-      // status was just set to JOB_ENDED.
+      //NOTE: mch_detect_ended_job() must only return a job of which the
+      //status was just set to JOB_ENDED.
       Job* job = mch_detect_ended_job(firstJobS);
       if (!job)
          break;
          
       did_end = true;
-      job_cleanup(job); // may add "job" to jobs_to_free
+      job_cleanup(job); //may add "job" to jobs_to_free
    }
 
-   // Actually free jobs that were cleaned up.
+   //Actually free jobs that were cleaned up.
    free_jobs_to_free_later();
 
    if (channel_need_redraw) {
@@ -6091,9 +6030,9 @@ job_check_ended(void) {
    return did_end;
 }
 
-// Create a job and return it.  Implements startJob().
-// When "argv_arg" is NULL then "argvars" is used. The returned job has a refcount of one.
-// Return NULL when out of memory.
+//Create a job and return it.  Implements startJob().
+//When "argv_arg" is NULL then "argvars" is used. The returned job has a refcount of one.
+//Return NULL when out of memory.
 pub Job*
 startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** term_job) {
    Byte** argv = NULL;
@@ -6110,7 +6049,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
    if (opt_arg)
       opt = *opt_arg;
    else {
-      // Default mode is NL.
+      //Default mode is NL.
       CLEAR_POINTER(&opt);
       opt.mode = CH_MODE_NL;
       if (get_job_options(&argvars[1], OUT &opt,
@@ -6123,7 +6062,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
       } 
    }
 
-   // Check that when io is "file" that there is a file name.
+   //Check that when io is "file" that there is a file name.
    for (part = PART_OUT; part < PART_COUNT; ++part) {
       if ((opt.set & (JO_OUT_IO << (part - PART_OUT))
             && opt.ioMode[part] == JIO_FILE
@@ -6138,7 +6077,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
    if ((opt.set & JO_IN_IO) && opt.ioMode[PART_IN] == JIO_BUFFER) {
       Book* book = NULL;
 
-      // check that we can find the book before starting the job
+      //check that we can find the book before starting the job
       if (opt.set & JO_IN_BUF) {
          book = bookFindFileByBookNr(opt.ioText[PART_IN]);
          if (!book)
@@ -6167,13 +6106,13 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
    job_set_options(job, &opt);
 
    if (argv_arg->len > 0) {
-      // Make a copy of argv_arg for job->argv.
+      //Make a copy of argv_arg for job->argv.
       argv = ALLOC_MULT(CS, argv_arg->len + 1);
       for (Unt i = 0; i < argv_arg->len; i++)
          argv[i] = copyStr(argv_arg->c[i]);
       argv[argc] = NULL;
    } ei (argvars[0].tag == VAR_STRING) {
-      // Command is a string.
+      //Command is a string.
       
       emsg(_(e_invalid_argument));
    } ei (argvars[0].tag != VAR_LIST || !argvars[0].list || argvars[0].list->len < 1){
@@ -6212,7 +6151,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
       ga_clear(&ga);
    }
    mch_job_start(argv, job, &opt, term_job != NULL);
-   // If the channel is reading from a buffer, write lines now.
+   //If the channel is reading from a buffer, write lines now.
    if (job->channel)
       channel_write_in(job->channel);
 
@@ -6233,7 +6172,7 @@ job_status(Job* job) {
    CS result;
 
    if (job->status >= JOB_ENDED)
-      // No need to check, dead is dead.
+      //No need to check, dead is dead.
       result = S"dead";
    ei (job->status == JOB_FAILED)
       result = S"fail";
@@ -6245,8 +6184,8 @@ job_status(Job* job) {
    return result;
 }
 
-// Send a signal to "job".  Implements job_stop(). When "type" is not NULL use this for the type.
-// Otherwise use argvars[1] for the type.
+//Send a signal to "job".  Implements job_stop(). When "type" is not NULL use this for the type.
+//Otherwise use argvars[1] for the type.
 pub int
 job_stop(Job* job, Arr(Var) argvars, CS type) {
    CS arg;
@@ -6309,7 +6248,7 @@ invoke_prompt_callback(void) {
    clearVar(&returnVar);
 }
 
-// Return true when the interrupt callback was invoked.
+//Return true when the interrupt callback was invoked.
 pub int
 invoke_prompt_interrupt(void) {
    Var returnVar;
@@ -6320,13 +6259,13 @@ invoke_prompt_interrupt(void) {
       return false;
    argv[0].tag = VAR_UNKNOWN;
 
-   gotInterruptG = false; // don't skip executing commands
+   gotInterruptG = false; //don't skip executing commands
    ret = call_callback(&curBook->promptInterrupt, -1, &returnVar, 0, argv);
    clearVar(&returnVar);
    return ret == FAIL ? false : true;
 }
 
-// Return the effective prompt for the specified book.
+//Return the effective prompt for the specified book.
 private CS
 buf_prompt_text(Book* book) {
    if (!book->promptText)
@@ -6334,21 +6273,21 @@ buf_prompt_text(Book* book) {
    return book->promptText;
 }
 
-// Return the effective prompt for the current book.
+//Return the effective prompt for the current book.
 pub CS
 prompt_text(void) {
    return buf_prompt_text(curBook);
 }
 
 
-// Return true if the cursor is in the editable position of the prompt line.
+//Return true if the cursor is in the editable position of the prompt line.
 pub int
 prompt_curpos_editable(void) {
    return curPor->cursor.lnum == curBook->mem.lineCount 
       && curPor->cursor.col >= (int)STRLEN(prompt_text());
 }
 
-// "prompt_setcallback({buffer}, {callback})" function
+//"prompt_setcallback({buffer}, {callback})" function
 pub void
 f_prompt_setcallback(Arr(Var) argvars, Var*) {
    Book* book = daGetBook(&argvars[0], false);
@@ -6365,7 +6304,7 @@ f_prompt_setcallback(Arr(Var) argvars, Var*) {
       eeglFree(callback.name);
 }
 
-// "prompt_setinterrupt({buffer}, {callback})" function
+//"prompt_setinterrupt({buffer}, {callback})" function
 pub void
 f_prompt_setinterrupt(Arr(Var) argvars, Var*) {
    Book* book = daGetBook(&argvars[0], false);
@@ -6383,10 +6322,10 @@ f_prompt_setinterrupt(Arr(Var) argvars, Var*) {
 }
 
 
-// "prompt_getprompt({buffer})" function
+//"prompt_getprompt({buffer})" function
 pub void
 f_prompt_getprompt(Arr(Var) argvars, Var* returnVar) {
-   // return an empty string by default, e.g. it's not a prompt buffer
+   //return an empty string by default, e.g. it's not a prompt buffer
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 
@@ -6400,7 +6339,7 @@ f_prompt_getprompt(Arr(Var) argvars, Var* returnVar) {
    returnVar->string = copyStr(buf_prompt_text(book));
 }
 
-// "prompt_setprompt({book}, {text})" function
+//"prompt_setprompt({book}, {text})" function
 pub void
 f_prompt_setprompt(Arr(Var) argvars, Var*) {
    Book* book = daGetBook(&argvars[0], false);
@@ -6412,7 +6351,7 @@ f_prompt_setprompt(Arr(Var) argvars, Var*) {
    book->promptText = copyStr(text);
 }
 
-// Get the job from the argument. Returns NULL if the job is invalid.
+//Get the job from the argument. Returns NULL if the job is invalid.
 private Job *
 get_job_arg(Var* tv) {
    if (tv->tag != VAR_JOB) {
@@ -6519,7 +6458,7 @@ f_startJob(Arr(Var) argvars, OUT Var* returnVar) {
 pub void
 f_job_status(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_JOB && argvars[0].job == NULL) {
-      // A job that never started returns "fail".
+      //A job that never started returns "fail".
       returnVar->tag = VAR_STRING;
       returnVar->string = copyStr(S"fail");
    } else {
@@ -6538,8 +6477,8 @@ f_job_stop(Arr(Var) argvars, Var* returnVar) {
       returnVar->number = job_stop(job, argvars, NULL);
 }
 
-// Get a string with information about the job in "varp" into "builder".
-// "builder" must be at least NUMBUFLEN long.
+//Get a string with information about the job in "varp" into "builder".
+//"builder" must be at least NUMBUFLEN long.
 pub void
 job_to_string_buf(OUT CS builder, Var* varp) {
    Job *job = varp->job;
@@ -6574,10 +6513,10 @@ chBuildArgv(Text cmd) {
 //}}}
 //{{{logging
 
-// Implements logging.  Originally intended for the channel feature, which is
-// why the "ch_" prefix is used.  Also useful for any kind of low-level and async debugging.
+//Implements logging.  Originally intended for the channel feature, which is
+//why the "ch_" prefix is used.  Also useful for any kind of low-level and async debugging.
 
-// Log file opened with ch_logfile().
+//Log file opened with ch_logfile().
 private FILE* log_fd = NULL;
 private CS log_name = NULL;
 private ProfTime log_start;
@@ -6595,7 +6534,7 @@ ch_logfile(CS fname, CS opt) {
       fclose(log_fd);
    }
 
-   // The "a" flag overrules the "w" flag.
+   //The "a" flag overrules the "w" flag.
    if (firstOccurrence(opt, 'a') == NULL && firstOccurrence(opt, 'w') != NULL)
       mode = S"w";
    ch_log_output = firstOccurrence(opt, 'o') != NULL ? LOG_ALWAYS : false;
@@ -6613,7 +6552,7 @@ ch_logfile(CS fname, CS opt) {
 
    if (log_fd) {
       fprintf(log_fd, "==== start log session %s ====\n", get_ctime(time(NULL), false));
-      // flush now, if fork/exec follows it could be written twice
+      //flush now, if fork/exec follows it could be written twice
       fflush(log_fd);
       profile_start(&log_start);
    }
@@ -6709,7 +6648,7 @@ f_ch_log(Arr(Var) argvars, Var*) {
    if (argvars[1].tag != VAR_UNKNOWN)
       channel = get_channel_arg(&argvars[1], false, false, 0);
 
-   // Prepend "ch_log()" to make it easier to find these entries in the logfile.
+   //Prepend "ch_log()" to make it easier to find these entries in the logfile.
    ch_log(channel, "ch_log(): %s", msg);
 }
 

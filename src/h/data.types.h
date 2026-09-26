@@ -4,6 +4,12 @@
    Unt cap;\
    Arena* a;\
 } L##T;
+typedef enum {
+   FILTERMAP_FILTER,
+   FILTERMAP_MAP,
+   FILTERMAP_MAPNEW,
+   FILTERMAP_FOREACH
+} FilterMap;
 #define getRefCount(a) _Generic((a),\
    Job*: _getRefCount\
 )(a)

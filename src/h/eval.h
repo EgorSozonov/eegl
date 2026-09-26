@@ -129,9 +129,9 @@ void evalvars_clear(void);
 int garbage_collect_globvars(int copyID);
 int garbage_collect_scriptvars(int copyID);
 void set_internal_string_var(CS name, CS value);
-void eval_diff(CS origfile, CS newfile, CS outfile);
-void eval_patch(CS origfile, CS diffFile, CS outfile);
-List * eval_spell_expr(CS badword, CS expr);
+void eval_diff(CS, CS, CS);
+void eval_patch(CS, CS, CS);
+List * eval_spell_expr(CS , CS expr);
 int is_scoped_variable(CS name);
 CS eval_one_expr_in_str(CS p, ArrayList *gap, int evaluate);
 List * heredoc_get(Invocation* invo, CS cmd, int script_get);
@@ -153,7 +153,6 @@ void item_lock(Var *tv, int deep, int lock, int check_refcount);
 void del_menutrans_vars(void);
 CS cat_prefix_varname(int prefix, CS name);
 CS get_user_var_name(Expand *xp, int idx);
-char * get_var_special_name(int nr);
 Bag* get_globvar_dict(void);
 EeSet * get_globvar_ht(void);
 void reset_reg_var(void);
@@ -176,13 +175,6 @@ void unref_var_dict(Bag* dict);
 void vars_clear(EeSet* ht);
 void vars_clear_ext(EeSet* ht, int free_val);
 void delete_var(EeSet* ht, EeSetItem *hi);
-int before_set_vvar(
-    CS varname,
-    DictItem* di,
-    Var* tv,
-    int copy,
-    int* type_error
-);
 void set_var(Text name, Var* newValue, Boole copy);
 int var_check_permission(DictItem* di, CS name);
 Boole var_check_ro(int flags, Text name, Boole use_gettext);
@@ -243,7 +235,6 @@ void f_hlID(Arr(Var) argvars, Var* returnVar);
 void f_hlexists(Arr(Var) argvars, Var* returnVar);
 void f_hostname(Arr(Var), Var* returnVar);
 void f_id(Arr(Var) argvars, Var* returnVar);
-Boole indexof_eval_expr(Var *expr);
 void f_len(Arr(Var) argvars, Var* returnVar);
 void range_list_materialize(List *list);
 long do_searchpair(

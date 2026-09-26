@@ -176,7 +176,7 @@ private CS findFileInPathImpl(
    OUT Byte** file_to_find,   // modified copy of file name
    OUT FileSearchCtx** search_ctx_arg // state of the search
 );
-private CS eval_includeexpr(CS ptr, int len);
+private CS eval_includeexpr(CS, int);
 private CS getLastSlash(CS fname);
 private int find_previous_pathsep(CS path, Byte** psep);
 private Boole is_unique(CS maybe_unique, ExpandMatch* matches, Unt i);

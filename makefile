@@ -665,29 +665,28 @@ include tests/Make_all.mak
 #	       ALL_SRC: source files used for make depend and make lint
 
 BASIC_SRC_NO_DIR = \
-/ book.c \
+   book.c \
    channel.c \
-/ data.c \
-/ diff.c \
-/ do.c \
-/ draw.c \
-/ eval.c \
-/ fileio.c \
-/ hilite.c \
-/ input.c \
-/ location.c \
-/ message.c \
-/ motor.c \
-/ option.c \
-/ portal.c \
-/ regexp.c \
-/ script.c \
-/ search.c \
-/ strings.c \
-/ tag.c \
-/ term.c \
-/ ui.c \
-/ wheel.c \
+   data.c \
+   diff.c \
+   do.c \
+   draw.c \
+   eval.c \
+   fileio.c \
+   hilite.c \
+   input.c \
+   location.c \
+   message.c \
+   motor.c \
+   option.c \
+   portal.c \
+   regexp.c \
+   script.c \
+   strings.c \
+   tag.c \
+   term.c \
+   ui.c \
+   wheel.c \
    window.c
 
 BASIC_SRC = $(addprefix src/, $(BASIC_SRC_NO_DIR))
@@ -735,7 +734,6 @@ OBJ_COMMON = \
  $(OBJDIR)/portal.o \
  $(OBJDIR)/regexp.o \
  $(OBJDIR)/script.o \
- $(OBJDIR)/search.o \
  $(OBJDIR)/tag.o \
  $(OBJDIR)/term.o \
  $(OBJDIR)/ui.o \
@@ -792,36 +790,35 @@ ALL_OBJ = $(OBJ_COMMON) \
 
 
 PRO_AUTO = \
-/ alloc.h \
-/ book.h \
-/ change.h \
-/ channel.h \
-/ dict.h \
-/ diff.h \
-/ do.h \
-/ draw.h \
-/ eval.h \
-/ fileio.h \
-/ hilite.h \
-/ input.h \
-/ list.h \
-/ location.h \
-/ mark.h \
-/ message.h \
-/ motor.h \
-/ option.h \
-/ unix.h \
-/ portal.h \
-/ regexp.h \
-/ script.h \
-/ search.h \
-/ sound.h \
-/ strings.h \
-/ tag.h \
-/ term.h \
-/ ui.h \
-/ wheel.h \
-/ window.h
+   alloc.h \
+   book.h \
+   change.h \
+   channel.h \
+   dict.h \
+   diff.h \
+   do.h \
+   draw.h \
+   eval.h \
+   fileio.h \
+   hilite.h \
+   input.h \
+   list.h \
+   location.h \
+   mark.h \
+   message.h \
+   motor.h \
+   option.h \
+   unix.h \
+   portal.h \
+   regexp.h \
+   script.h \
+   sound.h \
+   strings.h \
+   tag.h \
+   term.h \
+   ui.h \
+   wheel.h \
+   window.h
 
 # Default target is making the executable and tools
 all: $(EEGLTARGET) $(TOOLS) languages
@@ -1617,8 +1614,6 @@ $(OBJDIR)/portal.o: src/portal.c src/eegl.h \
 $(OBJDIR)/regexp.o: src/regexp.c src/eegl.h \
  src/commands.h
 $(OBJDIR)/script.o: src/script.c src/eegl.h \
- src/commands.h
-$(OBJDIR)/search.o: src/search.c src/eegl.h \
  src/commands.h
 $(OBJDIR)/strings.o: src/strings.c src/eegl.h \
  src/commands.h src/base.h

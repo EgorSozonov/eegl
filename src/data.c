@@ -99,6 +99,14 @@ struct ListWatch {
    ListWatch* next;   // next watcher
 };
 
+// Enum used by filter(), map(), mapnew() and foreach()
+pub typedef enum {
+   FILTERMAP_FILTER,
+   FILTERMAP_MAP,
+   FILTERMAP_MAPNEW,
+   FILTERMAP_FOREACH
+} FilterMap;
+
 //}}}
 #include "h/data.h"
 //{{{@@forward declarations
@@ -3853,7 +3861,7 @@ convertVarToString_strict(Var* varp, CS buf, int strict) {
          return varp->string;
       return S"";
    case VAR_BOOL:
-      STRCPY(buf, get_var_special_name(varp->number));
+      STRCPY(buf, varp->number != 0 ? S"true" : S"false");
       return buf;
    case VAR_BLOB:
       emsg(_(e_using_blob_as_string));

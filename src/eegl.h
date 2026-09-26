@@ -16,16 +16,11 @@
 
 // ============ the header file puzzle: order matters =========
 
-//{{{config.h
-
 // Defined to the size of an int
 #define SIZEOF_INT 4
 
 // Defined to the size of a long
 #define SIZEOF_LONG 8
-
-// Defined to the size of off_t
-#define SIZEOF_OFF_T 8
 
 // Define to nanoseconds field of struct stat
 #define ST_MTIM_NSEC st_mtim.tv_nsec
@@ -33,14 +28,7 @@
 // Define if tgetent() returns zero for an error
 #define TGETENT_ZERO_ERR 0
 
-#define HAVE_INET_NTOP 1
-
-// Define if you have the header file:
-#define HAVE_SETJMP_H 1
-
-//}}}
-
-// user ID of root is usually zero, but not for everybody
+// user ID of root
 #define ROOT_UID 0
 
 //How many Unicode symbols to combine max
@@ -53,7 +41,6 @@
 //{{{unix header: lots of system header files
 
 #include <ctype.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <inttypes.h> // for PRIu64
 
@@ -138,20 +125,6 @@ typedef struct pollfd PollFd;
 #define mch_setenv(name, val, x) setenv((char *)name, (char *)val, x)
 
 #include <string.h>
-
-#if defined(HAVE_SETJMP_H)
-# include <setjmp.h>
-# ifdef HAVE_SIGSETJMP
-#  define JMP_BUF sigjmp_buf
-#  define SETJMP(x) sigsetjmp((x), 1)
-#  define LONGJMP siglongjmp
-# else
-#  define JMP_BUF jmp_buf
-#  define SETJMP(x) setjmp(x)
-#  define LONGJMP longjmp
-# endif
-#endif
-
 
 #include <sys/ioctl.h>
 
@@ -4552,20 +4525,6 @@ typedef enum {
 } Magic;
 
 #define WHERE_INIT {NULL, 0, WT_UNKNOWN}
-
-// Struct passed to get_v_event() and restore_v_event().
-typedef struct {
-   int sve_did_save;
-   EeSet sve_hashtab;
-} SaveVEvent;
-
-// Enum used by filter(), map(), mapnew() and foreach()
-typedef enum {
-   FILTERMAP_FILTER,
-   FILTERMAP_MAP,
-   FILTERMAP_MAPNEW,
-   FILTERMAP_FOREACH
-} FilterMap;
 
 // Structure used by switch_win() to pass values to restore_win()
 typedef struct {

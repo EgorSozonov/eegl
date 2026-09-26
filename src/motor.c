@@ -25,7 +25,6 @@
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/script.h"
-#include "h/search.h"
 #include "h/strings.h"
 #include "h/tag.h"
 #include "h/term.h"
@@ -1117,11 +1116,11 @@ mainLoop(Boole inCommPort) {  // true when working in the command-line window
          //If terminal_loop() returns OK we got a key that is handled in Normal mode.  With FAIL 
          //we first need to position the cursor and the screen needs to be redrawn.
          if (terminal_loop(true) == OK) {
-            normalAction(OUT &oper, true);
+            normalAction(OUT &oper);
          }
       } else {
          skip_term_loop = false;
-         normalAction(&oper, true);
+         normalAction(&oper);
       }
    }
 

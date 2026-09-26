@@ -23,7 +23,6 @@
 #include "h/motor.h"
 #include "h/portal.h"
 #include "h/script.h"
-#include "h/search.h"
 #include "h/strings.h"
 #include "h/term.h"
 #include "h/ui.h"
@@ -709,17 +708,17 @@ restoreRedobuff(SaveRedo* save_redo) {
    old_redobuff = save_redo->sr_old_redobuff;
 }
 
-// Append "s" to the redo buffer. K_SPECIAL and CSI should already have been escaped.
+//Append "s" to the redo buffer. K_SPECIAL and CSI should already have been escaped.
 pub void
-AppendToRedobuff(CS s) {
+inpAppendToRedoBuff(CS s) {
    if (!block_redo)
       add_buff(&redobuff, s, -1L);
 }
 
-// Append to Redo buffer literally, escaping special characters with CTRL-V.
-// K_SPECIAL and CSI are escaped as well.
+//Append to Redo buffer literally, escaping special characters with CTRL-V.
+//K_SPECIAL and CSI are escaped as well.
 pub void
-AppendToRedobuffLit(CS str, int len) {      // "len" = length of "str" or -1 for up to the ZERO
+inpAppendLitToRedoBuff(CS str, int len) {      // "len" = length of "str" or -1 for up to the ZERO
    if (block_redo)
       return;
       
@@ -756,7 +755,7 @@ AppendToRedobuffLit(CS str, int len) {      // "len" = length of "str" or -1 for
 // Append "s" to the redo buffer, leaving 3-byte special key codes unmodified
 // and escaping other K_SPECIAL and CSI bytes.
 pub void
-AppendToRedobuffSpec(CS s) {
+inpAppendSpecToRedoBuff(CS s) {
    if (block_redo)
       return;
 
@@ -1512,16 +1511,16 @@ openscript(CS name, Boole directly) {
       int save_msg_scroll = msg_scroll;
 
       stateG = MODE_NORMAL;
-      msg_scroll = false;   // no msg scrolling in Normal mode
-      restart_edit = 0;   // don't go to Insert mode
+      msg_scroll = false;  // no msg scrolling in Normal mode
+      restart_edit = 0;    // don't go to Insert mode
       doClearOpArg(&oper);
       finish_op = false;
 
       int oldcurscript = curscript;
       do {
-         update_topline_cursor();   // update cursor position and topline
-         normalAction(&oper, false);   // execute one action
-         (void)vpeekc();      // check for end of file
+         update_topline_cursor(); // update cursor position and topline
+         normalAction(&oper);     // execute one action
+         (void)vpeekc();          // check for end of file
       } while (scriptin[oldcurscript] != NULL);
 
       stateG = save_State;

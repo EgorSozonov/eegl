@@ -190,7 +190,6 @@ int daCompareVars_list(
    Boole ic,
    OUT int* res
 );
-int daCompareVars_null(Var *tv1, Var *tv2);
 int daCompareVars_blob(Var* tv1, Var* tv2, ExprType type, int* res);
 int daCompareVars_dict(
    Var* tv1,
