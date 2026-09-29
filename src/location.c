@@ -15625,13 +15625,12 @@ prepare_help_buffer(void) {
       optChangeStringOptionDirect(S"iskeyword", p, OPT_LOCAL, 0);
    }
 
-   curBook->o.shiftWidth = 3;      //tab size is 8
-   curPor->o.list = false;   //no list mode
+   curBook->o.shiftWidth = 3;     //tab size is 3
+   curPor->o.list = false;        //no list mode
 
-   curBook->o.binary = false;   //reset 'bin' before reading file
-   curPor->o.relativeNumber = false;   //no relative line numbers
-   curPor->o.foldEnable = false;   //No folding in the help portal
-   curPor->o.diff = false;   //No 'diff', no scroll or cursor binding
+   curBook->o.binary = false;     //reset 'bin' before reading file
+   curPor->o.foldEnable = false;  //No folding in the help portal
+   curPor->o.diff = false;        //No 'diff', no scroll or cursor binding
 
    bookSetBooklisted(false);
 }

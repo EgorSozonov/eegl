@@ -3,16 +3,16 @@
 
 //This file defines the Normal and Visual mode actions. Stuff that is mapped to keys like "o"
 //When adding an Action:
-// 1. Add an entry in the table `actions[]` below.
-// 2. Run "make indices" to re-generate indices/actions.h.
-// 3. Add an entry in the index for Normal/Visual commands at
-//    ":help normal-index" and ":help visual-index" .
-// 4. Add documentation in ../doc/xxx.txt.  Add a tag for both the short and
-//    long name of the command.
+//1. Add an entry in the table `actions[]` below.
+//2. Run "make indices" to re-generate indices/actions.h.
+//3. Add an entry in the index for Normal/Visual commands at
+//   ":help normal-index" and ":help visual-index" .
+//4. Add documentation in ../doc/xxx.txt.  Add a tag for both the short and
+//   long name of the command.
 
 #ifdef DO_DECLARE_ACTIONS
 
-// Used when building Eegl.
+//Used when building Eegl.
 # define ACTION(a, b, c, d) \
    {a, b, c, d}
 
@@ -26,21 +26,21 @@
 
 #define NV_DROP      nv_drop
 
-// Function to be called for a Normal or Visual mode Action. The argument is an ActionArg.
+//Function to be called for a Normal or Visual mode Action. The argument is an ActionArg.
 typedef void (*nv_func_T)(ActionArg *cap);
 
-// Values for cmd_flags.
-#define NV_NCH       0x01     // may need to get a second char
-#define NV_NCH_NOP  (0x02|NV_NCH) // get second char when no operator pending
-#define NV_NCH_ALW  (0x04|NV_NCH) // always get a second char
-#define NV_LANG       0x08   // second char needs language adjustment
+//Values for cmd_flags.
+#define NV_NCH       0x01     //may need to get a second char
+#define NV_NCH_NOP  (0x02|NV_NCH) //get second char when no operator pending
+#define NV_NCH_ALW  (0x04|NV_NCH) //always get a second char
+#define NV_LANG       0x08   //second char needs language adjustment
 
-#define NV_SS       0x10    // may start selection
-#define NV_SSS       0x20    // may start selection with shift modifier
-#define NV_STS       0x40    // may stop selection without shift modif.
-#define NV_RL       0x80    // 'rightleft' modifies command
-#define NV_KEEPREG 0x100 // don't clear regname
-#define NV_NCW       0x200 // not allowed in command-line window
+#define NV_SS       0x10    //may start selection
+#define NV_SSS       0x20    //may start selection with shift modifier
+#define NV_STS       0x40    //may stop selection without shift modif.
+#define NV_RL       0x80    //'rightleft' modifies command
+#define NV_KEEPREG 0x100 //don't clear regname
+#define NV_NCW       0x200 //not allowed in command-line window
 
 //Generally speaking, every Normal mode command should either clear any pending operator (with 
 //*clearop*()), or set the motion type variable oap->motion_type.
@@ -52,20 +52,20 @@ typedef void (*nv_func_T)(ActionArg *cap);
 //this will be sorted by the create_nvcmdidx.vim script to generate the nv_cmd_idx[] lookup table.
 //It is faster when all keys from zero to '~' are present.
 static const struct Action {
-   int      actionChar;   // (first) command character
-   nv_func_T   fn;   // function for this command
-   Short   cmd_flags;   // NV_ flags
-   short   cmd_arg;   // value for ca.arg
+   int      actionChar;   //(first) command character
+   nv_func_T   fn;   //function for this command
+   Short   cmd_flags;   //NV_ flags
+   short   cmd_arg;   //value for ca.arg
 } actions[] =
 
-#else  // DO_DECLARE_ACTIONS
+#else  //DO_DECLARE_ACTIONS
 
-// Used to build indices/actions.h.
+//Used to build indices/actions.h.
 
 # define ACTION(a, b, c, d)  a
 private const int actions[] =
 
-#endif // DO_DECLARE_ACTION
+#endif //DO_DECLARE_ACTION
 {
    ACTION(ZERO,      nvError,   0,         0),
    ACTION(Ctrl_A,   nvAddSub,   0,         0),
@@ -126,7 +126,7 @@ private const int actions[] =
    ACTION('8',      nv_ignore,   0,         0),
    ACTION('9',      nv_ignore,   0,         0),
    ACTION(':',      nv_csearch,   0,         0),
-   ACTION(';',      nv_colon,   0,         FALSE),
+   ACTION(';',      nv_semicolon,   0,         FALSE),
    ACTION('<',      nv_operator,   NV_RL,         0),
    ACTION('=',      nv_operator,   0,         0),
    ACTION('>',      nv_operator,   NV_RL,         0),
@@ -193,7 +193,7 @@ private const int actions[] =
    ACTION('}',      nv_findpar,   0,         FORWARD),
    ACTION('~',      nv_tilde,   0,         0),
 
-   // pound sign
+   //pound sign
    ACTION(POUND,   nv_ident,   0,         0),
    ACTION(K_MOUSEUP,   nv_mousescroll,   0,     MSCR_UP),
    ACTION(K_MOUSEDOWN,   nv_mousescroll, 0,     MSCR_DOWN),
@@ -258,10 +258,10 @@ private const int actions[] =
    ACTION(K_DROP,   NV_DROP,   NV_STS,         0),
    ACTION(K_CURSORHOLD, nv_cursorhold,   NV_KEEPREG,      0),
    ACTION(K_PS,      nv_edit,   0,         0),
-   ACTION(K_COMMAND,   nv_colon,   0,         0),
-   ACTION(K_SCRIPT_COMMAND, nv_colon,   0,         0),
+   ACTION(K_COMMAND,   nv_semicolon,   0,         0),
+   ACTION(K_SCRIPT_COMMAND, nv_semicolon,   0,         0),
 };
 
-// Number of commands in actions[].
+//Number of commands in actions[].
 #define ACTIONS_SIZE sizeof(actions)/sizeof(actions[0])
 

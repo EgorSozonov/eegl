@@ -33,7 +33,7 @@
 #include "h/wheel.h"
 #include "h/window.h"
 
-#include <sys/stat.h> // for stat, fstat, S_ISDIR
+#include <sys/stat.h> //for stat, fstat, S_ISDIR
 
 //{{{the intro screen and version info about the current build
 
@@ -50,7 +50,7 @@ private Byte longVersion[] = EEGL_VERSION_LONG_DATE __DATE__ " " __TIME__ ")";
 
 
 private int included_patches[] = {   
-// Add new patch number below this line */
+//Add new patch number below this line */
    0
 };
 
@@ -60,13 +60,13 @@ private int included_patches[] = {
 //See the official Eegl patches for the diff format: It must use a context of
 //one line only.  Create it by hand or use "diff -C2" and edit the patch.
 private CS extra_patches[] = {
-   // Add your patch description below this line
+   //Add your patch description below this line
    NULL
 };
 
 pub int
 highest_patch(void) {
-   // this relies on the highest patch number to be the first entry
+   //this relies on the highest patch number to be the first entry
    return included_patches[0];
 }
 
@@ -80,8 +80,8 @@ list_version(void) {
    msg(longVersion);
 
 
-   // Print the list of patch numbers if there is at least one.
-   // Print a range when patches are consecutive: "1-10, 12, 15-40, 42-45"
+   //Print the list of patch numbers if there is at least one.
+   //Print a range when patches are consecutive: "1-10, 12, 15-40, 42-45"
    if (included_patches[0] != 0) {
       msg_puts(_("\nIncluded patches: "));
       first = -1;
@@ -102,7 +102,7 @@ list_version(void) {
       }
    }
 
-   // Print the list of extra patch descriptions if there is at least one.
+   //Print the list of extra patch descriptions if there is at least one.
    if (extra_patches[0] != NULL) {
       msg_puts(_("\nExtra patches: "));
       s = S"";
@@ -139,7 +139,7 @@ c_version(Invocation* invo) {
 private void do_intro_line(int row, CS mesg, int add_version);
 private void intro_message(int colon);
 
-// Show the intro message when not editing a file.
+//Show the intro message when not editing a file.
 pub void
 maybe_intro_message(void) {
    if (CURBOOK_EMPTY() && !curBook->currFileName && !firstPor->next && p_intro)
@@ -150,7 +150,7 @@ maybe_intro_message(void) {
 //Only used when starting Eegl on an empty file, without a file name.
 //Or with the ":intro" command (for Sven :-).
 private void
-intro_message(int colon) {     // true for ":intro"
+intro_message(int colon) {     //true for ":intro"
    int i;
    CS p;
    static CS lines[] = { SMAP((CS),
@@ -167,19 +167,19 @@ intro_message(int colon) {     // true for ":intro"
       ""
    )};
 
-   // blanklines = screen height - # message lines
+   //blanklines = screen height - # message lines
    int blanklines = (int)visibleRowsG - (ARRAY_LENGTH(lines) - 1) + 4;
 
-   // Don't overwrite a statusline.  Depends on @commheight.
+   //Don't overwrite a statusline.  Depends on @commheight.
    blanklines -= visibleRowsG - topframeG->width;
    if (blanklines < 0)
       blanklines = 0;
-   // Show the sponsor and register message one out of four times, the Uganda
-   // message two out of four times.
+   //Show the sponsor and register message one out of four times, the Uganda
+   //message two out of four times.
    int sponsor = (int)time(NULL);
    sponsor = ((sponsor & 2) == 0) - ((sponsor & 4) == 0);
 
-   // start displaying the message lines after half of the blank lines
+   //start displaying the message lines after half of the blank lines
    int row = blanklines / 2;
    if ((row >= 2 && topframeG->width >= 50) || colon) {
       for (i = 0; i < (int)ARRAY_LENGTH(lines); ++i) {
@@ -205,7 +205,7 @@ intro_message(int colon) {     // true for ":intro"
       }
    }
 
-   // Make the wait-return message appear just below the text.
+   //Make the wait-return message appear just below the text.
    if (colon)
       msgRowG = row;
 }
@@ -213,12 +213,12 @@ intro_message(int colon) {     // true for ":intro"
 private void
 do_intro_line(int row, CS mesg, int add_version){
    Byte vers[20];
-   // Center the message horizontally.
+   //Center the message horizontally.
    int col = eeglStrSize(mesg);
    if (add_version) {
       STRCPY(vers, mediumVersion);
       if (highest_patch()) {
-         // Check for 9.9x or 9.9xx, alpha/beta version
+         //Check for 9.9x or 9.9xx, alpha/beta version
          if (SAFE_isalpha((int)vers[3])) {
             int len = (SAFE_isalpha((int)vers[4])) ? 5 : 4;
             sprintf((char *)vers + len, ".%d%s", highest_patch(), mediumVersion + len);
@@ -231,7 +231,7 @@ do_intro_line(int row, CS mesg, int add_version){
    if (col < 0)
       col = 0;
 
-   // Split up in parts to highlight <> items differently.
+   //Split up in parts to highlight <> items differently.
    int l;
    for (CS p = mesg; *p != ZERO; p += l) {
       int clen = 0;
@@ -245,12 +245,12 @@ do_intro_line(int row, CS mesg, int add_version){
       col += clen;
    }
 
-   // Add the version number to the version line.
+   //Add the version number to the version line.
    if (add_version)
       drawText(vers, row, col + firstPor->windowCol, 0);
 }
 
-// ":intro": clear screen, display intro screen and wait for return.
+//":intro": clear screen, display intro screen and wait for return.
 pub void
 c_intro(Invocation*){
    screenclear();
@@ -262,27 +262,27 @@ c_intro(Invocation*){
 //}}}
 //{{{types
 
-// Values for edit_type.
-#define EDIT_NONE   0       // no edit type yet
-#define EDIT_FILE   1       // file name argument[s] given, use argument list
-#define EDIT_STDIN  2       // read file from stdin
-#define EDIT_TAG    3       // tag name argument given, use tagname
-#define EDIT_QF     4       // start in quickfix mode
+//Values for edit_type.
+#define EDIT_NONE   0       //no edit type yet
+#define EDIT_FILE   1       //file name argument[s] given, use argument list
+#define EDIT_STDIN  2       //read file from stdin
+#define EDIT_TAG    3       //tag name argument given, use tagname
+#define EDIT_QF     4       //start in quickfix mode
 
-// Maximum number of commands from + or -c arguments.
+//Maximum number of commands from + or -c arguments.
 pub
 #define MAX_ARG_CMDS 10
 
-// Struct for various parameters passed between main() and other functions.
+//Struct for various parameters passed between main() and other functions.
 pub
 typedef struct {
    int argc;
    Arr(Arr(char)) argv;
 
-   CS fname;         // first file to edit
+   CS fname;         //first file to edit
 
-   CS altInitFile;      // alternative init file name from -u argument
-   int clean;         // --clean argument
+   CS altInitFile;      //alternative init file name from -u argument
+   int clean;         //--clean argument
 
    int n_commands;                 //no. of commands from + or -c
    CS commands[MAX_ARG_CMDS];      //commands from + or -c arg.
@@ -295,34 +295,34 @@ typedef struct {
    CS use_ef;     //@errorfile from -q argument
 
    int want_full_screen;
-   int not_a_term;      // no warning for missing term?
-   int tty_fail;      // exit if not a tty
-   CS term;         // specified terminal name
-   int no_swap_file;      // "-n" argument used
+   int not_a_term;      //no warning for missing term?
+   int tty_fail;      //exit if not a tty
+   CS term;         //specified terminal name
+   int no_swap_file;      //"-n" argument used
    int use_debug_break_level;
-   Unt portalCount;      // number of portals to use
-   int portalLayout;     // 0, WIN_HOR, WIN_VER or WIN_TABS
+   Unt portalCount;      //number of portals to use
+   int portalLayout;     //0, WIN_HOR, WIN_VER or WIN_TABS
 
-   int serverArg;      // TRUE when argument for a server
-   CS serverName_arg;  // cmdline arg for server name
-   CS serverStr;       // remote server command
-   CS servername;      // allocated name for our server
-   int diff_mode;      // start with 'diff' set
+   int serverArg;      //TRUE when argument for a server
+   CS serverName_arg;  //cmdline arg for server name
+   CS serverStr;       //remote server command
+   CS servername;      //allocated name for our server
+   int diff_mode;      //start with 'diff' set
 } MainParams;
 
-// Variable flavor
+//Variable flavor
 typedef enum {
-   VAR_FLAVOR_DEFAULT,   // doesn't start with uppercase
-   VAR_FLAVOR_SESSION,   // starts with uppercase, some lower
-   VAR_FLAVOR_EEGLINFO      // all uppercase
+   VAR_FLAVOR_DEFAULT,   //doesn't start with uppercase
+   VAR_FLAVOR_SESSION,   //starts with uppercase, some lower
+   VAR_FLAVOR_EEGLINFO      //all uppercase
 } VarFlavor;
 
-// Structure used for reading from the eeglinfo file.
+//Structure used for reading from the eeglinfo file.
 typedef struct {
-   CS line;   // text of the current line
-   FILE* vir_fd;   // file descriptor
-   int vir_version;   // eeglinfo version detected or -1
-   ArrayList vir_barlines;   // lines starting with |
+   CS line;   //text of the current line
+   FILE* vir_fd;   //file descriptor
+   int vir_version;   //eeglinfo version detected or -1
+   ArrayList vir_barlines;   //lines starting with |
 } Vir;
 
 //}}}
@@ -335,9 +335,9 @@ private void init1(OUT MainParams* par);
 private int isSafeNow(void);
 private void earlyArgScan(MainParams* par);
 private int getNumericArg(
-   CS p,       // pointer to argument
-   int* idx,       // index in argument, is incremented
-   int def       // default value
+   CS p,       //pointer to argument
+   int* idx,       //index in argument, is incremented
+   int def       //default value
 );
 private void parseCommandName(MainParams* par);
 private void scanCommandLineArgs(MainParams *par);
@@ -349,8 +349,8 @@ private void executePreCommands(MainParams* par);
 private void exeCommands(MainParams* par);
 private void sourceStartupScripts(MainParams* par);
 private void mainerr(
-   Unt n,   // one of the ME_ defines
-   NULLABLE CS str   // extra argument
+   Unt n,   //one of the ME_ defines
+   NULLABLE CS str   //extra argument
 );
 private void main_msg(CS s);
 private void usage(void);
@@ -372,9 +372,9 @@ private int put_view(
    FILE* fd,
    Portal* wp,
    Tab* tp,
-   int add_edit,        // add ":edit" command to view
-   int current_arg_idx,     // current argument index of the portal, use -1 if unknown
-   EeSet* terminal_bufs // already encountered terminal books, can be NULL
+   int add_edit,        //add ":edit" command to view
+   int current_arg_idx,     //current argument index of the portal, use -1 if unknown
+   EeSet* terminal_bufs //already encountered terminal books, can be NULL
 );
 private VarFlavor getVarFlavor(CS varname);
 private int store_session_globals(FILE *fd);
@@ -408,10 +408,10 @@ private int read_eeglinfo_sub_string(Vir* virp, int force);
 private void write_eeglinfo_sub_string(FILE *fp);
 private int read_eeglinfo_search_pattern(Vir* virp, Boole force);
 private void wvsp_one(
-   FILE* fp,   // file to write to
-   int idx,   // spats[] index
-   CS s,   // search pat
-   int sc   // dir char
+   FILE* fp,   //file to write to
+   int idx,   //spats[] index
+   CS s,   //search pat
+   int sc   //dir char
 );
 private void write_eeglinfo_search_pattern(FILE* fp);
 private void prepare_eeglinfo_registers(void);
@@ -442,13 +442,13 @@ private void do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags);
 //}}}
 
 
-// Various parameters passed between main() and other functions.
+//Various parameters passed between main() and other functions.
 private MainParams paramsP;
 
 
-private void* virtualBuf = null;      // buffer for setvbuf()
+private void* virtualBuf = null;      //buffer for setvbuf()
 
-private CS start_dir = NULL;   // current working dir on startup
+private CS start_dir = NULL;   //current working dir on startup
 
 //#ifndef NO_EEGL_MAIN
 //private void usage(void);
@@ -465,7 +465,7 @@ private CS start_dir = NULL;   // current working dir on startup
 //private void set_progpath(CS argv0);
 //#endif
 
-// Different types of error messages.
+//Different types of error messages.
 private CS main_errors[] = {
     N_("Unknown option argument"),
 #define ME_UNKNOWN_OPTION   0
@@ -481,17 +481,23 @@ private CS main_errors[] = {
 #define ME_INVALID_ARG      5
 };
 
+//flags for read_eeglinfo() and children
+#define EIF_WANT_INFO       1   //load non-mark info
+#define EIF_WANT_MARKS      2   //load file marks
+#define EIF_ONLY_CURBOOK    4   //bail out after loading marks for curBook
+#define EIF_FORCEIT         8   //overwrite info already read
+#define EIF_GET_OLDFILES   16   //load v:oldfiles
 
-// It is defined when NO_EEGL_MAIN is defined, but then it's empty.
+//It is defined when NO_EEGL_MAIN is defined, but then it's empty.
 pub int
 libMain(void) {
 #ifndef NO_EEGL_MAIN
    //Decide about portal layout for diff mode after reading init.vim.
    if (paramsP.diff_mode && paramsP.portalLayout == 0) {
       if (diffopt_horizontal())
-         paramsP.portalLayout = WIN_HOR;   // use horizontal split
+         paramsP.portalLayout = WIN_HOR;   //use horizontal split
       else
-         paramsP.portalLayout = WIN_VER;   // use vertical split
+         paramsP.portalLayout = WIN_VER;   //use vertical split
    }
 
    //Recovery mode without a file name
@@ -541,8 +547,8 @@ libMain(void) {
    if (paramsP.edit_type == EDIT_STDIN && !recoveryModeG)
       readStdin();
 
-   // When switching screens and something caused a message from a vimrc
-   // script, need to output an extra newline on exit.
+   //When switching screens and something caused a message from a vimrc
+   //script, need to output an extra newline on exit.
    if ((anyEmsgG || msg_didout) && *termCodesG[KS_TI] != ZERO && paramsP.edit_type != EDIT_STDIN)
       newlineOnExitG = true;
 
@@ -559,21 +565,21 @@ libMain(void) {
       TIME_MSG("waiting for return");
    }
 
-   starttermcap();       // start termcap if not done by wait_return()
+   starttermcap();       //start termcap if not done by wait_return()
    TIME_MSG("start termcap");
 
-   setmouse();            // may start using the mouse
+   setmouse();            //may start using the mouse
    if (scroll_region)
-      scroll_region_reset();      // In case visibleRowsG changed
-   scroll_start();   // may scroll the screen to the right position
+      scroll_region_reset();      //In case visibleRowsG changed
+   scroll_start();   //may scroll the screen to the right position
 
-   screenclear();         // clear screen
+   screenclear();         //clear screen
    TIME_MSG("clearing screen");
 
    no_wait_return = true;
 
-   // Create the requested number of portals and edit buffers.
-   // Also does recovery if "recoveryModeG" set.
+   //Create the requested number of portals and edit buffers.
+   //Also does recovery if "recoveryModeG" set.
    createPortals(&paramsP);
    TIME_MSG("opening buffers");
 
@@ -581,18 +587,18 @@ libMain(void) {
    TIME_MSG("BufEnter autocommands");
    setpcmark();
 
-   // When started with "-q errorfile" jump to first error now.
+   //When started with "-q errorfile" jump to first error now.
    if (paramsP.edit_type == EDIT_QF) {
       llJump(NULL, 0, 0, false);
       TIME_MSG("jump to first error");
    }
 
-   // If opened more than one portal, start editing files in the other portals.
+   //If opened more than one portal, start editing files in the other portals.
    editBuffers(&paramsP, start_dir);
    eeglFree(start_dir);
 
    if (paramsP.diff_mode) {
-      // set options in each portal for "eegldiff".
+      //set options in each portal for "eegldiff".
       Portal* port;
       FOR_ALL_PORTALS(port)
          diff_win_options(port, true);
@@ -609,19 +615,19 @@ libMain(void) {
       executeCommLine(IObuff);
       TIME_MSG("jumping to tag");
 
-      // If the user doesn't want to edit the file then we quit here.
+      //If the user doesn't want to edit the file then we quit here.
       if (swap_exists_did_quit)
          exitEegl(1);
    }
 
-   // Execute any "+", "-c" and "-S" arguments.
+   //Execute any "+", "-c" and "-S" arguments.
    if (paramsP.n_commands > 0)
       exeCommands(&paramsP);
 
-   // Must come before the may_req_ calls.
+   //Must come before the may_req_ calls.
    starting = 0;
 
-   // Must be done before redrawing, puts a few characters on the screen.
+   //Must be done before redrawing, puts a few characters on the screen.
    check_terminal_behavior();
 
    isRedrawingDisabledG = 0;
@@ -646,12 +652,12 @@ libMain(void) {
       TIME_MSG("diff scrollbinding");
    }
 
-   // If ":startinsert" command used, stuff a dummy command to be able to
-   // call normalAction(), which will then start Insert mode.
+   //If ":startinsert" command used, stuff a dummy command to be able to
+   //call normalAction(), which will then start Insert mode.
    if (restart_edit != 0)
       stuffcharReadbuff(K_NOP);
 
-   // Redraw at least once, also when 'lazyredraw' is set, to be sure the window title gets updated
+   //Redraw at least once, also when 'lazyredraw' is set, to be sure the window title gets updated
    //do_redraw = true;
 
    TIME_MSG("before starting main loop");
@@ -659,12 +665,12 @@ libMain(void) {
    //Call the main command loop. This never returns.
    mainLoop(false);
 
-#endif // NO_EEGL_MAIN
+#endif //NO_EEGL_MAIN
 
    return 0;
 }
 
-// Initialization #1 shared by main() and some tests.
+//Initialization #1 shared by main() and some tests.
 pub void
 init0(void) {
    estack_init();
@@ -677,7 +683,7 @@ init0(void) {
       return;
    }
    //optsInitializeGlobalDefaults();
-   evalInitGlobals();   // init global variables
+   evalInitGlobals();   //init global variables
 
    //Allocate space for the generic buffers (needed for optInit0() and emsg()).
    IObuff = alloc(IOSIZE);
@@ -685,7 +691,7 @@ init0(void) {
    TIME_MSG("Allocated generic buffers");
 }
 
-// Initialization #1 shared by main() and some tests.
+//Initialization #1 shared by main() and some tests.
 private void
 init1(OUT MainParams* par) {
    //Setup to use the current locale (for ctype() and many other things).
@@ -696,16 +702,16 @@ init1(OUT MainParams* par) {
    
    //Set the default values for the options.
    //First find out the home directory, needed to expand "~" in options.
-   init_homedir();      // find real value of $HOME
+   init_homedir();      //find real value of $HOME
    TIME_MSG("inits 0");
 
    swapDirG = fiInitSwapDir((CS)par->argv[0]);
 
    //Do a first scan of the arguments in "argv[]":
-   //   -display or --display
-   //   --server...
-   //   --socketid
-   //   --windowid
+   //  -display or --display
+   //  --server...
+   //  --socketid
+   //  --windowid
    earlyArgScan(par);
 
    TIME_MSG("clipboard setup");
@@ -721,17 +727,17 @@ init1(OUT MainParams* par) {
    if (portAllocFirst() == FAIL)
       mch_exit(0);
 
-   init_yank();      // init yank buffers
+   init_yank();      //init yank buffers
 
-   alist_init(&argListG);   // Init the argument list to empty.
+   alist_init(&argListG);   //Init the argument list to empty.
    argListG.id = 0;
 
    init_signs();
    
    set_internal_string_var(S"g:mapleader", S",");
 
-   // initialize location lists. don't send an error message when memory allocation fails.
-   // do it when the user tries to access a location list
+   //initialize location lists. don't send an error message when memory allocation fails.
+   //do it when the user tries to access a location list
    llInitStacksOnce();
 }
 
@@ -756,10 +762,10 @@ appMain(int argc, char** argv) {
    atexit(eeMemProfileDump);
 #endif
 
-   // Various initializations #0 shared with tests.
+   //Various initializations #0 shared with tests.
    init0();
 
-   // Need to find "--startuptime" and "--log" before actually parsing arguments.
+   //Need to find "--startuptime" and "--log" before actually parsing arguments.
    for (int i = 1; i < argc - 1; ++i) {
       if (caseInsensitiveCompare(argv[i], "--startuptime") == 0 && time_fd == NULL) {
          time_fd = fopen(argv[i + 1], "a");
@@ -769,7 +775,7 @@ appMain(int argc, char** argv) {
          ch_logfile((CS)(argv[i + 1]), S"ao");
    }
 
-   // Various initializations #1 shared with tests.
+   //Various initializations #1 shared with tests.
    init1(OUT &paramsP);
 
    //Figure out the way to work from the command name argv[0]. "eegldiff" starts diff mode, etc.
@@ -777,12 +783,12 @@ appMain(int argc, char** argv) {
    
    p_modifiable = true;
 
-   // Process command line arguments. File names are put into the global argument list "argListG"
+   //Process command line arguments. File names are put into the global argument list "argListG"
    scanCommandLineArgs(&paramsP);
    TIME_MSG("parsing arguments");
 
-   // On some systems, when we compile with the GUI, we always use it.  On Mac
-   // there is no terminal version, and on Portals we can't fork one off with :gui.
+   //On some systems, when we compile with the GUI, we always use it.  On Mac
+   //there is no terminal version, and on Portals we can't fork one off with :gui.
    if (GARGCOUNT > 0) {
       paramsP.fname = alist_name(&GARGLIST[0]);
    }
@@ -790,12 +796,12 @@ appMain(int argc, char** argv) {
    TIME_MSG("expanding arguments");
 
    if (paramsP.diff_mode && paramsP.portalCount == UNT)
-      paramsP.portalCount = 0;   // open up to 3 portals
+      paramsP.portalCount = 0;   //open up to 3 portals
 
-   // Don't redraw until much later.
+   //Don't redraw until much later.
    ++isRedrawingDisabledG;
 
-   // When listing swap file names, don't do cursor positioning et. al.
+   //When listing swap file names, don't do cursor positioning et. al.
    if (recoveryModeG && paramsP.fname == NULL)
       paramsP.want_full_screen = false;
 
@@ -804,11 +810,11 @@ appMain(int argc, char** argv) {
    uiInit();
    TIME_MSG("shell init");
 
-   // Print a warning if stdout is not a terminal.
+   //Print a warning if stdout is not a terminal.
    check_tty(&paramsP);
 
    if (silentModeG) {
-      // Ensure output works usefully without a tty: buffer lines instead of fully buffered.
+      //Ensure output works usefully without a tty: buffer lines instead of fully buffered.
       virtualBuf = malloc(BUFSIZ);
       setvbuf(stdout, virtualBuf, _IOLBF, BUFSIZ);
    }
@@ -818,17 +824,17 @@ appMain(int argc, char** argv) {
    if (GARGCOUNT > 1 && !silentModeG && !is_not_a_term())
       printf((char*)_("%d files to edit\n"), GARGCOUNT);
 
-   initHilite(true); // set the default hilite groups
+   initHilite(true); //set the default hilite groups
    drawInit();
    if (paramsP.want_full_screen && !silentModeG) {
       //set terminal name and get terminal capabilities (will set fullScreenG)
       termInitTerminfo(paramsP.term);
-      screen_start();      // don't know where cursor is now
+      screen_start();      //don't know where cursor is now
       TIME_MSG("Termcap init");
    }
 
    //Set the default values for the options that use visibleRowsG and visibleColsG.
-   ui_get_shellsize();      // inits Rows and Columns
+   ui_get_shellsize();      //inits Rows and Columns
    portalInitSize();
    //Set the @diff option now, so that it can be checked for in an init.vim
    //file. There is no book yet, though.
@@ -837,7 +843,7 @@ appMain(int argc, char** argv) {
 
    commlineRowG = visibleRowsG - commlineHeightG;
    msgRowG = commlineRowG;
-   screenalloc(false);      // allocate screen buffers
+   screenalloc(false);      //allocate screen buffers
    optInit1();
    TIME_MSG("inits 0");
 
@@ -860,13 +866,13 @@ appMain(int argc, char** argv) {
    return libMain();
 }
 
-// Return true when the --not-a-term argument was found.
+//Return true when the --not-a-term argument was found.
 pub int
 is_not_a_term(void) {
    return paramsP.not_a_term;
 }
 
-// Return true when the --not-a-term argument was found or the GUI is in use.
+//Return true when the --not-a-term argument was found or the GUI is in use.
 pub int
 is_not_a_term_or_gui(void) {
    return paramsP.not_a_term;
@@ -883,10 +889,10 @@ free_vbuf(void) {
 }
 #endif
 
-// When true in a safe state when starting to wait for a character.
+//When true in a safe state when starting to wait for a character.
 private Boole wasSafeP = false;
 
-// Return whether currently it is safe, assuming it was safe before (high level state didn't change)
+//Return whether currently it is safe, assuming it was safe before (high level state didn't change)
 private int
 isSafeNow(void) {
    return stuff_empty()
@@ -896,20 +902,20 @@ isSafeNow(void) {
       && !global_busy;
 }
 
-// Trigger SafeState if currently in a safe state, that is "safe" is true and there is no typeahead
+//Trigger SafeState if currently in a safe state, that is "safe" is true and there is no typeahead
 pub void
 may_trigger_safestate(Boole safe) {
    Boole is_safe = safe && isSafeNow();
    if (wasSafeP != is_safe)
-      // Only log when the state changes, otherwise it happens at nearly every key stroke.
+      //Only log when the state changes, otherwise it happens at nearly every key stroke.
       lo(is_safe ? "SafeState: Start triggering" : "SafeState: Stop triggering");
    if (is_safe)
       applyAutocomms(EVENT_SAFESTATE, NULL, NULL, false, curBook);
    wasSafeP = is_safe;
 }
 
-// Something changed which causes the state possibly to be unsafe, e.g. a
-// character was typed.  It will remain unsafe until the next call to may_trigger_safestate().
+//Something changed which causes the state possibly to be unsafe, e.g. a
+//character was typed.  It will remain unsafe until the next call to may_trigger_safestate().
 pub void
 state_no_longer_safe(CS reason) {
    if (wasSafeP)
@@ -922,19 +928,19 @@ get_was_safe_state(void) {
    return wasSafeP;
 }
 
-// Invoked when leaving code that invokes callbacks.  Then trigger
-// SafeStateAgain, if it was safe when starting to wait for a character.
+//Invoked when leaving code that invokes callbacks.  Then trigger
+//SafeStateAgain, if it was safe when starting to wait for a character.
 pub void
 may_trigger_safestateagain(void) {
    if (!wasSafeP)     {
-      // If the safe state was reset in state_no_longer_safe(), e.g. because
-      // of calling feedkeys(), we check if it's now safe again (all keys were consumed).
+      //If the safe state was reset in state_no_longer_safe(), e.g. because
+      //of calling feedkeys(), we check if it's now safe again (all keys were consumed).
       wasSafeP = isSafeNow();
       if (wasSafeP)
          lo("SafeState: undo reset");
    }
    if (wasSafeP) {
-      // Only do this message when another message was given, otherwise we get lots of them.
+      //Only do this message when another message was given, otherwise we get lots of them.
       if ((did_repeated_msg & REPEATED_MSG_SAFESTATE) == 0)    {
          int did = did_repeated_msg;
 
@@ -956,8 +962,8 @@ work_pending(void) {
 //Also used to handle commands in the command-line portal, until the portal is closed.
 //Also used to handle ":visual" command after ":global": execute Normal mode commands.
 pub void
-mainLoop(Boole inCommPort) {  // true when working in the command-line window
-   Operator oper;      // operator arguments
+mainLoop(Boole inCommPort) {  //true when working in the command-line window
+   Operator oper;      //operator arguments
    Operator* operPrev = currOperatorG; //operator arguments
    currOperatorG = &oper;
 
@@ -967,8 +973,8 @@ mainLoop(Boole inCommPort) {  // true when working in the command-line window
          did_check_timestamps = false;
          if (need_check_timestamps)
             check_timestamps(false);
-         if (need_wait_return)   // if wait_return() still needed ...
-            wait_return(false);   // ... call it now
+         if (need_wait_return)   //if wait_return() still needed ...
+            wait_return(false);   //... call it now
       }
 
       //Reset "gotInterruptG" now that we got back to the main loop.  Except when
@@ -977,7 +983,7 @@ mainLoop(Boole inCommPort) {  // true when working in the command-line window
       //a second time we go back to Ex mode and abort the ":g" command.
       if (gotInterruptG) {
          if (!quitMoreG) {
-            (void)vgetc();      // flush all buffers
+            (void)vgetc();      //flush all buffers
          }
          gotInterruptG = false;
       }
@@ -1007,32 +1013,32 @@ mainLoop(Boole inCommPort) {  // true when working in the command-line window
             last_cursormoved = curPor->cursor;
          }
 
-         // Ensure curPor->topLine and curPor->leftCol are up to date before triggering a 
-         // WinScrolled autocommand.
+         //Ensure curPor->topLine and curPor->leftCol are up to date before triggering a 
+         //WinScrolled autocommand.
          update_topline();
          validate_cursor();
 
          if (!finish_op)
             may_trigger_win_scrolled_resized();
 
-         // If nothing is pending and we are going to wait for the user to
-         // type a character, trigger SafeState.
+         //If nothing is pending and we are going to wait for the user to
+         //type a character, trigger SafeState.
          may_trigger_safestate(!op_pending() && restart_edit == 0);
 
-         // Updating diffs from changed() does not always work properly,
-         // esp. updating folds.  Do an update just before redrawing if needed.
+         //Updating diffs from changed() does not always work properly,
+         //esp. updating folds.  Do an update just before redrawing if needed.
          if (curtab->diff_update || curtab->diff_invalid) {
             c_diffupdate(NULL);
             curtab->diff_update = false;
          }
 
-         // Scroll-binding for diff mode may have been postponed until
-         // here.  Avoids doing it for every change.
+         //Scroll-binding for diff mode may have been postponed until
+         //here.  Avoids doing it for every change.
          if (diff_need_scrollbind) {
             check_scrollbind((LineNr)0, 0L);
             diff_need_scrollbind = false;
          }
-         // Include a closed fold completely in the Visual area.
+         //Include a closed fold completely in the Visual area.
          foldAdjustVisual();
          //When 'foldclose' is set, apply 'foldlevel' to folds that don't contain the cursor.
          //When 'foldopen' is "all", open the fold(s) under the cursor.
@@ -1049,14 +1055,14 @@ mainLoop(Boole inCommPort) {  // true when working in the command-line window
          validate_cursor();
 
          if (VIsual_active)
-            drawUpdateCurBook(UPD_INVERTED); // update inverted part
+            drawUpdateCurBook(UPD_INVERTED); //update inverted part
          ei (mustRedrawG) {
             drawUpdateScreen(0);
          } ei (redrawCommlineG || mustClearCommlineG || redrawModeG)
             showmode();
          redraw_statuslines();
          curBook->lastUsed = eeTime();
-         // display message after redraw
+         //display message after redraw
          if (msgAfterRedrawG) {
             CS p = copyStr(msgAfterRedrawG);
             //msg_start() will set msgAfterRedrawG to NULL, make a copy first. Don't reset 
@@ -1067,15 +1073,15 @@ mainLoop(Boole inCommPort) {  // true when working in the command-line window
             msg_hist_off = false;
             eeglFree(p);
          }
-         if (needFileinfoG) {     // show file info after redraw
+         if (needFileinfoG) {     //show file info after redraw
             fileinfo(false, true, false);
             needFileinfoG = false;
          }
 
-         emsg_on_display = false;   // can delete error message now
+         emsg_on_display = false;   //can delete error message now
          anyEmsgG = false;
-         msg_didany = false;      // reset lines_left in msg_start()
-         may_clear_sb_text();   // clear scroll-back text on next msg
+         msg_didany = false;      //reset lines_left in msg_start()
+         may_clear_sb_text();   //clear scroll-back text on next msg
          showruler(false);
 
          setcursor();
@@ -1091,16 +1097,16 @@ mainLoop(Boole inCommPort) {  // true when working in the command-line window
             fclose(time_fd);
             time_fd = NULL;
          }
-         // After the first screen update may start triggering WinScrolled
-         // autocmd events.  Store all the scroll positions and sizes now.
+         //After the first screen update may start triggering WinScrolled
+         //autocmd events.  Store all the scroll positions and sizes now.
          may_make_initial_scroll_size_snapshot();
       }
 
-      // May request the keyboard protocol state now.
+      //May request the keyboard protocol state now.
       may_send_t_RK();
 
-      // Update cursWant if setCursWant has been set.
-      // Postponed until here to avoid computing virtCol too often.
+      //Update cursWant if setCursWant has been set.
+      //Postponed until here to avoid computing virtCol too often.
       update_curswant();
 
       //May perform garbage collection when waiting for a character, but
@@ -1148,13 +1154,13 @@ exitEegl(int exitval) {
       Portal      *wp;
       int      unblock = 0;
 
-      // Trigger BufWinLeave for all portals, but only once per buffer.
+      //Trigger BufWinLeave for all portals, but only once per buffer.
       Tab* next_tp;
       for (Tab* tp = firstTabG; tp; tp = next_tp) {
          next_tp = tp->next;
          FOR_ALL_PORTALS_IN_TAB(tp, wp) {
             if (wp->book == NULL || !bookIsValid(wp->book))
-               // Autocmd must have close the buffer already, skip.
+               //Autocmd must have close the buffer already, skip.
                continue;
             Book* book = wp->book;
             if (CHANGEDTICK(book) != -1) {
@@ -1163,9 +1169,9 @@ exitEegl(int exitval) {
                bookStoreInRef(OUT &bookRef, book);
                applyAutocomms(EVENT_BUFWINLEAVE, book->currFileName, book->currFileName, false, book);
                if (bookRefValid(&bookRef))
-                  CHANGEDTICK(book) = -1;  // note we did it already
+                  CHANGEDTICK(book) = -1;  //note we did it already
 
-               // start all over, autocommands may mess up the lists
+               //start all over, autocommands may mess up the lists
                next_tp = firstTabG;
                break;
             }
@@ -1173,19 +1179,19 @@ exitEegl(int exitval) {
       }
 
       Book* book;
-      // Trigger BufUnload for loaded books
+      //Trigger BufUnload for loaded books
       FOR_ALL_BOOKS(book) {
          if (book->mem.mfile) {
             BookRef bookRef;
             bookStoreInRef(OUT &bookRef, book);
             applyAutocomms(EVENT_BUFUNLOAD, book->currFileName, book->currFileName, false, book);
             if (!bookRefValid(&bookRef))
-               // autocmd deleted the book
+               //autocmd deleted the book
                break;
          }
       }
 
-      // deathtrap() blocks autocommands, but we do want to trigger EeglLeavePre.
+      //deathtrap() blocks autocommands, but we do want to trigger EeglLeavePre.
       if (areAutocommsBlocked()) {
          unblock_autocmds();
          ++unblock;
@@ -1201,13 +1207,13 @@ exitEegl(int exitval) {
 #endif
          p_eeglinfo
    )
-      // Write out the registers, history, marks etc, to the eeglinfo file
+      //Write out the registers, history, marks etc, to the eeglinfo file
       write_eeglinfo(NULL, false);
 
    if (v_dying <= 1) {
       int unblock = 0;
 
-      // deathtrap() blocks autocommands, but we do want to trigger EeglLeave.
+      //deathtrap() blocks autocommands, but we do want to trigger EeglLeave.
       if (areAutocommsBlocked()) {
           unblock_autocmds();
           ++unblock;
@@ -1218,12 +1224,12 @@ exitEegl(int exitval) {
    }
 
    if (anyEmsgG) {
-      // give the user a chance to read the (error) message
+      //give the user a chance to read the (error) message
       no_wait_return = false;
       wait_return(false);
    }
 
-   // Position the cursor again, the autocommands may have moved it
+   //Position the cursor again, the autocommands may have moved it
    if (!is_not_a_term_or_gui())
       windgoto((int)visibleRowsG - 1, 0);
 
@@ -1253,12 +1259,12 @@ earlyArgScan(MainParams* par) {
 
 #ifndef NO_EEGL_MAIN
 
-// Get an (optional) count for a Eegl argument.
+//Get an (optional) count for a Eegl argument.
 private int
 getNumericArg(
-   CS p,       // pointer to argument
-   int* idx,       // index in argument, is incremented
-   int def       // default value
+   CS p,       //pointer to argument
+   int* idx,       //index in argument, is incremented
+   int def       //default value
 ){
    if (eeIsDigit(p[*idx])) {
       def = atoi((char *)&(p[*idx]));
@@ -1282,12 +1288,12 @@ parseCommandName(MainParams* par) {
    if (STRNICMP(initstr, "view", 4) == 0) {
       optSetByName(S"modifiable", optBoole(false), SET_GLOBAL);
       curBook->o.modifiable = false;
-      swapEnabledG = true;         // don't update very often
+      swapEnabledG = true;         //don't update very often
       initstr += 4;
    } ei (STRNICMP(initstr, "eegl", 3) == 0)
       initstr += 3;
 
-   // Catch "eegldiff" and "viewdiff".
+   //Catch "eegldiff" and "viewdiff".
    if (caseInsensitiveCompare(initstr, "diff") == 0) {
       par->diff_mode = true;
    }
@@ -1298,37 +1304,37 @@ private void
 scanCommandLineArgs(MainParams *par) {
    int argc = par->argc;
    char** argv = par->argv;
-   int argv_idx;      // index in argv[n][]
-   int had_minmin = false;   // found "--" argument
-   int want_argument;      // option argument with argument
+   int argv_idx;      //index in argv[n][]
+   int had_minmin = false;   //found "--" argument
+   int want_argument;      //option argument with argument
    int c;
    CS text = NULL;
 
    --argc;
    ++argv;
-   argv_idx = 1;       // active option letter is argv[0][argv_idx]
+   argv_idx = 1;       //active option letter is argv[0][argv_idx]
    while (argc > 0) {
       //"+" or "+{number}" or "+/{pat}" or "+{command}" argument.
       if (argv[0][0] == '+' && !had_minmin) {
          if (par->n_commands >= MAX_ARG_CMDS)
             mainerr(ME_EXTRA_CMD, NULL);
-         argv_idx = -1;       // skip to next argument
+         argv_idx = -1;       //skip to next argument
          if (argv[0][1] == ZERO)
             par->commands[par->n_commands++] = (CS)"$";
          else
             par->commands[par->n_commands++] = (CS)&(argv[0][1]);
       }
-      // Optional argument.
+      //Optional argument.
       ei (argv[0][0] == '-' && !had_minmin) {
          want_argument = false;
          c = argv[0][argv_idx++];
          switch (c) {
-         case ZERO:      // "eegl -"  read from stdin. "ex -" silent mode
+         case ZERO:      //"eegl -"  read from stdin. "ex -" silent mode
             if (par->edit_type != EDIT_NONE)
                mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
             par->edit_type = EDIT_STDIN;
-            read_cmd_fd = 2;   // read from stderr instead of stdin
-            argv_idx = -1;      // skip to next argument
+            read_cmd_fd = 2;   //read from stderr instead of stdin
+            argv_idx = -1;      //skip to next argument
             break;
 
          case '-': 
@@ -1349,7 +1355,7 @@ scanCommandLineArgs(MainParams *par) {
                 usage();
             ei (caseInsensitiveCompare(argv[0] + argv_idx, "version") == 0) {
                 visibleColsG = 80;
-                info_message = true; // use mch_msg(), not mch_errmsg()
+                info_message = true; //use mch_msg(), not mch_errmsg()
                 list_version();
                 msg_putchar('\n');
                 msg_didout = false;
@@ -1377,11 +1383,11 @@ scanCommandLineArgs(MainParams *par) {
                 want_argument = true;
                 argv_idx += 3;
             } ei (STRNICMP(argv[0] + argv_idx, "serverlist", 10) == 0)
-                ; // already processed -- no arg
+                ; //already processed -- no arg
             ei (STRNICMP(argv[0] + argv_idx, "servername", 10) == 0
                    || STRNICMP(argv[0] + argv_idx, "serversend", 10) == 0
             ){
-               // already processed -- snatch the following arg
+               //already processed -- snatch the following arg
                if (argc > 1) {
                   --argc;
                   ++argv;
@@ -1392,92 +1398,92 @@ scanCommandLineArgs(MainParams *par) {
                had_minmin = true;
             }
             if (!want_argument)
-               argv_idx = -1;   // skip to next argument
+               argv_idx = -1;   //skip to next argument
             break;
 
-         case 'b':      // "-b" binary mode. binary file I/O
+         case 'b':      //"-b" binary mode. binary file I/O
             OptionChange cha = (OptionChange){.newVal = optBoole(true), .setScope = SET_LOCAL,
                .ref = (OptionRef){.tag = OPTION_BOOLE, .boole = &curBook->o.binary}
             };
             optSetBinary(&cha);
             break;
 
-         case 'h':      // "-h" give help message
+         case 'h':      //"-h" give help message
             usage();
             break;
 
-         case 'M':      // "-M"  no changes or writing of files
-            // FALLTHROUGH
+         case 'M':      //"-M"  no changes or writing of files
+            //FALLTHROUGH
          case 'm':
             p_modifiable = false;
             break;
 
-         case 'n':      // "-n" no swap file
+         case 'n':      //"-n" no swap file
             par->no_swap_file = true;
             break;
 
-         case 'p':      // "-p[N]" open N tabs
-            // default is 0: open portal for each file
+         case 'p':      //"-p[N]" open N tabs
+            //default is 0: open portal for each file
             par->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
             par->portalLayout = WIN_TABS;
             break;
 
-         case 'o':      // "-o[N]" open N horizontal split windows
-            // default is 0: open window for each file
+         case 'o':      //"-o[N]" open N horizontal split windows
+            //default is 0: open window for each file
             par->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
             par->portalLayout = WIN_HOR;
             break;
 
-         case 'O':   // "-O[N]" open N vertical split windows
-            // default is 0: open window for each file
+         case 'O':   //"-O[N]" open N vertical split windows
+            //default is 0: open window for each file
             par->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
             par->portalLayout = WIN_VER;
             break;
 
-         case 'q':      // "-q" QuickFix mode
+         case 'q':      //"-q" QuickFix mode
             if (par->edit_type != EDIT_NONE) 
                mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
             par->edit_type = EDIT_QF;
-            if (argv[0][argv_idx]) {     // "-q{errorfile}"
+            if (argv[0][argv_idx]) {     //"-q{errorfile}"
                par->use_ef = (CS)argv[0] + argv_idx;
                argv_idx = -1;
-            } ei (argc > 1)      // "-q {errorfile}"
+            } ei (argc > 1)      //"-q {errorfile}"
                want_argument = true;
             break;
 
-         case 'R':      // "-R" readonly mode, equivalent to "-m" or "-M"
+         case 'R':      //"-R" readonly mode, equivalent to "-m" or "-M"
             p_modifiable = false;
             break;
 
-         case 'r':      // "-r" recovery mode
-         case 'L':      // "-L" recovery mode
+         case 'r':      //"-r" recovery mode
+         case 'L':      //"-L" recovery mode
             recoveryModeG = 1;
             break;
 
          case 's':
-            // "-s {scriptin}" read from script file
+            //"-s {scriptin}" read from script file
             want_argument = true;
             break;
 
-         case 't':      // "-t {tag}" or "-t{tag}" jump to tag
+         case 't':      //"-t {tag}" or "-t{tag}" jump to tag
             if (par->edit_type != EDIT_NONE)
                mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
             par->edit_type = EDIT_TAG;
-            if (argv[0][argv_idx]) {     // "-t{tag}"
+            if (argv[0][argv_idx]) {     //"-t{tag}"
                par->tagname = (CS)argv[0] + argv_idx;
                argv_idx = -1;
-            } else            // "-t {tag}"
+            } else            //"-t {tag}"
                 want_argument = true;
             break;
 
-         case 'D':      // "-D"      Debugging
+         case 'D':      //"-D"      Debugging
             par->use_debug_break_level = 9999;
             break;
-         case 'd':      // "-d"      'diff'
+         case 'd':      //"-d"      'diff'
             par->diff_mode = true;
             break;
-         case 'V':      // "-V{N}"   Verbose level
-            // default is 10: a little bit verbose
+         case 'V':      //"-V{N}"   Verbose level
+            //default is 10: a little bit verbose
             p_verbose = getNumericArg((CS)argv[0], &argv_idx, 10);
             if (argv[0][argv_idx] != ZERO) {
                optChangeAndReportError(
@@ -1488,11 +1494,11 @@ scanCommandLineArgs(MainParams *par) {
             break;
 
 
-         case 'w': // "-w {scriptout}"   write to script
+         case 'w': //"-w {scriptout}"   write to script
             want_argument = true;
             break;
 
-         case 'c':      // "-c{command}" or "-c {command}" execute command
+         case 'c':      //"-c{command}" or "-c {command}" execute command
             if (argv[0][argv_idx] != ZERO) {
                if (par->n_commands >= MAX_ARG_CMDS)
                   mainerr(ME_EXTRA_CMD, NULL);
@@ -1500,13 +1506,13 @@ scanCommandLineArgs(MainParams *par) {
                argv_idx = -1;
                break;
             }
-            // FALLTHROUGH
-         case 'P':      // "-P {dir}" project mode at dir
-         case 'S':      // "-S {file}" execute Vimscript
-         case 'i':      // "-i {eeglinfo}" use for eeglinfo
-         case 'T':      // "-T {terminal}" terminal name
-         case 'u':      // "-u {vimrc}" Eegl inits file
-         case 'W':      // "-W {scriptout}" overwrite
+            //FALLTHROUGH
+         case 'P':      //"-P {dir}" project mode at dir
+         case 'S':      //"-S {file}" execute Vimscript
+         case 'i':      //"-i {eeglinfo}" use for eeglinfo
+         case 'T':      //"-T {terminal}" terminal name
+         case 'u':      //"-u {vimrc}" Eegl inits file
+         case 'W':      //"-W {scriptout}" overwrite
             want_argument = true;
             break;
 
@@ -1516,19 +1522,19 @@ scanCommandLineArgs(MainParams *par) {
 
          //Handle option arguments with argument.
          if (want_argument) {
-            // Check for garbage immediately after the option letter.
+            //Check for garbage immediately after the option letter.
             if (argv[0][argv_idx] != ZERO)
                 mainerr(ME_GARBAGE, (CS)argv[0]);
 
             --argc;
-            if (argc < 1 && c != 'S')  // -S has an optional argument
+            if (argc < 1 && c != 'S')  //-S has an optional argument
                 mainerr_arg_missing((CS)argv[0]);
             ++argv;
             argv_idx = -1;
 
             switch (c) {
-            case 'c':   // "-c {command}" execute command
-            case 'S':   // "-S {file}" execute Vim script
+            case 'c':   //"-c {command}" execute command
+            case 'S':   //"-S {file}" execute Vim script
                if (par->n_commands >= MAX_ARG_CMDS)
                   mainerr(ME_EXTRA_CMD, NULL);
                if (c == 'S') {
@@ -1552,31 +1558,31 @@ scanCommandLineArgs(MainParams *par) {
                   par->commands[par->n_commands++] = (CS)argv[0];
                break;
                
-            case 'P':   // "-P {dir}" project mode at dir
+            case 'P':   //"-P {dir}" project mode at dir
                projectDirG = (CS)argv[0];
                break;
 
             case '-':
                if (argv[-1][2] == 'c') {
-                  // "--comm {command}" execute command
+                  //"--comm {command}" execute command
                   if (par->n_pre_commands >= MAX_ARG_CMDS)
                      mainerr(ME_EXTRA_CMD, NULL);
                   par->pre_commands[par->n_pre_commands++] = (CS)argv[0];
                }
 
-               // "--startuptime <file>" already handled
-               // "--log <file>" already handled
+               //"--startuptime <file>" already handled
+               //"--log <file>" already handled
                break;
 
-            case 'q':   // "-q {errorfile}" QuickFix mode
+            case 'q':   //"-q {errorfile}" QuickFix mode
                par->use_ef = (CS)argv[0];
                break;
 
-            case 'i':   // "-i {eeglinfo}" use for eeglinfo
+            case 'i':   //"-i {eeglinfo}" use for eeglinfo
                optChangeAndReportError(S"eeglinfofile", optStr(argv[0]), SET_GLOBAL);
                break;
 
-            case 's':   // "-s {scriptin}" read from script file
+            case 's':   //"-s {scriptin}" read from script file
                if (scriptin[0]) {
 scripterror:
                   mch_errmsg(_("Attempt to open script file again: \""));
@@ -1593,25 +1599,25 @@ scripterror:
                   mch_exit(2);
                }
                if (save_typebuf() == FAIL)
-                  mch_exit(2);   // out of memory
+                  mch_exit(2);   //out of memory
                break;
 
-            case 't':   // "-t {tag}"
+            case 't':   //"-t {tag}"
                 par->tagname = (CS)argv[0];
                 break;
 
-            case 'T':   // "-T {terminal}" terminal name
+            case 'T':   //"-T {terminal}" terminal name
                //The -T term argument is always available and when
                //HAVE_TERMLIB is supported it overrides the environment variable TERM.
                par->term = (CS)argv[0];
                break;
 
-            case 'u':   // "-u {vimrc}" Eegl inits file
+            case 'u':   //"-u {vimrc}" Eegl inits file
                 par->altInitFile = (CS)argv[0];
                 break;
 
-            case 'w': // "-w {scriptout}" append to script file
-            case 'W': // "-W {scriptout}" overwrite script file
+            case 'w': //"-w {scriptout}" append to script file
+            case 'W': //"-W {scriptout}" overwrite script file
                if (scriptout)
                   goto scripterror;
                if ((scriptout = fopen(argv[0], c == 'w' ? APPENDBIN : WRITEBIN)) == NULL) {
@@ -1625,15 +1631,15 @@ scripterror:
             }
          }
       } else {
-      // File name argument.
-         argv_idx = -1;       // skip to next argument
+      //File name argument.
+         argv_idx = -1;       //skip to next argument
 
-         // Check for only one type of editing.
+         //Check for only one type of editing.
          if (par->edit_type != EDIT_NONE && par->edit_type != EDIT_FILE)
             mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
          par->edit_type = EDIT_FILE;
 
-         // Add the file to the global argument list.
+         //Add the file to the global argument list.
          if (ga_grow(&argListG.al_ga, 1) == FAIL)
             mch_exit(2);
          text = copyStr((CS)argv[0]); 
@@ -1650,7 +1656,7 @@ scripterror:
             }
          }
 
-         arglistIngest(&argListG, text, 2); // add buffer number now and use curBook
+         arglistIngest(&argListG, text, 2); //add buffer number now and use curBook
       }
 
       //If there are no more letters after the current "-", go to next
@@ -1662,7 +1668,7 @@ scripterror:
       }
    }
 
-   // If there is a "+123" or "-c" command, set v:swapcommand to the first one.
+   //If there is a "+123" or "-c" command, set v:swapcommand to the first one.
    if (par->n_commands > 0) {
       text = alloc(STRLEN(par->commands[0]) + 3);
       sprintf((char *)text, ":%s\r", par->commands[0]);
@@ -1672,10 +1678,10 @@ scripterror:
 
 //}}}
 
-// Print a warning if stdout is not a terminal.
+//Print a warning if stdout is not a terminal.
 private void
 check_tty(MainParams* par) {
-   int input_isatty;      // is active input a terminal?
+   int input_isatty;      //is active input a terminal?
 
    input_isatty = mch_input_isatty();
    if (par->want_full_screen && (!stdout_isatty || !input_isatty) && !par->not_a_term) {
@@ -1692,17 +1698,17 @@ check_tty(MainParams* par) {
    }
 }
 
-// Read text from stdin.
+//Read text from stdin.
 private void
 readStdin(void) {
-   // When getting the ATTENTION prompt here, use a dialog
+   //When getting the ATTENTION prompt here, use a dialog
    swap_exists_action = SEA_DIALOG;
 
    no_wait_return = true;
    int i = msg_didany;
    bookSetBooklisted(true);
 
-   // Create memfile and read from stdin.
+   //Create memfile and read from stdin.
    (void)bookOpenFromInvo(true, NULL, 0);
 
    no_wait_return = false;
@@ -1711,8 +1717,8 @@ readStdin(void) {
 
    check_swap_exists_action();
 
-   // Dup stdin from stderr to read commands from, so that shell commands work.
-   // TODO: why is this needed, even though readfile() has done this?
+   //Dup stdin from stderr to read commands from, so that shell commands work.
+   //TODO: why is this needed, even though readfile() has done this?
    close(0);
    (void)dup(2);
 }
@@ -1724,12 +1730,12 @@ createPortals(MainParams* par) {
    int dorewind;
 
    //Create the number of portals that was requested.
-   if (par->portalCount == UNT)   // was not set
+   if (par->portalCount == UNT)   //was not set
       par->portalCount = 1;
    if (par->portalCount == 0)
       par->portalCount = GARGCOUNT;
    if (par->portalCount > 1) {
-      // Don't change the portals if there was a command in .vimrc that already split some portals
+      //Don't change the portals if there was a command in .vimrc that already split some portals
       if (par->portalLayout == 0)
           par->portalLayout = WIN_HOR;
       ei (par->portalLayout == WIN_TABS) {
@@ -1743,10 +1749,10 @@ createPortals(MainParams* par) {
    } else
       par->portalCount = 1;
 
-   if (recoveryModeG) {         // do recover
-      msg_scroll = true;      // scroll message up
+   if (recoveryModeG) {         //do recover
+      msg_scroll = true;      //scroll message up
       ml_recover(true);
-      if (bookNoMemfile(curBook)) // failed
+      if (bookNoMemfile(curBook)) //failed
          exitEegl(1);
    } else {
       //Open a buffer for portals that don't have one yet. Commands in the .vimrc might have loaded 
@@ -1775,18 +1781,18 @@ createPortals(MainParams* par) {
          if (!curBook->mem.mfile) {
             if (foldLevelStart >= 0)
                curPor->o.foldLevel = foldLevelStart;
-            // When getting the ATTENTION prompt here, use a dialog
+            //When getting the ATTENTION prompt here, use a dialog
             swap_exists_action = SEA_DIALOG;
 
             bookSetBooklisted(true);
 
-            // create memfile, read file
+            //create memfile, read file
             (void)bookOpenFromInvo(false, NULL, 0);
 
             if (swap_exists_action == SEA_QUIT) {
                if (gotInterruptG || onlyOnePortal()) {
-                  // abort selected or quit and only one portal
-                  anyEmsgG = false;   // avoid hit-enter prompt
+                  //abort selected or quit and only one portal
+                  anyEmsgG = false;   //avoid hit-enter prompt
                   exitEegl(1);
                }
                //We can't close the window, it would disturb what happens next. Clear the file 
@@ -1796,11 +1802,11 @@ createPortals(MainParams* par) {
                swap_exists_action = SEA_NONE;
             } else
                handle_swap_exists(NULL);
-            dorewind = true;      // start again
+            dorewind = true;      //start again
          }
          ui_breakcheck();
          if (gotInterruptG) {
-            (void)vgetc();   // only break the file loading, not the rest
+            (void)vgetc();   //only break the file loading, not the rest
             break;
          }
       }
@@ -1817,15 +1823,15 @@ createPortals(MainParams* par) {
 //If opened more than one portal, start editing files in the other portals. portMakePortals() has 
 //already opened the portals.
 private void
-editBuffers(MainParams* par, CS cwd) {        // current working dir
-   int arg_idx;      // index in argument list
+editBuffers(MainParams* par, CS cwd) {        //current working dir
+   int arg_idx;      //index in argument list
    int advance = true;
 
    //Don't execute Win/Buf Enter/Leave autocommands here
    ++autocmd_no_enter;
    ++autocmd_no_leave;
 
-   // When argListInd is -1 remove the window (see createPortals()).
+   //When argListInd is -1 remove the window (see createPortals()).
    if (curPor->argListInd == -1) {
       closePortal(curPor, true);
       advance = false;
@@ -1835,7 +1841,7 @@ editBuffers(MainParams* par, CS cwd) {        // current working dir
    for (Unt i = 1; i < par->portalCount; ++i) {
       if (cwd)
          mch_chdir(cwd);
-      // When argListInd is -1 remove the window (see createPortals()).
+      //When argListInd is -1 remove the window (see createPortals()).
       if (curPor->argListInd == -1) {
          ++arg_idx;
          closePortal(curPor, true);
@@ -1844,11 +1850,11 @@ editBuffers(MainParams* par, CS cwd) {        // current working dir
       }
       if (advance) {
          if (par->portalLayout == WIN_TABS) {
-            if (!curtab->next)   // just checking
+            if (!curtab->next)   //just checking
                break;
             gotoTabById(0);
          } else {
-            if (!curPor->next)   // just checking
+            if (!curPor->next)   //just checking
                break;
             enterPortal(curPor->next, false);
          }
@@ -1867,7 +1873,7 @@ editBuffers(MainParams* par, CS cwd) {        // current working dir
             NULL, NULL, ECMD_LASTL, ECMD_HIDE, curPor
          );
          if (swap_exists_did_quit) {
-            // abort or quit selected
+            //abort or quit selected
             if (gotInterruptG || onlyOnePortal()) {
                //abort selected and only one portal
                anyEmsgG = false;  //avoid hit-enter prompt
@@ -1882,7 +1888,7 @@ editBuffers(MainParams* par, CS cwd) {        // current working dir
       }
       ui_breakcheck();
       if (gotInterruptG) {
-         (void)vgetc();   // only break the file loading, not the rest
+         (void)vgetc();   //only break the file loading, not the rest
          break;
       }
    }
@@ -1891,9 +1897,9 @@ editBuffers(MainParams* par, CS cwd) {        // current working dir
       gotoTabById(1);
    --autocmd_no_enter;
 
-   // make the first portal the current one
+   //make the first portal the current one
    Portal* po = firstPor;
-   // Avoid making a preview portal the current one.
+   //Avoid making a preview portal the current one.
    while (po->isPreview) {
       po = po->next;
       if (!po) {
@@ -1906,10 +1912,10 @@ editBuffers(MainParams* par, CS cwd) {        // current working dir
    --autocmd_no_leave;
    TIME_MSG("editing files in windows");
    if (par->portalCount > 1 && par->portalLayout != WIN_TABS)
-      portEqualizeHeight(curPor, false, EAD_BOTH);   // adjust heights
+      portEqualizeHeight(curPor, false, EAD_BOTH);   //adjust heights
 }
 
-// Execute the commands from --comm arguments "comms[cnt]".
+//Execute the commands from --comm arguments "comms[cnt]".
 private void
 executePreCommands(MainParams* par) {
    Arr(CS) comms = par->pre_commands;
@@ -1920,7 +1926,7 @@ executePreCommands(MainParams* par) {
    if (cnt <= 0)
       return;
 
-   curPor->cursor.lnum = 0; // just in case..
+   curPor->cursor.lnum = 0; //just in case..
    estack_push(ETYPE_ARGS, (CS)_("pre-vimrc command line"), 0);
    ESTACK_CHECK_SETUP;
    scriptPosG.sid = SID_CMDARG;
@@ -1933,13 +1939,13 @@ executePreCommands(MainParams* par) {
    TIME_MSG("--comm commands");
 }
 
-// Execute "+", "-c" and "-S" arguments.
+//Execute "+", "-c" and "-S" arguments.
 private void
 exeCommands(MainParams* par) {
    ESTACK_CHECK_DECLARATION;
 
-   // We start commands on line 0, make "eegl +/pat file" match a
-   // pattern on line 1.  But don't move the cursor when an autocommand with g`" was used.
+   //We start commands on line 0, make "eegl +/pat file" match a
+   //pattern on line 1.  But don't move the cursor when an autocommand with g`" was used.
    msg_scroll = true;
    if (par->tagname == NULL && curPor->cursor.lnum <= 1)
       curPor->cursor.lnum = 0;
@@ -1960,16 +1966,16 @@ exeCommands(MainParams* par) {
 
    msg_scroll = false;
 
-   // When started with "-q errorfile" jump to first error again.
+   //When started with "-q errorfile" jump to first error again.
    if (par->edit_type == EDIT_QF)
       llJump(NULL, 0, 0, false);
    TIME_MSG("executing command arguments");
 }
 
-// Source startup scripts.
+//Source startup scripts.
 private void
 sourceStartupScripts(MainParams* par) {
-   // If -u argument given, use only the initializations from that file and nothing else.
+   //If -u argument given, use only the initializations from that file and nothing else.
    if (par->altInitFile) {
       if (STRCMP(par->altInitFile, "DEFAULTS") == 0) {
          if (scriptRunFile((CS)EE_DEFAULTS_FILE, NULL) != OK)
@@ -1987,15 +1993,15 @@ sourceStartupScripts(MainParams* par) {
    TIME_MSG(S"sourcing init.vim file(s)");
 }
 
-#endif  // NO_EEGL_MAIN
+#endif  //NO_EEGL_MAIN
 
-// Give an error message main_errors["n"] and exit.
+//Give an error message main_errors["n"] and exit.
 private void
 mainerr(
-   Unt n,   // one of the ME_ defines
-   NULLABLE CS str   // extra argument
+   Unt n,   //one of the ME_ defines
+   NULLABLE CS str   //extra argument
 ){
-   reset_signals();      // kill us with CTRL-C here, if you like
+   reset_signals();      //kill us with CTRL-C here, if you like
 
    mch_errmsg(longVersion);
    mch_errmsg("\n");
@@ -2016,7 +2022,7 @@ mainerr_arg_missing(CS str) {
 }
 
 #ifndef NO_EEGL_MAIN
-// print a message with three spaces prepended and '\n' appended.
+//print a message with three spaces prepended and '\n' appended.
 private void
 main_msg(CS s) {
    mch_msg("   ");
@@ -2029,7 +2035,7 @@ mainProgramVersion() {
    return programVersion;
 }
 
-// Print messages for "eegl -h" or "eegl --help" and exit.
+//Print messages for "eegl -h" or "eegl --help" and exit.
 private void
 usage(void) {
    int      i;
@@ -2040,7 +2046,7 @@ usage(void) {
       N_("-q [errorfile]  edit file with first error")
    };
 
-   reset_signals();      // kill us with CTRL-C here, if you like
+   reset_signals();      //kill us with CTRL-C here, if you like
 
    mch_msg(longVersion);
    mch_msg(_("\n\nUsage:"));
@@ -2107,9 +2113,9 @@ usage(void) {
    mch_exit(0);
 }
 
-// Check the result of the ATTENTION dialog:
-// When "Quit" selected, exit Eegl.
-// When "Recover" selected, recover the file.
+//Check the result of the ATTENTION dialog:
+//When "Quit" selected, exit Eegl.
+//When "Recover" selected, recover the file.
 private void
 check_swap_exists_action(void) {
    if (swap_exists_action == SEA_QUIT)
@@ -2117,11 +2123,11 @@ check_swap_exists_action(void) {
    handle_swap_exists(NULL);
 }
 
-#endif // NO_EEGL_MAIN
+#endif //NO_EEGL_MAIN
 
 
 pub void __attribute__((noinline))
-__bp() { // breakpoints for debugger
+__bp() { //breakpoints for debugger
    ;
 }
 
@@ -2143,12 +2149,12 @@ set_progpath(CS argv0) {
       val = buf;
 }
 
-#endif // NO_EEGL_MAIN
+#endif //NO_EEGL_MAIN
 
 
 //{{{resource cleanup at exit
 
-// Output a newline when exiting. Make sure the newline goes to the same stream as the text.
+//Output a newline when exiting. Make sure the newline goes to the same stream as the text.
 private void
 exit_scroll(void) {
    if (silentModeG)
@@ -2162,8 +2168,8 @@ exit_scroll(void) {
       } else
          out_char('\n');
    } ei (!is_not_a_term()) {
-      msg_clr_eos_force();      // clear the rest of the display
-      //windgoto((int)visibleRowsG - 1, 0);   // may have moved the cursor
+      msg_clr_eos_force();      //clear the rest of the display
+      //windgoto((int)visibleRowsG - 1, 0);   //may have moved the cursor
    }
 }
 
@@ -2180,7 +2186,7 @@ mch_exit(int r) {
    if (termIsScreenBeingSwapped() && !newlineOnExitG)
       exit_scroll();
 
-   // Stop termcap: May need to check for KS_CRV response, which requires RAW mode.
+   //Stop termcap: May need to check for KS_CRV response, which requires RAW mode.
    termStopTerminfo();
 
    //A newline is only required after a message in the alternate screen.
@@ -2194,10 +2200,10 @@ mch_exit(int r) {
       cursor_on();
    
    out_flush();
-   ml_close_all(true);      // remove all memfiles
+   ml_close_all(true);      //remove all memfiles
 
 #ifdef USE_GCOV_FLUSH
-   // Flush coverage info before possibly being killed by a deadly signal.
+   //Flush coverage info before possibly being killed by a deadly signal.
    __gcov_flush();
 #endif
 
@@ -2215,7 +2221,7 @@ mch_exit(int r) {
 //{{{persisting sessions
 //{{{users
 
-// All user names (for ~user completion as done by shell).
+//All user names (for ~user completion as done by shell).
 private ArrayList   ga_users;
 
 
@@ -2297,9 +2303,9 @@ match_user(CS name) {
    init_users();
    for (i = 0; i < ga_users.len; i++) {
       if (STRCMP(((Byte **)ga_users.c)[i], name) == 0)
-         return 2; // full match
+         return 2; //full match
       if (STRNCMP(((Byte **)ga_users.c)[i], name, n) == 0)
-         result = 1; // partial match
+         result = 1; //partial match
    }
    return result;
 }
@@ -2323,7 +2329,7 @@ free_users(void) {
 //}}}
 //{{{sessions
 
-private Boole did_lcd;   // whether ":lcd" was produced for a session
+private Boole did_lcd;   //whether ":lcd" was produced for a session
 
 //Write a file name to the session file.
 //Takes care of the "slash" option in 'sessionoptions' and escapes special characters.
@@ -2333,11 +2339,11 @@ ses_put_fname(FILE *fd, CS name) {
    CS sname = home_replace_save(NULL, name);
 
    int retval = OK;
-   // escape special characters
+   //escape special characters
    CS p = copyStr_fnameescape(sname, VSE_NONE);
    eeglFree(sname);
 
-   // write the result
+   //write the result
    if (FPUTS(p, fd) < 0)
       retval = FAIL;
 
@@ -2355,15 +2361,15 @@ ses_fname(FILE* fd, Book* book, int add_eol) {
    return OK;
 }
 
-// Write an argument list to the session file. Return FAIL if writing fails.
+//Write an argument list to the session file. Return FAIL if writing fails.
 private int
-ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname) {   // true: use full path name
+ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname) {   //true: use full path name
    if (FPUTS(cmd, fd) < 0 || put_eol(fd) == FAIL)
       return FAIL;
    if (put_line(fd, S"%argdel") == FAIL)
       return FAIL;
    for (int i = 0; i < gap->len; ++i) {
-      // NULL file names are skipped (only happens when out of memory).
+      //NULL file names are skipped (only happens when out of memory).
       CS s = alist_name(&((ArgFileEntry *)gap->c)[i]);
       if (!s) {
          continue;
@@ -2384,19 +2390,19 @@ ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname) {   // true: use ful
    return OK;
 }
 
-// Return non-zero if portal "po" is to be stored in the Session.
+//Return non-zero if portal "po" is to be stored in the Session.
 private Boole
 portNeedsToBeSaved(Portal* po) {
    if (bt_terminal(po->book)) {
       return !term_is_finished(po->book) && term_should_restore(po->book);
    } 
    if (!po->book->currFileName || bt_nofilename(po->book))
-      // When 'buftype' is "nofile", can't restore the portal contents.
+      //When 'buftype' is "nofile", can't restore the portal contents.
       return false;
    return true;
 }
 
-// Return true if frame "fr" has a window somewhere that we want to save in the Session
+//Return true if frame "fr" has a window somewhere that we want to save in the Session
 private Boole
 ses_do_frame(Frame* fr) {
    if (fr->layout == FR_LEAF)
@@ -2410,7 +2416,7 @@ ses_do_frame(Frame* fr) {
    return false;
 }
 
-// Skip frames that don't contain portals we want to save in the Session. Return NULL when none
+//Skip frames that don't contain portals we want to save in the Session. Return NULL when none
 private Frame*
 ses_skipframe(Frame* fr) {
    Frame* frc;
@@ -2421,21 +2427,21 @@ ses_skipframe(Frame* fr) {
    return null;
 }
 
-// Write commands to "fd" to recursively create portals for frame "fr", horizontally and vertically
-// split. After the commands the last portal in the frame is the current portal. Return FAIL when 
-// writing the commands to "fd" fails.
+//Write commands to "fd" to recursively create portals for frame "fr", horizontally and vertically
+//split. After the commands the last portal in the frame is the current portal. Return FAIL when 
+//writing the commands to "fd" fails.
 private int
 recreatePortals(FILE* fd, Frame* fr) {
    if (fr->layout == FR_LEAF)
       return OK;
 
-   // Find first frame that's not skipped and then create a window for
-   // each following one (first frame is already there).
+   //Find first frame that's not skipped and then create a window for
+   //each following one (first frame is already there).
    Frame* frc = ses_skipframe(fr->child);
    int count = 0;
    if (frc) {
       while ((frc = ses_skipframe(frc->next)) != NULL) {
-         // Make window as big as possible so that we have lots of room to split.
+         //Make window as big as possible so that we have lots of room to split.
          if (put_line(fd, S"wincmd _ | wincmd |") == FAIL
                || put_line(fd, fr->layout == FR_COL ? S"split" : S"vsplit") == FAIL
          )
@@ -2444,18 +2450,18 @@ recreatePortals(FILE* fd, Frame* fr) {
       }
    } 
 
-   // Go back to the first window.
+   //Go back to the first window.
    if (count > 0 && (fprintf(fd, fr->layout == FR_COL
           ? "%dwincmd k" : "%dwincmd h", count) < 0
          || put_eol(fd) == FAIL))
       return FAIL;
 
-   // Recursively create frames/windows in each window of this column or row.
+   //Recursively create frames/windows in each window of this column or row.
    frc = ses_skipframe(fr->child);
    while (frc) {
       recreatePortals(fd, frc);
       frc = ses_skipframe(frc->next);
-      // Go to next window.
+      //Go to next window.
       if (frc && put_line(fd, S"wincmd w") == FAIL)
           return FAIL;
    }
@@ -2474,7 +2480,7 @@ portalSizes(FILE* fd, int restore_size, Portal* tab_firstPor) {
             continue;
          ++n;
 
-         // restore height when not full height
+         //restore height when not full height
          if (wp->height + STATUS_HEIGHT < topframeG->width
                 && (fprintf(fd,
                  "exe '%dresize ' . ((&lines * %ld + %ld) / %ld)",
@@ -2482,7 +2488,7 @@ portalSizes(FILE* fd, int restore_size, Portal* tab_firstPor) {
                           || put_eol(fd) == FAIL))
             return FAIL;
 
-          // restore width when not full width
+          //restore width when not full width
           if (wp->width < visibleColsG && (fprintf(fd,
             "exe 'vert %dresize ' . ((&columns * %ld + %ld) / %ld)",
                 n, (long)wp->width, visibleColsG / 2, visibleColsG) < 0
@@ -2490,7 +2496,7 @@ portalSizes(FILE* fd, int restore_size, Portal* tab_firstPor) {
          return FAIL;
       }
    } else {
-      // Just equalise window sizes
+      //Just equalise window sizes
       if (put_line(fd, S"wincmd =") == FAIL)
          return FAIL;
    }
@@ -2514,18 +2520,18 @@ put_view(
    FILE* fd,
    Portal* wp,
    Tab* tp,
-   int add_edit,        // add ":edit" command to view
-   int current_arg_idx,     // current argument index of the portal, use -1 if unknown
-   EeSet* terminal_bufs // already encountered terminal books, can be NULL
+   int add_edit,        //add ":edit" command to view
+   int current_arg_idx,     //current argument index of the portal, use -1 if unknown
+   EeSet* terminal_bufs //already encountered terminal books, can be NULL
 ){
    Portal   *save_curPor;
    int      f;
    int      did_next = false;
 
-   // Always restore cursor position for ":mksession".
+   //Always restore cursor position for ":mksession".
    Boole do_cursor = true;
 
-   // Local argument list.
+   //Local argument list.
    if (wp->argList == &argListG) {
       if (put_line(fd, S"argglobal") == FAIL)
          return FAIL;
@@ -2544,7 +2550,7 @@ put_view(
       did_next = true;
    }
 
-   // Edit the file.  Skip this when ":next" already did it.
+   //Edit the file.  Skip this when ":next" already did it.
    if (add_edit && (!did_next || wp->isNotValid)) {
       if (bookIsHelp(wp->book)) {
          CS curtag = S"";
@@ -2564,14 +2570,14 @@ put_view(
          if (term_write_session(fd, wp, terminal_bufs) == FAIL)
             return FAIL;
       }
-      // Load the file.
+      //Load the file.
       ei (wp->book->fullFileName != NULL && !bt_nofilename(wp->book)) {
-          // Editing a file in this book: use ":edit file".
-          // This may have side effects! (e.g., compressed or network file).
+          //Editing a file in this book: use ":edit file".
+          //This may have side effects! (e.g., compressed or network file).
           //
-          // Note, if a book for that file already exists, use :badd to
-          // edit that book, to not lose folding information (:edit resets
-          // folds in other books)
+          //Note, if a book for that file already exists, use :badd to
+          //edit that book, to not lose folding information (:edit resets
+          //folds in other books)
           if (fputs("if bufexists(fnamemodify(\"", fd) < 0
              || ses_fname(fd, wp->book, false) == FAIL
              || fputs("\", \":p\")) | buffer ", fd) < 0
@@ -2597,7 +2603,7 @@ put_view(
    if (wp->altFnum) {
       Book *alt = bookFindFileByBookNr(wp->altFnum);
 
-      // Set the alternate file if the book is listed.
+      //Set the alternate file if the book is listed.
       if (     alt
             && alt->currFileName != NULL
             && *alt->currFileName != ZERO
@@ -2606,7 +2612,7 @@ put_view(
          return FAIL;
    }
 
-   // Local mappings and abbreviations.
+   //Local mappings and abbreviations.
    if (makemap(fd, wp->book) == FAIL)
       return FAIL;
 
@@ -2624,11 +2630,11 @@ put_view(
    if (f == FAIL)
       return FAIL;
 
-   // Set the cursor after creating folds, since that moves the cursor.
+   //Set the cursor after creating folds, since that moves the cursor.
    if (do_cursor) {
 
-      // Restore the cursor line in the file and relatively in the
-      // portal.  Don't use "G", it changes the jumplist.
+      //Restore the cursor line in the file and relatively in the
+      //portal.  Don't use "G", it changes the jumplist.
       if (wp->height <= 0) {
          if (fprintf(fd, "let s:l = %ld", (long)wp->cursor.lnum) < 0)
             return FAIL;
@@ -2646,7 +2652,7 @@ put_view(
             || fprintf(fd, "keepjumps %ld", (long)wp->cursor.lnum) < 0
             || put_eol(fd) == FAIL)
           return FAIL;
-      // Restore the cursor column and left offset when not wrapping.
+      //Restore the cursor column and left offset when not wrapping.
       if (wp->cursor.col == 0) {
          if (put_line(fd, S"normal! 0") == FAIL)
             return FAIL;
@@ -2672,8 +2678,8 @@ put_view(
       }
    }
 
-   // Local directory, if the current flag is not view options or the "curdir"
-   // option is included.
+   //Local directory, if the current flag is not view options or the "curdir"
+   //option is included.
    if (wp->localDir) {
       if (fputs("lcd ", fd) < 0
             || ses_put_fname(fd, wp->localDir) == FAIL
@@ -2715,7 +2721,7 @@ store_session_globals(FILE *fd) {
          if ((this_var->c.tag == VAR_NUMBER || this_var->c.tag == VAR_STRING)
                 && getVarFlavor(this_var->key) == VAR_FLAVOR_SESSION
          ){
-            // Escape special characters with a backslash. Turn a LF and CR into \n and \r.
+            //Escape special characters with a backslash. Turn a LF and CR into \n and \r.
             p = copyStr_escaped(tv_get_string(&this_var->c), (CS)"\\\"\n\r");
             for (t = p; *t != ZERO; ++t)
                if (*t == '\n')
@@ -2752,7 +2758,7 @@ store_session_globals(FILE *fd) {
 //Write openfile commands for the current books to an .exrc file.
 //Return FAIL on error, OK otherwise.
 private int
-makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
+makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
    Book   *book;
    int      nr;
    int      restore_size = true;
@@ -2772,19 +2778,19 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
    hash_init(&terminal_bufs);
 
 
-   // Begin by setting the this_session variable, and then other
-   // sessionable variables.
+   //Begin by setting the this_session variable, and then other
+   //sessionable variables.
    if (put_line(fd, S"let v:this_session=expand(\"<sfile>:p\")") == FAIL
         || store_session_globals(fd) == FAIL)
       goto fail;
 
-   // Close all portals and tabs but one.
+   //Close all portals and tabs but one.
    if (put_line(fd, S"silent only") == FAIL)
       goto fail;
    if (put_line(fd, S"silent tabonly") == FAIL)
       goto fail;
 
-   // Now a :cd command to the current directory
+   //Now a :cd command to the current directory
    sname = home_replace_save(NULL, globaldir != NULL ? globaldir : currDir);
    if (  fputs("cd ", fd) < 0
       || ses_put_fname(fd, sname) == FAIL
@@ -2795,8 +2801,8 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
    }
    eeglFree(sname);
 
-   // If there is an empty, unnamed book we will wipe it out later.
-   // Remember the book number.
+   //If there is an empty, unnamed book we will wipe it out later.
+   //Remember the book number.
    if (put_line(fd, S"if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''") 
          == FAIL
    )
@@ -2806,14 +2812,14 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
    if (put_line(fd, S"endif") == FAIL)
       goto fail;
 
-   // Set 'shortmess' for the following.
+   //Set 'shortmess' for the following.
    if (put_line(fd, S"set shortmess+=aoO") == FAIL)
       goto fail;
 
-   // Now save the current files, current book first.
-   // Put all books into the book list.
-   // Do it very early to preserve book order after loading session (which
-   // can be disrupted by prior `edit` or `tabedit` calls).
+   //Now save the current files, current book first.
+   //Put all books into the book list.
+   //Do it very early to preserve book order after loading session (which
+   //can be disrupted by prior `edit` or `tabedit` calls).
    FOR_ALL_BOOKS(book) {
       if (fprintf(fd, "badd +%ld ", book->portInfos == NULL ? 1L
                   : book->portInfos->wi_fpos.lnum) < 0
@@ -2821,35 +2827,35 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
          goto fail;
    }
 
-   // the global argument list
+   //the global argument list
    if (ses_arglist(fd, S"argglobal", &argListG.al_ga, false) 
          == FAIL
    )
       goto fail;
 
-   // Note: after the restore we still check it worked!
+   //Note: after the restore we still check it worked!
    if (fprintf(fd, "set lines=%ld columns=%ld" , visibleRowsG, visibleColsG) < 0 
          || put_eol(fd) == FAIL)
       goto fail;
 
-   // "tabs" is in 'sessionoptions': Similar to recreatePortals() below, populate the tabs first 
-   // so later local options won't be copied to the new tabs.
+   //"tabs" is in 'sessionoptions': Similar to recreatePortals() below, populate the tabs first 
+   //so later local options won't be copied to the new tabs.
    FOR_ALL_TABS(tp) {
-      // Use `bufhidden=wipe` to remove empty "placeholder" books once they are not needed. 
-      // This prevents creating extra books (see cause of patch 8.1.0829)
+      //Use `bufhidden=wipe` to remove empty "placeholder" books once they are not needed. 
+      //This prevents creating extra books (see cause of patch 8.1.0829)
       if (tp->next != NULL && put_line(fd, S"tabnew +setlocal\\ bufhidden=wipe") == FAIL)
          goto fail;
    } 
    if (firstTabG->next != NULL && put_line(fd, S"tabrewind") == FAIL)
        goto fail;
 
-   // Assume "tabs" is in 'sessionoptions'. If not then we only do "curtab" and bail out of the loop
+   //Assume "tabs" is in 'sessionoptions'. If not then we only do "curtab" and bail out of the loop
    FOR_ALL_TABS(tp) {
       int   need_tabnext = false;
       int   cnr = 1;
 
-      // May repeat putting Portals for each tab, when "tabs" is in 'sessionoptions'.
-      // Don't use goto_tabpage(), it may change directory and trigger autocommands.
+      //May repeat putting Portals for each tab, when "tabs" is in 'sessionoptions'.
+      //Don't use goto_tabpage(), it may change directory and trigger autocommands.
       if (tp == curtab) {
          tab_firstPor = firstPor;
          tab_topframe = topframeG;
@@ -2860,9 +2866,9 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
       if (tp != firstTabG)
          need_tabnext = true;
 
-      // Before creating the window layout, try loading one file.  If this
-      // is aborted we don't end up with a number of useless windows.
-      // This may have side effects! (e.g., compressed or network file).
+      //Before creating the window layout, try loading one file.  If this
+      //is aborted we don't end up with a number of useless windows.
+      //This may have side effects! (e.g., compressed or network file).
       for (wp = tab_firstPor; wp != NULL; wp = wp->next) {
           if (portNeedsToBeSaved(wp)
              && wp->book->fullFileName != NULL
@@ -2881,12 +2887,12 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
          }
       }
 
-      // If no file got edited create an empty tab
+      //If no file got edited create an empty tab
       if (need_tabnext && put_line(fd, S"tabnext") == FAIL)
          goto fail;
 
       if (tab_topframe->layout != FR_LEAF) {
-          // Save current window layout.
+          //Save current window layout.
           if (put_line(fd, S"let s:save_splitbelow = &splitbelow") == FAIL
                 || put_line(fd, S"let s:save_splitright = &splitright") == FAIL)
             goto fail;
@@ -2899,8 +2905,8 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
             goto fail;
       }
 
-      // Check if window sizes can be restored (no windows omitted).
-      // Remember the window number of the current window after restoring.
+      //Check if window sizes can be restored (no windows omitted).
+      //Remember the window number of the current window after restoring.
       nr = 0;
       for (wp = tab_firstPor; wp != NULL; wp = wp->next) {
          if (portNeedsToBeSaved(wp))
@@ -2912,17 +2918,17 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
       }
 
       if (tab_firstPor->next) {
-         // Go to the first portal.
+         //Go to the first portal.
          if (put_line(fd, S"wincmd t") == FAIL)
             goto fail;
 
-          // If more than one window, see if sizes can be restored.
-          // First set 'winheight' and 'winwidth' to 1 to avoid the windows
-          // being resized when moving between windows.
-          // Do this before restoring the view, so that the topline and the
-          // cursor can be set.  This is done again below.
-          // winminheight and winminwidth need to be set to avoid an error if
-          // the user has set winheight or winwidth.
+          //If more than one window, see if sizes can be restored.
+          //First set 'winheight' and 'winwidth' to 1 to avoid the windows
+          //being resized when moving between windows.
+          //Do this before restoring the view, so that the topline and the
+          //cursor can be set.  This is done again below.
+          //winminheight and winminwidth need to be set to avoid an error if
+          //the user has set winheight or winwidth.
           if (put_line(fd, S"let s:save_winminheight = &winminheight") == FAIL
              || put_line(fd, S"let s:save_winminwidth = &winminwidth")
                                   == FAIL)
@@ -2937,9 +2943,9 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
       if (nr > 1 && portalSizes(fd, restore_size, tab_firstPor) == FAIL)
          goto fail;
 
-      // Restore the tab-local working directory if specified
-      // Do this before the windows, so that the window-local directory can
-      // override the tab-local directory.
+      //Restore the tab-local working directory if specified
+      //Do this before the windows, so that the window-local directory can
+      //override the tab-local directory.
       if (tp->localdir != NULL) {
          if (fputs("tcd ", fd) < 0
               || ses_put_fname(fd, tp->localdir) == FAIL
@@ -2949,7 +2955,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
          did_lcd = true;
       }
 
-      // Restore the view of the window (options, file, cursor, etc.).
+      //Restore the view of the window (options, file, cursor, etc.).
       for (wp = tab_firstPor; wp != NULL; wp = wp->next) {
          if (!portNeedsToBeSaved(wp))
             continue;
@@ -2963,11 +2969,11 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
           next_arg_idx = wp->argListInd;
       }
 
-      // The argument index in the first tab is zero, need to set it in each portal. For further 
-      // tabs it's the portal where we do "tabedit".
+      //The argument index in the first tab is zero, need to set it in each portal. For further 
+      //tabs it's the portal where we do "tabedit".
       cur_arg_idx = next_arg_idx;
 
-      // Restore cursor to the current window if it's not the first one.
+      //Restore cursor to the current window if it's not the first one.
       if (cnr > 1 && (fprintf(fd, "%dwincmd w", cnr) < 0 || put_eol(fd) == FAIL))
          goto fail;
 
@@ -2982,7 +2988,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
    if (restore_stal && put_line(fd, S"set stal=1") == FAIL)
       goto fail;
 
-   // Wipe out an empty unnamed book we started in.
+   //Wipe out an empty unnamed book we started in.
    if (put_line(fd, S"if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0") == FAIL)
       goto fail;
    if (put_line(fd, S"  silent exe 'bwipe ' . s:wipebuf") == FAIL)
@@ -2992,18 +2998,18 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
    if (put_line(fd, S"unlet! s:wipebuf") == FAIL)
       goto fail;
 
-   // Re-apply 'winheight' and 'winwidth'.
+   //Re-apply 'winheight' and 'winwidth'.
    if (fprintf(fd, "set winheight=%ld winwidth=%ld", p_wh, p_wiw) < 0 || put_eol(fd) == FAIL)
       goto fail;
 
-   if (restore_height_width // Restore 'winminheight' and 'winminwidth'.
+   if (restore_height_width //Restore 'winminheight' and 'winminwidth'.
        && (put_line(fd, S"let &winminheight = s:save_winminheight") == FAIL
          || put_line(fd, S"let &winminwidth = s:save_winminwidth") == FAIL)
    ) {
       goto fail;
    }
 
-   // Lastly, execute the x.vim file if it exists.
+   //Lastly, execute the x.vim file if it exists.
    if (put_line(fd, S"let s:sx = expand(\"<sfile>:p:r\").\"x.vim\"") == FAIL
           || put_line(fd, S"if filereadable(s:sx)") == FAIL
           || put_line(fd, S"  exe \"source \" . fnameescape(s:sx)") == FAIL
@@ -3016,17 +3022,17 @@ fail:
    return ret;
 }
 
-// ":mkvimrc",  and ":mksession".
+//":mkvimrc",  and ":mksession".
 pub void
 c_mkrc(Invocation* invo) {
    int failed = false;
-   int using_vdir = false;   // using 'viewdir'?
+   int using_vdir = false;   //using 'viewdir'?
    CS viewFile = NULL;
 
    Boole sessionFile = (invo->id == C_mksession);
 
-   // Use the short file name until ":lcd" is used.  We also don't use the
-   // short file name when 'acd' is set, that is checked later.
+   //Use the short file name until ":lcd" is used.  We also don't use the
+   //short file name when 'acd' is set, that is checked later.
    did_lcd = false;
    
    CS fname;
@@ -3042,7 +3048,7 @@ c_mkrc(Invocation* invo) {
       goto theEnd;
    }
 
-   // Write the version command for :mkvimrc
+   //Write the version command for :mkvimrc
    if (invo->id == C_mkvimrc)
        (void)put_line(fd, S"version 6.0");
 
@@ -3062,8 +3068,8 @@ c_mkrc(Invocation* invo) {
          "setg so=0 siso=0 | setl so=-1 siso=-1") == FAIL)
       failed = true;
       if (invo->id == C_mksession) {
-         Byte currDir[MAXPATHL];    // current directory
-         // Change to session file's dir.
+         Byte currDir[MAXPATHL];    //current directory
+         //Change to session file's dir.
          if (mch_dirname(currDir, MAXPATHL) == FAIL || mch_chdir(currDir) != 0)
             *currDir = ZERO;
          if (*currDir != ZERO) {
@@ -3076,7 +3082,7 @@ c_mkrc(Invocation* invo) {
 
          failed |= (makeopens(fd, currDir) == FAIL);
 
-         // restore original dir
+         //restore original dir
          if (*currDir != ZERO && globaldir) {
             if (mch_chdir(currDir) != 0)
                emsg(_(e_cannot_go_back_to_previous_directory));
@@ -3135,7 +3141,7 @@ put_line(FILE *fd, CS s) {
 #define EEGLINFO_VERSION_WITH_REGISTERS 3
 #define EEGLINFO_VERSION_WITH_MARKS     4
 
-// The type numbers are fixed for backwards compatibility.
+//The type numbers are fixed for backwards compatibility.
 #define BARTYPE_VERSION  1
 #define BARTYPE_HISTORY  2
 #define BARTYPE_REGISTER 3
@@ -3151,9 +3157,9 @@ typedef struct {
    BValKind   btag;
    long   bv_nr;
    Byte   *bv_string;
-   Byte   *bv_tofree;   // free later when not NULL
-   int      bv_len;      // length of bv_string
-   int      bv_allocated;   // bv_string was allocated
+   Byte   *bv_tofree;   //free later when not NULL
+   int      bv_len;      //length of bv_string
+   int      bv_allocated;   //bv_string was allocated
 } BVal;
 
 
@@ -3169,10 +3175,10 @@ find_eeglinfo_parameter(int type) {
    for (CS p = p_eeglinfo; *p; ++p) {
       if (*p == type)
          return p + 1;
-      if (*p == 'n')          // 'n' is always the last one
+      if (*p == 'n')          //'n' is always the last one
          break;
-      p = firstOccurrence(p, ',');       // skip until next ','
-      if (!p)          // hit the end without finding parameter
+      p = firstOccurrence(p, ',');       //skip until next ','
+      if (!p)          //hit the end without finding parameter
          break;
    }
    return NULL;
@@ -3201,9 +3207,9 @@ eeglinfo_filename(CS file) {
       ei ((file = find_eeglinfo_parameter('n')) == NULL || *file == ZERO) {
 #ifdef EEGLINFO_FILE2
          if (mch_getenv((CS)"HOME") == NULL) {
-            // don't use $EEGL when not available.
+            //don't use $EEGL when not available.
             doExpandEnv(OUT nameBuffTextG, S"$EEGL");
-            if (STRCMP("$EEGL", nameBuffG) != 0)  // $EEGL was expanded
+            if (STRCMP("$EEGL", nameBuffG) != 0)  //$EEGL was expanded
                file = (CS)EEGLINFO_FILE2;
             else
                file = (CS)EEGLINFO_FILE;
@@ -3265,7 +3271,7 @@ barline_writestring(FILE *fd, CS s, int remaining_start) {
    int       remaining = remaining_start;
    int       len = 2;
 
-   // Count the number of characters produced, including quotes.
+   //Count the number of characters produced, including quotes.
    for (p = s; *p != ZERO; ++p) {
       if (*p == NL)
           len += 2;
@@ -3298,7 +3304,7 @@ barline_writestring(FILE *fd, CS s, int remaining_start) {
           putc('\n', fd);
           putc('|', fd);
           putc('<', fd);
-          // Leave enough space for another continuation.
+          //Leave enough space for another continuation.
           remaining = LSIZE - 20;
       }
    }
@@ -3315,7 +3321,7 @@ barline_writestring(FILE *fd, CS s, int remaining_start) {
 //
 //Return the string in allocated memory (NULL when out of memory).
 private CS
-eeglinfo_readstring(Vir* virp, int off) {          // offset for virp->line
+eeglinfo_readstring(Vir* virp, int off) {          //offset for virp->line
    CS retval = NULL;
    CS s;
    long len;
@@ -3325,18 +3331,18 @@ eeglinfo_readstring(Vir* virp, int off) {          // offset for virp->line
       if (len > 0 && len < 1000000)
          retval = lalloc(len, true);
       else {
-         // Invalid length, line too long?  Skip next line.
+         //Invalid length, line too long?  Skip next line.
          (void)eeFgets(virp->line, 10, virp->vir_fd);
          return NULL;
       }
       (void)eeFgets(retval, (int)len, virp->vir_fd);
-      s = retval + 1;       // Skip the leading '<'
+      s = retval + 1;       //Skip the leading '<'
    } else {
       retval = copyStr(virp->line + off);
       s = retval;
    }
 
-   // Change CTRL-V CTRL-V to CTRL-V and CTRL-V n to \n in-place.
+   //Change CTRL-V CTRL-V to CTRL-V and CTRL-V n to \n in-place.
    CS d = retval;
    while (*s != ZERO && *s != '\n') {
       if (s[0] == Ctrl_V && s[1] != ZERO) {
@@ -3352,7 +3358,7 @@ eeglinfo_readstring(Vir* virp, int off) {          // offset for virp->line
    return retval;
 }
 
-// Read a line from the eeglinfo file. Return true for end-of-file;
+//Read a line from the eeglinfo file. Return true for end-of-file;
 private int
 eeglinfo_readline(Vir* virp) {
    return eeFgets(virp->line, LSIZE, virp->vir_fd);
@@ -3366,13 +3372,13 @@ readEeglinfoBookList(Vir* virp, int writing) {
    Book* book;
    CS sfname;
 
-   // Handle long line and escaped characters.
+   //Handle long line and escaped characters.
    CS xline = eeglinfo_readstring(virp, 1);
 
-   // don't read in if there are files on the command-line or if writing:
+   //don't read in if there are files on the command-line or if writing:
    if (xline && !writing && ARGCOUNT == 0 && find_eeglinfo_parameter('%') != NULL) {
-      // Format is: <fname> Tab <lnum> Tab <col>.
-      // Watch out for a Tab in the file name, work from the end.
+      //Format is: <fname> Tab <lnum> Tab <col>.
+      //Watch out for a Tab in the file name, work from the end.
       lnum = 0;
       col = 0;
       tab = lastOccurrence(xline, '\t');
@@ -3386,13 +3392,13 @@ readEeglinfoBookList(Vir* virp, int writing) {
          }
       }
 
-      // Expand "~/" in the file name at "line + 1" to a full path.
-      // Then try shortening it by comparing with the current directory
+      //Expand "~/" in the file name at "line + 1" to a full path.
+      //Then try shortening it by comparing with the current directory
       doExpandEnv(OUT nameBuffTextG, xline);
       sfname = shorten_fname1(nameBuffG);
 
       book = bookNew(nameBuffG, sfname, (LineNr)0, BLN_LISTED);
-      if (book != NULL) {  // just in case...
+      if (book != NULL) {  //just in case...
          book->lastCursor.lnum = lnum;
          book->lastCursor.col = col;
          bookSetPosInPort(book, curPor, lnum, col, false);
@@ -3403,7 +3409,7 @@ readEeglinfoBookList(Vir* virp, int writing) {
    return eeglinfo_readline(virp);
 }
 
-// Return true if "name" is on removable media (depending on @eeglinfo).
+//Return true if "name" is on removable media (depending on @eeglinfo).
 private Boole
 removable(CS name) {
    if (!p_eeglinfo)
@@ -3432,10 +3438,10 @@ writeEeglInfoBookList(FILE* fp) {
    if (find_eeglinfo_parameter('%') == NULL)
       return;
 
-   // Without a number -1 is returned: do all books.
+   //Without a number -1 is returned: do all books.
    int max_buffers = get_eeglinfo_parameter('%');
 
-   // Allocate room for the file name, lnum and col.
+   //Allocate room for the file name, lnum and col.
 #define LINE_BUF_LEN (MAXPATHL + 40)
    Byte line[LINE_BUF_LEN];
 
@@ -3466,15 +3472,15 @@ writeEeglInfoBookList(FILE* fp) {
    }
 }
 
-// Buffers for history read from a eeglinfo file.  Only valid while reading.
+//Buffers for history read from a eeglinfo file.  Only valid while reading.
 private HistoryEntry *eeglinfo_history[HIST_COUNT] = {NULL, NULL, NULL, NULL, NULL};
 private int   eeglinfo_hisidx[HIST_COUNT] = {0, 0, 0, 0, 0};
 private int   eeglinfo_hislen[HIST_COUNT] = {0, 0, 0, 0, 0};
 private int   eeglinfo_add_at_front = false;
 
-// Translate a history type number to the associated character.
+//Translate a history type number to the associated character.
 private int
-hist_type2char(int type, int use_question) {      // use '?' instead of '/'
+hist_type2char(int type, int use_question) {      //use '?' instead of '/'
    if (type == HIST_CMD)
       return ':';
    if (type == HIST_SEARCH) {
@@ -3539,22 +3545,22 @@ read_eeglinfo_history(Vir* virp, int writing) {
    if (in_history(type, val + (type == HIST_SEARCH), eeglinfo_add_at_front, sep, writing))
       goto done;
 
-   // Need to re-allocate to append the separator byte.
+   //Need to re-allocate to append the separator byte.
    Ulong len = STRLEN(val);
    CS p;
    if (type == HIST_SEARCH) {
-      p = alloc((Unt)len + 1); // +1 for the ZERO. val already includes the separator.
+      p = alloc((Unt)len + 1); //+1 for the ZERO. val already includes the separator.
 
-      // Search entry: Move the separator from the first column to after the ZERO.
+      //Search entry: Move the separator from the first column to after the ZERO.
       MEMMOVE(p, val + 1, (Unt)len);
       p[len] = sep;
-      --len;                // take into account the shortened string
+      --len;                //take into account the shortened string
    } else {
-      p = alloc((Unt)len + 2);       // +1 for ZERO and +1 for separator
+      p = alloc((Unt)len + 2);       //+1 for ZERO and +1 for separator
 
-      // Not a search entry: No separator in the eeglinfo file, add a ZERO separator.
-      MEMMOVE(p, val, (Unt)len + 1);   // +1 to include the ZERO
-      p[len + 1] = ZERO;         // put the separator *after* the string's ZERO
+      //Not a search entry: No separator in the eeglinfo file, add a ZERO separator.
+      MEMMOVE(p, val, (Unt)len + 1);   //+1 to include the ZERO
+      p[len + 1] = ZERO;         //put the separator *after* the string's ZERO
    }
    eeglinfo_history[type][eeglinfo_hisidx[type]].hisstr = p;
    eeglinfo_history[type][eeglinfo_hisidx[type]].hisstrlen = (Unt)len;
@@ -3573,8 +3579,8 @@ private void
 handle_eeglinfo_history(ArrayList* values, int writing) {
    BVal* vp = (BVal *)values->c;
 
-   // Check the format:
-   // |{bartype},{histtype},{timestamp},{separator},"text"
+   //Check the format:
+   //|{bartype},{histtype},{timestamp},{separator},"text"
    if (values->len < 4
         || vp[0].btag != BVAL_NR
         || vp[1].btag != BVAL_NR
@@ -3603,8 +3609,8 @@ handle_eeglinfo_history(ArrayList* values, int writing) {
    Ulong len;
    CS p;
    
-   // If lines were written by an older Eegl, we need to avoid getting duplicates. See if the 
-   // entry already exists.
+   //If lines were written by an older Eegl, we need to avoid getting duplicates. See if the 
+   //entry already exists.
    for (idx = 0; idx < eeglinfo_hisidx[type]; ++idx) {
       p = eeglinfo_history[type][idx].hisstr;
       len = eeglinfo_history[type][idx].hisstrlen;
@@ -3615,16 +3621,16 @@ handle_eeglinfo_history(ArrayList* values, int writing) {
    }
 
    if (!overwrite) {
-      // Need to re-allocate to append the separator byte.
+      //Need to re-allocate to append the separator byte.
       len = vp[3].bv_len;
       p = alloc(len + 2);
    } else
-      len = 0; // for picky compilers
+      len = 0; //for picky compilers
    if (p) {
       eeglinfo_history[type][idx].time_set = vp[1].bv_nr;
       if (!overwrite) {
           MEMMOVE(p, val, (Unt)len + 1);
-          // Put the separator after the ZERO.
+          //Put the separator after the ZERO.
           p[len + 1] = sep;
           eeglinfo_history[type][idx].hisstr = p;
           eeglinfo_history[type][idx].hisstrlen = (Unt)len;
@@ -3700,7 +3706,7 @@ merge_history(int type) {
    int* hisidx = get_hisidx(type);
    int* hisnum = get_hisnum(type);
 
-   // Make one long list with all entries.
+   //Make one long list with all entries.
    int max_len = hislen + eeglinfo_hisidx[type];
    tot_hist = ALLOC_MULT(HistoryEntry *, max_len);
    new_hist = ALLOC_MULT(HistoryEntry, hislen);
@@ -3718,10 +3724,10 @@ merge_history(int type) {
          tot_hist[len++] = &histentry[i];
    } 
 
-   // Sort the list on timestamp.
+   //Sort the list on timestamp.
    qsort((void *)tot_hist, (Unt)len, sizeof(HistoryEntry *), sort_hist);
 
-   // Keep the newest ones.
+   //Keep the newest ones.
    for (i = 0; i < hislen; i++) {
       if (i < len) {
           new_hist[i] = *tot_hist[i];
@@ -3734,7 +3740,7 @@ merge_history(int type) {
    }
    *hisidx = (i < len ? i : len) - 1;
 
-   // Free what is not kept.
+   //Free what is not kept.
    for (i = 0; i < eeglinfo_hisidx[type]; i++) {
       eeglFree(eeglinfo_history[type][i].hisstr);
       eeglinfo_history[type][i].hisstrlen = 0;
@@ -3748,7 +3754,7 @@ merge_history(int type) {
    eeglFree(tot_hist);
 }
 
-// Finish reading history lines from eeglinfo.  Not used when writing eeglinfo.
+//Finish reading history lines from eeglinfo.  Not used when writing eeglinfo.
 private void
 finish_eeglinfo_history(Vir *virp) {
    int type;
@@ -3790,7 +3796,7 @@ write_eeglinfo_history(FILE *fp, int merge) {
       num_saved = get_eeglinfo_parameter(hist_type2char(type, false));
       if (num_saved == 0)
           continue;
-      if (num_saved < 0)  // Use default
+      if (num_saved < 0)  //Use default
           num_saved = hislen;
       fprintf(fp, (char*)_("\n# %s History (newest to oldest):\n"),
                 type == HIST_CMD ? _("Command Line") :
@@ -3801,18 +3807,18 @@ write_eeglinfo_history(FILE *fp, int merge) {
       if (num_saved > hislen)
           num_saved = hislen;
 
-      // Merge typed and eeglinfo history:
-      // round 1: history of typed commands.
-      // round 2: history from recently read eeglinfo.
+      //Merge typed and eeglinfo history:
+      //round 1: history of typed commands.
+      //round 2: history from recently read eeglinfo.
       for (round = 1; round <= 2; ++round) {
          if (round == 1)
-            // start at newest entry, somewhere in the list
+            //start at newest entry, somewhere in the list
             i = *hisidx;
          ei (eeglinfo_hisidx[type] > 0)
-            // start at newest entry, first in the list
+            //start at newest entry, first in the list
             i = 0;
          else
-            // empty list
+            //empty list
             i = -1;
          if (i >= 0) {
             while (num_saved > 0 && !(round == 2 && i >= eeglinfo_hisidx[type])) {
@@ -3840,8 +3846,8 @@ write_eeglinfo_history(FILE *fp, int merge) {
                if (p != NULL && (round == 2 || !merge || !histentry[i].eeglinfo)) {
                   --num_saved;
                   fputc(hist_type2char(type, true), fp);
-                  // For the search history: put the separator in the
-                  // second column; use a space if there isn't one.
+                  //For the search history: put the separator in the
+                  //second column; use a space if there isn't one.
                   if (type == HIST_SEARCH) {
                       c = p[plen + 1];
                       putc(c == ZERO ? ' ' : c, fp);
@@ -3851,8 +3857,8 @@ write_eeglinfo_history(FILE *fp, int merge) {
                   {
                      char    cbuf[NUMBUFLEN];
 
-                     // New style history with a bar line. Format:
-                     // |{bartype},{histtype},{timestamp},{separator},"text"
+                     //New style history with a bar line. Format:
+                     //|{bartype},{histtype},{timestamp},{separator},"text"
                      if (c == ZERO)
                         cbuf[0] = ZERO;
                      else
@@ -3863,13 +3869,13 @@ write_eeglinfo_history(FILE *fp, int merge) {
                   }
                }
                if (round == 1) {
-                  // Decrement index, loop around and stop when back at the start.
+                  //Decrement index, loop around and stop when back at the start.
                   if (--i < 0)
                      i = hislen - 1;
                   if (i == *hisidx)
                      break;
                } else {
-                  // Increment index. Stop at the end in the while.
+                  //Increment index. Stop at the end in the while.
                   ++i;
                }
             }
@@ -3898,7 +3904,7 @@ write_eeglinfo_barlines(Vir *virp, FILE *fp_out) {
 
    FPUTS(_("\n# Bar lines, copied verbatim:\n"), fp_out);
 
-   // Skip over continuation lines until seeing a useful line.
+   //Skip over continuation lines until seeing a useful line.
    for (i = 0; i < gap->len; ++i) {
       line = ((char **)(gap->c))[i];
       if (seen_useful || line[1] != '<') {
@@ -3928,8 +3934,8 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
       value = (BVal *)(values->c) + values->len;
 
       if (*p == '>') {
-         // Need to read a continuation line.  Put strings in allocated
-         // memory, because virp->line is overwritten.
+         //Need to read a continuation line.  Put strings in allocated
+         //memory, because virp->line is overwritten.
          if (!allocated) {
             for (i = 0; i < values->len; ++i) {
                BVal  *vp = (BVal *)(values->c) + i;
@@ -3947,12 +3953,12 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
             Unt todo;
             Unt n;
 
-            // String value was split into lines that are each shorter
-            // than LSIZE:
-            //     |{bartype},>{length of "{text}{text2}"}
-            //     |<"{text1}
-            //     |<{text2}",{value}
-            // Length includes the quotes.
+            //String value was split into lines that are each shorter
+            //than LSIZE:
+            //    |{bartype},>{length of "{text}{text2}"}
+            //    |<"{text1}
+            //    |<{text2}",{value}
+            //Length includes the quotes.
             ++p;
             len = parseLong(&p);
             buf = alloc((int)(len + 1));
@@ -3960,17 +3966,17 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
             for (todo = len; todo > 0; todo -= n) {
                eof = eeglinfo_readline(virp);
                if (eof || virp->line[0] != '|' || virp->line[1] != '<') {
-                  // File was truncated or garbled. Read another line if this one starts with '|'.
+                  //File was truncated or garbled. Read another line if this one starts with '|'.
                   eeglFree(buf);
                   return eof || virp->line[0] == '|';
                }
-               // Get length of text, excluding |< and NL chars.
+               //Get length of text, excluding |< and NL chars.
                n = STRLEN(virp->line);
                while (n > 0 && (virp->line[n - 1] == NL || virp->line[n - 1] == ENTER))
                   --n;
                n -= 2;
                if (n > todo) {
-                  // more values follow after the string
+                  //more values follow after the string
                   nextp = virp->line + 2 + todo;
                   n = todo;
                }
@@ -3980,13 +3986,13 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
             *p = ZERO;
             p = buf;
           } else {
-            // Line ending in ">" continues in the next line:
-            //     |{bartype},{lots of values},>
-            //     |<{value},{value}
+            //Line ending in ">" continues in the next line:
+            //    |{bartype},{lots of values},>
+            //    |<{value},{value}
             eof = eeglinfo_readline(virp);
             if (eof || virp->line[0] != '|' || virp->line[1] != '<')
-               // File was truncated or garbled. Read another line if
-               // this one starts with '|'.
+               //File was truncated or garbled. Read another line if
+               //this one starts with '|'.
                return eof || virp->line[0] == '|';
             p = virp->line + 2;
          }
@@ -4000,11 +4006,11 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
          int len = 0;
          CS s = p;
 
-         // Unescape special characters in-place.
+         //Unescape special characters in-place.
          ++p;
          while (*p != '"') {
             if (*p == NL || *p == ZERO)
-               return true;  // syntax error, drop the value
+               return true;  //syntax error, drop the value
             if (*p == '\\') {
                ++p;
                if (*p == 'n')
@@ -4021,8 +4027,8 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
          converted = false;
          value->bv_tofree = NULL;
 
-         // Need to copy in allocated memory if the string wasn't allocated
-         // above and we did allocate before, thus line may change.
+         //Need to copy in allocated memory if the string wasn't allocated
+         //above and we did allocate before, thus line may change.
          if (s != buf && allocated && !converted)
             s = copySubstr(s, len);
          value->bv_string = s;
@@ -4031,7 +4037,7 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
          value->bv_allocated = allocated || converted;
          ++values->len;
          if (nextp) {
-            // values following a long string
+            //values following a long string
             p = nextp;
             nextp = NULL;
          }
@@ -4051,7 +4057,7 @@ write_eeglinfo_version(FILE* fp_out) {
 
 private int
 no_eeglinfo(void) {
-   // "vim -i NONE" does not read or write a eeglinfo file
+   //"vim -i NONE" does not read or write a eeglinfo file
    return !p_eeglinfofile || STRCMP(p_eeglinfofile, "NONE") == 0;
 }
 
@@ -4081,7 +4087,7 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
    if (!writing && (find_eeglinfo_parameter('!') != NULL)) {
       CS tab = firstOccurrence(virp->line + 1, '\t');
       if (tab) {
-         *tab++ = '\0';   // isolate the variable name
+         *tab++ = '\0';   //isolate the variable name
          switch (*tab) {
          case 'S': type = VAR_STRING; break;
          case 'F': type = VAR_FLOAT; break;
@@ -4104,7 +4110,7 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
                Var *etv = eval_expr(tv.string, NULL);
 
                if (etv == NULL)
-                  // Failed to parse back the dict or list, use it as a string.
+                  //Failed to parse back the dict or list, use it as a string.
                   tv.tag = VAR_STRING;
                else {
                   eeglFree(tv.string);
@@ -4115,7 +4121,7 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
                Blob *blob = string2blob(tv.string);
 
                if (blob == NULL)
-                  // Failed to parse back the blob, use it as a string.
+                  //Failed to parse back the blob, use it as a string.
                   tv.tag = VAR_STRING;
                else {
                   eeglFree(tv.string);
@@ -4124,7 +4130,7 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
                }
             }
 
-            // when in a function use global variables
+            //when in a function use global variables
             save_funccal(&funccal_entry);
             set_var(mbText(virp->line + 1), &tv, false);
             restore_funccal();
@@ -4140,7 +4146,7 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
    return eeglinfo_readline(virp);
 }
 
-// Write global vars that start with a capital to the eeglinfo file
+//Write global vars that start with a capital to the eeglinfo file
 private void
 write_eeglinfo_varlist(FILE* fp) {
    EeSet* gvht = get_globvar_ht();
@@ -4171,7 +4177,7 @@ write_eeglinfo_varlist(FILE* fp) {
 
                s = S"DIC";
                if (di && !setRefInSet(&di->hashTable, copyID, NULL) && di->copyId == copyID)
-                  // has a circular reference, can't turn the value into a string
+                  //has a circular reference, can't turn the value into a string
                   continue;
                break;
             }
@@ -4181,12 +4187,12 @@ write_eeglinfo_varlist(FILE* fp) {
 
                s = S"LIS";
                if (l && !set_ref_in_list_items(l, copyID, NULL) && l->copyId == copyID)
-                  // has a circular reference, can't turn the value into a string
+                  //has a circular reference, can't turn the value into a string
                   continue;
                break;
             }
             case VAR_BLOB:    s = S"BLO"; break;
-            case VAR_BOOL:    s = S"XPL"; break;  // backwards compat.
+            case VAR_BOOL:    s = S"XPL"; break;  //backwards compat.
 
             case VAR_UNKNOWN:
             case VAR_ANY:
@@ -4199,7 +4205,7 @@ write_eeglinfo_varlist(FILE* fp) {
             }
             fprintf(fp, "!%s\t%s\t", this_var->key, s);
             if (this_var->c.tag == VAR_BOOL) {
-               // do not use "v:true" but "1"
+               //do not use "v:true" but "1"
                sprintf((char *)numbuf, "%ld", (long)this_var->c.number);
                p = numbuf;
                tofree = NULL;
@@ -4246,22 +4252,22 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
    Byte* val;
    SearchPattern* spat;
 
-   // Old line types:
-   // "/pat", "&pat": search/subst. pat
-   // "~/pat", "~&pat": last used search/subst. pat
-   // New line types:
-   // "~h", "~H": hlsearch hiliting off/on
-   // "~<magic><smartcase><line><end><off><last><which>pat"
-   // <magic>: 'm' off, 'M' on
-   // <smartcase>: 's' off, 'S' on
-   // <line>: 'L' line offset, 'l' char offset
-   // <end>: 'E' from end, 'e' from start
-   // <off>: decimal, offset
-   // <last>: '~' last used pattern
-   // <which>: '/' search pat, '&' subst. pat
+   //Old line types:
+   //"/pat", "&pat": search/subst. pat
+   //"~/pat", "~&pat": last used search/subst. pat
+   //New line types:
+   //"~h", "~H": hlsearch hiliting off/on
+   //"~<magic><smartcase><line><end><off><last><which>pat"
+   //<magic>: 'm' off, 'M' on
+   //<smartcase>: 's' off, 'S' on
+   //<line>: 'L' line offset, 'l' char offset
+   //<end>: 'E' from end, 'e' from start
+   //<off>: decimal, offset
+   //<last>: '~' last used pattern
+   //<which>: '/' search pat, '&' subst. pat
    CS lp = virp->line;
-   if (lp[0] == '~' && (lp[1] == 'm' || lp[1] == 'M')) {  // new line type
-      if (lp[1] == 'M')      // magic on
+   if (lp[0] == '~' && (lp[1] == 'm' || lp[1] == 'M')) {  //new line type
+      if (lp[1] == 'M')      //magic on
          magic = true;
       if (lp[2] == 's')
          no_scs = true;
@@ -4272,7 +4278,7 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
       lp += 5;
       off = parseLong(&lp);
    }
-   if (lp[0] == '~') {     // use this pattern for last-used pattern
+   if (lp[0] == '~') {     //use this pattern for last-used pattern
       setlast = true;
       lp++;
    }
@@ -4280,9 +4286,9 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
       idx = RE_SEARCH;
    ei (lp[0] == '&')
       idx = RE_SUBST;
-   ei (lp[0] == 'h')   // ~h: 'hlsearch' hiliting off
+   ei (lp[0] == 'h')   //~h: 'hlsearch' hiliting off
       hlsearch_on = false;
-   ei (lp[0] == 'H')   // ~H: 'hlsearch' hiliting on
+   ei (lp[0] == 'H')   //~H: 'hlsearch' hiliting on
       hlsearch_on = true;
    if (idx >= 0) {
       spat = getPrevSearchPattern(idx);
@@ -4305,25 +4311,25 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
 
 private void
 wvsp_one(
-   FILE* fp,   // file to write to
-   int idx,   // spats[] index
-   CS s,   // search pat
-   int sc   // dir char
+   FILE* fp,   //file to write to
+   int idx,   //spats[] index
+   CS s,   //search pat
+   int sc   //dir char
 ){
    SearchPattern* spat = getPrevSearchPattern(idx);
    if (spat->pat.len == 0)
       return;
 
    fprintf(fp, (char*)_("\n# Last %sSearch Pattern:\n~"), s);
-   // off.dir is not stored, it's reset to forward
+   //off.dir is not stored, it's reset to forward
    fprintf(
       fp, "%c%c%c%c%ld%s%c",
-      spat->magic    ? 'M' : 'm',   // magic
-      spat->no_scs   ? 's' : 'S',   // smartcase
-      spat->off.line ? 'L' : 'l',   // line offset
-      spat->off.end  ? 'E' : 'e',   // offset from end
-      spat->off.off,         // offset
-      getPrevSearchOrSubstPattern() == idx ? "~" : "",   // last used pat
+      spat->magic    ? 'M' : 'm',   //magic
+      spat->no_scs   ? 's' : 'S',   //smartcase
+      spat->off.line ? 'L' : 'l',   //line offset
+      spat->off.end  ? 'E' : 'e',   //offset from end
+      spat->off.off,         //offset
+      getPrevSearchOrSubstPattern() == idx ? "~" : "",   //last used pat
       sc
    );
    eeglinfo_writestring(fp, spat->pat.c);
@@ -4340,14 +4346,14 @@ write_eeglinfo_search_pattern(FILE* fp) {
    wvsp_one(fp, RE_SUBST, _("Substitute "), '&');
 }
 
-// Functions relating to reading/writing registers from eeglinfo
+//Functions relating to reading/writing registers from eeglinfo
 
 private YankReg *y_read_regs = NULL;
 
 #define REG_PREVIOUS 1
 #define REG_EXEC 2
 
-// Prepare for reading eeglinfo registers when writing eeglinfo later.
+//Prepare for reading eeglinfo registers when writing eeglinfo later.
 private void
 prepare_eeglinfo_registers(void) {
    y_read_regs = ALLOC_CLEAR_MULT(YankReg, NUM_REGISTERS);
@@ -4374,14 +4380,14 @@ read_eeglinfo_register(Vir* virp, Boole force) {
    int do_it = true;
    int set_prev = false;
    Arr(Text) array = NULL;
-   int      new_type = MCHAR; // init to shut up compiler
-   ColNr   new_width = 0; // init to shut up compiler
+   int      new_type = MCHAR; //init to shut up compiler
+   ColNr   new_width = 0; //init to shut up compiler
    YankReg   *y_current_p;
 
-   // We only get here (hopefully) if line[0] == '"'
+   //We only get here (hopefully) if line[0] == '"'
    CS str = virp->line + 1;
 
-   // If the line starts with "" this is the y_previous register.
+   //If the line starts with "" this is the y_previous register.
    if (*str == '"') {
       set_prev = true;
       str++;
@@ -4389,7 +4395,7 @@ read_eeglinfo_register(Vir* virp, Boole force) {
 
    if (!ASCII_ISALNUM(*str) && *str != '-') {
       if (eeglinfo_error(S"E577: ", _(e_illegal_register_name), virp->line))
-          return true;   // too many errors, pretend end-of-file
+          return true;   //too many errors, pretend end-of-file
       do_it = false;
    }
    get_yank_register(*str++, false);
@@ -4398,18 +4404,18 @@ read_eeglinfo_register(Vir* virp, Boole force) {
       do_it = false;
 
    if (*str == '@') {
-      // "x@: register x used for @@
+      //"x@: register x used for @@
       if (force || get_execreg_lastc() == ZERO)
           set_execreg_lastc(str[-1]);
    }
 
    int size = 0;
-   int limit = 100;   // Optimized for registers containing <= 100 lines
+   int limit = 100;   //Optimized for registers containing <= 100 lines
    if (do_it) {
-      // Build the new register in array[].
-      // y_array is kept as-is until done.
-      // The "do_it" flag is reset when something is wrong, in which case
-      // array[] needs to be freed.
+      //Build the new register in array[].
+      //y_array is kept as-is until done.
+      //The "do_it" flag is reset when something is wrong, in which case
+      //array[] needs to be freed.
       if (set_prev)
          set_y_previous(y_current_p);
       array = ALLOC_MULT(Text, limit);
@@ -4420,7 +4426,7 @@ read_eeglinfo_register(Vir* virp, Boole force) {
          new_type = MBLOCK;
       else
          new_type = MLINE;
-      // get the block width; if it's missing we get a zero, which is OK
+      //get the block width; if it's missing we get a zero, which is OK
       str = skipwhite(skiptowhite(str));
       new_width = parseLong(&str);
    }
@@ -4447,13 +4453,13 @@ read_eeglinfo_register(Vir* virp, Boole force) {
             array[size].len = STRLEN(str);
             ++size;
          } else
-            // error, don't store the result
+            //error, don't store the result
             do_it = false;
       }
    }
 
    if (do_it) {
-      // free y_array[]
+      //free y_array[]
       for (int i = 0; i < y_current_p->y_size; i++)
          eeglFree(y_current_p->y_array[i].c);
       eeglFree(y_current_p->y_array);
@@ -4465,7 +4471,7 @@ read_eeglinfo_register(Vir* virp, Boole force) {
       if (size == 0) {
          y_current_p->y_array = NULL;
       } else {
-         // Move the lines from array[] to y_array[].
+         //Move the lines from array[] to y_array[].
          y_current_p->y_array = ALLOC_MULT(Text, size);
          for (int i = 0; i < size; i++) {
             if (y_current_p->y_array == NULL) {
@@ -4476,7 +4482,7 @@ read_eeglinfo_register(Vir* virp, Boole force) {
          }
       }
     } else {
-      // Free array[] if it was filled.
+      //Free array[] if it was filled.
       for (int i = 0; i < size; i++)
          eeglFree(array[i].c);
    }
@@ -4494,9 +4500,9 @@ handle_eeglinfo_register(ArrayList *values, int force) {
    YankReg   *y_regs_p = get_y_regs();
    int      i;
 
-   // Check the format:
-   // |{bartype},{flags},{name},{type},
-   //      {linecount},{width},{timestamp},"line1","line2"
+   //Check the format:
+   //|{bartype},{flags},{name},{type},
+   //     {linecount},{width},{timestamp},"line1","line2"
    if (values->len < 6
        || vp[0].btag != BVAL_NR
        || vp[1].btag != BVAL_NR
@@ -4554,7 +4560,7 @@ handle_eeglinfo_register(ArrayList *values, int force) {
    }
    y_ptr->y_array = ALLOC_MULT(Text, linecount);
    if (y_ptr->y_array == NULL) {
-      y_ptr->y_size = 0; // ensure object state is consistent
+      y_ptr->y_size = 0; //ensure object state is consistent
       return;
    }
    for (i = 0; i < linecount; i++) {
@@ -4584,7 +4590,7 @@ write_eeglinfo_registers(FILE* fp) {
 
    FPUTS(_("\n# Registers:\n"), fp);
 
-   // Get '<' value, use old '"' value if '<' is not found.
+   //Get '<' value, use old '"' value if '<' is not found.
    int max_num_lines = get_eeglinfo_parameter('<');
    if (max_num_lines < 0)
       max_num_lines = get_eeglinfo_parameter('"');
@@ -4595,14 +4601,14 @@ write_eeglinfo_registers(FILE* fp) {
       return;
 
    for (i = 0; i < NUM_REGISTERS; i++) {
-      // Skip '*'/'+' register, we don't want them back next time
+      //Skip '*'/'+' register, we don't want them back next time
       if (i == STAR_REGISTER || i == PLUS_REGISTER)
           continue;
-      // Neither do we want the '~' register
+      //Neither do we want the '~' register
       if (i == TILDE_REGISTER)
           continue;
-      // When reading eeglinfo for merging and writing: Use the register from
-      // eeglinfo if it's newer.
+      //When reading eeglinfo for merging and writing: Use the register from
+      //eeglinfo if it's newer.
       if (y_read_regs
          && y_read_regs[i].y_array != NULL
          && (y_regs_p[i].y_array == NULL || y_read_regs[i].y_time_set > y_regs_p[i].y_time_set)
@@ -4613,7 +4619,7 @@ write_eeglinfo_registers(FILE* fp) {
       else
          y_ptr = &y_regs_p[i];
 
-      // Skip empty registers.
+      //Skip empty registers.
       num_lines = y_ptr->y_size;
       if (num_lines == 0
          || (num_lines == 1 && y_ptr->y_type == MCHAR
@@ -4621,7 +4627,7 @@ write_eeglinfo_registers(FILE* fp) {
           continue;
 
       if (max_kbyte > 0) {
-          // Skip register if there is more text than the maximum size.
+          //Skip register if there is more text than the maximum size.
           len = 0;
           for (j = 0; j < num_lines; j++)
          len += (long)y_ptr->y_array[j].len + 1L;
@@ -4652,7 +4658,7 @@ write_eeglinfo_registers(FILE* fp) {
          fprintf(fp, "@");
       fprintf(fp, "\t%s\t%d\n", type, (int)y_ptr->y_width);
 
-      // If max_num_lines < 0, then we save ALL the lines in the register
+      //If max_num_lines < 0, then we save ALL the lines in the register
       if (max_num_lines > 0 && num_lines > max_num_lines)
          num_lines = max_num_lines;
       for (j = 0; j < num_lines; j++) {
@@ -4663,11 +4669,11 @@ write_eeglinfo_registers(FILE* fp) {
       {
          Unt flags = 0;
 
-         // New style with a bar line. Format:
-         // |{bartype},{flags},{name},{type},
-         //      {linecount},{width},{timestamp},"line1","line2"
-         // flags: REG_PREVIOUS - register is y_previous
-         //         REG_EXEC - used for @@
+         //New style with a bar line. Format:
+         //|{bartype},{flags},{name},{type},
+         //     {linecount},{width},{timestamp},"line1","line2"
+         //flags: REG_PREVIOUS - register is y_previous
+         //        REG_EXEC - used for @@
          if (get_y_previous() == &y_regs_p[i])
             flags |= REG_PREVIOUS;
          if (c == get_execreg_lastc())
@@ -4675,7 +4681,7 @@ write_eeglinfo_registers(FILE* fp) {
          fprintf(fp, "|%d,%d,%d,%d,%d,%d,%ld", BARTYPE_REGISTER, flags,
              i, y_ptr->y_type, num_lines, (int)y_ptr->y_width,
              (long)y_ptr->y_time_set);
-         // 11 chars for type/flags/name/type, 3 * 20 for numbers
+         //11 chars for type/flags/name/type, 3 * 20 for numbers
          int remaining = LSIZE - 71;
          for (j = 0; j < num_lines; j++) {
             putc(',', fp);
@@ -4687,7 +4693,7 @@ write_eeglinfo_registers(FILE* fp) {
    }
 }
 
-// Functions relating to reading/writing marks from eeglinfo
+//Functions relating to reading/writing marks from eeglinfo
 
 private FileMarkExt *vi_namedfm = NULL;
 private FileMarkExt *vi_jumplist = NULL;
@@ -4705,8 +4711,8 @@ writeBookMarks(Book* book, FILE* fp_out) {
    fprintf(fp_out, "\n> ");
    eeglinfo_writestring(fp_out, IObuff);
 
-   // Write the last used timestamp as the lnum of the non-existing mark '*'.
-   // Older Eegls will ignore it and/or copy it.
+   //Write the last used timestamp as the lnum of the non-existing mark '*'.
+   //Older Eegls will ignore it and/or copy it.
    Pos pos;
    pos.lnum = (LineNr)book->lastUsed;
    pos.col = 0;
@@ -4715,9 +4721,9 @@ writeBookMarks(Book* book, FILE* fp_out) {
    write_one_mark(fp_out, '"', &book->lastCursor);
    write_one_mark(fp_out, '^', &book->lastInsert);
    write_one_mark(fp_out, '.', &book->lastChange);
-   // changelist positions are stored oldest first
+   //changelist positions are stored oldest first
    for (Unt i = 0; i < book->changeListLen; ++i) {
-      // skip duplicates
+      //skip duplicates
       if (i == 0 || !EQUAL_POS(book->changeList[i - 1], book->changeList[i]))
           write_one_mark(fp_out, '+', &book->changeList[i]);
    }
@@ -4725,7 +4731,7 @@ writeBookMarks(Book* book, FILE* fp_out) {
       write_one_mark(fp_out, 'a' + i, &book->namedMarks[i]);
 }
 
-// Return true if marks for "book" should not be written.
+//Return true if marks for "book" should not be written.
 private int
 skip_for_eeglinfo(Book *book) {
     return bt_terminal(book) || removable(book->fullFileName);
@@ -4738,7 +4744,7 @@ write_eeglinfo_marks(FILE* fp_out, ArrayList* buflist) {
    int is_mark_set;
    int i;
 
-   // Set lastCursor for all books that have a portal.
+   //Set lastCursor for all books that have a portal.
    Portal   *port;
    Tab   *t;
    FOR_ALL_TAB_PORTALS(t, port)
@@ -4747,7 +4753,7 @@ write_eeglinfo_marks(FILE* fp_out, ArrayList* buflist) {
    FPUTS(_("\n# History of marks within files (newest to oldest):\n"), fp_out);
    Book   *book;
    FOR_ALL_BOOKS(book) {
-      // Only write something if book has been loaded and at least one mark is set.
+      //Only write something if book has been loaded and at least one mark is set.
       if (book->haveReadEeglinfoMarks) {
          if (book->lastCursor.lnum != 0)
             is_mark_set = true;
@@ -4773,21 +4779,21 @@ write_eeglinfo_marks(FILE* fp_out, ArrayList* buflist) {
 
 private void
 write_one_filemark(FILE* fp, FileMarkExt* fm, int c1, int c2) {
-   if (fm->fmark.mark.lnum == 0)   // not set
+   if (fm->fmark.mark.lnum == 0)   //not set
       return;
 
    CS name;
-   if (fm->fmark.fnum != 0)      // there is a book
+   if (fm->fmark.fnum != 0)      //there is a book
       name = bookGetNameByBookNr(fm->fmark.fnum, true, false);
    else
-      name = fm->fname;      // use name from .eeglinfo
+      name = fm->fname;      //use name from .eeglinfo
    if (name && *name != ZERO) {
       fprintf(fp, "%c%c  %ld  %ld  ", c1, c2, (long)fm->fmark.mark.lnum,
                          (long)fm->fmark.mark.col);
       eeglinfo_writestring(fp, name);
 
-      // Barline: |{bartype},{name},{lnum},{col},{timestamp},{filename}
-      // size up to filename: 8 + 3 * 20
+      //Barline: |{bartype},{name},{lnum},{col},{timestamp},{filename}
+      //size up to filename: 8 + 3 * 20
       fprintf(fp, "|%d,%d,%ld,%ld,%ld,", BARTYPE_MARK, c2,
          (long)fm->fmark.mark.lnum, (long)fm->fmark.mark.col,
          (long)fm->time_set);
@@ -4814,7 +4820,7 @@ write_eeglinfo_filemarks(FILE* fp) {
 
    FPUTS(_("\n# File marks:\n"), fp);
 
-   // Write the filemarks 'A - 'Z
+   //Write the filemarks 'A - 'Z
    for (i = 0; i < NMARKS; i++) {
       if (vi_namedfm != NULL && (vi_namedfm[i].time_set > namedfm_p[i].time_set))
          fm = &vi_namedfm[i];
@@ -4823,10 +4829,10 @@ write_eeglinfo_filemarks(FILE* fp) {
       write_one_filemark(fp, fm, '\'', i + 'A');
    }
 
-   // Find a mark that is the same file and position as the cursor.
-   // That one, or else the last one is deleted.
-   // Move '0 to '1, '1 to '2, etc. until the matching one or '9
-   // Set the '0 mark to current cursor position.
+   //Find a mark that is the same file and position as the cursor.
+   //That one, or else the last one is deleted.
+   //Move '0 to '1, '1 to '2, etc. until the matching one or '9
+   //Set the '0 mark to current cursor position.
    if (curBook->fullFileName != NULL && !skip_for_eeglinfo(curBook)) {
       name = bookGetNameByBookNr(curBook->fiNum, true, false);
       for (i = NMARKS; i < NMARKS + EXTRA_MARKS - 1; ++i)
@@ -4847,7 +4853,7 @@ write_eeglinfo_filemarks(FILE* fp) {
       namedfm_p[NMARKS].time_set = eeTime();
    }
 
-   // Write the filemarks '0 - '9.  Newest (highest timestamp) first.
+   //Write the filemarks '0 - '9.  Newest (highest timestamp) first.
    vi_idx = NMARKS;
    idx = NMARKS;
    for (i = NMARKS; i < NMARKS + EXTRA_MARKS; i++) {
@@ -4868,14 +4874,14 @@ write_eeglinfo_filemarks(FILE* fp) {
                  && vi_fm->fmark.fnum == fm->fmark.fnum)
                   || (vi_fm->fname && fm->fname && STRCMP(vi_fm->fname, fm->fname) == 0))
          )
-            ++vi_idx;  // skip duplicate
+            ++vi_idx;  //skip duplicate
       }
       write_one_filemark(fp, fm, '\'', i - NMARKS + '0');
    }
 
-   // Write the jumplist with -'
+   //Write the jumplist with -'
    FPUTS(_("\n# Jumplist (newest first):\n"), fp);
-   setpcmark();   // add current cursor position
+   setpcmark();   //add current cursor position
    cleanup_jumplist(curPor, false);
    vi_idx = 0;
    idx = curPor->jumpListLen - 1;
@@ -4927,7 +4933,7 @@ copy_eeglinfo_marks(
    *name_buf = ZERO;
 
    if (fp_out && buflist->len > 0) {
-      // Sort the list of books on lastUsed.
+      //Sort the list of books on lastUsed.
       qsort(buflist->c, (Unt)buflist->len, sizeof(Book *), bookCompare);
       buflist_buf = ((Book **)buflist->c)[0];
    }
@@ -4942,13 +4948,13 @@ copy_eeglinfo_marks(
          if (line[0] != '\n' && line[0] != '\r' && line[0] != '#'
             && eeglinfo_error(S"E576: ", _(e_nonr_missing_gt), line)
          )
-            break;   // too many errors, return now
+            break;   //too many errors, return now
          eof = eeFgets(line, LSIZE, virp->vir_fd);
-         continue;      // Skip this dud line
+         continue;      //Skip this dud line
       }
 
-      // Handle long line and translate escaped characters.
-      // Find file name, set str to start. Ignore leading and trailing white space.
+      //Handle long line and translate escaped characters.
+      //Find file name, set str to start. Ignore leading and trailing white space.
       str = skipwhite(line + 1);
       str = eeglinfo_readstring(virp, (int)(str - virp->line));
       if (str == NULL)
@@ -4963,18 +4969,18 @@ copy_eeglinfo_marks(
       if (list)
          list_append_string(list, str, -1);
 
-      // If fp_out == NULL, load marks for current book.
-      // If fp_out != NULL, copy marks for books not in booklist.
+      //If fp_out == NULL, load marks for current book.
+      //If fp_out != NULL, copy marks for books not in booklist.
       load_marks = copy_marks_out = false;
       if (fp_out == NULL) {
          if ((flags & EIF_WANT_MARKS) && curBook->fullFileName != NULL) {
-            if (*name_buf == ZERO)       // only need to do this once
+            if (*name_buf == ZERO)       //only need to do this once
                home_replace(curBook->fullFileName, name_buf, LSIZE, true);
             if (fnamecmp(str, name_buf) == 0)
                load_marks = true;
          }
-      } else { // fp_out != NULL
-         // This is slow if there are many books!!
+      } else { //fp_out != NULL
+         //This is slow if there are many books!!
          FOR_ALL_BOOKS(book) {
             if (book->fullFileName) {
                home_replace(book->fullFileName, name_buf, LSIZE, true);
@@ -4983,13 +4989,13 @@ copy_eeglinfo_marks(
             }
          } 
 
-         // Copy marks if the book has not been loaded.
+         //Copy marks if the book has not been loaded.
          if (book == NULL || !book->haveReadEeglinfoMarks) {
             int   did_read_line = false;
 
             if (buflist_buf) {
-               // Read the next line.  If it has the "*" mark compare the
-               // time stamps.  Write entries from "buflist" that are newer.
+               //Read the next line.  If it has the "*" mark compare the
+               //time stamps.  Write entries from "buflist" that are newer.
                if (!eeglinfo_readline(virp) && line[0] == TAB) {
                   did_read_line = true;
                   if (line[1] == '*') {
@@ -5006,8 +5012,8 @@ copy_eeglinfo_marks(
                         buflist_buf = ((Book **)buflist->c)[buflist_used];
                      }
                   } else {
-                     // No timestamp, must be written by an older Eegl.
-                     // Assume all remaining books are older than ours.
+                     //No timestamp, must be written by an older Eegl.
+                     //Assume all remaining books are older than ours.
                      while (count < num_marked_files && buflist_used < buflist->len) {
                         buflist_buf = ((Book **)buflist->c)[buflist_used++];
                         writeBookMarks(buflist_buf, fp_out);
@@ -5047,10 +5053,10 @@ copy_eeglinfo_marks(
                case '^': curBook->lastInsert = pos; break;
                case '.': curBook->lastChange = pos; break;
                case '+':
-                    // changelist positions are stored oldest
-                    // first
+                    //changelist positions are stored oldest
+                    //first
                     if (curBook->changeListLen == JUMPLISTSIZE)
-                        // list is full, remove oldest entry
+                        //list is full, remove oldest entry
                         MEMMOVE(curBook->changeList,
                          curBook->changeList + 1,
                          sizeof(Pos) * (JUMPLISTSIZE - 1));
@@ -5059,7 +5065,7 @@ copy_eeglinfo_marks(
                     curBook->changeList[curBook->changeListLen - 1] = pos;
                     break;
 
-                    // Using the line number for the last-used timestamp.
+                    //Using the line number for the last-used timestamp.
                case '*': curBook->lastUsed = pos.lnum; break;
 
                default:  
@@ -5083,7 +5089,7 @@ copy_eeglinfo_marks(
    }
 
    if (fp_out) {
-      // Write any remaining entries from buflist.
+      //Write any remaining entries from buflist.
       while (count < num_marked_files && buflist_used < buflist->len) {
           buflist_buf = ((Book **)buflist->c)[buflist_used++];
           writeBookMarks(buflist_buf, fp_out);
@@ -5101,8 +5107,8 @@ check_marks_read(void) {
    if (!curBook->haveReadEeglinfoMarks && get_eeglinfo_parameter('\'') > 0 && curBook->fullFileName)
       read_eeglinfo(NULL, EIF_WANT_MARKS | EIF_ONLY_CURBOOK);
 
-   // Always set haveReadEeglinfoMarks; needed when 'eeglinfo' is changed to include
-   // the ' parameter after opening a book.
+   //Always set haveReadEeglinfoMarks; needed when 'eeglinfo' is changed to include
+   //the ' parameter after opening a book.
    curBook->haveReadEeglinfoMarks = true;
 }
 
@@ -5112,15 +5118,15 @@ read_eeglinfo_filemark(Vir *virp, int force) {
    FileMarkExt* fm;
    int i;
 
-   // We only get here if line[0] == '\'' or '-'.
-   // Illegal mark names are ignored (for future expansion).
+   //We only get here if line[0] == '\'' or '-'.
+   //Illegal mark names are ignored (for future expansion).
    CS str = virp->line + 1;
    if (*str <= 127
        && ((*virp->line == '\'' && (EE_ISDIGIT(*str) || SAFE_isupper(*str)))
         || (*virp->line == '-' && *str == '\''))
    ){
       if (*str == '\'') {
-         // If the jumplist isn't full insert fmark as oldest entry
+         //If the jumplist isn't full insert fmark as oldest entry
          if (curPor->jumpListLen == JUMPLISTSIZE)
             fm = NULL;
          else {
@@ -5152,7 +5158,7 @@ read_eeglinfo_filemark(Vir *virp, int force) {
    return eeFgets(virp->line, LSIZE, virp->vir_fd);
 }
 
-// Prepare for reading eeglinfo marks when writing eeglinfo later.
+//Prepare for reading eeglinfo marks when writing eeglinfo later.
 private void
 prepare_eeglinfo_marks(void) {
    vi_namedfm = ALLOC_CLEAR_MULT(FileMarkExt, NMARKS + EXTRA_MARKS);
@@ -5174,13 +5180,13 @@ finish_eeglinfo_marks(void) {
    }
 }
 
-// Accept a new style mark line from the eeglinfo, store it when it's new.
+//Accept a new style mark line from the eeglinfo, store it when it's new.
 private void
 handle_eeglinfo_mark(ArrayList *values, int force) {
    BVal* vp = (BVal *)values->c;
 
-   // Check the format:
-   // |{bartype},{name},{lnum},{col},{timestamp},{filename}
+   //Check the format:
+   //|{bartype},{name},{lnum},{col},{timestamp},{filename}
    if (values->len < 5
          || vp[0].btag != BVAL_NR
          || vp[1].btag != BVAL_NR
@@ -5207,32 +5213,32 @@ handle_eeglinfo_mark(ArrayList *values, int force) {
          int idx;
          int i;
 
-         // If we have a timestamp insert it in the right place.
+         //If we have a timestamp insert it in the right place.
          if (timestamp != 0) {
             for (idx = curPor->jumpListLen - 1; idx >= 0; --idx)
                if (curPor->jumpList[idx].time_set < timestamp) {
                   ++idx;
                   break;
                }
-            // idx cannot be zero now
+            //idx cannot be zero now
             if (idx < 0 && curPor->jumpListLen < JUMPLISTSIZE)
-               // insert as the oldest entry
+               //insert as the oldest entry
                idx = 0;
          } ei (curPor->jumpListLen < JUMPLISTSIZE)
-            // insert as oldest entry
+            //insert as oldest entry
             idx = 0;
          else
             idx = -1;
 
          if (idx >= 0) {
             if (curPor->jumpListLen == JUMPLISTSIZE) {
-               // Drop the oldest entry.
+               //Drop the oldest entry.
                --idx;
                eeglFree(curPor->jumpList[0].fname);
                for (i = 0; i < idx; ++i)
                   curPor->jumpList[i] = curPor->jumpList[i + 1];
             } else {
-               // Move newer entries forward.
+               //Move newer entries forward.
                for (i = curPor->jumpListLen; i > idx; --i)
                   curPor->jumpList[i] = curPor->jumpList[i - 1];
                ++curPor->jumpListInd;
@@ -5254,13 +5260,13 @@ handle_eeglinfo_mark(ArrayList *values, int force) {
          else {
             int i;
 
-            // Do not use the name from the eeglinfo file, insert in time
-            // order.
+            //Do not use the name from the eeglinfo file, insert in time
+            //order.
             for (idx = NMARKS; idx < NMARKS + EXTRA_MARKS; ++idx)
                 if (namedfm_p[idx].time_set < timestamp)
                break;
             if (idx == NMARKS + EXTRA_MARKS)
-                // All existing entries are newer.
+                //All existing entries are newer.
                 return;
             i = NMARKS + EXTRA_MARKS - 1;
 
@@ -5303,16 +5309,16 @@ read_eeglinfo_barline(Vir* virp, Boole force, int writing) {
    int i;
    int read_next = true;
 
-   // The format is: |{bartype},{value},...
-   // For a very long string:
-   //     |{bartype},>{length of "{text}{text2}"}
-   //     |<{text1}
-   //     |<{text2},{value}
-   // For a long line not using a string
-   //     |{bartype},{lots of values},>
-   //     |<{value},{value}
+   //The format is: |{bartype},{value},...
+   //For a very long string:
+   //    |{bartype},>{length of "{text}{text2}"}
+   //    |<{text1}
+   //    |<{text2},{value}
+   //For a long line not using a string
+   //    |{bartype},{lots of values},>
+   //    |<{value},{value}
    if (*p == '<') {
-      // Continuation line of an unrecognized item.
+      //Continuation line of an unrecognized item.
       if (writing)
          ga_copy_string(&virp->vir_barlines, virp->line);
    } else {
@@ -5342,7 +5348,7 @@ read_eeglinfo_barline(Vir* virp, Boole force, int writing) {
          break;
 
       default:
-         // copy unrecognized line (for future use)
+         //copy unrecognized line (for future use)
          if (writing)
             ga_copy_string(&virp->vir_barlines, virp->line);
       }
@@ -5371,11 +5377,11 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
    int eof = eeglinfo_readline(virp);
    while (!eof && virp->line[0] != '>') {
       switch (virp->line[0]) {
-      // Characters reserved for future expansion, ignored now
-      case '+': // "+40 /path/dir file", for running vim without args
-      case '^': // to be defined
-      case '<': // long line - ignored
-      // A comment or empty line.
+      //Characters reserved for future expansion, ignored now
+      case '+': //"+40 /path/dir file", for running vim without args
+      case '^': //to be defined
+      case '<': //long line - ignored
+      //A comment or empty line.
       case ZERO:
       case '\r':
       case '\n':
@@ -5385,14 +5391,14 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
       case '|':
          eof = read_eeglinfo_barline(virp, forceit, writing);
          break;
-      case '!': // global variable
+      case '!': //global variable
          eof = read_eeglinfo_varlist(virp, writing);
          break;
-      case '%': // entry for book list
+      case '%': //entry for book list
          eof = readEeglinfoBookList(virp, writing);
          break;
       case '"':
-         // When registers are in bar lines skip the old style register lines.
+         //When registers are in bar lines skip the old style register lines.
          if (virp->vir_version < EEGLINFO_VERSION_WITH_REGISTERS)
             eof = read_eeglinfo_register(virp, forceit);
          else
@@ -5400,9 +5406,9 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
                eof = eeglinfo_readline(virp);
             } while (!eof && (virp->line[0] == TAB || virp->line[0] == '<'));
          break;
-      case '/':       // Search string
-      case '&':       // Substitute search string
-      case '~':       // Last search string, followed by '/' or '&'
+      case '/':       //Search string
+      case '&':       //Substitute search string
+      case '~':       //Last search string, followed by '/' or '&'
          eof = read_eeglinfo_search_pattern(virp, forceit);
          break;
       case '$':
@@ -5412,7 +5418,7 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
       case '?':
       case '=':
       case '@':
-         // When history is in bar lines skip the old style history lines.
+         //When history is in bar lines skip the old style history lines.
          if (virp->vir_version < EEGLINFO_VERSION_WITH_HISTORY)
             eof = read_eeglinfo_history(virp, writing);
          else
@@ -5420,7 +5426,7 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
          break;
       case '-':
       case '\'':
-         // When file marks are in bar lines skip the old style lines.
+         //When file marks are in bar lines skip the old style lines.
          if (virp->vir_version < EEGLINFO_VERSION_WITH_MARKS)
             eof = read_eeglinfo_filemark(virp, forceit);
          else
@@ -5435,11 +5441,11 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
       }
    }
 
-   // Finish reading history items.
+   //Finish reading history items.
    if (!writing)
       finish_eeglinfo_history(virp);
 
-   // Change file names to book numbers for fmarks.
+   //Change file names to book numbers for fmarks.
    Book* book;
    FOR_ALL_BOOKS(book) {
       fmarks_check_names(book);
@@ -5448,7 +5454,7 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
    return eof;
 }
 
-// do_eeglinfo() -- Should only be called from read_eeglinfo() & write_eeglinfo().
+//do_eeglinfo() -- Should only be called from read_eeglinfo() & write_eeglinfo().
 private void
 do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags) {
    int eof = false;
@@ -5474,7 +5480,7 @@ do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags) {
          eof = read_eeglinfo_up_to_marks(&vir, flags & EIF_FORCEIT, fp_out != NULL);
          merge = true;
       } ei (flags != 0)
-         // Skip info, find start of marks
+         //Skip info, find start of marks
          while (!(eof = eeglinfo_readline(&vir)) && vir.line[0] != '>')
             {}
 
@@ -5482,7 +5488,7 @@ do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags) {
    }
 
    if (fp_out != NULL) {
-      // Write the info:
+      //Write the info:
       fprintf(fp_out, (char*)_("# This eeglinfo file was generated by Eegl %s.\n"),
                           EEGL_VERSION_MEDIUM);
       FPUTS(_("# You may edit it if you're careful!\n\n"), fp_out);
@@ -5517,15 +5523,15 @@ do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags) {
 //set are not over-written unless "flags" includes EIF_FORCEIT. -- webb
 pub int
 read_eeglinfo(
-   CS file,       // file name or NULL to use default name
-   Unt flags       // EIF_WANT_INFO et al.
+   CS file,       //file name or NULL to use default name
+   Unt flags       //EIF_WANT_INFO et al.
 ){
-   FileStat   st;      // stat() of existing eeglinfo file
+   FileStat   st;      //stat() of existing eeglinfo file
 
    if (no_eeglinfo())
       return FAIL;
 
-   CS fname = eeglinfo_filename(file);   // get file name in allocated book
+   CS fname = eeglinfo_filename(file);   //get file name in allocated book
    if (!fname)
       return FAIL;
    FILE* fp = FOPEN(fname, READBIN);
@@ -5562,37 +5568,37 @@ read_eeglinfo(
 //read in, and only internal info is written to the file.
 pub void
 write_eeglinfo(CS file, Boole forceit) {
-   FILE* fp_out = NULL;   // output eeglinfo file
-   CS tempname = NULL;   // name of temp eeglinfo file
-   FileStat   st_new;      // stat() of potential new file
-   FileStat   st_old;      // stat() of existing eeglinfo file
+   FILE* fp_out = NULL;   //output eeglinfo file
+   CS tempname = NULL;   //name of temp eeglinfo file
+   FileStat   st_new;      //stat() of potential new file
+   FileStat   st_old;      //stat() of existing eeglinfo file
    mode_t   umask_save;
 
    if (no_eeglinfo())
       return;
 
-   CS fname = eeglinfo_filename(file);   // may set to default if NULL
+   CS fname = eeglinfo_filename(file);   //may set to default if NULL
    if (!fname)
       return;
 
-   FILE* fp_in = fopen((char *)fname, READBIN); // input eeglinfo file, if any
+   FILE* fp_in = fopen((char *)fname, READBIN); //input eeglinfo file, if any
    if (!fp_in) {
-      // if it does exist, but we can't read it, don't try writing
+      //if it does exist, but we can't read it, don't try writing
       if (stat((char *)fname, &st_new) == 0)
          goto end;
 
-      // Create the new .eeglinfo non-accessible for others, because it may
-      // contain text from non-accessible documents. It is up to the user to
-      // widen access (e.g. to a group). This may also fail if there is a
-      // race condition, then just give up.
+      //Create the new .eeglinfo non-accessible for others, because it may
+      //contain text from non-accessible documents. It is up to the user to
+      //widen access (e.g. to a group). This may also fail if there is a
+      //race condition, then just give up.
       int fd = open((char *)fname, O_CREAT|O_EXTRA|O_EXCL|O_WRONLY|O_NOFOLLOW, 0600);
       if (fd < 0)
          goto end;
       fp_out = fdopen(fd, WRITEBIN);
    } else {
-      // There is an existing eeglinfo file.  Create a temporary file to
-      // write the new eeglinfo into, in the same directory as the
-      // existing eeglinfo file, which will be renamed once all writing is successful.
+      //There is an existing eeglinfo file.  Create a temporary file to
+      //write the new eeglinfo into, in the same directory as the
+      //existing eeglinfo file, which will be renamed once all writing is successful.
       if (fstat(fileno(fp_in), &st_old) < 0
          || S_ISDIR(st_old.st_mode)
          //We check the owner of the file. It's not very nice to overwrite a user's eeglinfo file 
@@ -5606,29 +5612,29 @@ write_eeglinfo(CS file, Boole forceit) {
       ) {
           int   tt = msg_didany;
 
-          // avoid a wait_return() for this message, it's annoying
+          //avoid a wait_return() for this message, it's annoying
           showErrFmtMsg(_(e_eeglinfo_file_is_not_writable_str), fname);
           msg_didany = tt;
           fclose(fp_in);
           goto end;
       }
 
-      // Make tempname, find one that does not exist yet. Beware of a race condition: If someone 
-      // logs out and all Eegl instances exit at the same time a temp file might be created between
-      // stat() and open(). Use open() with O_EXCL to avoid that.
+      //Make tempname, find one that does not exist yet. Beware of a race condition: If someone 
+      //logs out and all Eegl instances exit at the same time a temp file might be created between
+      //stat() and open(). Use open() with O_EXCL to avoid that.
       for (;;) {
          int next_char = 'z';
 
          tempname = fiAppendFileExtension(fname, S".tmp", false);
-         if (!tempname)      // out of memory
+         if (!tempname)      //out of memory
             break;
 
-         // Try a series of names. Change one character, just before the extension. 
+         //Try a series of names. Change one character, just before the extension. 
          CS wp = tempname + STRLEN(tempname) - 5;
-         if (wp < fiGetShortFiName(tempname))       // empty file name?
+         if (wp < fiGetShortFiName(tempname))       //empty file name?
             wp = fiGetShortFiName(tempname);
          for (;;) {
-            // Check if tempfile already exists.  Never overwrite an existing file!
+            //Check if tempfile already exists.  Never overwrite an existing file!
             if (stat((char *)tempname, &st_new) == 0) {
                //Check if tempfile is same as original file. May happen when fiAppendFileExtension() gave the 
                //same file back.  E.g.  silly link, or file name-length reached. 
@@ -5649,8 +5655,8 @@ write_eeglinfo(CS file, Boole forceit) {
                (void)umask(umask_save);
                if (fd < 0) {
                   fp_out = NULL;
-                  // Avoid trying lots of names while the problem is lack
-                  // of permission, only retry if the file already exists.
+                  //Avoid trying lots of names while the problem is lack
+                  //of permission, only retry if the file already exists.
                   if (errno != EEXIST)
                      break;
                } else
@@ -5659,9 +5665,9 @@ write_eeglinfo(CS file, Boole forceit) {
                   break;
             }
 
-            // Assume file exists, try again with another name.
+            //Assume file exists, try again with another name.
             if (next_char == 'a' - 1) {
-               // They all exist?  Must be something wrong! Don't write the eeglinfo file then.
+               //They all exist?  Must be something wrong! Don't write the eeglinfo file then.
                showErrFmtMsg(_(e_too_many_eeglinfo_temp_files_like_str), tempname);
                break;
             }
@@ -5692,7 +5698,7 @@ write_eeglinfo(CS file, Boole forceit) {
       }
    }
 
-   // Check if the new eeglinfo file can be written to.
+   //Check if the new eeglinfo file can be written to.
    if (!fp_out) {
       showErrFmtMsg(_(e_cant_write_eeglinfo_file_str),
                 (fp_in == NULL || tempname == NULL) ? fname : tempname);
@@ -5716,8 +5722,8 @@ write_eeglinfo(CS file, Boole forceit) {
    if (fp_in) {
       fclose(fp_in);
 
-      // In case of an error keep the original eeglinfo file.  Otherwise
-      // rename the newly written file.  Give an error if that fails.
+      //In case of an error keep the original eeglinfo file.  Otherwise
+      //rename the newly written file.  Give an error if that fails.
       if (eeglinfo_errcnt == 0) {
          if (eeRename(tempname, fname) == -1) {
             ++eeglinfo_errcnt;

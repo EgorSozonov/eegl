@@ -303,9 +303,5 @@ void internal_format(
    Unt c //character to be inserted (can be ZERO)
 );
 int fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComments);
-void auto_format(
-    int trailblank,   //when true also format with trailing blank
-    int prev_line   //may start in previous line
-);
-void check_auto_format(int end_insert);
+void whAutoFormat(Boole trailblank, Boole prev_line);
 int comp_textwidth(int ff);

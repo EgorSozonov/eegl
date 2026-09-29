@@ -63,7 +63,7 @@ int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 #include <poll.h> //for poll
 
-# define XT_TRACE_DELAY   50   // delay for xterm tracing
+# define XT_TRACE_DELAY   50   //delay for xterm tracing
 
 //{{{vTerm (abstraction over a terminal)
 //{{{types
@@ -79,7 +79,7 @@ typedef struct {
     void (*free)(void* ptr);
 } VTermAllocatorFunctions;
 
-// Specifies a rectangular screen area.
+//Specifies a rectangular screen area.
 typedef struct {
    Short start_row;
    Short end_row;
@@ -99,9 +99,9 @@ typedef struct {
 
   VTermAllocatorFunctions* allocator;
 
-  // Override default sizes for various structures
-  Unt outbuffer_len;  // default: 4096
-  Unt tmpbuffer_len;  // default: 4096
+  //Override default sizes for various structures
+  Unt outbuffer_len;  //default: 4096
+  Unt tmpbuffer_len;  //default: 4096
 } VTermBuilder;
 
 enum {
@@ -120,22 +120,22 @@ typedef struct {
 #define MOUSE_WANT_CLICK 0x01
 #define MOUSE_WANT_DRAG  0x02
 #define MOUSE_WANT_MOVE  0x04
-  // useful to add protocol?
+  //useful to add protocol?
 } VTermMouseState;
 
 
 typedef enum {
-   // VTERM_PROP_NONE = 0
-   VTERM_PROP_CURSORVISIBLE = 1, // bool
-   VTERM_PROP_CURSORBLINK,       // bool
-   VTERM_PROP_ALTSCREEN,         // bool
-   VTERM_PROP_TITLE,             // string
-   VTERM_PROP_ICONNAME,          // string
-   VTERM_PROP_REVERSE,           // bool
-   VTERM_PROP_CURSORSHAPE,       // number
-   VTERM_PROP_MOUSE,             // number
-   VTERM_PROP_FOCUSREPORT,       // bool
-   VTERM_PROP_CURSORCOLOR,       // string
+   //VTERM_PROP_NONE = 0
+   VTERM_PROP_CURSORVISIBLE = 1, //bool
+   VTERM_PROP_CURSORBLINK,       //bool
+   VTERM_PROP_ALTSCREEN,         //bool
+   VTERM_PROP_TITLE,             //string
+   VTERM_PROP_ICONNAME,          //string
+   VTERM_PROP_REVERSE,           //bool
+   VTERM_PROP_CURSORSHAPE,       //number
+   VTERM_PROP_MOUSE,             //number
+   VTERM_PROP_FOCUSREPORT,       //bool
+   VTERM_PROP_CURSORCOLOR,       //string
 
    VTERM_N_PROPS
 } VTermProp;
@@ -157,15 +157,15 @@ typedef union {
    VTermColor color;
 } VTermValue;
 
-// All fields are optional, NULL when not used.
+//All fields are optional, NULL when not used.
 typedef struct {
    int (*damage)(VTermRect rect, void* user);
    int (*moverect)(VTermRect dest, VTermRect src, void* user);
    int (*movecursor)(VTermPos pos, VTermPos oldpos, int visible, void* user);
    int (*settermprop)(VTermProp prop, VTermValue* val, void* user);
    int (*resize)(int rows, int cols, void* user);
-   // A line was pushed off the top of the window.
-   // "cells[cols]" contains the cells of that line. Return value is unused.
+   //A line was pushed off the top of the window.
+   //"cells[cols]" contains the cells of that line. Return value is unused.
    int (*sb_pushline)(int cols, Arr(ScreenCell) cells, void* user);
    int (*sb_popline)(int cols, Arr(ScreenCell) cells, void* user);
    int (*sb_clear)(void* user);
@@ -181,18 +181,18 @@ typedef enum {
 } VTermDamageSize;
 
 typedef enum {
-   // VTERM_ATTR_NONE = 0
-   VTERM_ATTR_BOLD = 1,   // bool:   1, 22
-   VTERM_ATTR_UNDERLINE,  // number: 4, 21, 24
-   VTERM_ATTR_ITALIC,     // bool:   3, 23
-   VTERM_ATTR_FOREGROUND, // color:  30-39 90-97
-   VTERM_ATTR_BACKGROUND, // color:  40-49 100-107
+   //VTERM_ATTR_NONE = 0
+   VTERM_ATTR_BOLD = 1,   //bool:   1, 22
+   VTERM_ATTR_UNDERLINE,  //number: 4, 21, 24
+   VTERM_ATTR_ITALIC,     //bool:   3, 23
+   VTERM_ATTR_FOREGROUND, //color:  30-39 90-97
+   VTERM_ATTR_BACKGROUND, //color:  40-49 100-107
 
    VTERM_N_ATTRS
 } VTermAttr;
 
 typedef enum {
-   // VTERM_VALUETYPE_NONE = 0 */
+   //VTERM_VALUETYPE_NONE = 0 */
    VTERM_VALUETYPE_BOOL = 1,
    VTERM_VALUETYPE_INT,
    VTERM_VALUETYPE_STRING,
@@ -207,8 +207,8 @@ pub declStruct(VTermLineInfo);
 //callback gets total control of these fields and may free-and-reallocate them if required. They
 //will be copied back from the struct after the callback has returned.
 typedef struct {
-   VTermPos pos;                // current cursor position
-   VTermLineInfo *lineinfos[2]; // [1] may be NULL
+   VTermPos pos;                //current cursor position
+   VTermLineInfo *lineinfos[2]; //[1] may be NULL
 } VTermStateFields;
 
 enum {
@@ -237,7 +237,7 @@ typedef enum {
   VTERM_ALL_MODS_MASK = 0x07
 } VTermModifier;
 
-// The order here must match keycodes[] in src/keyboard.c!
+//The order here must match keycodes[] in src/keyboard.c!
 typedef enum {
   VTERM_KEY_NONE,
 
@@ -258,11 +258,11 @@ typedef enum {
   VTERM_KEY_PAGEUP,
   VTERM_KEY_PAGEDOWN,
 
-  // F1 is VTERM_KEY_FUNCTION(1), F2 VTERM_KEY_FUNCTION(2), etc.
+  //F1 is VTERM_KEY_FUNCTION(1), F2 VTERM_KEY_FUNCTION(2), etc.
   VTERM_KEY_FUNCTION_0   = 256,
   VTERM_KEY_FUNCTION_MAX = VTERM_KEY_FUNCTION_0 + 255,
 
-  // keypad keys
+  //keypad keys
   VTERM_KEY_KP_0,
   VTERM_KEY_KP_1,
   VTERM_KEY_KP_2,
@@ -282,7 +282,7 @@ typedef enum {
   VTERM_KEY_KP_ENTER,
   VTERM_KEY_KP_EQUAL,
 
-  VTERM_KEY_MAX, // Must be last
+  VTERM_KEY_MAX, //Must be last
   VTERM_N_KEYS = VTERM_KEY_MAX
 } VTermKey;
 
@@ -311,7 +311,7 @@ typedef struct {
 #define ARGSrect(r) (r).start_row, (r).start_col, (r).end_row, (r).end_col
 
 
-// Expand dst to contain src as well
+//Expand dst to contain src as well
 private void 
 rect_expand(VTermRect *dst, VTermRect *src) {
    if (dst->start_row > src->start_row) dst->start_row = src->start_row;
@@ -320,19 +320,19 @@ rect_expand(VTermRect *dst, VTermRect *src) {
    if (dst->end_col   < src->end_col)   dst->end_col   = src->end_col;
 }
 
-// Clip the dst to ensure it does not step outside of bounds
+//Clip the dst to ensure it does not step outside of bounds
 private void 
 rect_clip(VTermRect *dst, VTermRect *bounds) {
    if (dst->start_row < bounds->start_row) dst->start_row = bounds->start_row;
    if (dst->start_col < bounds->start_col) dst->start_col = bounds->start_col;
    if (dst->end_row   > bounds->end_row)   dst->end_row   = bounds->end_row;
    if (dst->end_col   > bounds->end_col)   dst->end_col   = bounds->end_col;
-   // Ensure it doesn't end up negatively-sized
+   //Ensure it doesn't end up negatively-sized
    if (dst->end_row < dst->start_row) dst->end_row = dst->start_row;
    if (dst->end_col < dst->start_col) dst->end_col = dst->start_col;
 }
 
-// True if the two rectangles are equal
+//True if the two rectangles are equal
 private int rect_equal(VTermRect *a, VTermRect *b) {
   return (a->start_row == b->start_row) 
      && (a->start_col == b->start_col) 
@@ -340,7 +340,7 @@ private int rect_equal(VTermRect *a, VTermRect *b) {
      && (a->end_col   == b->end_col);
 }
 
-// True if small is contained entirely within big
+//True if small is contained entirely within big
 private int 
 rect_contains(VTermRect *big, VTermRect *small) {
   if (small->start_row < big->start_row) return 0;
@@ -350,7 +350,7 @@ rect_contains(VTermRect *big, VTermRect *small) {
   return 1;
 }
 
-// True if the rectangles overlap at all
+//True if the rectangles overlap at all
 private int 
 rect_intersects(VTermRect* a, VTermRect* b) {
    if (a->start_row > b->end_row || b->start_row > a->end_row)
@@ -360,7 +360,7 @@ rect_intersects(VTermRect* a, VTermRect* b) {
    return 1;
 }
 
-// A handy macro for defaulting values out of builder fields
+//A handy macro for defaulting values out of builder fields
 #define DEFAULT(v, def)  ((v) ? (v) : (def))
 
 #define VTERM_KEY_FUNCTION(n) (VTERM_KEY_FUNCTION_0+(n))
@@ -448,7 +448,7 @@ struct VTerm {
          VT_CSI_ARGS,
          VT_CSI_INTERMED,
          VT_DCS_COMMAND,
-         // below here are the "string states"
+         //below here are the "string states"
          VT_OSC_COMMAND,
          VT_OSC,
          VT_DCS,
@@ -487,7 +487,7 @@ struct VTerm {
       int emit_nul;
    } parser;
 
-   // len == malloc()ed size; cur == number of valid bytes
+   //len == malloc()ed size; cur == number of valid bytes
  
    VTermOutputCallback* outfunc;
    void* outdata;
@@ -521,7 +521,7 @@ typedef enum {
    VTERM_SELECTION_PRIMARY   = (1<<1),
    VTERM_SELECTION_SECONDARY = (1<<2),
    VTERM_SELECTION_SELECT    = (1<<3),
-   VTERM_SELECTION_CUT0      = (1<<4), // also CUT1 .. CUT7 by bitshifting
+   VTERM_SELECTION_CUT0      = (1<<4), //also CUT1 .. CUT7 by bitshifting
 } VTermSelectionMask;
 
 typedef struct {
@@ -541,43 +541,43 @@ struct VTermState {
    Unt rows;
    Unt cols;
 
-   // Current cursor position
+   //Current cursor position
    VTermPos pos;
 
-   int at_phantom; // True if we're on the "101st" phantom column to defer a wraparound
+   int at_phantom; //True if we're on the "101st" phantom column to defer a wraparound
 
    Unt scrollregion_top;
-   Unt scrollregion_bottom; // UNT means unbounded
+   Unt scrollregion_bottom; //UNT means unbounded
 #define SCROLLREGION_BOTTOM(state) \
       ((state)->scrollregion_bottom < UNT ? (state)->scrollregion_bottom : (state)->rows)
    Unt scrollregion_left;
 #define SCROLLREGION_LEFT(state)  \
       ((state)->mode.leftrightmargin ? (state)->scrollregion_left : 0)
-   Unt scrollregion_right; // UNT means unbounded
+   Unt scrollregion_right; //UNT means unbounded
 #define SCROLLREGION_RIGHT(state) ((state)->mode.leftrightmargin \
       && (state)->scrollregion_right < UNT ? (state)->scrollregion_right : (state)->cols)
 
-   // Bitvector of tab stops
+   //Bitvector of tab stops
    Arr(Byte) tabstops;
 
-   // Primary and Altscreen; lineinfos[1] is lazily allocated as needed 
+   //Primary and Altscreen; lineinfos[1] is lazily allocated as needed 
    VTermLineInfo* lineinfos[2];
 
-   // lineinfo will == lineinfos[0] or lineinfos[1], depending on altscreen
+   //lineinfo will == lineinfos[0] or lineinfos[1], depending on altscreen
    VTermLineInfo* lineinfo;
 #define ROWWIDTH(state,row) ((state)->lineinfo[(row)].doublewidth ? ((state)->cols / 2) : (state)->cols)
 #define THISROWWIDTH(state) ROWWIDTH(state, (state)->pos.row)
 
-   // Mouse state
+   //Mouse state
    int mouse_col, mouse_row;
    int mouse_buttons;
    int mouse_flags;
 
-   // Last glyph output, for Unicode recombining purposes
+   //Last glyph output, for Unicode recombining purposes
    Unt* combine_chars;
-   Unt combine_chars_size; // Number of ELEMENTS in the above
-   int combine_width; // The width of the glyph above
-   VTermPos combine_pos;   // Position before movement
+   Unt combine_chars_size; //Number of ELEMENTS in the above
+   int combine_width; //The width of the glyph above
+   VTermPos combine_pos;   //Position before movement
 
    struct {
       unsigned int keypad:1;
@@ -605,7 +605,7 @@ struct VTermState {
    VTermColor default_fg;
    VTermColor default_bg;
 
-   // Saved state under DEC mode 1048/1049
+   //Saved state under DEC mode 1048/1049
    struct {
       VTermPos pos;
       CellDeco pen;
@@ -617,7 +617,7 @@ struct VTermState {
       } mode;
    } saved;
 
-  // Temporary state for DECRQSS parsing
+  //Temporary state for DECRQSS parsing
   union {
     char decrqss[4];
     struct {
@@ -669,12 +669,12 @@ utf8_seqlen(long codepoint) {
   return 6;
 }
 
-// Does NOT ZERO-terminate the buffer
+//Does NOT ZERO-terminate the buffer
 private int 
 fill_utf8(long codepoint, CS str) {
    int nbytes = utf8_seqlen(codepoint);
  
-   // This is easier done backwards
+   //This is easier done backwards
    int b = nbytes;
    while(b > 1) {
       b--;
@@ -698,9 +698,9 @@ fill_utf8(long codepoint, CS str) {
 //{{{parsing layer
 
 
-// Flag to indicate non-final subparameters in a single CSI parameter.
+//Flag to indicate non-final subparameters in a single CSI parameter.
 //Consider
-//  CSI 1;2:3:4;5a
+// CSI 1;2:3:4;5a
 //1 4 and 5 are final.
 //2 and 3 are non-final and will have this bit set
 //
@@ -711,8 +711,8 @@ fill_utf8(long codepoint, CS str) {
 #define CSI_ARG_HAS_MORE(a) ((a) & CSI_ARG_FLAG_MORE)
 #define CSI_ARG(a)          ((a) & CSI_ARG_MASK)
 
-// Can't use -1 to indicate a missing argument; use this instead.
-// Changed 31 to 30 to avoid an overflow warning
+//Can't use -1 to indicate a missing argument; use this instead.
+//Changed 31 to 30 to avoid an overflow warning
 #define CSI_ARG_MISSING ((1<<30)-1)
 
 #define CSI_ARG_IS_MISSING(a) (CSI_ARG(a) == CSI_ARG_MISSING)
@@ -982,7 +982,7 @@ private int resize_func(int check_only);
 private int mch_inchar(
    OUT CS buf,
    int maxlen,
-   long wtime,       // don't use "time", MIPS cannot handle it
+   long wtime,       //don't use "time", MIPS cannot handle it
    int changeCnt
 );
 private int ui_wait_for_chars_or_timer(
@@ -1027,136 +1027,136 @@ private void do_by_tplmode(
 #endif
 
 struct UTF8DecoderData {
-  // number of bytes remaining in this codepoint
+  //number of bytes remaining in this codepoint
   int bytes_remaining;
 
-  // number of bytes total in this codepoint once it's finished
-  // (for detecting overlongs)
+  //number of bytes total in this codepoint once it's finished
+  //(for detecting overlongs)
   int bytes_total;
 
   int this_cp;
 };
 
 //private void init_utf8(void *data_) {
-//  struct UTF8DecoderData *data = data_;
-//  data->bytes_remaining = 0;
-//  data->bytes_total     = 0;
+// struct UTF8DecoderData *data = data_;
+// data->bytes_remaining = 0;
+// data->bytes_total     = 0;
 //}
 
 //private void decode_utf8(void *data_,
-//                        uint32_t cp[], int *cpi, int cplen,
-//                        const char bytes[], Unt *pos, Unt bytelen)
+//                       uint32_t cp[], int *cpi, int cplen,
+//                       const char bytes[], Unt *pos, Unt bytelen)
 //{
-//  struct UTF8DecoderData *data = data_;
+// struct UTF8DecoderData *data = data_;
 //
 //#ifdef DEBUG_PRINT_UTF8
-//  printf("BEGIN UTF-8\n");
+// printf("BEGIN UTF-8\n");
 //#endif
 //
-//  for(; *pos < bytelen && *cpi < cplen; (*pos)++) {
-//      unsigned char c = bytes[*pos];
+// for(; *pos < bytelen && *cpi < cplen; (*pos)++) {
+//     unsigned char c = bytes[*pos];
 //
 //#ifdef DEBUG_PRINT_UTF8
-//      printf(" pos=%zd c=%02x rem=%d\n", *pos, c, data->bytes_remaining);
+//     printf(" pos=%zd c=%02x rem=%d\n", *pos, c, data->bytes_remaining);
 //#endif
 //
-//      if (c < 0x20) // C0
-//         return;
-//      ei (c >= 0x20 && c < 0x7f) {
-//         if (data->bytes_remaining) {
-//            data->bytes_remaining = 0;
-//            cp[(*cpi)++] = UNICODE_INVALID;
-//            //avoid going over the end
-//            if (*cpi >= cplen)
-//               break;
-//         }
-//         cp[(*cpi)++] = c;
+//     if (c < 0x20) // C0
+//        return;
+//     ei (c >= 0x20 && c < 0x7f) {
+//        if (data->bytes_remaining) {
+//           data->bytes_remaining = 0;
+//           cp[(*cpi)++] = UNICODE_INVALID;
+//           //avoid going over the end
+//           if (*cpi >= cplen)
+//              break;
+//        }
+//        cp[(*cpi)++] = c;
 //#ifdef DEBUG_PRINT_UTF8
-//         printf(" UTF-8 char: U+%04x\n", c);
+//        printf(" UTF-8 char: U+%04x\n", c);
 //#endif
-//      } ei(c == 0x7f) // DEL
-//         return;
-//      ei(c >= 0x80 && c < 0xc0) {
-//         if (!data->bytes_remaining) {
-//            cp[(*cpi)++] = UNICODE_INVALID;
-//            continue;
-//         }
+//     } ei(c == 0x7f) // DEL
+//        return;
+//     ei(c >= 0x80 && c < 0xc0) {
+//        if (!data->bytes_remaining) {
+//           cp[(*cpi)++] = UNICODE_INVALID;
+//           continue;
+//        }
 //
-//         data->this_cp <<= 6;
-//         data->this_cp |= c & 0x3f;
-//         data->bytes_remaining--;
+//        data->this_cp <<= 6;
+//        data->this_cp |= c & 0x3f;
+//        data->bytes_remaining--;
 //
-//         if (!data->bytes_remaining) {
+//        if (!data->bytes_remaining) {
 //#ifdef DEBUG_PRINT_UTF8
-//            printf(" UTF-8 raw char U+%04x bytelen=%d ", data->this_cp, data->bytes_total);
+//           printf(" UTF-8 raw char U+%04x bytelen=%d ", data->this_cp, data->bytes_total);
 //#endif
-//            // Check for overlong sequences
-//            switch(data->bytes_total) {
-//            case 2:
-//               if (data->this_cp <  0x0080) data->this_cp = UNICODE_INVALID;
-//               break;
-//            case 3:
-//               if (data->this_cp <  0x0800) data->this_cp = UNICODE_INVALID;
-//               break;
-//            case 4:
-//               if (data->this_cp < 0x10000) data->this_cp = UNICODE_INVALID;
-//               break;
-//            case 5:
-//               if (data->this_cp < 0x200000) data->this_cp = UNICODE_INVALID;
-//               break;
-//            case 6:
-//               if (data->this_cp < 0x4000000) data->this_cp = UNICODE_INVALID;
-//               break;
-//            }
-//            // Now look for plain invalid ones
-//            if ((data->this_cp >= 0xD800 && data->this_cp <= 0xDFFF) 
-//                  || data->this_cp == 0xFFFE || data->this_cp == 0xFFFF
-//            )
-//               data->this_cp = UNICODE_INVALID;
+//           // Check for overlong sequences
+//           switch(data->bytes_total) {
+//           case 2:
+//              if (data->this_cp <  0x0080) data->this_cp = UNICODE_INVALID;
+//              break;
+//           case 3:
+//              if (data->this_cp <  0x0800) data->this_cp = UNICODE_INVALID;
+//              break;
+//           case 4:
+//              if (data->this_cp < 0x10000) data->this_cp = UNICODE_INVALID;
+//              break;
+//           case 5:
+//              if (data->this_cp < 0x200000) data->this_cp = UNICODE_INVALID;
+//              break;
+//           case 6:
+//              if (data->this_cp < 0x4000000) data->this_cp = UNICODE_INVALID;
+//              break;
+//           }
+//           // Now look for plain invalid ones
+//           if ((data->this_cp >= 0xD800 && data->this_cp <= 0xDFFF) 
+//                 || data->this_cp == 0xFFFE || data->this_cp == 0xFFFF
+//           )
+//              data->this_cp = UNICODE_INVALID;
 //#ifdef DEBUG_PRINT_UTF8
-//            printf(" char: U+%04x\n", data->this_cp);
+//           printf(" char: U+%04x\n", data->this_cp);
 //#endif
-//            cp[(*cpi)++] = data->this_cp;
-//         }
-//      } ei(c >= 0xc0 && c < 0xe0) {
-//         if (data->bytes_remaining)
-//           cp[(*cpi)++] = UNICODE_INVALID;
+//           cp[(*cpi)++] = data->this_cp;
+//        }
+//     } ei(c >= 0xc0 && c < 0xe0) {
+//        if (data->bytes_remaining)
+//          cp[(*cpi)++] = UNICODE_INVALID;
 //
-//         data->this_cp = c & 0x1f;
-//         data->bytes_total = 2;
-//         data->bytes_remaining = 1;
-//      } ei(c >= 0xe0 && c < 0xf0) {
-//         if (data->bytes_remaining)
-//           cp[(*cpi)++] = UNICODE_INVALID;
+//        data->this_cp = c & 0x1f;
+//        data->bytes_total = 2;
+//        data->bytes_remaining = 1;
+//     } ei(c >= 0xe0 && c < 0xf0) {
+//        if (data->bytes_remaining)
+//          cp[(*cpi)++] = UNICODE_INVALID;
 //
-//         data->this_cp = c & 0x0f;
-//         data->bytes_total = 3;
-//         data->bytes_remaining = 2;
-//      } ei(c >= 0xf0 && c < 0xf8) {
-//         if (data->bytes_remaining)
-//           cp[(*cpi)++] = UNICODE_INVALID;
+//        data->this_cp = c & 0x0f;
+//        data->bytes_total = 3;
+//        data->bytes_remaining = 2;
+//     } ei(c >= 0xf0 && c < 0xf8) {
+//        if (data->bytes_remaining)
+//          cp[(*cpi)++] = UNICODE_INVALID;
 //
-//         data->this_cp = c & 0x07;
-//         data->bytes_total = 4;
-//         data->bytes_remaining = 3;
-//      } ei(c >= 0xf8 && c < 0xfc) {
-//         if (data->bytes_remaining)
-//           cp[(*cpi)++] = UNICODE_INVALID;
+//        data->this_cp = c & 0x07;
+//        data->bytes_total = 4;
+//        data->bytes_remaining = 3;
+//     } ei(c >= 0xf8 && c < 0xfc) {
+//        if (data->bytes_remaining)
+//          cp[(*cpi)++] = UNICODE_INVALID;
 //
-//         data->this_cp = c & 0x03;
-//         data->bytes_total = 5;
-//         data->bytes_remaining = 4;
-//      } ei(c >= 0xfc && c < 0xfe) {
-//         if (data->bytes_remaining)
-//           cp[(*cpi)++] = UNICODE_INVALID;
+//        data->this_cp = c & 0x03;
+//        data->bytes_total = 5;
+//        data->bytes_remaining = 4;
+//     } ei(c >= 0xfc && c < 0xfe) {
+//        if (data->bytes_remaining)
+//          cp[(*cpi)++] = UNICODE_INVALID;
 //
-//         data->this_cp = c & 0x01;
-//         data->bytes_total = 6;
-//         data->bytes_remaining = 5;
-//      } else {
-//         cp[(*cpi)++] = UNICODE_INVALID;
-//      }
-//   }
+//        data->this_cp = c & 0x01;
+//        data->bytes_total = 6;
+//        data->bytes_remaining = 5;
+//     } else {
+//        cp[(*cpi)++] = UNICODE_INVALID;
+//     }
+//  }
 //}
 
 //}}}
@@ -1189,7 +1189,7 @@ vterm_keyboard_unichar(VTerm *vt, uint32_t c, VTermModifier mod) {
       mod &= ~VTERM_MOD_SHIFT;
  
    if (mod == 0) {
-      // Normal text - ignore just shift
+      //Normal text - ignore just shift
       Byte str[6];
       int seqlen = fill_utf8(c, str);
       vterm_push_output_bytes(vt, str, seqlen);
@@ -1198,24 +1198,24 @@ vterm_keyboard_unichar(VTerm *vt, uint32_t c, VTermModifier mod) {
  
    int needs_CSIu;
    switch(c) {
-      // Special Ctrl- letters that can't be represented elsewise
+      //Special Ctrl- letters that can't be represented elsewise
       case 'i': case 'j': case 'm': case '[':
          needs_CSIu = 1;
          break;
-      // Ctrl-\ ] ^ _ don't need CSUu
+      //Ctrl-\ ] ^ _ don't need CSUu
       case '\\': case ']': case '^': case '_':
          needs_CSIu = 0;
          break;
-      // Shift-space needs CSIu
+      //Shift-space needs CSIu
       case ' ':
          needs_CSIu = !!(mod & VTERM_MOD_SHIFT);
          break;
-      // All other characters needs CSIu except for letters a-z
+      //All other characters needs CSIu except for letters a-z
       default:
          needs_CSIu = (c < 'a' || c > 'z');
    }
  
-   // ALT we can just prefix with ESC; anything else requires CSI u
+   //ALT we can just prefix with ESC; anything else requires CSI u
    if (needs_CSIu && (mod & ~VTERM_MOD_ALT)) {
       vterm_push_output_sprintf_ctrl(vt, C1_CSI, "%d;%du", c, mod+1);
       return;
@@ -1243,63 +1243,63 @@ typedef struct {
    int csinum;
 } keycodes_s;
 
-// Order here must be exactly the same as VTermKey enum!
+//Order here must be exactly the same as VTermKey enum!
 private keycodes_s keycodes[] = {
-  { KEYCODE_NONE,       0, 0 }, // NONE
+  { KEYCODE_NONE,       0, 0 }, //NONE
 
-  { KEYCODE_ENTER,      '\r', 0 }, // ENTER
-  { KEYCODE_TAB,        '\t',  0 }, // TAB
-  { KEYCODE_LITERAL,    '\x7f', 0 }, // BACKSPACE == ASCII DEL
-  { KEYCODE_LITERAL,    '\x1b', 0 }, // ESCAPE
+  { KEYCODE_ENTER,      '\r', 0 }, //ENTER
+  { KEYCODE_TAB,        '\t',  0 }, //TAB
+  { KEYCODE_LITERAL,    '\x7f', 0 }, //BACKSPACE == ASCII DEL
+  { KEYCODE_LITERAL,    '\x1b', 0 }, //ESCAPE
 
-  { KEYCODE_CSI_CURSOR, 'A', 0 }, // UP
-  { KEYCODE_CSI_CURSOR, 'B', 0 }, // DOWN
-  { KEYCODE_CSI_CURSOR, 'D', 0 }, // LEFT
-  { KEYCODE_CSI_CURSOR, 'C', 0 }, // RIGHT
+  { KEYCODE_CSI_CURSOR, 'A', 0 }, //UP
+  { KEYCODE_CSI_CURSOR, 'B', 0 }, //DOWN
+  { KEYCODE_CSI_CURSOR, 'D', 0 }, //LEFT
+  { KEYCODE_CSI_CURSOR, 'C', 0 }, //RIGHT
 
-  { KEYCODE_CSINUM, '~', 2 },  // INS
-  { KEYCODE_CSINUM, '~', 3 },  // DEL
-  { KEYCODE_CSI_CURSOR, 'H', 0 }, // HOME
-  { KEYCODE_CSI_CURSOR, 'F', 0 }, // END
-  { KEYCODE_CSINUM, '~', 5 },  // PAGEUP
-  { KEYCODE_CSINUM, '~', 6 },  // PAGEDOWN
+  { KEYCODE_CSINUM, '~', 2 },  //INS
+  { KEYCODE_CSINUM, '~', 3 },  //DEL
+  { KEYCODE_CSI_CURSOR, 'H', 0 }, //HOME
+  { KEYCODE_CSI_CURSOR, 'F', 0 }, //END
+  { KEYCODE_CSINUM, '~', 5 },  //PAGEUP
+  { KEYCODE_CSINUM, '~', 6 },  //PAGEDOWN
 };
 
 private keycodes_s keycodes_fn[] = {
-  { KEYCODE_NONE,       0, 0 },   // F0 - shouldn't happen
-  { KEYCODE_SS3,   'P', 0 }, // F1
-  { KEYCODE_SS3,   'Q', 0 }, // F2
-  { KEYCODE_SS3,   'R', 0 }, // F3
-  { KEYCODE_SS3,   'S', 0 }, // F4
-  { KEYCODE_CSINUM, '~', 15 }, // F5
-  { KEYCODE_CSINUM, '~', 17 }, // F6
-  { KEYCODE_CSINUM, '~', 18 }, // F7
-  { KEYCODE_CSINUM, '~', 19 }, // F8
-  { KEYCODE_CSINUM, '~', 20 }, // F9
-  { KEYCODE_CSINUM, '~', 21 }, // F10
-  { KEYCODE_CSINUM, '~', 23 }, // F11
-  { KEYCODE_CSINUM, '~', 24 }, // F12
+  { KEYCODE_NONE,       0, 0 },   //F0 - shouldn't happen
+  { KEYCODE_SS3,   'P', 0 }, //F1
+  { KEYCODE_SS3,   'Q', 0 }, //F2
+  { KEYCODE_SS3,   'R', 0 }, //F3
+  { KEYCODE_SS3,   'S', 0 }, //F4
+  { KEYCODE_CSINUM, '~', 15 }, //F5
+  { KEYCODE_CSINUM, '~', 17 }, //F6
+  { KEYCODE_CSINUM, '~', 18 }, //F7
+  { KEYCODE_CSINUM, '~', 19 }, //F8
+  { KEYCODE_CSINUM, '~', 20 }, //F9
+  { KEYCODE_CSINUM, '~', 21 }, //F10
+  { KEYCODE_CSINUM, '~', 23 }, //F11
+  { KEYCODE_CSINUM, '~', 24 }, //F12
 };
 
 private keycodes_s keycodes_kp[] = {
-  { KEYCODE_KEYPAD, '0', 'p' }, // KP_0
-  { KEYCODE_KEYPAD, '1', 'q' }, // KP_1
-  { KEYCODE_KEYPAD, '2', 'r' }, // KP_2
-  { KEYCODE_KEYPAD, '3', 's' }, // KP_3
-  { KEYCODE_KEYPAD, '4', 't' }, // KP_4
-  { KEYCODE_KEYPAD, '5', 'u' }, // KP_5
-  { KEYCODE_KEYPAD, '6', 'v' }, // KP_6
-  { KEYCODE_KEYPAD, '7', 'w' }, // KP_7
-  { KEYCODE_KEYPAD, '8', 'x' }, // KP_8
-  { KEYCODE_KEYPAD, '9', 'y' }, // KP_9
-  { KEYCODE_KEYPAD, '*', 'j' }, // KP_MULT
-  { KEYCODE_KEYPAD, '+', 'k' }, // KP_PLUS
-  { KEYCODE_KEYPAD, ',', 'l' }, // KP_COMMA
-  { KEYCODE_KEYPAD, '-', 'm' }, // KP_MINUS
-  { KEYCODE_KEYPAD, '.', 'n' }, // KP_PERIOD
-  { KEYCODE_KEYPAD, '/', 'o' }, // KP_DIVIDE
-  { KEYCODE_KEYPAD, '\n', 'M' }, // KP_ENTER
-  { KEYCODE_KEYPAD, '=', 'X' }, // KP_EQUAL
+  { KEYCODE_KEYPAD, '0', 'p' }, //KP_0
+  { KEYCODE_KEYPAD, '1', 'q' }, //KP_1
+  { KEYCODE_KEYPAD, '2', 'r' }, //KP_2
+  { KEYCODE_KEYPAD, '3', 's' }, //KP_3
+  { KEYCODE_KEYPAD, '4', 't' }, //KP_4
+  { KEYCODE_KEYPAD, '5', 'u' }, //KP_5
+  { KEYCODE_KEYPAD, '6', 'v' }, //KP_6
+  { KEYCODE_KEYPAD, '7', 'w' }, //KP_7
+  { KEYCODE_KEYPAD, '8', 'x' }, //KP_8
+  { KEYCODE_KEYPAD, '9', 'y' }, //KP_9
+  { KEYCODE_KEYPAD, '*', 'j' }, //KP_MULT
+  { KEYCODE_KEYPAD, '+', 'k' }, //KP_PLUS
+  { KEYCODE_KEYPAD, ',', 'l' }, //KP_COMMA
+  { KEYCODE_KEYPAD, '-', 'm' }, //KP_MINUS
+  { KEYCODE_KEYPAD, '.', 'n' }, //KP_PERIOD
+  { KEYCODE_KEYPAD, '/', 'o' }, //KP_DIVIDE
+  { KEYCODE_KEYPAD, '\n', 'M' }, //KP_ENTER
+  { KEYCODE_KEYPAD, '=', 'X' }, //KP_EQUAL
 };
 
 private void 
@@ -1331,7 +1331,7 @@ vterm_keyboard_key(VTerm *vt, VTermKey key, VTermModifier mod) {
    case KEYCODE_TAB:
     if (vterm_is_kitty_keyboard(vt) && mod != 0)
       vterm_push_output_sprintf_ctrl(vt, C1_CSI, "9;%du", mod+1);
-    // Shift-Tab is CSI Z but plain Tab is 0x09
+    //Shift-Tab is CSI Z but plain Tab is 0x09
     ei(mod == VTERM_MOD_SHIFT)
       vterm_push_output_sprintf_ctrl(vt, C1_CSI, "Z");
     ei(mod & VTERM_MOD_SHIFT)
@@ -1341,7 +1341,7 @@ vterm_keyboard_key(VTerm *vt, VTermKey key, VTermModifier mod) {
     break;
 
    case KEYCODE_ENTER:
-    // Enter is CRLF in newline mode, but just LF in linefeed
+    //Enter is CRLF in newline mode, but just LF in linefeed
     if (vt->state->mode.newline)
       vterm_push_output_sprintf(vt, "\r\n");
     else
@@ -1411,7 +1411,7 @@ vterm_keyboard_end_paste(VTerm *vt) {
 //}}}
 //{{{vterm
 
-// API functions
+//API functions
 
 private void *
 default_malloc(Unt size) {
@@ -1426,15 +1426,15 @@ default_free(void *ptr) {
 }
 
 private VTermAllocatorFunctions default_allocator = {
-   &default_malloc, // malloc
-   &default_free // free
+   &default_malloc, //malloc
+   &default_free //free
 };
 
 private VTerm *
 vterm_build(VTermBuilder* builder) {
    VTermAllocatorFunctions* allocator = DEFAULT(builder->allocator, &default_allocator);
 
-   // Need to bootstrap using the allocator function directly
+   //Need to bootstrap using the allocator function directly
    VTerm *vt = (*allocator->malloc)(sizeof(VTerm));
 
    vt->allocator = allocator;
@@ -1464,11 +1464,11 @@ vterm_build(VTermBuilder* builder) {
 
 //private VTerm *
 //vterm_new(int rows, int cols) {
-//   struct VTermBuilder builder;
-//   memset(&builder, 0, sizeof(builder));
-//   builder.rows = rows;
-//   builder.cols = cols;
-//   return vterm_build(&builder);
+//  struct VTermBuilder builder;
+//  memset(&builder, 0, sizeof(builder));
+//  builder.rows = rows;
+//  builder.cols = cols;
+//  return vterm_build(&builder);
 //}
 
 private VTerm *
@@ -1529,8 +1529,8 @@ vterm_set_size(VTerm *vt, int rows, int cols) {
 
 //private void 
 //vterm_output_set_callback(VTerm *vt, VTermOutputCallback *func, void *user) {
-//  vt->outfunc = func;
-//  vt->outdata = user;
+// vt->outfunc = func;
+// vt->outdata = user;
 //}
 
 private void
@@ -1602,7 +1602,7 @@ vterm_push_output_sprintf_str(VTerm* vt, unsigned char ctrl, int term, const cha
    va_end(args);
 
    if (term) {
-      cur = snprintf((char*)vt->tmpbuffer, vt->tmpbuffer_len, ESC_S "\\"); // ST
+      cur = snprintf((char*)vt->tmpbuffer, vt->tmpbuffer_len, ESC_S "\\"); //ST
       if (cur >= vt->tmpbuffer_len)
          return;
       vterm_push_output_bytes(vt, vt->tmpbuffer, cur);
@@ -1631,21 +1631,21 @@ vterm_output_read(VTerm *vt, CS builder, Unt len) {
 
 //private VTermValueType 
 //vterm_get_prop_type(VTermProp prop) {
-//   switch(prop) {
-//    case VTERM_PROP_CURSORVISIBLE: return VTERM_VALUETYPE_BOOL;
-//    case VTERM_PROP_CURSORBLINK:   return VTERM_VALUETYPE_BOOL;
-//    case VTERM_PROP_ALTSCREEN:     return VTERM_VALUETYPE_BOOL;
-//    case VTERM_PROP_TITLE:         return VTERM_VALUETYPE_STRING;
-//    case VTERM_PROP_ICONNAME:      return VTERM_VALUETYPE_STRING;
-//    case VTERM_PROP_REVERSE:       return VTERM_VALUETYPE_BOOL;
-//    case VTERM_PROP_CURSORSHAPE:   return VTERM_VALUETYPE_INT;
-//    case VTERM_PROP_MOUSE:         return VTERM_VALUETYPE_INT;
-//    case VTERM_PROP_FOCUSREPORT:   return VTERM_VALUETYPE_BOOL;
-//    case VTERM_PROP_CURSORCOLOR:   return VTERM_VALUETYPE_STRING;
+//  switch(prop) {
+//   case VTERM_PROP_CURSORVISIBLE: return VTERM_VALUETYPE_BOOL;
+//   case VTERM_PROP_CURSORBLINK:   return VTERM_VALUETYPE_BOOL;
+//   case VTERM_PROP_ALTSCREEN:     return VTERM_VALUETYPE_BOOL;
+//   case VTERM_PROP_TITLE:         return VTERM_VALUETYPE_STRING;
+//   case VTERM_PROP_ICONNAME:      return VTERM_VALUETYPE_STRING;
+//   case VTERM_PROP_REVERSE:       return VTERM_VALUETYPE_BOOL;
+//   case VTERM_PROP_CURSORSHAPE:   return VTERM_VALUETYPE_INT;
+//   case VTERM_PROP_MOUSE:         return VTERM_VALUETYPE_INT;
+//   case VTERM_PROP_FOCUSREPORT:   return VTERM_VALUETYPE_BOOL;
+//   case VTERM_PROP_CURSORCOLOR:   return VTERM_VALUETYPE_STRING;
 //
-//    case VTERM_N_PROPS: return 0;
-//  }
-//  return 0; /* UNREACHABLE */
+//   case VTERM_N_PROPS: return 0;
+// }
+// return 0; /* UNREACHABLE */
 //}
 
 private void 
@@ -1662,24 +1662,24 @@ vterm_scroll_rect(
  
    if (abs(downward)  >= rect.end_row - rect.start_row ||
       abs(rightward) >= rect.end_col - rect.start_col) {
-      // Scroll more than area; just erase the lot
+      //Scroll more than area; just erase the lot
       (*eraserect)(rect, user);
       return;
    }
  
    if (rightward >= 0) {
-      // rect: [XXX................]
-      // src:     [----------------]
-      // dest: [----------------]
+      //rect: [XXX................]
+      //src:     [----------------]
+      //dest: [----------------]
       //
       dest.start_col = rect.start_col;
       dest.end_col   = rect.end_col   - rightward;
       src.start_col  = rect.start_col + rightward;
       src.end_col    = rect.end_col;
    } else {
-      // rect: [................XXX]
-      // src:  [----------------]
-      // dest:    [----------------]
+      //rect: [................XXX]
+      //src:  [----------------]
+      //dest:    [----------------]
       //
       int leftward = -rightward;
       dest.start_col = rect.start_col + leftward;
@@ -1719,45 +1719,45 @@ vterm_scroll_rect(
 
 //private void 
 //vterm_copy_cells(VTermRect dest,
-//    VTermRect src,
-//    void (*copycell)(VTermPos dest, VTermPos src, void *user),
-//    void *user)
+//   VTermRect src,
+//   void (*copycell)(VTermPos dest, VTermPos src, void *user),
+//   void *user)
 //{
-//  int downward  = src.start_row - dest.start_row;
-//  int rightward = src.start_col - dest.start_col;
+// int downward  = src.start_row - dest.start_row;
+// int rightward = src.start_col - dest.start_col;
 //
-//  int init_row, test_row, init_col, test_col;
-//  int inc_row, inc_col;
+// int init_row, test_row, init_col, test_col;
+// int inc_row, inc_col;
 //
-//  if (downward < 0) {
-//    init_row = dest.end_row - 1;
-//    test_row = dest.start_row - 1;
-//    inc_row = -1;
-//  }
-//  else /* downward >= 0 */ {
-//    init_row = dest.start_row;
-//    test_row = dest.end_row;
-//    inc_row = +1;
-//  }
+// if (downward < 0) {
+//   init_row = dest.end_row - 1;
+//   test_row = dest.start_row - 1;
+//   inc_row = -1;
+// }
+// else /* downward >= 0 */ {
+//   init_row = dest.start_row;
+//   test_row = dest.end_row;
+//   inc_row = +1;
+// }
 //
-//  if (rightward < 0) {
-//    init_col = dest.end_col - 1;
-//    test_col = dest.start_col - 1;
-//    inc_col = -1;
-//  } else /* rightward >= 0 */ {
-//    init_col = dest.start_col;
-//    test_col = dest.end_col;
-//    inc_col = +1;
-//  }
+// if (rightward < 0) {
+//   init_col = dest.end_col - 1;
+//   test_col = dest.start_col - 1;
+//   inc_col = -1;
+// } else /* rightward >= 0 */ {
+//   init_col = dest.start_col;
+//   test_col = dest.end_col;
+//   inc_col = +1;
+// }
 //
-//  VTermPos pos;
-//  for(pos.row = init_row; pos.row != (Unt)test_row; pos.row += inc_row)
-//     for(pos.col = init_col; pos.col != (Unt)test_col; pos.col += inc_col) {
-//        VTermPos srcpos;
-//        srcpos.row = pos.row + downward;
-//        srcpos.col = pos.col + rightward;
-//        (*copycell)(pos, srcpos, user);
-//     }
+// VTermPos pos;
+// for(pos.row = init_row; pos.row != (Unt)test_row; pos.row += inc_row)
+//    for(pos.col = init_col; pos.col != (Unt)test_col; pos.col += inc_col) {
+//       VTermPos srcpos;
+//       srcpos.row = pos.row + downward;
+//       srcpos.col = pos.col + rightward;
+//       (*copycell)(pos, srcpos, user);
+//    }
 //}
 
 //}}}
@@ -1765,9 +1765,9 @@ vterm_scroll_rect(
 
 #if !defined(WCWIDTH_FUNCTION) || !defined(IS_COMBINING_FUNCTION)
 
-// sorted list of non-overlapping intervals of non-spacing characters
-// generated by "uniset +cat=Me +cat=Mn +cat=Cf -00AD +1160-11FF +200B c"
-// Replaced by the combining table from Eegl.
+//sorted list of non-overlapping intervals of non-spacing characters
+//generated by "uniset +cat=Me +cat=Mn +cat=Cf -00AD +1160-11FF +200B c"
+//Replaced by the combining table from Eegl.
 private Interval combining[] = {
    {0X0300, 0X036F},
    {0X0483, 0X0489},
@@ -2052,7 +2052,7 @@ private Interval combining[] = {
 };
 #endif
 
-// auxiliary function for binary search in interval table
+//auxiliary function for binary search in interval table
 private int 
 bisearch(uint32_t ucs, Interval* table, int max) {
    int min = 0;
@@ -2074,68 +2074,68 @@ bisearch(uint32_t ucs, Interval* table, int max) {
 }
 
 //The following two functions define the column width of an ISO 10646 character as follows:
-//  - The null character (U+0000) has a column width of 0.
+// - The null character (U+0000) has a column width of 0.
 //
-//  - Other C0/C1 control characters and DEL will lead to a return value of -1.
+// - Other C0/C1 control characters and DEL will lead to a return value of -1.
 //
-//  - Non-spacing and enclosing combining characters (general
-//    category code Mn or Me in the Unicode database) have a column width of 0.
+// - Non-spacing and enclosing combining characters (general
+//   category code Mn or Me in the Unicode database) have a column width of 0.
 //
-//  - SOFT HYPHEN (U+00AD) has a column width of 1.
+// - SOFT HYPHEN (U+00AD) has a column width of 1.
 //
-//  - Other format characters (general category code Cf in the Unicode
-//    database) and ZERO WIDTH SPACE (U+200B) have a column width of 0.
+// - Other format characters (general category code Cf in the Unicode
+//   database) and ZERO WIDTH SPACE (U+200B) have a column width of 0.
 //
-//  - Hangul Jamo medial vowels and final consonants (U+1160-U+11FF) have a column width of 0.
+// - Hangul Jamo medial vowels and final consonants (U+1160-U+11FF) have a column width of 0.
 //
-//  - Spacing characters in the East Asian Wide (W) or East Asian
-//    Full-width (F) category as defined in Unicode Technical
-//    Report #11 have a column width of 2.
+// - Spacing characters in the East Asian Wide (W) or East Asian
+//   Full-width (F) category as defined in Unicode Technical
+//   Report #11 have a column width of 2.
 //
-//  - All remaining characters (including all printable
-//    ISO 8859-1 and WGL4 characters, Unicode control characters,
-//    etc.) have a column width of 1.
+// - All remaining characters (including all printable
+//   ISO 8859-1 and WGL4 characters, Unicode control characters,
+//   etc.) have a column width of 1.
 //
 //This implementation assumes that uint32_t characters are encoded in ISO 10646.
 
 #ifdef WCWIDTH_FUNCTION
-// use a provided wcwidth() function
+//use a provided wcwidth() function
 pub int WCWIDTH_FUNCTION(uint32_t ucs);
 #else
 # define WCWIDTH_FUNCTION mk_wcwidth
 
 private int 
 mk_wcwidth(uint32_t ucs) {
-   // test for 8-bit control characters
+   //test for 8-bit control characters
    if (ucs == 0)
       return 0;
    if (ucs < 32 || (ucs >= 0x7f && ucs < 0xa0))
       return -1;
 
-   // binary search in table of non-spacing characters
+   //binary search in table of non-spacing characters
    if (bisearch(ucs, combining, sizeof(combining) / sizeof(Interval) - 1))
       return 0;
 
-   // if we arrive here, ucs is not a combining or C0/C1 control character
+   //if we arrive here, ucs is not a combining or C0/C1 control character
 
    return 1 + 
     (ucs >= 0x1100 &&
-     (ucs <= 0x115f                    // Hangul Jamo init. consonants
+     (ucs <= 0x115f                    //Hangul Jamo init. consonants
          || ucs == 0x2329 || ucs == 0x232a
-         || (ucs >= 0x2e80 && ucs <= 0xa4cf && ucs != 0x303f) // CJK ... Yi
-         || (ucs >= 0xac00 && ucs <= 0xd7a3) // Hangul Syllables
-         || (ucs >= 0xf900 && ucs <= 0xfaff) // CJK Compatibility Ideographs
-         || (ucs >= 0xfe10 && ucs <= 0xfe19) // Vertical forms
-         || (ucs >= 0xfe30 && ucs <= 0xfe6f) // CJK Compatibility Forms
-         || (ucs >= 0xff00 && ucs <= 0xff60) // Fullwidth Forms
+         || (ucs >= 0x2e80 && ucs <= 0xa4cf && ucs != 0x303f) //CJK ... Yi
+         || (ucs >= 0xac00 && ucs <= 0xd7a3) //Hangul Syllables
+         || (ucs >= 0xf900 && ucs <= 0xfaff) //CJK Compatibility Ideographs
+         || (ucs >= 0xfe10 && ucs <= 0xfe19) //Vertical forms
+         || (ucs >= 0xfe30 && ucs <= 0xfe6f) //CJK Compatibility Forms
+         || (ucs >= 0xff00 && ucs <= 0xff60) //Fullwidth Forms
          || (ucs >= 0xffe0 && ucs <= 0xffe6)
          || (ucs >= 0x20000 && ucs <= 0x2fffd)
          || (ucs >= 0x30000 && ucs <= 0x3fffd)));
 }
 #endif
 
-// sorted list of non-overlapping intervals of East Asian Ambiguous
-// characters, generated by "uniset +WIDTH-A -cat=Me -cat=Mn -cat=Cf c"
+//sorted list of non-overlapping intervals of East Asian Ambiguous
+//characters, generated by "uniset +WIDTH-A -cat=Me -cat=Mn -cat=Cf c"
 private Interval ambiguous[] = {
    { 0x00A1, 0x00A1 }, { 0x00A4, 0x00A4 }, { 0x00A7, 0x00A8 },
    { 0x00AA, 0x00AA }, { 0x00AE, 0x00AE }, { 0x00B0, 0x00B4 },
@@ -2197,7 +2197,7 @@ vterm_unicode_is_ambiguous(uint32_t codepoint) {
 }
 
 #ifdef IS_COMBINING_FUNCTION
-// Use a provided is_combining() function.
+//Use a provided is_combining() function.
 pub int IS_COMBINING_FUNCTION(Unt codepoint);
 #else
 # define IS_COMBINING_FUNCTION vterm_is_combining
@@ -2217,8 +2217,8 @@ vterm_get_special_pty_type_placeholder(void) {
 }
 #endif
 
-// ################################
-// ### The rest added by Paul Evans
+//################################
+//### The rest added by Paul Evans
 
 private Interval fullwidth[] = {
    { 0x1100, 0x115f },
@@ -2355,7 +2355,7 @@ vterm_get_special_pty_type(void) {
 //}}}
 //{{{pen
 
-// Some conveniences
+//Some conveniences
 
 private void 
 penSetpenattr(
@@ -2418,7 +2418,7 @@ vterm_state_set_default_colors(
 
 private void 
 vterm_state_newpen(VTermState* state) {
-   // 90% grey so that pure white is brighter
+   //90% grey so that pure white is brighter
    vterm_state_set_default_colors(state, state->default_fg, state->default_bg);
 }
 
@@ -2504,55 +2504,55 @@ vterm_state_setpen(VTermState* state, long args[], int argcount) {
          state->pen.flags &= ~DECO_ITALIC;
          break;
  
-      case 24: // Underline off
+      case 24: //Underline off
          state->pen.flags &= ~DECO_UNDERLINE;
          setpenattr_int(state, VTERM_ATTR_UNDERLINE, 0);
          break;
  
       case 30: case 31: case 32: case 33:
-      case 34: case 35: case 36: case 37: // Foreground color ANSI palette
+      case 34: case 35: case 36: case 37: //Foreground color ANSI palette
          value = CSI_ARG(args[argi]) - 30;
          set_pen_col_ansi(state, VTERM_ATTR_FOREGROUND, value);
          break;
  
-      case 38: // Foreground color alternative palette
+      case 38: //Foreground color alternative palette
          if (argcount - argi < 1)
             return;
          argi += 2;
          setpenattr_col(state, VTERM_ATTR_FOREGROUND, state->pen.fg);
          break;
  
-      case 39: // Foreground colour default
+      case 39: //Foreground colour default
          state->pen.fg = state->default_fg;
          setpenattr_col(state, VTERM_ATTR_FOREGROUND, state->pen.fg);
          break;
  
       case 40: case 41: case 42: case 43:
-      case 44: case 45: case 46: case 47: // Background color ANSI palette
+      case 44: case 45: case 46: case 47: //Background color ANSI palette
          value = CSI_ARG(args[argi]) - 40;
          set_pen_col_ansi(state, VTERM_ATTR_BACKGROUND, value);
          break;
  
-      case 48: // Background color alternative palette
+      case 48: //Background color alternative palette
          if (argcount - argi < 1)
             return;
          argi += 2;
          setpenattr_col(state, VTERM_ATTR_BACKGROUND, state->pen.bg);
          break;
  
-      case 49: // Default background
+      case 49: //Default background
          state->pen.bg = state->default_bg;
          setpenattr_col(state, VTERM_ATTR_BACKGROUND, state->pen.bg);
          break;
  
       case 90: case 91: case 92: case 93:
-      case 94: case 95: case 96: case 97: // Foreground color high-intensity ANSI palette
+      case 94: case 95: case 96: case 97: //Foreground color high-intensity ANSI palette
          value = CSI_ARG(args[argi]) - 90 + 8;
          set_pen_col_ansi(state, VTERM_ATTR_FOREGROUND, value);
          break;
  
       case 100: case 101: case 102: case 103:
-      case 104: case 105: case 106: case 107: // Background color high-intensity ANSI palette
+      case 104: case 105: case 106: case 107: //Background color high-intensity ANSI palette
          value = CSI_ARG(args[argi]) - 100 + 8;
          set_pen_col_ansi(state, VTERM_ATTR_BACKGROUND, value);
          break;
@@ -2684,7 +2684,7 @@ struct VTermScreen {
    void *cbdata;
 
    VTermDamageSize damage_merge;
-   // start_row == -1 => no damage
+   //start_row == -1 => no damage
    VTermRect damaged;
    VTermRect pending_scrollrect;
    int pending_scroll_downward, pending_scroll_rightward;
@@ -2695,13 +2695,13 @@ struct VTermScreen {
    Unt global_reverse : 1;
    Unt reflow : 1;
 
-   // Primary and Altscreen. buffers[1] is lazily allocated as needed
+   //Primary and Altscreen. buffers[1] is lazily allocated as needed
    ScreenCell* buffers[2];
 
-   // buffer will == buffers[0] or buffers[1], depending on altscreen
+   //buffer will == buffers[0] or buffers[1], depending on altscreen
    ScreenCell *buffer;
 
-   // buffer for a single screen row used in scrollback storage callbacks
+   //buffer for a single screen row used in scrollback storage callbacks
    ScreenCell *sb_buffer;
 
    CellDeco pen;
@@ -2743,29 +2743,29 @@ damagerect(VTermScreen* screen, VTermRect rect) {
 
    switch(screen->damage_merge) {
    case VTERM_DAMAGE_CELL:
-      // Always emit damage event */
+      //Always emit damage event */
       emit = rect;
       break;
 
    case VTERM_DAMAGE_ROW:
-      // Emit damage longer than one row. Try to merge with existing damage in the same row */
+      //Emit damage longer than one row. Try to merge with existing damage in the same row */
       if (rect.end_row > rect.start_row + 1) {
-         // Bigger than 1 line - flush existing, emit this
+         //Bigger than 1 line - flush existing, emit this
          vterm_screen_flush_damage(screen);
          emit = rect;
       } ei(screen->damaged.start_row == SHORT) {
-         // None stored yet
+         //None stored yet
          screen->damaged = rect;
          return;
       } ei(rect.start_row == screen->damaged.start_row) {
-         // Merge with the stored line
+         //Merge with the stored line
          if (screen->damaged.start_col > rect.start_col)
             screen->damaged.start_col = rect.start_col;
          if (screen->damaged.end_col < rect.end_col)
             screen->damaged.end_col = rect.end_col;
          return;
       } else {
-         // Emit the currently stored line, store a new one
+         //Emit the currently stored line, store a new one
          emit = screen->damaged;
          screen->damaged = rect;
       }
@@ -2773,7 +2773,7 @@ damagerect(VTermScreen* screen, VTermRect rect) {
 
    case VTERM_DAMAGE_SCREEN:
    case VTERM_DAMAGE_SCROLL:
-      // Never emit damage event
+      //Never emit damage event
       if (screen->damaged.start_row == SHORT)
         screen->damaged = rect;
       else {
@@ -2848,9 +2848,9 @@ moverect_internal(VTermRect dest, VTermRect src, void* user) {
    VTermScreen *screen = user;
 
    if (screen->callbacks && screen->callbacks->sb_pushline &&
-      dest.start_row == 0 && dest.start_col == 0 &&        // starts top-left corner
-      dest.end_col == screen->cols &&                      // full width
-      screen->buffer == screen->buffers[BUFIDX_PRIMARY]) { // not altscreen
+      dest.start_row == 0 && dest.start_col == 0 &&        //starts top-left corner
+      dest.end_col == screen->cols &&                      //full width
+      screen->buffer == screen->buffers[BUFIDX_PRIMARY]) { //not altscreen
       for(Unt row = 0; row < src.start_row; row++)
          sb_pushline_from_row(screen, row);
    }
@@ -2883,7 +2883,7 @@ moverect_user(VTermRect dest, VTermRect src, void *user) {
 
   if (screen->callbacks && screen->callbacks->moverect) {
     if (screen->damage_merge != VTERM_DAMAGE_SCROLL)
-      // Avoid an infinite loop
+      //Avoid an infinite loop
       vterm_screen_flush_damage(screen);
 
     if ((*screen->callbacks->moverect)(dest, src, screen->cbdata))
@@ -2910,7 +2910,7 @@ erase_internal(VTermRect rect, void *user) {
 
          cell->chars[0] = 0;
          cell->deco = (CellDeco){
-           // Only copy .fg and .bg; leave things like rv in reset state
+           //Only copy .fg and .bg; leave things like rv in reset state
            .fg = screen->pen.fg,
            .bg = screen->pen.bg,
          };
@@ -2929,7 +2929,7 @@ erase_user(VTermRect rect, void* user) {
    return 1;
 }
 
-// Move "rect" "row_delta" down and "col_delta" right. Do not check boundaries.
+//Move "rect" "row_delta" down and "col_delta" right. Do not check boundaries.
 private void 
 vterm_rect_move(VTermRect *rect, int row_delta, int col_delta) {
    rect->start_row += row_delta; rect->end_row += row_delta;
@@ -3075,7 +3075,7 @@ settermprop(VTermProp prop, VTermValue *val, void *user) {
       damagescreen(screen);
       break;
     default:
-      ; // ignore
+      ; //ignore
    }
 
   if (screen->callbacks && screen->callbacks->settermprop)
@@ -3084,8 +3084,8 @@ settermprop(VTermProp prop, VTermValue *val, void *user) {
   return 1;
 }
 
-// How many cells are non-blank
-// Returns the position of the first blank cell in the trailing blank end
+//How many cells are non-blank
+//Returns the position of the first blank cell in the trailing blank end
 private int 
 line_popcount(ScreenCell *buffer, int row, int, int cols) {
   int col = cols - 1;
@@ -3110,7 +3110,7 @@ resize_buffer(
   ScreenCell *new_buffer = vterm_allocator_malloc(screen->vt, sizeof(ScreenCell) * newRows * newCols);
   VTermLineInfo *new_lineinfo = vterm_allocator_malloc(screen->vt, sizeof(new_lineinfo[0]) * newRows);
 
-  // Find the final row of old buffer content
+  //Find the final row of old buffer content
   int old_row = old_rows - 1;
   int new_row = newRows - 1;
 
@@ -3128,7 +3128,7 @@ resize_buffer(
 
    while(old_row >= 0) {
       int old_row_end = old_row;
-      // TODO: Stop if dwl or dhl
+      //TODO: Stop if dwl or dhl
       while(REFLOW && old_lineinfo && old_row >= 0 && old_lineinfo[old_row].continuation)
          old_row--;
       int old_row_start = old_row;
@@ -3156,8 +3156,8 @@ resize_buffer(
   
       int spare_rows = newRows - final_blank_row;
   
-      if (new_row_start < 0 && // we'd fall off the top
-           spare_rows >= 0 && // we actually have spare rows
+      if (new_row_start < 0 && //we'd fall off the top
+           spare_rows >= 0 && //we actually have spare rows
            (!active || new_cursor.row == SHORT || ((int)new_cursor.row - new_row_start) < newRows)
       ){
          //Attempt to scroll content down into the blank rows at the bottom to make it fit
@@ -3269,7 +3269,7 @@ resize_buffer(
    }
 
    if (old_row >= 0 && bufidx == BUFIDX_PRIMARY) {
-      // Push spare lines to scrollback buffer
+      //Push spare lines to scrollback buffer
       if (screen->callbacks && screen->callbacks->sb_pushline)
          for(int row = 0; row <= old_row; row++)
            sb_pushline_from_row(screen, row);
@@ -3278,7 +3278,7 @@ resize_buffer(
    }
    if (new_row >= 0 && bufidx == BUFIDX_PRIMARY &&
       screen->callbacks && screen->callbacks->sb_popline) {
-      // Try to backfill rows by popping scrollback buffer */
+      //Try to backfill rows by popping scrollback buffer */
       while(new_row >= 0) {
          VTermPos pos;
          if (!(screen->callbacks->sb_popline(old_cols, screen->sb_buffer, screen->cbdata)))
@@ -3309,7 +3309,7 @@ resize_buffer(
       }
    }
    if (new_row >= 0) {
-      // Scroll new rows back up to the top and fill in blanks at the bottom
+      //Scroll new rows back up to the top and fill in blanks at the bottom
       int moverows = newRows - new_row - 1;
       memmove(
          &new_buffer[0], 
@@ -3349,7 +3349,7 @@ resize(Short newRows, Short newCols, VTermStateFields *fields, void *user) {
    int old_cols = (int)screen->cols;
 
    if (newCols > old_cols) {
-      // Ensure that ->sb_buffer is large enough for a new or and old row */
+      //Ensure that ->sb_buffer is large enough for a new or and old row */
       if (screen->sb_buffer)
          vterm_allocator_free(screen->vt, screen->sb_buffer);
 
@@ -3366,8 +3366,8 @@ resize(Short newRows, Short newCols, VTermStateFields *fields, void *user) {
    if (screen->buffers[BUFIDX_ALTSCREEN])
       resize_buffer(screen, 1, newRows, newCols, altscreen_active, fields);
    ei(newRows != (int)old_rows) {
-      // We don't need a full resize of the altscreen because it isn't enabled
-      // but we should at least keep the lineinfo the right size */
+      //We don't need a full resize of the altscreen because it isn't enabled
+      //but we should at least keep the lineinfo the right size */
       vterm_allocator_free(screen->vt, fields->lineinfos[BUFIDX_ALTSCREEN]);
 
       VTermLineInfo *new_lineinfo = vterm_allocator_malloc(screen->vt, sizeof(new_lineinfo[0]) * newRows);
@@ -3442,16 +3442,16 @@ sb_clear(void *user) {
 }
 
 private VTermStateCallbacks state_cbs = {
-  &putglyph, // putglyph
-  &movecursor, // movecursor
-  &scrollrect, // scrollrect
-  NULL, // moverect
-  &erase, // erase
-  NULL, // initpen
-  &setpenattr, // setpenattr
-  &settermprop, // settermprop
-  &resize, // resize
-  &setlineinfo, // setlineinfo
+  &putglyph, //putglyph
+  &movecursor, //movecursor
+  &scrollrect, //scrollrect
+  NULL, //moverect
+  &erase, //erase
+  NULL, //initpen
+  &setpenattr, //setpenattr
+  &settermprop, //settermprop
+  &resize, //resize
+  &setlineinfo, //setlineinfo
   &sb_clear, //sb_clear
 };
 
@@ -3533,10 +3533,10 @@ _get_chars(VTermScreen* screen, void* buffer, Unt len, VTermRect rect) {
             return 1;
          }
          if (cell->chars[0] == 0)
-            // Erased cell, might need a space
+            //Erased cell, might need a space
             padding++;
          ei(cell->chars[0] == (uint32_t)-1)
-            // Gap behind a double-width char, do nothing
+            //Gap behind a double-width char, do nothing
             ;
          else {
             while(padding) {
@@ -3563,7 +3563,7 @@ vterm_screen_get_text(VTermScreen* screen, CS str, Unt len, VTermRect rect) {
    return _get_chars(screen, str, len, rect);
 }
 
-// Copy internal to external representation of a screen cell
+//Copy internal to external representation of a screen cell
 private int 
 vterm_screen_get_cell(VTermScreen* screen, VTermPos pos, OUT ScreenCell* cell) {
    ScreenCell* intcell = getcell(screen, pos.row, pos.col);
@@ -3584,14 +3584,14 @@ vterm_screen_get_cell(VTermScreen* screen, VTermPos pos, OUT ScreenCell* cell) {
 
 //private int 
 //vterm_screen_is_eol(VTermScreen const* screen, VTermPos pos) {
-//   // This cell is EOL if this and every cell to the right is black
-//   for(; pos.col < screen->cols; pos.col++) {
-//      ScreenCell* cell = getcell(screen, pos.row, pos.col);
-//      if (cell->chars[0] != 0)
-//         return 0;
-//   }
+//  // This cell is EOL if this and every cell to the right is black
+//  for(; pos.col < screen->cols; pos.col++) {
+//     ScreenCell* cell = getcell(screen, pos.row, pos.col);
+//     if (cell->chars[0] != 0)
+//        return 0;
+//  }
 //
-//   return 1;
+//  return 1;
 //}
 
 private VTermScreen *
@@ -3638,106 +3638,106 @@ vterm_screen_flush_damage(VTermScreen *screen) {
 
 //private void 
 //vterm_screen_set_damage_merge(VTermScreen *screen, VTermDamageSize size) {
-//   vterm_screen_flush_damage(screen);
-//   screen->damage_merge = size;
+//  vterm_screen_flush_damage(screen);
+//  screen->damage_merge = size;
 //}
 
 //static int 
 //attrs_differ(VTermAttrMask deco, ScreenCell *a, ScreenCell *b) {
-//   if ((deco & VTERM_ATTR_BOLD_MASK)       && (a->pen.bold != b->pen.bold))
-//      return 1;
-//   if ((deco & VTERM_ATTR_UNDERLINE_MASK)  && (a->pen.underline != b->pen.underline))
-//      return 1;
-//   if ((deco & VTERM_ATTR_ITALIC_MASK)     && (a->pen.italic != b->pen.italic))
-//      return 1;
-//   if ((deco & VTERM_ATTR_BLINK_MASK)      && (a->pen.blink != b->pen.blink))
-//      return 1;
-//   if ((deco & VTERM_ATTR_REVERSE_MASK)    && (a->pen.reverse != b->pen.reverse))
-//      return 1;
-//   if ((deco & VTERM_ATTR_CONCEAL_MASK)    && (a->pen.conceal != b->pen.conceal))
-//      return 1;
-//   if ((deco & VTERM_ATTR_STRIKE_MASK)     && (a->pen.strike != b->pen.strike))
-//      return 1;
-//   if ((deco & VTERM_ATTR_FONT_MASK)       && (a->pen.font != b->pen.font))
-//      return 1;
-//   if ((deco & VTERM_ATTR_FOREGROUND_MASK) && !vterm_color_is_equal(&a->pen.fg, &b->pen.fg))
-//      return 1;
-//   if ((deco & VTERM_ATTR_BACKGROUND_MASK) && !vterm_color_is_equal(&a->pen.bg, &b->pen.bg))
-//      return 1;
-//   if ((deco & VTERM_ATTR_SMALL_MASK)    && (a->pen.small != b->pen.small))
-//      return 1;
-//   if ((deco & VTERM_ATTR_BASELINE_MASK)    && (a->pen.baseline != b->pen.baseline))
-//      return 1;
+//  if ((deco & VTERM_ATTR_BOLD_MASK)       && (a->pen.bold != b->pen.bold))
+//     return 1;
+//  if ((deco & VTERM_ATTR_UNDERLINE_MASK)  && (a->pen.underline != b->pen.underline))
+//     return 1;
+//  if ((deco & VTERM_ATTR_ITALIC_MASK)     && (a->pen.italic != b->pen.italic))
+//     return 1;
+//  if ((deco & VTERM_ATTR_BLINK_MASK)      && (a->pen.blink != b->pen.blink))
+//     return 1;
+//  if ((deco & VTERM_ATTR_REVERSE_MASK)    && (a->pen.reverse != b->pen.reverse))
+//     return 1;
+//  if ((deco & VTERM_ATTR_CONCEAL_MASK)    && (a->pen.conceal != b->pen.conceal))
+//     return 1;
+//  if ((deco & VTERM_ATTR_STRIKE_MASK)     && (a->pen.strike != b->pen.strike))
+//     return 1;
+//  if ((deco & VTERM_ATTR_FONT_MASK)       && (a->pen.font != b->pen.font))
+//     return 1;
+//  if ((deco & VTERM_ATTR_FOREGROUND_MASK) && !vterm_color_is_equal(&a->pen.fg, &b->pen.fg))
+//     return 1;
+//  if ((deco & VTERM_ATTR_BACKGROUND_MASK) && !vterm_color_is_equal(&a->pen.bg, &b->pen.bg))
+//     return 1;
+//  if ((deco & VTERM_ATTR_SMALL_MASK)    && (a->pen.small != b->pen.small))
+//     return 1;
+//  if ((deco & VTERM_ATTR_BASELINE_MASK)    && (a->pen.baseline != b->pen.baseline))
+//     return 1;
 //
-//   return 0;
+//  return 0;
 //}
 
 //private int 
 //vterm_screen_get_attrs_extent(
-//    const VTermScreen *screen, VTermRect *extent, VTermPos pos, VTermAttrMask deco
+//   const VTermScreen *screen, VTermRect *extent, VTermPos pos, VTermAttrMask deco
 //) {
-//   ScreenCell *target = getcell(screen, pos.row, pos.col);
+//  ScreenCell *target = getcell(screen, pos.row, pos.col);
 //
-//   // TODO: bounds check
-//   extent->start_row = pos.row;
-//   extent->end_row   = pos.row + 1;
+//  // TODO: bounds check
+//  extent->start_row = pos.row;
+//  extent->end_row   = pos.row + 1;
 //
-//   if (extent->start_col == UNT)
-//      extent->start_col = 0;
-//   if (extent->end_col == UNT)
-//      extent->end_col = screen->cols;
+//  if (extent->start_col == UNT)
+//     extent->start_col = 0;
+//  if (extent->end_col == UNT)
+//     extent->end_col = screen->cols;
 //
-//   Unt col;
-//   for(col = pos.col - 1; col >= extent->start_col; col--) {
-//      if (attrs_differ(deco, target, getcell(screen, pos.row, col)))
-//         break;
-//   } 
-//   extent->start_col = col + 1;
+//  Unt col;
+//  for(col = pos.col - 1; col >= extent->start_col; col--) {
+//     if (attrs_differ(deco, target, getcell(screen, pos.row, col)))
+//        break;
+//  } 
+//  extent->start_col = col + 1;
 //
-//   for(col = pos.col + 1; col < extent->end_col; col++) {
-//      if (attrs_differ(deco, target, getcell(screen, pos.row, col)))
-//         break;
-//   } 
-//   extent->end_col = col - 1;
+//  for(col = pos.col + 1; col < extent->end_col; col++) {
+//     if (attrs_differ(deco, target, getcell(screen, pos.row, col)))
+//        break;
+//  } 
+//  extent->end_col = col - 1;
 //
-//   return 1;
+//  return 1;
 //}
 
 
 //private void 
 //reset_default_colours(VTermScreen *screen, ScreenCell *buffer) {
-//   for (Unt row = 0; row <= screen->rows - 1; row++) {
-//      for (Unt col = 0; col <= screen->cols - 1; col++) {
-//         ScreenCell *cell = &buffer[row * screen->cols + col];
-//         if (VTERM_COLOR_IS_DEFAULT_FG(&cell->pen.fg))
-//            cell->pen.fg = screen->pen.fg;
-//         if (VTERM_COLOR_IS_DEFAULT_BG(&cell->pen.bg))
-//            cell->pen.bg = screen->pen.bg;
-//      }
-//   } 
+//  for (Unt row = 0; row <= screen->rows - 1; row++) {
+//     for (Unt col = 0; col <= screen->cols - 1; col++) {
+//        ScreenCell *cell = &buffer[row * screen->cols + col];
+//        if (VTERM_COLOR_IS_DEFAULT_FG(&cell->pen.fg))
+//           cell->pen.fg = screen->pen.fg;
+//        if (VTERM_COLOR_IS_DEFAULT_BG(&cell->pen.bg))
+//           cell->pen.bg = screen->pen.bg;
+//     }
+//  } 
 //}
 
 //private void 
 //vterm_screen_set_default_colors(
-//    VTermScreen *screen, const VTermColor* default_fg, const VTermColor *default_bg
+//   VTermScreen *screen, const VTermColor* default_fg, const VTermColor *default_bg
 //) {
-//  vterm_state_set_default_colors(screen->state, default_fg, default_bg);
+// vterm_state_set_default_colors(screen->state, default_fg, default_bg);
 //
-//  if (default_fg && VTERM_COLOR_IS_DEFAULT_FG(&screen->pen.fg)) {
-//    screen->pen.fg = *default_fg;
-//    screen->pen.fg.type = (screen->pen.fg.type & ~VTERM_COLOR_DEFAULT_MASK)
-//                        | VTERM_COLOR_DEFAULT_FG;
-//  }
+// if (default_fg && VTERM_COLOR_IS_DEFAULT_FG(&screen->pen.fg)) {
+//   screen->pen.fg = *default_fg;
+//   screen->pen.fg.type = (screen->pen.fg.type & ~VTERM_COLOR_DEFAULT_MASK)
+//                       | VTERM_COLOR_DEFAULT_FG;
+// }
 //
-//  if (default_bg && VTERM_COLOR_IS_DEFAULT_BG(&screen->pen.bg)) {
-//    screen->pen.bg = *default_bg;
-//    screen->pen.bg.type = (screen->pen.bg.type & ~VTERM_COLOR_DEFAULT_MASK)
-//                        | VTERM_COLOR_DEFAULT_BG;
-//  }
+// if (default_bg && VTERM_COLOR_IS_DEFAULT_BG(&screen->pen.bg)) {
+//   screen->pen.bg = *default_bg;
+//   screen->pen.bg.type = (screen->pen.bg.type & ~VTERM_COLOR_DEFAULT_MASK)
+//                       | VTERM_COLOR_DEFAULT_BG;
+// }
 //
-//  reset_default_colours(screen, screen->buffers[0]);
-//  if (screen->buffers[1])
-//    reset_default_colours(screen, screen->buffers[1]);
+// reset_default_colours(screen, screen->buffers[0]);
+// if (screen->buffers[1])
+//   reset_default_colours(screen, screen->buffers[1]);
 //}
 
 //}}}
@@ -3855,9 +3855,9 @@ string_fragment(VTerm *vt, CS str, Unt len, int final) {
 private Unt 
 vterm_input_write(VTerm *vt, CS bytes, Unt len) {
    Unt pos = 0;
-   CS string_start = NULL;  // init to avoid gcc warning
+   CS string_start = NULL;  //init to avoid gcc warning
 
-   vt->in_backspace = 0;          // Count down with BS key and activate when it reaches 1
+   vt->in_backspace = 0;          //Count down with BS key and activate when it reaches 1
 
    switch(vt->parser.state) {
    case VT_NORMAL:
@@ -3886,7 +3886,7 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
       Byte c = bytes[pos];
       int c1_allowed = 0;
 
-      if (c == 0x00 || c == 0x7f) { // NUL, DEL
+      if (c == 0x00 || c == 0x7f) { //NUL, DEL
          if (IS_STRING_STATE()) {
             string_fragment(vt, string_start, bytes + pos - string_start, false);
             string_start = bytes + pos + 1;
@@ -3895,29 +3895,29 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
             do_control(vt, c);
          continue;
       }
-      if (c == 0x18 || c == 0x1a) { // CAN, SUB
+      if (c == 0x18 || c == 0x1a) { //CAN, SUB
          vt->parser.in_esc = false;
          ENTER_NORMAL_STATE();
          if (vt->parser.emit_nul)
             do_control(vt, c);
          continue;
-      } ei (c == 0x1b) { // ESC
+      } ei (c == 0x1b) { //ESC
          vt->parser.intermedlen = 0;
          if (!IS_STRING_STATE())
             vt->parser.state = VT_NORMAL;
          vt->parser.in_esc = true;
          continue;
-      } ei (c == 0x07 && IS_STRING_STATE()) {// BEL, can stand for ST in VT_OSC or VT_DCS state
-         // fallthrough
-      } ei (c < 0x20) { // other C0
+      } ei (c == 0x07 && IS_STRING_STATE()) {//BEL, can stand for ST in VT_OSC or VT_DCS state
+         //fallthrough
+      } ei (c < 0x20) { //other C0
          if (vt->parser.state == VT_SOS)
-            continue; // All other C0s permitted in SOS
+            continue; //All other C0s permitted in SOS
 
          if (vterm_get_special_pty_type() == 2) {
-            if (c == 0x08) // BS
-               // Set the trick for BS output after a sequence, to delay backspace activation
+            if (c == 0x08) //BS
+               //Set the trick for BS output after a sequence, to delay backspace activation
                if (pos + 2 < len && bytes[pos + 1] == 0x20 && bytes[pos + 2] == 0x08)
-               vt->in_backspace = 2; // Trigger when count down to 1
+               vt->in_backspace = 2; //Trigger when count down to 1
          }
          if (IS_STRING_STATE())
             string_fragment(vt, string_start, bytes + pos - string_start, false);
@@ -3926,13 +3926,13 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
             string_start = bytes + pos + 1;
          continue;
       }
-      // else fallthrough
+      //else fallthrough
 
       Unt string_len = bytes + pos - string_start;
 
       if (vt->parser.in_esc) {
-         // Hoist an ESC letter into a C1 if we're not in a string mode
-         // Always accept ESC \ == ST even in string mode
+         //Hoist an ESC letter into a C1 if we're not in a string mode
+         //Always accept ESC \ == ST even in string mode
          if (!vt->parser.intermedlen &&
              c >= 0x40 && c < 0x60 &&
              ((!IS_STRING_STATE() || c == 0x5c))) {
@@ -3949,23 +3949,23 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
 
       switch(vt->parser.state) {
       case VT_CSI_LEADER:
-         // Extract leader bytes 0x3c to 0x3f
+         //Extract leader bytes 0x3c to 0x3f
          if (c >= 0x3c && c <= 0x3f) {
            if (vt->parser.v.csi.leaderlen < CSI_LEADER_MAX-1)
              vt->parser.v.csi.leader[vt->parser.v.csi.leaderlen++] = c;
            break;
          }
 
-         // else fallthrough
+         //else fallthrough
          vt->parser.v.csi.leader[vt->parser.v.csi.leaderlen] = 0;
 
          vt->parser.v.csi.argi = 0;
          vt->parser.v.csi.args[0] = CSI_ARG_MISSING;
          vt->parser.state = VT_CSI_ARGS;
 
-         // fallthrough
+         //fallthrough
       case VT_CSI_ARGS:
-         // Numerical value of argument
+         //Numerical value of argument
          if (c >= '0' && c <= '9') {
             if (vt->parser.v.csi.args[vt->parser.v.csi.argi] == CSI_ARG_MISSING)
                vt->parser.v.csi.args[vt->parser.v.csi.argi] = 0;
@@ -3983,29 +3983,29 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
             break;
          }
 
-         // else fallthrough
+         //else fallthrough
          vt->parser.v.csi.argi++;
          vt->parser.intermedlen = 0;
          vt->parser.state = VT_CSI_INTERMED;
-         // FALLTHROUGH
+         //FALLTHROUGH
       case VT_CSI_INTERMED:
          if (is_intermed(c)) {
             if (vt->parser.intermedlen < INTERMED_MAX-1)
                vt->parser.intermed[vt->parser.intermedlen++] = c;
             break;
          } ei(c == 0x1b) {
-            // ESC in CSI cancels
+            //ESC in CSI cancels
          } ei(c >= 0x40 && c <= 0x7e) {
             vt->parser.intermed[vt->parser.intermedlen] = 0;
             do_csi(vt, c);
          }
-         // else was invalid CSI
+         //else was invalid CSI
 
          ENTER_NORMAL_STATE();
          break;
 
       case VT_OSC_COMMAND:
-         // Numerical value of command
+         //Numerical value of command
          if (c >= '0' && c <= '9') {
             if (vt->parser.v.osc.command == -1)
                vt->parser.v.osc.command = 0;
@@ -4020,7 +4020,7 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
             break;
          }
 
-         // else fallthrough
+         //else fallthrough
          string_start = bytes + pos;
          string_len   = 0;
          vt->parser.state = VT_OSC;
@@ -4064,34 +4064,34 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
          }
          if (c1_allowed && c >= 0x80 && c < 0xa0) {
             switch(c) {
-            case 0x90: // DCS
+            case 0x90: //DCS
                vt->parser.string_initial = true;
                vt->parser.v.dcs.commandlen = 0;
                ENTER_STATE(VT_DCS_COMMAND);
                break;
-            case 0x98: // SOS
+            case 0x98: //SOS
                vt->parser.string_initial = true;
                ENTER_STATE(VT_SOS);
                string_start = bytes + pos + 1;
                string_len = 0;
                break;
-            case 0x9b: // CSI
+            case 0x9b: //CSI
                vt->parser.v.csi.leaderlen = 0;
                ENTER_STATE(VT_CSI_LEADER);
                break;
-            case 0x9d: // OSC
+            case 0x9d: //OSC
                vt->parser.v.osc.command = -1;
                vt->parser.string_initial = true;
                string_start = bytes + pos + 1;
                ENTER_STATE(VT_OSC_COMMAND);
                break;
-            case 0x9e: // PM
+            case 0x9e: //PM
                vt->parser.string_initial = true;
                ENTER_STATE(VT_PM);
                string_start = bytes + pos + 1;
                string_len = 0;
                break;
-            case 0x9f: // APC
+            case 0x9f: //APC
                vt->parser.string_initial = true;
                ENTER_STATE(VT_APC);
                string_start = bytes + pos + 1;
@@ -4108,11 +4108,11 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
 
             if (!eaten) {
                DEBUG_LOG("libvterm: Text callback did not consume any input\n");
-               // force it to make progress
+               //force it to make progress
                eaten = 1;
             }
 
-            pos += (eaten - 1); // we'll ++ it again in a moment
+            pos += (eaten - 1); //we'll ++ it again in a moment
          }
          break;
       }
@@ -4145,7 +4145,7 @@ vterm_parser_set_callbacks(VTerm* vt, VTermParserCallbacks* callbacks, void* use
 
 private Boole on_resize(Short rows, Short cols, void *user);
 
-// Some convenient wrappers to make callback functions easier
+//Some convenient wrappers to make callback functions easier
 
 private void 
 statePutglyph(VTermState* state, Unt chars[], int width, VTermPos pos) {
@@ -4220,7 +4220,7 @@ vterm_state_new(VTerm* vt) {
 
    state->lineinfos[BUFIDX_PRIMARY]   = 
       vterm_allocator_malloc(state->vt, state->rows * sizeof(VTermLineInfo));
-   // TODO: Make an 'enable' function
+   //TODO: Make an 'enable' function
    state->lineinfos[BUFIDX_ALTSCREEN] = 
       vterm_allocator_malloc(state->vt, state->rows * sizeof(VTermLineInfo));
    state->lineinfo = state->lineinfos[BUFIDX_PRIMARY];
@@ -4256,7 +4256,7 @@ scroll(VTermState* state, VTermRect rect, int downward, int rightward) {
    ei(rightward < -cols)
       rightward = -cols;
 
-   // Update lineinfo if full line
+   //Update lineinfo if full line
    if (rect.start_col == 0 && rect.end_col == state->cols && rightward == 0) {
       int height = rect.end_row - rect.start_row - abs(downward);
       VTermLineInfo zeroLineInfo = {0x0};
@@ -4384,7 +4384,7 @@ on_text(CS, Unt, void* user) {
 
    VTermPos oldpos = state->pos;
 
-   // We'll have at most len codepoints, plus one from a previous incomplete sequence.
+   //We'll have at most len codepoints, plus one from a previous incomplete sequence.
    Unt *codepoints = (Unt*)(state->vt->tmpbuffer);
 
    //There's a chance UTF-8 hasn't found enough bytes yet for even a single codepoint
@@ -4409,12 +4409,12 @@ on_text(CS, Unt, void* user) {
          printf("} + {");
 #endif
 
-         // Find where we need to append these combining chars
+         //Find where we need to append these combining chars
          int saved_i = 0;
          while(state->combine_chars[saved_i])
             saved_i++;
 
-         // Add extra ones
+         //Add extra ones
          while(i < npoints && vterm_unicode_is_combining(codepoints[i])) {
             if (saved_i >= (int)state->combine_chars_size)
                grow_combine_buffer(state);
@@ -4430,7 +4430,7 @@ on_text(CS, Unt, void* user) {
          printf("}\n");
 #endif
 
-         // Now render it
+         //Now render it
          statePutglyph(state, state->combine_chars, state->combine_width, state->combine_pos);
       } else {
          DEBUG_LOG("libvterm: TODO: Skip over split char+combining\n");
@@ -4438,7 +4438,7 @@ on_text(CS, Unt, void* user) {
    }
 
    for(; i < npoints; i++) {
-      // Try to find combining characters following this
+      //Try to find combining characters following this
       int glyph_starts = i;
       int glyph_ends;
       int width = 0;
@@ -4458,7 +4458,7 @@ on_text(CS, Unt, void* user) {
          if (vterm_get_special_pty_type() == 2) {
             state->vt->in_backspace -= (state->vt->in_backspace > 0) ? 1 : 0;
             if (state->vt->in_backspace == 1)
-               codepoints[i] = 0; // codepoints under this condition must be 0
+               codepoints[i] = 0; //codepoints under this condition must be 0
          }
          chars[i - glyph_starts] = codepoints[i];
          this_width = vterm_unicode_width(codepoints[i]);
@@ -4469,7 +4469,7 @@ on_text(CS, Unt, void* user) {
          }
 #endif
          if (i == glyph_starts || this_width > width)
-            width = this_width;  // TODO: should be += ?
+            width = this_width;  //TODO: should be += ?
       }
 
       while(i < npoints && vterm_unicode_is_combining(codepoints[i]))
@@ -4494,9 +4494,9 @@ on_text(CS, Unt, void* user) {
    }
 
    if (state->mode.insert) {
-      // TODO: This will be a little inefficient for large bodies of text, as
-      // it'll have to 'ICH' effectively before every glyph. We should scan
-      // ahead and ICH as many times as required
+      //TODO: This will be a little inefficient for large bodies of text, as
+      //it'll have to 'ICH' effectively before every glyph. We should scan
+      //ahead and ICH as many times as required
       VTermRect rect;
       rect.start_row = state->pos.row;
       rect.end_row   = state->pos.row + 1;
@@ -4553,60 +4553,60 @@ on_control(unsigned char control, void *user) {
  
    ScreenCell cell;
  
-   // Preparing to see the leading byte
+   //Preparing to see the leading byte
    VTermPos leadpos = state->pos;
    leadpos.col -= (leadpos.col >= 2 ? 2 : 0);
 
    switch(control) {
-   case 0x08: // BS - ECMA-48 8.3.5
+   case 0x08: //BS - ECMA-48 8.3.5
       if (state->pos.col > 0)
          state->pos.col--;
       if (vterm_get_special_pty_type() == 2) {
-         // In 2 cell letters, go back 2 cells
+         //In 2 cell letters, go back 2 cells
          vterm_screen_get_cell(state->vt->screen, leadpos, OUT &cell);
          if (vterm_unicode_width(cell.chars[0]) == 2)
             state->pos.col--;
        }
        break;
 
-   case 0x09: // HT - ECMA-48 8.3.60
+   case 0x09: //HT - ECMA-48 8.3.60
       tab(state, 1, +1);
       break;
 
-   case 0x0a: // LF - ECMA-48 8.3.74
-   case 0x0b: // VT
-   case 0x0c: // FF
+   case 0x0a: //LF - ECMA-48 8.3.74
+   case 0x0b: //VT
+   case 0x0c: //FF
       linefeed(state);
       if (state->mode.newline)
          state->pos.col = 0;
       break;
 
-   case 0x0d: // CR - ECMA-48 8.3.15
+   case 0x0d: //CR - ECMA-48 8.3.15
       state->pos.col = 0;
       break;
 
-   case 0x0e: // LS1 - ECMA-48 8.3.76
+   case 0x0e: //LS1 - ECMA-48 8.3.76
       state->gl_set = 1;
       break;
 
-   case 0x0f: // LS0 - ECMA-48 8.3.75
+   case 0x0f: //LS0 - ECMA-48 8.3.75
       state->gl_set = 0;
       break;
 
-   case 0x84: // IND - DEPRECATED but implemented for completeness
+   case 0x84: //IND - DEPRECATED but implemented for completeness
       linefeed(state);
       break;
 
-   case 0x85: // NEL - ECMA-48 8.3.86
+   case 0x85: //NEL - ECMA-48 8.3.86
       linefeed(state);
       state->pos.col = 0;
       break;
 
-   case 0x88: // HTS - ECMA-48 8.3.62
+   case 0x88: //HTS - ECMA-48 8.3.62
       set_col_tabstop(state, state->pos.col);
       break;
 
-   case 0x8d: // RI - ECMA-48 8.3.104
+   case 0x8d: //RI - ECMA-48 8.3.104
       if (state->pos.row == state->scrollregion_top) {
          VTermRect rect;
          rect.start_row = state->scrollregion_top;
@@ -4619,11 +4619,11 @@ on_control(unsigned char control, void *user) {
          state->pos.row--;
       break;
 
-   case 0x8e: // SS2 - ECMA-48 8.3.141
+   case 0x8e: //SS2 - ECMA-48 8.3.141
       state->gsingle_set = 2;
       break;
 
-   case 0x8f: // SS3 - ECMA-48 8.3.142
+   case 0x8f: //SS3 - ECMA-48 8.3.142
       state->gsingle_set = 3;
       break;
 
@@ -4708,10 +4708,10 @@ on_escape(Arr(Byte) bytes, Unt len, void* user) {
          return 0;
 
       switch(bytes[1]) {
-      case 'F': // S7C1T
+      case 'F': //S7C1T
          break;
 
-      case 'G': // S8C1T
+      case 'G': //S8C1T
          break;
 
       default:
@@ -4724,31 +4724,31 @@ on_escape(Arr(Byte) bytes, Unt len, void* user) {
          return 0;
 
       switch(bytes[1]) {
-      case '3': // DECDHL top
+      case '3': //DECDHL top
          if (state->mode.leftrightmargin)
             break;
          set_lineinfo(state, state->pos.row, false);
          break;
 
-      case '4': // DECDHL bottom
+      case '4': //DECDHL bottom
          if (state->mode.leftrightmargin)
             break;
          set_lineinfo(state, state->pos.row, false);
          break;
 
-      case '5': // DECSWL
+      case '5': //DECSWL
          if (state->mode.leftrightmargin)
              break;
          set_lineinfo(state, state->pos.row, false);
          break;
 
-      case '6': // DECDWL
+      case '6': //DECDWL
          if (state->mode.leftrightmargin)
            break;
          set_lineinfo(state, state->pos.row, false);
          break;
 
-      case '8': {// DECALN
+      case '8': {//DECALN
          VTermPos pos;
          uint32_t eGlyph[] = { 'E', 0 };
          for(pos.row = 0; pos.row < state->rows; pos.row++) {
@@ -4766,31 +4766,31 @@ on_escape(Arr(Byte) bytes, Unt len, void* user) {
    case '(': 
    case ')': 
    case '*': 
-   case '+': // SCS
+   case '+': //SCS
       if (len != 2)
          return 0;
       return 2;
 
-   case '7': // DECSC
+   case '7': //DECSC
       savecursor(state, 1);
       return 1;
 
-   case '8': // DECRC
+   case '8': //DECRC
       savecursor(state, 0);
       return 1;
 
-   case '<': // Ignored by VT100. Used in VT52 mode to switch up to VT100
+   case '<': //Ignored by VT100. Used in VT52 mode to switch up to VT100
       return 1;
 
-   case '=': // DECKPAM
+   case '=': //DECKPAM
       state->mode.keypad = 1;
       return 1;
 
-   case '>': // DECKPNM
+   case '>': //DECKPNM
       state->mode.keypad = 0;
       return 1;
 
-   case 'c': { // RIS - ECMA-48 8.3.105
+   case 'c': { //RIS - ECMA-48 8.3.105
       VTermPos oldpos = state->pos;
       vterm_state_reset(state, 1);
       if (state->callbacks && state->callbacks->movecursor)
@@ -4800,23 +4800,23 @@ on_escape(Arr(Byte) bytes, Unt len, void* user) {
       return 1;
    }
 
-   case 'n': // LS2 - ECMA-48 8.3.78
+   case 'n': //LS2 - ECMA-48 8.3.78
       state->gl_set = 2;
       return 1;
 
-   case 'o': // LS3 - ECMA-48 8.3.80
+   case 'o': //LS3 - ECMA-48 8.3.80
       state->gl_set = 3;
       return 1;
 
-   case '~': // LS1R - ECMA-48 8.3.77
+   case '~': //LS1R - ECMA-48 8.3.77
       state->gr_set = 1;
       return 1;
 
-   case '}': // LS2R - ECMA-48 8.3.79
+   case '}': //LS2R - ECMA-48 8.3.79
       state->gr_set = 2;
       return 1;
 
-   case '|': // LS3R - ECMA-48 8.3.81
+   case '|': //LS3R - ECMA-48 8.3.81
       state->gr_set = 3;
       return 1;
 
@@ -4828,11 +4828,11 @@ on_escape(Arr(Byte) bytes, Unt len, void* user) {
 private void
 set_mode(VTermState* state, int num, int val) {
    switch(num) {
-   case 4: // IRM - ECMA-48 7.2.10
+   case 4: //IRM - ECMA-48 7.2.10
       state->mode.insert = val;
       break;
 
-   case 20: // LNM - ANSI X3.4-1977
+   case 20: //LNM - ANSI X3.4-1977
       state->mode.newline = val;
       break;
 
@@ -4924,13 +4924,13 @@ on_csi(
    VTermPos oldpos = state->pos;
    int handled = 1;
  
-   // Some temporaries for later code
+   //Some temporaries for later code
    int count, val;
    Unt row, col;
    VTermRect rect;
  
    if (leader && leader[0]) {
-      if (leader[1]) // longer than 1 char
+      if (leader[1]) //longer than 1 char
          return 0;
   
       switch(leader[0]) {
@@ -4944,7 +4944,7 @@ on_csi(
    }
 
    if (intermed && intermed[0]) {
-      if (intermed[1]) // longer than 1 char
+      if (intermed[1]) //longer than 1 char
          return 0;
 
       switch(intermed[0]) {
@@ -4969,7 +4969,7 @@ on_csi(
 #define INTERMED(i,b) ((i << 16) | b)
 
    switch(intermed_byte << 16 | leader_byte << 8 | command) {
-   case 0x40: // ICH - ECMA-48 8.3.64
+   case 0x40: //ICH - ECMA-48 8.3.64
       count = CSI_ARG_COUNT(args[0]);
 
       if (!is_cursor_in_scrollregion(state))
@@ -4987,56 +4987,56 @@ on_csi(
 
       break;
 
-   case 0x41: // CUU - ECMA-48 8.3.22
+   case 0x41: //CUU - ECMA-48 8.3.22
       count = CSI_ARG_COUNT(args[0]);
       state->pos.row -= count;
       state->at_phantom = 0;
       break;
 
-   case 0x42: // CUD - ECMA-48 8.3.19
+   case 0x42: //CUD - ECMA-48 8.3.19
       count = CSI_ARG_COUNT(args[0]);
       state->pos.row += count;
       state->at_phantom = 0;
       break;
 
-   case 0x43: // CUF - ECMA-48 8.3.20
+   case 0x43: //CUF - ECMA-48 8.3.20
       count = CSI_ARG_COUNT(args[0]);
       state->pos.col += count;
       state->at_phantom = 0;
       break;
 
-   case 0x44: // CUB - ECMA-48 8.3.18
+   case 0x44: //CUB - ECMA-48 8.3.18
       count = CSI_ARG_COUNT(args[0]);
       state->pos.col -= count;
       state->at_phantom = 0;
       break;
 
-   case 0x45: // CNL - ECMA-48 8.3.12
+   case 0x45: //CNL - ECMA-48 8.3.12
       count = CSI_ARG_COUNT(args[0]);
       state->pos.col = 0;
       state->pos.row += count;
       state->at_phantom = 0;
       break;
 
-   case 0x46: // CPL - ECMA-48 8.3.13
+   case 0x46: //CPL - ECMA-48 8.3.13
       count = CSI_ARG_COUNT(args[0]);
       state->pos.col = 0;
       state->pos.row -= count;
       state->at_phantom = 0;
       break;
 
-   case 0x47: // CHA - ECMA-48 8.3.9
+   case 0x47: //CHA - ECMA-48 8.3.9
       val = CSI_ARG_OR(args[0], 1);
       state->pos.col = val-1;
       state->at_phantom = 0;
       break;
 
-   case 0x48: // CUP - ECMA-48 8.3.21
+   case 0x48: //CUP - ECMA-48 8.3.21
       row = CSI_ARG_OR(args[0], 1);
       col = argcount < 2 || CSI_ARG_IS_MISSING(args[1]) ? 1 : CSI_ARG(args[1]);
-      // zero-based
+      //zero-based
       if (vterm_get_special_pty_type() == 2) {
-         // Fix a sequence that is not correct right now
+         //Fix a sequence that is not correct right now
          if (state->pos.row == row - 1) {
             Unt ptr = 0;
             for(Unt cnt = 0; cnt < col - 1; ++cnt) {
@@ -5047,10 +5047,10 @@ on_csi(
                vterm_screen_get_cell(state->vt->screen, p, OUT &c0);
                p.col++;
                vterm_screen_get_cell(state->vt->screen, p, OUT &c1);
-               Unt diff = (c1.chars[0] == UNT)          // double cell?
-                  ? ((vterm_unicode_is_ambiguous(c0.chars[0]))    // is ambiguous?
+               Unt diff = (c1.chars[0] == UNT)          //double cell?
+                  ? ((vterm_unicode_is_ambiguous(c0.chars[0]))    //is ambiguous?
                      ? vterm_unicode_width(0x00a1) 
-                     : 1)          // &ambiwidth
+                     : 1)          //&ambiwidth
                   : 1;   
                ptr += diff;
             }
@@ -5066,13 +5066,13 @@ on_csi(
       state->at_phantom = 0;
       break;
 
-   case 0x49: // CHT - ECMA-48 8.3.10
+   case 0x49: //CHT - ECMA-48 8.3.10
       count = CSI_ARG_COUNT(args[0]);
       tab(state, count, +1);
       break;
 
-   case 0x4a: // ED - ECMA-48 8.3.39
-   case LEADER('?', 0x4a): // DECSED - Selective Erase in Display
+   case 0x4a: //ED - ECMA-48 8.3.39
+   case LEADER('?', 0x4a): //DECSED - Selective Erase in Display
       switch(CSI_ARG(args[0])) {
       case CSI_ARG_MISSING:
       case 0:
@@ -5119,8 +5119,8 @@ on_csi(
       }
       break;
 
-   case 0x4b: // EL - ECMA-48 8.3.41
-   case LEADER('?', 0x4b): // DECSEL - Selective Erase in Line
+   case 0x4b: //EL - ECMA-48 8.3.41
+   case LEADER('?', 0x4b): //DECSEL - Selective Erase in Line
       rect.start_row = state->pos.row;
       rect.end_row   = state->pos.row + 1;
 
@@ -5141,7 +5141,7 @@ on_csi(
 
       break;
 
-   case 0x4c: // IL - ECMA-48 8.3.67
+   case 0x4c: //IL - ECMA-48 8.3.67
       count = CSI_ARG_COUNT(args[0]);
 
       if (!is_cursor_in_scrollregion(state))
@@ -5156,7 +5156,7 @@ on_csi(
 
       break;
 
-   case 0x4d: // DL - ECMA-48 8.3.32
+   case 0x4d: //DL - ECMA-48 8.3.32
       count = CSI_ARG_COUNT(args[0]);
 
       if (!is_cursor_in_scrollregion(state))
@@ -5171,7 +5171,7 @@ on_csi(
 
       break;
 
-   case 0x50: // DCH - ECMA-48 8.3.26
+   case 0x50: //DCH - ECMA-48 8.3.26
       count = CSI_ARG_COUNT(args[0]);
 
       if (!is_cursor_in_scrollregion(state))
@@ -5189,7 +5189,7 @@ on_csi(
 
       break;
 
-   case 0x53: // SU - ECMA-48 8.3.147
+   case 0x53: //SU - ECMA-48 8.3.147
       count = CSI_ARG_COUNT(args[0]);
 
       rect.start_row = state->scrollregion_top;
@@ -5201,7 +5201,7 @@ on_csi(
 
       break;
 
-   case 0x54: // SD - ECMA-48 8.3.113
+   case 0x54: //SD - ECMA-48 8.3.113
       count = CSI_ARG_COUNT(args[0]);
 
       rect.start_row = state->scrollregion_top;
@@ -5213,7 +5213,7 @@ on_csi(
 
       break;
 
-   case 0x58: // ECH - ECMA-48 8.3.38
+   case 0x58: //ECH - ECMA-48 8.3.38
       count = CSI_ARG_COUNT(args[0]);
 
       rect.start_row = state->pos.row;
@@ -5225,24 +5225,24 @@ on_csi(
       stateErase(state, rect);
       break;
 
-   case 0x5a: // CBT - ECMA-48 8.3.7
+   case 0x5a: //CBT - ECMA-48 8.3.7
       count = CSI_ARG_COUNT(args[0]);
       tab(state, count, -1);
       break;
 
-   case 0x60: // HPA - ECMA-48 8.3.57
+   case 0x60: //HPA - ECMA-48 8.3.57
       col = CSI_ARG_OR(args[0], 1);
       state->pos.col = col-1;
       state->at_phantom = 0;
       break;
 
-   case 0x61: // HPR - ECMA-48 8.3.59
+   case 0x61: //HPR - ECMA-48 8.3.59
       count = CSI_ARG_COUNT(args[0]);
       state->pos.col += count;
       state->at_phantom = 0;
       break;
 
-   case 0x62: { // REP - ECMA-48 8.3.103
+   case 0x62: { //REP - ECMA-48 8.3.103
       const Unt row_width = THISROWWIDTH(state);
       count = CSI_ARG_COUNT(args[0]);
       col = state->pos.col + count;
@@ -5258,19 +5258,19 @@ on_csi(
       break;
    }
 
-   case 0x63: // DA - ECMA-48 8.3.24
+   case 0x63: //DA - ECMA-48 8.3.24
       val = CSI_ARG_OR(args[0], 0);
       if (val == 0)
-        // DEC VT100 response
+        //DEC VT100 response
         vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, "?1;2c");
       break;
 
-   case LEADER('>', 0x63): // DEC secondary Device Attributes
-      // This returns xterm version number 100.
+   case LEADER('>', 0x63): //DEC secondary Device Attributes
+      //This returns xterm version number 100.
       vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, ">%d;%d;%dc", 0, 100, 0);
       break;
 
-   case 0x64: // VPA - ECMA-48 8.3.158
+   case 0x64: //VPA - ECMA-48 8.3.158
       row = CSI_ARG_OR(args[0], 1);
       state->pos.row = row-1;
       if (state->mode.origin)
@@ -5278,16 +5278,16 @@ on_csi(
       state->at_phantom = 0;
       break;
 
-   case 0x65: // VPR - ECMA-48 8.3.160
+   case 0x65: //VPR - ECMA-48 8.3.160
       count = CSI_ARG_COUNT(args[0]);
       state->pos.row += count;
       state->at_phantom = 0;
       break;
 
-   case 0x66: // HVP - ECMA-48 8.3.63
+   case 0x66: //HVP - ECMA-48 8.3.63
       row = CSI_ARG_OR(args[0], 1);
       col = argcount < 2 || CSI_ARG_IS_MISSING(args[1]) ? 1 : CSI_ARG(args[1]);
-      // zero-based
+      //zero-based
       state->pos.row = row-1;
       state->pos.col = col-1;
       if (state->mode.origin) {
@@ -5297,7 +5297,7 @@ on_csi(
       state->at_phantom = 0;
       break;
 
-   case 0x67: // TBC - ECMA-48 8.3.154
+   case 0x67: //TBC - ECMA-48 8.3.154
       val = CSI_ARG_OR(args[0], 0);
 
       switch(val) {
@@ -5313,46 +5313,46 @@ on_csi(
       case 2:
       case 4:
          break;
-         // TODO: 1, 2 and 4 aren't meaningful yet without line tab stops
+         //TODO: 1, 2 and 4 aren't meaningful yet without line tab stops
       default:
          return 0;
       }
       break;
 
-   case 0x68: // SM - ECMA-48 8.3.125
+   case 0x68: //SM - ECMA-48 8.3.125
       if (!CSI_ARG_IS_MISSING(args[0]))
          set_mode(state, CSI_ARG(args[0]), 1);
       break;
 
-   case LEADER('?', 0x68): // DEC private mode set
+   case LEADER('?', 0x68): //DEC private mode set
       break;
 
-   case 0x6a: // HPB - ECMA-48 8.3.58
+   case 0x6a: //HPB - ECMA-48 8.3.58
       count = CSI_ARG_COUNT(args[0]);
       state->pos.col -= count;
       state->at_phantom = 0;
       break;
 
-   case 0x6b: // VPB - ECMA-48 8.3.159
+   case 0x6b: //VPB - ECMA-48 8.3.159
       count = CSI_ARG_COUNT(args[0]);
       state->pos.row -= count;
       state->at_phantom = 0;
       break;
 
-   case 0x6c: // RM - ECMA-48 8.3.106
+   case 0x6c: //RM - ECMA-48 8.3.106
       if (!CSI_ARG_IS_MISSING(args[0]))
          set_mode(state, CSI_ARG(args[0]), 0);
       break;
 
-   case LEADER('?', 0x6c): // DEC private mode reset
+   case LEADER('?', 0x6c): //DEC private mode reset
       break;
 
-   case 0x6d: // SGR - ECMA-48 8.3.117
+   case 0x6d: //SGR - ECMA-48 8.3.117
       vterm_state_setpen(state, args, argcount);
       break;
 
-   case LEADER('?', 0x6d): // DECSGR and XTQMODKEYS
-      // CSI ? 4 m  XTQMODKEYS: request modifyOtherKeys level
+   case LEADER('?', 0x6d): //DECSGR and XTQMODKEYS
+      //CSI ? 4 m  XTQMODKEYS: request modifyOtherKeys level
       if (argcount == 1 && CSI_ARG(args[0]) == 4) {
          vterm_push_output_sprintf_ctrl(
                state->vt, C1_CSI, ">4;%dm", state->mode.modify_other_keys ? 2 : 0
@@ -5365,15 +5365,15 @@ on_csi(
       for(int argi = 0; argi < argcount; argi++) {
          long arg;
          switch(arg = CSI_ARG(args[argi])) {
-         case 4: // Superscript on
+         case 4: //Superscript on
             arg = 73;
             vterm_state_setpen(state, &arg, 1);
             break;
-         case 5: // Subscript on
+         case 5: //Subscript on
             arg = 74;
             vterm_state_setpen(state, &arg, 1);
             break;
-         case 24: // Super+subscript off
+         case 24: //Super+subscript off
             arg = 75;
             vterm_state_setpen(state, &arg, 1);
             break;
@@ -5381,29 +5381,29 @@ on_csi(
       }
       break;
 
-   case LEADER('>', 0x6d): // CSI > 4 ; Pv m   xterm resource modifyOtherKeys
+   case LEADER('>', 0x6d): //CSI > 4 ; Pv m   xterm resource modifyOtherKeys
       if (argcount == 2 && CSI_ARG(args[0]) == 4) {
-         // can't have both modify_other_keys and kitty_keyboard
+         //can't have both modify_other_keys and kitty_keyboard
          state->mode.kitty_keyboard = 0;
          state->mode.modify_other_keys = CSI_ARG(args[1]) == 2;
       }
       break;
 
-   case LEADER('>', 0x75): // CSI > 1 u  enable kitty keyboard protocol
+   case LEADER('>', 0x75): //CSI > 1 u  enable kitty keyboard protocol
       if (argcount == 1 && CSI_ARG(args[0]) == 1) {
-         // can't have both modify_other_keys and kitty_keyboard
+         //can't have both modify_other_keys and kitty_keyboard
          state->mode.modify_other_keys = 0;
 
          state->mode.kitty_keyboard = 1;
       }
       break;
 
-   case LEADER('<', 0x75): // CSI < u  disable kitty keyboard protocol
+   case LEADER('<', 0x75): //CSI < u  disable kitty keyboard protocol
       if (argcount <= 1)
          state->mode.kitty_keyboard = 0;
       break;
 
-   case LEADER('?', 0x75): // CSI ? u  request kitty keyboard protocol state
+   case LEADER('?', 0x75): //CSI ? u  request kitty keyboard protocol state
       if (argcount <= 1)
          //TODO: this only uses the values zero and one. The protocol specifies
          //more values, the progressive enhancement flags.
@@ -5411,20 +5411,20 @@ on_csi(
                        state->mode.kitty_keyboard);
       break;
 
-   case 0x6e: // DSR - ECMA-48 8.3.35
-   case LEADER('?', 0x6e): { // DECDSR
+   case 0x6e: //DSR - ECMA-48 8.3.35
+   case LEADER('?', 0x6e): { //DECDSR
       val = CSI_ARG_OR(args[0], 0);
 
       char *qmark = (leader_byte == '?') ? "?" : "";
 
       switch(val) {
       case 0: case 1: case 2: case 3: case 4:
-         // ignore - these are replies
+         //ignore - these are replies
          break;
       case 5:
          vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, "%s0n", qmark);
          break;
-      case 6: // CPR - cursor position report
+      case 6: //CPR - cursor position report
          vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, "%s%d;%dR", qmark, state->pos.row + 1, state->pos.col + 1);
          break;
       }
@@ -5432,7 +5432,7 @@ on_csi(
       }
 
 
-   case INTERMED('!', 0x70): // DECSTR - DEC soft terminal reset
+   case INTERMED('!', 0x70): //DECSTR - DEC soft terminal reset
       vterm_state_reset(state, 0);
       break;
 
@@ -5440,7 +5440,7 @@ on_csi(
       request_dec_mode(state, CSI_ARG(args[0]));
       break;
 
-   case INTERMED(' ', 0x71): // DECSCUSR - DEC set cursor shape
+   case INTERMED(' ', 0x71): //DECSCUSR - DEC set cursor shape
       val = CSI_ARG_OR(args[0], 1);
 
       switch(val) {
@@ -5472,7 +5472,7 @@ on_csi(
 
       break;
 
-   case 0x72: // DECSTBM - DEC custom
+   case 0x72: //DECSTBM - DEC custom
       state->scrollregion_top = CSI_ARG_OR(args[0], 1) - 1;
       state->scrollregion_bottom = argcount < 2 || CSI_ARG_IS_MISSING(args[1]) 
             ? UNT : CSI_ARG(args[1]);
@@ -5483,12 +5483,12 @@ on_csi(
          UBOUND(state->scrollregion_bottom, state->rows);
 
       if (SCROLLREGION_BOTTOM(state) <= state->scrollregion_top) {
-         // Invalid
+         //Invalid
          state->scrollregion_top    = 0;
          state->scrollregion_bottom = UNT;
       }
 
-      // Setting the scrolling region restores the cursor to the home position
+      //Setting the scrolling region restores the cursor to the home position
       state->pos.row = 0;
       state->pos.col = 0;
       if (state->mode.origin) {
@@ -5498,8 +5498,8 @@ on_csi(
 
       break;
 
-   case 0x73: // DECSLRM - DEC custom
-      // Always allow setting these margins, just they won't take effect without DECVSSM
+   case 0x73: //DECSLRM - DEC custom
+      //Always allow setting these margins, just they won't take effect without DECVSSM
       state->scrollregion_left = CSI_ARG_OR(args[0], 1) - 1;
       state->scrollregion_right = argcount < 2 || CSI_ARG_IS_MISSING(args[1]) 
          ? -1 : CSI_ARG(args[1]);
@@ -5511,12 +5511,12 @@ on_csi(
 
       if (state->scrollregion_right < UNT && state->scrollregion_right <= state->scrollregion_left
       ) {
-         // Invalid
+         //Invalid
          state->scrollregion_left  = 0;
          state->scrollregion_right = UNT;
       }
 
-      // Setting the scrolling region restores the cursor to the home position
+      //Setting the scrolling region restores the cursor to the home position
       state->pos.row = 0;
       state->pos.col = 0;
       if (state->mode.origin) {
@@ -5528,7 +5528,7 @@ on_csi(
 
    case 0x74:
       switch(CSI_ARG(args[0])) {
-      case 8: // CSI 8 ; rows ; cols t  set size
+      case 8: //CSI 8 ; rows ; cols t  set size
          if (argcount == 3)
             on_resize(CSI_ARG(args[1]), CSI_ARG(args[2]), state);
          break;
@@ -5538,7 +5538,7 @@ on_csi(
       }
       break;
 
-   case INTERMED('\'', 0x7D): // DECIC
+   case INTERMED('\'', 0x7D): //DECIC
       count = CSI_ARG_COUNT(args[0]);
   
       if (!is_cursor_in_scrollregion(state))
@@ -5553,7 +5553,7 @@ on_csi(
   
       break;
 
-   case INTERMED('\'', 0x7E): // DECDC
+   case INTERMED('\'', 0x7E): //DECDC
       count = CSI_ARG_COUNT(args[0]);
 
       if (!is_cursor_in_scrollregion(state))
@@ -5622,17 +5622,17 @@ on_csi(
 
 //private char
 //base64_one(Byte b) {
-//   if (b < 26)
-//      return 'A' + b;
-//   ei(b < 52)
-//      return 'a' + b - 26;
-//   ei(b < 62)
-//      return '0' + b - 52;
-//   ei(b == 62)
-//      return '+';
-//   ei(b == 63)
-//      return '/';
-//   return 0;
+//  if (b < 26)
+//     return 'A' + b;
+//  ei(b < 52)
+//     return 'a' + b - 26;
+//  ei(b < 62)
+//     return '0' + b - 52;
+//  ei(b == 62)
+//     return '+';
+//  ei(b == 63)
+//     return '/';
+//  return 0;
 //}
 
 private Byte
@@ -5659,7 +5659,7 @@ osc_selection(VTermState* state, VTermStringFragment frag) {
    }
 
    while(!state->tmp.selection.state && frag.len) {
-      // Parse selection parameter
+      //Parse selection parameter
       switch(frag.str[0]) {
       case 'c':
          state->tmp.selection.mask |= VTERM_SELECTION_CLIPBOARD;
@@ -5696,7 +5696,7 @@ osc_selection(VTermState* state, VTermStringFragment frag) {
    }
 
    if (!frag.len) {
-      // Clear selection if we're already finished but didn't do anything
+      //Clear selection if we're already finished but didn't do anything
       if (frag.final && state->selection.callbacks->set) {
         (*state->selection.callbacks->set)(state->tmp.selection.mask, (VTermStringFragment){
                 .str     = NULL,
@@ -5791,10 +5791,10 @@ osc_selection(VTermState* state, VTermStringFragment frag) {
          if (!frag.len || (state->selection.buflen - bufcur) < 3) {
             if (bufcur) {
                VTermStringFragment setfrag = {
-                     state->selection.buffer, // str
-                     bufcur, // len
-                     state->tmp.selection.state == SELECTION_SET_INITIAL, // initial
-                     frag.final && !frag.len // final
+                     state->selection.buffer, //str
+                     bufcur, //len
+                     state->tmp.selection.state == SELECTION_SET_INITIAL, //initial
+                     frag.final && !frag.len //final
                };
                (*state->selection.callbacks->set)(state->tmp.selection.mask, setfrag, state->selection.user);
                state->tmp.selection.state = SELECTION_SET;
@@ -5869,7 +5869,7 @@ request_status_string(VTermState* state, VTermStringFragment frag) {
 
    switch(tmp[0] | tmp[1]<<8 | tmp[2]<<16) {
    case 'm': {
-      // Query SGR
+      //Query SGR
       long args[20];
       int const argCnt = vterm_state_getpen(state, args, sizeof(args)/sizeof(args[0]));
       Unt cur = 0;
@@ -5900,20 +5900,20 @@ request_status_string(VTermState* state, VTermStringFragment frag) {
    }
 
    case 'r':
-      // Query DECSTBM
+      //Query DECSTBM
       vterm_push_output_sprintf_str(vt, C1_DCS, true,
           "1$r%d;%dr", state->scrollregion_top + 1, SCROLLREGION_BOTTOM(state));
       return;
 
    case 's':
-      // Query DECSLRM
+      //Query DECSLRM
       vterm_push_output_sprintf_str(vt, C1_DCS, true,
           "1$r%d;%ds", SCROLLREGION_LEFT(state)+1, SCROLLREGION_RIGHT(state)
       );
       return;
 
    case ' '|('q'<<8): {
-      // Query DECSCUSR
+      //Query DECSCUSR
       int reply;
       switch(state->mode.cursor_shape) {
       case VTERM_PROP_CURSORSHAPE_BLOCK:     reply = 2; break;
@@ -5953,7 +5953,7 @@ on_apc(VTermStringFragment frag, void *user) {
    if (state->fallbacks && state->fallbacks->apc && (*state->fallbacks->apc)(frag, state->fbdata))
       return 1;
 
-   // No DEBUG_LOG because all APCs are unhandled
+   //No DEBUG_LOG because all APCs are unhandled
    return 0;
 }
 
@@ -5964,7 +5964,7 @@ on_pm(VTermStringFragment frag, void* user) {
    if (state->fallbacks && state->fallbacks->pm && (*state->fallbacks->pm)(frag, state->fbdata))
       return 1;
 
-   // No DEBUG_LOG because all PMs are unhandled
+   //No DEBUG_LOG because all PMs are unhandled
    return 0;
 }
 
@@ -5975,11 +5975,11 @@ on_sos(VTermStringFragment frag, void* user) {
    if (state->fallbacks && state->fallbacks->sos && (*state->fallbacks->sos)(frag, state->fbdata))
       return 1;
 
-   // No DEBUG_LOG because all SOSs are unhandled
+   //No DEBUG_LOG because all SOSs are unhandled
    return 0;
 }
 
-// Return true if success
+//Return true if success
 private Boole
 on_resize(Short rows, Short cols, void* user) {
    VTermState* state = user;
@@ -5988,7 +5988,7 @@ on_resize(Short rows, Short cols, void* user) {
    if (cols != state->cols) {
       CS newtabstops = vterm_allocator_malloc(state->vt, (cols + 7) / 8);
 
-      // TODO: This can all be done much more efficiently bytewise
+      //TODO: This can all be done much more efficiently bytewise
       Unt col;
       for(col = 0; col < state->cols && col < cols; col++) {
          unsigned char mask = 1 << (col & 7);
@@ -6073,16 +6073,16 @@ on_resize(Short rows, Short cols, void* user) {
 }
 
 private VTermParserCallbacks PARSER_TABLE = {
-   on_text, // text
-   on_control, // control
-   on_escape, // escape
-   on_csi, // csi
-   on_osc, // osc
-   on_dcs, // dcs
-   on_apc, // apc
-   on_pm, // pm
-   on_sos, // sos
-   on_resize // resize
+   on_text, //text
+   on_control, //control
+   on_escape, //escape
+   on_csi, //csi
+   on_osc, //osc
+   on_dcs, //dcs
+   on_apc, //apc
+   on_pm, //pm
+   on_sos, //sos
+   on_resize //resize
 };
 
 //Return the existing state or create a new one. Return NULL when out of memory.
@@ -6139,7 +6139,7 @@ vterm_state_reset(VTermState *state, int hard) {
   state->gr_set = 1;
   state->gsingle_set = 0;
 
-  // Initialise the props
+  //Initialise the props
   settermprop_bool(state, VTERM_PROP_CURSORVISIBLE, 1);
   settermprop_bool(state, VTERM_PROP_CURSORBLINK,   1);
   settermprop_int (state, VTERM_PROP_CURSORSHAPE,   VTERM_PROP_CURSORSHAPE_BLOCK);
@@ -6209,7 +6209,7 @@ vterm_state_set_termprop(VTermState* state, VTermProp prop, VTermValue* val) {
    case VTERM_PROP_TITLE:
    case VTERM_PROP_ICONNAME:
    case VTERM_PROP_CURSORCOLOR:
-      // we don't store these, just transparently pass through
+      //we don't store these, just transparently pass through
       return 1;
    case VTERM_PROP_CURSORVISIBLE:
       state->mode.cursor_visible = val->boolean;
@@ -6267,115 +6267,115 @@ vterm_state_focus_out(VTermState *state) {
 
 //private void 
 //vterm_state_set_selection_callbacks(
-//   VTermState *state, const VTermSelectionCallbacks *callbacks, void *user,
-//   char *buffer, Unt buflen
+//  VTermState *state, const VTermSelectionCallbacks *callbacks, void *user,
+//  char *buffer, Unt buflen
 //) {
-//  if (buflen && !buffer)
-//    buffer = vterm_allocator_malloc(state->vt, buflen);
+// if (buflen && !buffer)
+//   buffer = vterm_allocator_malloc(state->vt, buflen);
 //
-//  state->selection.callbacks = callbacks;
-//  state->selection.user      = user;
-//  state->selection.buffer    = buffer;
-//  state->selection.buflen    = buflen;
+// state->selection.callbacks = callbacks;
+// state->selection.user      = user;
+// state->selection.buffer    = buffer;
+// state->selection.buflen    = buflen;
 //}
 
 //private void
 //vterm_state_send_selection(VTermState *state, VTermSelectionMask mask, VTermStringFragment frag) {
-//  VTerm *vt = state->vt;
+// VTerm *vt = state->vt;
 //
-//  if (frag.initial) {
-//    // TODO: support sending more than one mask bit
-//    static char selection_chars[] = "cpqs";
-//    int idx;
-//    for(idx = 0; idx < 4; idx++)
-//      if (mask & (1 << idx))
-//        break;
+// if (frag.initial) {
+//   // TODO: support sending more than one mask bit
+//   static char selection_chars[] = "cpqs";
+//   int idx;
+//   for(idx = 0; idx < 4; idx++)
+//     if (mask & (1 << idx))
+//       break;
 //
-//    vterm_push_output_sprintf_str(vt, C1_OSC, false, "52;%c;", selection_chars[idx]);
+//   vterm_push_output_sprintf_str(vt, C1_OSC, false, "52;%c;", selection_chars[idx]);
 //
-//    state->tmp.selection.sendpartial = 0;
+//   state->tmp.selection.sendpartial = 0;
+// }
+//
+//  if (frag.len) {
+//     Unt bufcur = 0;
+//     char *buffer = state->selection.buffer;
+//
+//     uint32_t x = 0;
+//     int n = 0;
+//
+//     if (state->tmp.selection.sendpartial) {
+//        n = state->tmp.selection.sendpartial >> 24;
+//        x = state->tmp.selection.sendpartial & 0xFFFFFF;
+//
+//        state->tmp.selection.sendpartial = 0;
+//     }
+//
+//     while((state->selection.buflen - bufcur) >= 4 && frag.len) {
+//        x = (x << 8) | frag.str[0];
+//        n++;
+//        frag.str++, frag.len--;
+//
+//        if (n == 3) {
+//           buffer[0] = base64_one((x >> 18) & 0x3F);
+//           buffer[1] = base64_one((x >> 12) & 0x3F);
+//           buffer[2] = base64_one((x >>  6) & 0x3F);
+//           buffer[3] = base64_one((x >>  0) & 0x3F);
+//
+//           buffer += 4, bufcur += 4;
+//           x = 0;
+//           n = 0;
+//        }
+//
+//        if (!frag.len || (state->selection.buflen - bufcur) < 4) {
+//           if (bufcur)
+//              vterm_push_output_bytes(vt, state->selection.buffer, bufcur);
+//
+//           buffer = state->selection.buffer;
+//           bufcur = 0;
+//        }
+//     }
+//
+//     if (n)
+//        state->tmp.selection.sendpartial = (n << 24) | x;
 //  }
 //
-//   if (frag.len) {
-//      Unt bufcur = 0;
-//      char *buffer = state->selection.buffer;
-//
-//      uint32_t x = 0;
-//      int n = 0;
-//
-//      if (state->tmp.selection.sendpartial) {
-//         n = state->tmp.selection.sendpartial >> 24;
-//         x = state->tmp.selection.sendpartial & 0xFFFFFF;
-//
-//         state->tmp.selection.sendpartial = 0;
-//      }
-//
-//      while((state->selection.buflen - bufcur) >= 4 && frag.len) {
-//         x = (x << 8) | frag.str[0];
-//         n++;
-//         frag.str++, frag.len--;
-//
-//         if (n == 3) {
-//            buffer[0] = base64_one((x >> 18) & 0x3F);
-//            buffer[1] = base64_one((x >> 12) & 0x3F);
-//            buffer[2] = base64_one((x >>  6) & 0x3F);
-//            buffer[3] = base64_one((x >>  0) & 0x3F);
-//
-//            buffer += 4, bufcur += 4;
-//            x = 0;
-//            n = 0;
-//         }
-//
-//         if (!frag.len || (state->selection.buflen - bufcur) < 4) {
-//            if (bufcur)
-//               vterm_push_output_bytes(vt, state->selection.buffer, bufcur);
-//
-//            buffer = state->selection.buffer;
-//            bufcur = 0;
-//         }
-//      }
-//
-//      if (n)
-//         state->tmp.selection.sendpartial = (n << 24) | x;
-//   }
-//
-//   if (frag.final) {
-//      if (state->tmp.selection.sendpartial) {
-//         int n      = state->tmp.selection.sendpartial >> 24;
-//         uint32_t x = state->tmp.selection.sendpartial & 0xFFFFFF;
-//         char *buffer = state->selection.buffer;
-//  
-//         // n is either 1 or 2 now
-//         x <<= (n == 1) ? 16 : 8;
-//  
-//         buffer[0] = base64_one((x >> 18) & 0x3F);
-//         buffer[1] = base64_one((x >> 12) & 0x3F);
-//         buffer[2] = (n == 1) ? '=' : base64_one((x >>  6) & 0x3F);
-//         buffer[3] = '=';
-//  
-//         vterm_push_output_sprintf_str(vt, 0, true, "%.*s", 4, buffer);
-//     } else
-//         vterm_push_output_sprintf_str(vt, 0, true, "");
-//   }
+//  if (frag.final) {
+//     if (state->tmp.selection.sendpartial) {
+//        int n      = state->tmp.selection.sendpartial >> 24;
+//        uint32_t x = state->tmp.selection.sendpartial & 0xFFFFFF;
+//        char *buffer = state->selection.buffer;
+// 
+//        // n is either 1 or 2 now
+//        x <<= (n == 1) ? 16 : 8;
+// 
+//        buffer[0] = base64_one((x >> 18) & 0x3F);
+//        buffer[1] = base64_one((x >> 12) & 0x3F);
+//        buffer[2] = (n == 1) ? '=' : base64_one((x >>  6) & 0x3F);
+//        buffer[3] = '=';
+// 
+//        vterm_push_output_sprintf_str(vt, 0, true, "%.*s", 4, buffer);
+//    } else
+//        vterm_push_output_sprintf_str(vt, 0, true, "");
+//  }
 //}
 
 //}}}
 //}}}
 //{{{auxiliary functions
 
-// flags for startSubterminal()
+//flags for startSubterminal()
 #define TERM_START_NOJOB   1
 #define TERM_START_FORCEIT 2
 #define TERM_START_SYSTEM  4
 
 typedef struct sb_line_S {
-   Unt cols;   // can differ per line
-   Arr(CellDeco) sb_cells;   // allocated
-   CellDeco sb_fillDeco;   // for short line
-   CS sb_text;   // for scrollbackPostponed
+   Unt cols;   //can differ per line
+   Arr(CellDeco) sb_cells;   //allocated
+   CellDeco sb_fillDeco;   //for short line
+   CS sb_text;   //for scrollbackPostponed
 } ScrollbackLine;
 
-// typedef Terminal in eegl.h@@structs
+//typedef Terminal in eegl.h@@structs
 struct Terminal {
    Terminal* next;
 
@@ -6383,75 +6383,75 @@ struct Terminal {
    Job* job;
    Book* book;
 
-   // Set when setting the size of a vterm, reset after redrawing.
+   //Set when setting the size of a vterm, reset after redrawing.
    int vterm_size_changed;
 
-   int isNormalMode; // true: Terminal-Normal mode
+   int isNormalMode; //true: Terminal-Normal mode
    int isChannelClosing;
    int isChannelClosed;
-   int isChannelRecentlyClosed; // still need to handle tl_finish
+   int isChannelRecentlyClosed; //still need to handle tl_finish
 
    int tl_finish;
 #define TL_FINISH_UNSET   ZERO
-#define TL_FINISH_CLOSE     'c'   // ++close or :terminal without argument
-#define TL_FINISH_NOCLOSE   'n'   // ++noclose
-#define TL_FINISH_OPEN      'o'   // ++open
+#define TL_FINISH_CLOSE     'c'   //++close or :terminal without argument
+#define TL_FINISH_NOCLOSE   'n'   //++noclose
+#define TL_FINISH_OPEN      'o'   //++open
    CS openComm;
    CS tl_eof_chars;
-   CS tl_api;   // prefix for terminal API function
+   CS tl_api;   //prefix for terminal API function
 
-   CS tl_arg0_cmd;   // To format the status bar
+   CS tl_arg0_cmd;   //To format the status bar
 
    CS command;
    CS tl_kill;
 
-   // last known vterm size
+   //last known vterm size
    Unt rows;
    Unt cols;
 
-   CS title; // NULL or allocated
-   CS tl_status_text; // NULL or allocated
+   CS title; //NULL or allocated
+   CS tl_status_text; //NULL or allocated
 
-   // Range of screen rows to update.  Zero based.
-   int dirtyRowStart; // MAX_ROW if nothing dirty
-   int dirtyRowEnd;   // row below last one to update
-   Boole dirtySnapshot;  // text updated after making snapshot
+   //Range of screen rows to update.  Zero based.
+   int dirtyRowStart; //MAX_ROW if nothing dirty
+   int dirtyRowEnd;   //row below last one to update
+   Boole dirtySnapshot;  //text updated after making snapshot
    Boole timerSet;
    ProfTime timerDue;
-   Unt postponedScroll;   // to be scrolled up
+   Unt postponedScroll;   //to be scrolled up
 
    ArrayList scrollback;
    int scrollbackScrolled;
    ArrayList scrollbackPostponed;
 
-   CS hiliteName; // replaces "Terminal"; allocated
+   CS hiliteName; //replaces "Terminal"; allocated
 
    CellDeco cellDeco;
 
-   LineNr topDiffRows;   // rows of top diff file or zero
-   LineNr bottDiffRows;   // rows of bottom diff file
+   LineNr topDiffRows;   //rows of top diff file or zero
+   LineNr bottDiffRows;   //rows of bottom diff file
 
    VTermPos   cursorPos;
    int tl_cursor_visible;
    int tl_cursor_blink;
-   int tl_cursor_shape;  // 1: block, 2: underline, 3: bar
-   Byte* tl_cursor_color; // NULL or allocated
+   int tl_cursor_shape;  //1: block, 2: underline, 3: bar
+   Byte* tl_cursor_color; //NULL or allocated
 
-   Ulong* palette; // array of 16 colors specified by startSubterminal, can be NULL
+   Ulong* palette; //array of 16 colors specified by startSubterminal, can be NULL
    int tl_using_altscreen;
-   ArrayList oscBuilder;       // incomplete OSC string
+   ArrayList oscBuilder;       //incomplete OSC string
 };
 
-#define TMODE_ONCE 1       // CTRL-\ CTRL-N used
-#define TMODE_LOOP 2       // CTRL-W N used
+#define TMODE_ONCE 1       //CTRL-\ CTRL-N used
+#define TMODE_LOOP 2       //CTRL-W N used
 
-// List of all active terminals.
+//List of all active terminals.
 private Terminal *fstTermP = NULL;
 
-// Terminal active in terminal_loop().
+//Terminal active in terminal_loop().
 private Terminal *in_terminal_loop = NULL;
 
-#define MAX_ROW 999999       // used for dirtyRowEnd to update all rows
+#define MAX_ROW 999999       //used for dirtyRowEnd to update all rows
 #define KEY_BUF_LEN 200
 
 #define FOR_ALL_TERMS(term)   \
@@ -6466,12 +6466,12 @@ private void term_free_vterm(Terminal *term);
 
 private void handle_postponed_scrollback(Terminal *term);
 
-// The character that we know (or assume) that the terminal expects for the
-// backspace key.
+//The character that we know (or assume) that the terminal expects for the
+//backspace key.
 private int term_backspace_char = BS;
 
-// Store the last set and the desired cursor properties, so that we only update
-// them when needed.  Doing it unnecessary may result in flicker.
+//Store the last set and the desired cursor properties, so that we only update
+//them when needed.  Doing it unnecessary may result in flicker.
 private CS last_set_cursor_color = NULL;
 private CS desired_cursor_color = NULL;
 private int   last_set_cursor_shape = -1;
@@ -6488,7 +6488,7 @@ cursor_color_equal(CS lhs_color, CS rhs_color) {
 
 private void
 cursor_color_copy(OUT CS* to_color, CS from_color) {
-   // Avoid a free & alloc if the value is already right.
+   //Avoid a free & alloc if the value is already right.
    if (cursor_color_equal(*to_color, from_color))
       return;
    eeglFree(*to_color);
@@ -6501,9 +6501,9 @@ cursor_color_get(CS color) {
 }
 
 
-// Parse 'termwinsize' and set "rows" and "cols" for the terminal size in the current portal.
-// Set "rows" and/or "cols" to 0 when it should follow the portal size.
-// Return true if the size is the minimum size: "24*80".
+//Parse 'termwinsize' and set "rows" and "cols" for the terminal size in the current portal.
+//Set "rows" and/or "cols" to 0 when it should follow the portal size.
+//Return true if the size is the minimum size: "24*80".
 private Boole
 parse_termwinsize(Portal *po, OUT Unt* rows, OUT Unt* cols) {
 
@@ -6514,7 +6514,7 @@ parse_termwinsize(Portal *po, OUT Unt* rows, OUT Unt* cols) {
 
    CS p = firstOccurrence(po->o.termWinSize, 'x');
 
-   // Syntax of value was already checked when it's set.
+   //Syntax of value was already checked when it's set.
    Boole minsize = false;
    if (!p) {
       minsize = true;
@@ -6529,7 +6529,7 @@ parse_termwinsize(Portal *po, OUT Unt* rows, OUT Unt* cols) {
    return minsize;
 }
 
-// Determine the terminal size from 'termwinsize' and the current portal.
+//Determine the terminal size from 'termwinsize' and the current portal.
 private void
 set_term_and_win_size(Terminal *term, JobOptions *opt) {
 
@@ -6569,7 +6569,7 @@ set_term_and_win_size(Terminal *term, JobOptions *opt) {
    }
 }
 
-// Initialize job options for a terminal job. Caller may overrule some of them.
+//Initialize job options for a terminal job. Caller may overrule some of them.
 pub void
 init_job_options(JobOptions *opt) {
    CLEAR_POINTER(opt);
@@ -6580,11 +6580,11 @@ init_job_options(JobOptions *opt) {
    opt->set = JO_MODE | JO_OUT_MODE | JO_ERR_MODE;
 }
 
-// Set job options mandatory for a terminal job.
+//Set job options mandatory for a terminal job.
 private void
 setup_job_options(JobOptions *opt, int rows, int cols) {
    if (!(opt->set & JO_OUT_IO)) {
-      // Connect stdout to the terminal.
+      //Connect stdout to the terminal.
       opt->ioMode[PART_OUT] = JIO_BUFFER;
       opt->ioText[PART_OUT] = curBook->fiNum;
       opt->jo_modifiable[PART_OUT] = 0;
@@ -6592,7 +6592,7 @@ setup_job_options(JobOptions *opt, int rows, int cols) {
    }
 
    if (!(opt->set & JO_ERR_IO)) {
-      // Connect stderr to the terminal.
+      //Connect stderr to the terminal.
       opt->ioMode[PART_ERR] = JIO_BUFFER;
       opt->ioText[PART_ERR] = curBook->fiNum;
       opt->jo_modifiable[PART_ERR] = 0;
@@ -6613,14 +6613,14 @@ mch_check_messages(void) {
 }
 
 
-// Flush messages on channels.
+//Flush messages on channels.
 private void
 term_flush_messages(void) {
    mch_check_messages();
    parse_queued_messages();
 }
 
-// Close a terminal book (and its portal). Used when creating the terminal fails.
+//Close a terminal book (and its portal). Used when creating the terminal fails.
 private void
 closeFailedTerminalBook(Book* book, Book* old_curBook) {
    free_terminal(book);
@@ -6632,7 +6632,7 @@ closeFailedTerminalBook(Book* book, Book* old_curBook) {
    }
    CHECK_CURBOOK;
 
-   // Wiping out the book will also close the portal and call free_terminal().
+   //Wiping out the book will also close the portal and call free_terminal().
    bookDo(DOBOOK_WIPE, DOBOOK_FIRST, FORWARD, book->fiNum, DOBOOK_FORCEIT);
 }
 
@@ -6646,7 +6646,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
    Book* curBookSaved = NULL; 
    Book* newBook;
    int vertical = opt->vertical || (commModifierG.cmod_split & WSP_VERT);
-   JobOptions orig_opt;  // only partly filled
+   JobOptions orig_opt;  //only partly filled
    Pos save_cursor;
 
    if (commPortTypeG != 0) {
@@ -6678,7 +6678,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
    setpcmark();
    CLEAR_FIELD(splitInvo);
    if (opt->curPor) {
-      // Create a new buffer in the current portal.
+      //Create a new buffer in the current portal.
       if (startEditingFile(
               0, NULL, NULL, OUT &splitInvo, ECMD_ONE,
               ECMD_HIDE + ((flags & TERM_START_FORCEIT) ? ECMD_FORCEIT : 0), curPor
@@ -6724,7 +6724,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
       if (cmod_split_modified)
          commModifierG.cmod_split &= ~WSP_VERT;
       if (curPor == old_curPor) {
-         // split failed
+         //split failed
          eeglFree(term);
          return NULL;
       }
@@ -6733,14 +6733,14 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
    curBook->term = term;
 
    if (!opt->jo_hidden) {
-      // Only one size was taken care of with :new, do the other one. With "curPor" both needed
+      //Only one size was taken care of with :new, do the other one. With "curPor" both needed
       if (opt->jo_term_rows > 0 && (opt->curPor || vertical))
           portSetHeight(opt->jo_term_rows, curPor);
       if (opt->jo_term_cols > 0 && (opt->curPor || !vertical))
           portSetWidth(opt->jo_term_cols, curPor);
    }
 
-   // Link the new terminal in the list of active terminals.
+   //Link the new terminal in the list of active terminals.
    term->next = fstTermP;
    fstTermP = term;
 
@@ -6811,7 +6811,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
    if (flags & TERM_START_NOJOB)
       return curBook;
 
-   // Remember the command for the session file.
+   //Remember the command for the session file.
    if (opt->jo_term_norestore || argv->len > 0)
       term->command = copyStr(S"NONE");
    ei (argvar->tag == VAR_STRING) {
@@ -6853,7 +6853,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
    if (opt->set1 & JO2_TERM_HIGHLIGHT)
       term->hiliteName = copyStr(opt->jo_term_highlight);
 
-   // System dependent: setup the vterm and maybe start the job in it.
+   //System dependent: setup the vterm and maybe start the job in it.
    int res;
    if (argv->len == 0 && argvar->tag == VAR_STRING && argvar->string && eq(argvar->string, S"NONE"))
       res = create_pty_only(term, opt);
@@ -6862,7 +6862,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
 
    newBook = curBook;
    if (res == OK) {
-      // Get and remember the size we ended up with.  Update the pty.
+      //Get and remember the size we ended up with.  Update the pty.
       vterm_get_size(term->vterm, &term->rows, &term->cols);
       term_report_winsize(term, term->rows, term->cols);
 
@@ -6877,7 +6877,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
          curPor->cursor = save_cursor;
          ++curBook->countPortals;
       } ei (vgetcBusyG || timer_busy || input_busy) {
-         // When waiting for input need to return and possibly end up in terminal_loop() instead
+         //When waiting for input need to return and possibly end up in terminal_loop() instead
          Byte ignore[4] = {K_SPECIAL, KS_EXTRA, KE_IGNORE, ZERO};
          insertIntoTypebuf(ignore, REMAP_NONE, 0, true, false);
          typebuf_was_filled = true;
@@ -6893,7 +6893,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
    return newBook;
 }
 
-// ":terminal": open a terminal portal and execute a job in it.
+//":terminal": open a terminal portal and execute a job in it.
 pub void
 c_terminal(Invocation* invo) {
    Var argvar[2];
@@ -6914,7 +6914,7 @@ c_terminal(Invocation* invo) {
             ep = NULL;
       }
 
-// Note: Keep this in sync with get_terminaloname.
+//Note: Keep this in sync with get_terminaloname.
 
 # define OPTARG_HAS(name) ((int)(p - shellComm) == sizeof(name) - 1 \
                 && STRNICMP(shellComm, name, sizeof(name) - 1) == 0)
@@ -6975,13 +6975,13 @@ c_terminal(Invocation* invo) {
       shellComm = skipwhite(p);
    }
    if (*shellComm == ZERO) {
-      // default to close when the shell exits
+      //default to close when the shell exits
       if (opt.jo_term_finish == ZERO)
          opt.jo_term_finish = TL_FINISH_CLOSE;
    }
 
    if (invo->addr_count > 0) {
-      // Write lines from current buffer to the job.
+      //Write lines from current buffer to the job.
       opt.set |= JO_IN_IO | JO_IN_BUF | JO_IN_TOP | JO_IN_BOT;
       opt.ioMode[PART_IN] = JIO_BUFFER;
       opt.ioText[PART_IN] = curBook->fiNum;
@@ -7010,7 +7010,7 @@ theend:
 
 private CS
 get_terminaloname(Expand*, int idx) {
-   // Note: Keep this in sync with c_terminal.
+   //Note: Keep this in sync with c_terminal.
    static CS p_termopt_values[] = { SMAP((CS),
       "close",
       "noclose",
@@ -7034,8 +7034,8 @@ get_terminaloname(Expand*, int idx) {
 
 private CS
 get_termkill_name(Expand*, int idx) {
-   // These are platform-specific values used for job_stop(). They are defined
-   // in each platform's mch_signal_job(). Just use a unified auto-complete list for simplicity.
+   //These are platform-specific values used for job_stop(). They are defined
+   //in each platform's mch_signal_job(). Just use a unified auto-complete list for simplicity.
    static CS p_termkill_values[] = { SMAP((CS),
       "term",
       "hup",
@@ -7050,7 +7050,7 @@ get_termkill_name(Expand*, int idx) {
    return NULL;
 }
 
-// Command-line expansion for :terminal [options]
+//Command-line expansion for :terminal [options]
 pub int
 expand_terminal_opt(CS pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches) {
    if (xp->input.c > xp->fullInput && *(xp->input.c - 1) == '=') {
@@ -7098,15 +7098,15 @@ term_write_session(FILE* fd, Portal* po, EeSet* terminal_bufs){
 
       EeSetItem* entry = hash_find(terminal_bufs, mbText(id_as_str));
       if (!HASHITEM_EMPTY(entry)) {
-         // we've already opened this terminal buffer
+         //we've already opened this terminal buffer
          if (fprintf(fd, "execute 'buffer ' . s:term_buf_%d", bufnr) < 0)
             return FAIL;
          return put_eol(fd);
       }
    }
 
-   // Create the terminal and run the command. This is not without
-   // risk, but let's assume the user only creates a session when this will be OK.
+   //Create the terminal and run the command. This is not without
+   //risk, but let's assume the user only creates a session when this will be OK.
    if (fprintf(fd, "terminal ++curPor ++cols=%d ++rows=%d ", term->cols, term->rows) < 0)
       return FAIL;
    if (term->command != NULL && fputs((char *)term->command, fd) < 0)
@@ -7127,14 +7127,14 @@ term_write_session(FILE* fd, Portal* po, EeSet* terminal_bufs){
    return put_eol(fd);
 }
 
-// Return true if "buf" has a terminal that should be restored.
+//Return true if "buf" has a terminal that should be restored.
 pub int
 term_should_restore(Book* book) {
    Terminal* term = book->term;
    return term && (term->command == NULL || STRCMP(term->command, "NONE") != 0);
 }
 
-// Free the scrollback buffer for "term".
+//Free the scrollback buffer for "term".
 private void
 free_scrollback(Terminal* term) {
    int i;
@@ -7148,20 +7148,20 @@ free_scrollback(Terminal* term) {
 }
 
 
-// Terminals that need to be freed soon.
+//Terminals that need to be freed soon.
 private Terminal* terminals_to_free = NULL;
 
-// Free a terminal and everything it refers to. Kills the job if there is one.
-// Called when wiping out a buffer. The actual terminal structure is freed later in 
-// free_unused_terminals(), because callbacks may wipe out a buffer while the terminal is still
-// referenced.
+//Free a terminal and everything it refers to. Kills the job if there is one.
+//Called when wiping out a buffer. The actual terminal structure is freed later in 
+//free_unused_terminals(), because callbacks may wipe out a buffer while the terminal is still
+//referenced.
 pub void
 free_terminal(Book* book) {
    Terminal* term = book->term;
    if (!term)
       return;
 
-   // Unlink the terminal form the list of terminals.
+   //Unlink the terminal form the list of terminals.
    if (fstTermP == term)
       fstTermP = term->next;
    else {
@@ -7213,9 +7213,9 @@ free_unused_terminals(void) {
    }
 }
 
-// Get the part that is connected to the tty. Normally this is PART_IN, but
-// when writing buffer lines to the job it can be another. This makes it possible to do 
-// "1,5term vim -".
+//Get the part that is connected to the tty. Normally this is PART_IN, but
+//when writing buffer lines to the job it can be another. This makes it possible to do 
+//"1,5term vim -".
 private ChannelFdKind
 get_tty_part(Terminal* term) {
    ChannelFdKind parts[3] = {PART_IN, PART_OUT, PART_ERR};
@@ -7229,7 +7229,7 @@ get_tty_part(Terminal* term) {
    return PART_IN;
 }
 
-// Read any vterm output and send it on the channel.
+//Read any vterm output and send it on the channel.
 private void
 term_forward_output(Terminal *term) {
    VTerm* vterm = term->vterm;
@@ -7240,7 +7240,7 @@ term_forward_output(Terminal *term) {
       channel_send(chJobGetChannel(term->job), get_tty_part(term), buf, (int)curlen, NULL);
 }
 
-// Write job output "msg[len]" to the vterm.
+//Write job output "msg[len]" to the vterm.
 private void
 term_write_job_output(Terminal* term, CS msg_arg, Unt len_arg) {
    CS msg = msg_arg;
@@ -7249,7 +7249,7 @@ term_write_job_output(Terminal* term, CS msg_arg, Unt len_arg) {
    Unt prevlen = vterm_output_get_buffer_current(vterm);
    Unt limit = p_twsl * term->cols * 3;
 
-   // Limit the length to @termwinscroll * cols * 3 bytes.  Keep the text at the end.
+   //Limit the length to @termwinscroll * cols * 3 bytes.  Keep the text at the end.
    if (len > limit) {
       CS p = msg + len - limit;
 
@@ -7260,11 +7260,11 @@ term_write_job_output(Terminal* term, CS msg_arg, Unt len_arg) {
 
    vterm_input_write(vterm, msg, len);
 
-   // flush vterm buffer when vterm responded to control sequence
+   //flush vterm buffer when vterm responded to control sequence
    if (prevlen != vterm_output_get_buffer_current(vterm))
       term_forward_output(term);
 
-   // this invokes the damage callbacks
+   //this invokes the damage callbacks
    vterm_screen_flush_damage(vterm_obtain_screen(vterm));
 }
 
@@ -7286,10 +7286,10 @@ update_cursor(Terminal *term, int redraw) {
    if (term->isNormalMode)
       return;
    if (!term_job_running(term)) {
-      // avoid the cursor positioned below the last used line
+      //avoid the cursor positioned below the last used line
       setcursor();
    } else {
-      // do not use the portal cursor position
+      //do not use the portal cursor position
       position_cursor(curPor, &curBook->term->cursorPos);
       windgoto(curPor->windowRow + curPor->cursorRow, curPor->windowCol + curPor->cursorCol);
    }
@@ -7300,7 +7300,7 @@ update_cursor(Terminal *term, int redraw) {
    }
 }
 
-// Invoked when "msg" output from a job was received.  Write it to the terminal of "buffer"
+//Invoked when "msg" output from a job was received.  Write it to the terminal of "buffer"
 pub void
 write_to_term(Book *book, CS msg, Channel* channel) {
    Unt   len = STRLEN(msg);
@@ -7315,18 +7315,18 @@ write_to_term(Book *book, CS msg, Channel* channel) {
    cursor_off();
    term_write_job_output(term, msg, len);
 
-   // In Terminal-Normal mode we are displaying the book, not the terminal
-   // contents, thus no screen update is needed.
+   //In Terminal-Normal mode we are displaying the book, not the terminal
+   //contents, thus no screen update is needed.
    if (!term->isNormalMode) {
-      // Don't use drawUpdateScreen() when editing the command line, it gets
-      // cleared.
-      // TODO: only update once in a while.
+      //Don't use drawUpdateScreen() when editing the command line, it gets
+      //cleared.
+      //TODO: only update once in a while.
       ch_log(chJobGetChannel(term->job), "updating screen");
       if (book == curBook && (stateG & MODE_COMMLINE) == 0) {
          drawUpdateScreen(UPD_VALID_NO_UPDATE);
          if (needRedrawTabpanelG) 
              draw_tabpanel();
-         // drawUpdateScreen() can be slow, check the terminal wasn't closed already
+         //drawUpdateScreen() can be slow, check the terminal wasn't closed already
          if (book == curBook && curBook->term != NULL)
             update_cursor(curBook->term, true);
       } else
@@ -7334,7 +7334,7 @@ write_to_term(Book *book, CS msg, Channel* channel) {
    }
 }
 
-// Send a mouse position and click to the vterm
+//Send a mouse position and click to the vterm
 private int
 sendMouse(VTerm *vterm, int button, int pressed) {
    VTermModifier   mod = VTERM_MOD_NONE;
@@ -7354,26 +7354,26 @@ sendMouse(VTerm *vterm, int button, int pressed) {
 private int enter_mouse_col = -1;
 private int enter_mouse_row = -1;
 
-// Handle a mouse click, drag or release. Return true when a mouse event is sent to the terminal.
+//Handle a mouse click, drag or release. Return true when a mouse event is sent to the terminal.
 private int
 handleMouseEvent(VTerm *vterm, Unt key) {
-   // For modeless selection mouse drag and release events are ignored, unless they are preceded 
-   // with a mouse down event
+   //For modeless selection mouse drag and release events are ignored, unless they are preceded 
+   //with a mouse down event
    static Boole ignoreDragRelease = true;
    VTermMouseState mouse_state;
 
    vterm_state_get_mousestate(vterm_obtain_state(vterm), &mouse_state);
    if (mouse_state.flags == 0) {
-      // Terminal is not using the mouse, use modeless selection.
+      //Terminal is not using the mouse, use modeless selection.
       switch (key) {
       case K_LEFTDRAG:
       case K_LEFTRELEASE:
       case K_RIGHTDRAG:
       case K_RIGHTRELEASE:
-         // Ignore drag and release events when the button-down wasn't seen before.
+         //Ignore drag and release events when the button-down wasn't seen before.
          if (ignoreDragRelease && enter_mouse_col < 0)
             break;
-         // FALLTHROUGH
+         //FALLTHROUGH
       case K_LEFTMOUSE:
       case K_RIGHTMOUSE:
          break;
@@ -7404,8 +7404,8 @@ handleMouseEvent(VTerm *vterm, Unt key) {
    return true;
 }
 
-// Convert typed key "c" with modifiers "modmask" into bytes to send to the job.
-// Return the number of bytes in "buf".
+//Convert typed key "c" with modifiers "modmask" into bytes to send to the job.
+//Return the number of bytes in "buf".
 private int
 term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
    VTerm       *vterm = term->vterm;
@@ -7414,9 +7414,9 @@ term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
    int          other = false;
 
    switch (c) {
-   // don't use VTERM_KEY_ENTER, it may do an unwanted conversion
+   //don't use VTERM_KEY_ENTER, it may do an unwanted conversion
 
-   // don't use VTERM_KEY_BACKSPACE, it always becomes 0x7f DEL
+   //don't use VTERM_KEY_BACKSPACE, it always becomes 0x7f DEL
    case K_BS:      c = term_backspace_char; break;
 
    case ESC:      key = VTERM_KEY_ESCAPE; break;
@@ -7457,16 +7457,16 @@ term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
    case K_K7:      key = VTERM_KEY_KP_7; break;
    case K_K8:      key = VTERM_KEY_KP_8; break;
    case K_K9:      key = VTERM_KEY_KP_9; break;
-   case K_KDEL:      key = VTERM_KEY_DEL; break; // TODO
+   case K_KDEL:      key = VTERM_KEY_DEL; break; //TODO
    case K_KDIVIDE:      key = VTERM_KEY_KP_DIVIDE; break;
-   case K_KEND:      key = VTERM_KEY_KP_1; break; // TODO
+   case K_KEND:      key = VTERM_KEY_KP_1; break; //TODO
    case K_KENTER:      key = VTERM_KEY_KP_ENTER; break;
-   case K_KHOME:      key = VTERM_KEY_KP_7; break; // TODO
-   case K_KINS:      key = VTERM_KEY_KP_0; break; // TODO
+   case K_KHOME:      key = VTERM_KEY_KP_7; break; //TODO
+   case K_KINS:      key = VTERM_KEY_KP_0; break; //TODO
    case K_KMINUS:      key = VTERM_KEY_KP_MINUS; break;
    case K_KMULTIPLY:   key = VTERM_KEY_KP_MULT; break;
-   case K_KPAGEDOWN:   key = VTERM_KEY_KP_3; break; // TODO
-   case K_KPAGEUP:      key = VTERM_KEY_KP_9; break; // TODO
+   case K_KPAGEDOWN:   key = VTERM_KEY_KP_3; break; //TODO
+   case K_KPAGEUP:      key = VTERM_KEY_KP_9; break; //TODO
    case K_KPLUS:      key = VTERM_KEY_KP_PLUS; break;
    case K_KPOINT:      key = VTERM_KEY_KP_PERIOD; break;
    case K_LEFT:      key = VTERM_KEY_LEFT; break;
@@ -7537,7 +7537,7 @@ term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
          break;
    }
 
-   // add modifiers for the typed key
+   //add modifiers for the typed key
    if (modmask & MOD_MASK_SHIFT)
       mod |= VTERM_MOD_SHIFT;
    if (modmask & MOD_MASK_CTRL)
@@ -7545,59 +7545,59 @@ term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
    if (modmask & (MOD_MASK_ALT | MOD_MASK_META))
       mod |= VTERM_MOD_ALT;
 
-   // Ctrl-Shift-i may have the key "I" instead of "i", but for the kitty
-   // keyboard protocol should use "i".  Applies to all ascii letters.
+   //Ctrl-Shift-i may have the key "I" instead of "i", but for the kitty
+   //keyboard protocol should use "i".  Applies to all ascii letters.
    if (ASCII_ISUPPER(c)
           && vterm_is_kitty_keyboard(vterm)
           && mod == (VTERM_MOD_CTRL | VTERM_MOD_SHIFT))
       c = TOLOWER_ASC(c);
 
-   // Convert special keys to vterm keys:
-   // - Write keys to vterm: vterm_keyboard_key()
-   // - Write output to channel.
+   //Convert special keys to vterm keys:
+   //- Write keys to vterm: vterm_keyboard_key()
+   //- Write output to channel.
    if (key != VTERM_KEY_NONE)
-      // Special key, let vterm convert it.
+      //Special key, let vterm convert it.
       vterm_keyboard_key(vterm, key, mod);
    ei (!other)
-      // Normal character, let vterm convert it.
+      //Normal character, let vterm convert it.
       vterm_keyboard_unichar(vterm, c, mod);
 
-   // Read back the converted escape sequence.
+   //Read back the converted escape sequence.
    return (int)vterm_output_read(vterm, buf, KEY_BUF_LEN);
 }
 
-// Return true if the job for "term" is still running. If "check_job_status" is true update the 
-// job status. NOTE: "term" may be freed by callbacks.
+//Return true if the job for "term" is still running. If "check_job_status" is true update the 
+//job status. NOTE: "term" may be freed by callbacks.
 private int
 term_job_running_check(Terminal* term, int check_job_status) {
-   // Also consider the job finished when the channel is closed, to avoid a
-   // race condition when updating the title.
+   //Also consider the job finished when the channel is closed, to avoid a
+   //race condition when updating the title.
    if (!term || !term->job || !channel_is_open(chJobGetChannel(term->job)))
       return false;
 
    Job* job = term->job;
 
-   // Careful: Checking the job status may invoke callbacks, which close
-   // the book and terminate "term".  However, "job" will not be freed yet.
+   //Careful: Checking the job status may invoke callbacks, which close
+   //the book and terminate "term".  However, "job" will not be freed yet.
    if (check_job_status)
       job_status(job);
    return (chJobGetStatus(job) == JOB_STARTED
           || (chJobGetChannel(job) && chJobGetChannel(job)->ch_keep_open));
 }
 
-// Return true if the job for "term" is still running.
+//Return true if the job for "term" is still running.
 pub int
 term_job_running(Terminal *term) {
    return term_job_running_check(term, false);
 }
 
-// Return true if the job for "term" is still running, ignoring the job was "NONE".
+//Return true if the job for "term" is still running, ignoring the job was "NONE".
 pub int
 term_job_running_not_none(Terminal *term) {
    return term_job_running(term) && !term_none_open(term);
 }
 
-// Return true if "term" has an active channel and used ":term NONE".
+//Return true if "term" has an active channel and used ":term NONE".
 pub int
 term_none_open(Terminal *term) {
    //Also consider the job finished when the channel is closed, to avoid a
@@ -7608,8 +7608,8 @@ term_none_open(Terminal *term) {
       && chJobGetChannel(term->job)->ch_keep_open;
 }
 
-// Used to confirm whether we would like to kill a terminal. Return OK when the user confirms to 
-// kill it. Return FAIL if the user selects otherwise.
+//Used to confirm whether we would like to kill a terminal. Return OK when the user confirms to 
+//kill it. Return FAIL if the user selects otherwise.
 pub int
 term_confirm_stop(Book* book) {
    Byte buff[DIALOG_MSG_SIZE];
@@ -7622,8 +7622,8 @@ term_confirm_stop(Book* book) {
       return FAIL;
 }
 
-// Used when exiting: kill the job in "book" if so desired. Return OK when the job finished.
-// Return FAIL when the job is still running.
+//Used when exiting: kill the job in "book" if so desired. Return OK when the job finished.
+//Return FAIL when the job is still running.
 pub int
 term_try_stop_job(Book* book) {
    int       count;
@@ -7640,17 +7640,17 @@ term_try_stop_job(Book* book) {
 
    job_stop(book->term->job, NULL, how);
 
-   // wait for up to a second for the job to die
+   //wait for up to a second for the job to die
    for (count = 0; count < 100; ++count) {
       Job *job;
 
-      // book, terminal and job may be cleaned up while waiting
+      //book, terminal and job may be cleaned up while waiting
       if (!bookIsValid(book) || book->term == NULL || book->term->job == NULL)
          return OK;
       job = book->term->job;
 
-      // Call job_status() to update jv_status. It may cause the job to be
-      // cleaned up but it won't be freed.
+      //Call job_status() to update jv_status. It may cause the job to be
+      //cleaned up but it won't be freed.
       job_status(job);
       if (chJobGetStatus(job) >= JOB_ENDED)
          return OK;
@@ -7661,7 +7661,7 @@ term_try_stop_job(Book* book) {
    return FAIL;
 }
 
-// Add the last line of the scrollback buffer to the buffer in the portal.
+//Add the last line of the scrollback buffer to the buffer in the portal.
 private void
 add_scrollback_line_to_buffer(Terminal *term, CS text, Unt len) {
    Book* book = term->book;
@@ -7670,7 +7670,7 @@ add_scrollback_line_to_buffer(Terminal *term, CS text, Unt len) {
 
    memAppendBook(term->book, lnum, text, len + 1, false);
    if (empty) {
-      // Delete the empty line that was in the empty buffer.
+      //Delete the empty line that was in the empty buffer.
       ml_deleteBufLine(book, 1);
    }
 }
@@ -7680,8 +7680,8 @@ equal_celattr(CellDeco *a, CellDeco *b) {
    return a->fg == b->fg && a->bg == b->bg;
 }
 
-// Add an empty scrollback line to "term".  When "lnum" is not zero, add the
-// line at this position.  Otherwise at the end.
+//Add an empty scrollback line to "term".  When "lnum" is not zero, add the
+//line at this position.  Otherwise at the end.
 private int
 add_empty_scrollback(Terminal *term, CellDeco *fillDeco, int lnum){
    if (ga_grow(&term->scrollback, 1) == FAIL)
@@ -7704,8 +7704,8 @@ add_empty_scrollback(Terminal *term, CellDeco *fillDeco, int lnum){
    return OK;
 }
 
-// Remove the terminal contents from the scrollback and the buffer. Used before adding a new 
-// scrollback line or updating the buffer for lines displayed in the terminal.
+//Remove the terminal contents from the scrollback and the buffer. Used before adding a new 
+//scrollback line or updating the buffer for lines displayed in the terminal.
 private void
 cleanup_scrollback(Terminal *term) {
    ScrollbackLine   *line;
@@ -7724,7 +7724,7 @@ cleanup_scrollback(Terminal *term) {
       check_cursor();
 }
 
-// Add the current lines of the terminal to scrollback and to the buffer.
+//Add the current lines of the terminal to scrollback and to the buffer.
 private void
 update_snapshot(Terminal* term) {
    VTermScreen* screen;
@@ -7738,7 +7738,7 @@ update_snapshot(Terminal* term) {
       term->job ? chJobGetChannel(term->job) : null, "Adding terminal portal snapshot to buffer"
    );
 
-   // First remove the lines that were appended before, they might be outdated.
+   //First remove the lines that were appended before, they might be outdated.
    cleanup_scrollback(term);
 
    screen = vterm_obtain_screen(term->vterm);
@@ -7750,14 +7750,14 @@ update_snapshot(Terminal* term) {
             len = pos.col + 1;
             newFillDeco = term->cellDeco;
          } else
-            // Assume the last deco is the filler deco
+            //Assume the last deco is the filler deco
             newFillDeco = cell.deco;
 
       if (len == 0 && equal_celattr(&newFillDeco, &fillDeco))
          ++lines_skipped;
       else {
          while (lines_skipped > 0) {
-            // Line was skipped, add an empty line.
+            //Line was skipped, add an empty line.
             --lines_skipped;
             if (add_empty_scrollback(term, &fillDeco, 0) == OK)
                 add_scrollback_line_to_buffer(term, (CS)"", 0);
@@ -7783,10 +7783,10 @@ update_snapshot(Terminal* term) {
                } else {
                   p[pos.col] = cell.deco;
                   if (width == 2)
-                      // second cell of double-width character has the same decorations.
+                      //second cell of double-width character has the same decorations.
                       p[pos.col + 1] = p[pos.col];
 
-                  // Each character can be up to 6 bytes.
+                  //Each character can be up to 6 bytes.
                   if (ga_grow(&ga, MAX_COMBINED_SYMBOLS * 6) == OK) {
                      int c;
 
@@ -7813,7 +7813,7 @@ update_snapshot(Terminal* term) {
       }
    }
 
-   // Add trailing empty lines.
+   //Add trailing empty lines.
    for (pos.row = term->scrollback.len;
         pos.row < term->scrollbackScrolled + term->cursorPos.row;
         ++pos.row
@@ -7826,9 +7826,9 @@ update_snapshot(Terminal* term) {
    term->timerSet = false;
 }
 
-// Loop over all portals in the current tab, and also curPor, which is not
-// encountered when using a terminal in a popup portal.
-// Return true if "*po" was set to the next portal.
+//Loop over all portals in the current tab, and also curPor, which is not
+//encountered when using a terminal in a popup portal.
+//Return true if "*po" was set to the next portal.
 private int
 forAllPortalsAndCurPort(OUT Portal **po, OUT int *did_curPor) {
    if (!*po)
@@ -7883,8 +7883,8 @@ may_move_terminal_to_buffer(Terminal* term, int redraw) {
    }
 }
 
-// Check if any terminal timer expired.  If so, copy text from the terminal to the buffer.
-// Return the time until the next timer will expire.
+//Check if any terminal timer expired.  If so, copy text from the terminal to the buffer.
+//Return the time until the next timer will expire.
 pub int
 term_check_timers(int next_due_arg, ProfTime *now) {
    Terminal* term;
@@ -7905,7 +7905,7 @@ term_check_timers(int next_due_arg, ProfTime *now) {
    return next_due;
 }
 
-// When "normal_mode" is true set the terminal to Terminal-Normal mode, otherwise end it.
+//When "normal_mode" is true set the terminal to Terminal-Normal mode, otherwise end it.
 private void
 set_terminal_mode(Terminal *term, int normal_mode) {
    term->isNormalMode = normal_mode;
@@ -7915,8 +7915,8 @@ set_terminal_mode(Terminal *term, int normal_mode) {
    EE_CLEAR(term->tl_status_text);
 }
 
-// Called after the job is finished and Terminal mode is not active:
-// Move the vterm contents into the scrollback buffer and free the vterm.
+//Called after the job is finished and Terminal mode is not active:
+//Move the vterm contents into the scrollback buffer and free the vterm.
 private void
 cleanup_vterm(Terminal *term) {
    set_terminal_mode(term, false);
@@ -7925,17 +7925,17 @@ cleanup_vterm(Terminal *term) {
    term_free_vterm(term);
 }
 
-// Switch from Terminal-Job mode to Terminal-Normal mode. Suspend updating the terminal portal.
+//Switch from Terminal-Job mode to Terminal-Normal mode. Suspend updating the terminal portal.
 private void
 term_enter_normal_mode(void) {
    Terminal *term = curBook->term;
 
    set_terminal_mode(term, true);
 
-   // Append the current terminal contents to the buffer.
+   //Append the current terminal contents to the buffer.
    may_move_terminal_to_buffer(term, true);
 
-   // Move the portal cursor to the position of the cursor in the terminal.
+   //Move the portal cursor to the position of the cursor in the terminal.
    curPor->cursor.lnum = term->scrollbackScrolled
                     + term->cursorPos.row + 1;
    check_cursor();
@@ -7943,18 +7943,18 @@ term_enter_normal_mode(void) {
       coladvance(MAXCOL);
    curPor->setCursWant = true;
 
-   // Display the same lines as in the terminal.
+   //Display the same lines as in the terminal.
    curPor->topLine = term->scrollbackScrolled + 1;
 }
 
-// Return true if the current portal contains a terminal and we are in Terminal-Normal mode.
+//Return true if the current portal contains a terminal and we are in Terminal-Normal mode.
 pub int
 term_in_normal_mode(void) {
    Terminal *term = curBook->term;
    return term && term->isNormalMode;
 }
 
-// Switch from Terminal-Normal mode to Terminal-Job mode. Restores updating the terminal portal.
+//Switch from Terminal-Normal mode to Terminal-Job mode. Restores updating the terminal portal.
 pub void
 term_enter_job_mode(void) {
    Terminal   *term = curBook->term;
@@ -7972,15 +7972,15 @@ term_enter_job_mode(void) {
 //key.  However, we may only find out after calling vgetc().  Therefore vgetorpeek() will call 
 //check_no_reduce_keys() to update "no_reduce_keys" before using it.
 typedef enum {
-   NRKS_NONE,   // initial value
-   NRKS_CHECK,  // modify_other_keys was off before calling vgetc()
-   NRKS_SET,    // no_reduce_keys was incremented in term_vgetc() or
-             // check_no_reduce_keys(), must be decremented.
+   NRKS_NONE,   //initial value
+   NRKS_CHECK,  //modify_other_keys was off before calling vgetc()
+   NRKS_SET,    //no_reduce_keys was incremented in term_vgetc() or
+             //check_no_reduce_keys(), must be decremented.
 } reduce_key_state_T;
 
 private reduce_key_state_T  no_reduce_key_state = NRKS_NONE;
 
-// Return true if the term is using modifyOtherKeys level 2 or the kitty keyboard protocol.
+//Return true if the term is using modifyOtherKeys level 2 or the kitty keyboard protocol.
 private int
 vterm_using_key_protocol(void) {
     return curBook->term
@@ -7999,15 +7999,15 @@ check_no_reduce_keys(void) {
       return;
 
    if (vterm_using_key_protocol()) {
-      // "modify_other_keys" or kitty keyboard protocol was enabled while waiting.
+      //"modify_other_keys" or kitty keyboard protocol was enabled while waiting.
       no_reduce_key_state = NRKS_SET;
       ++no_reduce_keys;
    }
 }
 
-// Get a key from the user with terminal mode mappings.
-// Note: while waiting a terminal may be closed and freed if the channel is
-// closed and ++close was used.  This may even happen before we get here.
+//Get a key from the user with terminal mode mappings.
+//Note: while waiting a terminal may be closed and freed if the channel is
+//closed and ++close was used.  This may even happen before we get here.
 private int
 term_vgetc(void) {
    int save_State = stateG;
@@ -8035,15 +8035,15 @@ term_vgetc(void) {
 
 private int   mouse_was_outside = false;
 
-// Send key "c" with modifiers "modmask" to terminal. FAIL when the key needs to be handled in 
-// Normal mode. OK when the key was dropped or sent to the terminal.
+//Send key "c" with modifiers "modmask" to terminal. FAIL when the key needs to be handled in 
+//Normal mode. OK when the key was dropped or sent to the terminal.
 pub int
 send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
    Byte msg[KEY_BUF_LEN];
    Unt len;
    int dragging_outside = false;
 
-   // Catch keys that need to be handled as in Normal mode.
+   //Catch keys that need to be handled as in Normal mode.
    switch (c) {
    case ZERO:
    case K_ZERO:
@@ -8056,7 +8056,7 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
       return FAIL;
 
    case K_IGNORE:
-   case K_CANCEL:  // used for :normal when running out of chars
+   case K_CANCEL:  //used for :normal when running out of chars
       return FAIL;
 
    case K_LEFTDRAG:
@@ -8065,7 +8065,7 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
    case K_X1DRAG:
    case K_X2DRAG:
       dragging_outside = mouse_was_outside;
-      // FALLTHROUGH
+      //FALLTHROUGH
    case K_LEFTMOUSE:
    case K_LEFTMOUSE_NM:
    case K_LEFTRELEASE:
@@ -8097,7 +8097,7 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
          || col >= (int)P_ENDCOL(curPor)
          || dragging_outside
       ) {
-        // click or scroll outside the current portal or on status line or vertical separator
+        //click or scroll outside the current portal or on status line or vertical separator
         if (typed) {
             stuffcharReadbuff(c);
             mouse_was_outside = true;
@@ -8114,16 +8114,16 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
    if (typed)
       mouse_was_outside = false;
 
-   // Convert the typed key to a sequence of bytes for the job.
+   //Convert the typed key to a sequence of bytes for the job.
    len = term_convert_key(term, c, modmask, msg);
    if (len > 0)
-      // TODO: if FAIL is returned, stop?
+      //TODO: if FAIL is returned, stop?
       channel_send(chJobGetChannel(term->job), get_tty_part(term), (CS)msg, (int)len, NULL);
 
    return OK;
 }
 
-// Handle CTRL-W "": send register contents to the job.
+//Handle CTRL-W "": send register contents to the job.
 private void
 term_paste_register(Unt prev_c) {
    Long reglen = 0;
@@ -8135,14 +8135,14 @@ term_paste_register(Unt prev_c) {
    clear_showcmd();
 
    if (!term_use_loop())
-      // job finished while waiting for a character
+      //job finished while waiting for a character
       return;
 
-   // CTRL-W "= prompt for expression to evaluate.
+   //CTRL-W "= prompt for expression to evaluate.
    if (c == '=' && get_expr_register() != '=')
       return;
    if (!term_use_loop())
-      // job finished while waiting for a character
+      //job finished while waiting for a character
       return;
 
    List* l = (List *)get_reg_contents(c, GREG_LIST);
@@ -8168,7 +8168,7 @@ terminal_is_active(void) {
    return in_terminal_loop != NULL;
 }
 
-// May update the shape of the cursor.
+//May update the shape of the cursor.
 private void
 ui_cursor_shape_forced(Boole forced) {
    term_cursor_mode(forced);
@@ -8185,14 +8185,14 @@ may_output_cursor_props(void) {
       last_set_cursor_blink = desired_cursor_blink;
       term_cursor_color(cursor_color_get(desired_cursor_color));
       if (desired_cursor_shape == -1 || desired_cursor_blink == -1)
-         // this will restore the initial cursor style, if possible
+         //this will restore the initial cursor style, if possible
          ui_cursor_shape_forced(true);
       else
          termSetCursorShape(desired_cursor_shape, desired_cursor_blink);
    }
 }
 
-// Set the cursor color and shape, if not last set to these.
+//Set the cursor color and shape, if not last set to these.
 private void
 may_set_cursor_props(Terminal *term) {
    if (in_terminal_loop == term) {
@@ -8203,7 +8203,7 @@ may_set_cursor_props(Terminal *term) {
    }
 }
 
-// Reset the desired cursor properties and restore them when needed.
+//Reset the desired cursor properties and restore them when needed.
 private void
 prepare_restoreCursor_props(void) {
    cursor_color_copy(OUT &desired_cursor_color, NULL);
@@ -8222,14 +8222,14 @@ term_use_loop_check(int check_job_status) {
       && term_job_running_check(term, check_job_status);
 }
 
-// Return true if the current portal contains a terminal and we are sending keys to the job.
+//Return true if the current portal contains a terminal and we are sending keys to the job.
 pub int
 term_use_loop(void) {
    return term_use_loop_check(false);
 }
 
-// Called when entering a portal with the mouse. If this is a terminal portal, we may 
-// want to change state.
+//Called when entering a portal with the mouse. If this is a terminal portal, we may 
+//want to change state.
 pub void
 term_enterPortaled(void) {
    Terminal *term = curBook->term;
@@ -8297,9 +8297,9 @@ terminal_loop(int blocking) {
    int tty_fd = chJobGetChannel(curBook->term->job)->fds[get_tty_part(curBook->term)].fd;
    Boole restoreCursor = false;
 
-   // Remember the terminal we are sending keys to.  However, the terminal might be closed while 
-   // waiting for a character, e.g. typing "exit" in a shell and ++close was used.  Therefore use 
-   // curBook->term instead of a stored reference.
+   //Remember the terminal we are sending keys to.  However, the terminal might be closed while 
+   //waiting for a character, e.g. typing "exit" in a shell and ++close was used.  Therefore use 
+   //curBook->term instead of a stored reference.
    in_terminal_loop = curBook->term;
 
    if (curPor->o.termWinKey) {
@@ -8312,14 +8312,14 @@ terminal_loop(int blocking) {
    may_set_cursor_props(curBook->term);
 
    while (blocking || vpeekc_nomap() != ZERO) {
-      // TODO: skip screen update when handling a sequence of keys.
-      // Repeat redrawing in case a message is received while redrawing.
+      //TODO: skip screen update when handling a sequence of keys.
+      //Repeat redrawing in case a message is received while redrawing.
       while (mustRedrawG != 0) {
          if (drawUpdateScreen(0) == FAIL)
             break;
       }
       if (!term_use_loop_check(true) || in_terminal_loop != curBook->term)
-         // job finished while redrawing
+         //job finished while redrawing
          break;
 
       update_cursor(curBook->term, false);
@@ -8327,7 +8327,7 @@ terminal_loop(int blocking) {
 
       raw_c = term_vgetc();
       if (!term_use_loop_check(true) || in_terminal_loop != curBook->term) {
-          // Job finished while waiting for a character.  Push back the received character.
+          //Job finished while waiting for a character.  Push back the received character.
           if (raw_c != K_IGNORE)
              vungetc(raw_c);
           break;
@@ -8336,18 +8336,18 @@ terminal_loop(int blocking) {
          continue;
       c = raw_c_to_ctrl(raw_c);
 
-      // The shell or another program may change the tty settings.  Getting them for every typed 
-      // character is a bit of overhead, but it's needed for the first character typed, e.g. when 
-      // Eegl starts in a shell.
+      //The shell or another program may change the tty settings.  Getting them for every typed 
+      //character is a bit of overhead, but it's needed for the first character typed, e.g. when 
+      //Eegl starts in a shell.
       if (mch_isatty(tty_fd)) {
          TtyInfo info;
 
-         // Get the current backspace character of the pty.
+         //Get the current backspace character of the pty.
          if (get_tty_info(tty_fd, &info) == OK)
             term_backspace_char = info.backspace;
       }
 
-      // Was either CTRL-W (termwinkey) or CTRL-\ pressed? Not in a system terminal.
+      //Was either CTRL-W (termwinkey) or CTRL-\ pressed? Not in a system terminal.
       if ((c == (termwinkey == 0 ? Ctrl_W : termwinkey) || c == Ctrl_BSL)) {
          Unt prev_c = c;
          Unt prev_raw_c = raw_c;
@@ -8362,30 +8362,30 @@ terminal_loop(int blocking) {
          clear_showcmd();
 
          if (!term_use_loop_check(true) || in_terminal_loop != curBook->term)
-            // job finished while waiting for a character
+            //job finished while waiting for a character
             break;
 
          if (prev_c == Ctrl_BSL) {
             if (c == Ctrl_N) {
-               // CTRL-\ CTRL-N : go to Terminal-Normal mode.
+               //CTRL-\ CTRL-N : go to Terminal-Normal mode.
                term_enter_normal_mode();
                ret = FAIL;
                goto theend;
             }
-            // Send both keys to the terminal, first one here, second one below.
+            //Send both keys to the terminal, first one here, second one below.
             send_keys_to_term(curBook->term, prev_raw_c, prev_modMaskG, true);
          } ei (c == Ctrl_C) {
-            // "CTRL-W CTRL-C" or 'termwinkey' CTRL-C: end the job
+            //"CTRL-W CTRL-C" or 'termwinkey' CTRL-C: end the job
             mch_signal_job(curBook->term->job, (CS)"kill");
          } ei (c == '.') {
-            // "CTRL-W .": send CTRL-W to the job
-            // "'termwinkey' .": send 'termwinkey' to the job
+            //"CTRL-W .": send CTRL-W to the job
+            //"'termwinkey' .": send 'termwinkey' to the job
             raw_c = ctrl_to_raw_c(termwinkey == 0 ? Ctrl_W : termwinkey);
          } ei (c == Ctrl_BSL) {
-            // "CTRL-W CTRL-\": send CTRL-\ to the job
+            //"CTRL-W CTRL-\": send CTRL-\ to the job
             raw_c = ctrl_to_raw_c(Ctrl_BSL);
          } ei (c == 'N') {
-            // CTRL-W N : go to Terminal-Normal mode.
+            //CTRL-W N : go to Terminal-Normal mode.
             term_enter_normal_mode();
             ret = FAIL;
             goto theend;
@@ -8393,7 +8393,7 @@ terminal_loop(int blocking) {
             term_paste_register(prev_c);
             continue;
         } ei (termwinkey == 0 || c != termwinkey) {
-            // space for CTRL-W, modifier, multi-byte char and ZERO
+            //space for CTRL-W, modifier, multi-byte char and ZERO
             Byte buf[1 + 3 + MB_MAXBYTES + 1];
 
             //Put the command into the typeahead buffer, when using the
@@ -8407,8 +8407,8 @@ terminal_loop(int blocking) {
       }
       if (send_keys_to_term(curBook->term, raw_c, modMaskG, true) != OK) {
            if (raw_c == K_MOUSEMOVE)
-              // We are sure to come back here, don't reset the cursor color
-              // and shape to avoid flickering.
+              //We are sure to come back here, don't reset the cursor color
+              //and shape to avoid flickering.
               restoreCursor = false;
 
            ret = OK;
@@ -8422,8 +8422,8 @@ theend:
    if (restoreCursor)
       prepare_restoreCursor_props();
 
-   // Move a snapshot of the screen contents to the buffer, so that completion
-   // works in other buffers.
+   //Move a snapshot of the screen contents to the buffer, so that completion
+   //works in other buffers.
    if (curBook->term != NULL && !curBook->term->isNormalMode)
       may_move_terminal_to_buffer(curBook->term, false);
 
@@ -8442,7 +8442,7 @@ may_toggle_cursor(Terminal *term) {
 }
 
 //Convert the decorations of a vterm cell into a Decoration
-// TODO get rid of it through type unification
+//TODO get rid of it through type unification
 pub Decoration
 cellToDecoration(VTermDeco flags, VTermColor fg, VTermColor bg){
    return (Decoration) {
@@ -8454,7 +8454,7 @@ private void
 set_dirty_snapshot(Terminal* term) {
    term->dirtySnapshot = true;
    if (!term->isNormalMode) {
-      // Update the snapshot after 100 msec of not getting updates.
+      //Update the snapshot after 100 msec of not getting updates.
       profile_setlimit(100L, &term->timerDue);
       term->timerSet = true;
    }
@@ -8482,7 +8482,7 @@ term_scroll_up(Terminal* term, int start_row, int count) {
 
    while (forAllPortalsAndCurPort(OUT &po, OUT &did_curPor)) {
       if (po->book == term->book) {
-         // Set the color to clear lines with.
+         //Set the color to clear lines with.
          vterm_state_get_default_colors(vterm_obtain_state(term->vterm), OUT &fg, OUT &bg);
          Decoration clearDeco = cellToDecoration(cellAttr, fg, bg);
          deleteLinesFromPortal(po, start_row, count, false, false, clearDeco.flags);
@@ -8495,9 +8495,9 @@ handle_moverect(VTermRect dest, VTermRect src, void* user) {
    Terminal   *term = (Terminal *)user;
    int      count = src.start_row - dest.start_row;
 
-   // Scrolling up is done much more efficiently by deleting lines instead of
-   // redrawing the text. But avoid doing this multiple times, postpone until
-   // the redraw happens.
+   //Scrolling up is done much more efficiently by deleting lines instead of
+   //redrawing the text. But avoid doing this multiple times, postpone until
+   //the redraw happens.
    if (dest.start_col == src.start_col
        && dest.end_col == src.end_col
        && dest.start_row < src.start_row)
@@ -8512,7 +8512,7 @@ handle_moverect(VTermRect dest, VTermRect src, void* user) {
    term->dirtyRowEnd = MIN(term->dirtyRowEnd, (int)dest.end_row);
    set_dirty_snapshot(term);
 
-   // Note sure if the scrolling will work correctly, let's do a complete redraw later.
+   //Note sure if the scrolling will work correctly, let's do a complete redraw later.
    drawBookLater(term->book, UPD_NOT_VALID);
    return 1;
 }
@@ -8550,15 +8550,15 @@ handle_settermprop(VTermProp prop, VTermValue* value, void* user) {
       if (strval == NULL)
          break;
       eeglFree(term->title);
-      // a blank title isn't useful, make it empty, so that "running" is
-      // displayed
+      //a blank title isn't useful, make it empty, so that "running" is
+      //displayed
       if (*skipwhite(strval) == ZERO)
          term->title = NULL;
-      // Same as blank
+      //Same as blank
       ei (term->tl_arg0_cmd != NULL
           && STRNCMP(term->tl_arg0_cmd, strval, (int)STRLEN(term->tl_arg0_cmd)) == 0)
          term->title = NULL;
-         // Empty corrupted data of winpty
+         //Empty corrupted data of winpty
       ei (STRNCMP("  - ", strval, 4) == 0)
          term->title = NULL;
       else {
@@ -8596,7 +8596,7 @@ handle_settermprop(VTermProp prop, VTermValue* value, void* user) {
       break;
 
    case VTERM_PROP_ALTSCREEN:
-      // TODO: do anything else?
+      //TODO: do anything else?
       term->tl_using_altscreen = value->boolean;
       break;
 
@@ -8605,7 +8605,7 @@ handle_settermprop(VTermProp prop, VTermValue* value, void* user) {
    }
    eeglFree(strval);
 
-   // Always return 1, otherwise vterm doesn't store the value internally.
+   //Always return 1, otherwise vterm doesn't store the value internally.
    return 1;
 }
 
@@ -8615,7 +8615,7 @@ handleShellResize(void) {
    shell_resized();
 }
 
-// The job running in the terminal resized the terminal.
+//The job running in the terminal resized the terminal.
 private int
 handle_resize(int rows, int cols, void *user) {
    Terminal   *term = (Terminal *)user;
@@ -8623,7 +8623,7 @@ handle_resize(int rows, int cols, void *user) {
    term->rows = rows;
    term->cols = cols;
    if (term->vterm_size_changed)
-      // Size was set by vterm_set_size(), don't set the portal size.
+      //Size was set by vterm_set_size(), don't set the portal size.
       term->vterm_size_changed = false;
    else {
       Portal* po;
@@ -8638,9 +8638,9 @@ handle_resize(int rows, int cols, void *user) {
     return 1;
 }
 
-// If the number of lines that are stored goes over 'termwinscroll' then delete the first 10%.
-// "scrollback" points to scrollback or scrollbackPostponed.
-// "update_buffer" is true when the buffer should be updated.
+//If the number of lines that are stored goes over 'termwinscroll' then delete the first 10%.
+//"scrollback" points to scrollback or scrollbackPostponed.
+//"update_buffer" is true when the buffer should be updated.
 private void
 limit_scrollback(Terminal *term, ArrayList* scrollback, int update_buffer) {
    if (scrollback->len < p_twsl)
@@ -8675,7 +8675,7 @@ limit_scrollback(Terminal *term, ArrayList* scrollback, int update_buffer) {
    }
 }
 
-// Handle a line that is pushed off the top of the screen.
+//Handle a line that is pushed off the top of the screen.
 private int
 handle_pushline(int cols, Arr(ScreenCell) cells, void* user) {
    Terminal   *term = (Terminal *)user;
@@ -8709,7 +8709,7 @@ handle_pushline(int cols, Arr(ScreenCell) cells, void* user) {
    ArrayList   ga;
    CellDeco fillDeco = term->cellDeco;
 
-   // do not store empty cells at the end
+   //do not store empty cells at the end
    for (i = 0; i < cols; ++i) {
       if (cells[i].chars[0] != 0)
          len = i + 1;
@@ -8754,13 +8754,13 @@ handle_pushline(int cols, Arr(ScreenCell) cells, void* user) {
    if (update_buffer) {
       line->sb_text = NULL;
       ++term->scrollbackScrolled;
-      ga_clear(&ga);  // free the text
+      ga_clear(&ga);  //free the text
    } else {
       line->sb_text = text;
-      ga_init(&ga);  // text is kept in scrollbackPostponed
+      ga_init(&ga);  //text is kept in scrollbackPostponed
    }
    ++scrollback->len;
-   return 0; // ignored
+   return 0; //ignored
 }
 
 //Called when leaving Terminal-Normal mode: deal with any scrollback that was
@@ -8772,7 +8772,7 @@ handle_postponed_scrollback(Terminal *term) {
       return;
    lo("Moving postponed scrollback to scrollback");
 
-   // First remove the lines that were appended before, the pushed lines go above it.
+   //First remove the lines that were appended before, the pushed lines go above it.
    cleanup_scrollback(term);
 
    for (int i = 0; i < term->scrollbackPostponed.len; ++i) {
@@ -8802,21 +8802,21 @@ handle_postponed_scrollback(Terminal *term) {
 }
 
 private VTermScreenCallbacks screen_callbacks = {
-   handle_damage,      // damage
-   handle_moverect,      // moverect
-   handle_movecursor,      // movecursor
-   handle_settermprop,      // settermprop
-   handle_resize,      // resize
-   handle_pushline,      // sb_pushline
-   NULL,         // sb_popline
-   NULL         // sb_clear
+   handle_damage,      //damage
+   handle_moverect,      //moverect
+   handle_movecursor,      //movecursor
+   handle_settermprop,      //settermprop
+   handle_resize,      //resize
+   handle_pushline,      //sb_pushline
+   NULL,         //sb_popline
+   NULL         //sb_clear
 };
 
 //Do the work after the channel of a terminal was closed. Must be called only when updating_screen
 //is false. Returns true when a buffer was closed (list of terminals may have changed).
 private int
 term_after_channel_closed(Terminal* term) {
-    // Unless in Terminal-Normal mode: clear the vterm.
+    //Unless in Terminal-Normal mode: clear the vterm.
    if (!term->isNormalMode) {
       int   fnum = term->book->fiNum;
 
@@ -8827,13 +8827,13 @@ term_after_channel_closed(Terminal* term) {
          int do_set_locked = term->book->countPortals == 0;
          Portal* po = NULL;
 
-         // If this was a terminal in a popup portal, go back to the previous portal.
+         //If this was a terminal in a popup portal, go back to the previous portal.
          if (portalIsPopup(curPor) && curBook == term->book) {
             po = curPor;
             if (portalIsValid(prevPor))
                 enterPortal(prevPor, false);
          } else
-            // If this is the last normal portal: exit Eegl.
+            //If this is the last normal portal: exit Eegl.
             if (term->book->countPortals > 0 && onlyOnePortal()) {
                Invocation invo;
                CLEAR_FIELD(invo);
@@ -8841,11 +8841,11 @@ term_after_channel_closed(Terminal* term) {
                return true;
             }
 
-         // ++close or term_finish == "close"
+         //++close or term_finish == "close"
          lo("terminal job finished, closing portal");
          auCommPrepareBook(&aco, term->book);
          if (curBook == term->book) {
-            // Avoid closing the portal if we temporarily use it.
+            //Avoid closing the portal if we temporarily use it.
             if (is_autoCommPort(curPor))
                do_set_locked = true;
             if (do_set_locked)
@@ -8891,7 +8891,7 @@ may_close_term_popup(void) {
    return OK;
 }
 
-// Called when a channel is going to be closed, before invoking the close callback.
+//Called when a channel is going to be closed, before invoking the close callback.
 pub void
 term_channel_closing(Channel* ch) {
    for (Terminal* term = fstTermP; term != NULL; term = term->next) {
@@ -8900,7 +8900,7 @@ term_channel_closing(Channel* ch) {
    } 
 }
 
-// Called when a channel has been closed. If this was a terminal portal's chan, then finish it up
+//Called when a channel has been closed. If this was a terminal portal's chan, then finish it up
 pub void
 term_channel_closed(Channel* ch) {
    Terminal* term;
@@ -8917,7 +8917,7 @@ term_channel_closed(Channel* ch) {
          EE_CLEAR(term->tl_status_text);
 
          if (updating_screen) {
-            // Cannot open or close portals now.  Can happen when 'lazyredraw' is set.
+            //Cannot open or close portals now.  Can happen when 'lazyredraw' is set.
             term->isChannelRecentlyClosed = true;
             continue;
          }
@@ -8930,7 +8930,7 @@ term_channel_closed(Channel* ch) {
    if (did_one) {
       redraw_statuslines();
 
-      // Need to break out of vgetc().
+      //Need to break out of vgetc().
       ins_char_typebuf(K_IGNORE, 0);
       typebuf_was_filled = true;
 
@@ -8951,7 +8951,7 @@ term_check_channel_closed_recently(void) {
       if (term->isChannelRecentlyClosed) {
          term->isChannelRecentlyClosed = false;
          if (term_after_channel_closed(term))
-            // start over, the list may have changed
+            //start over, the list may have changed
             next_term = fstTermP;
       }
    }
@@ -8978,7 +8978,7 @@ termDoUpdatePortal(Portal* po) {
    return term && term->vterm && !term->isNormalMode;
 }
 
-// Called to update a portal that contains an active terminal.
+//Called to update a portal that contains an active terminal.
 pub void
 termUpdatePortal(Portal* po) {
    Terminal* term = po->book->term;
@@ -8992,8 +8992,8 @@ termUpdatePortal(Portal* po) {
    screen = vterm_obtain_screen(vterm);
    state = vterm_obtain_state(vterm);
 
-   // We use UPD_NOT_VALID on a resize or scroll, redraw everything then.
-   // With UPD_SOME_VALID only redraw what was marked dirty.
+   //We use UPD_NOT_VALID on a resize or scroll, redraw everything then.
+   //With UPD_SOME_VALID only redraw what was marked dirty.
    if (po->redrawType > UPD_SOME_VALID) {
       term->dirtyRowStart = 0;
       term->dirtyRowEnd = MAX_ROW;
@@ -9013,10 +9013,10 @@ termUpdatePortal(Portal* po) {
    Unt newrows = 99999;
    Unt newcols = 99999;
    for (twp = firstPor; ; twp = twp->next) {
-      // Always use curPor, it may be a popup portal.
+      //Always use curPor, it may be a popup portal.
       Portal *wwp = twp == NULL ? curPor : twp;
 
-      // When more than one portal shows the same terminal, use the smallest size.
+      //When more than one portal shows the same terminal, use the smallest size.
       if (wwp->book == term->book) {
          newrows = MIN(newrows, wwp->height);
          newcols = MIN(newcols, wwp->width);
@@ -9025,12 +9025,12 @@ termUpdatePortal(Portal* po) {
          break;
    }
    if (newrows == 99999 || newcols == 99999)
-      return; // safety exit
+      return; //safety exit
    newrows = rows == 0 ? newrows : (minsize ? MAX(rows, newrows) : rows);
    newcols = cols == 0 ? newcols : (minsize ? MAX(cols, newcols) : cols);
 
-   // If no cell is visible there is no point in resizing.  Also, vterm can't
-   // handle a zero height.
+   //If no cell is visible there is no point in resizing.  Also, vterm can't
+   //handle a zero height.
    if (newrows == 0 || newcols == 0)
       return;
 
@@ -9046,7 +9046,7 @@ termUpdatePortal(Portal* po) {
           may_move_terminal_to_buffer(term, false);
    }
 
-   // The cursor may have been moved when resizing.
+   //The cursor may have been moved when resizing.
    vterm_state_get_cursorpos(state, &pos);
    position_cursor(po, &pos);
 
@@ -9144,7 +9144,7 @@ handle_drop_command(ListItem* item) {
    int bufnr = bookOpen(fname, BLN_LISTED | BLN_NOOPT);
    FOR_ALL_TAB_PORTALS(tp, po) {
       if (po->book->fiNum == bufnr) {
-          // buffer is in a portal already, go there
+          //buffer is in a portal already, go there
           goto_tab_port(tp, po);
           return;
       }
@@ -9168,7 +9168,7 @@ handle_drop_command(ListItem* item) {
           invo.force_bin = FORCE_NOBIN;
    }
 
-   // open in new portal, like ":split fname"
+   //open in new portal, like ":split fname"
    if (!invo.comm)
       invo.comm = (CS)"split";
    invo.arg = fname;
@@ -9217,11 +9217,11 @@ handle_call_command(Terminal* term, Channel* channel, ListItem* item) {
       ch_log(channel, "Calling function %s failed", func);
 }
 
-// URL decoding (also know as Percent-encoding).
+//URL decoding (also know as Percent-encoding).
 //
-// Note this function currently is only used for decoding shell's OSC 7 escape sequence which we 
-// can assume all bytes are valid UTF-8 bytes. Thus we don't need to deal with invalid UTF-8
-// encoding bytes like 0xfe, 0xff.
+//Note this function currently is only used for decoding shell's OSC 7 escape sequence which we 
+//can assume all bytes are valid UTF-8 bytes. Thus we don't need to deal with invalid UTF-8
+//encoding bytes like 0xfe, 0xff.
 private Unt
 url_decode(const char *src, const Unt len, CS dst) {
    Unt i = 0, j = 0;
@@ -9247,11 +9247,11 @@ url_decode(const char *src, const Unt len, CS dst) {
 //and what VTerm provides via VTermStringFragment is "file://HOSTNAME/CURRENT/DIR"
 private void
 sync_shell_dir(ArrayList* gap) {
-   int offset = 7;  // len of "file://" is 7
+   int offset = 7;  //len of "file://" is 7
    char* pos = (char *)gap->c + offset;
    CS new_dir;
 
-   // remove HOSTNAME to get PWD
+   //remove HOSTNAME to get PWD
    for (; offset < (int)gap->len && *pos != '/'; ++offset, ++pos ) 
       {}
 
@@ -9266,7 +9266,7 @@ sync_shell_dir(ArrayList* gap) {
    eeglFree(new_dir);
 }
 
-// Called by libvterm when it cannot recognize an OSC sequence. We recognize a terminal API command
+//Called by libvterm when it cannot recognize an OSC sequence. We recognize a terminal API command
 private int
 parse_osc(int command, VTermStringFragment frag, void *user) {
    Terminal* term = (Terminal *)user;
@@ -9275,11 +9275,11 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
    Channel* channel = term->job ? chJobGetChannel(term->job) : null;
    ArrayList* gap = &term->oscBuilder;
 
-   // We recognize only OSC 5 1 ; {command} and OSC 7 ; {command}
+   //We recognize only OSC 5 1 ; {command} and OSC 7 ; {command}
    if (command != 51 && (command != 7 || !p_asd))
       return 0;
 
-   // Concatenate what was received until the final piece is found.
+   //Concatenate what was received until the final piece is found.
    if (ga_grow(gap, (int)frag.len + 1) == FAIL) {
       ga_clear(gap);
       return 1;
@@ -9308,8 +9308,8 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
       else {
          CS comm = tv_get_string(&item->c);
 
-         // Make sure an invoked command doesn't delete the buffer (and the
-         // terminal) under our fingers.
+         //Make sure an invoked command doesn't delete the buffer (and the
+         //terminal) under our fingers.
          ++term->book->locked;
 
          item = item->next;
@@ -9347,11 +9347,11 @@ parse_csi(
    int y = 0;
    Portal* po;
 
-   // We recognize only CSI 13 t
+   //We recognize only CSI 13 t
    if (command != 't' || argcount != 1 || args[0] != 13)
-      return 0; // not handled
+      return 0; //not handled
 
-   // When getting the portal position is not possible or it fails it results in 0/0.
+   //When getting the portal position is not possible or it fails it results in 0/0.
    (void)uiGetPortPos(&x, &y, (Long)100);
 
    FOR_ALL_PORTALS(po) {
@@ -9359,8 +9359,8 @@ parse_csi(
          break;
    } 
    if (po) {
-       // We roughly estimate the position of the terminal portal inside
-       // the Eegl portal by assuming a 10 x 7 character cell.
+       //We roughly estimate the position of the terminal portal inside
+       //the Eegl portal by assuming a 10 x 7 character cell.
        x += po->windowCol * 7;
        y += po->windowRow * 10;
    }
@@ -9372,19 +9372,19 @@ parse_csi(
 }
 
 private VTermStateFallbacks state_fallbacks = {
-   NULL,      // control
-   parse_csi,      // csi
-   parse_osc,      // osc
-   NULL,      // dcs
-   NULL,      // apc
-   NULL,      // pm
-   NULL      // sos
+   NULL,      //control
+   parse_csi,      //csi
+   parse_osc,      //osc
+   NULL,      //dcs
+   NULL,      //apc
+   NULL,      //pm
+   NULL      //sos
 };
 
-// Use Eegl's allocation functions for vterm so profiling works.
+//Use Eegl's allocation functions for vterm so profiling works.
 private void *
 vterm_malloc(Unt size) {
-   // make sure that the length is not zero
+   //make sure that the length is not zero
    return allocZeroed(size == 0 ? 1L : size);
 }
 
@@ -9398,7 +9398,7 @@ private VTermAllocatorFunctions vterm_allocator = {
    &vterm_memfree
 };
 
-// Create a new vterm and initialize it. Return FAIL when out of memory.
+//Create a new vterm and initialize it. Return FAIL when out of memory.
 private int
 create_vterm(Terminal* term, int rows, int cols) {
    VTermValue       value;
@@ -9406,7 +9406,7 @@ create_vterm(Terminal* term, int rows, int cols) {
    VTerm* vterm = vterm_new_with_allocator(rows, cols, &vterm_allocator);
    term->vterm = vterm;
 
-   // Allocate screen and state here, so we can bail out if that fails.
+   //Allocate screen and state here, so we can bail out if that fails.
    VTermState* state = vterm_obtain_state(vterm);
    VTermScreen* screen = vterm_obtain_screen(vterm);
    if (state == NULL || screen == NULL) {
@@ -9419,7 +9419,7 @@ create_vterm(Terminal* term, int rows, int cols) {
    vterm_state_set_default_colors(state, term->cellDeco.fg, term->cellDeco.bg);
 
    //Required to initialize most things.
-   vterm_screen_reset(screen, 1); // hard reset
+   vterm_screen_reset(screen, 1); //hard reset
 
    //Allow using alternate screen.
    vterm_screen_enable_altscreen(screen, 1);
@@ -9433,7 +9433,7 @@ create_vterm(Terminal* term, int rows, int cols) {
    return OK;
 }
 
-// Called when option 'liteTheme' was set, or when any hilite is changed.
+//Called when option 'liteTheme' was set, or when any hilite is changed.
 pub void
 term_update_colors_all(void) {
    Terminal* term;
@@ -9447,7 +9447,7 @@ term_update_colors_all(void) {
    }
 }
 
-// Return the text to show for the book name and status.
+//Return the text to show for the book name and status.
 pub CS
 term_get_status_text(Terminal* term) {
    if (term->tl_status_text)
@@ -9475,13 +9475,13 @@ term_get_status_text(Terminal* term) {
    return term->tl_status_text;
 }
 
-// Clear the cached value of the status text.
+//Clear the cached value of the status text.
 pub void
 term_clear_status_text(Terminal* term) {
    EE_CLEAR(term->tl_status_text);
 }
 
-// Mark references in jobs of terminals.
+//Mark references in jobs of terminals.
 pub int
 set_ref_in_term(int copyID) {
    int      abort = false;
@@ -9497,15 +9497,15 @@ set_ref_in_term(int copyID) {
    return abort;
 }
 
-// Get the buffer from the first argument in "argvars".
-// Return NULL when the buffer is not for a terminal portal and logs a message with "where".
+//Get the buffer from the first argument in "argvars".
+//Return NULL when the buffer is not for a terminal portal and logs a message with "where".
 private Book *
 term_get_buf(Var* argvars, CS where) {
    ++emsg_off;
    Book* book = daGetBook(&argvars[0], false);
    --emsg_off;
    if (!book || !book->term) {
-      (void)tv_get_number(&argvars[0]);    // issue errmsg if type error
+      (void)tv_get_number(&argvars[0]);    //issue errmsg if type error
       lo("%s: invalid buffer argument", where);
       return NULL;
    }
@@ -9518,24 +9518,24 @@ dump_term_color(FILE* fd, VTermColor color) {
    fprintf(fd, "%d", index);
 }
 
-// "term_dumpwrite(book, filename, options)" function
+//"term_dumpwrite(book, filename, options)" function
 //
-// Each screen cell in full is:
-//    |{characters}+{decorations}#{fg-color}{color-idx}#{bg-color}{color-idx}
-// {characters} is a space for an empty cell
-// {decorations} is the decimal value of DECO_BOLD + DECO_UNDERLINE, etc.
-//           when "&" use the same as the previous cell.
-// {fg-color} is a 256-color index, when "&" use the same as the previous cell.
-// {bg-color} is a 256-color index, when "&" use the same as the previous cell.
-// {color-idx} is a number from 0 to 255
+//Each screen cell in full is:
+//   |{characters}+{decorations}#{fg-color}{color-idx}#{bg-color}{color-idx}
+//{characters} is a space for an empty cell
+//{decorations} is the decimal value of DECO_BOLD + DECO_UNDERLINE, etc.
+//          when "&" use the same as the previous cell.
+//{fg-color} is a 256-color index, when "&" use the same as the previous cell.
+//{bg-color} is a 256-color index, when "&" use the same as the previous cell.
+//{color-idx} is a number from 0 to 255
 //
-// Screen cell with same width, decorations and color as the previous one:
-//    |{characters}
+//Screen cell with same width, decorations and color as the previous one:
+//   |{characters}
 //
-// To use the color of the previous cell, use "&" instead of {color}-{idx}.
+//To use the color of the previous cell, use "&" instead of {color}-{idx}.
 //
-// Repeating the previous screen cell:
-//    @{count}
+//Repeating the previous screen cell:
+//   @{count}
 pub void
 f_term_dumpwrite(Var* argvars, Var*) {
    Unt max_height = 0;
@@ -9606,7 +9606,7 @@ f_term_dumpwrite(Var* argvars, Var*) {
             int pc = prev_cell.chars[i];
             int should_break = c == ZERO || pc == ZERO;
 
-            // For the first character ZERO is the same as space.
+            //For the first character ZERO is the same as space.
             if (i == 0) {
                 c = (c == ZERO) ? ' ' : c;
                 pc = (pc == ZERO) ? ' ' : pc;
@@ -9670,7 +9670,7 @@ f_term_dumpwrite(Var* argvars, Var*) {
    fclose(fd);
 }
 
-// Called when a dump is corrupted.  Put a breakpoint here when debugging.
+//Called when a dump is corrupted.  Put a breakpoint here when debugging.
 private void
 dump_is_corrupt(ArrayList* gap) {
    ga_concat(gap, S"CORRUPT");
@@ -9685,8 +9685,8 @@ append_cell(ArrayList* gap, CellDeco* cell) {
    ++gap->len;
 }
 
-// Read the dump file from "fd" and append lines to the current buffer.
-// Return the cell width of the longest line.
+//Read the dump file from "fd" and append lines to the current buffer.
+//Return the cell width of the longest line.
 private Unt
 read_dump_file(FILE *fd, VTermPos* cursor_pos) {
    ArrayList       ga_text;
@@ -9711,10 +9711,10 @@ read_dump_file(FILE *fd, VTermPos* cursor_pos) {
       if (c == (Unt)EOF)
           break;
       if (c == '\r') {
-         // DOS line endings?  Ignore.
+         //DOS line endings?  Ignore.
          c = fgetc(fd);
       } ei (c == '\n') {
-         // End of a line: append it to the buffer.
+         //End of a line: append it to the buffer.
          if (ga_text.c == NULL)
             dump_is_corrupt(&ga_text);
          if (ga_grow(&term->scrollback, 1) == OK) {
@@ -9740,12 +9740,12 @@ read_dump_file(FILE *fd, VTermPos* cursor_pos) {
 
          if (c == '>') {
             if (cursor_pos->row != SHORT)
-               dump_is_corrupt(&ga_text);   // duplicate cursor
+               dump_is_corrupt(&ga_text);   //duplicate cursor
             cursor_pos->row = term->scrollback.len - start_row;
             cursor_pos->col = ga_cell.len;
          }
 
-         // normal character(s) followed by "+", "*", "|", "@" or NL
+         //normal character(s) followed by "+", "*", "|", "@" or NL
          c = fgetc(fd);
          if (c != (Unt)EOF)
             ga_append(&ga_text, c);
@@ -9756,22 +9756,22 @@ read_dump_file(FILE *fd, VTermPos* cursor_pos) {
             ga_append(&ga_text, c);
          }
 
-         // save the character for repeating it
+         //save the character for repeating it
          eeglFree(prev_char);
          if (ga_text.c)
             prev_char = copySubstr(((CS)ga_text.c) + prev_len, ga_text.len - prev_len);
 
          if (c == '@' || c == '|' || c == '>' || c == '\n') {
-            // use all decorations from previous cell
+            //use all decorations from previous cell
          } ei (c == '+') {
             int is_bg;
 
             c = fgetc(fd);
             if (c == '&') {
-               // use same deco as previous cell
+               //use same deco as previous cell
                c = fgetc(fd);
             } ei (SAFE_isdigit(c)) {
-               // get the decimal decoration
+               //get the decimal decoration
                decoFlags = 0;
                while (SAFE_isdigit(c)) {
                   decoFlags = decoFlags * 10 + (c - '0');
@@ -9779,10 +9779,10 @@ read_dump_file(FILE *fd, VTermPos* cursor_pos) {
                }
                cell.flags = decoFlags;
 
-               // is_bg == 0: fg, is_bg == 1: bg
+               //is_bg == 0: fg, is_bg == 1: bg
                for (is_bg = 0; is_bg <= 1; ++is_bg) {
                   if (c == '&') {
-                     // use same color as previous cell
+                     //use same color as previous cell
                      c = fgetc(fd);
                   } else  {
                      if (!SAFE_isdigit(c))
@@ -9811,7 +9811,7 @@ read_dump_file(FILE *fd, VTermPos* cursor_pos) {
          else {
             int count = 0;
 
-            // repeat previous character, get the count
+            //repeat previous character, get the count
             for (;;) {
                c = fgetc(fd);
                if (!SAFE_isdigit(c))
@@ -9831,7 +9831,7 @@ read_dump_file(FILE *fd, VTermPos* cursor_pos) {
    }
 
    if (ga_text.len > 0) {
-      // trailing characters after last NL
+      //trailing characters after last NL
       dump_is_corrupt(&ga_text);
       ga_append(&ga_text, ZERO);
       ml_append(curBook->mem.lineCount, ga_text.c, ga_text.len, false);
@@ -9844,8 +9844,8 @@ read_dump_file(FILE *fd, VTermPos* cursor_pos) {
    return max_cells;
 }
 
-// Return an allocated string with at least "text_width" "=" characters and
-// "fname" inserted in the middle.
+//Return an allocated string with at least "text_width" "=" characters and
+//"fname" inserted in the middle.
 private CS
 get_separator(int text_width, CS fname) {
    int width = MAX(text_width, (int)curPor->width);
@@ -9859,14 +9859,14 @@ get_separator(int text_width, CS fname) {
 
    int fname_size = eeglStrSize(fname);
    if (fname_size < width - 8) {
-      // enough room, don't use the full portal width
+      //enough room, don't use the full portal width
       width = MAX(text_width, fname_size + 8);
    } ei (fname_size > width - 8) {
-      // full name doesn't fit, use only the tail
+      //full name doesn't fit, use only the tail
       p = fiGetShortFiName(fname);
       fname_size = eeglStrSize(p);
    }
-   // skip characters until the name fits
+   //skip characters until the name fits
    while (fname_size > width - 8) {
       p += utfCharLen(p);
       fname_size = eeglStrSize(p);
@@ -9886,7 +9886,7 @@ get_separator(int text_width, CS fname) {
    return textline;
 }
 
-// Common for "term_dumpdiff()" and "term_dumpload()".
+//Common for "term_dumpdiff()" and "term_dumpload()".
 private void
 term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    JobOptions   opt;
@@ -9898,7 +9898,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    FILE* fd1;
    FILE* fd2 = NULL;
 
-   // First open the files.  If this fails bail out.
+   //First open the files.  If this fails bail out.
    CS fname1 = convertVarToString(&argvars[0], buf1);
    if (do_diff)
       fname2 = convertVarToString(&argvars[1], buf2);
@@ -9941,7 +9941,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    if (opt.jo_bufnr_buf != NULL) {
       Portal *po = portTryFindOpenBook(opt.jo_bufnr_buf);
 
-      // With "bufnr" argument: enter the portal into this buffer and make it empty.
+      //With "bufnr" argument: enter the portal into this buffer and make it empty.
       if (!po)
          showErrFmtMsg(_(e_invalid_argument_str), "bufnr");
       else {
@@ -9952,7 +9952,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
          redraw_later(UPD_NOT_VALID);
       }
    } else
-      // Create a new terminal portal.
+      //Create a new terminal portal.
       book = startSubterminal(&argvars[0], NULL, &opt, TERM_START_NOJOB);
 
    if (!book || !book->term) {
@@ -9965,19 +9965,19 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
 
    returnVar->number = book->fiNum;
 
-   // read the files, fill the buffer with the diff
+   //read the files, fill the buffer with the diff
    Unt width = read_dump_file(fd1, &cursor_pos1);
 
-   // position the cursor
+   //position the cursor
    if (cursor_pos1.row != SHORT) {
       curPor->cursor.lnum = cursor_pos1.row + 1;
       coladvance(cursor_pos1.col);
    }
 
-   // Delete the empty line that was in the empty buffer.
+   //Delete the empty line that was in the empty buffer.
    ml_delete(1);
 
-   // For term_dumpload() we are done here.
+   //For term_dumpload() we are done here.
    if (!do_diff)
       goto theend;
 
@@ -10011,7 +10011,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
 
    for (lnum = 1; lnum <= term->topDiffRows; ++lnum) {
       if (lnum + bot_lnum > curBook->mem.lineCount) {
-         // bottom part has fewer rows, fill with "-"
+         //bottom part has fewer rows, fill with "-"
          for (Unt i = 0; i < width; ++i)
             textline[i] = '-';
       } else {
@@ -10023,7 +10023,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
          CellDeco* cellattr1 = (sb_line + lnum - 1)->sb_cells;
          CellDeco* cellattr2 = (sb_line + lnum + bot_lnum - 1) ->sb_cells;
 
-         // Make a copy, getting the second line will invalidate it.
+         //Make a copy, getting the second line will invalidate it.
          CS line1 = copyStr(ml_get(lnum));
          p1 = line1;
 
@@ -10035,17 +10035,17 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
 
             textline[col] = ' ';
             if (len1 != len2 || STRNCMP(p1, p2, len1) != 0)
-               // text differs
+               //text differs
                textline[col] = 'X';
             ei (lnum == cursor_pos1.row + 1
                    && col == cursor_pos1.col
                       && (cursor_pos1.row != cursor_pos2.row || cursor_pos1.col != cursor_pos2.col))
-               // cursor in first but not in second
+               //cursor in first but not in second
                textline[col] = '>';
             ei (lnum == cursor_pos2.row + 1
                    && col == cursor_pos2.col
                       && (cursor_pos1.row != cursor_pos2.row || cursor_pos1.col != cursor_pos2.col))
-               // cursor in second but not in first
+               //cursor in second but not in first
                textline[col] = '<';
             ei (cellattr1 != 0 && cellattr2 != 0) {
                if (cellattr1[col].fg != cellattr2[col].fg)
@@ -10057,7 +10057,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
             }
             p1 += len1;
             p2 += len2;
-            // TODO: handle different width
+            //TODO: handle different width
          }
 
          while (col < width) {
@@ -10081,7 +10081,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    }
 
    while (lnum + bot_lnum <= curBook->mem.lineCount) {
-      // bottom part has more rows, fill with "+"
+      //bottom part has more rows, fill with "+"
       for (Unt i = 0; i < width; ++i)
          textline[i] = '+';
       if (add_empty_scrollback(term, &term->cellDeco, term->topDiffRows) == OK)
@@ -10092,7 +10092,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
 
    term->cols = width;
 
-   // looks better without wrapping
+   //looks better without wrapping
    curPor->o.wrap = 0;
 
 theend:
@@ -10103,8 +10103,8 @@ theend:
       fclose(fd2);
 }
 
-// If the current buffer shows the output of term_dumpdiff(), swap the top and bottom files.
-// Return FAIL when this is not possible.
+//If the current buffer shows the output of term_dumpdiff(), swap the top and bottom files.
+//Return FAIL when this is not possible.
 pub int
 term_swap_diff(void) {
    Terminal* term = curBook->term;
@@ -10125,7 +10125,7 @@ term_swap_diff(void) {
    bot_start = line_count - bot_rows;
    sb_line = (ScrollbackLine *)term->scrollback.c;
 
-   // move lines from top to above the bottom part
+   //move lines from top to above the bottom part
    for (lnum = 1; lnum <= top_rows; ++lnum) {
       p = copyStr(ml_get(1));
       ml_append(bot_start, p, 0, false);
@@ -10133,7 +10133,7 @@ term_swap_diff(void) {
       eeglFree(p);
    }
 
-   // move lines from bottom to the top
+   //move lines from bottom to the top
    for (lnum = 1; lnum <= bot_rows; ++lnum) {
       p = copyStr(ml_get(bot_start + lnum));
       ml_delete(bot_start + lnum);
@@ -10141,20 +10141,20 @@ term_swap_diff(void) {
       eeglFree(p);
    }
 
-   // move top title to bottom
+   //move top title to bottom
    p = copyStr(ml_get(bot_rows + 1));
    ml_append(line_count - top_rows - 1, p, 0, false);
    ml_delete(bot_rows + 1);
    eeglFree(p);
 
-   // move bottom title to top
+   //move bottom title to top
    p = copyStr(ml_get(line_count - top_rows));
    ml_delete(line_count - top_rows);
    ml_append(bot_rows, p, 0, false);
    eeglFree(p);
 
    if (top_rows == bot_rows) {
-      // rows counts are equal, can swap cell properties
+      //rows counts are equal, can swap cell properties
       for (lnum = 0; lnum < top_rows; ++lnum) {
           ScrollbackLine   temp;
 
@@ -10166,7 +10166,7 @@ term_swap_diff(void) {
       Unt      size = sizeof(ScrollbackLine) * term->scrollback.len;
       ScrollbackLine* temp = alloc(size);
 
-      // need to copy cell properties into temp memory
+      //need to copy cell properties into temp memory
       if (temp) {
          MEMMOVE(temp, term->scrollback.c, size);
          MEMMOVE(term->scrollback.c, temp + bot_start, sizeof(ScrollbackLine) * bot_rows);
@@ -10188,19 +10188,19 @@ term_swap_diff(void) {
    return OK;
 }
 
-// "term_dumpdiff(filename, filename, options)" function
+//"term_dumpdiff(filename, filename, options)" function
 pub void
 f_term_dumpdiff(Arr(Var) argvars, Var* returnVar) {
    term_load_dump(argvars, returnVar, true);
 }
 
-// "term_dumpload(filename, options)" function
+//"term_dumpload(filename, options)" function
 pub void
 f_term_dumpload(Arr(Var) argvars, Var* returnVar) {
    term_load_dump(argvars, returnVar, false);
 }
 
-// "term_getaltscreen(book)" function
+//"term_getaltscreen(book)" function
 pub void
 f_term_getaltscreen(Var* argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getaltscreen()");
@@ -10209,7 +10209,7 @@ f_term_getaltscreen(Var* argvars, Var* returnVar) {
    returnVar->number = book->term->tl_using_altscreen;
 }
 
-// "term_getcursor(book)" function
+//"term_getcursor(book)" function
 pub void
 f_term_getcursor(Var* argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getcursor()");
@@ -10233,7 +10233,7 @@ f_term_getcursor(Var* argvars, Var* returnVar) {
    listAppendBag(l, b);
 }
 
-// "term_getjob(book)" function
+//"term_getjob(book)" function
 pub void
 f_term_getjob(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getjob()");
@@ -10256,7 +10256,7 @@ get_row_number(Var *tv, Terminal *term) {
    return (int)tv_get_number(tv) - 1;
 }
 
-// "term_getline(book, row)" function
+//"term_getline(book, row)" function
 pub void
 f_term_getline(Arr(Var) argvars, Var* returnVar) {
    Terminal* term;
@@ -10273,7 +10273,7 @@ f_term_getline(Arr(Var) argvars, Var* returnVar) {
    if (term->vterm == NULL) {
       LineNr lnum = row + term->scrollbackScrolled + 1;
 
-      // vterm is finished, get the text from the book
+      //vterm is finished, get the text from the book
       if (lnum > 0 && lnum <= book->mem.lineCount)
          returnVar->string = copyStr(memGetLine(book, lnum, false));
    } else {
@@ -10294,7 +10294,7 @@ f_term_getline(Arr(Var) argvars, Var* returnVar) {
     }
 }
 
-// "term_getscrolled(book)" function
+//"term_getscrolled(book)" function
 pub void
 f_term_getscrolled(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getscrolled()");
@@ -10303,7 +10303,7 @@ f_term_getscrolled(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = book->term->scrollbackScrolled;
 }
 
-// "term_getsize(book)" function
+//"term_getsize(book)" function
 pub void
 f_term_getsize(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getsize()");
@@ -10316,7 +10316,7 @@ f_term_getsize(Arr(Var) argvars, Var* returnVar) {
    list_append_number(l, book->term->cols);
 }
 
-// "term_setsize(book, rows, cols)" function
+//"term_setsize(book, rows, cols)" function
 pub void
 f_term_setsize(Arr(Var) argvars, Var*) {
    Terminal* term;
@@ -10335,14 +10335,14 @@ f_term_setsize(Arr(Var) argvars, Var*) {
    cols = tv_get_number(&argvars[2]);
    cols = cols <= 0 ? term->cols : cols;
    vterm_set_size(term->vterm, rows, cols);
-   // handleShellResize() will resize the portals
+   //handleShellResize() will resize the portals
 
-   // Get and remember the size we ended up with.  Update the pty.
+   //Get and remember the size we ended up with.  Update the pty.
    vterm_get_size(term->vterm, &term->rows, &term->cols);
    term_report_winsize(term, term->rows, term->cols);
 }
 
-// "term_getstatus(book)" function
+//"term_getstatus(book)" function
 pub void
 f_term_getstatus(Arr(Var) argvars, Var* returnVar) {
    Terminal* term;
@@ -10364,7 +10364,7 @@ f_term_getstatus(Arr(Var) argvars, Var* returnVar) {
    returnVar->string = copyStr(val);
 }
 
-// "term_gettitle(book)" function
+//"term_gettitle(book)" function
 pub void
 f_term_gettitle(Arr(Var) argvars, Var* returnVar) {
 
@@ -10378,7 +10378,7 @@ f_term_gettitle(Arr(Var) argvars, Var* returnVar) {
       returnVar->string = copyStr(book->term->title);
 }
 
-// "term_gettty(book)" function
+//"term_gettty(book)" function
 pub void
 f_term_gettty(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_gettty()");
@@ -10408,7 +10408,7 @@ f_term_gettty(Arr(Var) argvars, Var* returnVar) {
       returnVar->string = copyStr(p);
 }
 
-// "term_list()" function
+//"term_list()" function
 pub void
 f_term_list(Arr(Var), Var* returnVar) {
    if (!fstTermP)
@@ -10423,7 +10423,7 @@ f_term_list(Arr(Var), Var* returnVar) {
    } 
 }
 
-// "term_scrape(book, row)" function
+//"term_scrape(book, row)" function
 pub void
 f_term_scrape(Arr(Var) argvars, Var* returnVar) {
    VTermScreen* screen = NULL;
@@ -10444,7 +10444,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
 
    if (term->vterm != NULL) {
       screen = vterm_obtain_screen(term->vterm);
-      if (!screen)  // can't really happen
+      if (!screen)  //can't really happen
          return;
       p = NULL;
       line = NULL;
@@ -10466,7 +10466,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
       int i;
 
       if (!screen) {
-         // vterm has finished, get the cell from scrollback
+         //vterm has finished, get the cell from scrollback
          if (pos.col >= line->cols)
             break;
          CellDeco* cellattr = line->sb_cells + pos.col;
@@ -10508,7 +10508,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
    }
 }
 
-// "term_sendkeys(book, keys)" function
+//"term_sendkeys(book, keys)" function
 pub void
 f_term_sendkeys(Arr(Var) argvars, Var*) {
    Book* book = term_get_buf(argvars, S"term_sendkeys()");
@@ -10536,7 +10536,7 @@ f_term_sendkeys(Arr(Var) argvars, Var*) {
    }
 }
 
-// "term_setapi(book, api)" function
+//"term_setapi(book, api)" function
 pub void
 f_term_setapi(Arr(Var) argvars, Var*) {
    Book* book = term_get_buf(argvars, S"term_setapi()");
@@ -10548,7 +10548,7 @@ f_term_setapi(Arr(Var) argvars, Var*) {
    term->tl_api = api ? copyStr(api) : null;
 }
 
-// "term_setrestore(book, command)" function
+//"term_setrestore(book, command)" function
 pub void
 f_term_setrestore(Arr(Var) argvars, Var*) {
    Book* book = term_get_buf(argvars, S"term_setrestore()");
@@ -10560,7 +10560,7 @@ f_term_setrestore(Arr(Var) argvars, Var*) {
    term->command = comm ? copyStr(comm) : null;
 }
 
-// "term_setkill(book, how)" function
+//"term_setkill(book, how)" function
 pub void
 f_term_setkill(Arr(Var) argvars, Var*) {
    Book* book = term_get_buf(argvars, S"term_setkill()");
@@ -10572,7 +10572,7 @@ f_term_setkill(Arr(Var) argvars, Var*) {
    term->tl_kill = how ? copyStr(how) : null;
 }
 
-// "term_start(command, options)" function
+//"term_start(command, options)" function
 pub void
 f_term_start(Arr(Var) argvars, Var* returnVar) {
    JobOptions opt;
@@ -10606,15 +10606,15 @@ f_term_wait(Arr(Var) argvars, Var*) {
       return;
    }
    if (!chJobGetChannel(book->term->job))
-      // channel is closed, nothing to do
+      //channel is closed, nothing to do
       return;
 
-   // Get the job status, this will detect a job that finished.
+   //Get the job status, this will detect a job that finished.
    if (!chJobGetChannel(book->term->job)->ch_keep_open
        && STRCMP(job_status(book->term->job), "dead") == 0
    ){
-      // The job is dead, keep reading channel I/O until the channel is
-      // closed. book->term may become NULL if the terminal was closed while waiting.
+      //The job is dead, keep reading channel I/O until the channel is
+      //closed. book->term may become NULL if the terminal was closed while waiting.
       lo("term_wait(): waiting for channel to close");
       while (book->term && !book->term->isChannelClosed) {
          term_flush_messages();
@@ -10634,18 +10634,18 @@ f_term_wait(Arr(Var) argvars, Var*) {
 
       term_flush_messages();
 
-      // Wait for some time for any channel I/O.
+      //Wait for some time for any channel I/O.
       if (argvars[1].tag != VAR_UNKNOWN)
          wait = tv_get_number(&argvars[1]);
       ui_delay(wait, true);
 
-      // Flushing messages on channels is hopefully sufficient. TODO: is there a better way?
+      //Flushing messages on channels is hopefully sufficient. TODO: is there a better way?
       term_flush_messages();
    }
 }
 
-// Called when a channel has sent all the lines to a terminal.
-// Send a CTRL-D to mark the end of the text.
+//Called when a channel has sent all the lines to a terminal.
+//Send a CTRL-D to mark the end of the text.
 pub void
 term_send_eof(Channel* ch) {
    Terminal* term;
@@ -10660,8 +10660,8 @@ term_send_eof(Channel* ch) {
 }
 
 ///////////////////////////////////////
-// Create a new terminal of "rows" by "cols" cells. Start job for "cmd".
-// Store the pointers in "term". When "argv" is not NULL then "argvar" is not used. OK or FAIL.
+//Create a new terminal of "rows" by "cols" cells. Start job for "cmd".
+//Store the pointers in "term". When "argv" is not NULL then "argvar" is not used. OK or FAIL.
 private int
 initSubtermAndJob(
    Terminal* term,
@@ -10675,7 +10675,7 @@ initSubtermAndJob(
    if (create_vterm(term, term->rows, term->cols) == FAIL)
       return FAIL;
 
-   // This may change a string in "argvar".
+   //This may change a string in "argvar".
    term->job = startJob(argvar, argv, opt, &term->job);
    if (term->job)
       incRefCount(term->job);
@@ -10692,13 +10692,13 @@ create_pty_only(Terminal* term, JobOptions* opt) {
    term->job = job_alloc();
    incRefCount(term->job);
 
-   // behave like the job is already finished
+   //behave like the job is already finished
    chJobSetStatus(term->job, JOB_FINISHED);
 
    return mch_create_pty_channel(term->job, opt);
 }
 
-// Free the terminal emulator part of "term".
+//Free the terminal emulator part of "term".
 private void
 term_free_vterm(Terminal* term) {
    if (term->vterm)
@@ -10706,10 +10706,10 @@ term_free_vterm(Terminal* term) {
    term->vterm = NULL;
 }
 
-// Report the size to the terminal.
+//Report the size to the terminal.
 private void
 term_report_winsize(Terminal* term, int rows, int cols) {
-   // Use an ioctl() to report the new portal size to the job.
+   //Use an ioctl() to report the new portal size to the job.
    if (!term->job || !chJobGetChannel(term->job))
       return;
 
@@ -10732,8 +10732,8 @@ term_getjob(Terminal* term) {
 
 private void
 prepare_to_exit(void) {
-   // Ignore SIGHUP, because a dropped connection causes a read error, which
-   // makes Eegl exit and then handling SIGHUP causes various reentrance problems.
+   //Ignore SIGHUP, because a dropped connection causes a read error, which
+   //makes Eegl exit and then handling SIGHUP causes various reentrance problems.
    mch_signal(SIGHUP, SIG_IGN);
 
    windgoto((int)visibleRowsG - 1, 0);
@@ -10752,28 +10752,28 @@ pub void
 preserve_exit(void) {
    prepare_to_exit();
 
-   // Setting this will prevent free() calls.  That avoids calling free()
-   // recursively when free() was invoked with a bad pointer.
+   //Setting this will prevent free() calls.  That avoids calling free()
+   //recursively when free() was invoked with a bad pointer.
    really_exiting = true;
 
    out_str(IObuff);
-   screen_start();          // don't know where cursor is now
+   screen_start();          //don't know where cursor is now
    out_flush();
 
-   ml_close_notmod();          // close all not-modified buffers
+   ml_close_notmod();          //close all not-modified buffers
 
    Book* book;
    FOR_ALL_BOOKS(book) {
       if (!bookNoFname(book)) {
          OUT_STR("Eegl: preserving files...\r\n");
-         screen_start();       // don't know where cursor is now
+         screen_start();       //don't know where cursor is now
          out_flush();
-         ml_sync_all(false, false);   // preserve all swap files
+         ml_sync_all(false, false);   //preserve all swap files
          break;
       }
    }
 
-   ml_close_all(false);       // close all memfiles, without deleting
+   ml_close_all(false);       //close all memfiles, without deleting
 
    OUT_STR("Eegl: Finished.\r\n");
 
@@ -10804,7 +10804,7 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
 
    int result;
    for (;;) {
-      int finished = true; // default is to 'loop' just once
+      int finished = true; //default is to 'loop' just once
       
       //each channel may use in, out and err
       PollFd fds[6 + 3 * MAX_OPEN_CHANNELS];
@@ -10825,7 +10825,7 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
       if (result == 0 && interrupted && ret > 0)
           *interrupted = true;
 
-      // also call when ret == 0, we may be polling a keep-open channel
+      //also call when ret == 0, we may be polling a keep-open channel
       if (ret >= 0)
           chPollCheck(ret, fds);
       
@@ -10839,7 +10839,7 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
          //Compute remaining wait time.
          msec = start_msec - ELAPSED_FUNC(start_tv);
          if (msec <= 0)
-            break;   // waited long enough
+            break;   //waited long enough
       }
    }
 
@@ -10851,7 +10851,7 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
 private void
 mch_write(CS s, int len) {
    (void)write(1, (char *)s, len);
-   if (p_wd)      // Unix is too fast, slow down a bit more
+   if (p_wd)      //Unix is too fast, slow down a bit more
       uiRealWaitForChar(read_cmd_fd, p_wd, null);
 }
 
@@ -10860,9 +10860,9 @@ mch_write(CS s, int len) {
 //Wayland users must have a clipboard manager to replicate such behavior.
 //private void
 //lose_clipboard(void){
-//   if (clipboard.owned) {
-//      clip_lose_selection(&clipboard);
-//   }
+//  if (clipboard.owned) {
+//     clip_lose_selection(&clipboard);
+//  }
 //}
 
 //Return true if the input comes from a terminal, false otherwise.
@@ -10876,11 +10876,11 @@ mch_input_isatty(void) {
 //}}}
 //{{{ui proper
 
-// ui.c: functions that handle the user interface.
-// 1. Keyboard input stuff, and a bit of windowing stuff.  These are called
-//    before the machine specific stuff (mch_*) so that we can call the GUI
-//    stuff instead if the GUI is running.
-// 2. Input buffer stuff.
+//ui.c: functions that handle the user interface.
+//1. Keyboard input stuff, and a bit of windowing stuff.  These are called
+//   before the machine specific stuff (mch_*) so that we can call the GUI
+//   stuff instead if the GUI is running.
+//2. Input buffer stuff.
 
 pub void
 uiInit(void) {
@@ -10889,16 +10889,16 @@ uiInit(void) {
 
    out_flush();
 
-   // Check whether we were invoked with SIGTSTP set to be ignored. If it is
-   // that indicates the shell (or program) that launched us does not support
-   // tty job control and thus we should ignore that signal.
+   //Check whether we were invoked with SIGTSTP set to be ignored. If it is
+   //that indicates the shell (or program) that launched us does not support
+   //tty job control and thus we should ignore that signal.
    setIgnoreSigTstp(SIG_IGN == mch_signal(SIGTSTP, SIG_ERR));
    set_signals();
 }
 
 pub void
 ui_write(CS s, int len, int console) {
-   // Don't output anything in silent mode ("ex -s") unless 'verbose' set
+   //Don't output anything in silent mode ("ex -s") unless 'verbose' set
    if (!(silentModeG && p_verbose == 0)) {
       mch_write(s, len);
       if (console && s[len - 1] == '\n')
@@ -10906,11 +10906,11 @@ ui_write(CS s, int len, int console) {
    }
 }
 
-// When executing an external program, there may be some typed characters that
-// are not consumed by it. Give them back to ui_inchar() and they are stored here for the next call.
+//When executing an external program, there may be some typed characters that
+//are not consumed by it. Give them back to ui_inchar() and they are stored here for the next call.
 private CS ta_str = NULL;
-private int ta_off;   // offset for next char to use when ta_str != NULL
-private int ta_len;   // length of ta_str when it's not NULL
+private int ta_off;   //offset for next char to use when ta_str != NULL
+private int ta_len;   //length of ta_str when it's not NULL
 
 pub void
 ui_inBytendo(CS s, int len) {
@@ -10953,37 +10953,37 @@ private int
 mch_inchar(
    OUT CS buf,
    int maxlen,
-   long wtime,       // don't use "time", MIPS cannot handle it
+   long wtime,       //don't use "time", MIPS cannot handle it
    int changeCnt
 ) {
    return inchar_loop(OUT buf, maxlen, wtime, changeCnt, waitForChar, resize_func);
 }
 
-// ui_inchar(): low level input function. Get characters from the keyboard.
-// Return the number of characters that are available.
-// If "wtime" == 0 do not wait for characters.
-// If "wtime" == -1 wait forever for characters.
-// If "wtime" > 0 wait "wtime" milliseconds for a character.
+//ui_inchar(): low level input function. Get characters from the keyboard.
+//Return the number of characters that are available.
+//If "wtime" == 0 do not wait for characters.
+//If "wtime" == -1 wait forever for characters.
+//If "wtime" > 0 wait "wtime" milliseconds for a character.
 //
-// "changeCnt" is the value of typeBufG.changeCnt iff "buf" points into
-// it (null otherwise).  When typeBufG.changeCnt changes (e.g., when a message is received
-// from a remote client) "buf" can no longer be used.
+//"changeCnt" is the value of typeBufG.changeCnt iff "buf" points into
+//it (null otherwise).  When typeBufG.changeCnt changes (e.g., when a message is received
+//from a remote client) "buf" can no longer be used.
 pub int
 ui_inchar(
    OUT CS buf,
    int maxlen,
-   long wtime,       // don't use "time", MIPS cannot handle it
+   long wtime,       //don't use "time", MIPS cannot handle it
    int changeCnt
 ){
    int      retval = 0;
 
-   // If we are going to wait for some time or block...
+   //If we are going to wait for some time or block...
    if (wtime == -1 || wtime > 100L) {
-      // ... allow signals to kill us.
+      //... allow signals to kill us.
       (void)eeHandleSignal(SIGNAL_UNBLOCK);
 
-      // ... there is no need for CTRL-C to interrupt something, don't let
-      // it set gotInterruptG when it was mapped.
+      //... there is no need for CTRL-C to interrupt something, don't let
+      //it set gotInterruptG when it was mapped.
       if ((mapped_ctrl_c | curBook->mappedCtrlC) & get_real_state())
           ctrl_c_interrupts = false;
    }
@@ -10993,44 +10993,44 @@ ui_inchar(
    //
    //while (not timed out)
    //{
-   //   handle-resize;
-   //   parse-queued-messages;
-   //   if (waited for 'updatetime')
-   //      trigger-cursorhold;
-   //   ui_wait_for_chars_or_timer()
-   //   if (character available)
-   //     break;
+   //  handle-resize;
+   //  parse-queued-messages;
+   //  if (waited for 'updatetime')
+   //     trigger-cursorhold;
+   //  ui_wait_for_chars_or_timer()
+   //  if (character available)
+   //    break;
    //}
    //
    //ui_wait_for_chars_or_timer() does:
    //
    //while (not timed out)
    //{
-   //    if (anyTimerTriggered)
-   //        invokeTimerCallback;
-   //    waitForCharacter();
-   //    if (character available)
-   //        break;
+   //   if (anyTimerTriggered)
+   //       invokeTimerCallback;
+   //   waitForCharacter();
+   //   if (character available)
+   //       break;
    //}
    //
    //wait-for-character() does:
    //while (not timed out)
    //{
-   //    Wait for event;
-   //    if (something on channel)
-   //        read/write channel;
-   //     ei (resized)
-   //        handleResize();
-   //     ei (system event)
-   //        dealWithSystemEvent;
-   //     ei (character available)
-   //        break;
+   //   Wait for event;
+   //   if (something on channel)
+   //       read/write channel;
+   //    ei (resized)
+   //       handleResize();
+   //    ei (system event)
+   //       dealWithSystemEvent;
+   //    ei (character available)
+   //       break;
    //}
 
    retval = mch_inchar(OUT buf, maxlen, wtime, changeCnt);
 
    if (wtime == -1 || wtime > 100L) {
-      // block SIGHUP et al.
+      //block SIGHUP et al.
       (void)eeHandleSignal(SIGNAL_BLOCK);
    }
 
@@ -11050,7 +11050,7 @@ pub int
 inchar_loop(
    OUT CS buf,
    int maxlen,
-   long wtime,       // don't use "time", MIPS cannot handle it
+   long wtime,       //don't use "time", MIPS cannot handle it
    int changeCnt,
    int (*wait_func)(long wtime, int *interrupted, Boole ignore_input),
    int (*resize_func)(int check_only)
@@ -11080,28 +11080,28 @@ inchar_loop(
             return 0;
       }
       if (wtime < 0 && did_start_blocking)
-         // blocking and already waited for p_ut
+         //blocking and already waited for p_ut
          wait_time = -1;
       else {
          if (wtime >= 0)
             wait_time = wtime;
          else
-            // going to block after p_ut
+            //going to block after p_ut
             wait_time = p_ut;
          elapsed_time = ELAPSED_FUNC(start_tv);
          wait_time -= elapsed_time;
 
-         // If the waiting time is now zero or less, we timed out. However, loop at least once to
-         // check for characters and events. Matters when "wtime" is zero.
+         //If the waiting time is now zero or less, we timed out. However, loop at least once to
+         //check for characters and events. Matters when "wtime" is zero.
          if (wait_time <= 0 && did_call_wait_func) {
             if (wtime >= 0)
-               // no character available within "wtime"
+               //no character available within "wtime"
                return 0;
 
-            // No character available within 'updatetime'.
+            //No character available within 'updatetime'.
             did_start_blocking = true;
             if (trigger_cursorhold() && maxlen >= 3 && !typebuf_changed(changeCnt)) {
-               // Put K_CURSORHOLD in the input buffer or return it.
+               //Put K_CURSORHOLD in the input buffer or return it.
                if (!buf) {
                   Byte ibuf[3];
                   ibuf[0] = CSI;
@@ -11124,39 +11124,39 @@ inchar_loop(
       }
 
       if (wait_time < 0 || wait_time > 100L) {
-         // Checking if a job ended requires polling. Do this at least every 100 msec.
+         //Checking if a job ended requires polling. Do this at least every 100 msec.
          if (has_pending_job())
             wait_time = 100L;
 
-         // If there is readahead then parse_queued_messages() timed out and
-         // we should call it again soon.
+         //If there is readahead then parse_queued_messages() timed out and
+         //we should call it again soon.
          if (channel_any_readahead())
             wait_time = 10L;
       }
 
-      // Wait for a character to be typed or another event, such as the winch
-      // signal or an event on the monitored file descriptors.
+      //Wait for a character to be typed or another event, such as the winch
+      //signal or an event on the monitored file descriptors.
       did_call_wait_func = true;
       if (wait_func(wait_time, &interrupted, false)) {
-         // If input was put directly in typeahead buffer bail out here.
+         //If input was put directly in typeahead buffer bail out here.
          if (typebuf_changed(changeCnt))
             return 0;
 
-         // We might have something to return now.
+         //We might have something to return now.
          if (!buf) {
-            // "buf" is NULL, we were just waiting, not actually getting input.
+            //"buf" is NULL, we were just waiting, not actually getting input.
             return input_available();
          }
 
          len = read_from_input_buf(buf, (long)maxlen);
-         if (len > 0) { // here we get raw keyboard input
+         if (len > 0) { //here we get raw keyboard input
             return len;
          }
          continue;
       }
-      // Timed out or interrupted with no character available.
+      //Timed out or interrupted with no character available.
 
-      // estimate the elapsed time
+      //estimate the elapsed time
       elapsed_time += wait_time;
 
       if ((resize_func && resize_func(true))
@@ -11164,17 +11164,17 @@ inchar_loop(
             || wait_time > 0
             || (wtime < 0 && !did_start_blocking)
       )
-         // no character available, but something to be done, keep going
+         //no character available, but something to be done, keep going
          continue;
 
-      // no character available or interrupted, return zero
+      //no character available or interrupted, return zero
       break;
    }
    return 0;
 }
 
-// Wait for a timer to fire or "wait_func" to return non-zero.
-// Return OK when something was read. Return FAIL when it timed out or was interrupted.
+//Wait for a timer to fire or "wait_func" to return non-zero.
+//Return OK when something was read. Return FAIL when it timed out or was interrupted.
 private int
 ui_wait_for_chars_or_timer(
    long wtime,
@@ -11187,7 +11187,7 @@ ui_wait_for_chars_or_timer(
    int changeCnt = typeBufG.changeCnt;
    int brief_wait = false;
 
-   // When waiting very briefly don't trigger timers.
+   //When waiting very briefly don't trigger timers.
    if (wtime >= 0 && wtime < 10L)
       return wait_func(wtime, NULL, ignore_input);
 
@@ -11196,7 +11196,7 @@ ui_wait_for_chars_or_timer(
       //time.
       due_time = check_due_timer();
       if (typeBufG.changeCnt != changeCnt) {
-         // timer may have used feedkeys()
+         //timer may have used feedkeys()
          return FAIL;
       }
       if (due_time <= 0 || (wtime > 0 && due_time > remaining))
@@ -11210,8 +11210,8 @@ ui_wait_for_chars_or_timer(
       if (wait_func(due_time, interrupted, ignore_input))
          return OK;
       if ((interrupted != NULL && *interrupted) || brief_wait)
-         // Nothing available, but need to return so that side effects get
-         // handled, such as handling a message on a channel.
+         //Nothing available, but need to return so that side effects get
+         //handled, such as handling a message on a channel.
          return FAIL;
       if (wtime > 0)
           remaining -= due_time;
@@ -11225,7 +11225,7 @@ ui_wait_for_chars_or_timer(
 //but something else needs to be done.
 private int
 waitForCharOrMouse(Long msec, OUT int *interrupted, Boole ignore_input) {
-   if (!ignore_input && input_available())       // something in inbuf[]
+   if (!ignore_input && input_available())       //something in inbuf[]
       return 1;
 
    int avail = uiRealWaitForChar(read_cmd_fd, msec, OUT interrupted);
@@ -11256,7 +11256,7 @@ mch_char_avail(void) {
    return waitForChar(0L, NULL, false);
 }
 
-// Return non-zero if a character is available.
+//Return non-zero if a character is available.
 pub int
 ui_char_avail(void) {
    return mch_char_avail();
@@ -11292,7 +11292,7 @@ ui_set_shellsize(int) {
    mch_set_shellsize();
 }
 
-// Get the portal position in pixels, if possible. Return FAIL when not possible.
+//Get the portal position in pixels, if possible. Return FAIL when not possible.
 pub int
 uiGetPortPos(int* x, int* y, Long timeout) {
    return term_get_winpos(x, y, timeout);
@@ -11303,21 +11303,21 @@ ui_breakcheck(void) {
    ui_breakcheck_force(false);
 }
 
-// When "force" is true also check when the terminal is not in raw mode.
-// This is useful to read input on channels.
+//When "force" is true also check when the terminal is not in raw mode.
+//This is useful to read input on channels.
 pub void
 ui_breakcheck_force(Boole force) {
    static int recursive = false;
    int save_updating_screen = updating_screen;
 
-   // We could be called recursively if stderr is redirected, calling
-   // fill_input_buf() calls termSetMode() when stdin isn't a tty.  termSetMode()
-   // calls vgetorpeek() which calls ui_breakcheck() again.
+   //We could be called recursively if stderr is redirected, calling
+   //fill_input_buf() calls termSetMode() when stdin isn't a tty.  termSetMode()
+   //calls vgetorpeek() which calls ui_breakcheck() again.
    if (recursive)
       return;
    recursive = true;
 
-   // We do not want gui_resize_shell() to redraw the screen here.
+   //We do not want gui_resize_shell() to redraw the screen here.
    ++updating_screen;
 
    chBreakcheck(force);
@@ -11331,25 +11331,25 @@ ui_breakcheck_force(Boole force) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Functions that handle the input buffer.
+//Functions that handle the input buffer.
 //
-// The input characters are buffered to be able to check for a CTRL-C. This should be done with 
-// signals, but I don't know how to do that in a portable way for a tty in RAW mode.
+//The input characters are buffered to be able to check for a CTRL-C. This should be done with 
+//signals, but I don't know how to do that in a portable way for a tty in RAW mode.
 //
-// For the client-server code in the console the received keys are put in the input buffer.
+//For the client-server code in the console the received keys are put in the input buffer.
 
 
-// Internal typeahead buffer. Includes extra space for long key code descriptions which would 
-// otherwise overflow.  The buffer is considered full when only this extra space (or part of it) 
-// remains.
+//Internal typeahead buffer. Includes extra space for long key code descriptions which would 
+//otherwise overflow.  The buffer is considered full when only this extra space (or part of it) 
+//remains.
 # define INBUFLEN 4096
 
 private Byte inbuf[INBUFLEN + MAX_KEY_CODE_LEN];
-private int inbufcount = 0;       // number of chars in inbuf[]
+private int inbufcount = 0;       //number of chars in inbuf[]
 
-// eeIsInputBufFull(), eeIsInputBufEmpty(), add_to_input_buf(), and
-// trash_input_buf() are functions for manipulating the input buffer.  These
-// are used by the gui_* calls when a GUI is used to handle keyboard input.
+//eeIsInputBufFull(), eeIsInputBufEmpty(), add_to_input_buf(), and
+//trash_input_buf() are functions for manipulating the input buffer.  These
+//are used by the gui_* calls when a GUI is used to handle keyboard input.
 
 pub int
 eeIsInputBufFull(void) {
@@ -11361,14 +11361,14 @@ eeIsInputBufEmpty(void) {
    return (inbufcount == 0);
 }
 
-// Return the current contents of the input buffer and make it empty.
-// The returned pointer must be passed to set_input_buf() later.
+//Return the current contents of the input buffer and make it empty.
+//The returned pointer must be passed to set_input_buf() later.
 pub CS
 get_input_buf(void) {
-   // We use an arraylist to store the data pointer and the length.
+   //We use an arraylist to store the data pointer and the length.
    ArrayList* gap = ALLOC_ONE(ArrayList);
    if (gap) {
-      // Add one to avoid a zero size.
+      //Add one to avoid a zero size.
       gap->c = alloc(inbufcount + 1);
       MEMMOVE(gap->c, inbuf, (Unt)inbufcount);
       gap->len = inbufcount;
@@ -11377,8 +11377,8 @@ get_input_buf(void) {
    return (CS)gap;
 }
 
-// Restore the input buffer with a pointer returned from get_input_buf(). The allocated memory is 
-// freed, this only works once! When "overwrite" is false input typed later is kept.
+//Restore the input buffer with a pointer returned from get_input_buf(). The allocated memory is 
+//freed, this only works once! When "overwrite" is false input typed later is kept.
 pub void
 set_input_buf(CS p, Boole overwrite) {
    ArrayList   *gap = (ArrayList *)p;
@@ -11399,18 +11399,18 @@ set_input_buf(CS p, Boole overwrite) {
    eeglFree(gap);
 }
 
-// Add the given bytes to the input buffer Special keys start with CSI. A real CSI must have 
-// been translated to CSI KS_EXTRA KE_CSI.  K_SPECIAL doesn't require translation.
+//Add the given bytes to the input buffer Special keys start with CSI. A real CSI must have 
+//been translated to CSI KS_EXTRA KE_CSI.  K_SPECIAL doesn't require translation.
 pub void
 add_to_input_buf(CS s, int len) {
    if (inbufcount + len > INBUFLEN + MAX_KEY_CODE_LEN)
-       return;       // Shouldn't ever happen!
+       return;       //Shouldn't ever happen!
 
    while (len--)
       inbuf[inbufcount++] = *s++;
 }
 
-// Add "str[len]" to the input buffer while escaping CSI bytes.
+//Add "str[len]" to the input buffer while escaping CSI bytes.
 pub void
 add_to_input_buf_csi(CS str, int len) {
    Byte buf[2];
@@ -11418,7 +11418,7 @@ add_to_input_buf_csi(CS str, int len) {
    for (int i = 0; i < len; ++i) {
       add_to_input_buf(str + i, 1);
       if (str[i] == CSI) {
-         // Turn CSI into K_CSI.
+         //Turn CSI into K_CSI.
          buf[0] = KS_EXTRA;
          buf[1] = (int)KE_CSI;
          add_to_input_buf(buf, 2);
@@ -11426,22 +11426,22 @@ add_to_input_buf_csi(CS str, int len) {
    }
 }
 
-// Remove everything from the input buffer.  Called when ^C is found.
+//Remove everything from the input buffer.  Called when ^C is found.
 pub void
 trash_input_buf(void) {
    inbufcount = 0;
 }
 
-// Read as much data from the input buffer as possible up to maxlen, and store it in buf.
+//Read as much data from the input buffer as possible up to maxlen, and store it in buf.
 pub int
 read_from_input_buf(CS buf, long maxlen) {
-   if (inbufcount == 0)   // if the buffer is empty, fill it
+   if (inbufcount == 0)   //if the buffer is empty, fill it
       fill_input_buf(true);
    if (maxlen > inbufcount)
       maxlen = inbufcount;
    MEMMOVE(buf, inbuf, (Unt)maxlen);
    inbufcount -= maxlen;
-   // check "maxlen" to avoid clang warning
+   //check "maxlen" to avoid clang warning
    if (inbufcount > 0 && maxlen > 0)
       MEMMOVE(inbuf, inbuf + maxlen, (Unt)inbufcount);
    return (int)maxlen;
@@ -11451,7 +11451,7 @@ pub void
 fill_input_buf(Boole exit_on_error) {
    int try;
    static int   did_read_something = false;
-   static CS rest = NULL;       // unconverted rest of previous read
+   static CS rest = NULL;       //unconverted rest of previous read
    static int   restlen = 0;
    int      unconverted;
 
@@ -11461,8 +11461,8 @@ fill_input_buf(Boole exit_on_error) {
    //If we can't get any, but there is some in the buffer, just return.
    //If we can't get any, and there isn't any in the buffer, we give up and exit Eegl.
    if (rest) {
-      // Use remainder of previous call, starts with an invalid character
-      // that may become valid when reading more.
+      //Use remainder of previous call, starts with an invalid character
+      //that may become valid when reading more.
       if (restlen > INBUFLEN - inbufcount)
          unconverted = INBUFLEN - inbufcount;
       else
@@ -11490,15 +11490,15 @@ fill_input_buf(Boole exit_on_error) {
 
       if (len > 0 || gotInterruptG)
          break;
-      // If reading stdin results in an error, continue reading stderr.
-      // This helps when using "foo | xargs eegl".
+      //If reading stdin results in an error, continue reading stderr.
+      //This helps when using "foo | xargs eegl".
       if (!did_read_something && !isatty(read_cmd_fd) && read_cmd_fd == 0) {
           int m = cur_tmode;
 
-          // We probably set the wrong file descriptor to raw mode.  Switch
-          // back to cooked mode, use another descriptor and set the mode to what it was.
+          //We probably set the wrong file descriptor to raw mode.  Switch
+          //back to cooked mode, use another descriptor and set the mode to what it was.
           termSetMode(TMODE_COOK);
-          // Use stderr for stdin, also works for shell commands.
+          //Use stderr for stdin, also works for shell commands.
           close(0);
           (void)dup(2);
           termSetMode(m);
@@ -11511,22 +11511,22 @@ fill_input_buf(Boole exit_on_error) {
    if (len > 0)
       did_read_something = true;
    if (gotInterruptG) {
-      // Interrupted, pretend a CTRL-C was typed.
+      //Interrupted, pretend a CTRL-C was typed.
       inbuf[0] = 3;
       inbufcount = 1;
    } else {
       while (len > 0) {
-         // If a CTRL-C was typed, remove it from the buffer and set gotInterruptG. Also recognize 
-         // CTRL-C with modifyOtherKeys set, lower and upper case, in two forms.
-         // If terminal key protocols are in use, we expect to receive
-         // Ctrl_C as an escape sequence, ignore a raw Ctrl_C as this could be paste data.
+         //If a CTRL-C was typed, remove it from the buffer and set gotInterruptG. Also recognize 
+         //CTRL-C with modifyOtherKeys set, lower and upper case, in two forms.
+         //If terminal key protocols are in use, we expect to receive
+         //Ctrl_C as an escape sequence, ignore a raw Ctrl_C as this could be paste data.
          if (ctrl_c_interrupts
            && ((len >= 10 && STRNCMP(inbuf + inbufcount, "\033[27;5;99~", 10) == 0)
               || (len >= 10 && STRNCMP(inbuf + inbufcount, "\033[27;5;67~", 10) == 0)
               || (len >= 7 && STRNCMP(inbuf + inbufcount, "\033[99;5u", 7) == 0)
               || (len >= 7 && STRNCMP(inbuf + inbufcount, "\033[67;5u", 7) == 0))
          ) {
-            // remove everything typed before the CTRL-C
+            //remove everything typed before the CTRL-C
             MEMMOVE(inbuf, inbuf + inbufcount, (Unt)(len));
             inbufcount = 0;
             gotInterruptG = true;
@@ -11537,10 +11537,10 @@ fill_input_buf(Boole exit_on_error) {
    }
 }
 
-// Exit because of an input read error.
+//Exit because of an input read error.
 pub void
 read_error_exit(void) {
-   if (silentModeG)   // Normal way to exit for "ex -s"
+   if (silentModeG)   //Normal way to exit for "ex -s"
    exitEegl(0);
     STRCPY(IObuff, _("Eegl: Error reading input, exiting...\n"));
     preserve_exit();
@@ -11551,7 +11551,7 @@ ui_cursor_shape(void) {
    ui_cursor_shape_forced(false);
 }
 
-// Check bounds for column number
+//Check bounds for column number
 pub Unt
 check_col(Unt col) {
    if ((int)col >= screenLinesColsG)
@@ -11559,7 +11559,7 @@ check_col(Unt col) {
    return col;
 }
 
-// Check bounds for row number
+//Check bounds for row number
 pub Unt
 check_row(Unt row) {
    if ((int)row >= screenLinesRowsG)
@@ -11567,7 +11567,7 @@ check_row(Unt row) {
    return row;
 }
 
-// Return length of line "lnum" in screen cells for horizontal scrolling.
+//Return length of line "lnum" in screen cells for horizontal scrolling.
 pub long
 scroll_line_len(LineNr lnum) {
    CS p = ml_get(lnum);
@@ -11577,7 +11577,7 @@ scroll_line_len(LineNr lnum) {
       for (;;) {
          int       w = chartabsize(p, col);
          MB_PTR_ADV(p);
-         if (*p == ZERO)      // don't count the last character
+         if (*p == ZERO)      //don't count the last character
             break;
          col += w;
       }
@@ -11585,15 +11585,15 @@ scroll_line_len(LineNr lnum) {
    return col;
 }
 
-// Find the longest visible line number.  This is used for horizontal
-// scrolling.  If this is not possible (or not desired, by setting 'h' in
-// "guioptions") then the current line number is returned.
+//Find the longest visible line number.  This is used for horizontal
+//scrolling.  If this is not possible (or not desired, by setting 'h' in
+//"guioptions") then the current line number is returned.
 pub LineNr
 ui_find_longest_lnum(void) {
    LineNr ret = 0;
 
-   // Calculate maximum for horizontal scrollbar.  Check for reasonable
-   // line numbers, topline and botline can be invalid when displaying is postponed.
+   //Calculate maximum for horizontal scrollbar.  Check for reasonable
+   //line numbers, topline and botline can be invalid when displaying is postponed.
    if (
        curPor->topLine <= curPor->cursor.lnum
        && curPor->bottomLine > curPor->cursor.lnum
@@ -11602,8 +11602,8 @@ ui_find_longest_lnum(void) {
       long n;
       long max = 0;
 
-      // Use maximum of all visible lines.  Remember the lnum of the
-      // longest line, closest to the cursor line.  Used when scrolling below.
+      //Use maximum of all visible lines.  Remember the lnum of the
+      //longest line, closest to the cursor line.  Used when scrolling below.
       for (LineNr lnum = curPor->topLine; lnum < curPor->bottomLine; ++lnum) {
          n = scroll_line_len(lnum);
          if (n > max) {
@@ -11614,15 +11614,15 @@ ui_find_longest_lnum(void) {
             ret = lnum;
       }
    } else
-      // Use cursor line only.
+      //Use cursor line only.
       ret = curPor->cursor.lnum;
 
    return ret;
 }
 
-// Called when focus changed. 
+//Called when focus changed. 
 pub void
-ui_focus_change(int in_focus) {  // true if focus gained.
+ui_focus_change(int in_focus) {  //true if focus gained.
    static time_t   last_time = (time_t)0;
    int need_redraw = false;
 
@@ -11635,7 +11635,7 @@ ui_focus_change(int in_focus) {  // true if focus gained.
 
    term_focus_change(in_focus);
 
-   // Fire the focus gained/lost autocommand.
+   //Fire the focus gained/lost autocommand.
    need_redraw |= applyAutocomms(in_focus ? EVENT_FOCUSGAINED
             : EVENT_FOCUSLOST, NULL, NULL, false, curBook);
 
@@ -11643,7 +11643,7 @@ ui_focus_change(int in_focus) {  // true if focus gained.
       redraw_after_callback(true, true);
 }
 
-// Report the windows size "rows" and "cols" to tty "fd".
+//Report the windows size "rows" and "cols" to tty "fd".
 pub int
 mch_report_winsize(int fd, int rows, int cols) {
    int retval = -1;
@@ -11657,12 +11657,12 @@ mch_report_winsize(int fd, int rows, int cols) {
    ws.ws_col = cols;
    ws.ws_row = rows;
 
-   // calculate and set tty pixel size
+   //calculate and set tty pixel size
    CellSize cs;
    mch_calc_cell_size(&cs);
 
    if (cs.cs_xpixel == -1) {
-      // failed get pixel size.
+      //failed get pixel size.
       ws.ws_xpixel = 0;
       ws.ws_ypixel = 0;
    } else {
@@ -11683,22 +11683,22 @@ mch_report_winsize(int fd, int rows, int cols) {
    return retval == 0 ? OK : FAIL;
 }
 
-// Try to set the window size to visibleRowsG and visibleColsG.
+//Try to set the window size to visibleRowsG and visibleColsG.
 pub void
 mch_set_shellsize(void) {
    if (*termCodesG[KS_CWS] != ZERO) {
-      // NOTE: if you get an error here that term_set_winsize() is undefined, check the output of 
-      // configure.  It could probably not find a ncurses, termcap or termlib library.
+      //NOTE: if you get an error here that term_set_winsize() is undefined, check the output of 
+      //configure.  It could probably not find a ncurses, termcap or termlib library.
       term_set_winsize((int)visibleRowsG, (int)visibleColsG);
       out_flush();
-      screen_start();         // don't know where cursor is now
+      screen_start();         //don't know where cursor is now
    }
 }
 
-// Try to get the current terminal cell size. On failure, returns -1x-1
+//Try to get the current terminal cell size. On failure, returns -1x-1
 pub void
 mch_calc_cell_size(CellSize* cs_out) {
-   // get current tty size.
+   //get current tty size.
    struct winsize ws;
    int fd = 1;
    int retval = -1;
@@ -11712,11 +11712,11 @@ mch_calc_cell_size(CellSize* cs_out) {
       return;
    }
 
-   // calculate parent tty's pixel per cell.
+   //calculate parent tty's pixel per cell.
    int x_cell_size = ws.ws_xpixel / ws.ws_col;
    int y_cell_size = ws.ws_ypixel / ws.ws_row;
 
-   // calculate current tty's pixel
+   //calculate current tty's pixel
    cs_out->cs_xpixel = x_cell_size;
    cs_out->cs_ypixel = y_cell_size;
 
@@ -11735,15 +11735,15 @@ mch_get_shellsize(void) {
    long   columns = 0;
    CS p;
 
-   // 1. try using an ioctl. It is the most accurate method.
-   // Try using TIOCGWINSZ first, some systems that have it also define
-   // TIOCGSIZE but don't have a struct ttysize.
+   //1. try using an ioctl. It is the most accurate method.
+   //Try using TIOCGWINSZ first, some systems that have it also define
+   //TIOCGSIZE but don't have a struct ttysize.
 # ifdef TIOCGWINSZ
    {
    struct winsize ws;
    int fd = 1;
 
-   // When stdout is not a tty, use stdin for the ioctl().
+   //When stdout is not a tty, use stdin for the ioctl().
    if (!isatty(fd) && isatty(read_cmd_fd))
        fd = read_cmd_fd;
    if (ioctl(fd, TIOCGWINSZ, &ws) == 0) {
@@ -11752,13 +11752,13 @@ mch_get_shellsize(void) {
        lo("Got size with TIOCGWINSZ: %ld x %ld", columns, rows);
    }
     }
-# else // TIOCGWINSZ
+# else //TIOCGWINSZ
 #  ifdef TIOCGSIZE
     {
    struct ttysize   ts;
    int fd = 1;
 
-   // When stdout is not a tty, use stdin for the ioctl().
+   //When stdout is not a tty, use stdin for the ioctl().
    if (!isatty(fd) && isatty(read_cmd_fd))
       fd = read_cmd_fd;
    if (ioctl(fd, TIOCGSIZE, &ts) == 0) {
@@ -11767,10 +11767,10 @@ mch_get_shellsize(void) {
       lo("Got size with TIOCGSIZE: %ld x %ld", columns, rows);
    }
    }
-#  endif // TIOCGSIZE
-# endif // TIOCGWINSZ
+#  endif //TIOCGSIZE
+# endif //TIOCGWINSZ
 
-   // 2. get size from environment
+   //2. get size from environment
    if (columns == 0 || rows == 0) {
       if ((p = (CS)getenv("LINES"))) {
          rows = atoi((char *)p);
@@ -11782,7 +11782,7 @@ mch_get_shellsize(void) {
       }
    }
 
-   // 3. try reading "co" and "li" entries from termcap
+   //3. try reading "co" and "li" entries from termcap
    if (columns == 0 || rows == 0) {
       getlinecol(&columns, &rows);
       lo("Got size from termcap: %ld x %ld", columns, rows);
@@ -11801,23 +11801,23 @@ mch_get_shellsize(void) {
 //}}}
 //{{{tabpanel
 
-// The panel with the list of tabs on the left
+//The panel with the list of tabs on the left
 
 private void do_by_tplmode(Unt tplmode, Unt col_start, Unt col_end,
    OUT Unt* pcurtab_row, OUT Unt* tabNr);
 
-// set pcurtab_row. don't redraw tabpanel.
+//set pcurtab_row. don't redraw tabpanel.
 #define TPLMODE_GET_CURTAB_ROW 0
-// set ptabNr. don't redraw tabpanel.
+//set ptabNr. don't redraw tabpanel.
 #define TPLMODE_GET_TAB_NR     1
-// redraw tabpanel.
+//redraw tabpanel.
 #define TPLMODE_REDRAW         2
 
 #define TPL_FILLCHAR      ' '
 
 #define VERT_LEN    1
 
-// tabPanelAlignS's values
+//tabPanelAlignS's values
 #define ALIGN_LEFT  0
 #define ALIGN_RIGHT 1
 
@@ -11869,7 +11869,7 @@ uiValidateTabpanelopt(CS new) {
    return OK;
 }
 
-// Return the width of tabpanel.
+//Return the width of tabpanel.
 pub int
 tabpanel_width(void) {
    if (p_stpl) {
@@ -11884,13 +11884,13 @@ tabpanel_width(void) {
       return tpl_columns;
 }
 
-// Return the offset of a portal considering the width of tabpanel.
+//Return the offset of a portal considering the width of tabpanel.
 pub int
 tabpanel_leftcol(void) {
    return tabPanelAlignS == ALIGN_RIGHT ? 0 : tabpanel_width();
 }
 
-// draw the tabpanel.
+//draw the tabpanel.
 pub void
 draw_tabpanel(void) {
    int saved_keyWasTypedG = keyWasTypedG;
@@ -11903,24 +11903,24 @@ draw_tabpanel(void) {
    if (maxwidth == 0)
       return;
 
-   // Reset gotInterruptG to avoid bookRenderStatusLine() isn't evaluted.
+   //Reset gotInterruptG to avoid bookRenderStatusLine() isn't evaluted.
    gotInterruptG = false;
 
    if (tpl_is_vert) {
       if (is_right) {
-         // draw main contents in tabpanel
+         //draw main contents in tabpanel
          do_by_tplmode(
             TPLMODE_GET_CURTAB_ROW, VERT_LEN, maxwidth - VERT_LEN, OUT &curtab_row, NULL
          );
          do_by_tplmode(TPLMODE_REDRAW, VERT_LEN, maxwidth, OUT &curtab_row, NULL);
-         // draw vert separator in tabpanel
+         //draw vert separator in tabpanel
          for (Unt vsrow = 0; vsrow < commlineRowG; vsrow++)
             screen_putchar(fillCharsG.tpl_vert, vsrow, topframeG->width, vsDecoFlags);
       } else {
-         // draw main contents in tabpanel
+         //draw main contents in tabpanel
          do_by_tplmode(TPLMODE_GET_CURTAB_ROW, 0, maxwidth - VERT_LEN, OUT &curtab_row, NULL);
          do_by_tplmode(TPLMODE_REDRAW, 0, maxwidth - VERT_LEN, OUT &curtab_row, NULL);
-         // draw vert separator in tabpanel
+         //draw vert separator in tabpanel
          for (Unt vsrow = 0; vsrow < commlineRowG; vsrow++)
             screen_putchar(fillCharsG.tpl_vert, vsrow, maxwidth - VERT_LEN, vsDecoFlags);
       }
@@ -11931,13 +11931,13 @@ draw_tabpanel(void) {
 
    gotInterruptG |= saved_gotInterruptG;
 
-   // A user function may reset keyWasTypedG, restore it.
+   //A user function may reset keyWasTypedG, restore it.
    keyWasTypedG = saved_keyWasTypedG;
 
    needRedrawTabpanelG = false;
 }
 
-// Return tabNr when clicking and dragging in tabpanel. UNT if not found.
+//Return tabNr when clicking and dragging in tabpanel. UNT if not found.
 pub Unt
 get_tabNr_on_tabpanel(void) {
    Unt maxwidth = tabpanel_width();
@@ -11953,7 +11953,7 @@ get_tabNr_on_tabpanel(void) {
    return tabNr;
 }
 
-// Fill tailing area between {start_row} and {end_row - 1}.
+//Fill tailing area between {start_row} and {end_row - 1}.
 private void
 fillRowsWithTwoCharsWithTailingArea(
    int tplmode,
@@ -11990,7 +11990,7 @@ drawTextLen_for_tabpanel(
          break;
 
       if (p[j] == '\n' || p[j] == '\r') {
-         // fill the tailing area of current row.
+         //fill the tailing area of current row.
          if (*tapa->prow >= tapa->offsetrow && *tapa->prow < tapa->offsetrow + tapa->maxrow) {
             fillRowsWithTwoCharsWithTailingArea(tplmode,
                *tapa->prow - tapa->offsetrow,
@@ -12009,7 +12009,7 @@ drawTextLen_for_tabpanel(
          buf[charLen] = ZERO;
          j += charLen;
 
-         // Make all characters printable.
+         //Make all characters printable.
          temp = sanitizeStr(buf);
          if (temp != NULL) {
             copySubstrToAllocation(buf, (Text){temp, sizeof(buf) - 1});
@@ -12019,7 +12019,7 @@ drawTextLen_for_tabpanel(
          chcells = mb_ptr2cells(buf);
 
          if (tapa->col_end < (*tapa->pcol) + chcells) {
-            // fill the tailing area of current row.
+            //fill the tailing area of current row.
             if (*tapa->prow >= tapa->offsetrow && *tapa->prow - tapa->offsetrow < tapa->maxrow)
                fillRowsWithTwoCharsWithTailingArea(
                   tplmode,
@@ -12046,7 +12046,7 @@ drawTextLen_for_tabpanel(
    }
 }
 
-// default tabpanel drawing behavior if 'tabpanel' option is empty.
+//default tabpanel drawing behavior if 'tabpanel' option is empty.
 private void
 draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
    int modified;
@@ -12083,7 +12083,7 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
    len = (int)STRLEN(nameBuffG);
    drawTextLen_for_tabpanel(tplmode, nameBuffG, len, getFullDecoration(0), tapa);
 
-   // fill the tailing area of current row.
+   //fill the tailing area of current row.
    if (*tapa->prow >= tapa->offsetrow && *tapa->prow < tapa->offsetrow + tapa->maxrow) {
       fillRowsWithTwoCharsWithTailingArea(
          tplmode, *tapa->prow - tapa->offsetrow, *tapa->prow - tapa->offsetrow + 1,
@@ -12093,7 +12093,7 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
    *tapa->pcol = tapa->col_end;
 }
 
-// default tabpanel drawing behavior if @tabpanel option is NOT empty.
+//default tabpanel drawing behavior if @tabpanel option is NOT empty.
 private void
 drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    Byte buf[IOSIZE];
@@ -12103,8 +12103,8 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    Boole diffSaved = tapa->currPort->o.diff;
    tapa->currPort->o.diff = false;
 
-   // Make a copy, because the statusline may include a function call that
-   // might change the option value and free the memory.
+   //Make a copy, because the statusline may include a function call that
+   //might change the option value and free the memory.
    CS p = copyStr(tapa->user_defined);
 
    Arr(StatusLineHilite) labels;
@@ -12120,7 +12120,7 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    p = buf;
    drawTextLen_for_tabpanel(tplmode, p, (int)STRLEN(p), currDeco, tapa);
 
-   // fill the tailing area of current row.
+   //fill the tailing area of current row.
    if (*tapa->prow >= tapa->offsetrow && *tapa->prow < tapa->offsetrow + tapa->maxrow) {
       fillRowsWithTwoCharsWithTailingArea(
          tplmode, *tapa->prow - tapa->offsetrow, *tapa->prow + 1 - tapa->offsetrow, 
@@ -12138,8 +12138,8 @@ startsWithPercentAndBang(Tabpanel* tapa) {
    CS usefmt = p_tpl;
    int anyEmsgG_before = anyEmsgG;
 
-   // When the format starts with "%!" then evaluate it as an expression and
-   // use the result as the actual format string.
+   //When the format starts with "%!" then evaluate it as an expression and
+   //use the result as the actual format string.
    if (usefmt[0] == '%' && usefmt[1] == '!') {
       Var tv = {};
       tv.tag = VAR_NUMBER;
@@ -12161,7 +12161,7 @@ startsWithPercentAndBang(Tabpanel* tapa) {
    return usefmt;
 }
 
-// do something by tplmode for drawing tabpanel.
+//do something by tplmode for drawing tabpanel.
 private void
 do_by_tplmode(
    Unt tplmode,
@@ -12221,7 +12221,7 @@ do_by_tplmode(
 
          while (p[i] != ZERO) {
             while (p[i] == '\n' || p[i] == '\r') {
-               // fill the tailing area of current row.
+               //fill the tailing area of current row.
                if (row >= tapa.offsetrow && row < tapa.offsetrow + tapa.maxrow) {
                   fillRowsWithTwoCharsWithTailingArea(
                      tplmode,
@@ -12248,7 +12248,7 @@ do_by_tplmode(
             tapa.prow = &row;
             tapa.pcol = &col;
             drawTabpanelUserdefined(tplmode, &tapa);
-            // p_tpl could have been freed in bookRenderStatusLine()
+            //p_tpl could have been freed in bookRenderStatusLine()
             if (!p_tpl) {
                usefmt = NULL;
                break;
@@ -12278,7 +12278,7 @@ do_by_tplmode(
       }
    }
 
-   // fill the area of TabPanelFill.
+   //fill the area of TabPanelFill.
    fillRowsWithTwoCharsWithTailingArea(
       tplmode, row - tapa.offsetrow, tapa.maxrow, tapa.col_start, tapa.col_end, fillerDeco
    );

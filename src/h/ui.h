@@ -70,13 +70,13 @@ void ui_inBytendo(CS s, int len);
 int ui_inchar(
    OUT CS buf,
    int maxlen,
-   long wtime,       // don't use "time", MIPS cannot handle it
+   long wtime,       //don't use "time", MIPS cannot handle it
    int changeCnt
 );
 int inchar_loop(
    OUT CS buf,
    int maxlen,
-   long wtime,       // don't use "time", MIPS cannot handle it
+   long wtime,       //don't use "time", MIPS cannot handle it
    int changeCnt,
    int (*wait_func)(long wtime, int *interrupted, Boole ignore_input),
    int (*resize_func)(int check_only)

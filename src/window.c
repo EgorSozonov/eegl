@@ -1543,8 +1543,6 @@ do_put(
       } else
          curPor->cursor.lnum = lnum;
    } else {
-      Pos necursor;
-
       yanklen = (int)y_array[0].len;
 
       // Character or Line mode
@@ -1565,7 +1563,7 @@ do_put(
       // Line mode: BACKWARD is the same as FORWARD on the previous line
       ei (dir == BACKWARD)
          --lnum;
-      necursor = curPor->cursor;
+      Pos necursor = curPor->cursor;
 
       // simple case: insert into one line at a time
       if (y_type == MCHAR && y_size == 1) {
@@ -1601,14 +1599,13 @@ do_put(
                oldp = ml_get(lnum);
                oldlen = ml_get_len(lnum);
                if (lnum > start_lnum) {
-               Pos   pos;
-
-               pos.lnum = lnum;
-               if (getvpos(&pos, vcol) == OK)
-                   col = pos.col;
-               else
-                   col = MAXCOL;
-                }
+                  Pos  pos;
+                  pos.lnum = lnum;
+                  if (getvpos(OUT &pos, vcol) == OK)
+                     col = pos.col;
+                  else
+                     col = MAXCOL;
+               }
                if (VIsual_active && col > oldlen) {
                   lnum++;
                   continue;
@@ -1622,24 +1619,23 @@ do_put(
                }
                MEMMOVE(ptr, oldp + col, (Unt)(oldlen - col) + 1);       // +1 for ZERO
 
-                // compute the byte offset for the last character
-                first_byte_off = mb_head_off(newp, ptr - 1);
+               // compute the byte offset for the last character
+               first_byte_off = mb_head_off(newp, ptr - 1);
 
-                // Note: this may free "newp"
-                ml_replace(lnum, newp, false);
+               // Note: this may free "newp"
+               ml_replace(lnum, newp, false);
 
-                inserted_bytes(lnum, col, totlen);
+               inserted_bytes(lnum, col, totlen);
 
-                // Place cursor on last putted char.
-                if (lnum == curPor->cursor.lnum)
-                {
-               // make sure curPor->virtCol is updated
-               changed_cline_bef_curs();
-               invalidate_botline();
-               curPor->cursor.col += (ColNr)(totlen - 1);
-                }
-                if (VIsual_active)
-               lnum++;
+               // Place cursor on last putted char.
+               if (lnum == curPor->cursor.lnum) {
+                  // make sure curPor->virtCol is updated
+                  changed_cline_bef_curs();
+                  invalidate_botline();
+                  curPor->cursor.col += (ColNr)(totlen - 1);
+               }
+               if (VIsual_active)
+                  lnum++;
             } while (VIsual_active && lnum <= end_lnum);
 
             if (VIsual_active) // reset lnum to the last visual line
@@ -1714,20 +1710,19 @@ do_put(
                    indent = 0;     // Leave # lines at start
                ei (*ptr == ZERO)
                    indent = 0;     // Ignore empty lines
-               ei (first_indent)
-               {
+               ei (first_indent) {
                    indent_diff = orig_indent - get_indent();
                    indent = orig_indent;
                    first_indent = false;
                }
                ei ((indent = get_indent() + indent_diff) < 0)
                    indent = 0;
-               (void)set_indent(indent, 0);
+               (void)doSetIndent(indent, 0);
                curPor->cursor = old_pos;
                // remember how many chars were removed
                if (cnt == count && i == y_size - 1)
                    lendiff -= ml_get_len(lnum);
-                }
+               }
             }
             if (cnt == 1)
                new_lnum = lnum;

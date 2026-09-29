@@ -29,7 +29,7 @@ int put_line(FILE *fd, CS s);
 int get_eeglinfo_parameter(int type);
 void check_marks_read(void);
 int read_eeglinfo(
-   CS file,       // file name or NULL to use default name
-   Unt flags       // EIF_WANT_INFO et al.
+   CS file,       //file name or NULL to use default name
+   Unt flags       //EIF_WANT_INFO et al.
 );
 void write_eeglinfo(CS file, Boole forceit);

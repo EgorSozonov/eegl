@@ -43,20 +43,20 @@ pub
 
 #include <sys/resource.h>
 
-int fstat(int fd, struct stat* statbuf); // from sys/stat.h
+int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 int lstat(const char* restrict, struct stat* restrict);
 
 
 //{{{types
 
-// struct used in the array that's given to qsort()
+//struct used in the array that's given to qsort()
 typedef struct {
    ListItem* item;
    int idx;
 } SortItem;
 
-// struct storing information about current sort
+//struct storing information about current sort
 typedef struct {
    int item_compare_ic;
    int item_compare_lc;
@@ -80,8 +80,8 @@ typedef enum {
 typedef struct match_struct {
    int needle_len;
    int haystack_len;
-   int lower_needle[MATCH_MAX_LEN];     // stores codepoints
-   int lower_haystack[MATCH_MAX_LEN];   // stores codepoints
+   int lower_needle[MATCH_MAX_LEN];     //stores codepoints
+   int lower_haystack[MATCH_MAX_LEN];   //stores codepoints
    double match_bonus[MATCH_MAX_LEN];
 } MatchInfo;
 
@@ -95,11 +95,11 @@ typedef enum {
 } AssertKind;
 
 struct ListWatch {
-   ListItem* c;   // item being watched
-   ListWatch* next;   // next watcher
+   ListItem* c;   //item being watched
+   ListWatch* next;   //next watcher
 };
 
-// Enum used by filter(), map(), mapnew() and foreach()
+//Enum used by filter(), map(), mapnew() and foreach()
 pub typedef enum {
    FILTERMAP_FILTER,
    FILTERMAP_MAP,
@@ -119,13 +119,13 @@ private int list_append_tv_move(List* l, Var* tv);
 private void list_flatten(List* list, ListItem* first, long maxitems, long maxdepth);
 private void flatten_common(Arr(Var) argvars, Var* returnVar, int make_copy);
 private int list_join_inner(
-    ArrayList* gap,      // to store the result in
+    ArrayList* gap,      //to store the result in
     List* l,
     CS sep,
     int echo_style,
     int restore_copyID,
     int copyID,
-    ArrayList* join_gap)   // to keep each list item string
+    ArrayList* join_gap)   //to keep each list item string
 ;
 private void listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg);
 private int item_compare(const void *s1, const void *s2);
@@ -355,8 +355,8 @@ pub
 //}}}
 //{{{vimscript list
 
-// List heads for garbage collection.
-private List* first_list = NULL;   // list of all lists
+//List heads for garbage collection.
+private List* first_list = NULL;   //list of all lists
 
 #define FOR_ALL_WATCHERS(l, lw) \
     for ((lw) = (l)->watcher; (lw) != NULL; (lw) = (lw)->next)
@@ -364,14 +364,14 @@ private List* first_list = NULL;   // list of all lists
 private void
 list_free_item(List* l, ListItem* item);
 
-// Add a watcher to a list.
+//Add a watcher to a list.
 pub void
 list_add_watch(List* l, ListWatch* lw) {
    lw->next = l->watcher;
    l->watcher = lw;
 }
 
-// Remove a watcher from a list. No warning when it isn't found...
+//Remove a watcher from a list. No warning when it isn't found...
 pub void
 list_rem_watch(List* l, ListWatch* lwrem) {
    ListWatch* lw;
@@ -385,7 +385,7 @@ list_rem_watch(List* l, ListWatch* lwrem) {
    }
 }
 
-// Just before removing an item from a list: advance watchers to the next item.
+//Just before removing an item from a list: advance watchers to the next item.
 private void
 list_fix_watch(List* l, ListItem* item) {
    ListWatch* lw;
@@ -396,7 +396,7 @@ list_fix_watch(List* l, ListItem* item) {
 }
 
 
-// Prepend the list to the list of lists for garbage collection.
+//Prepend the list to the list of lists for garbage collection.
 private void
 registerForGc(List* l) {
    if (first_list)
@@ -406,7 +406,7 @@ registerForGc(List* l) {
    first_list = l;
 }
 
-// Allocate an empty header for a list. Caller should take care of the reference count.
+//Allocate an empty header for a list. Caller should take care of the reference count.
 pub List *
 list_alloc(void) {
    List* l = ALLOC_CLEAR_ONE(List);
@@ -414,7 +414,7 @@ list_alloc(void) {
    return l;
 }
 
-// list_alloc() with an ID for alloc_fail().
+//list_alloc() with an ID for alloc_fail().
 pub List *
 list_alloc_id(AllocId id) {
    if (alloc_fail_id == id && alloc_does_fail(sizeof(List)))
@@ -422,8 +422,8 @@ list_alloc_id(AllocId id) {
    return (list_alloc());
 }
 
-// Allocate space for a list, plus "count" items. This uses one allocation for efficiency.
-// The reference count is not set. Next list_set_item() must be called for each item.
+//Allocate space for a list, plus "count" items. This uses one allocation for efficiency.
+//The reference count is not set. Next list_set_item() must be called for each item.
 pub List *
 list_alloc_with_items(int count) {
    List* l = (List *)allocZeroed(sizeof(List) + count * sizeof(ListItem));
@@ -454,23 +454,23 @@ list_alloc_with_items(int count) {
    return l;
 }
 
-// Set item "idx" for a list previously allocated with list_alloc_with_items().
-// The contents of "tv" is moved into the list item. Each item must be set exactly once.
+//Set item "idx" for a list previously allocated with list_alloc_with_items().
+//The contents of "tv" is moved into the list item. Each item must be set exactly once.
 pub void
 list_set_item(List *l, int idx, Var *tv) {
    ListItem* li = (ListItem *)(l + 1) + idx;
    li->c = *tv;
 }
 
-// Allocate an empty list for a return value, with reference count set. Return OK or FAIL.
+//Allocate an empty list for a return value, with reference count set. Return OK or FAIL.
 pub void
 allocReturnList(OUT Var* returnVar) {
    returnVar->lock = 0;
    returnVar_list_set(OUT returnVar, list_alloc());
 }
 
-// Allocate an empty list for a return value, with reference count set. Return OK or FAIL.
-// Uses an allocation id for testing.
+//Allocate an empty list for a return value, with reference count set. Return OK or FAIL.
+//Uses an allocation id for testing.
 pub int
 allocReturnList_id(Var* returnVar, AllocId id) {
    if (id == alloc_fail_id && alloc_does_fail(sizeof(List)))
@@ -480,7 +480,7 @@ allocReturnList_id(Var* returnVar, AllocId id) {
 }
 
 
-// Set a list as the return value.  Increments the reference count.
+//Set a list as the return value.  Increments the reference count.
 pub void
 returnVar_list_set(OUT Var* returnVar, List *l) {
    returnVar->tag = VAR_LIST;
@@ -489,21 +489,21 @@ returnVar_list_set(OUT Var* returnVar, List *l) {
       ++l->refCount;
 }
 
-// Unreference a list: decrement the reference count and free it when it becomes zero.
+//Unreference a list: decrement the reference count and free it when it becomes zero.
 pub void
 list_unref(List* l) {
    if (l && --l->refCount <= 0)
       list_free(l);
 }
 
-// Free a list, including all non-container items it points to. Ignores the reference count.
+//Free a list, including all non-container items it points to. Ignores the reference count.
 private void
 list_free_contents(List* l) {
    ListItem *item;
 
    if (l->first != &range_list_item) {
       for (item = l->first; item; item = l->first) {
-         // Remove the item before deleting it.
+         //Remove the item before deleting it.
          l->first = item->next;
          clearVar(&item->c);
          list_free_item(l, item);
@@ -511,16 +511,16 @@ list_free_contents(List* l) {
    } 
 }
 
-// Go through the list of lists and free items without the copyID. But don't free a list that has 
-// a watcher (used in a for loop), these are not referenced anywhere.
+//Go through the list of lists and free items without the copyID. But don't free a list that has 
+//a watcher (used in a for loop), these are not referenced anywhere.
 pub int
 list_free_nonref(int copyID) {
    int did_free = false;
 
    for (List* ll = first_list; ll != NULL; ll = ll->usedNext) {
       if ((ll->copyId & COPYID_MASK) != (copyID & COPYID_MASK) && ll->watcher == NULL) {
-          // Free the List and ordinary items it contains, but don't recurse
-          // into Lists and Dictionaries, they will be in the list of dicts or list of lists.
+          //Free the List and ordinary items it contains, but don't recurse
+          //into Lists and Dictionaries, they will be in the list of dicts or list of lists.
           list_free_contents(ll);
           did_free = true;
       }
@@ -530,7 +530,7 @@ list_free_nonref(int copyID) {
 
 private void
 list_free_list(List* l) {
-   // Remove the list from the list of lists for garbage collection.
+   //Remove the list from the list of lists for garbage collection.
    if (!l->usedPrev)
       first_list = l->usedNext;
    else
@@ -548,8 +548,8 @@ list_free_items(int copyID) {
    for (List* ll = first_list; ll != NULL; ll = ll_next) {
       ll_next = ll->usedNext;
       if ((ll->copyId & COPYID_MASK) != (copyID & COPYID_MASK) && ll->watcher == NULL) {
-         // Free the List and ordinary items it contains, but don't recurse
-         // into Lists and Dictionaries, they will be in the list of dicts or list of lists.
+         //Free the List and ordinary items it contains, but don't recurse
+         //into Lists and Dictionaries, they will be in the list of dicts or list of lists.
          list_free_list(ll);
       }
    }
@@ -564,14 +564,14 @@ list_free(List* l) {
    list_free_list(l);
 }
 
-// Allocate a list item. It is not initialized, don't forget to set lock.
+//Allocate a list item. It is not initialized, don't forget to set lock.
 pub ListItem *
 listitem_alloc(void) {
    return ALLOC_ONE(ListItem);
 }
 
-// Free a list item, unless it was allocated together with the list itself.
-// Does not clear the value.  Does not notify watchers.
+//Free a list item, unless it was allocated together with the list itself.
+//Does not clear the value.  Does not notify watchers.
 private void
 list_free_item(List *l, ListItem *item) {
    if (l->withItems == 0 || item < (ListItem *)l
@@ -579,22 +579,22 @@ list_free_item(List *l, ListItem *item) {
       eeglFree(item);
 }
 
-// Free a list item, unless it was allocated together with the list itself.
-// Also clears the value.  Does not notify watchers.
+//Free a list item, unless it was allocated together with the list itself.
+//Also clears the value.  Does not notify watchers.
 pub void
 listitem_free(List* l, ListItem* item) {
     clearVar(&item->c);
     list_free_item(l, item);
 }
 
-// Remove a list item from a List and free it.  Also clears the value.
+//Remove a list item from a List and free it.  Also clears the value.
 pub void
 listitem_remove(List* l, ListItem* item) {
     list_remove(l, item, item);
     listitem_free(l, item);
 }
 
-// Get the number of items in a list.
+//Get the number of items in a list.
 pub long
 list_len(List* l) {
    if (!l)
@@ -602,16 +602,16 @@ list_len(List* l) {
    return l->len;
 }
 
-// Return true when two lists have exactly the same values.
+//Return true when two lists have exactly the same values.
 pub int
-list_equal(List* l1, List* l2, int ic) {  // ignore case for strings
+list_equal(List* l1, List* l2, int ic) {  //ignore case for strings
 
    if (l1 == l2)
       return true;
    if (list_len(l1) != list_len(l2))
       return false;
    if (list_len(l1) == 0)
-      // empty and NULL list are considered equal
+      //empty and NULL list are considered equal
       return true;
    if (l1 == NULL || l2 == NULL)
       return false;
@@ -631,8 +631,8 @@ list_equal(List* l1, List* l2, int ic) {  // ignore case for strings
    return item1 == NULL && item2 == NULL;
 }
 
-// Locate item with index "n" in list "l" and return it. A negative index is counted from the end;
-// -1 is the last item. Return NULL when "n" is out of range.
+//Locate item with index "n" in list "l" and return it. A negative index is counted from the end;
+//-1 is the last item. Return NULL when "n" is out of range.
 pub ListItem *
 list_find(List* l, long n) {
    ListItem* item;
@@ -641,76 +641,76 @@ list_find(List* l, long n) {
    if (!l)
       return NULL;
 
-   // Negative index is relative to the end.
+   //Negative index is relative to the end.
    if (n < 0)
       n = l->len + n;
 
-   // Check for index out of range.
+   //Check for index out of range.
    if (n < 0 || n >= l->len)
       return NULL;
 
    CHECK_LIST_MATERIALIZE(l);
 
-   // range_list_materialize may reset l->len
+   //range_list_materialize may reset l->len
    if (n >= l->len)
       return NULL;
 
-   // When there is a cached index may start search from there.
+   //When there is a cached index may start search from there.
    if (l->lv_u.mat.cachedItem != NULL) {
       if (n < l->lv_u.mat.cachedInd / 2) {
-         // closest to the start of the list
+         //closest to the start of the list
          item = l->first;
          idx = 0;
       } ei (n > (l->lv_u.mat.cachedInd + l->len) / 2) {
-         // closest to the end of the list
+         //closest to the end of the list
          item = l->lv_u.mat.last;
          idx = l->len - 1;
       } else {
-         // closest to the cached index
+         //closest to the cached index
          item = l->lv_u.mat.cachedItem;
          idx = l->lv_u.mat.cachedInd;
       }
    } else {
       if (n < l->len / 2) {
-         // closest to the start of the list
+         //closest to the start of the list
          item = l->first;
          idx = 0;
       } else {
-         // closest to the end of the list
+         //closest to the end of the list
          item = l->lv_u.mat.last;
          idx = l->len - 1;
       }
    }
 
    while (n > idx) {
-      // search forward
+      //search forward
       item = item->next;
       ++idx;
    }
    while (n < idx) {
-      // search backward
+      //search backward
       item = item->prev;
       --idx;
    }
 
-   // cache the used index
+   //cache the used index
    l->lv_u.mat.cachedInd = idx;
    l->lv_u.mat.cachedItem = item;
 
    return item;
 }
 
-// Get list item "l[idx]" as a number.
+//Get list item "l[idx]" as a number.
 pub long
-list_find_nr(List* l, long idx, OUT Boole* errorp) {  // set to true when something wrong
+list_find_nr(List* l, long idx, OUT Boole* errorp) {  //set to true when something wrong
    if (l && l->first == &range_list_item) {
       long n = idx;
 
-      // not materialized range() list: compute the value. Negative index is relative to the end.
+      //not materialized range() list: compute the value. Negative index is relative to the end.
       if (n < 0)
          n = l->len + n;
 
-      // Check for index out of range.
+      //Check for index out of range.
       if (n < 0 || n >= l->len) {
          if (errorp)
             *errorp = true;
@@ -729,7 +729,7 @@ list_find_nr(List* l, long idx, OUT Boole* errorp) {  // set to true when someth
    return (long)varGetNumberChk(&li->c, OUT errorp);
 }
 
-// Get list item "l[idx - 1]" as a string.  Returns NULL for failure.
+//Get list item "l[idx - 1]" as a string.  Returns NULL for failure.
 pub CS
 list_find_str(List *l, long idx) {
    ListItem* li = list_find(l, idx - 1);
@@ -740,8 +740,8 @@ list_find_str(List *l, long idx) {
    return tv_get_string(&li->c);
 }
 
-// Like list_find() but when a negative index is used that is not found use
-// zero and set "idx" to zero.  Used for first index of a range.
+//Like list_find() but when a negative index is used that is not found use
+//zero and set "idx" to zero.  Used for first index of a range.
 pub ListItem *
 list_find_index(List *l, long *idx) {
    ListItem *li = list_find(l, *idx);
@@ -756,7 +756,7 @@ list_find_index(List *l, long *idx) {
    return li;
 }
 
-// Locate "item" list "l" and return its index. Returns -1 when "item" is not in the list.
+//Locate "item" list "l" and return its index. Returns -1 when "item" is not in the list.
 pub long
 list_idx_of_item(List *l, ListItem *item) {
    if (!l)
@@ -772,12 +772,12 @@ list_idx_of_item(List *l, ListItem *item) {
    return idx;
 }
 
-// Append item "item" to the end of list "l".
+//Append item "item" to the end of list "l".
 pub void
 list_append(List* l, ListItem* item) {
    CHECK_LIST_MATERIALIZE(l);
    if (l->lv_u.mat.last == NULL) {
-      // empty list
+      //empty list
       l->first = item;
       item->prev = NULL;
    } else {
@@ -789,8 +789,8 @@ list_append(List* l, ListItem* item) {
    item->next = NULL;
 }
 
-// Append Var "tv" to the end of list "l". "tv" is copied. 
-// Return FAIL when out of memory or the tag is wrong.
+//Append Var "tv" to the end of list "l". "tv" is copied. 
+//Return FAIL when out of memory or the tag is wrong.
 pub int
 list_append_tv(List* l, Var* newVal) {
    ListItem* newItem = listitem_alloc();
@@ -800,8 +800,8 @@ list_append_tv(List* l, Var* newVal) {
    return OK;
 }
 
-// Append Var "tv" to the end of list "l". "tv" is moved. 
-// Return FAIL when out of memory or the tag is wrong.
+//Append Var "tv" to the end of list "l". "tv" is moved. 
+//Return FAIL when out of memory or the tag is wrong.
 private int
 list_append_tv_move(List* l, Var* tv) {
    ListItem* li = listitem_alloc();
@@ -811,7 +811,7 @@ list_append_tv_move(List* l, Var* tv) {
    return OK;
 }
 
-// Add a dictionary to a list.  Used by getqflist(). Return FAIL when out of memory.
+//Add a dictionary to a list.  Used by getqflist(). Return FAIL when out of memory.
 pub int
 listAppendBag(List *list, Bag* bag) {
    ListItem   *li = listitem_alloc();
@@ -822,7 +822,7 @@ listAppendBag(List *list, Bag* bag) {
    return OK;
 }
 
-// Append list2 to list1. Return FAIL when out of memory.
+//Append list2 to list1. Return FAIL when out of memory.
 pub int
 list_append_list(List *list1, List *list2) {
    ListItem   *li = listitem_alloc();
@@ -833,8 +833,8 @@ list_append_list(List *list1, List *list2) {
    return OK;
 }
 
-// Make a copy of "str" and append it as an item to list "l".
-// When "len" >= 0 use "str[len]". Returns FAIL when out of memory.
+//Make a copy of "str" and append it as an item to list "l".
+//When "len" >= 0 use "str[len]". Returns FAIL when out of memory.
 pub int
 list_append_string(List *l, CS str, int len) {
    ListItem *li = listitem_alloc();
@@ -850,7 +850,7 @@ list_append_string(List *l, CS str, int len) {
 }
 
 
-// Append "n" to list "l". Return FAIL when out of memory.
+//Append "n" to list "l". Return FAIL when out of memory.
 pub int
 list_append_number(List* l, Long n) {
    ListItem* li = listitem_alloc();
@@ -859,8 +859,8 @@ list_append_number(List* l, Long n) {
    return OK;
 }
 
-// Insert Var "tv" in list "l" before "item". If "item" is NULL, append at the end.
-// Return FAIL when out of memory or the type is wrong.
+//Insert Var "tv" in list "l" before "item". If "item" is NULL, append at the end.
+//Return FAIL when out of memory or the type is wrong.
 pub int
 list_insert_tv(List *l, Var *tv, ListItem *item) {
    ListItem* ni = listitem_alloc();
@@ -873,10 +873,10 @@ pub void
 list_insert(List *l, ListItem *ni, ListItem *item) {
    CHECK_LIST_MATERIALIZE(l);
    if (!item)
-      // Append new item at end of list.
+      //Append new item at end of list.
       list_append(l, ni);
    else {
-      // Insert new item before existing item.
+      //Insert new item before existing item.
       ni->prev = item->prev;
       ni->next = item;
       if (item->prev == NULL) {
@@ -891,8 +891,8 @@ list_insert(List *l, ListItem *ni, ListItem *item) {
    }
 }
 
-// Get the list item in "l" with index "n1".  "n1" is adjusted if needed.
-// Return NULL if there is no such item.
+//Get the list item in "l" with index "n1".  "n1" is adjusted if needed.
+//Return NULL if there is no such item.
 pub ListItem *
 check_range_index_one(List* l, long* n1, int quiet) {
    long orig_n1 = *n1;
@@ -906,9 +906,9 @@ check_range_index_one(List* l, long* n1, int quiet) {
    return NULL;
 }
 
-// Check that "n2" can be used as the second index in a range of list "l".
-// If "n1" or "n2" is negative it is changed to the positive index.
-// "li1" is the item for item "n1". Return OK or FAIL.
+//Check that "n2" can be used as the second index in a range of list "l".
+//If "n1" or "n2" is negative it is changed to the positive index.
+//"li1" is the item for item "n1". Return OK or FAIL.
 pub int
 check_range_index_two(List* l, long* n1, ListItem* li1, long* n2, int quiet) {
    if (*n2 < 0) {
@@ -922,7 +922,7 @@ check_range_index_two(List* l, long* n1, ListItem* li1, long* n2, int quiet) {
       *n2 = list_idx_of_item(l, ni);
    }
 
-   // Check that n2 isn't before n1.
+   //Check that n2 isn't before n1.
    if (*n1 < 0)
       *n1 = list_idx_of_item(l, li1);
    if (*n2 < *n1) {
@@ -933,12 +933,12 @@ check_range_index_two(List* l, long* n1, ListItem* li1, long* n2, int quiet) {
     return OK;
 }
 
-// Assign values from list "src" into a range of "dest".
-// "idx1_arg" is the index of the first item in "dest" to be replaced.
-// "idx2" is the index of last item to be replaced, but when "empty_idx2" is
-// true then replace all items after "idx1".
-// "op" is the operator, normally "=" but can be "+=" and the like.
-// "varname" is used for error messages. Return OK or FAIL.
+//Assign values from list "src" into a range of "dest".
+//"idx1_arg" is the index of the first item in "dest" to be replaced.
+//"idx2" is the index of last item to be replaced, but when "empty_idx2" is
+//true then replace all items after "idx1".
+//"op" is the operator, normally "=" but can be "+=" and the like.
+//"varname" is used for error messages. Return OK or FAIL.
 pub int
 list_assign_range(
    List* dest,
@@ -953,7 +953,7 @@ list_assign_range(
    ListItem   *first_li = list_find_index(dest, &idx1);
    long   idx;
 
-   // Check whether any of the list items is locked before making any changes.
+   //Check whether any of the list items is locked before making any changes.
    idx = idx1;
    ListItem* destItem = first_li;
    for (ListItem* srcItem = src->first; srcItem != NULL && destItem != NULL; ) {
@@ -966,7 +966,7 @@ list_assign_range(
       ++idx;
    }
 
-   // Assign the List values to the list items.
+   //Assign the List values to the list items.
    idx = idx1;
    ListItem* srcItem;
    destItem = first_li;
@@ -981,7 +981,7 @@ list_assign_range(
       if (srcItem == NULL || (!empty_idx2 && idx2 == idx))
          break;
       if (destItem->next == NULL) {
-         // Need to add an empty item.
+         //Need to add an empty item.
          if (list_append_number(dest, 0) == FAIL) {
             srcItem = NULL;
             break;
@@ -1003,9 +1003,9 @@ list_assign_range(
    return OK;
 }
 
-// Flatten up to "maxitems" in "list", starting at "first" to depth "maxdepth".
-// When "first" is NULL use the first item.
-// It does nothing if "maxdepth" is 0. Return FAIL when out of memory.
+//Flatten up to "maxitems" in "list", starting at "first" to depth "maxdepth".
+//When "first" is NULL use the first item.
+//It does nothing if "maxdepth" is 0. Return FAIL when out of memory.
 private void
 list_flatten(List* list, ListItem* first, long maxitems, long maxdepth) {
    int done = 0;
@@ -1045,7 +1045,7 @@ list_flatten(List* list, ListItem* first, long maxitems, long maxdepth) {
    }
 }
 
-// "flatten()" and "flattennew()" functions
+//"flatten()" and "flattennew()" functions
 private void
 flatten_common(Arr(Var) argvars, Var* returnVar, int make_copy) {
    List  *l;
@@ -1080,7 +1080,7 @@ flatten_common(Arr(Var) argvars, Var* returnVar, int make_copy) {
       returnVar->list = l;
       if (l == NULL)
          return;
-      // The type will change.
+      //The type will change.
       free_type(l->ty);
       l->ty = NULL;
    } else {
@@ -1092,28 +1092,28 @@ flatten_common(Arr(Var) argvars, Var* returnVar, int make_copy) {
     list_flatten(l, NULL, l->len, maxdepth);
 }
 
-// "flatten(list[, {maxdepth}])" function
+//"flatten(list[, {maxdepth}])" function
 pub void
 f_flatten(Arr(Var) argvars, Var* returnVar) {
    flatten_common(argvars, returnVar, false);
 }
 
-// "flattennew(list[, {maxdepth}])" function
+//"flattennew(list[, {maxdepth}])" function
 pub void
 f_flattennew(Arr(Var) argvars, Var* returnVar) {
    flatten_common(argvars, returnVar, true);
 }
 
-// "items(list)" function Caller must have already checked that argvars[0] is a List.
+//"items(list)" function Caller must have already checked that argvars[0] is a List.
 pub void
 list2items(Arr(Var) argvars, Var* returnVar) {
    List* l = argvars[0].list;
 
    allocReturnList(returnVar);
    if (!l)
-      return;  // null list behaves like an empty list
+      return;  //null list behaves like an empty list
 
-   // TODO: would be more efficient to not materialize the argument
+   //TODO: would be more efficient to not materialize the argument
    CHECK_LIST_MATERIALIZE(l);
    ListItem* li;
    Long idx;
@@ -1129,12 +1129,12 @@ list2items(Arr(Var) argvars, Var* returnVar) {
    }
 }
 
-// "items(string)" function. Precond: Caller must have already checked that argvars[0] is a String.
+//"items(string)" function. Precond: Caller must have already checked that argvars[0] is a String.
 pub void
 string2items(Arr(Var) argvars, Var* returnVar) {
    CS p = argvars[0].string;
    allocReturnList(returnVar);
-   if (!p)  // null string behaves like an empty string
+   if (!p)  //null string behaves like an empty string
       return;
 
    for (Long idx = 0; *p != ZERO; ++idx) {
@@ -1152,16 +1152,16 @@ string2items(Arr(Var) argvars, Var* returnVar) {
    }
 }
 
-// Extend "l1" with "l2".  "l1" must not be NULL.
-// If "bef" is NULL append at the end, otherwise insert before this item.
-// Return FAIL when out of memory.
+//Extend "l1" with "l2".  "l1" must not be NULL.
+//If "bef" is NULL append at the end, otherwise insert before this item.
+//Return FAIL when out of memory.
 pub int
 list_extend(List *l1, List *l2, ListItem *bef) {
    ListItem   *item;
    int      todo;
    ListItem   *bef_prev;
 
-   // NULL list is equivalent to an empty list: nothing to do.
+   //NULL list is equivalent to an empty list: nothing to do.
    if (l2 == NULL || l2->len == 0)
       return OK;
 
@@ -1169,13 +1169,13 @@ list_extend(List *l1, List *l2, ListItem *bef) {
    CHECK_LIST_MATERIALIZE(l1);
    CHECK_LIST_MATERIALIZE(l2);
 
-   // When exending a list with itself, at some point we run into the item
-   // that was before "bef" and need to skip over the already inserted items
-   // to "bef".
+   //When exending a list with itself, at some point we run into the item
+   //that was before "bef" and need to skip over the already inserted items
+   //to "bef".
    bef_prev = bef == NULL ? NULL : bef->prev;
 
-   // We also quit the loop when we have inserted the original item count of
-   // the list, avoid a hang when we extend a list with itself.
+   //We also quit the loop when we have inserted the original item count of
+   //the list, avoid a hang when we extend a list with itself.
    for (item = l2->first; item != NULL && --todo >= 0;
       item = item == bef_prev ? bef : item->next) {
       if (list_insert_tv(l1, &item->c, bef) == FAIL)
@@ -1184,10 +1184,10 @@ list_extend(List *l1, List *l2, ListItem *bef) {
    return OK;
 }
 
-// Concatenate lists "l1" and "l2" into a new list, stored in "tv". Return FAIL when out of memory.
+//Concatenate lists "l1" and "l2" into a new list, stored in "tv". Return FAIL when out of memory.
 pub int
 list_concat(List *l1, List *l2, Var *tv) {
-   // make a copy of the first list.
+   //make a copy of the first list.
    List* l = l1 ? list_copy(l1, false, true, 0) : list_alloc();
    tv->tag = VAR_LIST;
    tv->lock = 0;
@@ -1195,7 +1195,7 @@ list_concat(List *l1, List *l2, Var *tv) {
    if (!l1)
       ++l->refCount;
 
-   // append all items from the second list
+   //append all items from the second list
    return list_extend(l, l2, NULL);
 }
 
@@ -1230,8 +1230,8 @@ list_slice_or_index(
    if (n1 < 0)
       n1 = len + n1;
    if (n1 < 0 || n1 >= len) {
-      // For a range we allow invalid values and for legacy script return an empty list.
-      // A list index out of range is an error.
+      //For a range we allow invalid values and for legacy script return an empty list.
+      //A list index out of range is an error.
       if (!range) {
          if (verbose)
             showErrFmtMsg(_(e_list_index_out_of_range_nr), (long)n1_arg);
@@ -1256,7 +1256,7 @@ list_slice_or_index(
       clearVar(returnVar);
       returnVar_list_set(returnVar, l);
    } else {
-      // copy the item to "var1" to avoid that freeing the list makes it invalid.
+      //copy the item to "var1" to avoid that freeing the list makes it invalid.
       copy_tv(OUT &var1, &list_find(list, n1)->c);
       clearVar(returnVar);
       *returnVar = var1;
@@ -1264,9 +1264,9 @@ list_slice_or_index(
    return OK;
 }
 
-// Make a copy of list "orig".  Shallow if "deep" is false.
-// The refcount of the new list is set to 1.
-// See item_copy() for "top" and "copyID". Return NULL when out of memory.
+//Make a copy of list "orig".  Shallow if "deep" is false.
+//The refcount of the new list is set to 1.
+//See item_copy() for "top" and "copyID". Return NULL when out of memory.
 pub List *
 list_copy(List *orig, int deep, int top, int copyID) {
    ListItem   *ni;
@@ -1281,8 +1281,8 @@ list_copy(List *orig, int deep, int top, int copyID) {
    else
       copy->ty = alloc_type(orig->ty);
    if (copyID != 0) {
-      // Do this before adding the items, because one of the items may
-      // refer back to this list.
+      //Do this before adding the items, because one of the items may
+      //refer back to this list.
       orig->copyId = copyID;
       orig->copyList = copy;
    }
@@ -1317,7 +1317,7 @@ list_remove(List* l, ListItem* item, ListItem* item2) {
 
    CHECK_LIST_MATERIALIZE(l);
 
-    // notify watchers
+    //notify watchers
    for (ip = item; ip != NULL; ip = ip->next) {
       --l->len;
       list_fix_watch(l, ip);
@@ -1336,7 +1336,7 @@ list_remove(List* l, ListItem* item, ListItem* item2) {
    l->lv_u.mat.cachedItem = NULL;
 }
 
-// Return an allocated string with the string representation of a list. May return NULL.
+//Return an allocated string with the string representation of a list. May return NULL.
 pub CS
 list2string(Var* tv, int copyID, int restore_copyID) {
    if (tv->list == NULL)
@@ -1361,13 +1361,13 @@ typedef struct join_S {
 
 private int
 list_join_inner(
-    ArrayList* gap,      // to store the result in
+    ArrayList* gap,      //to store the result in
     List* l,
     CS sep,
     int echo_style,
     int restore_copyID,
     int copyID,
-    ArrayList* join_gap)   // to keep each list item string
+    ArrayList* join_gap)   //to keep each list item string
 {
     int i;
     Join* p;
@@ -1379,7 +1379,7 @@ list_join_inner(
     ListItem   *item;
     CS s;
 
-   // Stringify each item in the list.
+   //Stringify each item in the list.
    CHECK_LIST_MATERIALIZE(l);
    for (item = l->first; item != NULL && !gotInterruptG; item = item->next) {
       s = echo_string_core(&item->c, &tofree, numbuf, copyID,
@@ -1401,12 +1401,12 @@ list_join_inner(
       }
 
       line_breakcheck();
-      if (did_echo_string_emsg)  // recursion error, bail out
+      if (did_echo_string_emsg)  //recursion error, bail out
           break;
    }
 
-    // Allocate result buffer with its total size, avoid re-allocation and
-    // multiple copy operations.  Add 2 for a tailing ']' and ZERO.
+    //Allocate result buffer with its total size, avoid re-allocation and
+    //multiple copy operations.  Add 2 for a tailing ']' and ZERO.
    if (join_gap->len >= 2)
    sumlen += (int)STRLEN(sep) * (join_gap->len - 1);
    if (ga_grow(gap, sumlen + 2) == FAIL)
@@ -1427,9 +1427,9 @@ list_join_inner(
     return OK;
 }
 
-// Join list "l" into a string in "*gap", using separator "sep".
-// When "echo_style" is true use String as echoed, otherwise as inside a List.
-// Return FAIL or OK.
+//Join list "l" into a string in "*gap", using separator "sep".
+//When "echo_style" is true use String as echoed, otherwise as inside a List.
+//Return FAIL or OK.
 pub int
 list_join(
     ArrayList* gap,
@@ -1442,14 +1442,14 @@ list_join(
    ArrayList   join_ga;
 
    if (l->len < 1)
-      return OK; // nothing to do
+      return OK; //nothing to do
    ga_init2(&join_ga, sizeof(Join), l->len);
    int retval = list_join_inner(gap, l, sep, echo_style, restore_copyID, copyID, &join_ga);
 
    if (join_ga.c == NULL)
       return retval;
 
-   // Dispose each item in join_ga.
+   //Dispose each item in join_ga.
    Join* p = (Join *)join_ga.c;
    for (int i = 0; i < join_ga.len; ++i) {
       eeglFree(p->tofree);
@@ -1484,8 +1484,8 @@ f_join(Arr(Var) argvars, Var* returnVar) {
       returnVar->string = NULL;
 }
 
-// Allocate a variable for a List and fill it from "*arg".
-// "*arg" points to the "[". Return OK or FAIL.
+//Allocate a variable for a List and fill it from "*arg".
+//"*arg" points to the "[". Return OK or FAIL.
 pub int
 eval_list(Byte **arg, Var* returnVar, EvalCtx *evalarg, int do_error) {
    int evaluate = evalarg == NULL ? false : evalarg->eval_flags & EVAL_EVALUATE;
@@ -1500,7 +1500,7 @@ eval_list(Byte **arg, Var* returnVar, EvalCtx *evalarg, int do_error) {
 
    *arg = skipwhite_and_linebreak(*arg + 1, evalarg);
    while (**arg != ']' && **arg != ZERO) {
-      if (eval1(arg, &tv, evalarg) == FAIL)   // recursive!
+      if (eval1(arg, &tv, evalarg) == FAIL)   //recursive!
           goto failret;
       if (evaluate) {
          item = listitem_alloc();
@@ -1508,17 +1508,17 @@ eval_list(Byte **arg, Var* returnVar, EvalCtx *evalarg, int do_error) {
          item->c.lock = 0;
          list_append(l, item);
       }
-      // Vim script allows a space before the comma.
+      //Vim script allows a space before the comma.
       *arg = skipwhite(*arg);
 
-      // the comma must come after the value
+      //the comma must come after the value
       had_comma = **arg == ',';
       if (had_comma) {
          *arg = skipwhite(*arg + 1);
       }
 
-      // The "]" can be on the next line.  But a double quoted string may
-      // follow, not a comment.
+      //The "]" can be on the next line.  But a double quoted string may
+      //follow, not a comment.
       *arg = skipwhite_and_linebreak(*arg, evalarg);
       if (**arg == ']')
           break;
@@ -1551,7 +1551,7 @@ failret:
     return OK;
 }
 
-// Write "list" of strings to file "fd".
+//Write "list" of strings to file "fd".
 pub int
 write_list(FILE* fd, List* list, int binary) {
    ListItem   *li;
@@ -1584,7 +1584,7 @@ write_list(FILE* fd, List* list, int binary) {
    return ret;
 }
 
-// Initialize a static list with 10 items.
+//Initialize a static list with 10 items.
 pub void
 init_static_list(StaticList10 *sl) {
    List* l = &sl->list;
@@ -1624,7 +1624,7 @@ f_list2str(Arr(Var) argvars, Var* returnVar) {
 
    List* l = argvars[0].list;
    if (!l)
-      return;  // empty list results in empty string
+      return;  //empty list results in empty string
 
    CHECK_LIST_MATERIALIZE(l);
    ga_init2(&ga, 1, 80);
@@ -1640,8 +1640,8 @@ f_list2str(Arr(Var) argvars, Var* returnVar) {
    returnVar->string = ga.c;
 }
 
-// Remove item argvars[1] from List argvars[0]. If argvars[2] is supplied, then
-// remove the range of items from argvars[1] to argvars[2] (inclusive).
+//Remove item argvars[1] from List argvars[0]. If argvars[2] is supplied, then
+//remove the range of items from argvars[1] to argvars[2] (inclusive).
 private void
 listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    List* l;
@@ -1657,7 +1657,7 @@ listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
 
    long idx = (long)varGetNumberChk(&argvars[1], OUT &error);
    if (error)
-      return;      // type error: do nothing, errmsg already given
+      return;      //type error: do nothing, errmsg already given
 
    if ((item = list_find(l, idx)) == NULL) {
       showErrFmtMsg(_(e_list_index_out_of_range_nr), idx);
@@ -1665,17 +1665,17 @@ listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    }
 
    if (argvars[2].tag == VAR_UNKNOWN) {
-      // Remove one item, return its value.
+      //Remove one item, return its value.
       list_remove(l, item, item);
       *returnVar = item->c;
       list_free_item(l, item);
       return;
    }
 
-   // Remove range of items, return list with values.
+   //Remove range of items, return list with values.
    end = (long)varGetNumberChk(&argvars[2], OUT &error);
    if (error)
-      return;      // type error: do nothing
+      return;      //type error: do nothing
 
    if ((item2 = list_find(l, end)) == NULL) {
       showErrFmtMsg(_(e_list_index_out_of_range_nr), end);
@@ -1687,7 +1687,7 @@ listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
       if (li == item2)
          break;
    }
-   if (!li) { // didn't find "item2" after "item"
+   if (!li) { //didn't find "item2" after "item"
       emsg(_(e_invalid_range));
       return;
    }
@@ -1698,7 +1698,7 @@ listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    rl = returnVar->list;
 
    if (l->withItems > 0) {
-      // need to copy the list items and move the value
+      //need to copy the list items and move the value
       while (item) {
          li = listitem_alloc();
          li->c = item->c;
@@ -1720,7 +1720,7 @@ listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
 private SortInfo* sortinfo = NULL;
 #define ITEM_COMPARE_FAIL 999
 
-// Comparer for f_sort() and f_uniq() below.
+//Comparer for f_sort() and f_uniq() below.
 private int
 item_compare(const void *s1, const void *s2) {
    Var   *tv1, *tv2;
@@ -1782,7 +1782,7 @@ item_compare(const void *s1, const void *s2) {
       res = n1 == n2 ? 0 : n1 > n2 ? 1 : -1;
    }
 
-   // When the result would be zero, compare the item indexes. Makes the sort stable.
+   //When the result would be zero, compare the item indexes. Makes the sort stable.
    if (res == 0 && !sortinfo->item_compare_keep_zero)
       res = si1->idx > si2->idx ? 1 : -1;
 
@@ -1798,7 +1798,7 @@ item_compare2(const void *s1, const void *s2) {
    FnExe   funcexe;
    int      anyEmsgG_before = anyEmsgG;
 
-   // shortcut after failure in previous call; compare all items equal
+   //shortcut after failure in previous call; compare all items equal
    if (sortinfo->item_compare_func_err)
       return 0;
 
@@ -1807,13 +1807,13 @@ item_compare2(const void *s1, const void *s2) {
 
    CS funcName = (!partial) ? sortinfo->item_compare_func : partial_name(partial);
 
-   // Copy the values.  This is needed to be able to set lock to VAR_FIXED
-   // in the copy without changing the original list items.
+   //Copy the values.  This is needed to be able to set lock to VAR_FIXED
+   //in the copy without changing the original list items.
    copy_tv(OUT &argv[0], &si1->item->c);
    copy_tv(OUT &argv[1], &si2->item->c);
 
    Var returnVar;
-   returnVar.tag = VAR_UNKNOWN;      // clearVar() uses this
+   returnVar.tag = VAR_UNKNOWN;      //clearVar() uses this
    CLEAR_FIELD(funcexe);
    funcexe.fe_evaluate = true;
    funcexe.fe_partial = partial;
@@ -1832,7 +1832,7 @@ item_compare2(const void *s1, const void *s2) {
          res = -1;
    }
    if (sortinfo->item_compare_func_err)
-   res = ITEM_COMPARE_FAIL;  // return value has wrong type
+   res = ITEM_COMPARE_FAIL;  //return value has wrong type
     clearVar(&returnVar);
 
    //When the result would be zero, compare the pointers themselves. Makes the sort stable.
@@ -1849,10 +1849,10 @@ do_sort(List *l, SortInfo *info) {
 
    long len = list_len(l);
 
-   // Make an array with each entry pointing to an item in the List.
+   //Make an array with each entry pointing to an item in the List.
    Arr(SortItem) ptrs = ALLOC_MULT(SortItem, len);
 
-   // sort(): ptrs will be the list to sort
+   //sort(): ptrs will be the list to sort
    FOR_ALL_LIST_ITEMS(l, li) {
       ptrs[i].item = li;
       ptrs[i].idx = i;
@@ -1861,20 +1861,20 @@ do_sort(List *l, SortInfo *info) {
 
    info->item_compare_func_err = false;
    info->item_compare_keep_zero = false;
-   // test the compare function
+   //test the compare function
    if ((info->item_compare_func != NULL
          || info->item_compare_partial != NULL)
           && item_compare2((void *)&ptrs[0], (void *)&ptrs[1]) == ITEM_COMPARE_FAIL)
       emsg(_(e_sort_compare_function_failed));
    else {
-      // Sort the array with item pointers.
+      //Sort the array with item pointers.
       qsort((void *)ptrs, (Unt)len, sizeof(SortItem),
          info->item_compare_func == NULL
          && info->item_compare_partial == NULL
          ? item_compare : item_compare2);
 
       if (!info->item_compare_func_err) {
-         // Clear the List and append the items in sorted order.
+         //Clear the List and append the items in sorted order.
          l->first = l->lv_u.mat.last = l->lv_u.mat.cachedItem = NULL;
          l->len = 0;
          for (i = 0; i < len; ++i)
@@ -1885,7 +1885,7 @@ do_sort(List *l, SortInfo *info) {
     eeglFree(ptrs);
 }
 
-// uniq() List "l"
+//uniq() List "l"
 private void
 do_uniq(List *l, SortInfo *info) {
    long   i = 0;
@@ -1894,10 +1894,10 @@ do_uniq(List *l, SortInfo *info) {
 
    long len = list_len(l);
 
-   // Make an array with each entry pointing to an item in the List.
+   //Make an array with each entry pointing to an item in the List.
    Arr(SortItem) ptrs = ALLOC_MULT(SortItem, len);
 
-   // f_uniq(): ptrs will be a stack of items to remove
+   //f_uniq(): ptrs will be a stack of items to remove
    info->item_compare_func_err = false;
    info->item_compare_keep_zero = true;
    item_compare_func_ptr = info->item_compare_func || info->item_compare_partial 
@@ -1929,8 +1929,8 @@ do_uniq(List *l, SortInfo *info) {
    eeglFree(ptrs);
 }
 
-// Parse the optional arguments supplied to the sort() or uniq() function and
-// return the values in "info".
+//Parse the optional arguments supplied to the sort() or uniq() function and
+//return the values in "info".
 private int
 parse_sort_uniq_args(Arr(Var) argvars, SortInfo *info) {
    info->item_compare_ic = false;
@@ -1945,7 +1945,7 @@ parse_sort_uniq_args(Arr(Var) argvars, SortInfo *info) {
    if (argvars[1].tag == VAR_UNKNOWN)
       return OK;
 
-    // optional second argument: {func}
+    //optional second argument: {func}
    if (argvars[1].tag == VAR_FUNC)
       info->item_compare_func = argvars[1].string;
    ei (argvars[1].tag == VAR_PARTIAL)
@@ -1971,7 +1971,7 @@ parse_sort_uniq_args(Arr(Var) argvars, SortInfo *info) {
       }
       if (info->item_compare_func != NULL) {
           if (*info->item_compare_func == ZERO) {
-            // empty string means default sort
+            //empty string means default sort
             info->item_compare_func = NULL;
           } ei (STRCMP(info->item_compare_func, "n") == 0) {
             info->item_compare_func = NULL;
@@ -1993,7 +1993,7 @@ parse_sort_uniq_args(Arr(Var) argvars, SortInfo *info) {
    }
 
    if (argvars[2].tag != VAR_UNKNOWN) {
-      // optional third argument: {dict}
+      //optional third argument: {dict}
       if (check_for_dict_arg(argvars, 2) == FAIL)
          return FAIL;
       info->item_compare_selfdict = argvars[2].bag;
@@ -2002,7 +2002,7 @@ parse_sort_uniq_args(Arr(Var) argvars, SortInfo *info) {
    return OK;
 }
 
-// "sort()" or "uniq()" function
+//"sort()" or "uniq()" function
 private void
 do_sort_uniq(Arr(Var) argvars, Var* returnVar, int sort) {
    SortInfo info;
@@ -2012,8 +2012,8 @@ do_sort_uniq(Arr(Var) argvars, Var* returnVar, int sort) {
       return;
    }
 
-   // Pointer to current info struct used in compare function. Save and
-   // restore the current one for nested calls.
+   //Pointer to current info struct used in compare function. Save and
+   //restore the current one for nested calls.
    SortInfo* old_sortinfo = sortinfo;
    sortinfo = &info;
 
@@ -2029,7 +2029,7 @@ do_sort_uniq(Arr(Var) argvars, Var* returnVar, int sort) {
 
    long len = list_len(l);
    if (len <= 1)
-      goto theend;   // short list sorts pretty quickly
+      goto theend;   //short list sorts pretty quickly
 
    if (parse_sort_uniq_args(argvars, &info) == FAIL)
       goto theend;
@@ -2043,33 +2043,33 @@ theend:
     sortinfo = old_sortinfo;
 }
 
-// "sort({list})" function
+//"sort({list})" function
 pub void
 f_sort(Arr(Var) argvars, Var* returnVar) {
    do_sort_uniq(argvars, returnVar, true);
 }
 
-// "uniq({list})" function
+//"uniq({list})" function
 pub void
 f_uniq(Arr(Var) argvars, Var* returnVar) {
    do_sort_uniq(argvars, returnVar, false);
 }
 
-// Handle one item for map(), filter(), foreach()
+//Handle one item for map(), filter(), foreach()
 pub int
 filter_map_one(
-   Var*,         // original value
-   Var* expr,       // callback
+   Var*,         //original value
+   Var* expr,       //callback
    FilterMap filtermap,
-   Var* newtv,       // for map() and mapnew(): new value
-   int* remp      // for filter(): remove flag
+   Var* newtv,       //for map() and mapnew(): new value
+   int* remp      //for filter(): remove flag
 ){
    Var argv[3];
    int retval = FAIL;
 
    newtv->tag = VAR_UNKNOWN;
    if (filtermap == FILTERMAP_FOREACH && expr->tag == VAR_STRING) {
-      // foreach() is not limited to an expression
+      //foreach() is not limited to an expression
       executeCommLine(expr->string);
       if (!anyEmsgG)
           retval = OK;
@@ -2081,7 +2081,7 @@ filter_map_one(
    if (filtermap == FILTERMAP_FILTER) {
       Boole error = false;
 
-      // filter(): when expr is zero remove the item
+      //filter(): when expr is zero remove the item
       *remp = (varGetNumberChk(newtv, OUT &error) == 0);
       clearVar(newtv);
       //On type error, nothing has been removed; return FAIL to stop the
@@ -2095,8 +2095,8 @@ theend:
    return retval;
 }
 
-// Implementation of map(), filter(), foreach() for a List.  Apply "expr" to
-// every item in List "l" and return the result in "returnVar".
+//Implementation of map(), filter(), foreach() for a List.  Apply "expr" to
+//every item in List "l" and return the result in "returnVar".
 private void
 list_filter_map(
    List* l,
@@ -2134,8 +2134,8 @@ list_filter_map(
       int len = l->len;
       int stride = l->lv_u.nonmat.stride;
 
-      // List from range(): loop over the numbers
-      // NOTE: foreach() returns the range_list_item
+      //List from range(): loop over the numbers
+      //NOTE: foreach() returns the range_list_item
       if (filtermap != FILTERMAP_MAPNEW && filtermap != FILTERMAP_FOREACH) {
          l->first = NULL;
          l->lv_u.mat.last = NULL;
@@ -2154,11 +2154,11 @@ list_filter_map(
          }
          if (filtermap != FILTERMAP_FOREACH) {
             if (filtermap != FILTERMAP_FILTER) {
-               // map(), mapnew(): always append the new value to the list
+               //map(), mapnew(): always append the new value to the list
                if (list_append_tv_move(filtermap == FILTERMAP_MAP ? l : l_ret, &newtv) == FAIL)
                   break;
             } ei (!rem) {
-               // filter(): append the list item value when not rem
+               //filter(): append the list item value when not rem
                if (list_append_tv_move(l, &tv) == FAIL)
                   break;
             }
@@ -2167,7 +2167,7 @@ list_filter_map(
          val += stride;
       }
    } else {
-      // Materialized list: loop over the items
+      //Materialized list: loop over the items
       for (li = l->first; li != NULL; li = nli) {
          if (filtermap == FILTERMAP_MAP && value_check_lock(li->c.lock, mbText(arg_errmsg), true))
             break;
@@ -2179,12 +2179,12 @@ list_filter_map(
             break;
          }
          if (filtermap == FILTERMAP_MAP) {
-            // map(): replace the list item value
+            //map(): replace the list item value
             clearVar(&li->c);
             newtv.lock = 0;
             li->c = newtv;
          } ei (filtermap == FILTERMAP_MAPNEW) {
-            // mapnew(): append the list item value
+            //mapnew(): append the list item value
             if (list_append_tv_move(l_ret, &newtv) == FAIL)
                break;
          } ei (filtermap == FILTERMAP_FILTER && rem)
@@ -2196,7 +2196,7 @@ list_filter_map(
    l->lock = prev_lock;
 }
 
-// Implementation of map(), filter() and foreach().
+//Implementation of map(), filter() and foreach().
 private void
 filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
     CS funcName = (CS)(
@@ -2219,7 +2219,7 @@ filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
    );
    int      save_anyEmsgG;
 
-   // map(), filter(), foreach() return the first argument, also on failure.
+   //map(), filter(), foreach() return the first argument, also on failure.
    if (filtermap != FILTERMAP_MAPNEW && argvars[0].tag != VAR_STRING)
       copy_tv(OUT returnVar, &argvars[0]);
 
@@ -2254,7 +2254,7 @@ filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
       blob_filter_map(argvars[0].blob, filtermap, expr, arg_errmsg, returnVar);
    ei (argvars[0].tag == VAR_STRING)
       string_filter_map(tv_get_string(&argvars[0]), filtermap, expr, returnVar);
-   else // argvars[0].tag == VAR_LIST
+   else //argvars[0].tag == VAR_LIST
       list_filter_map(argvars[0].list, filtermap, arg_errmsg, expr, returnVar);
 
    anyEmsgG |= save_anyEmsgG;
@@ -2280,7 +2280,7 @@ f_foreach(Arr(Var) argvars, Var* returnVar) {
    filter_map(argvars, returnVar, FILTERMAP_FOREACH);
 }
 
-// "add(list, item)" function
+//"add(list, item)" function
 private void
 list_add(Arr(Var) argvars, Var* returnVar) {
    List   *l = argvars[0].list;
@@ -2293,10 +2293,10 @@ list_add(Arr(Var) argvars, Var* returnVar) {
    }
 }
 
-// "add(object, item)" function
+//"add(object, item)" function
 pub void
 f_add(Arr(Var) argvars, Var* returnVar) {
-   returnVar->number = 1; // Default: Failed
+   returnVar->number = 1; //Default: Failed
 
    if (argvars[0].tag == VAR_LIST)
       list_add(argvars, returnVar);
@@ -2362,8 +2362,8 @@ f_count(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = n;
 }
 
-// extend() a List. Append List argvars[1] to List argvars[0] before index
-// argvars[3] and return the resulting list in "returnVar".  "is_new" is true for extendnew().
+//extend() a List. Append List argvars[1] to List argvars[0] before index
+//argvars[3] and return the resulting list in "returnVar".  "is_new" is true for extendnew().
 private void
 list_extend_func(
    Var   *argvars,
@@ -2393,7 +2393,7 @@ list_extend_func(
    if (argvars[2].tag != VAR_UNKNOWN) {
       before = (long)varGetNumberChk(argvars + 2, OUT &error);
       if (error)
-         return;      // type error; errmsg already given
+         return;      //type error; errmsg already given
 
       if (before == l1->len)
          item = NULL;
@@ -2414,29 +2414,29 @@ list_extend_func(
       copy_tv(OUT returnVar, &argvars[0]);
 }
 
-// "extend()" or "extendnew()" function.  "is_new" is true for extendnew().
+//"extend()" or "extendnew()" function.  "is_new" is true for extendnew().
 private void
 extend(Arr(Var) argvars, Var* returnVar, CS arg_errmsg, int is_new) {
    CS funcName = (CS)( is_new ? "extendnew()" : "extend()");
 
    if (argvars[0].tag == VAR_LIST && argvars[1].tag == VAR_LIST) {
-      // Check that extend() does not change the type of the list if it was declared.
+      //Check that extend() does not change the type of the list if it was declared.
       list_extend_func(argvars, arg_errmsg, is_new, returnVar);
    } ei (argvars[0].tag == VAR_BAG && argvars[1].tag == VAR_BAG) {
-      // Check that extend() does not change the type of the dict if it was declared.
+      //Check that extend() does not change the type of the dict if it was declared.
       bagExtend_func(argvars, arg_errmsg, is_new, returnVar);
    } else
       showErrFmtMsg(_(e_argument_of_str_must_be_list_or_dictionary), funcName);
 }
 
-// "extend(list, list [, idx])" function. "extend(dict, dict [, action])" function
+//"extend(list, list [, idx])" function. "extend(dict, dict [, action])" function
 pub void
 f_extend(Arr(Var) argvars, Var* returnVar) {
    CS errmsg = (CS)N_("extend() argument");
    extend(argvars, returnVar, errmsg, false);
 }
 
-// "extendnew(list, list [, idx])" function. "extendnew(dict, dict [, action])" function
+//"extendnew(list, list [, idx])" function. "extendnew(dict, dict [, action])" function
 pub void
 f_extendnew(Arr(Var) argvars, Var* returnVar) {
    CS errmsg = (CS)N_("extendnew() argument");
@@ -2460,7 +2460,7 @@ list_insert_func(Arr(Var) argvars, Var* returnVar) {
    if (argvars[2].tag != VAR_UNKNOWN)
       before = (long)varGetNumberChk(argvars + 2, OUT &error);
    if (error)
-      return;      // type error; errmsg already given
+      return;      //type error; errmsg already given
 
    if (before == l->len)
       item = NULL;
@@ -2526,7 +2526,7 @@ list_reverse(List *l, Var* returnVar) {
    }
 }
 
-// "reverse({list})" function
+//"reverse({list})" function
 pub void
 f_reverse(Arr(Var) argvars, Var* returnVar) {
    if (check_for_string_or_list_or_blob_arg(argvars, 0) == FAIL)
@@ -2544,8 +2544,8 @@ f_reverse(Arr(Var) argvars, Var* returnVar) {
       list_reverse(argvars[0].list, returnVar);
 }
 
-// Implementation of reduce() for list "argvars[0]", using the function "expr"
-// starting with the optional initial value argvars[2] and return the result in "returnVar".
+//Implementation of reduce() for list "argvars[0]", using the function "expr"
+//starting with the optional initial value argvars[2] and return the result in "returnVar".
 private void
 list_reduce(
    Var   *argvars,
@@ -2562,7 +2562,7 @@ list_reduce(
    int      called_emsg_start = called_emsg;
    int      prev_locked;
 
-   // Using reduce on a range() uses "range_idx" and "range_val".
+   //Using reduce on a range() uses "range_idx" and "range_val".
    int range_list = l != NULL && l->first == &range_list_item;
    if (range_list)
       range_val = l->lv_u.nonmat.start;
@@ -2592,7 +2592,7 @@ list_reduce(
       return;
 
    prev_locked = l->lock;
-   l->lock = VAR_FIXED;  // disallow the list changing here
+   l->lock = VAR_FIXED;  //disallow the list changing here
 
    while (range_list ? range_idx < l->len : li != NULL) {
       argv[0] = *returnVar;
@@ -2611,7 +2611,7 @@ list_reduce(
       if (r == FAIL || called_emsg != called_emsg_start)
           break;
 
-      // advance to the next item
+      //advance to the next item
       if (range_list) {
          range_val += l->lv_u.nonmat.stride;
          ++range_idx;
@@ -2663,7 +2663,7 @@ f_slice(Arr(Var) argvars, Var* returnVar) {
    );
 }
 
-// Same as ga_grow() but uses an allocation id for testing.
+//Same as ga_grow() but uses an allocation id for testing.
 pub int
 ga_grow_id(ArrayList *gap, int n, AllocId id) {
    if (alloc_fail_id == id && alloc_does_fail(sizeof(List)))
@@ -2676,34 +2676,34 @@ ga_grow_id(ArrayList *gap, int n, AllocId id) {
 //}}}
 //{{{hashtable: Handling of a hashtable with Eegl-specific properties.
 
-// Each item in a hashtable has a ZERO-terminated string key.  A key can appear only once in 
-// the table.
+//Each item in a hashtable has a ZERO-terminated string key.  A key can appear only once in 
+//the table.
 //
-// A hash number is computed from the key for quick lookup.  When the hashes of two different keys 
-// point to the same entry an algorithm is used to iterate over other entries in the table until 
-// the right one is found. To make the iteration work removed keys are different from entries where
-// a key was never present.
+//A hash number is computed from the key for quick lookup.  When the hashes of two different keys 
+//point to the same entry an algorithm is used to iterate over other entries in the table until 
+//the right one is found. To make the iteration work removed keys are different from entries where
+//a key was never present.
 //
-// The mechanism has been partly based on how Python Dictionaries are implemented. The algorithm 
-// is from Knuth Vol. 3, Sec. 6.4.
+//The mechanism has been partly based on how Python Dictionaries are implemented. The algorithm 
+//is from Knuth Vol. 3, Sec. 6.4.
 //
-// The hashtable grows to accommodate more entries when needed.  At least 1/3 of the entries is 
-// empty to keep the lookup efficient (at the cost of extra memory).
+//The hashtable grows to accommodate more entries when needed.  At least 1/3 of the entries is 
+//empty to keep the lookup efficient (at the cost of extra memory).
 
 #if 0
-# define HT_DEBUG   // extra checks for table consistency  and statistics
+# define HT_DEBUG   //extra checks for table consistency  and statistics
 
-private long hash_count_lookup = 0;   // count number of hashtab lookups
-private long hash_count_perturb = 0;   // count number of "misses"
+private long hash_count_lookup = 0;   //count number of hashtab lookups
+private long hash_count_perturb = 0;   //count number of "misses"
 #endif
 
-// Magic value for algorithm that walks through the array.
+//Magic value for algorithm that walks through the array.
 #define PERTURB_SHIFT 5
 
 private int hash_may_resize(EeSet *ht, int minitems);
 
-#if 0 // currently not used
-// Create an empty hash table. Return NULL when out of memory.
+#if 0 //currently not used
+//Create an empty hash table. Return NULL when out of memory.
 pub EeSet *
 hash_create(void) {
    EeSet *ht;
@@ -2715,16 +2715,16 @@ hash_create(void) {
 }
 #endif
 
-// Initialize an empty hash table.
+//Initialize an empty hash table.
 pub void
 hash_init(EeSet* ht) {
-   // This zeroes all "ht_" entries and all the "hi_key" in "smallArray".
+   //This zeroes all "ht_" entries and all the "hi_key" in "smallArray".
    CLEAR_POINTER(ht);
    ht->array = ht->smallArray;
    ht->mask = HT_INIT_SIZE - 1;
 }
 
-// If "ht->flags" has HTFLAGS_FROZEN then give an error message using "command" and return true.
+//If "ht->flags" has HTFLAGS_FROZEN then give an error message using "command" and return true.
 pub int
 check_hashtab_frozen(EeSet* ht, CS command) {
    if ((ht->flags & HTFLAGS_FROZEN) == 0)
@@ -2734,17 +2734,17 @@ check_hashtab_frozen(EeSet* ht, CS command) {
       return true;
 }
 
-// Free the array of a hash table.  Does not free the items it contains!
-// If "ht" is not freed then you should call hash_init() next!
+//Free the array of a hash table.  Does not free the items it contains!
+//If "ht" is not freed then you should call hash_init() next!
 pub void
 hash_clear(EeSet* ht) {
    if (ht->array != ht->smallArray)
       eeglFree(ht->array);
 }
 
-// Free the array of a hash table and all the keys it contains.  The keys must have been allocated.
-// "off" is the offset from the start of the allocate memory to the location of the key (it's 
-// always positive).
+//Free the array of a hash table and all the keys it contains.  The keys must have been allocated.
+//"off" is the offset from the start of the allocate memory to the location of the key (it's 
+//always positive).
 pub void
 hash_clear_all(EeSet* ht, int off) {
    EeSetItem   *hi;
@@ -2759,16 +2759,16 @@ hash_clear_all(EeSet* ht, int off) {
    hash_clear(ht);
 }
 
-// Find "key" in hashtable "ht". "key" must not be NULL. Always return a pointer to a EeSetItem.
-// If the item was not found, then HASHITEM_EMPTY() is true.  The pointer is then the place where
-// the key would be added. WARNING: The returned pointer becomes invalid when the hashtable is 
-// changed (adding, setting or removing an item)!
+//Find "key" in hashtable "ht". "key" must not be NULL. Always return a pointer to a EeSetItem.
+//If the item was not found, then HASHITEM_EMPTY() is true.  The pointer is then the place where
+//the key would be added. WARNING: The returned pointer becomes invalid when the hashtable is 
+//changed (adding, setting or removing an item)!
 pub EeSetItem *
 hash_find(EeSet* ht, Text key) {
    return hash_lookup(ht, key, calcHash(key));
 }
 
-// Like hash_find(), but caller computes "hash".
+//Like hash_find(), but caller computes "hash".
 pub EeSetItem *
 hash_lookup(EeSet* ht, Text key, Hash hash) {
    Hash   perturb;
@@ -2777,10 +2777,10 @@ hash_lookup(EeSet* ht, Text key, Hash hash) {
    ++hash_count_lookup;
 #endif
 
-   // Quickly handle the most common situations:
-   // - return if there is no item at all
-   // - skip over a removed item
-   // - return if the item matches
+   //Quickly handle the most common situations:
+   //- return if there is no item at all
+   //- skip over a removed item
+   //- return if the item matches
    Unt idx = (Unt)(hash & ht->mask);
    EeSetItem* hi = &ht->array[idx];
 
@@ -2802,7 +2802,7 @@ hash_lookup(EeSet* ht, Text key, Hash hash) {
    //removed item).
    for (perturb = hash; ; perturb >>= PERTURB_SHIFT) {
 #ifdef HT_DEBUG
-      ++hash_count_perturb;       // count a "miss" for hashtab lookup
+      ++hash_count_perturb;       //count a "miss" for hashtab lookup
 #endif
       idx = (Unt)((idx << 2U) + idx + perturb + 1);
       hi = &ht->array[idx & ht->mask];
@@ -2818,8 +2818,8 @@ hash_lookup(EeSet* ht, Text key, Hash hash) {
    return null;
 }
 
-// Print the efficiency of hashtable lookups. Useful when trying different hash algorithms.
-// Called when exiting.
+//Print the efficiency of hashtable lookups. Useful when trying different hash algorithms.
+//Called when exiting.
 pub void
 hash_debug_results(void) {
 # ifdef HT_DEBUG
@@ -2847,12 +2847,12 @@ hash_add(EeSet* ht, Text key, CS command) {
    return hash_add_item(ht, hi, key, hash);
 }
 
-// Add item "hi" with "key" to hashtable "ht". "key" must not be NULL and "hi" must have been 
-// obtained with hash_lookup() and point to an empty item. "hi" is invalid after this!
-// Return OK or FAIL (out of memory).
+//Add item "hi" with "key" to hashtable "ht". "key" must not be NULL and "hi" must have been 
+//obtained with hash_lookup() and point to an empty item. "hi" is invalid after this!
+//Return OK or FAIL (out of memory).
 pub int
 hash_add_item(EeSet* ht, EeSetItem* hi, Text newItem, Hash hash) {
-   // If resizing failed before and it fails again we can't add an item.
+   //If resizing failed before and it fails again we can't add an item.
    if (ht->flags & HTFLAGS_ERROR)
       return FAIL;
 
@@ -2864,17 +2864,17 @@ hash_add_item(EeSet* ht, EeSetItem* hi, Text newItem, Hash hash) {
    hi->len = newItem.len;
    hi->hi_hash = hash;
 
-   // When the space gets low may resize the array.
+   //When the space gets low may resize the array.
    return hash_may_resize(ht, 0);
 }
 
-#if 0  // not used
-// Overwrite hashtable item "hi" with "key".  "hi" must point to the item that
-// is to be overwritten.  Thus the number of items in the hashtable doesn't change.
-// Although the key must be identical, the pointer may be different, thus it's
-// set anyway (the key is part of an item with that key).
-// The caller must take care of freeing the old item.
-// "hi" is invalid after this!
+#if 0  //not used
+//Overwrite hashtable item "hi" with "key".  "hi" must point to the item that
+//is to be overwritten.  Thus the number of items in the hashtable doesn't change.
+//Although the key must be identical, the pointer may be different, thus it's
+//set anyway (the key is part of an item with that key).
+//The caller must take care of freeing the old item.
+//"hi" is invalid after this!
 pub void
 hash_set(EeSetItem *hi, Byte *key) {
    hi->hi_key = key;
@@ -2896,33 +2896,33 @@ hash_remove(EeSet* ht, EeSetItem* hi, CS command) {
    return OK;
 }
 
-// Lock a hashtable: prevent that array changes. Don't use this when items are to be added!
-// Must call hash_unlock() later.
+//Lock a hashtable: prevent that array changes. Don't use this when items are to be added!
+//Must call hash_unlock() later.
 pub void
 hash_lock(EeSet *ht) {
     ++ht->ht_locked;
 }
 
-// Lock a hashtable at the specified number of entries.
-// Caller must make sure no more than "size" entries will be added. Must call hash_unlock() later.
+//Lock a hashtable at the specified number of entries.
+//Caller must make sure no more than "size" entries will be added. Must call hash_unlock() later.
 pub void
 hash_lock_size(EeSet *ht, int size) {
     (void)hash_may_resize(ht, size);
     ++ht->ht_locked;
 }
 
-// Unlock a hashtable: allow array changes again. Table will be resized (shrink) when necessary.
-// This must balance a call to hash_lock().
+//Unlock a hashtable: allow array changes again. Table will be resized (shrink) when necessary.
+//This must balance a call to hash_lock().
 pub void
 hash_unlock(EeSet* ht) {
    --ht->ht_locked;
    (void)hash_may_resize(ht, 0);
 }
 
-// Shrink a hashtable when there is too much empty space. Grow a hashtable when there is not 
-// enough empty space. Return OK or FAIL (overflow on size).
+//Shrink a hashtable when there is too much empty space. Grow a hashtable when there is not 
+//enough empty space. Return OK or FAIL (overflow on size).
 private int
-hash_may_resize(EeSet* ht, int minitems) {     // minimal number of items
+hash_may_resize(EeSet* ht, int minitems) {     //minimal number of items
    EeSetItem temparray[HT_INIT_SIZE];
    EeSetItem *oldarray, *newarray;
    EeSetItem *olditem, *newitem;
@@ -2933,7 +2933,7 @@ hash_may_resize(EeSet* ht, int minitems) {     // minimal number of items
    Ulong   newmask;
    Hash   perturb;
 
-   // Don't resize a locked table.
+   //Don't resize a locked table.
    if (ht->ht_locked > 0)
       return OK;
 
@@ -2946,8 +2946,8 @@ hash_may_resize(EeSet* ht, int minitems) {     // minimal number of items
 
    Ulong oldsize = ht->mask + 1;
    if (minitems == 0) {
-      // Return quickly for small tables with at least two NULL items.  NULL
-      // items are required for the lookup to decide a key isn't there.
+      //Return quickly for small tables with at least two NULL items.  NULL
+      //items are required for the lookup to decide a key isn't there.
       if (ht->occupied < HT_INIT_SIZE - 1 && ht->array == ht->smallArray)
           return OK;
 
@@ -2959,29 +2959,29 @@ hash_may_resize(EeSet* ht, int minitems) {     // minimal number of items
          return OK;
 
       if (ht->count > 1000)
-          minsize = ht->count * 2;  // it's big, don't make too much room
+          minsize = ht->count * 2;  //it's big, don't make too much room
       else
-          minsize = ht->count * 4;  // make plenty of room
+          minsize = ht->count * 4;  //make plenty of room
    } else {
-      // Use specified size.
-      if ((Ulong)minitems < ht->count)   // just in case...
+      //Use specified size.
+      if ((Ulong)minitems < ht->count)   //just in case...
           minitems = (int)ht->count;
-      minsize = (minitems * 3 + 1) / 2;   // array is up to 2/3 full
+      minsize = (minitems * 3 + 1) / 2;   //array is up to 2/3 full
    }
 
    newsize = HT_INIT_SIZE;
    while (newsize < minsize) {
-      newsize <<= 1;      // make sure it's always a power of 2
+      newsize <<= 1;      //make sure it's always a power of 2
       if (newsize == 0)
-         return FAIL;   // overflow
+         return FAIL;   //overflow
    }
 
    if (newsize == HT_INIT_SIZE) {
-      // Use the small array inside the hashdict structure.
+      //Use the small array inside the hashdict structure.
       newarray = ht->smallArray;
       if (ht->array == newarray) {
-         // Moving from smallArray to smallArray!  Happens when there
-         // are many removed items.  Copy the items to be able to clean up removed items.
+         //Moving from smallArray to smallArray!  Happens when there
+         //are many removed items.  Copy the items to be able to clean up removed items.
          MEMMOVE(temparray, newarray, sizeof(temparray));
          oldarray = temparray;
       } else
@@ -2992,7 +2992,7 @@ hash_may_resize(EeSet* ht, int minitems) {     // minimal number of items
       //many removed items, bail out.
       return OK;
    } else {
-      // Allocate an array.
+      //Allocate an array.
       newarray = ALLOC_CLEAR_MULT(EeSetItem, newsize);
       oldarray = ht->array;
    }
@@ -3044,7 +3044,7 @@ calcHash(Text const key) {
       return (Hash)0;
    CS p = key.c + 1;
 
-   // A simplistic algorithm that appears to do very well. Suggested by George Reilly.
+   //A simplistic algorithm that appears to do very well. Suggested by George Reilly.
    for (; p < key.c + key.len; p++)
       hash = hash * 101 + (*p);
 
@@ -3105,7 +3105,7 @@ vartype_name(VarTag type) {
    return "unknown";
 }
 
-// Allocate memory for a variable type-value, and make it empty (0 or NULL value)
+//Allocate memory for a variable type-value, and make it empty (0 or NULL value)
 pub Var *
 allocVar(void) {
    return ALLOC_CLEAR_ONE(Var);
@@ -3131,7 +3131,7 @@ freeVar(Var* varp) {
    switch (varp->tag) {
    case VAR_FUNC:
       func_unref(varp->string);
-      // FALLTHROUGH
+      //FALLTHROUGH
    case VAR_STRING:
       eeglFree(varp->string);
       break;
@@ -3173,7 +3173,7 @@ clearVar(Var* varp) {
    switch (varp->tag) {
    case VAR_FUNC:
       func_unref(varp->string);
-      // FALLTHROUGH
+      //FALLTHROUGH
    case VAR_STRING:
       EE_CLEAR(varp->string);
       break;
@@ -3269,7 +3269,7 @@ convertToBoolOrNumber(
        internal_error_no_abort((CS)"tv_get_number(UNKNOWN)");
        break;
    }
-   if (!denote)      // useful for values that must be unsigned
+   if (!denote)      //useful for values that must be unsigned
       n = -1;
    else
       *denote = true;
@@ -3281,7 +3281,7 @@ convertToBoolOrNumber(
 //caller of incompatible types: set *denote to true if "denote" is not NULL or return -1 otherwise.
 pub Long
 tv_get_number(Var* varp) {
-   return varGetNumberChk(varp, null);   // return 0L on error
+   return varGetNumberChk(varp, null);   //return 0L on error
 }
 
 pub Long
@@ -3345,7 +3345,7 @@ tv_get_float(Var* varp) {
     return convertToDouble(varp, NULL);
 }
 
-// Give an error and return FAIL unless "args[idx]" is unknown
+//Give an error and return FAIL unless "args[idx]" is unknown
 pub int
 check_for_unknown_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_UNKNOWN) {
@@ -3355,7 +3355,7 @@ check_for_unknown_arg(Arr(Var) args, int idx) {
    return OK;
 }
 
-// Give an error and return FAIL unless "args[idx]" is a string.
+//Give an error and return FAIL unless "args[idx]" is a string.
 pub int
 check_for_string_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_STRING) {
@@ -3365,7 +3365,7 @@ check_for_string_arg(Var* args, int idx) {
    return OK;
 }
 
-// Give an error and return FAIL unless "args[idx]" is a non-empty string.
+//Give an error and return FAIL unless "args[idx]" is a non-empty string.
 pub int
 check_for_nonempty_string_arg(Var* args, int idx) {
    if (check_for_string_arg(args, idx) == FAIL)
@@ -3383,7 +3383,7 @@ check_for_opt_string_arg(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN || check_for_string_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
-// Give an error and return FAIL unless "args[idx]" is a number.
+//Give an error and return FAIL unless "args[idx]" is a number.
 pub int
 check_for_number_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_NUMBER) {
@@ -3458,7 +3458,7 @@ check_for_blob_arg(Var* args, int idx) {
    return OK;
 }
 
-// Give an error and return FAIL unless "args[idx]" is a list.
+//Give an error and return FAIL unless "args[idx]" is a list.
 pub int
 confirmVarIsList(Var* arg, int idx) {
    if (arg[idx].tag != VAR_LIST) {
@@ -3488,7 +3488,7 @@ confirmVarIsOptionalList(Arr(Var) args, int idx) {
        || confirmVarIsList(args, idx) != FAIL) ? OK : FAIL;
 }
 
-// Give an error and return FAIL unless "args[idx]" is a dict.
+//Give an error and return FAIL unless "args[idx]" is a dict.
 pub int
 check_for_dict_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_BAG) {
@@ -3511,21 +3511,21 @@ check_for_nonnull_dict_arg(Arr(Var) args, int idx) {
    return OK;
 }
 
-// Check for an optional dict argument at 'idx'
+//Check for an optional dict argument at 'idx'
 pub int
 check_for_oself_arg(Arr(Var) args, int idx) {
     return (args[idx].tag == VAR_UNKNOWN
        || check_for_dict_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
-// Check for an optional non-NULL dict argument at 'idx'
+//Check for an optional non-NULL dict argument at 'idx'
 pub int
 check_for_opt_nonnull_dict_arg(Var* args, int idx) {
     return (args[idx].tag == VAR_UNKNOWN
        || check_for_nonnull_dict_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
-// Give an error and return FAIL unless "args[idx]" is a channel or a job.
+//Give an error and return FAIL unless "args[idx]" is a channel or a job.
 pub int
 check_for_chan_or_job_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_CHANNEL && args[idx].tag != VAR_JOB) {
@@ -3552,14 +3552,14 @@ check_for_job_arg(Var* args, int idx) {
    return OK;
 }
 
-// Check for an optional job argument at 'idx'.
+//Check for an optional job argument at 'idx'.
 pub int
 check_for_opt_job_arg(Arr(Var) args, int idx) {
     return (args[idx].tag == VAR_UNKNOWN
        || check_for_job_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
-// Give an error and return FAIL unless "args[idx]" is a string or a number.
+//Give an error and return FAIL unless "args[idx]" is a string or a number.
 pub int
 check_for_string_or_number_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING && args[idx].tag != VAR_NUMBER) {
@@ -3651,7 +3651,7 @@ check_for_string_or_dict_arg(Arr(Var) args, int idx) {
     return OK;
 }
 
-// Give an error and return FAIL unless "args[idx]" is a string or a number or a list.
+//Give an error and return FAIL unless "args[idx]" is a string or a number or a list.
 pub int
 check_for_string_or_number_or_list_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING
@@ -3697,7 +3697,7 @@ check_for_string_list_or_dict_arg(Arr(Var) args, int idx) {
    return OK;
 }
 
-// Give an error and return FAIL unless "args[idx]" is a string or a function reference.
+//Give an error and return FAIL unless "args[idx]" is a string or a function reference.
 pub int
 check_for_string_or_func_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_PARTIAL
@@ -3883,7 +3883,7 @@ convertVarToString_strict(Var* varp, CS buf, int strict) {
    return NULL;
 }
 
-// Turn a var into a string. Similar to tv_get_string_buf() but uses string() on Bag, List, etc.
+//Turn a var into a string. Similar to tv_get_string_buf() but uses string() on Bag, List, etc.
 pub CS
 tv_stringify(Var* varp, CS buf) {
    if (varp->tag == VAR_LIST
@@ -4011,9 +4011,9 @@ copy_tv(OUT Var* to, Var* from) {
 //Compare "tv1" and "tv2". Put the result in "tv1".  Caller should clear "tv2".
 pub int
 daCompareVars(
-   Var* tv1,   // first operand
-   Var* tv2,   // second operand
-   ExprType type,   // operator
+   Var* tv1,   //first operand
+   Var* tv2,   //second operand
+   ExprType type,   //operator
    Boole ignoreCase
 ) {
    Long n1, n2;
@@ -4050,8 +4050,8 @@ daCompareVars(
       }
       n1 = res;
    }
-   // If one of the two variables is a float, compare as a float.
-   // When using "=~" or "!~", always compare as string.
+   //If one of the two variables is a float, compare as a float.
+   //When using "=~" or "!~", always compare as string.
    ei ((tv1->tag == VAR_FLOAT || tv2->tag == VAR_FLOAT)
        && type != EXPR_MATCH && type != EXPR_NOMATCH
    ){
@@ -4077,12 +4077,12 @@ daCompareVars(
    case EXPR_SEQUAL:   n1 = (f1 <= f2); break;
    case EXPR_UNKNOWN:
    case EXPR_MATCH:
-   default:  break;  // avoid gcc warning
+   default:  break;  //avoid gcc warning
    }
    }
 
-   // If one of the two variables is a number, compare as a number.
-   // When using "=~" or "!~", always compare as string.
+   //If one of the two variables is a number, compare as a number.
+   //When using "=~" or "!~", always compare as string.
    ei ((tv1->tag == VAR_NUMBER || tv2->tag == VAR_NUMBER)
        && type != EXPR_MATCH && type != EXPR_NOMATCH
    ){
@@ -4106,7 +4106,7 @@ daCompareVars(
       case EXPR_SEQUAL:   n1 = (n1 <= n2); break;
       case EXPR_UNKNOWN:
       case EXPR_MATCH:
-      default:  break;  // avoid gcc warning
+      default:  break;  //avoid gcc warning
       }
    } ei (tv1->tag == tv2->tag
        && (tv1->tag == VAR_CHANNEL || tv1->tag == VAR_JOB)
@@ -4245,7 +4245,7 @@ daCompareVars_func(
       val = (tv1->partial == tv2->partial);
    ei (type == EXPR_IS || type == EXPR_ISNOT) {
       if (tv1->tag == VAR_FUNC && tv2->tag == VAR_FUNC)
-         // strings are considered the same if their value is the same
+         //strings are considered the same if their value is the same
          val = tv_equal(tv1, tv2, ic);
       ei (tv1->tag == VAR_PARTIAL && tv2->tag == VAR_PARTIAL)
          val = (tv1->partial == tv2->partial);
@@ -4280,11 +4280,11 @@ daCompareVars_string(
       i = ignoreCase ? caseInsensitiveCompareMaxCol(s1, s2) : STRCMP(s1, s2);
    switch (type) {
    case EXPR_IS: 
-      // FALLTHROUGH
+      //FALLTHROUGH
    case EXPR_EQUAL:    
       val = (i == 0); break;
    case EXPR_ISNOT:    
-      // FALLTHROUGH
+      //FALLTHROUGH
    case EXPR_NEQUAL:   
       val = (i != 0); break;
    case EXPR_GREATER:  
@@ -4300,7 +4300,7 @@ daCompareVars_string(
           val = !val;
       break;
 
-   default:  break;  // avoid gcc warning
+   default:  break;  //avoid gcc warning
    }
    *res = val;
    return OK;
@@ -4319,7 +4319,7 @@ daStringOfVar(Var *arg, int quotes) {
       ret = copyStr(arg->string ? arg->string : S"");
    } else {
       ret = tv2string(arg, &tofree, numbuf, 0);
-      // Make a copy if we have a value but it's not in allocated memory.
+      //Make a copy if we have a value but it's not in allocated memory.
       if (ret && !tofree)
          ret = copyStr(ret);
    }
@@ -4336,9 +4336,9 @@ tv_islocked(Var *tv) {
 }
 
 private int
-func_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
+func_equal(Var *tv1, Var *tv2, int ic) {      //ignore case
    int      i;
-   // empty and NULL function name considered the same
+   //empty and NULL function name considered the same
    CS s1 = tv1->tag == VAR_FUNC ? tv1->string : partial_name(tv1->partial);
    if (s1 && *s1 == ZERO)
       s1 = NULL;
@@ -4351,7 +4351,7 @@ func_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
    } ei (STRCMP(s1, s2) != 0)
       return false;
 
-   // empty dict and NULL dict is different
+   //empty dict and NULL dict is different
    Bag* d1 = tv1->tag == VAR_FUNC ? NULL : tv1->partial->self;
    Bag* d2 = tv2->tag == VAR_FUNC ? NULL : tv2->partial->self;
    if (!d1 || !d2) {
@@ -4360,7 +4360,7 @@ func_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
    } ei (!bagEqual(d1, d2, ic))
       return false;
 
-   // empty list and no list considered the same
+   //empty list and no list considered the same
    int a1 = tv1->tag == VAR_FUNC ? 0 : tv1->partial->argc;
    int a2 = tv2->tag == VAR_FUNC ? 0 : tv2->partial->argc;
    if (a1 != a2)
@@ -4377,11 +4377,11 @@ func_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
 //Compares the items just like "==" would compare them, but strings and
 //numbers are different.  Floats and numbers are also different.
 pub int
-tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
+tv_equal(Var* tv1, Var* tv2, int ic) {      //ignore case
    Byte buf1[NUMBUFLEN], buf2[NUMBUFLEN];
    CS s1;
    CS s2;
-   static int  recursive_cnt = 0;       // catch recursive loops
+   static int  recursive_cnt = 0;       //catch recursive loops
    int      r;
    static int   tv_equal_recurse_limit;
 
@@ -4396,7 +4396,7 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
       return true;
    }
 
-   // For VAR_FUNC and VAR_PARTIAL compare the function name, bound dict and arguments.
+   //For VAR_FUNC and VAR_PARTIAL compare the function name, bound dict and arguments.
    if ((tv1->tag == VAR_FUNC || (tv1->tag == VAR_PARTIAL && tv1->partial)) 
          && (tv2->tag == VAR_FUNC || (tv2->tag == VAR_PARTIAL && tv2->partial))
    ) {
@@ -4452,8 +4452,8 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
       break;
    }
 
-   // VAR_UNKNOWN can be the result of a invalid expression, let's say it
-   // does not equal anything, not even itself.
+   //VAR_UNKNOWN can be the result of a invalid expression, let's say it
+   //does not equal anything, not even itself.
    return false;
 }
 
@@ -4462,11 +4462,11 @@ pub int
 eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
    int get_float = false;
 
-   // We accept a float when the format matches
-   // "[0-9]\+\.[0-9]\+\([eE][+-]\?[0-9]\+\)\?".  This is very
-   // strict to avoid backwards compatibility problems.
-   // The leading digit can be omitted.
-   // Don't look for a float after the "." operator, so that ":let vers = 1.2.3" doesn't fail.
+   //We accept a float when the format matches
+   //"[0-9]\+\.[0-9]\+\([eE][+-]\?[0-9]\+\)\?".  This is very
+   //strict to avoid backwards compatibility problems.
+   //The leading digit can be omitted.
+   //Don't look for a float after the "." operator, so that ":let vers = 1.2.3" doesn't fail.
    CS p;
    if (**arg == '.')
       p = *arg;
@@ -4506,7 +4506,7 @@ eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
       CS  bp;
       Blob* blob = NULL;
 
-      // Blob constant: 0z0123456789abcdef
+      //Blob constant: 0z0123456789abcdef
       if (evaluate)
          blob = blob_alloc();
       for (bp = *arg + 2; eeIsXDigit(bp[0]); bp += 2) {
@@ -4528,7 +4528,7 @@ eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
       *arg = bp;
    } else {
 
-      // decimal or hex number
+      //decimal or hex number
       int len;
       Long n;
       readLongNumber(
@@ -4577,11 +4577,11 @@ eval_env_var(OUT CS* arg, Var* returnVar, int evaluate) {
    int len = readEnvNameAndGetItsLen(arg);
    if (evaluate) {
       if (len == 0)
-         return FAIL; // invalid empty name
+         return FAIL; //invalid empty name
 
       cc = name[len];
       name[len] = ZERO;
-      // first try eeglGetEnv(), fast for normal environment vars
+      //first try eeglGetEnv(), fast for normal environment vars
       string = eeglGetEnv(name);
       if (string && *string != ZERO) {
          if (!mustfree)
@@ -4590,7 +4590,7 @@ eval_env_var(OUT CS* arg, Var* returnVar, int evaluate) {
          if (mustfree)
             eeglFree(string);
 
-         // next try expanding things like $EEGL and ${HOME}
+         //next try expanding things like $EEGL and ${HOME}
          string = doExpandEnvInMultiplePaths(name - 1);
          if (string != NULL && *string == '$')
             EE_CLEAR(string);
@@ -4614,7 +4614,7 @@ tv_get_lnum(Arr(Var) argvars) {
    LineNr lnum = (LineNr)varGetNumberChk(&argvars[0], NULL);
    if (lnum <= 0 && anyEmsgG_before == anyEmsgG && argvars[0].tag != VAR_NUMBER) {
       int fnum;
-      // no valid number, try using arg like line()
+      //no valid number, try using arg like line()
       Pos* fp = var2fpos(&argvars[0], true, &fnum, false);
       if (fp)
           lnum = fp->lnum;
@@ -4651,7 +4651,7 @@ daGetBook(Var* tv, Boole curtab_only) {
 
    Book* book = bookFindByName(name, curtab_only);
 
-   // If not found, try expanding the name, like done for bufexists().
+   //If not found, try expanding the name, like done for bufexists().
    if (!book)
       book = findBook(tv);
 
@@ -4667,7 +4667,7 @@ daGetBookFromArg(Var* tv) {
    if (!book
        && tv->tag != VAR_NUMBER
        && tv->tag != VAR_STRING)
-      // issue errmsg for type error
+      //issue errmsg for type error
       (void)tv_get_number(tv);
    return book;
 }
@@ -4695,7 +4695,7 @@ equal_type(TypeSpec *type1, TypeSpec *type2, int flags) {
    case VAR_BLOB:
    case VAR_JOB:
    case VAR_CHANNEL:
-      break;  // not composite is always OK
+      break;  //not composite is always OK
    case VAR_LIST:
    case VAR_BAG:
       return equal_type(type1->member, type2->member, flags);
@@ -4749,7 +4749,7 @@ get_compare_type(CS p, int* len, int* type_is) {
       break;
    case 'i':   
       if (p[1] == 's') {
-         // "is" and "isnot"; but not a prefix of a name
+         //"is" and "isnot"; but not a prefix of a name
          if (p[2] == 'n' && p[3] == 'o' && p[4] == 't')
             *len = 5;
          i = p[*len];
@@ -4801,17 +4801,17 @@ tv2bool(Var* tv) {
 //}}}
 //{{{Bags
 
-// List head for garbage collection. Although there can be a reference loop
-// from partial to dict to partial, we don't need to keep track of the partial,
-// since it will get freed when the dict is unused and gets freed.
+//List head for garbage collection. Although there can be a reference loop
+//from partial to dict to partial, we don't need to keep track of the partial,
+//since it will get freed when the dict is unused and gets freed.
 private Bag* first_dict = NULL;
 
-// Allocate an empty header for a dictionary. Caller should take care of the reference count.
+//Allocate an empty header for a dictionary. Caller should take care of the reference count.
 pub Bag *
 allocBag(void) {
    Bag* d = ALLOC_CLEAR_ONE(Bag);
 
-   // Add the dict to the list of dicts for garbage collection.
+   //Add the dict to the list of dicts for garbage collection.
    if (first_dict)
       first_dict->dv_used_prev = d;
    d->dv_used_next = first_dict;
@@ -4841,14 +4841,14 @@ allocBag_lock(int lock) {
    return d;
 }
 
-// Allocate an empty dict for a return value. Return OK or FAIL.
+//Allocate an empty dict for a return value. Return OK or FAIL.
 pub void
 allocReturnDict(Var* returnVar) {
    Bag* b = allocBag_lock(0);
    returnVar_dict_set(returnVar, b);
 }
 
-// Set a dictionary as the return value
+//Set a dictionary as the return value
 pub void
 returnVar_dict_set(Var* returnVar, Bag* b) {
    returnVar->tag = VAR_BAG;
@@ -4869,9 +4869,9 @@ char_from_string(CS str, Long index) {
       return NULL;
    Unt slen = STRLEN(str);
 
-   // Do the same as for a list: a negative index counts from the end.
-   // Optimization to check the first byte to be below 0x80 (and no composing
-   // character follows) makes this a lot faster.
+   //Do the same as for a list: a negative index counts from the end.
+   //Optimization to check the first byte to be below 0x80 (and no composing
+   //character follows) makes this a lot faster.
    if (index < 0) {
       int   clen = 0;
 
@@ -4883,7 +4883,7 @@ char_from_string(CS str, Long index) {
       }
       nchar = clen + index;
       if (nchar < 0)
-         // unlike list: index out of range results in empty string
+         //unlike list: index out of range results in empty string
          return NULL;
    }
 
@@ -4913,7 +4913,7 @@ textOfItem(EeSetItem* si) {
    return (Text){.c = si->hi_key, .len = si->len};
 }
 
-// Add item "item" to Bag "b". Return FAIL when wrong bag or when key already exists.
+//Add item "item" to Bag "b". Return FAIL when wrong bag or when key already exists.
 pub int
 bagAdd(Bag* b, DictItem* item) {
    if (dictWrongFuncName(b, &item->c, textOfDi(item)))
@@ -4921,7 +4921,7 @@ bagAdd(Bag* b, DictItem* item) {
    return hash_add(&b->hashTable, textOfDi(item), S"add to dictionary");
 }
 
-// Add a number or special entry to a Bag. FAIL when out of memory or when key exists
+//Add a number or special entry to a Bag. FAIL when out of memory or when key exists
 private int
 bagAddNumber_special(Bag* b, CS key, Long nr, VarTag vartype) {
    DictItem* item = dictitem_alloc(mbText(key));
@@ -4934,19 +4934,19 @@ bagAddNumber_special(Bag* b, CS key, Long nr, VarTag vartype) {
    return OK;
 }
 
-// Add a number entry to a Bag. Return FAIL when out of memory or when key already exists.
+//Add a number entry to a Bag. Return FAIL when out of memory or when key already exists.
 pub int
 bagAddNumber(Bag* d, CS key, Long nr) {
    return bagAddNumber_special(d, key, nr, VAR_NUMBER);
 }
 
-// Add a special entry to a Bag. FAIL when out of memory or when key already exists.
+//Add a special entry to a Bag. FAIL when out of memory or when key already exists.
 pub int
 bagAdd_bool(Bag* d, CS key, Long nr) {
    return bagAddNumber_special(d, key, nr, VAR_BOOL);
 }
 
-// Add a string entry to Bag. Return FAIL when out of memory or when key already exists.
+//Add a string entry to Bag. Return FAIL when out of memory or when key already exists.
 pub int
 bagAddString(Bag* d, CS key, CS str) {
    return bagAddString_len(d, key, str, -1);
@@ -4974,7 +4974,7 @@ bagAddString_len(Bag *d, CS key, CS str, int len) {
    return OK;
 }
 
-// Add a list entry to dictionary "d". Return FAIL when out of memory and when key already exists.
+//Add a list entry to dictionary "d". Return FAIL when out of memory and when key already exists.
 pub int
 bagAddList(Bag* d, CS key, List* list) {
    DictItem* item = dictitem_alloc(mbText(key));
@@ -4988,7 +4988,7 @@ bagAddList(Bag* d, CS key, List* list) {
    return OK;
 }
 
-// Add a Var entry to dictionary "d". Return FAIL when out of memory and when key already exists.
+//Add a Var entry to dictionary "d". Return FAIL when out of memory and when key already exists.
 pub int
 bagAddVar(Bag* b, CS key, Var* tv) {
    DictItem* item = dictitem_alloc(mbText(key));
@@ -5000,7 +5000,7 @@ bagAddVar(Bag* b, CS key, Var* tv) {
    return OK;
 }
 
-// Add a callback to dictionary "d". Return FAIL when out of memory and when key already exists.
+//Add a callback to dictionary "d". Return FAIL when out of memory and when key already exists.
 pub int
 bagAddCallback(Bag* d, CS key, Callback* cb) {
    DictItem* item = dictitem_alloc(mbText(key));
@@ -5012,7 +5012,7 @@ bagAddCallback(Bag* d, CS key, Callback* cb) {
    return OK;
 }
 
-// Add a function entry to dictionary "d". FAIL when out of memory or when key already exists.
+//Add a function entry to dictionary "d". FAIL when out of memory or when key already exists.
 pub int
 bagAddFn(Bag* d, CS key, UserFunc* fp) {
    DictItem* item = dictitem_alloc(mbText(key));
@@ -5026,9 +5026,9 @@ bagAddFn(Bag* d, CS key, UserFunc* fp) {
    return OK;
 }
 
-// Initialize "iter" for iterating over dictionary items with bagIterateNext().
-// If "var" is not a Bag or an empty Bag then there will be nothing to iterate over, no error 
-// is given. NOTE: The dictionary must not change until iterating is finished!
+//Initialize "iter" for iterating over dictionary items with bagIterateNext().
+//If "var" is not a Bag or an empty Bag then there will be nothing to iterate over, no error 
+//is given. NOTE: The dictionary must not change until iterating is finished!
 pub void
 bagIterateStart(Var* var, DictIterator* iter) {
    if (var->tag != VAR_BAG || var->bag == NULL)
@@ -5061,8 +5061,8 @@ bagIterateNext(DictIterator* iter, Var** tv_result) {
    return result;
 }
 
-// Add a dict entry to dictionary "d".
-// Return FAIL when out of memory and when key already exists.
+//Add a dict entry to dictionary "d".
+//Return FAIL when out of memory and when key already exists.
 pub int
 bagAddBag(Bag* d, CS key, Bag* dict) {
    DictItem* item = dictitem_alloc(mbText(key));
@@ -5076,13 +5076,13 @@ bagAddBag(Bag* d, CS key, Bag* dict) {
    return OK;
 }
 
-// Get the number of items in a Dictionary.
+//Get the number of items in a Dictionary.
 pub Ulong
 bagSize(Bag* b) {
    return b ? (Long)b->hashTable.count : 0L;
 }
 
-// Find item "key[len]" in Dictionary "d". If "len" is negative use strlen(key). NULL when not found
+//Find item "key[len]" in Dictionary "d". If "len" is negative use strlen(key). NULL when not found
 pub DictItem*
 bagFind(Bag* b, Text const key) {
 #define AKEYLEN 200
@@ -5095,7 +5095,7 @@ bagFind(Bag* b, Text const key) {
    if (key.len >= AKEYLEN) {
       tofree = akey = copySubstr(key.c, key.len);
    } else {
-      // Avoid a malloc/free by using buf[].
+      //Avoid a malloc/free by using buf[].
       copySubstrToAllocation(buf, key);
       akey = buf;
    }
@@ -5107,14 +5107,14 @@ bagFind(Bag* b, Text const key) {
    return HI2DI(hi);
 }
 
-// Return true if "key" is present in Dictionary "d".
+//Return true if "key" is present in Dictionary "d".
 pub int
 bagHasKey(Bag* b, Text key) {
    return bagFind(b, key) != NULL;
 }
 
-// Get a Var item from a dictionary and copy it into "returnVar".
-// Return FAIL if the entry doesn't exist or out of memory.
+//Get a Var item from a dictionary and copy it into "returnVar".
+//Return FAIL if the entry doesn't exist or out of memory.
 pub int
 bagGetVar(Bag *d, Text key, Var* returnVar) {
    DictItem* di = bagFind(d, key);
@@ -5228,7 +5228,7 @@ bagToString(Var* tv, int copyID, int restore_copyID) {
 }
 
 //Advance over a literal key, including "-".  If the first character is not a
-// literal key character then "key" is returned.
+//literal key character then "key" is returned.
 private CS
 skip_literal_key(CS key) {
    CS p;
@@ -5238,7 +5238,7 @@ skip_literal_key(CS key) {
    return p;
 }
 
-// Get the key for #{key: val} into "tv" and advance "arg". Return FAIL when there is no valid key.
+//Get the key for #{key: val} into "tv" and advance "arg". Return FAIL when there is no valid key.
 private int
 get_literal_key_tv(Arr(CS) arg, Var *tv) {
    CS p = skip_literal_key(*arg);
@@ -5266,10 +5266,10 @@ bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
    Byte buf[NUMBUFLEN];
    int had_comma;
 
-   // First check if it's not a curly-braces expression: {expr}. Must do this without evaluating, 
-   // otherwise a function may be called twice. Unfortunately this means we need to call eval1() 
-   // twice for the first item. 
-   // "{}" is an empty Dictionary. "#{abc}" is never a curly-braces expression.
+   //First check if it's not a curly-braces expression: {expr}. Must do this without evaluating, 
+   //otherwise a function may be called twice. Unfortunately this means we need to call eval1() 
+   //twice for the first item. 
+   //"{}" is an empty Dictionary. "#{abc}" is never a curly-braces expression.
    if (*curly_expr != '}'
           && !literal
           && eval1(&curly_expr, &tv, NULL) == OK
@@ -5289,7 +5289,7 @@ bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
          if (get_literal_key_tv(arg, &tvkey) == FAIL)
             goto failret;
       } else {
-         if (eval1(arg, &tvkey, evalarg) == FAIL)   // recursive!
+         if (eval1(arg, &tvkey, evalarg) == FAIL)   //recursive!
             goto failret;
       }
 
@@ -5316,7 +5316,7 @@ bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
       }
 
       *arg = skipwhite_and_linebreak(*arg + 1, evalarg);
-      if (eval1(arg, &tv, evalarg) == FAIL) {  // recursive!
+      if (eval1(arg, &tv, evalarg) == FAIL) {  //recursive!
          if (evaluate)
             clearVar(&tvkey);
          goto failret;
@@ -5344,7 +5344,7 @@ bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
          *arg = skipwhite_and_nl(*arg + 1);
       }
 
-      // the "}" can be on the next line
+      //the "}" can be on the next line
       *arg = skipwhite_and_linebreak(*arg, evalarg);
       if (**arg == '}')
          break;
@@ -5373,9 +5373,9 @@ failret:
    return OK;
 }
 
-// Evaluate a literal dictionary: #{key: val, key: val} "*arg" points to the "#".
-// On return, "*arg" points to the character after the Bag.
-// Return OK or FAIL.  Returns NOTDONE for {expr}.
+//Evaluate a literal dictionary: #{key: val, key: val} "*arg" points to the "#".
+//On return, "*arg" points to the character after the Bag.
+//Return OK or FAIL.  Returns NOTDONE for {expr}.
 pub int
 bagEvalLiteral(OUT CS* arg, Var* returnVar, EvalCtx *evalarg) {
    int      ret = OK;
@@ -5389,7 +5389,7 @@ bagEvalLiteral(OUT CS* arg, Var* returnVar, EvalCtx *evalarg) {
    return ret;
 }
 
-// Make a copy of a Dictionary item.
+//Make a copy of a Dictionary item.
 private DictItem *
 dictitem_copy(DictItem* org) {
    Unt   len = STRLEN(org->key);
@@ -5401,12 +5401,12 @@ dictitem_copy(DictItem* org) {
    return di;
 }
 
-// Go over all entries in "d2" and add them to "d1".
-// When "action" is "error" then a duplicate key is an error.
-// When "action" is "force" then a duplicate key is overwritten.
-// When "action" is "move" then move items instead of copying.
-// Otherwise duplicate keys are ignored ("action" is "keep").
-// "funcName" is used for reporting where an error occurred.
+//Go over all entries in "d2" and add them to "d1".
+//When "action" is "error" then a duplicate key is an error.
+//When "action" is "force" then a duplicate key is overwritten.
+//When "action" is "move" then move items instead of copying.
+//Otherwise duplicate keys are ignored ("action" is "keep").
+//"funcName" is used for reporting where an error occurred.
 pub void
 bagExtend(Bag* d1, Bag* d2, CS action) {
    DictItem* di1;
@@ -5418,7 +5418,7 @@ bagExtend(Bag* d1, Bag* d2, CS action) {
    if (*action == 'm') {
       if (check_hashtab_frozen(&d2->hashTable, S"extend"))
          return;
-      hash_lock(&d2->hashTable);  // don't rehash on hash_remove()
+      hash_lock(&d2->hashTable);  //don't rehash on hash_remove()
    }
 
    int todo = (int)d2->hashTable.count;
@@ -5428,14 +5428,14 @@ bagExtend(Bag* d1, Bag* d2, CS action) {
          --todo;
          Text t2 = textOfItem(hi2);
          di1 = bagFind(d1, t2);
-         // Check the key to be valid when adding to any scope.
+         //Check the key to be valid when adding to any scope.
          if (d1->scope != 0 && !valid_varname(t2, true))
             break;
 
          if (!di1) {
             if (*action == 'm') {
-               // Cheap way to move a dict item from "d2" to "d1".
-               // If bagAdd() fails then "d2" won't be empty.
+               //Cheap way to move a dict item from "d2" to "d1".
+               //If bagAdd() fails then "d2" won't be empty.
                di1 = HI2DI(hi2);
                if (bagAdd(d1, di1) == OK)
                   hash_remove(&d2->hashTable, hi2, S"extend");
@@ -5451,7 +5451,7 @@ bagExtend(Bag* d1, Bag* d2, CS action) {
             if (value_check_lock(di1->c.lock, arg_errmsg, true)
                   || var_check_ro(di1->flags, arg_errmsg, true))
                break;
-            // Disallow replacing a builtin function.
+            //Disallow replacing a builtin function.
             if (dictWrongFuncName(d1, &HI2DI(hi2)->c, textOfItem(hi2)))
                break;
             clearVar(&di1->c);
@@ -5464,15 +5464,15 @@ bagExtend(Bag* d1, Bag* d2, CS action) {
       hash_unlock(&d2->hashTable);
 }
 
-// Return the dictitem that an entry in a hashtable points to.
+//Return the dictitem that an entry in a hashtable points to.
 pub DictItem *
 bagLookup(EeSetItem* hi) {
    return HI2DI(hi);
 }
 
-// Return true when two bags have exactly the same key/values.
+//Return true when two bags have exactly the same key/values.
 pub int
-bagEqual(Bag* d1, Bag* d2, int ic) {      // ignore case for strings
+bagEqual(Bag* d1, Bag* d2, int ic) {      //ignore case for strings
    EeSetItem   *hi;
    DictItem   *item2;
    int todo;
@@ -5482,7 +5482,7 @@ bagEqual(Bag* d1, Bag* d2, int ic) {      // ignore case for strings
    if (bagSize(d1) != bagSize(d2))
       return false;
    if (bagSize(d1) == 0)
-      // empty and NULL dicts are considered equal
+      //empty and NULL dicts are considered equal
       return true;
    if (d1 == NULL || d2 == NULL)
       return false;
@@ -5501,7 +5501,7 @@ bagEqual(Bag* d1, Bag* d2, int ic) {      // ignore case for strings
    return true;
 }
 
-// Count the number of times item "needle" occurs in Bag "d". Case is ignored if "ic" is true.
+//Count the number of times item "needle" occurs in Bag "d". Case is ignored if "ic" is true.
 pub long
 bagCount(Bag* d, Var* needle, int ic) {
    if (!d)
@@ -5521,8 +5521,8 @@ bagCount(Bag* d, Var* needle, int ic) {
    return n;
 }
 
-// extend() a Bag. Append Bag argvars[1] to Bag argvars[0] and return the
-// resulting Bag in "returnVar".  "is_new" is true for extendnew().
+//extend() a Bag. Append Bag argvars[1] to Bag argvars[0] and return the
+//resulting Bag in "returnVar".  "is_new" is true for extendnew().
 pub void
 bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar) {
    int   i;
@@ -5545,7 +5545,7 @@ bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar) {
           return;
    }
 
-   // Check the third argument.
+   //Check the third argument.
    CS action;
    if (argvars[2].tag != VAR_UNKNOWN) {
       static CS (av[]) = {S"keep", S"force", S"error"};
@@ -5579,8 +5579,8 @@ bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar) {
       copy_tv(OUT returnVar, &argvars[0]);
 }
 
-// Implementation of map(), filter(), foreach() for a Bag.  Apply "expr" to
-// every item in Bag "d" and return the result in "returnVar".
+//Implementation of map(), filter(), foreach() for a Bag.  Apply "expr" to
+//every item in Bag "d" and return the result in "returnVar".
 pub void
 bagFilterMap(
    Bag* d,
@@ -5630,19 +5630,19 @@ bagFilterMap(
             break;
          }
          if (filtermap == FILTERMAP_MAP) {
-            // map(): replace the dict item value
+            //map(): replace the dict item value
             clearVar(&di->c);
             newtv.lock = 0;
             di->c = newtv;
          } ei (filtermap == FILTERMAP_MAPNEW) {
-            // mapnew(): add the item value to the new dict
+            //mapnew(): add the item value to the new dict
             r = bagAddVar(d_ret, di->key, &newtv);
             clearVar(&newtv);
             if (r == FAIL)
                 break;
           } ei (filtermap == FILTERMAP_FILTER && rem) {
             Text errMsg = mbText(arg_errmsg);
-            // filter(false): remove the item from the dict
+            //filter(false): remove the item from the dict
             if (var_check_fixed(di->flags, errMsg, true) || var_check_ro(di->flags, errMsg, true))
                 break;
             dictitem_remove(d, di, S"filter");
@@ -5653,7 +5653,7 @@ bagFilterMap(
    d->lock = prev_lock;
 }
 
-// "remove({dict})" function
+//"remove({dict})" function
 pub void
 bagRemove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    if (argvars[2].tag != VAR_UNKNOWN) {
@@ -5683,7 +5683,7 @@ bagRemove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    dictitem_remove(b, di, S"remove()");
 }
 
-// Turn a dict into a list.
+//Turn a dict into a list.
 private void
 bagToList(Arr(Var) argvars, Var* returnVar, Dict2List what) {
    List   *l2;
@@ -5701,7 +5701,7 @@ bagToList(Arr(Var) argvars, Var* returnVar, Dict2List what) {
 
    Bag* d = argvars[0].bag;
    if (d == NULL)
-      // NULL dict behaves like an empty dict
+      //NULL dict behaves like an empty dict
       return;
 
    int todo = (int)d->hashTable.count;
@@ -5716,15 +5716,15 @@ bagToList(Arr(Var) argvars, Var* returnVar, Dict2List what) {
       list_append(returnVar->list, li);
 
       if (what == DICT2LIST_KEYS) {
-         // keys()
+         //keys()
          li->c.tag = VAR_STRING;
          li->c.lock = 0;
          li->c.string = copyStr(di->key);
       } ei (what == DICT2LIST_VALUES) {
-         // values()
+         //values()
          copy_tv(OUT &li->c, &di->c);
       } else {
-         // items()
+         //items()
          l2 = list_alloc();
          li->c.tag = VAR_LIST;
          li->c.lock = 0;
@@ -5740,7 +5740,7 @@ bagToList(Arr(Var) argvars, Var* returnVar, Dict2List what) {
    }
 }
 
-// "items(dict)" function
+//"items(dict)" function
 pub void
 f_items(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_STRING)
@@ -5761,13 +5761,13 @@ f_values(Arr(Var) argvars, Var* returnVar) {
    bagToList(argvars, returnVar, DICT2LIST_VALUES);
 }
 
-// Make each item in the bag readonly (not the value of the item).
+//Make each item in the bag readonly (not the value of the item).
 pub void
 bagSetItemsRo(Bag* di) {
    int      todo = (int)di->hashTable.count;
    EeSetItem   *hi;
 
-   // Set readonly
+   //Set readonly
    FOR_ALL_HASHTAB_ITEMS(&di->hashTable, hi, todo) {
       if (HASHITEM_EMPTY(hi))
          continue;
@@ -5794,14 +5794,14 @@ string_slice(CS str, Long first, Long last, int exclusive) {
    Unt slen = STRLEN(str);
    Long start_byte = char_idx2byte(str, slen, first);
    if (start_byte < 0)
-      start_byte = 0; // first index very negative: use zero
+      start_byte = 0; //first index very negative: use zero
    Long   end_byte;
    if ((last == -1 && !exclusive) || last == (Long)LONG_MAX)
       end_byte = (long)slen;
    else {
       end_byte = char_idx2byte(str, slen, last);
       if (!exclusive && end_byte >= 0 && end_byte < (long)slen)
-          // end index is inclusive
+          //end index is inclusive
           end_byte += utfCharLen(str + end_byte);
    }
 
@@ -5810,23 +5810,23 @@ string_slice(CS str, Long first, Long last, int exclusive) {
    return copySubstr(str + start_byte, end_byte - start_byte);
 }
 
-// Unreference a Dictionary: decrement the reference count and free it when it becomes zero.
+//Unreference a Dictionary: decrement the reference count and free it when it becomes zero.
 pub void
 bagUnref(Bag* b) {
    if (b && --b->refCount <= 0)
       dict_free(b);
 }
 
-// Go through the list of dicts and free items without the copyID. true if anything was freed.
+//Go through the list of dicts and free items without the copyID. true if anything was freed.
 pub int
 dict_free_nonref(int copyID) {
    Boole did_free = false;
 
    for (Bag* dd = first_dict; dd != NULL; dd = dd->dv_used_next) {
       if ((dd->copyId & COPYID_MASK) != (copyID & COPYID_MASK)) {
-         // Free the Dictionary and ordinary items it contains, but don't
-         // recurse into Lists and Dictionaries, they will be in the list
-         // of dicts or list of lists.
+         //Free the Dictionary and ordinary items it contains, but don't
+         //recurse into Lists and Dictionaries, they will be in the list
+         //of dicts or list of lists.
          dict_free_contents(dd);
          did_free = true;
       }
@@ -5834,8 +5834,8 @@ dict_free_nonref(int copyID) {
    return did_free;
 }
 
-// Clear hashtab "ht" and dict items it contains.
-// If "ht" is not freed then you should call hash_init() next!
+//Clear hashtab "ht" and dict items it contains.
+//If "ht" is not freed then you should call hash_init() next!
 pub void
 hashtab_free_contents(EeSet* ht) {
    EeSetItem   *hi;
@@ -5844,13 +5844,13 @@ hashtab_free_contents(EeSet* ht) {
    if (check_hashtab_frozen(ht, S"clear dict"))
       return;
 
-   // Lock the hashtab, we don't want it to resize while freeing items.
+   //Lock the hashtab, we don't want it to resize while freeing items.
    hash_lock(ht);
    int todo = (int)ht->count;
    FOR_ALL_HASHTAB_ITEMS(ht, hi, todo) {
       if (!HASHITEM_EMPTY(hi)) {
-          // Remove the item before deleting it, just in case there is
-          // something recursive causing trouble.
+          //Remove the item before deleting it, just in case there is
+          //something recursive causing trouble.
           di = HI2DI(hi);
           hash_remove(ht, hi, S"clear dict");
           dictitem_free(di);
@@ -5858,13 +5858,13 @@ hashtab_free_contents(EeSet* ht) {
       }
    }
 
-   // The hashtab is still locked, it has to be re-initialized anyway.
+   //The hashtab is still locked, it has to be re-initialized anyway.
    hash_clear(ht);
 }
 
 private void
 dict_free_dict(Bag *d) {
-   // Remove the dict from the list of dicts for garbage collection.
+   //Remove the dict from the list of dicts for garbage collection.
    if (d->dv_used_prev == NULL)
       first_dict = d->dv_used_next;
    else
@@ -5895,7 +5895,7 @@ dict_free_items(int copyID) {
    }
 }
 
-// Free a Dictionary, including all non-container items it contains. Ignore the reference count.
+//Free a Dictionary, including all non-container items it contains. Ignore the reference count.
 pub void
 dict_free_contents(Bag *d) {
    hashtab_free_contents(&d->hashTable);
@@ -5903,8 +5903,8 @@ dict_free_contents(Bag *d) {
    d->ty = NULL;
 }
 
-// Allocate a Dictionary item. The "key" is copied to the new item.
-// Note that the type and value of the item "c" still needs to be initialized after this!
+//Allocate a Dictionary item. The "key" is copied to the new item.
+//Note that the type and value of the item "c" still needs to be initialized after this!
 pub DictItem *
 dictitem_alloc(Text value) {
    DictItem* di = alloc(offsetof(DictItem, key) + value.len + 1);
@@ -5928,7 +5928,7 @@ dictitem_remove(Bag* bag, DictItem* item, CS command) {
    dictitem_free(item);
 }
 
-// Free a dict item.  Also clears the value.
+//Free a dict item.  Also clears the value.
 pub void
 dictitem_free(DictItem *item) {
    clearVar(&item->c);
@@ -5936,8 +5936,8 @@ dictitem_free(DictItem *item) {
       eeglFree(item);
 }
 
-// Make a copy of dict "d".  Shallow if "deep" is false. The refcount of the new dict is set to 1.
-// See item_copy() for "top" and "copyID". Return NULL when out of memory.
+//Make a copy of dict "d".  Shallow if "deep" is false. The refcount of the new dict is set to 1.
+//See item_copy() for "top" and "copyID". Return NULL when out of memory.
 pub Bag *
 dict_copy(Bag* orig, int deep, int top, int copyID) {
    if (!orig)
@@ -5982,8 +5982,8 @@ dict_copy(Bag* orig, int deep, int top, int copyID) {
    return copy;
 }
 
-// Check for adding a function to g: or or l:.
-// If the name is wrong give an error message and return true.
+//Check for adding a function to g: or or l:.
+//If the name is wrong give an error message and return true.
 pub int
 dictWrongFuncName(Bag* b, Var* tv, Text name) {
    return (b == get_globvar_dict() || &b->hashTable == get_funccal_local_ht())
@@ -5996,16 +5996,16 @@ dictWrongFuncName(Bag* b, Var* tv, Text name) {
 
 #define USING_FLOAT_STUFF
 
-// Convert the string "text" to a floating point number.
-// This uses strtod().  setlocale(LC_NUMERIC, "C") has been used to make sure
-// this always uses a decimal point.
-// Return the length of the text that was consumed.
+//Convert the string "text" to a floating point number.
+//This uses strtod().  setlocale(LC_NUMERIC, "C") has been used to make sure
+//this always uses a decimal point.
+//Return the length of the text that was consumed.
 pub int
 string2float(CS text, OUT double* value, Boole skip_quotes) {
    CS s = text;
    double f;
 
-   // MS-Portals does not deal with "inf" and "nan" properly.
+   //MS-Portals does not deal with "inf" and "nan" properly.
    if (STRNICMP(text, "inf", 3) == 0) {
       *value = INFINITY;
       return 3;
@@ -6024,7 +6024,7 @@ string2float(CS text, OUT double* value, Boole skip_quotes) {
 
       copySubstrToAllocation(buf, (Text){s, 99});
       for (CS p = buf; ; p = skipdigits(p)) {
-         // remove single quotes between digits, not in the exponent
+         //remove single quotes between digits, not in the exponent
          if (*p == '\'') {
             ++quotes;
             MEMMOVE(p, p + 1, STRLEN(p));
@@ -6043,8 +6043,8 @@ string2float(CS text, OUT double* value, Boole skip_quotes) {
    return (int)((CS)s - text);
 }
 
-// Get the float value of "argvars[0]" into "f".
-// Return FAIL when the argument is not a Number or Float.
+//Get the float value of "argvars[0]" into "f".
+//Return FAIL when the argument is not a Number or Float.
 private int
 get_float_arg(Arr(Var) argvars, OUT double* f) {
    if (argvars[0].tag == VAR_FLOAT) {
@@ -6059,7 +6059,7 @@ get_float_arg(Arr(Var) argvars, OUT double* f) {
    return FAIL;
 }
 
-// "abs(expr)" function
+//"abs(expr)" function
 pub void
 f_abs(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_FLOAT) {
@@ -6120,7 +6120,7 @@ f_atan2(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-// "ceil({float})" function
+//"ceil({float})" function
 pub void
 f_ceil(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
@@ -6164,7 +6164,7 @@ f_exp(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-// "float2nr({float})" function
+//"float2nr({float})" function
 pub void
 f_float2nr(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
@@ -6180,7 +6180,7 @@ f_float2nr(Arr(Var) argvars, Var* returnVar) {
       returnVar->number = (Long)f;
 }
 
-// "floor({float})" function
+//"floor({float})" function
 pub void
 f_floor(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
@@ -6203,14 +6203,14 @@ f_fmod(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-// "isinf()" function
+//"isinf()" function
 pub void
 f_isinf(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_FLOAT && isinf(argvars[0].floatt))
       returnVar->number = argvars[0].floatt > 0.0 ? 1 : -1;
 }
 
-// "isnan()" function
+//"isnan()" function
 pub void
 f_isnan(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = argvars[0].tag == VAR_FLOAT && isnan(argvars[0].floatt);
@@ -6287,7 +6287,7 @@ f_tan(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-// "tanh()" function
+//"tanh()" function
 pub void
 f_tanh(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
@@ -6299,20 +6299,20 @@ f_tanh(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-// "trunc({float})" function
+//"trunc({float})" function
 pub void
 f_trunc(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
    if (get_float_arg(argvars, OUT &f) == OK)
-      // trunc() is not in C90, use floor() or ceil() instead.
+      //trunc() is not in C90, use floor() or ceil() instead.
       returnVar->floatt = f > 0 ? floor(f) : ceil(f);
    else
       returnVar->floatt = 0.0;
 }
 
-// "round({float})" function
+//"round({float})" function
 pub void
 f_round(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
@@ -6350,7 +6350,7 @@ f_sinh(Arr(Var) argvars, Var* returnVar) {
 //}}}
 //{{{testing ancillary functions
 
-// Prepare "gap" for an assert error and add the sourcing position.
+//Prepare "gap" for an assert error and add the sourcing position.
 private void
 prepare_assert_error(ArrayList *gap) {
    char    buf[NUMBUFLEN];
@@ -6475,8 +6475,8 @@ fill_assert_error(
    else
       ga_concat(gap, (CS)"Expected ");
    if (exp_str == NULL) {
-      // When comparing dictionaries, drop the items that are equal, so that
-      // it's a lot easier to see what differs.
+      //When comparing dictionaries, drop the items that are equal, so that
+      //it's a lot easier to see what differs.
       if (assKind != ASSERT_NOTEQUAL
          && exp_tv->tag == VAR_BAG && got_tv->tag == VAR_BAG
          && exp_tv->bag != NULL && got_tv->bag != NULL)
@@ -6496,7 +6496,7 @@ fill_assert_error(
             if (!HASHITEM_EMPTY(hi)) {
                item2 = bagFind(got_d, textOfItem(hi));
                if (!item2 || !tv_equal(&HI2DI(hi)->c, &item2->c, false)) {
-                  // item of exp_d not present in got_d or values differ.
+                  //item of exp_d not present in got_d or values differ.
                   bagAddVar(exp_tv->bag, hi->hi_key, &HI2DI(hi)->c);
                   if (item2)
                      bagAddVar(got_tv->bag, hi->hi_key, &item2->c);
@@ -6506,13 +6506,13 @@ fill_assert_error(
             }
          }
 
-         // Add items only present in got_d.
+         //Add items only present in got_d.
          todo = (int)got_d->hashTable.count;
          FOR_ALL_HASHTAB_ITEMS(&got_d->hashTable, hi, todo) {
             if (!HASHITEM_EMPTY(hi)) {
                item2 = bagFind(exp_d, textOfItem(hi));
                if (item2 == NULL)
-                  // item of got_d not present in exp_d
+                  //item of got_d not present in exp_d
                   bagAddVar(got_tv->bag, hi->hi_key, &HI2DI(hi)->c);
                --todo;
             }
@@ -6740,7 +6740,7 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
              && check_for_opt_string_arg(argvars, 4) == FAIL)))))
       return;
 
-   // trylevel must be zero for a ":throw" command to be considered failed
+   //trylevel must be zero for a ":throw" command to be considered failed
    trylevel = 0;
    suppress_errthrow = true;
    in_assert_fails = true;
@@ -6749,7 +6749,7 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
    CS cmd = convertVarToStringSingleUse(&argvars[0]);
    executeCommLine(cmd);
 
-   // reset here for any errors reported below
+   //reset here for any errors reported below
    trylevel = save_trylevel;
    suppress_errthrow = false;
 
@@ -7050,7 +7050,7 @@ f_test_override(Arr(Var) argvars, Var*) {
       ui_delay_for_testing = 0;
       reset_term_props_on_termresponse = false;
       overrideSysinfoUptimeG = -1;
-      // ml_get_alloc_lines is not reset by "ALL"
+      //ml_get_alloc_lines is not reset by "ALL"
       if (save_starting >= 0) {
           starting = save_starting;
           save_starting = -1;
@@ -7204,7 +7204,7 @@ f_test_settime(Arr(Var) argvars, Var*) {
 //}}}
 //{{{indexing and slices
 
-// Check if "var" can have an [index] or [sli:ce]
+//Check if "var" can have an [index] or [sli:ce]
 pub int
 check_can_index(Var* var, int evaluate, int verbose) {
    switch (var->tag) {
@@ -7227,7 +7227,7 @@ check_can_index(Var* var, int evaluate, int verbose) {
          emsg(_(e_cannot_index_special_variable));
          return FAIL;
       }
-      // FALLTHROUGH
+      //FALLTHROUGH
 
    case VAR_STRING:
    case VAR_LIST:
@@ -7240,11 +7240,11 @@ check_can_index(Var* var, int evaluate, int verbose) {
    return OK;
 }
 
-// Apply index or range to "returnVar".
-// "var1" is the first index, NULL for [:expr].
-// "var2" is the second index, NULL for [expr] and [expr: ]
-// "exclusive" is true for slice(): second index is exclusive, use character index for string.
-// Alternatively, "key" is not NULL, then key[keylen] is the dict index.
+//Apply index or range to "returnVar".
+//"var1" is the first index, NULL for [:expr].
+//"var2" is the second index, NULL for [expr] and [expr: ]
+//"exclusive" is true for slice(): second index is exclusive, use character index for string.
+//Alternatively, "key" is not NULL, then key[keylen] is the dict index.
 pub int
 eval_index_inner(
    Var* returnVar,
@@ -7296,8 +7296,8 @@ eval_index_inner(
          else
             s = char_from_string(s, n1);
       } ei (is_range) {
-         // The resulting variable is a substring.  If the indexes
-         // are out of range the result is empty.
+         //The resulting variable is a substring.  If the indexes
+         //are out of range the result is empty.
          if (n1 < 0) {
             n1 = len + n1;
             if (n1 < 0)
@@ -7312,8 +7312,8 @@ eval_index_inner(
          else
             s = copySubstr(s + n1, n2 - n1 + 1);
       } else {
-         // The resulting variable is a string of a single
-         // character.  If the index is too big or negative the result is empty.
+         //The resulting variable is a string of a single
+         //character.  If the index is too big or negative the result is empty.
          if (n1 >= len || n1 < 0)
             s = NULL;
          else
@@ -7372,9 +7372,9 @@ eval_index_inner(
 //}}}
 //{{{blobs
 
-// Blob support by Yasuhiro Matsumoto
+//Blob support by Yasuhiro Matsumoto
 
-// Allocate an empty blob. Caller should take care of the reference count.
+//Allocate an empty blob. Caller should take care of the reference count.
 pub Blob *
 blob_alloc(void) {
    Blob *blob = ALLOC_CLEAR_ONE_ID(Blob, aid_blob_alloc);
@@ -7383,7 +7383,7 @@ blob_alloc(void) {
    return blob;
 }
 
-// Allocate an empty blob for a return value, with reference count set. Returns OK or FAIL.
+//Allocate an empty blob for a return value, with reference count set. Returns OK or FAIL.
 pub int
 returnVar_blob_alloc(Var* returnVar) {
    Blob   *b = blob_alloc();
@@ -7395,7 +7395,7 @@ returnVar_blob_alloc(Var* returnVar) {
    return OK;
 }
 
-// Set a blob as the return value.
+//Set a blob as the return value.
 pub void
 returnVar_blob_set(Var* returnVar, Blob *b) {
    returnVar->tag = VAR_BLOB;
@@ -7434,14 +7434,14 @@ blob_free(Blob *b) {
    eeglFree(b);
 }
 
-// Unreference a blob: decrement the reference count and free it when it becomes zero.
+//Unreference a blob: decrement the reference count and free it when it becomes zero.
 pub void
 blob_unref(Blob *b) {
    if (b && --b->refCount <= 0)
       blob_free(b);
 }
 
-// Get the length of data.
+//Get the length of data.
 pub long
 blob_len(Blob *b) {
    if (!b)
@@ -7449,25 +7449,25 @@ blob_len(Blob *b) {
    return b->c.len;
 }
 
-// Get byte "idx" in blob "b". Caller must check that "idx" is valid.
+//Get byte "idx" in blob "b". Caller must check that "idx" is valid.
 pub int
 blob_get(Blob *b, int idx) {
    return ((Byte*)b->c.c)[idx];
 }
 
-// Store one byte "byte" in blob "blob" at "idx". Caller must make sure that "idx" is valid.
+//Store one byte "byte" in blob "blob" at "idx". Caller must make sure that "idx" is valid.
 pub void
 blob_set(Blob* blob, int idx, int byte) {
    ((Byte*)blob->c.c)[idx] = byte;
 }
 
-// Store one byte "byte" in blob "blob" at "idx". Append one byte if needed.
+//Store one byte "byte" in blob "blob" at "idx". Append one byte if needed.
 pub void
 blob_set_append(Blob *blob, int idx, int byte) {
    ArrayList *gap = &blob->c;
 
-   // Allow for appending a byte.  Setting a byte beyond
-   // the end is an error otherwise.
+   //Allow for appending a byte.  Setting a byte beyond
+   //the end is an error otherwise.
    if (idx < gap->len || (idx == gap->len && ga_grow(gap, 1) == OK)) {
       blob_set(blob, idx, byte);
       if (idx == gap->len)
@@ -7475,14 +7475,14 @@ blob_set_append(Blob *blob, int idx, int byte) {
    }
 }
 
-// Return true when two blobs have exactly the same values.
+//Return true when two blobs have exactly the same values.
 pub int
 blob_equal(Blob   *b1, Blob   *b2) {
    int       i;
    int       len1 = blob_len(b1);
    int       len2 = blob_len(b2);
 
-   // empty and NULL are considered the same
+   //empty and NULL are considered the same
    if (len1 == 0 && len2 == 0)
       return true;
    if (b1 == b2)
@@ -7494,7 +7494,7 @@ blob_equal(Blob   *b1, Blob   *b2) {
    return true;
 }
 
-// Convert a blob to a readable form: "0z00112233.44556677.8899"
+//Convert a blob to a readable form: "0z00112233.44556677.8899"
 pub CS
 blob2string(Blob *blob, Byte **tofree, Byte *numbuf) {
    int      i;
@@ -7505,7 +7505,7 @@ blob2string(Blob *blob, Byte **tofree, Byte *numbuf) {
       return (CS)"0z";
    }
 
-   // Store bytes in the growarray.
+   //Store bytes in the growarray.
    ga_init2(&ga, 1, 4000);
    ga_concat(&ga, (CS)"0z");
    for (i = 0; i < blob_len(blob); i++) {
@@ -7519,8 +7519,8 @@ blob2string(Blob *blob, Byte **tofree, Byte *numbuf) {
    return *tofree;
 }
 
-// Convert a string variable, in the format of blob2string(), to a blob. Return NULL when 
-// the conversion failed.
+//Convert a string variable, in the format of blob2string(), to a blob. Return NULL when 
+//the conversion failed.
 pub Blob*
 string2blob(CS str) {
    Blob  *blob = blob_alloc();
@@ -7540,7 +7540,7 @@ string2blob(CS str) {
           ++s;
    }
    if (*skipwhite(s) != ZERO)
-      goto failed;  // text after final digit
+      goto failed;  //text after final digit
 
    ++blob->refCount;
    return blob;
@@ -7606,8 +7606,8 @@ blob_index(
    Long   idx,
    Var   *returnVar)
 {
-   // The resulting variable is a byte value.
-   // If the index is too big or negative that is an error.
+   //The resulting variable is a byte value.
+   //If the index is too big or negative that is an error.
    if (idx < 0)
       idx = len + idx;
    if (idx < len && idx >= 0) {
@@ -7641,7 +7641,7 @@ blob_slice_or_index(
       return blob_index(blob, len, n1, returnVar);
 }
 
-// Check if "n1"- is a valid index for a blobl with length "bloblen".
+//Check if "n1"- is a valid index for a blobl with length "bloblen".
 pub int
 check_blob_index(long bloblen, Long n1, int quiet) {
    if (n1 < 0 || n1 > bloblen) {
@@ -7652,7 +7652,7 @@ check_blob_index(long bloblen, Long n1, int quiet) {
    return OK;
 }
 
-// Check if "n1"-"n2" is a valid range for a blob with length "bloblen".
+//Check if "n1"-"n2" is a valid range for a blob with length "bloblen".
 pub int
 check_blob_range(long bloblen, Long n1, Long n2, int quiet) {
    if (n2 < 0 || n2 >= bloblen || n2 < n1) {
@@ -7679,7 +7679,7 @@ blob_set_range(Blob *dest, long n1, long n2, Var *src) {
    return OK;
 }
 
-// "add(blob, item)" function
+//"add(blob, item)" function
 pub void
 blob_add(Arr(Var) argvars, Var* returnVar) {
    Blob   *b = argvars[0].blob;
@@ -7700,7 +7700,7 @@ blob_add(Arr(Var) argvars, Var* returnVar) {
    copy_tv(OUT returnVar, &argvars[0]);
 }
 
-// "remove({blob}, {idx} [, {end}])" function
+//"remove({blob}, {idx} [, {end}])" function
 pub void
 blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    Blob* b = argvars[0].blob;
@@ -7717,14 +7717,14 @@ blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    int len = blob_len(b);
 
    if (idx < 0)
-      // count from the end
+      //count from the end
       idx = len + idx;
    if (idx < 0 || idx >= len) {
       showErrFmtMsg(_(e_blob_index_out_of_range_nr), idx);
       return;
    }
    if (argvars[2].tag == VAR_UNKNOWN) {
-      // Remove one item, return its value.
+      //Remove one item, return its value.
       p = (CS)b->c.c;
       returnVar->number = (Long) *(p + idx);
       MEMMOVE(p + idx, p + idx + 1, (Unt)len - idx - 1);
@@ -7732,12 +7732,12 @@ blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
       return;
    }
 
-   // Remove range of items, return blob with values.
+   //Remove range of items, return blob with values.
    long end = (long)varGetNumberChk(&argvars[2], &error);
    if (error)
       return;
    if (end < 0)
-   // count from the end
+   //count from the end
    end = len + end;
    if (end >= len || idx > end) {
       showErrFmtMsg(_(e_blob_index_out_of_range_nr), end);
@@ -7825,7 +7825,7 @@ blob_filter_map(
    b->lock = prev_lock;
 }
 
-// "insert(blob, {item} [, {idx}])" function
+//"insert(blob, {item} [, {idx}])" function
 pub void
 blob_insert_func(Arr(Var) argvars, Var* returnVar) {
    Blob   *b = argvars[0].blob;
@@ -7845,7 +7845,7 @@ blob_insert_func(Arr(Var) argvars, Var* returnVar) {
    if (argvars[2].tag != VAR_UNKNOWN) {
       before = (long)varGetNumberChk(&argvars[2], &error);
       if (error)
-         return;      // type error; errmsg already given
+         return;      //type error; errmsg already given
       if (before < 0 || before > len) {
          showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&argvars[2]));
          return;
@@ -7869,8 +7869,8 @@ blob_insert_func(Arr(Var) argvars, Var* returnVar) {
    copy_tv(OUT returnVar, &argvars[0]);
 }
 
-// Implementation of reduce() for Blob "argvars[0]" using the function "expr"
-// starting with the optional initial value "argvars[2]" and return the result in "returnVar".
+//Implementation of reduce() for Blob "argvars[0]" using the function "expr"
+//starting with the optional initial value "argvars[2]" and return the result in "returnVar".
 pub void
 blob_reduce(Var* argvars, Var* expr, Var* returnVar) {
    Blob* b = argvars[0].blob;
@@ -7968,7 +7968,7 @@ f_list2blob(Arr(Var) argvars, Var* returnVar) {
    }
 }
 
-// Add the bytes from "str" to "blob".
+//Add the bytes from "str" to "blob".
 private void
 blob_from_string(CS str, Blob* blob) {
    Unt len = STRLEN(str);
@@ -7977,7 +7977,7 @@ blob_from_string(CS str, Blob* blob) {
       int ch = str[i];
 
       if (str[i] == NL)
-         // Translate newlines in the string to ZERO character
+         //Translate newlines in the string to ZERO character
          ch = ZERO;
 
       ga_append(&blob->c, ch);
@@ -8043,7 +8043,7 @@ f_blob2str(Arr(Var) argvars, OUT Var* returnVar) {
    }
 }
 
-// "str2blob()" function
+//"str2blob()" function
 pub void
 f_str2blob(Arr(Var) argvars, OUT Var* returnVar) {
    if (confirmVarIsList(argvars, 0) == FAIL || check_for_oself_arg(argvars, 1) == FAIL)
@@ -8068,7 +8068,7 @@ f_str2blob(Arr(Var) argvars, OUT Var* returnVar) {
          str = S"";
 
       if (li != list->first)
-         // Each list string item is separated by a newline in the blob
+         //Each list string item is separated by a newline in the blob
          ga_append(&blob->c, NL);
 
       blob_from_string(str, blob);
@@ -8084,8 +8084,8 @@ f_str2blob(Arr(Var) argvars, OUT Var* returnVar) {
 //
 //Portions of this file are adapted from fzy (https://github.com/jhawthorn/fzy)
 //Original code:
-//  Copyright (c) 2014 John Hawthorn
-//  Licensed under the MIT License.
+// Copyright (c) 2014 John Hawthorn
+// Licensed under the MIT License.
 //
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -8123,7 +8123,7 @@ private int has_match(CS needle, CS haystack);
 #define SCORE_SCALE 1000
 
 typedef struct {
-   int      idx;      // used for stable sort
+   int      idx;      //used for stable sort
    ListItem* item;
    int score;
    List* lmatchpos;
@@ -8169,12 +8169,12 @@ fuzzy_match(
    CS pat = save_pat;
    CS p = pat;
 
-   // Try matching each word in 'pat_arg' in 'str'
+   //Try matching each word in 'pat_arg' in 'str'
    while (true) {
       if (matchseq)
          complete = true;
       else {
-         // Extract one word from the pattern (separated by space)
+         //Extract one word from the pattern (separated by space)
          p = skipwhite(p);
          if (*p == ZERO)
             break;
@@ -8182,7 +8182,7 @@ fuzzy_match(
          while (*p != ZERO && !SPACE_OR_TAB(mb_ptr2char(p))) {
             MB_PTR_ADV(p);
          }
-         if (*p == ZERO)      // processed all the words
+         if (*p == ZERO)      //processed all the words
             complete = true;
          *p = ZERO;
       }
@@ -8214,7 +8214,7 @@ fuzzy_match(
       if (complete || numMatches >= maxMatches)
           break;
 
-      // try matching the next word
+      //try matching the next word
       ++p;
    }
 
@@ -8282,7 +8282,7 @@ fuzzy_match_in_list(
    if (items == NULL)
       return;
 
-   // For all the string items in items, get the fuzzy matching score
+   //For all the string items in items, get the fuzzy matching score
    ListItem* li;
    FOR_ALL_LIST_ITEMS(l, li) {
       int      score;
@@ -8295,17 +8295,17 @@ fuzzy_match_in_list(
 
       itemstr = NULL;
       returnVar.tag = VAR_UNKNOWN;
-      if (li->c.tag == VAR_STRING)   // list of strings
+      if (li->c.tag == VAR_STRING)   //list of strings
          itemstr = li->c.string;
       ei (li->c.tag == VAR_BAG && (key != NULL || item_cb->name != NULL)) {
-         // For a dict, either use the specified key to lookup the string or
-         // use the specified callback function to get the string.
+         //For a dict, either use the specified key to lookup the string or
+         //use the specified callback function to get the string.
          if (key)
             itemstr = bagGetString(li->c.bag, text(key), false);
          else {
             Var   argv[2];
 
-            // Invoke the supplied callback (if any) to get the dict item
+            //Invoke the supplied callback (if any) to get the dict item
             li->c.bag->refCount++;
             argv[0].tag = VAR_BAG;
             argv[0].bag = li->c.bag;
@@ -8331,7 +8331,7 @@ fuzzy_match_in_list(
          items[match_count].itemstr = itemstr_allocate ? copyStr(itemstr) : itemstr;
          items[match_count].itemstr_allocated = itemstr_allocate;
 
-         // Copy the list of matching positions in itemstr to a list, if "retmatchpos" is set.
+         //Copy the list of matching positions in itemstr to a list, if "retmatchpos" is set.
          if (retmatchpos) {
             items[match_count].lmatchpos = list_alloc();
             if (items[match_count].lmatchpos == NULL)
@@ -8360,12 +8360,12 @@ fuzzy_match_in_list(
       qsort((void *)items, (Unt)match_count, sizeof(FuzzyItem), fuzzy_match_item_compare);
 
       //For matchfuzzy(), return a list of matched strings.
-      //      ['str1', 'str2', 'str3']
+      //     ['str1', 'str2', 'str3']
       //For matchfuzzypos(), return a list with three items.
       //The first item is a list of matched strings. The second item
       //is a list of lists where each list item is a list of matched
       //character positions. The third item is a list of matching scores.
-      //  [['str1', 'str2', 'str3'], [[1, 3], [1, 3], [1, 3]]]
+      // [['str1', 'str2', 'str3'], [[1, 3], [1, 3], [1, 3]]]
       if (retmatchpos) {
          li = list_find(fmatchlist, 0);
          if (li == NULL || li->c.list == NULL)
@@ -8374,13 +8374,13 @@ fuzzy_match_in_list(
       } else
          retlist = fmatchlist;
 
-      // Copy the matching strings to the return list
+      //Copy the matching strings to the return list
       for (int i = 0; i < match_count; i++) {
          if (list_append_tv(retlist, &items[i].item->c) == FAIL)
             goto done;
       }
 
-      // next copy the list of matching positions
+      //next copy the list of matching positions
       if (retmatchpos) {
          li = list_find(fmatchlist, -2);
          if (li == NULL || li->c.list == NULL)
@@ -8397,7 +8397,7 @@ fuzzy_match_in_list(
             }
          }
 
-         // copy the matching scores
+         //copy the matching scores
          li = list_find(fmatchlist, -1);
          if (li == NULL || li->c.list == NULL)
             goto done;
@@ -8431,7 +8431,7 @@ do_fuzzymatch(Var* argvars, Var* returnVar, int retmatchpos) {
 
    CLEAR_POINTER(&cb);
 
-   // validate and get the arguments
+   //validate and get the arguments
    if (argvars[0].tag != VAR_LIST || argvars[0].list == NULL) {
       showErrFmtMsg(_(e_argument_of_str_must_be_list),
                  retmatchpos ? "matchfuzzypos()" : "matchfuzzy()");
@@ -8449,7 +8449,7 @@ do_fuzzymatch(Var* argvars, Var* returnVar, int retmatchpos) {
       if (check_for_nonnull_dict_arg(argvars, 2) == FAIL)
          return;
 
-      // To search a dict, either a callback function or a key can be specified.
+      //To search a dict, either a callback function or a key can be specified.
       d = argvars[2].bag;
       if ((di = bagFind(d, tConst("key"))) != NULL) {
          if (di->c.tag != VAR_STRING
@@ -8480,7 +8480,7 @@ do_fuzzymatch(Var* argvars, Var* returnVar, int retmatchpos) {
          matchseq = true;
    }
 
-   // get the fuzzy matches
+   //get the fuzzy matches
    allocReturnList(returnVar);
    if (retmatchpos) {
 
@@ -8539,7 +8539,7 @@ fuzzyMatchStr_compare(const void *s0, const void *s1) {
 //Sort fuzzy matches by score
 pub void
 fuzzySortByScore(OUT Fuzzy* fuzzy) {
-   // Sort the list by the descending order of the match score
+   //Sort the list by the descending order of the match score
    qsort((void *)fuzzy->c, (Unt)fuzzy->len, sizeof(FuzzyMatch), fuzzyMatchStr_compare);
 }
 
@@ -8567,7 +8567,7 @@ fuzzy_match_func_compare(const void *s1, const void *s2) {
 //Sort fuzzy matches of function names by score. <SNR> functions should be sorted to the end.
 private void
 sortFnNamesByScore(Arr(FuzzyMatch) fm, int sz) {
-   // Sort the list by the descending order of the match score
+   //Sort the list by the descending order of the match score
    qsort((void *)fm, (Unt)sz, sizeof(FuzzyMatch), fuzzy_match_func_compare);
 }
 
@@ -8621,7 +8621,7 @@ fuzzyMatchStr_with_pos(CS str, CS pat) {
    return match_positions;
 }
 
-// Find the end of the word. Assumes it starts inside a word. Return a pointer to after the word
+//Find the end of the word. Assumes it starts inside a word. Return a pointer to after the word
 pub CS
 find_word_end(CS ptr) {
    int start_class = mb_get_class(ptr);
@@ -8636,7 +8636,7 @@ find_word_end(CS ptr) {
 }
 
 
-// Find the end of the line, omitting CR and NL at the end. Returns a pointer to just after the line.
+//Find the end of the line, omitting CR and NL at the end. Returns a pointer to just after the line.
 pub CS
 find_line_end(CS ptr) {
    CS s = ptr + STRLEN(ptr);
@@ -8676,17 +8676,17 @@ fuzzyMatchStr_in_line(
    line_end = find_line_end(str);
 
    while (str < line_end) {
-      // Skip non-word characters
+      //Skip non-word characters
       start = findWordStart(str);
       if (*start == ZERO)
           break;
       end = find_word_end(start);
 
-      // Extract the word from start to end
+      //Extract the word from start to end
       save_end = *end;
       *end = ZERO;
 
-      // Perform fuzzy match
+      //Perform fuzzy match
       *score = fuzzyMatchStr(start, pat);
       *end = save_end;
 
@@ -8699,9 +8699,9 @@ fuzzyMatchStr_in_line(
          break;
       }
 
-      // Move to the end of the current word for the next iteration
+      //Move to the end of the current word for the next iteration
       str = end;
-      // Ensure we continue searching after the current word
+      //Ensure we continue searching after the current word
       while (*str != ZERO && !eeIsWordPtr(str))
          MB_PTR_ADV(str);
    }
@@ -8745,22 +8745,22 @@ search_for_fuzzy_match(
 
    do {
 
-      // Check if looped around and back to start position
+      //Check if looped around and back to start position
       if (looped_around && EQUAL_POS(current_pos, circly_end))
          break;
 
-      // Ensure current_pos is valid
+      //Ensure current_pos is valid
       if (current_pos.lnum >= 1 && current_pos.lnum <= book->mem.lineCount) {
-         // Get the current line buffer
+         //Get the current line buffer
          *ptr = memGetLine(book, current_pos.lnum, false);
          if (!whole_line)
             *ptr += current_pos.col;
 
-         // If ptr is end of line is reached, move to next line
-         // or previous line based on direction
+         //If ptr is end of line is reached, move to next line
+         //or previous line based on direction
          if (*ptr != NULL && **ptr != ZERO) {
             if (!whole_line) {
-               // Try to find a fuzzy match in the current line starting from current position
+               //Try to find a fuzzy match in the current line starting from current position
                found_new_match = fuzzyMatchStr_in_line(ptr, pattern, len, &current_pos, score);
                if (found_new_match) {
                   *pos = current_pos;
@@ -8778,7 +8778,7 @@ search_for_fuzzy_match(
          }
       }
 
-      // Move to the next line or previous line based on direction
+      //Move to the next line or previous line based on direction
       if (dir == FORWARD) {
          if (++current_pos.lnum > book->mem.lineCount) {
             if (wrapSearchG) {
@@ -8831,7 +8831,7 @@ defuzz(
       matches->cap = len;
    }
 
-   // Sort the list by the descending order of the match score
+   //Sort the list by the descending order of the match score
    if (funcsort)
       sortFnNamesByScore((void *)fuzzy.c, len);
    else
@@ -8944,7 +8944,7 @@ match_row(MatchInfo* match, int row, double* curr_D,
    double prev_score = SCORE_MIN;
    double gap_score = i == n - 1 ? SCORE_GAP_TRAILING : SCORE_GAP_INNER;
 
-   // These will not be used with this value, but not all compilers see it
+   //These will not be used with this value, but not all compilers see it
    double prev_M = SCORE_MIN, prev_D = SCORE_MIN;
 
    for (int j = 0; j < m; j++) {
@@ -8955,7 +8955,7 @@ match_row(MatchInfo* match, int row, double* curr_D,
          } ei (j) { /* i > 0 && j > 0*/
              score = MAX(
                 prev_M + match_bonus[j],
-                // consecutive match, doesn't stack with match_bonus
+                //consecutive match, doesn't stack with match_bonus
                 prev_D + SCORE_MATCH_CONSECUTIVE);
          }
          prev_D = last_D[j];
@@ -8983,14 +8983,14 @@ match_positions(Byte *needle, Byte *haystack, Unt *positions) {
    int m = match.haystack_len;
 
    if (m > MATCH_MAX_LEN || n > m) {
-      // Unreasonably large candidate: return no score
-      // If it is a valid match it will still be returned, it will
-      // just be ranked below any reasonably sized candidates
+      //Unreasonably large candidate: return no score
+      //If it is a valid match it will still be returned, it will
+      //just be ranked below any reasonably sized candidates
       return SCORE_MIN;
    } ei (n == m) {
-      // Since this method can only be called with a haystack which
-      // matches needle. If the lengths of the strings are equal the
-      // strings themselves must also be equal (ignoring case).
+      //Since this method can only be called with a haystack which
+      //matches needle. If the lengths of the strings are equal the
+      //strings themselves must also be equal (ignoring case).
       if (positions) {
          for (int i = 0; i < n; i++)
             positions[i] = i;
@@ -8998,8 +8998,8 @@ match_positions(Byte *needle, Byte *haystack, Unt *positions) {
       return SCORE_MAX;
    }
 
-   // D[][] Stores the best score for this position ending with a match.
-   // M[][] Stores the best possible score at this position.
+   //D[][] Stores the best score for this position ending with a match.
+   //M[][] Stores the best possible score at this position.
    double (*D)[MATCH_MAX_LEN], (*M)[MATCH_MAX_LEN];
    M = alloc(sizeof(double) * MATCH_MAX_LEN * n);
    D = alloc(sizeof(double) * MATCH_MAX_LEN * n);
@@ -9010,19 +9010,19 @@ match_positions(Byte *needle, Byte *haystack, Unt *positions) {
    for (int i = 1; i < n; i++)
       match_row(&match, i, D[i], M[i], D[i - 1], M[i - 1]);
 
-   // backtrace to find the positions of optimal matching
+   //backtrace to find the positions of optimal matching
    if (positions) {
       int match_required = 0;
       for (int i = n - 1, j = m - 1; i >= 0; i--) {
          for (; j >= 0; j--) {
-            // There may be multiple paths which result in the optimal weight.
+            //There may be multiple paths which result in the optimal weight.
             //
-            // For simplicity, we will pick the first one
-            // we encounter, the latest in the candidate
-            // string.
+            //For simplicity, we will pick the first one
+            //we encounter, the latest in the candidate
+            //string.
             if (D[i][j] != SCORE_MIN && (match_required || D[i][j] == M[i][j])) {
-               // If this score was determined using SCORE_MATCH_CONSECUTIVE, the
-               // previous character MUST be a match
+               //If this score was determined using SCORE_MATCH_CONSECUTIVE, the
+               //previous character MUST be a match
                match_required = i && j && M[i][j] == D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE;
                positions[i] = j--;
                break;
@@ -9042,7 +9042,7 @@ match_positions(Byte *needle, Byte *haystack, Unt *positions) {
 //}}}
 //{{{string functions
 
-#define MAX_ALLOWED_STRING_WIDTH 1048576    // 1 MiB
+#define MAX_ALLOWED_STRING_WIDTH 1048576    //1 MiB
 
 //Make a Var of the first character of "input" and store it in "output". Return OK or FAIL.
 private int
@@ -9143,7 +9143,7 @@ string_reduce(Var* argvars, Var* expr, Var* returnVar) {
    }
 }
 
-// Implementation of "byteidx()" and "byteidxcomp()" functions
+//Implementation of "byteidx()" and "byteidxcomp()" functions
 private void
 byteidx_common(Var* argvars, Var* returnVar, Boole comp) {
    returnVar->number = -1;
@@ -9173,7 +9173,7 @@ byteidx_common(Var* argvars, Var* returnVar, Boole comp) {
 
    CS t = str;
    for ( ; idx > 0; idx--) {
-      if (*t == ZERO)      // EOL reached
+      if (*t == ZERO)      //EOL reached
          return;
       if (utf16idx) {
          int clen = ptr2len(t);
@@ -9229,8 +9229,8 @@ f_charidx(Var* argvars, Var* returnVar) {
    Unt len = 0;
    for (CS p = str; utf16idx ? idx >= 0 : p <= str + idx; len++) {
       if (*p == ZERO) {
-         // If the index is exactly the number of bytes or utf-16 code units
-         // in the string then return the length of the string in characters.
+         //If the index is exactly the number of bytes or utf-16 code units
+         //in the string then return the length of the string in characters.
          if (utf16idx ? (idx == 0) : (p == (str + idx)))
             returnVar->number = len;
          return;
@@ -9284,7 +9284,7 @@ f_str2nr(Var* argvars, Var* returnVar) {
    case 16: what |= STR2NR_HEX + STR2NR_FORCE; break;
    }
    readLongNumber(p, NULL, NULL, what, &n, NULL, 0, false, NULL);
-   // Text after the number is silently ignored.
+   //Text after the number is silently ignored.
    returnVar->number = isneg ? -n : n;
 }
 
@@ -9322,7 +9322,7 @@ f_stridx(Var* argvars, Var* returnVar) {
    CS save_haystack = haystack;
    returnVar->number = -1;
    if (needle == NULL || haystack == NULL)
-      return;      // type error; errmsg already given
+      return;      //type error; errmsg already given
 
    if (argvars[2].tag != VAR_UNKNOWN) {
       Boole error = false;
@@ -9346,7 +9346,7 @@ f_string(Arr(Var) argvars, OUT Var* returnVar) {
 
    returnVar->tag = VAR_STRING;
    returnVar->string = tv2string(&argvars[0], &tofree, numBuf, get_copyID());
-   // Make a copy if we have a value but it's not in allocated memory.
+   //Make a copy if we have a value but it's not in allocated memory.
    if (returnVar->string != NULL && tofree == NULL)
       returnVar->string = copyStr(returnVar->string);
 }
@@ -9449,10 +9449,10 @@ f_strcharpart(Arr(Var) argvars, OUT Var* returnVar) {
             --charlen;
          }
       } else
-          len = slen - nbyte;    // default: all bytes that are available.
+          len = slen - nbyte;    //default: all bytes that are available.
    }
 
-   // Only return the overlap between the specified part and the actual string.
+   //Only return the overlap between the specified part and the actual string.
    if (nbyte < 0) {
       len += nbyte;
       nbyte = 0;
@@ -9481,9 +9481,9 @@ f_strpart(Arr(Var) argvars, OUT Var* returnVar) {
    ei (argvars[2].tag != VAR_UNKNOWN)
       len = (int)tv_get_number(&argvars[2]);
    else
-      len = slen - n;       // default len: all bytes that are available.
+      len = slen - n;       //default len: all bytes that are available.
 
-   // Only return the overlap between the specified part and the actual string.
+   //Only return the overlap between the specified part and the actual string.
    if (n < 0) {
       len += n;
       n = 0;
@@ -9495,7 +9495,7 @@ f_strpart(Arr(Var) argvars, OUT Var* returnVar) {
       len = slen - n;
 
    if (argvars[2].tag != VAR_UNKNOWN && argvars[3].tag != VAR_UNKNOWN) {
-      // length in characters
+      //length in characters
       int off;
       for (off = n; off < slen && len > 0; --len)
          off += utfCharLen(p + off);
@@ -9515,21 +9515,21 @@ f_strridx(Arr(Var) argvars, OUT Var* returnVar) {
 
    returnVar->number = -1;
    if (needle == NULL || haystack == NULL)
-      return;      // type error; errmsg already given
+      return;      //type error; errmsg already given
 
    int haystack_len = (int)STRLEN(haystack);
    int endInd;
    if (argvars[2].tag != VAR_UNKNOWN) {
-      // Third argument: upper limit for index
+      //Third argument: upper limit for index
       endInd = (int)varGetNumberChk(argvars + 2, NULL);
       if (endInd < 0)
-          return;   // can never find a match
+          return;   //can never find a match
    } else
       endInd = haystack_len;
 
    CS lastmatch = NULL;
    if (*needle == ZERO) {
-      // Empty string matches past the end.
+      //Empty string matches past the end.
       lastmatch = haystack + endInd;
    } else {
       for (CS rest = haystack; *rest != '\0'; ++rest) {
@@ -9548,21 +9548,21 @@ f_strtrans(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->string = sanitizeStr(tv_get_string(&argvars[0]));
 }
 
-// "tolower(string)" function
+//"tolower(string)" function
 pub void
 f_tolower(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = strlow_save(tv_get_string(&argvars[0]));
 }
 
-// "toupper(string)" function
+//"toupper(string)" function
 pub void
 f_toupper(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = strup_save(tv_get_string(&argvars[0]));
 }
 
-// "tr(string, fromstr, tostr)" function
+//"tr(string, fromstr, tostr)" function
 pub void
 f_tr(Arr(Var) argvars, OUT Var* returnVar) {
    CS p;
@@ -9574,16 +9574,16 @@ f_tr(Arr(Var) argvars, OUT Var* returnVar) {
    CS fromstr = convertVarToString(&argvars[1], buf);
    CS tostr = convertVarToString(&argvars[2], buffer1);
 
-   // Default return value: empty string.
+   //Default return value: empty string.
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
    if (fromstr == NULL || tostr == NULL)
-      return;      // type error; errmsg already given
+      return;      //type error; errmsg already given
       
    ArrayList   ga;
    ga_init2(&ga, sizeof(char), 80);
 
-   // fromstr and tostr have to contain the same number of chars
+   //fromstr and tostr have to contain the same number of chars
    while (*in_str != ZERO) {
       int inlen = utfCharLen(in_str);
       CS cpstr = in_str;
@@ -9602,7 +9602,7 @@ f_tr(Arr(Var) argvars, OUT Var* returnVar) {
                    break;
                }
             }
-            if (*p == ZERO)   // tostr is shorter than fromstr
+            if (*p == ZERO)   //tostr is shorter than fromstr
                goto error;
             break;
          }
@@ -9610,9 +9610,9 @@ f_tr(Arr(Var) argvars, OUT Var* returnVar) {
       }
 
       if (first && cpstr == in_str) {
-         // Check that fromstr and tostr have the same number of
-         // (multi-byte) characters.  Done only once when a character
-         // of in_str doesn't appear in fromstr.
+         //Check that fromstr and tostr have the same number of
+         //(multi-byte) characters.  Done only once when a character
+         //of in_str doesn't appear in fromstr.
          first = false;
          for (p = tostr; *p != ZERO; p += tolen) {
             tolen = utfCharLen(p);
@@ -9629,7 +9629,7 @@ f_tr(Arr(Var) argvars, OUT Var* returnVar) {
       in_str += inlen;
    }
 
-   // add a terminating ZERO
+   //add a terminating ZERO
    (void)ga_grow(&ga, 1);
    ga_append(&ga, ZERO);
 
@@ -9643,7 +9643,7 @@ error:
    return;
 }
 
-// "trim({expr})" function
+//"trim({expr})" function
 pub void
 f_trim(Arr(Var) argvars, OUT Var* returnVar) {
    Byte buffer0[NUMBUFLEN];
@@ -9670,7 +9670,7 @@ f_trim(Arr(Var) argvars, OUT Var* returnVar) {
       if (argvars[2].tag != VAR_UNKNOWN) {
          Boole error = false;
 
-         // leading or trailing characters to trim
+         //leading or trailing characters to trim
          dir = (int)varGetNumberChk(argvars + 2, OUT &error);
          if (error)
             return;
@@ -9682,7 +9682,7 @@ f_trim(Arr(Var) argvars, OUT Var* returnVar) {
    }
 
    if (dir == 0 || dir == 1) {
-      // Trim leading characters
+      //Trim leading characters
       while (*head != ZERO) {
          Unt c1 = mb_ptr2char(head);
          if (mask == NULL) {
@@ -9701,7 +9701,7 @@ f_trim(Arr(Var) argvars, OUT Var* returnVar) {
 
    CS tail = head + STRLEN(head);
    if (dir == 0 || dir == 2) {
-      // Trim trailing characters
+      //Trim trailing characters
       CS prev;
       for (; tail > head; tail = prev) {
          prev = tail;
@@ -9840,25 +9840,25 @@ enum {
 //Types that can be used in a format string
 private int
 format_typeof(CS type) {
-   // allowed values: \0, h, l, L
+   //allowed values: \0, h, l, L
    Byte length_modifier = '\0';
 
-   // current conversion specifier character
+   //current conversion specifier character
    Byte fmt_spec = '\0';
 
-   // parse 'h', 'l' and 'll' length modifiers
+   //parse 'h', 'l' and 'll' length modifiers
    if (*type == 'h' || *type == 'l') {
       length_modifier = *type;
       type++;
       if (length_modifier == 'l' && *type == 'l') {
-         // double l = __int64 / Long
+         //double l = __int64 / Long
          length_modifier = 'L';
          type++;
       }
    }
    fmt_spec = *type;
 
-   // common synonyms:
+   //common synonyms:
    switch (fmt_spec) {
    case 'i': fmt_spec = 'd'; break;
    case '*': fmt_spec = 'd'; length_modifier = 'h'; break;
@@ -9868,10 +9868,10 @@ format_typeof(CS type) {
    default: break;
    }
 
-   // get parameter value, do initial processing
+   //get parameter value, do initial processing
    switch (fmt_spec) {
-   // '%' and 'c' behave similar to 's' regarding flags and field
-   // widths
+   //'%' and 'c' behave similar to 's' regarding flags and field
+   //widths
    case '%':
       return TYPE_PERCENT;
 
@@ -9899,11 +9899,11 @@ format_typeof(CS type) {
       ei (fmt_spec == 'b' || fmt_spec == 'B')
          return TYPE_UNSIGNEDLONGLONGINT;
       ei (fmt_spec == 'd') {
-         // signed
+         //signed
          switch (length_modifier) {
          case '\0':
          case 'h':
-            // char and short arguments are passed as int.
+            //char and short arguments are passed as int.
             return TYPE_INT;
          case 'l':
             return TYPE_LONGINT;
@@ -10035,17 +10035,17 @@ parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs) {
 
          p += n;
       } else {
-         // allowed values: \0, h, l, L
+         //allowed values: \0, h, l, L
          Byte   length_modifier = '\0';
 
-          // variable for positional arg
+          //variable for positional arg
          int      pos_arg = -1;
          CS ptype = NULL;
          Byte* pstart = p+1;
 
-         p++;  // skip '%'
+         p++;  //skip '%'
 
-         // First check to see if we find a positional argument specifier
+         //First check to see if we find a positional argument specifier
          ptype = p;
 
          while (EE_ISDIGIT(*ptype))
@@ -10053,12 +10053,12 @@ parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs) {
 
          if (*ptype == '$') {
             if (*p == '0') {
-               // 0 flag at the wrong place
+               //0 flag at the wrong place
                showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
                goto error;
             }
 
-            // Positional argument
+            //Positional argument
             Unt uj;
 
             if (parseUnsignedInt(pstart, OUT &p, OUT &uj, tvs != NULL) == FAIL)
@@ -10072,28 +10072,28 @@ parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs) {
             ++p;
          }
 
-         // parse flags
+         //parse flags
          while (*p == '0' || *p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '\'') {
             switch (*p) {
             case '0': break;
             case '-': break;
             case '+': break;
-            case ' ': // If both the ' ' and '+' flags appear, the ' '
-                 // flag should be ignored
+            case ' ': //If both the ' ' and '+' flags appear, the ' '
+                 //flag should be ignored
                  break;
             case '#': break;
             case '\'': break;
             }
             p++;
          }
-         // If the '0' and '-' flags both appear, the '0' flag should be ignored.
+         //If the '0' and '-' flags both appear, the '0' flag should be ignored.
 
-         // parse field width
+         //parse field width
          if (*(arg = p) == '*') {
             p++;
 
             if (EE_ISDIGIT((int)(*p))) {
-               // Positional argument field width
+               //Positional argument field width
                unsigned int uj;
 
                if (parseUnsignedInt(arg + 1, OUT &p, OUT &uj, tvs != NULL) == FAIL)
@@ -10115,8 +10115,8 @@ parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs) {
                CHECK_POS_ARG;
             }
          } ei (EE_ISDIGIT((int)(*p))) {
-            // Unt could be wider than unsigned int; make sure we treat
-            // argument like common implementations do
+            //Unt could be wider than unsigned int; make sure we treat
+            //argument like common implementations do
             CS digstart = p;
             unsigned int uj;
 
@@ -10129,14 +10129,14 @@ parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs) {
             }
          }
 
-         // parse precision
+         //parse precision
          if (*p == '.') {
             p++;
 
             if (*(arg = p) == '*') {
                p++;
                if (EE_ISDIGIT((int)(*p))) {
-                  // Parse precision
+                  //Parse precision
                   unsigned int uj;
 
                   if (parseUnsignedInt(arg + 1, OUT &p, OUT &uj, tvs != NULL) == FAIL)
@@ -10159,8 +10159,8 @@ parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs) {
                   CHECK_POS_ARG;
                }
             } ei (EE_ISDIGIT((int)(*p))) {
-               // Unt could be wider than unsigned int; make sure we
-               // treat argument like common implementations do
+               //Unt could be wider than unsigned int; make sure we
+               //treat argument like common implementations do
                CS digstart = p;
                unsigned int uj;
 
@@ -10181,19 +10181,19 @@ parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs) {
             ptype = p;
          }
 
-         // parse 'h', 'l' and 'll' length modifiers
+         //parse 'h', 'l' and 'll' length modifiers
          if (*p == 'h' || *p == 'l') {
             length_modifier = *p;
             p++;
             if (length_modifier == 'l' && *p == 'l') {
-               // double l = __int64 / Long
-               // length_modifier = 'L';
+               //double l = __int64 / Long
+               //length_modifier = 'L';
                p++;
             }
          }
 
          switch (*p) {
-         // Check for known format specifiers. % is special!
+         //Check for known format specifiers. % is special!
          case 'i':
          case '*':
          case 'd':
@@ -10233,7 +10233,7 @@ parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs) {
          }
 
          if (*p != ZERO)
-            p++;     // step over the just processed conversion specifier
+            p++;     //step over the just processed conversion specifier
       }
    }
 
@@ -10276,11 +10276,11 @@ skip_to_arg(
    }
 
    if (*arg_cur >= *arg_idx) {
-      // Reset ap to ap_start and skip arg_idx - 1 types
+      //Reset ap to ap_start and skip arg_idx - 1 types
       va_end(*ap);
       va_copy(*ap, ap_start);
    } else {
-      // Skip over any we should skip
+      //Skip over any we should skip
       arg_min = *arg_cur;
    }
 
@@ -10294,7 +10294,7 @@ skip_to_arg(
 
       int fmt_type = format_typeof(p);
 
-      // get parameter value, do initial processing
+      //get parameter value, do initial processing
       switch (fmt_type) {
       case TYPE_PERCENT:
       case TYPE_UNKNOWN:
@@ -10374,8 +10374,8 @@ eeVarPrintf0(
    va_list ap_start,
    Var* tvs
 ) {
-   Unt str_l = 0; // number of formatted characters. That is, the number of characters that 
-                  // would have been written to the string buf if it were large enough.
+   Unt str_l = 0; //number of formatted characters. That is, the number of characters that 
+                  //would have been written to the string buf if it were large enough.
 
    CS p = (CS)fmt;
    int arg_cur = 0;
@@ -10396,7 +10396,7 @@ eeVarPrintf0(
          CS q = STRCHR(p + 1, '%');
          Unt  n = (q == NULL) ? STRLEN(p) : (Unt)(q - p);
 
-         // Copy up to the next '%' or ZERO without any changes.
+         //Copy up to the next '%' or ZERO without any changes.
          if (str_l < str_m) {
             Unt avail = str_m - str_l;
             MEMMOVE(str + str_l, p, n > avail ? avail : n);
@@ -10408,55 +10408,55 @@ eeVarPrintf0(
          int       zero_padding = 0, precision_specified = 0, justify_left = 0;
          int       alternate_form = 0, force_sign = 0;
 
-         // If both the ' ' and '+' flags appear, the ' ' flag should be ignored.
+         //If both the ' ' and '+' flags appear, the ' ' flag should be ignored.
          int space_for_positive = 1;
 
-         // allowed values: \0, h, l, L
+         //allowed values: \0, h, l, L
          char length_modifier = '\0';
 
-         // temporary buffer for simple numeric->string conversion
-# define TMP_LEN 350   // On my system 1e308 is the biggest number possible.
-         // That sounds reasonable to use as the maximum printable.
+         //temporary buffer for simple numeric->string conversion
+# define TMP_LEN 350   //On my system 1e308 is the biggest number possible.
+         //That sounds reasonable to use as the maximum printable.
          Byte tmp[TMP_LEN];
 
-         // string address in case of string argument
+         //string address in case of string argument
          CS str_arg = NULL;
 
-         // natural field width of arg without padding and sign
+         //natural field width of arg without padding and sign
          Unt str_arg_l;
 
-         // unsigned char argument value - only defined for c conversion.
-         // N.B. standard explicitly states the char argument for the c conversion is unsigned
+         //unsigned char argument value - only defined for c conversion.
+         //N.B. standard explicitly states the char argument for the c conversion is unsigned
          unsigned char uchar_arg;
 
-         // number of zeros to be inserted for numeric conversions as
-         // required by the precision or minimal field width
+         //number of zeros to be inserted for numeric conversions as
+         //required by the precision or minimal field width
          Unt number_of_zeros_to_pad = 0;
 
-         // index into tmp where zero padding is to be inserted
+         //index into tmp where zero padding is to be inserted
          Unt zero_padding_insertion_ind = 0;
 
-         // current conversion specifier character
+         //current conversion specifier character
          Byte fmt_spec = '\0';
 
-         // buffer for 's' and 'S' specs
+         //buffer for 's' and 'S' specs
          Byte* tofree = NULL;
 
-         // variables for positional arg
+         //variables for positional arg
          int pos_arg = -1;
          CS ptype;
 
 
-         p++;  // skip '%'
+         p++;  //skip '%'
 
-         // First check to see if we find a positional argument specifier
+         //First check to see if we find a positional argument specifier
          ptype = p;
 
          while (EE_ISDIGIT(*ptype))
             ++ptype;
 
          if (*ptype == '$') {
-            // Positional argument
+            //Positional argument
             CS digstart = p;
             unsigned int uj;
 
@@ -10468,23 +10468,23 @@ eeVarPrintf0(
             ++p;
          }
 
-         // parse flags
+         //parse flags
          while (*p == '0' || *p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '\'') {
             switch (*p) {
             case '0': zero_padding = 1; break;
             case '-': justify_left = 1; break;
             case '+': force_sign = 1; space_for_positive = 0; break;
             case ' ': force_sign = 1;
-               // If both the ' ' and '+' flags appear, the ' ' flag should be ignored
+               //If both the ' ' and '+' flags appear, the ' ' flag should be ignored
                break;
             case '#': alternate_form = 1; break;
             case '\'': break;
             }
             p++;
          }
-         // If the '0' and '-' flags both appear, the '0' flag should be ignored.
+         //If the '0' and '-' flags both appear, the '0' flag should be ignored.
 
-         // parse field width
+         //parse field width
          if (*p == '*') {
             int j;
             CS digstart = p + 1;
@@ -10492,7 +10492,7 @@ eeVarPrintf0(
             p++;
 
             if (EE_ISDIGIT((int)(*p))) {
-               // Positional argument field width
+               //Positional argument field width
                unsigned int uj;
 
                if (parseUnsignedInt(digstart, OUT &p, OUT &uj, tvs != NULL) == FAIL)
@@ -10524,8 +10524,8 @@ eeVarPrintf0(
                justify_left = 1;
             }
          } ei (EE_ISDIGIT((int)(*p))) {
-            // Unt could be wider than unsigned int; make sure we treat
-            // argument like common implementations do
+            //Unt could be wider than unsigned int; make sure we treat
+            //argument like common implementations do
             CS digstart = p;
             unsigned int uj;
 
@@ -10535,14 +10535,14 @@ eeVarPrintf0(
             min_field_width = uj;
          }
 
-         // parse precision
+         //parse precision
          if (*p == '.') {
             p++;
             precision_specified = 1;
 
             if (EE_ISDIGIT((int)(*p))) {
-               // Unt could be wider than unsigned int; make sure we
-               // treat argument like common implementations do
+               //Unt could be wider than unsigned int; make sure we
+               //treat argument like common implementations do
                CS digstart = p;
                unsigned int uj;
 
@@ -10557,7 +10557,7 @@ eeVarPrintf0(
                p++;
 
                if (EE_ISDIGIT((int)(*p))) {
-                  // positional argument
+                  //positional argument
                   unsigned int uj;
 
                   if (parseUnsignedInt(digstart, OUT &p, OUT &uj, tvs != NULL) == FAIL)
@@ -10591,19 +10591,19 @@ eeVarPrintf0(
             }
          }
 
-         // parse 'h', 'l' and 'll' length modifiers
+         //parse 'h', 'l' and 'll' length modifiers
          if (*p == 'h' || *p == 'l') {
             length_modifier = *p;
             p++;
             if (length_modifier == 'l' && *p == 'l') {
-                // double l = __int64 / Long
+                //double l = __int64 / Long
                 length_modifier = 'L';
                 p++;
             }
          }
          fmt_spec = *p;
 
-         // common synonyms:
+         //common synonyms:
          switch (fmt_spec) {
          case 'i': fmt_spec = 'd'; break;
          case 'D': fmt_spec = 'd'; length_modifier = 'l'; break;
@@ -10621,9 +10621,9 @@ eeVarPrintf0(
          if (pos_arg != -1)
             arg_idx = pos_arg;
 
-         // get parameter value, do initial processing
+         //get parameter value, do initial processing
          switch (fmt_spec) {
-         // '%' and 'c' behave similar to 's' regarding flags and field widths
+         //'%' and 'c' behave similar to 's' regarding flags and field widths
          case '%':
          case 'c':
          case 's':
@@ -10643,7 +10643,7 @@ eeVarPrintf0(
                         va_arg(ap, int)
                     );
 
-               // standard demands unsigned char
+               //standard demands unsigned char
                uchar_arg = (unsigned char)j;
                str_arg = &uchar_arg;
                break;
@@ -10661,10 +10661,10 @@ eeVarPrintf0(
                   str_arg = S"[NULL]";
                   str_arg_l = 6;
                }
-               // make sure not to address string beyond the specified precision !!!
+               //make sure not to address string beyond the specified precision !!!
                ei (!precision_specified)
                   str_arg_l = STRLEN(str_arg);
-               // truncate string if necessary as requested by precision
+               //truncate string if necessary as requested by precision
                ei (precision == 0)
                   str_arg_l = 0;
                else {
@@ -10748,11 +10748,11 @@ eeVarPrintf0(
                if (bin_arg != 0)
                    arg_sign = 1;
             } ei (fmt_spec == 'd') {
-               // signed
+               //signed
                switch (length_modifier) {
                case '\0':
                case 'h':
-                   // char and short arguments are passed as int.
+                   //char and short arguments are passed as int.
                    int_arg = tvs
                       ? tv_nr(tvs, OUT &arg_idx) 
                       : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
@@ -10790,7 +10790,7 @@ eeVarPrintf0(
                    break;
                }
             } else {
-               // unsigned
+               //unsigned
                switch (length_modifier) {
                case '\0':
                case 'h':
@@ -10829,16 +10829,16 @@ eeVarPrintf0(
             str_arg = tmp;
             str_arg_l = 0;
 
-            // NOTE:
-            //   For d, i, u, o, x, and X conversions, if precision is
-            //   specified, the '0' flag should be ignored.
+            //NOTE:
+            //  For d, i, u, o, x, and X conversions, if precision is
+            //  specified, the '0' flag should be ignored.
             if (precision_specified)
                zero_padding = 0;
             if (fmt_spec == 'd') {
                if (force_sign && arg_sign >= 0)
                    tmp[str_arg_l++] = space_for_positive ? ' ' : '+';
-               // leave negative numbers for sprintf to handle, to
-               // avoid handling tricky cases like (short int)-32768
+               //leave negative numbers for sprintf to handle, to
+               //avoid handling tricky cases like (short int)-32768
             } ei (alternate_form) {
                if (arg_sign != 0
                        && (fmt_spec == 'b' || fmt_spec == 'B'
@@ -10847,21 +10847,21 @@ eeVarPrintf0(
                    tmp[str_arg_l++] = '0';
                    tmp[str_arg_l++] = fmt_spec;
                }
-               // alternate form should have no effect for p conversion, but ...
+               //alternate form should have no effect for p conversion, but ...
             }
 
             zero_padding_insertion_ind = str_arg_l;
             if (!precision_specified)
-               precision = 1;   // default precision is 1
+               precision = 1;   //default precision is 1
             if (precision == 0 && arg_sign == 0) {
-               // When zero value is formatted with an explicit
-               // precision 0, the resulting formatted string is
-               // empty (d, i, u, b, B, o, x, X, p).
+               //When zero value is formatted with an explicit
+               //precision 0, the resulting formatted string is
+               //empty (d, i, u, b, B, o, x, X, p).
             } else {
                char   f[6];
                int   f_l = 0;
 
-               // construct a simple format string for sprintf
+               //construct a simple format string for sprintf
                f[f_l++] = '%';
                if (!length_modifier)
                    ;
@@ -10890,7 +10890,7 @@ eeVarPrintf0(
                   str_arg_l += b_l;
                }
                ei (fmt_spec == 'd') {
-                   // signed
+                   //signed
                    switch (length_modifier) {
                    case '\0': str_arg_l += SPRINTF(tmp + str_arg_l, f, int_arg); break;
                    case 'h': str_arg_l += SPRINTF(tmp + str_arg_l, f, (Short)int_arg); break;
@@ -10898,7 +10898,7 @@ eeVarPrintf0(
                    case 'L': str_arg_l += SPRINTF(tmp + str_arg_l, f, llong_arg); break;
                    }
                } else {
-                  // unsigned
+                  //unsigned
                   switch (length_modifier) {
                   case '\0': str_arg_l += SPRINTF(tmp + str_arg_l, f, uint_arg); break;
                   case 'h': str_arg_l += SPRINTF( tmp + str_arg_l, f, (Short)uint_arg); break;
@@ -10907,8 +10907,8 @@ eeVarPrintf0(
                   }
                }
 
-               // include the optional minus sign and possible "0x" in the region before the zero 
-               // padding insertion point
+               //include the optional minus sign and possible "0x" in the region before the zero 
+               //padding insertion point
                if (zero_padding_insertion_ind < str_arg_l && tmp[zero_padding_insertion_ind] == '-')
                   zero_padding_insertion_ind++;
                if (zero_padding_insertion_ind + 1 < str_arg_l
@@ -10921,10 +10921,10 @@ eeVarPrintf0(
 
             Unt num_of_digits = str_arg_l - zero_padding_insertion_ind;
 
-            // zero padding to specified precision?
+            //zero padding to specified precision?
             if (num_of_digits < precision)
                 number_of_zeros_to_pad = precision - num_of_digits;
-             // zero padding to specified minimal field width?
+             //zero padding to specified minimal field width?
             if (!justify_left && zero_padding) {
                int n = (int)(min_field_width - (str_arg_l + number_of_zeros_to_pad));
                if (n > 0)
@@ -10939,7 +10939,7 @@ eeVarPrintf0(
          case 'E':
          case 'g':
          case 'G': {
-            // Floating point.
+            //Floating point.
             Byte format[40];
             int      l;
             int      remove_trailing_zeroes = false;
@@ -10953,8 +10953,8 @@ eeVarPrintf0(
             double abs_f = f < 0 ? -f : f;
 
             if (fmt_spec == 'g' || fmt_spec == 'G') {
-               // Would be nice to use %g directly, but it prints
-               // "1.0" as "1", we don't want that.
+               //Would be nice to use %g directly, but it prints
+               //"1.0" as "1", we don't want that.
                if ((abs_f >= 0.001 && abs_f < 10000000.0)
                                  || abs_f == 0.0)
                    fmt_spec = ASCII_ISUPPER(fmt_spec) ? 'F' : 'f';
@@ -10970,13 +10970,13 @@ eeVarPrintf0(
                 abs_f > 1.0e307
 # endif
             ) {
-               // Avoid a buffer overflow
+               //Avoid a buffer overflow
                STRCPY(tmp, infinity_str(f > 0.0, fmt_spec, force_sign, space_for_positive));
                str_arg_l = STRLEN(tmp);
                zero_padding = 0;
             } else {
                if (isnan(f)) {
-                  // Not a number: nan or NAN
+                  //Not a number: nan or NAN
                   STRCPY(tmp, ASCII_ISUPPER(fmt_spec) ? "NAN" : "nan");
                   str_arg_l = 3;
                   zero_padding = 0;
@@ -10985,7 +10985,7 @@ eeVarPrintf0(
                   str_arg_l = STRLEN(tmp);
                   zero_padding = 0;
                } else {
-                  // Regular float number
+                  //Regular float number
                   format[0] = '%';
                   l = 1;
                   if (force_sign)
@@ -10993,8 +10993,8 @@ eeVarPrintf0(
                   if (precision_specified) {
                      Unt max_prec = TMP_LEN - 10;
 
-                     // Make sure we don't get more digits than we
-                     // have room for.
+                     //Make sure we don't get more digits than we
+                     //have room for.
                      if ((fmt_spec == 'f' || fmt_spec == 'F') && abs_f > 1.0)
                         max_prec -= (Unt)log10(abs_f);
                      if (precision > max_prec)
@@ -11011,21 +11011,21 @@ eeVarPrintf0(
                   int i;
                   CS tp;
 
-                  // Using %g or %G: remove superfluous zeroes.
+                  //Using %g or %G: remove superfluous zeroes.
                   if (fmt_spec == 'f' || fmt_spec == 'F')
                      tp = tmp + str_arg_l - 1;
                   else {
                      tp = firstOccurrence((CS)tmp, fmt_spec == 'e' ? 'e' : 'E');
                      if (tp) {
-                        // Remove superfluous '+' and leading zeroes from the exponent.
+                        //Remove superfluous '+' and leading zeroes from the exponent.
                         if (tp[1] == '+') {
-                           // Change "1.0e+07" to "1.0e07"
+                           //Change "1.0e+07" to "1.0e07"
                            STRMOVE(tp + 1, tp + 2);
                            --str_arg_l;
                         }
                         i = (tp[1] == '-') ? 2 : 1;
                         while (tp[i] == '0') {
-                           // Change "1.0e07" to "1.0e7"
+                           //Change "1.0e07" to "1.0e7"
                            STRMOVE(tp + i, tp + i + 1);
                            --str_arg_l;
                         }
@@ -11034,7 +11034,7 @@ eeVarPrintf0(
                   }
 
                   if (tp && !precision_specified) {
-                     // Remove trailing zeroes, but keep the one just after a dot.
+                     //Remove trailing zeroes, but keep the one just after a dot.
                      while (tp > tmp + 2 && *tp == '0' && tp[-1] != '.') {
                          STRMOVE(tp, tp + 1);
                          --tp;
@@ -11042,8 +11042,8 @@ eeVarPrintf0(
                      }
                   } 
                } else {
-                  // Be consistent: some printf("%e") use 1.0e+12
-                  // and some 1.0e+012.  Remove one zero in the last case.
+                  //Be consistent: some printf("%e") use 1.0e+12
+                  //and some 1.0e+012.  Remove one zero in the last case.
                   CS tp = firstOccurrence((CS)tmp, fmt_spec == 'e' ? 'e' : 'E');
                   if (tp != NULL && (tp[1] == '+' || tp[1] == '-')
                        && tp[2] == '0'
@@ -11056,7 +11056,7 @@ eeVarPrintf0(
                }
             }
             if (zero_padding && min_field_width > str_arg_l && (tmp[0] == '-' || force_sign)) {
-               // padding 0's should be inserted after the sign
+               //padding 0's should be inserted after the sign
                number_of_zeros_to_pad = min_field_width - str_arg_l;
                zero_padding_insertion_ind = 1;
             }
@@ -11065,28 +11065,28 @@ eeVarPrintf0(
          }
 
          default:
-            // unrecognized conversion specifier, keep format string as-is
-            zero_padding = 0;  // turn zero padding off for non-numeric conversion
+            //unrecognized conversion specifier, keep format string as-is
+            zero_padding = 0;  //turn zero padding off for non-numeric conversion
             justify_left = 1;
-            min_field_width = 0;          // reset flags
+            min_field_width = 0;          //reset flags
 
-            // discard the unrecognized conversion, just keep *
-            // the unrecognized conversion character
+            //discard the unrecognized conversion, just keep *
+            //the unrecognized conversion character
             str_arg = p;
             str_arg_l = 0;
             if (*p != ZERO)
-                str_arg_l++;  // include invalid conversion specifier
-                    // unchanged if not at end-of-string
+                str_arg_l++;  //include invalid conversion specifier
+                    //unchanged if not at end-of-string
             break;
          }
 
          if (*p != ZERO)
-            p++;     // step over the just processed conversion specifier
+            p++;     //step over the just processed conversion specifier
 
-         // insert padding to the left as requested by min_field_width;
-         // this does not include the zero padding in case of numerical conversions
+         //insert padding to the left as requested by min_field_width;
+         //this does not include the zero padding in case of numerical conversions
          if (!justify_left) {
-            // left padding with blank or zero
+            //left padding with blank or zero
             int pn = (int)(min_field_width - (str_arg_l + number_of_zeros_to_pad));
 
             if (pn > 0) {
@@ -11107,7 +11107,7 @@ eeVarPrintf0(
             //force it to be copied later in its entirety
             zero_padding_insertion_ind = 0;
          } else {
-            // insert first part of numerics (sign or '0x') before zero padding
+            //insert first part of numerics (sign or '0x') before zero padding
             int zn = (int)zero_padding_insertion_ind;
 
             if (zn > 0) {
@@ -11118,7 +11118,7 @@ eeVarPrintf0(
                str_l += zn;
             }
 
-            // insert zero padding as requested by the precision or min field width
+            //insert zero padding as requested by the precision or min field width
             zn = (int)number_of_zeros_to_pad;
             if (zn > 0) {
                if (str_l < str_m) {
@@ -11129,8 +11129,8 @@ eeVarPrintf0(
             }
          }
 
-         // insert formatted string
-         // (or as-is conversion specifier for unknown conversions)
+         //insert formatted string
+         //(or as-is conversion specifier for unknown conversions)
          {
          int sn = (int)(str_arg_l - zero_padding_insertion_ind);
 
@@ -11146,9 +11146,9 @@ eeVarPrintf0(
          }
          }
 
-         // insert right padding
+         //insert right padding
          if (justify_left) {
-            // right blank padding to the field width
+            //right blank padding to the field width
             int pn = (int)(min_field_width - (str_arg_l + number_of_zeros_to_pad));
 
             if (pn > 0) {
@@ -11165,8 +11165,8 @@ eeVarPrintf0(
     }
 
    if (str_m > 0) {
-      // make sure the string is ZERO-terminated even at the expense of
-      // overwriting the last character (shouldn't happen, but just in case)
+      //make sure the string is ZERO-terminated even at the expense of
+      //overwriting the last character (shouldn't happen, but just in case)
       //
       str[str_l <= str_m - 1 ? str_l : str_m - 1] = '\0';
    }
@@ -11197,23 +11197,23 @@ op_format(Operator* oper, int keep_cursor){ //keep cursor on same text char
    curPor->cursor = oper->start;
 
    if (oper->is_VIsual)
-      // When there is no change: need to remove the Visual selection
+      //When there is no change: need to remove the Visual selection
       drawCurBookLater(UPD_INVERTED);
 
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
-      // Set '[ mark at the start of the formatted area
+      //Set '[ mark at the start of the formatted area
       curBook->opStart = oper->start;
 
-   // For "gw" remember the cursor position and put it back below (adjusted
-   // for joined and split lines).
+   //For "gw" remember the cursor position and put it back below (adjusted
+   //for joined and split lines).
    if (keep_cursor)
       saved_cursor = oper->cursor_start;
 
    format_lines(oper->line_count, keep_cursor);
 
-   // Leave the cursor at the first non-blank of the last formatted line.
-   // If the cursor was moved one line back (e.g. with "Q}") go to the next
-   // line, so "." will do the next lines.
+   //Leave the cursor at the first non-blank of the last formatted line.
+   //If the cursor was moved one line back (e.g. with "Q}") go to the next
+   //line, so "." will do the next lines.
    if (oper->end_adjusted && curPor->cursor.lnum < curBook->mem.lineCount)
       ++curPor->cursor.lnum;
    beginline(BL_WHITE | BL_FIX);
@@ -11221,14 +11221,14 @@ op_format(Operator* oper, int keep_cursor){ //keep cursor on same text char
    msgmore(old_line_count);
 
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
-      // put '] mark on the end of the formatted area
+      //put '] mark on the end of the formatted area
       curBook->opEnd = curPor->cursor;
 
    if (keep_cursor) {
       curPor->cursor = saved_cursor;
       saved_cursor.lnum = 0;
 
-      // formatting may have made the cursor position invalid
+      //formatting may have made the cursor position invalid
       check_cursor();
    }
 
@@ -11236,8 +11236,8 @@ op_format(Operator* oper, int keep_cursor){ //keep cursor on same text char
       Portal* po;
       FOR_ALL_PORTALS(po) {
          if (po->prevVisualEnd != 0) {
-            // When lines have been inserted or deleted, adjust the end of
-            // the Visual area to be redrawn.
+            //When lines have been inserted or deleted, adjust the end of
+            //the Visual area to be redrawn.
             if (po->prevVisualEnd > po->oldVisualLnum)
                po->prevVisualEnd += old_line_count;
             else
@@ -11247,27 +11247,27 @@ op_format(Operator* oper, int keep_cursor){ //keep cursor on same text char
    }
 }
 
-// Implementation of the format operator 'gq' for when using 'formatexpr'.
+//Implementation of the format operator 'gq' for when using 'formatexpr'.
 pub void
 op_formatexpr(Operator* oper) {
    if (oper->is_VIsual)
-      // When there is no change: need to remove the Visual selection
+      //When there is no change: need to remove the Visual selection
       drawCurBookLater(UPD_INVERTED);
 
    if (fex_format() != 0)
-      // As documented: when 'formatexpr' returns non-zero fall back to internal formatting.
+      //As documented: when 'formatexpr' returns non-zero fall back to internal formatting.
       op_format(oper, false);
 }
 
 pub int
-fex_format() {  // character to be inserted
+fex_format() {  //character to be inserted
    ScriptPos save_sctx = scriptPosG;
 
-   // Make a copy, the option could be changed while calling it.
+   //Make a copy, the option could be changed while calling it.
    CS fex = copyStr(curBook->o.formatExpr);
    scriptPosG = curBook->o.scriptLocs[PORTAL_foldExpr];
 
-   // Evaluate the function.
+   //Evaluate the function.
    int r = (int)eval_to_number(fex, true);
 
    eeglFree(fex);
@@ -11287,27 +11287,27 @@ pub CS
 copyStr_shellescape(CS string, int do_special, int do_newline) {
    Unt l;
 
-   // First count the number of extra bytes required.
-   Unt length = STRLEN(string) + 3;  // two quotes and a trailing ZERO
+   //First count the number of extra bytes required.
+   Unt length = STRLEN(string) + 3;  //two quotes and a trailing ZERO
    CS p; 
    for (p = string; *p != ZERO; MB_PTR_ADV(p)) {
       if (*p == '\'') {
-         length += 3;      // ' => '\''
+         length += 3;      //' => '\''
       }
       if ((*p == '\n' && do_newline) || (*p == '!' && do_special)) {
-         ++length;         // insert backslash
+         ++length;         //insert backslash
       }
       if (do_special && find_commline_var(p, &l) >= 0) {
-         ++length;         // insert backslash
+         ++length;         //insert backslash
          p += l - 1;
       }
    }
 
-   // Allocate memory for the result and fill it.
+   //Allocate memory for the result and fill it.
    CS escaped_string = alloc(length);
    CS d = escaped_string;
 
-   // add opening quote
+   //add opening quote
    *d++ = '\'';
 
    for (p = string; *p != ZERO; ) {
@@ -11325,8 +11325,8 @@ copyStr_shellescape(CS string, int do_special, int do_newline) {
          continue;
       }
       if (do_special && find_commline_var(p, &l) >= 0) {
-         *d++ = '\\';      // insert backslash
-         memcpy(d, p, l);   // copy the var
+         *d++ = '\\';      //insert backslash
+         memcpy(d, p, l);   //copy the var
          d += l;
          p += l;
          continue;
@@ -11335,7 +11335,7 @@ copyStr_shellescape(CS string, int do_special, int do_newline) {
       MB_COPY_CHAR(p, d);
    }
 
-   // add terminating quote and finish with a ZERO
+   //add terminating quote and finish with a ZERO
       *d++ = '\'';
    *d = ZERO;
 
@@ -11346,8 +11346,8 @@ copyStr_shellescape(CS string, int do_special, int do_newline) {
 //}}}
 //{{{json
 
-// json.c: Encoding and decoding JSON.
-// Follows this standard: https://tools.ietf.org/html/rfc7159.html
+//json.c: Encoding and decoding JSON.
+//Follows this standard: https://tools.ietf.org/html/rfc7159.html
 #define USING_FLOAT_STUFF
 
 private int json_encode_item(ArrayList *gap, Var *val, int copyID, int options);
@@ -11370,7 +11370,7 @@ pub CS
 json_encode(Var* val, int options) {
    ArrayList ga;
 
-   // Store bytes in the growarray.
+   //Store bytes in the growarray.
    ga_init2(&ga, 1, 4000);
    json_encode_gap(&ga, val, options);
    ga_append(&ga, ZERO);
@@ -11412,7 +11412,7 @@ json_encode_lsp_msg(Var* val) {
 
    ArrayList lspga;
    ga_init2(&lspga, 1, 4000);
-   // Header according to LSP specification.
+   //Header according to LSP specification.
    eeSnprintf(IObuff, IOSIZE, (CS)"Content-Length: %u\r\n\r\n", ga.len - 1);
    ga_concat(&lspga, IObuff);
    ga_concat_len(&lspga, ga.c, ga.len);
@@ -11422,14 +11422,14 @@ json_encode_lsp_msg(Var* val) {
 
 //Lookup table to quickly know if the given ASCII character must be escaped.
 private const char ascii_needs_escape[128] = {
-   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x0.
-   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x1.
-   0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x2.
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x3.
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x4.
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, // 0x5.
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x6.
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x7.
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //0x0.
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //0x1.
+   0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x2.
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x3.
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x4.
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, //0x5.
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x6.
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x7.
 };
 
 //Encode the utf-8 encoded string "str" into "gap".
@@ -11442,13 +11442,13 @@ write_string(ArrayList* gap, CS str) {
 
    CS res = str;
    ga_append(gap, '"');
-   // `from` is the beginning of a sequence of bytes we can directly copy from
-   // the input string, avoiding the overhead associated to decoding/encoding them.
+   //`from` is the beginning of a sequence of bytes we can directly copy from
+   //the input string, avoiding the overhead associated to decoding/encoding them.
    CS from = res;
    Byte numbuf[NUMBUFLEN];
    Unt c;
    while ((c = *res) != ZERO) {
-      // always use utf-8 encoding, ignore 'encoding'
+      //always use utf-8 encoding, ignore 'encoding'
       if (c < 0x80) {
          if (!ascii_needs_escape[c]) {
             res += 1;
@@ -11470,8 +11470,8 @@ write_string(ArrayList* gap, CS str) {
             ga_append(gap, '\\'); ga_append(gap, 'f'); break;
          case 0x0d:
             ga_append(gap, '\\'); ga_append(gap, 'r'); break;
-         case 0x22: // "
-         case 0x5c: // backslash
+         case 0x22: //"
+         case 0x5c: //backslash
             ga_append(gap, '\\');
             ga_append(gap, c);
             break;
@@ -11641,7 +11641,7 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
     return OK;
 }
 
-// When "reader" has less than NUMBUFLEN bytes available, call the fill callback to get more.
+//When "reader" has less than NUMBUFLEN bytes available, call the fill callback to get more.
 private void
 fill_numbuflen(JsReader* reader) {
    if (reader->js_fill && (int)(reader->js_end - reader->js_buf) - reader->js_used < NUMBUFLEN
@@ -11650,8 +11650,8 @@ fill_numbuflen(JsReader* reader) {
       reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
 }
 
-// Skip white space in "reader".  All characters <= space are considered whitespace.
-// Also tops up readahead when needed.
+//Skip white space in "reader".  All characters <= space are considered whitespace.
+//Also tops up readahead when needed.
 private void
 json_skip_white(JsReader* reader) {
    for (;;) {
@@ -11679,19 +11679,19 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
    if (res)
       ga_init2(&ga, 1, 200);
 
-   CS p = reader->js_buf + reader->js_used + 1; // skip over " or '
+   CS p = reader->js_buf + reader->js_used + 1; //skip over " or '
    while (*p != quote) {
-      // The JSON is always expected to be utf-8, thus use utf functions
-      // here. The string is converted below if needed.
+      //The JSON is always expected to be utf-8, thus use utf functions
+      //here. The string is converted below if needed.
       if (*p == ZERO || p[1] == ZERO || utf_ptr2len(p) < utf_byte2len(*p)) {
-         // Not enough bytes to make a character or end of the string. Get
-         // more if possible.
+         //Not enough bytes to make a character or end of the string. Get
+         //more if possible.
          if (reader->js_fill == NULL)
             break;
          len = (int)(reader->js_end - p);
          reader->js_used = (int)(p - reader->js_buf);
          if (!reader->js_fill(reader))
-            break; // didn't get more
+            break; //didn't get more
          p = reader->js_buf + reader->js_used;
          reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
          continue;
@@ -11730,7 +11730,7 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
             ) {
                Long   nr2 = 0;
 
-               // decode surrogate pair: \ud812\u3456
+               //decode surrogate pair: \ud812\u3456
                len = 0;
                readLongNumber(p + 2, NULL, &len, STR2NR_HEX + STR2NR_FORCE, &nr2, NULL, 4, true, NULL);
                if (len == 0) {
@@ -11752,7 +11752,7 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
             }
             break;
          default:
-            // not a special char, skip over backslash
+            //not a special char, skip over backslash
             ++p;
             continue;
          }
@@ -11794,21 +11794,21 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
 }
 
 typedef enum {
-   JSON_ARRAY,      // parsing items in an array
-   JSON_OBJECT_KEY,   // parsing key of an object
-   JSON_OBJECT      // parsing item in an object, after the key
+   JSON_ARRAY,      //parsing items in an array
+   JSON_OBJECT_KEY,   //parsing key of an object
+   JSON_OBJECT      //parsing item in an object, after the key
 } JsonDecodeType;
 
 typedef struct {
    JsonDecodeType jd_type;
-   Var jd_tv;   // the list or dict
+   Var jd_tv;   //the list or dict
    Var jd_key_tv;
    CS key;
 } JsonDecodeItem;
 
-// Decode one item and put it in "res".  If "res" is NULL only advance. Must already have skipped 
-// white space. Return FAIL for a decoding error (and give an error). Return MAYBE for an 
-// incomplete message.
+//Decode one item and put it in "res".  If "res" is NULL only advance. Must already have skipped 
+//white space. Return FAIL for a decoding error (and give an error). Return MAYBE for an 
+//incomplete message.
 private int
 json_decode_item(JsReader* reader, Var *res) {
    int i;
@@ -11838,9 +11838,9 @@ json_decode_item(JsReader* reader, Var *res) {
             goto theend;
          }
          if (topJson->jd_type == JSON_OBJECT_KEY || topJson->jd_type == JSON_ARRAY) {
-            // Check for end of object or array.
+            //Check for end of object or array.
             if (*p == (topJson->jd_type == JSON_ARRAY ? ']' : '}')) {
-               ++reader->js_used; // consume the ']' or '}'
+               ++reader->js_used; //consume the ']' or '}'
                --stack.len;
                if (stack.len == 0) {
                   retval = OK;
@@ -11854,7 +11854,7 @@ json_decode_item(JsReader* reader, Var *res) {
       }
 
       switch (*p) {
-      case '[': // start of array
+      case '[': //start of array
          if (topJson && topJson->jd_type == JSON_OBJECT_KEY) {
             retval = FAIL;
             break;
@@ -11867,7 +11867,7 @@ json_decode_item(JsReader* reader, Var *res) {
             allocReturnList(cur_item);
          }
 
-         ++reader->js_used; // consume the '['
+         ++reader->js_used; //consume the '['
          topJson = ((JsonDecodeItem *)stack.c) + stack.len;
          topJson->jd_type = JSON_ARRAY;
          ++stack.len;
@@ -11877,7 +11877,7 @@ json_decode_item(JsReader* reader, Var *res) {
          }
          continue;
 
-      case '{': // start of object
+      case '{': //start of object
          if (topJson && topJson->jd_type == JSON_OBJECT_KEY) {
             retval = FAIL;
             break;
@@ -11890,7 +11890,7 @@ json_decode_item(JsReader* reader, Var *res) {
             allocReturnList(cur_item);
          } 
 
-         ++reader->js_used; // consume the '{'
+         ++reader->js_used; //consume the '{'
          topJson = ((JsonDecodeItem *)stack.c) + stack.len;
          topJson->jd_type = JSON_OBJECT_KEY;
          ++stack.len;
@@ -11900,7 +11900,7 @@ json_decode_item(JsReader* reader, Var *res) {
          }
          continue;
 
-      case '"': // string
+      case '"': //string
          retval = json_decode_string(reader, cur_item, *p);
          break;
 
@@ -11909,12 +11909,12 @@ json_decode_item(JsReader* reader, Var *res) {
          retval = FAIL;
          break;
 
-      case ',': // comma: empty item
+      case ',': //comma: empty item
          showErrFmtMsg(_(e_json_decode_error_at_str), p);
          retval = FAIL;
          break;
-         // FALLTHROUGH
-      case ZERO: // empty
+         //FALLTHROUGH
+      case ZERO: //empty
          if (cur_item) {
             cur_item->tag = VAR_VOID;
             cur_item->number = 0;
@@ -11951,7 +11951,7 @@ json_decode_item(JsReader* reader, Var *res) {
                Long nr;
 
                readLongNumber(reader->js_buf + reader->js_used,
-                   NULL, &len, 0, // what
+                   NULL, &len, 0, //what
                    &nr, NULL, 0, true, NULL
                );
                if (len == 0) {
@@ -12022,7 +12022,7 @@ json_decode_item(JsReader* reader, Var *res) {
             retval = OK;
             break;
          }
-         // check for truncated name
+         //check for truncated name
          len = (int)(reader->js_end - (reader->js_buf + reader->js_used));
          if (
              (len < 5 && STRNICMP(p, "false", len) == 0)
@@ -12037,7 +12037,7 @@ json_decode_item(JsReader* reader, Var *res) {
          break;
       }
 
-      // We are finished when retval is FAIL or MAYBE and when at the toplevel.
+      //We are finished when retval is FAIL or MAYBE and when at the toplevel.
       if (retval == FAIL)
          break;
       if (retval == MAYBE || stack.len == 0)
@@ -12045,7 +12045,7 @@ json_decode_item(JsReader* reader, Var *res) {
 
       if (topJson && topJson->jd_type == JSON_OBJECT_KEY && cur_item != NULL) {
          if (cur_item->tag == VAR_FLOAT) {
-            // cannot use a float as a key
+            //cannot use a float as a key
             emsg(_(e_using_float_as_string));
             retval = FAIL;
             goto theend;
@@ -12163,11 +12163,11 @@ theend:
    return retval;
 }
 
-// Decode the JSON from "reader" and store the result in "res".
-// Return FAIL if not the whole message was consumed.
+//Decode the JSON from "reader" and store the result in "res".
+//Return FAIL if not the whole message was consumed.
 private int
 json_decode_all(OUT Var* res, JsReader* reader) {
-   // We find the end once, to avoid calling strlen() many times.
+   //We find the end once, to avoid calling strlen() many times.
    reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
    json_skip_white(reader);
    int ret = json_decode_item(reader, res);
@@ -12184,12 +12184,12 @@ json_decode_all(OUT Var* res, JsReader* reader) {
    return OK;
 }
 
-// Decode the JSON from "reader" and store the result in "res".
-// Return FAIL for a decoding error. Return MAYBE for an incomplete message. Consume the message 
-// anyway.
+//Decode the JSON from "reader" and store the result in "res".
+//Return FAIL for a decoding error. Return MAYBE for an incomplete message. Consume the message 
+//anyway.
 pub int
 json_decode(OUT Var* res, JsReader* reader) {
-   // We find the end once, to avoid calling strlen() many times.
+   //We find the end once, to avoid calling strlen() many times.
    reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
    json_skip_white(reader);
    int ret = json_decode_item(reader, res);
@@ -12198,17 +12198,17 @@ json_decode(OUT Var* res, JsReader* reader) {
    return ret;
 }
 
-// Decode the JSON from "reader" to find the end of the message. "options" can be JSON_JS or zero.
-// This is only used for testing. Return FAIL if the message has a decoding error.
-// Return MAYBE if the message is truncated, need to read more. This only works reliable if the 
-// message contains an object, array or string. A number might be truncated without knowing. Does 
-// not advance the reader.
+//Decode the JSON from "reader" to find the end of the message. "options" can be JSON_JS or zero.
+//This is only used for testing. Return FAIL if the message has a decoding error.
+//Return MAYBE if the message is truncated, need to read more. This only works reliable if the 
+//message contains an object, array or string. A number might be truncated without knowing. Does 
+//not advance the reader.
 pub int
 json_find_end(JsReader* reader) {
    int used_save = reader->js_used;
    int ret;
 
-   // We find the end once, to avoid calling strlen() many times.
+   //We find the end once, to avoid calling strlen() many times.
    reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
    json_skip_white(reader);
    ret = json_decode_item(reader, NULL);
@@ -12301,7 +12301,7 @@ mem_pre_free(void **pp) {
    num_freed++;
 }
 
-// called on exit via atexit()
+//called on exit via atexit()
 pub void
 eeMemProfileDump(void) {
    int i, j;
@@ -12336,7 +12336,7 @@ eeMemProfileDump(void) {
        num_alloc, num_freed);
 }
 
-#endif // MEM_PROFILE
+#endif //MEM_PROFILE
 
 pub int
 alloc_does_fail(Unt size) {
@@ -12350,8 +12350,8 @@ alloc_does_fail(Unt size) {
    return false;
 }
 
-// Some memory is reserved for error messages and for being able to
-// call mf_release_all(), which needs some memory for mf_trans_add().
+//Some memory is reserved for error messages and for being able to
+//call mf_release_all(), which needs some memory for mf_trans_add().
 #define KEEP_ROOM (2 * 8192L)
 #define KEEP_ROOM_KB (KEEP_ROOM / 1024L)
 
@@ -12366,7 +12366,7 @@ alloc(Unt size) {
 //Try to make a big allocation. Quietly return null if unsucessful.
 pub void*
 tryBigAlloc(Unt size) {
-   static int releasing = false;  // don't do mf_release_all() recursive
+   static int releasing = false;  //don't do mf_release_all() recursive
 
 #ifdef MEM_PROFILE
    //Safety check for allocating zero bytes
@@ -12382,10 +12382,10 @@ tryBigAlloc(Unt size) {
 
    //Loop when out of memory: Try to release some memfile blocks and
    //if some blocks are released call malloc again.
-   void   *p;          // pointer to new storage space
+   void   *p;          //pointer to new storage space
    for (;;) {
       if ((p = malloc(size)) != NULL) {
-         // 1. No check for available memory: Just return.
+         //1. No check for available memory: Just return.
          goto success;
       }
       //Remember that mf_release_all() is being called to avoid an endless
@@ -12394,8 +12394,8 @@ tryBigAlloc(Unt size) {
          break;
       releasing = true;
 
-      clear_sb_text(true);         // free any scrollback text
-      int try_again = mf_release_all(); // release as many blocks as possible
+      clear_sb_text(true);         //free any scrollback text
+      int try_again = mf_release_all(); //release as many blocks as possible
 
       releasing = false;
       if (!try_again)
@@ -12409,7 +12409,7 @@ success:
    return p;
 }
 
-// alloc() with an ID for alloc_fail().
+//alloc() with an ID for alloc_fail().
 pub void *
 alloc_id(Unt size, AllocId id) {
    if (alloc_fail_id == id && alloc_does_fail(size))
@@ -12417,7 +12417,7 @@ alloc_id(Unt size, AllocId id) {
    return lalloc(size, true);
 }
 
-// Allocate memory and set all bytes to zero.
+//Allocate memory and set all bytes to zero.
 pub void *
 allocZeroed(Unt size) {
    void* p = lalloc(size, true);
@@ -12425,7 +12425,7 @@ allocZeroed(Unt size) {
    return p;
 }
 
-// Same as allocZeroed() but with allocation id for testing
+//Same as allocZeroed() but with allocation id for testing
 pub void *
 allocZeroed_id(Unt size, AllocId id) {
    if (alloc_fail_id == id && alloc_does_fail(size))
@@ -12433,7 +12433,7 @@ allocZeroed_id(Unt size, AllocId id) {
    return allocZeroed(size);
 }
 
-// Allocate memory like lalloc() and set all bytes to zero.
+//Allocate memory like lalloc() and set all bytes to zero.
 pub void *
 lallocZeroed(Unt size, Boole message){
    void* p = lalloc(size, message);
@@ -12442,15 +12442,15 @@ lallocZeroed(Unt size, Boole message){
    return p;
 }
 
-// Low-level memory allocation function. This is used often, KEEP IT FAST!
+//Low-level memory allocation function. This is used often, KEEP IT FAST!
 pub void *
 lalloc(Unt size, Boole message) {
-   static int   releasing = false;  // don't do mf_release_all() recursive
+   static int   releasing = false;  //don't do mf_release_all() recursive
 
 #ifdef MEM_PROFILE
-   // Safety check for allocating zero bytes
+   //Safety check for allocating zero bytes
    if (size == 0) {
-      // Don't hide this message
+      //Don't hide this message
       emsg_silent = 0;
       internalErrMsg(e_internal_error_lalloc_zero);
       return NULL;
@@ -12461,10 +12461,10 @@ lalloc(Unt size, Boole message) {
 
    //Loop when out of memory: Try to release some memfile blocks and
    //if some blocks are released call malloc again.
-   void* p;          // pointer to new storage space
+   void* p;          //pointer to new storage space
    for (;;) {
       if ((p = malloc(size)) != NULL) {
-         // 1. No check for available memory: Just return.
+         //1. No check for available memory: Just return.
          goto success;
       }
       //Remember that mf_release_all() is being called to avoid an endless
@@ -12473,8 +12473,8 @@ lalloc(Unt size, Boole message) {
           break;
       releasing = true;
 
-      clear_sb_text(true);         // free any scrollback text
-      int try_again = mf_release_all(); // release as many blocks as possible
+      clear_sb_text(true);         //free any scrollback text
+      int try_again = mf_release_all(); //release as many blocks as possible
 
       releasing = false;
       if (!try_again)
@@ -12492,7 +12492,7 @@ success:
    return p;
 }
 
-// lalloc() with an ID for alloc_fail().
+//lalloc() with an ID for alloc_fail().
 pub void *
 lalloc_id(Unt size, int message, AllocId id) {
    if (alloc_fail_id == id && alloc_does_fail(size))
@@ -12502,7 +12502,7 @@ lalloc_id(Unt size, int message, AllocId id) {
 
 #if defined(MEM_PROFILE)
 
-// realloc() with memory profiling.
+//realloc() with memory profiling.
 pub void *
 memReallocWithProfiling(void *ptr, Unt size) {
    void *p;
@@ -12556,33 +12556,33 @@ free_all_mem(void) {
       return;
       
    entered_free_all_mem = true;
-   // Don't want to trigger autocommands from here on.
+   //Don't want to trigger autocommands from here on.
    block_autocmds();
 
-   // Close all tabs and portals. Reset 'equalalways' to avoid redraws.
+   //Close all tabs and portals. Reset 'equalalways' to avoid redraws.
    p_ea = false;
    if (firstTabG != NULL && firstTabG->next != NULL)
       executeCommLine(S"tabonly!");
    if (!ONLY_ONE_PORTAL)
       executeCommLine(S"only!");
 
-   // Free all spell info.
+   //Free all spell info.
    spell_free_all();
 
    ui_remove_balloon();
    if (curPor)
       close_all_popups(true);
 
-   // Clear user commands (before deleting books).
+   //Clear user commands (before deleting books).
    ex_comclear(NULL);
 
-   // When exiting from mainerr_arg_missing curBook has not been initialized, and not much else
+   //When exiting from mainerr_arg_missing curBook has not been initialized, and not much else
    if (curBook) {
-      // Clear menus.
+      //Clear menus.
       executeCommLine(S"aunmenu *");
       executeCommLine(S"tlunmenu *");
       executeCommLine(S"menutranslate clear");
-      // Clear mappings, abbreviations, breakpoints.
+      //Clear mappings, abbreviations, breakpoints.
       executeCommLine(S"lmapclear");
       executeCommLine(S"xmapclear");
       executeCommLine(S"mapclear");
@@ -12593,7 +12593,7 @@ free_all_mem(void) {
 
    free_findfile();
 
-   // Obviously named calls.
+   //Obviously named calls.
    free_all_autocmds();
    clear_termcodes();
    free_all_marks();
@@ -12613,22 +12613,22 @@ free_all_mem(void) {
    set_expr_line(NULL, NULL);
    if (curtab)
       diff_clear(curtab);
-   clear_sb_text(true);         // free any scrollback text
+   clear_sb_text(true);         //free any scrollback text
 
-   // Free some global vars.
+   //Free some global vars.
    eeglFree(username);
    eeglFree(lastCommlineG);
    eeglFree(newLastCommlineG);
    set_keep_msg(NULL, 0);
 
-   // Clear commline history.
+   //Clear commline history.
    p_hi = 0;
    init_history();
    clear_global_prop_types();
 
    free_quickfix();
 
-   // Close all script inputs.
+   //Close all script inputs.
    close_all_scripts();
 
    if (curPor)
@@ -12646,17 +12646,17 @@ free_all_mem(void) {
       Book* nextBook = book->next;
       bookClose(NULL, book, DOBUF_WIPE, false, false);
       if (bookRefValid(&bufref))
-         book = nextBook;   // didn't work, try next one
+         book = nextBook;   //didn't work, try next one
       else
          book = firstBook;
    }
 
-   // Clear registers.
+   //Clear registers.
    clear_registers();
    ResetRedobuff();
    ResetRedobuff();
 
-   // hilite info
+   //hilite info
    freeHilites();
 
    reset_last_sourcing();
@@ -12666,10 +12666,10 @@ free_all_mem(void) {
       firstTabG = NULL;
    }
 
-   // Machine-specific free.
+   //Machine-specific free.
    mch_free_mem();
 
-   // message history
+   //message history
    for (;;) {
       if (delete_first_msg() == FAIL)
           break;
@@ -12677,15 +12677,15 @@ free_all_mem(void) {
 
    channel_free_all();
    timer_free_all();
-   // must be after channel_free_all() with unrefs partials
+   //must be after channel_free_all() with unrefs partials
    eval_clear();
-   // must be after eval_clear() with unrefs jobs
+   //must be after eval_clear() with unrefs jobs
    job_free_all();
 
    free_termoptions();
    free_cur_term();
 
-   // screenlines (can't display anything now!)
+   //screenlines (can't display anything now!)
    free_screenlines();
 
    clear_hl_tables();
@@ -12698,7 +12698,7 @@ free_all_mem(void) {
 }
 #endif
 
-// Copy "p[len]" into allocated memory, ignoring ZERO characters.
+//Copy "p[len]" into allocated memory, ignoring ZERO characters.
 pub CS
 eeMemsave(Byte *p, Unt len) {
    Byte *ret = alloc(len);
@@ -12737,7 +12737,7 @@ mch_free_mem(void){
 }
 #endif
 
-// Copy full dir name to an allocation outside the arena & glue a file name to its end.
+//Copy full dir name to an allocation outside the arena & glue a file name to its end.
 pub CS
 toFullFileName(Text fileName, DirName* dn) {
    CS theString = alloc(dn->len + fileName.len + 1);
@@ -12750,53 +12750,53 @@ toFullFileName(Text fileName, DirName* dn) {
 //}}}
 //{{{garbage collection of variables
 
-// structure used for explicit stack while garbage collecting hash tables
+//structure used for explicit stack while garbage collecting hash tables
 struct HtStack {
    EeSet* ht;
    HtStack* prev;
 };
 
-// structure used for explicit stack while garbage collecting lists
+//structure used for explicit stack while garbage collecting lists
 struct ListStack{
    List* list;
    ListStack* prev;
 };
 
-// When recursively copying lists and dicts we need to remember which ones we
-// have done to avoid endless recursiveness.  This unique ID is used for that.
-// The last bit is used for previous_funccal, ignored when comparing.
+//When recursively copying lists and dicts we need to remember which ones we
+//have done to avoid endless recursiveness.  This unique ID is used for that.
+//The last bit is used for previous_funccal, ignored when comparing.
 private int current_copyID = 0;
 
 private int free_unref_items(int copyID);
 
-// Return the next (unique) copy ID. Used for serializing nested structures.
+//Return the next (unique) copy ID. Used for serializing nested structures.
 pub int
 get_copyID(void) {
    current_copyID += COPYID_INC;
    return current_copyID;
 }
 
-// Garbage collection for lists and dictionaries.
+//Garbage collection for lists and dictionaries.
 //
-// We use reference counts to be able to free most items right away when they
-// are no longer used.  But for composite items it's possible that it becomes
-// unused while the reference count is > 0: When there is a recursive
-// reference.  Example:
-//   :let l = [1, 2, 3]
-//   :let d = {9: l}
-//   :let l[1] = d
+//We use reference counts to be able to free most items right away when they
+//are no longer used.  But for composite items it's possible that it becomes
+//unused while the reference count is > 0: When there is a recursive
+//reference.  Example:
+//  :let l = [1, 2, 3]
+//  :let d = {9: l}
+//  :let l[1] = d
 //
-// Since this is quite unusual we handle this with garbage collection: every
-// once in a while find out which lists and dicts are not referenced from any
-// variable.
+//Since this is quite unusual we handle this with garbage collection: every
+//once in a while find out which lists and dicts are not referenced from any
+//variable.
 //
-// Here is a good reference text about garbage collection (refers to Python
-// but it applies to all reference-counting mechanisms):
-//   http://python.ca/nas/python/gc/
+//Here is a good reference text about garbage collection (refers to Python
+//but it applies to all reference-counting mechanisms):
+//  http://python.ca/nas/python/gc/
 
-// Perform garbage collection for lists and dicts.
-// When "testing" is true this is called from test_garbagecollect_now().
-// Return true if some memory was freed.
+//Perform garbage collection for lists and dicts.
+//When "testing" is true this is called from test_garbagecollect_now().
+//Return true if some memory was freed.
 pub int
 garbage_collect(int testing) {
    int copyID;
@@ -12807,23 +12807,23 @@ garbage_collect(int testing) {
    Tab* tab;
 
    if (!testing) {
-      // Only do this once.
+      //Only do this once.
       want_garbage_collect = false;
       may_garbage_collect = false;
       garbage_collect_at_exit = false;
    }
 
-   // The execution stack can grow big, limit the size.
+   //The execution stack can grow big, limit the size.
    if (exestack.cap - exestack.len > 500) {
       Unt new_len;
       Byte* pp;
 
-      // Keep 150% of the current size, with a minimum of the growth size.
+      //Keep 150% of the current size, with a minimum of the growth size.
       int n = exestack.len / 2;
       if (n < exestack.ga_growsize)
          n = exestack.ga_growsize;
 
-      // Don't make it bigger though.
+      //Don't make it bigger though.
       if (exestack.len + n < exestack.cap) {
          new_len = (Unt)exestack.ga_itemsize * (exestack.len + n);
          pp = eeRealloc(exestack.c, new_len);
@@ -12832,7 +12832,7 @@ garbage_collect(int testing) {
       }
    }
 
-   // We advance by two because we add one for items referenced through previous_funccal.
+   //We advance by two because we add one for items referenced through previous_funccal.
    copyID = get_copyID();
 
    //1. Go through all accessible variables and mark all lists and dicts with copyID.
@@ -12865,30 +12865,30 @@ garbage_collect(int testing) {
          abort = abort || set_ref_in_item(&wp->wVar.c, copyID, NULL, NULL);
    } 
 
-   // tab-local variables
+   //tab-local variables
    FOR_ALL_TABS(tab) {
       abort = abort || set_ref_in_item(&tab->tabVar.c, copyID, NULL, NULL);
    }
-   // global variables
+   //global variables
    abort = abort || garbage_collect_globvars(copyID)
-      // function-local variables
+      //function-local variables
       || set_ref_in_call_stack(copyID)
-      // named functions (matters for closures)
+      //named functions (matters for closures)
       || set_ref_in_functions(copyID)
-      // function call arguments, if v:testing is set.
+      //function call arguments, if v:testing is set.
       || set_ref_in_func_args(copyID);
 
-    // v: vars
+    //v: vars
     abort = abort 
-      // callbacks in books
+      //callbacks in books
       || setRefInBooks(copyID)
-      // @completefunc, @omnifunc and @thesaurusfunc callbacks
+      //@completefunc, @omnifunc and @thesaurusfunc callbacks
       || set_ref_in_insexpand_funcs(copyID)
-      // @operatorfunc callback
+      //@operatorfunc callback
       || set_ref_in_opfunc(copyID)
-      // @tagfunc callback
+      //@tagfunc callback
       || set_ref_in_tagfunc(copyID)
-      // @findfunc callback
+      //@findfunc callback
       || set_ref_in_findfunc(copyID);
 
     abort = abort 
@@ -12900,10 +12900,10 @@ garbage_collect(int testing) {
       || set_ref_in_popups(copyID);
 
    if (!abort) {
-      // 2. Free lists and dictionaries that are not referenced.
+      //2. Free lists and dictionaries that are not referenced.
       did_free = free_unref_items(copyID);
 
-      // 3. Check if any funccal can be freed now. This may call us back recursively.
+      //3. Check if any funccal can be freed now. This may call us back recursively.
       free_unref_funccal(copyID, testing);
    } ei (p_verbose > 0) {
       verb_msg(_("Not enough memory to set references, garbage collection aborted!"));
@@ -12912,41 +12912,41 @@ garbage_collect(int testing) {
    return did_free;
 }
 
-// Free lists, dictionaries, channels and jobs that are no longer referenced.
+//Free lists, dictionaries, channels and jobs that are no longer referenced.
 private int
 free_unref_items(int copyID) {
 
-   // Let all "free" functions know that we are here.  This means no
-   // dictionaries, lists, channels or jobs are to be freed, because we will do that here.
+   //Let all "free" functions know that we are here.  This means no
+   //dictionaries, lists, channels or jobs are to be freed, because we will do that here.
    in_free_unref_items = true;
 
-   // PASS 1: free the contents of the items.  We don't free the items
-   // themselves yet, so that it is possible to decrement refcount counters
+   //PASS 1: free the contents of the items.  We don't free the items
+   //themselves yet, so that it is possible to decrement refcount counters
 
-   // Go through the list of dicts and free items without this copyID.
+   //Go through the list of dicts and free items without this copyID.
    int did_free = dict_free_nonref(copyID);
 
-   // Go through the list of lists and free items without this copyID.
+   //Go through the list of lists and free items without this copyID.
    did_free |= list_free_nonref(copyID);
 
-   // Go through the list of jobs and free items without the copyID. This
-   // must happen before doing channels, because jobs refer to channels, but
-   // the reference from the channel to the job isn't tracked.
+   //Go through the list of jobs and free items without the copyID. This
+   //must happen before doing channels, because jobs refer to channels, but
+   //the reference from the channel to the job isn't tracked.
    did_free |= free_unused_jobs_contents(copyID, COPYID_MASK);
 
-   // Go through the list of channels and free items without the copyID.
+   //Go through the list of channels and free items without the copyID.
    did_free |= free_unused_channels_contents(copyID, COPYID_MASK);
 
-   // PASS 2: free the items themselves.
+   //PASS 2: free the items themselves.
    dict_free_items(copyID);
    list_free_items(copyID);
 
-   // Go through the list of jobs and free items without the copyID. This
-   // must happen before doing channels, because jobs refer to channels, but
-   // the reference from the channel to the job isn't tracked.
+   //Go through the list of jobs and free items without the copyID. This
+   //must happen before doing channels, because jobs refer to channels, but
+   //the reference from the channel to the job isn't tracked.
    free_unused_jobs(copyID, COPYID_MASK);
 
-   // Go through the list of channels and free items without the copyID.
+   //Go through the list of channels and free items without the copyID.
    free_unused_channels(copyID, COPYID_MASK);
 
    in_free_unref_items = false;
@@ -12970,8 +12970,8 @@ setRefInSet(EeSet* eeset, int copyID, ListStack** list_stack) {
    cur_ht = eeset;
    for (;;) {
       if (!abort) {
-         // Mark each item in the hashtab.  If the item contains a hashtab
-         // it is added to ht_stack, if it contains a list it is added to list_stack.
+         //Mark each item in the hashtab.  If the item contains a hashtab
+         //it is added to ht_stack, if it contains a list it is added to list_stack.
          todo = (int)cur_ht->count;
          FOR_ALL_HASHTAB_ITEMS(cur_ht, hi, todo) {
             if (!HASHITEM_EMPTY(hi)) {
@@ -12984,7 +12984,7 @@ setRefInSet(EeSet* eeset, int copyID, ListStack** list_stack) {
       if (ht_stack == NULL)
          break;
 
-      // take an item from the stack
+      //take an item from the stack
       cur_ht = ht_stack->ht;
       tempitem = ht_stack;
       ht_stack = ht_stack->prev;
@@ -12994,7 +12994,7 @@ setRefInSet(EeSet* eeset, int copyID, ListStack** list_stack) {
    return abort;
 }
 
-// Mark a list and its items with "copyID". Return true if setting references failed somehow.
+//Mark a list and its items with "copyID". Return true if setting references failed somehow.
 pub int
 set_ref_in_list(List *ll, int copyID) {
    if (ll && ll->copyId != copyID) {
@@ -13019,14 +13019,14 @@ set_ref_in_list_items(List* l, int copyID, HtStack** ht_stack) {
    cur_l = l;
    for (;;) {
       if (!abort && cur_l->first != &range_list_item)
-         // Mark each item in the list.  If the item contains a hashtab
-         // it is added to ht_stack, if it contains a list it is added to list_stack.
+         //Mark each item in the list.  If the item contains a hashtab
+         //it is added to ht_stack, if it contains a list it is added to list_stack.
          for (li = cur_l->first; !abort && li != NULL; li = li->next)
             abort = abort || set_ref_in_item(&li->c, copyID, ht_stack, &list_stack);
       if (list_stack == NULL)
          break;
 
-      // take an item from the stack
+      //take an item from the stack
       cur_l = list_stack->list;
       tempitem = list_stack;
       list_stack = list_stack->prev;
@@ -13036,7 +13036,7 @@ set_ref_in_list_items(List* l, int copyID, HtStack** ht_stack) {
    return abort;
 }
 
-// Mark the partial in callback 'cb' with "copyID".
+//Mark the partial in callback 'cb' with "copyID".
 pub Boole
 memSetRefInCallback(Callback* cb, int copyID) {
    if (!cb || !cb->name || *cb->name == ZERO || cb->cb_partial == NULL)
@@ -13048,7 +13048,7 @@ memSetRefInCallback(Callback* cb, int copyID) {
    return set_ref_in_item(&tv, copyID, NULL, NULL);
 }
 
-// Mark the dict "dd" with "copyID". Also see set_ref_in_item().
+//Mark the dict "dd" with "copyID". Also see set_ref_in_item().
 private Boole
 set_ref_in_item_dict(
    Bag* bag,
@@ -13059,7 +13059,7 @@ set_ref_in_item_dict(
    if (!bag || bag->copyId == copyID)
       return false;
 
-   // Didn't see this bag yet.
+   //Didn't see this bag yet.
    bag->copyId = copyID;
    if (!ht_stack)
       return setRefInSet(&bag->hashTable, copyID, list_stack);
@@ -13072,7 +13072,7 @@ set_ref_in_item_dict(
    return false;
 }
 
-// Mark the list "ll" with "copyID". Also see set_ref_in_item().
+//Mark the list "ll" with "copyID". Also see set_ref_in_item().
 private Boole
 set_ref_in_item_list(
    OUT List* ll,
@@ -13083,7 +13083,7 @@ set_ref_in_item_list(
    if (!ll || ll->copyId == copyID)
       return false;
 
-   // Didn't see this list yet.
+   //Didn't see this list yet.
    ll->copyId = copyID;
    if (!list_stack)
       return set_ref_in_list_items(ll, copyID, ht_stack);
@@ -13099,7 +13099,7 @@ set_ref_in_item_list(
    return false;
 }
 
-// Mark the partial "pt" with "copyID". Also see set_ref_in_item().
+//Mark the partial "pt" with "copyID". Also see set_ref_in_item().
 private Boole
 set_ref_in_item_partial(
    PartiallyApplied* pt,
@@ -13126,7 +13126,7 @@ set_ref_in_item_partial(
    return abort;
 }
 
-// Mark the job "pt" with "copyID". Also see set_ref_in_item().
+//Mark the job "pt" with "copyID". Also see set_ref_in_item().
 private Boole
 set_ref_in_item_job(Job* job, int copyID, HtStack** ht_stack, ListStack** list_stack) {
    if (!job || chJobGetCopyId(job) == copyID)
@@ -13148,7 +13148,7 @@ set_ref_in_item_job(Job* job, int copyID, HtStack** ht_stack, ListStack** list_s
    return false;
 }
 
-// Mark the channel "ch" with "copyID". Also see set_ref_in_item().
+//Mark the channel "ch" with "copyID". Also see set_ref_in_item().
 private Boole
 set_ref_in_item_channel(Channel* ch, int copyID, HtStack** ht_stack, ListStack** list_stack) {
    Var    dtv;
@@ -13186,11 +13186,11 @@ set_ref_in_item_channel(Channel* ch, int copyID, HtStack** ht_stack, ListStack**
    return false;
 }
 
-// Mark all lists, dicts and other container types referenced through Var "tv" with "copyID".
-// "list_stack" is used to add lists to be marked. May be NULL.
-// "ht_stack" is used to add hashtabs to be marked. May be NULL.
+//Mark all lists, dicts and other container types referenced through Var "tv" with "copyID".
+//"list_stack" is used to add lists to be marked. May be NULL.
+//"ht_stack" is used to add hashtabs to be marked. May be NULL.
 //
-// Return true if setting references failed somehow.
+//Return true if setting references failed somehow.
 pub int
 set_ref_in_item(Var* tv, int copyID, HtStack** ht_stack, ListStack** list_stack){
    Boole abort = false;
@@ -13217,7 +13217,7 @@ set_ref_in_item(Var* tv, int copyID, HtStack** ht_stack, ListStack** list_stack)
    case VAR_FLOAT:
    case VAR_STRING:
    case VAR_BLOB:
-       // Types that do not contain any other item
+       //Types that do not contain any other item
        break;
    }
 

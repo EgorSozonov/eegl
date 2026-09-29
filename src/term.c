@@ -50,20 +50,20 @@ private CS TC_CURSOR_DEFAULT_SHAPE = S"\033[0 q";
 //
 //Entries marked with "guessed" may be wrong.
 typedef struct {
-   CS value; // value
-   Unt c;   // either a KS_xxx code (>= 0), or a K_xxx code.
+   CS value; //value
+   Unt c;   //either a KS_xxx code (>= 0), or a K_xxx code.
 } TinfoEntry;
 
 typedef enum {
-   STATUS_GET,    // send request when switching to RAW mode
-   STATUS_SENT,   // did send request, checking for response
-   STATUS_GOT,    // received response
-   STATUS_FAIL    // timed out
+   STATUS_GET,    //send request when switching to RAW mode
+   STATUS_SENT,   //did send request, checking for response
+   STATUS_GOT,    //received response
+   STATUS_FAIL    //timed out
 } RequestProgress;
 
 typedef struct {
    RequestProgress progress;
-   Tyme start;   // when request was sent, -1 for never
+   Tyme start;   //when request was sent, -1 for never
 } TermRequest;
 
 //}}}
@@ -160,14 +160,7 @@ private void initmaster(int f);
 //}}}
 //{{{terminal state:
 
-//A few Linux systems define outfuntype in termcap.h to be used as the third
-//argument for tputs().
-# ifdef HAVE_OUTFUNTYPE
-#define TPUTSFUNCAST (outfuntype)
-# else
 #define TPUTSFUNCAST (int (*)(int))
-# endif
-
 
 //Size of the buffer used for tgetent().  Unfortunately this is largely
 //undocumented, some systems use 1024.  Using a buffer that is too small
@@ -175,7 +168,7 @@ private void initmaster(int f);
 //on the safe side.
 #define TBUFSZ 2048      //buffer size for termcap entry
 
-// start of keys that are not directly used by Eegl but can be mapped
+//start of keys that are not directly used by Eegl but can be mapped
 #define BT_EXTRA_KEYS   0x101
 
 private void gatherTermLeaders(void);
@@ -187,7 +180,7 @@ private Unt find_term_bykeys(CS src);
 private void accept_modifiers_for_function_keys(void);
 private Unt may_remove_shift_modifier(Unt modifiers, Unt key);
 
-#if 0  // Change to 1 to enable ch_log() calls for termresponse debugging.
+#if 0  //Change to 1 to enable ch_log() calls for termresponse debugging.
 # define DEBUG_TERMRESPONSE
 # define LOG_TR1(str) \
       lo("TermResp: %s " str, \
@@ -206,19 +199,19 @@ private CS invoke_tgetent(CS , CS );
 
 #define TERMREQUEST_INIT {STATUS_GET, -1}
 
-// Request Cursor position report:
+//Request Cursor position report:
 private TermRequest u7_status = TERMREQUEST_INIT;
 
-// Request xterm compatibility check:
+//Request xterm compatibility check:
 private TermRequest xcc_status = TERMREQUEST_INIT;
 
-// Request cursor blinking mode report:
+//Request cursor blinking mode report:
 private TermRequest cursorBlinkingRequestS = TERMREQUEST_INIT;
 
-// Request cursor style report:
+//Request cursor style report:
 private TermRequest cursorStyleRequestS = TERMREQUEST_INIT;
 
-// Request window's position report:
+//Request window's position report:
 private TermRequest winPositionRequestS = TERMREQUEST_INIT;
 
 private TermRequest* requestsP[] = {
@@ -237,12 +230,12 @@ private TermRequest* requestsP[] = {
 //OK    -> can write t_8u
 private int write_t_8u_state = false;
 
-pub extern char *UP, *BC, PC; // in termcap.h
+pub extern char *UP, *BC, PC; //in termcap.h
 
 # define TGETENT(b, t)   tgetent((char *)(b), (char *)(t))
 private CS eeTgetstr(CS s, Byte **pp);
 
-private int focus_state = MAYBE; // true if the Eegl window has focus
+private int focus_state = MAYBE; //true if the Eegl window has focus
 
 //When the cursor shape was detected these values are used:
 //1: block, 2: underline, 3: vertical bar
@@ -262,7 +255,7 @@ private int initial_cursor_blink = false;
 //default settings.
 //private CS resetDecorationsCode = S"\033[0m";
 
-// Additions for using the Kitty keyboard protocol.
+//Additions for using the Kitty keyboard protocol.
 private TinfoEntry builtin_kitty[] = {SMAP1((CS),
    "\033[=1;1u", KS_CTI, //t_TI enables the kitty keyboard protocol.
    "\033[?u", KS_CRK,    //t_RK requests the kitty keyboard protocol state
@@ -273,7 +266,7 @@ private TinfoEntry builtin_kitty[] = {SMAP1((CS),
 private TinfoEntry special_term[] = {
    //These are printf strings, not terminal codes.
    {S"\033[%dm", (Unt)KS_CF},
-   {null, (Unt)KS_NAME}  // end marker
+   {null, (Unt)KS_NAME}  //end marker
 };
 
 //Return true if "name" looks like some xterm name.
@@ -303,7 +296,7 @@ isEeglXterm(CS name) {
 //with the bytes C<1A 01>) and the newer "wide integer" format (starting with the bytes C<1E 02>).
 
 
-// The terminfo file format (as used by ncurses)
+//The terminfo file format (as used by ncurses)
 //In the following description, these data type representations are assumed:
 //Byte, bool, 16-bit integer in little-endian format, C ASCII strings.
 
@@ -330,8 +323,8 @@ isEeglXterm(CS name) {
 //description. The middle parts should be other names for the terminal. All parts except for the 
 //last should contain lowercase letters only.
 
-// The bool section
-// The bool section consists of I<BOOL_COUNT> bytes, each representing a boolean value.
+//The bool section
+//The bool section consists of I<BOOL_COUNT> bytes, each representing a boolean value.
 
 //Interlude: padding
 //If NAME_SIZE + BOOL_COUNT is not an even number, a padding byte is inserted here.
@@ -363,13 +356,13 @@ isEeglXterm(CS name) {
 //The extended header consists of possibly a padding byte and 5 ints.
 
 //Interlude: padding
-// If the standard part of the file contains an odd number of bytes, a padding
+//If the standard part of the file contains an odd number of bytes, a padding
 //byte is inserted here.
 
 //EXT_BOOL_COUNT The number of entries in the extended bool section.
 //EXT_NUM_COUNT The number of entries in the extended num section.
 //EXT_STRING_COUNT The number of entries in the extended string section.
-// EXT_OFFSET_COUNT The number of entries in the string table.
+//EXT_OFFSET_COUNT The number of entries in the string table.
 //NB: The ncurses code for writing terminfo files calculates this as
 //EXT_BOOL_COUNT + EXT_NUM_COUNT + EXT_STRING_COUNT + EXT_STRING_COUNT (one entry for each 
 //capability name plus one entry for each string value). The ncurses code for reading terminfo 
@@ -412,348 +405,348 @@ isEeglXterm(CS name) {
 //#define MAGIC_32BIT 01036
 //
 //struct RawTerminfo {
-//   char* name;
-//   char** aliases;
+//  char* name;
+//  char** aliases;
 //
-//   unsigned char bools[NCONTAINERS(unibi_boolean_end_ - unibi_boolean_begin_ - 1, CHAR_BIT)];
-//   int nums[unibi_numeric_end_ - unibi_numeric_begin_ - 1];
-//   char *strs[unibi_string_end_ - unibi_string_begin_ - 1];
-//   char *alloc;
+//  unsigned char bools[NCONTAINERS(unibi_boolean_end_ - unibi_boolean_begin_ - 1, CHAR_BIT)];
+//  int nums[unibi_numeric_end_ - unibi_numeric_begin_ - 1];
+//  char *strs[unibi_string_end_ - unibi_string_begin_ - 1];
+//  char *alloc;
 //
-//   DYNARR_T(bool) ext_bools;
-//   DYNARR_T(num) ext_nums;
-//   DYNARR_T(str) ext_strs;
-//   DYNARR_T(str) ext_names;
-//   char *ext_alloc;
+//  DYNARR_T(bool) ext_bools;
+//  DYNARR_T(num) ext_nums;
+//  DYNARR_T(str) ext_strs;
+//  DYNARR_T(str) ext_names;
+//  char *ext_alloc;
 //};
 //
 //private Short 
 //get_ushort16(char *p) {
-//   unsigned char *q = (unsigned char *)p;
-//   return q[0] + q[1] * 256;
+//  unsigned char *q = (unsigned char *)p;
+//  return q[0] + q[1] * 256;
 //}
 //
 //private Short
 //get_short16(char *p) {
-//   unsigned short n = get_ushort16(p);
-//   return n <= MAX15BITS ? n : 0xFFFF;
+//  unsigned short n = get_ushort16(p);
+//  return n <= MAX15BITS ? n : 0xFFFF;
 //}
 //
 //private Unt 
 //get_uint32(char *p) {
-//   unsigned char *q = (const unsigned char *)p;
-//   return q[0] + q[1] * 256u + q[2] * 256u * 256u + q[3] * 256u * 256u * 256u;
+//  unsigned char *q = (const unsigned char *)p;
+//  return q[0] + q[1] * 256u + q[2] * 256u * 256u + q[3] * 256u * 256u * 256u;
 //}
 //
 //private int
 //get_int32(char *p) {
-//   Unt n = get_uint32(p);
-//   return n <= MAX31BITS ? (int)n : -1;
+//  Unt n = get_uint32(p);
+//  return n <= MAX31BITS ? (int)n : -1;
 //}
 //
 //private void
 //fill_1(int *p, size_t n) {
-//   while (n--) {
-//      *p++ = -1;
-//   }
+//  while (n--) {
+//     *p++ = -1;
+//  }
 //}
 //
 //private void
 //fill_null(char **p, size_t n) {
-//    while (n--) {
-//        *p++ = NULL;
-//    }
+//   while (n--) {
+//       *p++ = NULL;
+//   }
 //}
 //
 //static const char *off_of(const char *p, size_t n, short i) {
-//    return i < 0 || (size_t)i >= n ? NULL : p + i;
+//   return i < 0 || (size_t)i >= n ? NULL : p + i;
 //}
 //
 //
 //private RawTerminfo *
 //unibi_from_mem(char *p, size_t n) {
-//   RawTerminfo *t = NULL;
-//   size_t numsize;
-//   Short magic, namlen, boollen, numlen, strslen, tablsz;
-//   char *strp, *namp;
-//   size_t namco;
-//   size_t i;
+//  RawTerminfo *t = NULL;
+//  size_t numsize;
+//  Short magic, namlen, boollen, numlen, strslen, tablsz;
+//  char *strp, *namp;
+//  size_t namco;
+//  size_t i;
 //
-//   FAIL_IF(n < 12, EFAULT);
+//  FAIL_IF(n < 12, EFAULT);
 //
-//   magic   = get_ushort16(p + 0);
-//   FAIL_IF(magic != MAGIC_16BIT && magic != MAGIC_32BIT, EINVAL);
-//   numsize = magic == MAGIC_16BIT ? 2 : 4;
+//  magic   = get_ushort16(p + 0);
+//  FAIL_IF(magic != MAGIC_16BIT && magic != MAGIC_32BIT, EINVAL);
+//  numsize = magic == MAGIC_16BIT ? 2 : 4;
 //
-//   namlen  = get_ushort16(p + 2);
-//   boollen = get_ushort16(p + 4);
-//   numlen  = get_ushort16(p + 6);
-//   strslen = get_ushort16(p + 8);
-//   tablsz  = get_ushort16(p + 10);
-//   p += 12;
-//   n -= 12;
+//  namlen  = get_ushort16(p + 2);
+//  boollen = get_ushort16(p + 4);
+//  numlen  = get_ushort16(p + 6);
+//  strslen = get_ushort16(p + 8);
+//  tablsz  = get_ushort16(p + 10);
+//  p += 12;
+//  n -= 12;
 //
-//   FAIL_IF(n < namlen, EFAULT);
+//  FAIL_IF(n < namlen, EFAULT);
 //
-//   namco = mcount(p, namlen, '|') + 1;
+//  namco = mcount(p, namlen, '|') + 1;
 //
-//   if (!(t = malloc(sizeof *t))) {
-//      return NULL;
-//   }
-//   {
-//      void *mem;
-//      mem = malloc(namco * sizeof *t->aliases + tablsz + namlen + 1);
-//      t->alloc = mem;
-//      t->aliases = mem;
-//   }
-//   strp = t->alloc + namco * sizeof *t->aliases;
-//   namp = strp + tablsz;
-//   memcpy(namp, p, namlen);
-//   namp[namlen] = '\0';
-//   p += namlen;
-//   n -= namlen;
+//  if (!(t = malloc(sizeof *t))) {
+//     return NULL;
+//  }
+//  {
+//     void *mem;
+//     mem = malloc(namco * sizeof *t->aliases + tablsz + namlen + 1);
+//     t->alloc = mem;
+//     t->aliases = mem;
+//  }
+//  strp = t->alloc + namco * sizeof *t->aliases;
+//  namp = strp + tablsz;
+//  memcpy(namp, p, namlen);
+//  namp[namlen] = '\0';
+//  p += namlen;
+//  n -= namlen;
 //
-//   {
-//      size_t k = 0;
-//      char *a, *z;
-//      a = namp;
+//  {
+//     size_t k = 0;
+//     char *a, *z;
+//     a = namp;
 //
-//      while ((z = strchr(a, '|'))) {
-//         *z = '\0';
-//         t->aliases[k++] = a;
-//         a = z + 1;
+//     while ((z = strchr(a, '|'))) {
+//        *z = '\0';
+//        t->aliases[k++] = a;
+//        a = z + 1;
+//     }
+//     assert(k < namco);
+//     t->aliases[k] = NULL;
+//
+//     t->name = a;
+//  }
+//
+//  DYNARR(bool, init)(&t->ext_bools);
+//  DYNARR(num, init)(&t->ext_nums);
+//  DYNARR(str, init)(&t->ext_strs);
+//  DYNARR(str, init)(&t->ext_names);
+//  t->ext_alloc = NULL;
+//
+//  DEL_FAIL_IF(n < boollen, EFAULT, t);
+//  memset(t->bools, '\0', sizeof t->bools);
+//  for (i = 0; i < boollen && i / CHAR_BIT < COUNTOF(t->bools); i++) {
+//      if (p[i]) {
+//          t->bools[i / CHAR_BIT] |= 1 << i % CHAR_BIT;
 //      }
-//      assert(k < namco);
-//      t->aliases[k] = NULL;
+//  }
+//  p += boollen;
+//  n -= boollen;
 //
-//      t->name = a;
-//   }
+//  if ((namlen + boollen) % 2 && n > 0) {
+//      p++;
+//      n--;
+//  }
 //
-//   DYNARR(bool, init)(&t->ext_bools);
-//   DYNARR(num, init)(&t->ext_nums);
-//   DYNARR(str, init)(&t->ext_strs);
-//   DYNARR(str, init)(&t->ext_names);
-//   t->ext_alloc = NULL;
+//  DEL_FAIL_IF(n < numlen * numsize, EFAULT, t);
+//  for (i = 0; i < numlen && i < COUNTOF(t->nums); i++) {
+//     if (numsize == 2) {
+//        t->nums[i] = get_short16(p + i * 2);
+//     } else {
+//        t->nums[i] = get_int32(p + i * 4);
+//     }
+//  }
+//  fill_1(t->nums + i, COUNTOF(t->nums) - i);
+//  p += numlen * numsize;
+//  n -= numlen * numsize;
 //
-//   DEL_FAIL_IF(n < boollen, EFAULT, t);
-//   memset(t->bools, '\0', sizeof t->bools);
-//   for (i = 0; i < boollen && i / CHAR_BIT < COUNTOF(t->bools); i++) {
-//       if (p[i]) {
-//           t->bools[i / CHAR_BIT] |= 1 << i % CHAR_BIT;
-//       }
-//   }
-//   p += boollen;
-//   n -= boollen;
+//  DEL_FAIL_IF(n < strslen * 2u, EFAULT, t);
+//  for (i = 0; i < strslen && i < COUNTOF(t->strs); i++) {
+//     t->strs[i] = off_of(strp, tablsz, get_short16(p + i * 2));
+//  }
+//  fill_null(t->strs + i, COUNTOF(t->strs) - i);
+//  p += strslen * 2;
+//  n -= strslen * 2;
 //
-//   if ((namlen + boollen) % 2 && n > 0) {
-//       p++;
-//       n--;
-//   }
+//  DEL_FAIL_IF(n < tablsz, EFAULT, t);
+//  memcpy(strp, p, tablsz);
+//  if (tablsz) {
+//     strp[tablsz - 1] = '\0';
+//  }
+//  p += tablsz;
+//  n -= tablsz;
 //
-//   DEL_FAIL_IF(n < numlen * numsize, EFAULT, t);
-//   for (i = 0; i < numlen && i < COUNTOF(t->nums); i++) {
-//      if (numsize == 2) {
-//         t->nums[i] = get_short16(p + i * 2);
-//      } else {
-//         t->nums[i] = get_int32(p + i * 4);
-//      }
-//   }
-//   fill_1(t->nums + i, COUNTOF(t->nums) - i);
-//   p += numlen * numsize;
-//   n -= numlen * numsize;
+//  if (tablsz % 2 && n > 0) {
+//     p += 1;
+//     n -= 1;
+//  }
 //
-//   DEL_FAIL_IF(n < strslen * 2u, EFAULT, t);
-//   for (i = 0; i < strslen && i < COUNTOF(t->strs); i++) {
-//      t->strs[i] = off_of(strp, tablsz, get_short16(p + i * 2));
-//   }
-//   fill_null(t->strs + i, COUNTOF(t->strs) - i);
-//   p += strslen * 2;
-//   n -= strslen * 2;
+//  if (n >= 10) {
+//     Short extboollen, extnumlen, extstrslen, extofflen, exttablsz;
+//     size_t extalllen;
 //
-//   DEL_FAIL_IF(n < tablsz, EFAULT, t);
-//   memcpy(strp, p, tablsz);
-//   if (tablsz) {
-//      strp[tablsz - 1] = '\0';
-//   }
-//   p += tablsz;
-//   n -= tablsz;
+//     extboollen = get_ushort16(p + 0);
+//     extnumlen  = get_ushort16(p + 2);
+//     extstrslen = get_ushort16(p + 4);
+//     extofflen  = get_ushort16(p + 6);
+//     exttablsz  = get_ushort16(p + 8);
 //
-//   if (tablsz % 2 && n > 0) {
-//      p += 1;
-//      n -= 1;
-//   }
+//     if (
+//         extboollen <= MAX15BITS
+//         && extnumlen <= MAX15BITS
+//         && extstrslen <= MAX15BITS
+//         && extofflen <= MAX15BITS
+//         && exttablsz <= MAX15BITS
+//     ) {
+//        p += 10;
+//        n -= 10;
 //
-//   if (n >= 10) {
-//      Short extboollen, extnumlen, extstrslen, extofflen, exttablsz;
-//      size_t extalllen;
+//        extalllen = 0;
+//        extalllen += extboollen;
+//        extalllen += extnumlen;
+//        extalllen += extstrslen;
 //
-//      extboollen = get_ushort16(p + 0);
-//      extnumlen  = get_ushort16(p + 2);
-//      extstrslen = get_ushort16(p + 4);
-//      extofflen  = get_ushort16(p + 6);
-//      exttablsz  = get_ushort16(p + 8);
+//        DEL_FAIL_IF(extofflen != extalllen + extstrslen, EINVAL, t);
 //
-//      if (
-//          extboollen <= MAX15BITS
-//          && extnumlen <= MAX15BITS
-//          && extstrslen <= MAX15BITS
-//          && extofflen <= MAX15BITS
-//          && exttablsz <= MAX15BITS
-//      ) {
-//         p += 10;
-//         n -= 10;
+//        DEL_FAIL_IF(
+//           n <
+//           extboollen
+//           + extboollen % 2
+//           + extnumlen * numsize
+//           + extstrslen * 2
+//           + extalllen * 2 
+//           + exttablsz,
+//           EFAULT,
+//           t
+//        );
 //
-//         extalllen = 0;
-//         extalllen += extboollen;
-//         extalllen += extnumlen;
-//         extalllen += extstrslen;
+//        DEL_FAIL_IF(
+//           !DYNARR(bool, ensure_slots)(&t->ext_bools, extboollen)
+//           || !DYNARR(num, ensure_slots)(&t->ext_nums, extnumlen)
+//           || !DYNARR(str, ensure_slots)(&t->ext_strs, extstrslen)
+//           || !DYNARR(str, ensure_slots)(&t->ext_names, extalllen)
+//           || (exttablsz && !(t->ext_alloc = malloc(exttablsz))),
+//           ENOMEM,
+//           t
+//        );
 //
-//         DEL_FAIL_IF(extofflen != extalllen + extstrslen, EINVAL, t);
+//        for (i = 0; i < extboollen; i++) {
+//           t->ext_bools.data[i] = !!p[i];
+//        }
+//        t->ext_bools.used = extboollen;
+//        p += extboollen;
+//        n -= extboollen;
 //
-//         DEL_FAIL_IF(
-//            n <
-//            extboollen
-//            + extboollen % 2
-//            + extnumlen * numsize
-//            + extstrslen * 2
-//            + extalllen * 2 
-//            + exttablsz,
-//            EFAULT,
-//            t
-//         );
+//        if (extboollen % 2 != 0) {
+//           p += 1;
+//           n -= 1;
+//        }
 //
-//         DEL_FAIL_IF(
-//            !DYNARR(bool, ensure_slots)(&t->ext_bools, extboollen)
-//            || !DYNARR(num, ensure_slots)(&t->ext_nums, extnumlen)
-//            || !DYNARR(str, ensure_slots)(&t->ext_strs, extstrslen)
-//            || !DYNARR(str, ensure_slots)(&t->ext_names, extalllen)
-//            || (exttablsz && !(t->ext_alloc = malloc(exttablsz))),
-//            ENOMEM,
-//            t
-//         );
+//        for (i = 0; i < extnumlen; i++) {
+//           if (numsize == 2) {
+//              t->ext_nums.data[i] = get_short16(p + i * 2);
+//           } else {
+//              t->ext_nums.data[i] = get_int32(p + i * 4);
+//           }
+//        }
+//        t->ext_nums.used = extnumlen;
+//        p += extnumlen * numsize;
+//        n -= extnumlen * numsize;
 //
-//         for (i = 0; i < extboollen; i++) {
-//            t->ext_bools.data[i] = !!p[i];
-//         }
-//         t->ext_bools.used = extboollen;
-//         p += extboollen;
-//         n -= extboollen;
+//        {
+//           char *ext_alloc2;
+//           size_t tblsz2;
+//           const char *const tbl1 = p + extstrslen * 2 + extalllen * 2;
+//           size_t s_max = 0, s_sum = 0;
 //
-//         if (extboollen % 2 != 0) {
-//            p += 1;
-//            n -= 1;
-//         }
+//           for (i = 0; i < extstrslen; i++) {
+//              const short v = get_short16(p + i * 2);
+//              if (v < 0 || (unsigned short)v >= exttablsz) {
+//                 t->ext_strs.data[i] = NULL;
+//              } else {
+//                 const char *start = tbl1 + v;
+//                 const char *end = memchr(start, '\0', exttablsz - v);
+//                 if (end) {
+//                    end++;
+//                 } else {
+//                    end = tbl1 + exttablsz;
+//                 }
+//                 s_sum += end - start;
+//                 s_max = size_max(s_max, end - tbl1);
+//                 t->ext_strs.data[i] = t->ext_alloc + v;
+//              }
+//           }
+//           t->ext_strs.used = extstrslen;
+//           p += extstrslen * 2;
+//           n -= extstrslen * 2;
 //
-//         for (i = 0; i < extnumlen; i++) {
-//            if (numsize == 2) {
-//               t->ext_nums.data[i] = get_short16(p + i * 2);
-//            } else {
-//               t->ext_nums.data[i] = get_int32(p + i * 4);
-//            }
-//         }
-//         t->ext_nums.used = extnumlen;
-//         p += extnumlen * numsize;
-//         n -= extnumlen * numsize;
+//           DEL_FAIL_IF(s_max != s_sum, EINVAL, t);
 //
-//         {
-//            char *ext_alloc2;
-//            size_t tblsz2;
-//            const char *const tbl1 = p + extstrslen * 2 + extalllen * 2;
-//            size_t s_max = 0, s_sum = 0;
+//           ext_alloc2 = t->ext_alloc + s_sum;
+//           tblsz2 = exttablsz - s_sum;
 //
-//            for (i = 0; i < extstrslen; i++) {
-//               const short v = get_short16(p + i * 2);
-//               if (v < 0 || (unsigned short)v >= exttablsz) {
-//                  t->ext_strs.data[i] = NULL;
-//               } else {
-//                  const char *start = tbl1 + v;
-//                  const char *end = memchr(start, '\0', exttablsz - v);
-//                  if (end) {
-//                     end++;
-//                  } else {
-//                     end = tbl1 + exttablsz;
-//                  }
-//                  s_sum += end - start;
-//                  s_max = size_max(s_max, end - tbl1);
-//                  t->ext_strs.data[i] = t->ext_alloc + v;
-//               }
-//            }
-//            t->ext_strs.used = extstrslen;
-//            p += extstrslen * 2;
-//            n -= extstrslen * 2;
+//           for (i = 0; i < extalllen; i++) {
+//              Short v = get_short16(p + i * 2);
+//              DEL_FAIL_IF(v < 0 || (unsigned short)v >= tblsz2, EINVAL, t);
+//              t->ext_names.data[i] = ext_alloc2 + v;
+//           }
+//           t->ext_names.used = extalllen;
+//           p += extalllen * 2;
+//           n -= extalllen * 2;
 //
-//            DEL_FAIL_IF(s_max != s_sum, EINVAL, t);
+//           assert(p == tbl1);
 //
-//            ext_alloc2 = t->ext_alloc + s_sum;
-//            tblsz2 = exttablsz - s_sum;
+//           if (exttablsz) {
+//              memcpy(t->ext_alloc, p, exttablsz);
+//              t->ext_alloc[exttablsz - 1] = '\0';
 //
-//            for (i = 0; i < extalllen; i++) {
-//               Short v = get_short16(p + i * 2);
-//               DEL_FAIL_IF(v < 0 || (unsigned short)v >= tblsz2, EINVAL, t);
-//               t->ext_names.data[i] = ext_alloc2 + v;
-//            }
-//            t->ext_names.used = extalllen;
-//            p += extalllen * 2;
-//            n -= extalllen * 2;
+//              p += exttablsz;
+//              n -= exttablsz;
+//           }
+//        }
+//     }
+//  }
 //
-//            assert(p == tbl1);
+//  ASSERT_EXT_NAMES(t);
 //
-//            if (exttablsz) {
-//               memcpy(t->ext_alloc, p, exttablsz);
-//               t->ext_alloc[exttablsz - 1] = '\0';
-//
-//               p += exttablsz;
-//               n -= exttablsz;
-//            }
-//         }
-//      }
-//   }
-//
-//   ASSERT_EXT_NAMES(t);
-//
-//   return t;
+//  return t;
 //}
 
 //}}}
 //{{{functions for controlling the terminal
 
-// DEFAULT_TERM is used, when no terminal is specified with -T option or $TERM.
+//DEFAULT_TERM is used, when no terminal is specified with -T option or $TERM.
 #define DEFAULT_TERM S"ansi"
 
-private int  needToGatherTermLeaders = false; // need to fill termLeaderG[]
-private Byte termLeaderG[256 + 1];            // for termTryParseTermcode()
-private int  check_for_codes = false;         // check for key code response
+private int  needToGatherTermLeaders = false; //need to fill termLeaderG[]
+private Byte termLeaderG[256 + 1];            //for termTryParseTermcode()
+private int  check_for_codes = false;         //check for key code response
 
-// Structure and table to store terminal features that can be detected by
-// querying the terminal.  Either by inspecting the termresponse or a more
-// specific request.  Besides this there are:
+//Structure and table to store terminal features that can be detected by
+//querying the terminal.  Either by inspecting the termresponse or a more
+//specific request.  Besides this there are:
 typedef struct {
    CS name;
    int setByTermResponse;
    int status;
 } TermProp;
 
-// Values for status.
+//Values for status.
 #define TPR_UNKNOWN     'u'
 #define TPR_YES         'y'
 #define TPR_NO          'n'
-#define TPR_MOUSE_SGR   's'   // use "sgr" for 'ttymouse'
+#define TPR_MOUSE_SGR   's'   //use "sgr" for 'ttymouse'
 
-// can request the cursor style without messing up the display
+//can request the cursor style without messing up the display
 #define TPR_CURSOR_STYLE   0
-// can request the cursor blink mode without messing up the display
+//can request the cursor blink mode without messing up the display
 #define TPR_CURSOR_BLINK   1
-// mouse support - TPR_MOUSE_XTERM, TPR_MOUSE_XTERM2 or TPR_MOUSE_SGR
+//mouse support - TPR_MOUSE_XTERM, TPR_MOUSE_XTERM2 or TPR_MOUSE_SGR
 #define TPR_MOUSE          3
-// term response indicates kitty
+//term response indicates kitty
 #define TPR_KITTY          4
-// table size
+//table size
 #define TPR_COUNT          5
 
 private TermProp term_props[TPR_COUNT];
 
-// Initialize the term_props table.
-// When "all" is false only set those that are detected from the version response.
+//Initialize the term_props table.
+//When "all" is false only set those that are detected from the version response.
 pub void
 termInitProps(Boole all) {
    term_props[TPR_CURSOR_STYLE].name = S"cursor_style";
@@ -780,11 +773,11 @@ f_terminalprops(Var*, Var* returnVar) {
    }
 }
 
-// Apply entries from a builtin termcap.
+//Apply entries from a builtin termcap.
 private void
 applyBuiltinCapability(Arr(TinfoEntry) entries, int len) {
    for (TinfoEntry *p = entries; p < entries + len && p->c != BT_EXTRA_KEYS; ++p) {
-      if ((int)p->c >= 0) {  // KS_xx entry
+      if ((int)p->c >= 0) {  //KS_xx entry
          termCodesG[p->c] = p->value;
       } else {
          Byte  name[2];
@@ -835,7 +828,7 @@ get_term_entries(OUT int* height, OUT int* width) {
    static Byte tstrbuf[TBUFSZ];
    CS tp = tstrbuf;
 
-   // get output strings
+   //get output strings
    for (Unt i = 0; i < ARRAY_LENGTH(entryNames); ++i) {
       if (termCodesG[entryNames[i].dest] == S"") {
          termCodesG[entryNames[i].dest] = eeTgetstr(entryNames[i].name, &tp);
@@ -846,8 +839,8 @@ get_term_entries(OUT int* height, OUT int* width) {
          termCodesG[i] = S"";
    }
 
-   // tgetflag() returns 1 if the flag is present, 0 if not and
-   // possibly -1 if the flag doesn't exist.
+   //tgetflag() returns 1 if the flag is present, 0 if not and
+   //possibly -1 if the flag doesn't exist.
    if (termCodesG[KS_MS] == S"" && tgetflag("ms") > 0)
       termCodesG[KS_MS] = S"y";
    if (termCodesG[KS_XS] == S"" && tgetflag("xs") > 0)
@@ -861,12 +854,12 @@ get_term_entries(OUT int* height, OUT int* width) {
    if (termCodesG[KS_UT] == S"" && tgetflag("ut") > 0)
       termCodesG[KS_UT] = S"y";
       
-   // get key codes
+   //get key codes
    for (Unt i = 0; i < ARRAY_LENGTH(key_names); ++i) {
       if (find_termcode(key_names[i]) == NULL) {
          CS p = TGETSTR(key_names[i], &tp);
 
-         // if cursor-left == backspace, ignore it (televideo 925)
+         //if cursor-left == backspace, ignore it (televideo 925)
          if (p && (*p != Ctrl_H || key_names[i][0] != 'k' || key_names[i][1] != 'l'))
             termAddRecognizedTermcode(key_names[i], p, false);
       }
@@ -894,14 +887,14 @@ set_termname(CS termName) {
    int width = 0, height = 0;
    CS errorMsg = NULL;
 
-   // In silect mode (ex -s) we don't use the 'term' option.
+   //In silect mode (ex -s) we don't use the 'term' option.
    if (silentModeG)
       return OK;
 
-   // Use external terminfo
+   //Use external terminfo
    Byte tbuf[TBUFSZ];
    
-   // If the external terminfo does not have a matching entry, try the builtin ones.
+   //If the external terminfo does not have a matching entry, try the builtin ones.
    if ((errorMsg = invoke_tgetent(tbuf, termName)) == NULL) {
       if (!termcap_cleared) {
          termcap_cleared = true;
@@ -947,7 +940,7 @@ set_termname(CS termName) {
    //will be sent out soon.
    termInitProps(false);
 
-   // If the first number in t_XM is 1006 then the terminal will support SGR mouse reporting.
+   //If the first number in t_XM is 1006 then the terminal will support SGR mouse reporting.
    if (termCodesG[KS_CXM] != NULL && *termCodesG[KS_CXM] != ZERO) {
       CS p = termCodesG[KS_CXM];
 
@@ -955,20 +948,20 @@ set_termname(CS termName) {
           ++p;
    }
 
-   // Set the 'ttymouse' option to the type of mouse to be used.
-   // The termcode for the mouse is added as a side effect in option.c.
+   //Set the 'ttymouse' option to the type of mouse to be used.
+   //The termcode for the mouse is added as a side effect in option.c.
    {
    CS p = S"";
 
    if (!p)
-      check_mouse_termcode();   // set mouse termcode anyway
+      check_mouse_termcode();   //set mouse termcode anyway
    }
 
-   // First time after setting 'term' a focus event is always reported.
+   //First time after setting 'term' a focus event is always reported.
    focus_state = MAYBE;
 
 #ifdef USE_TERM_CONSOLE
-   // DEFAULT_TERM indicates that it is the machine console.
+   //DEFAULT_TERM indicates that it is the machine console.
    if (STRCMP(termName, DEFAULT_TERM) != 0)
       term_console = false;
    else {
@@ -976,42 +969,42 @@ set_termname(CS termName) {
    }
 #endif
 
-   ttest(true);   // make sure we have a valid set of terminal codes
+   ttest(true);   //make sure we have a valid set of terminal codes
 
-   fullScreenG = true;      // we can use termcap codes from now on
+   fullScreenG = true;      //we can use termcap codes from now on
    write_t_8u_state = false;
 
    //Initialize the terminal with the appropriate termcap codes.
    //Set the mouse and window title if possible.
    //Don't do this when starting, need to parse the .vimrc first, because it may redefine t_TI etc.
    if (starting != NO_SCREEN) {
-      starttermcap();      // may change terminal mode
-      setmouse();      // may start using the mouse
+      starttermcap();      //may change terminal mode
+      setmouse();      //may start using the mouse
    }
 
    //display initial screen after ttest() checking. jw.
    if (width <= 0 || height <= 0) {
       //termcap failed to report size set defaults, in case ui_get_shellsize() also fails
       width = 80;
-      height = 24;       // most terminals are 24 lines
+      height = 24;       //most terminals are 24 lines
    }
-   set_shellsize(width, height, false);   // may change visibleRowsG
+   set_shellsize(width, height, false);   //may change visibleRowsG
    if (starting != NO_SCREEN) {
       if (scroll_region)
-         scroll_region_reset();      // In case visibleRowsG changed
-      check_map_keycodes();   // check mappings for terminal codes used
+         scroll_region_reset();      //In case visibleRowsG changed
+      check_map_keycodes();   //check mappings for terminal codes used
 
       {
          Book* buf;
          AutocommSave aco;
 
-         // Execute the TermChanged autocommands for each buffer that is loaded.
+         //Execute the TermChanged autocommands for each buffer that is loaded.
          FOR_ALL_BOOKS(buf) {
             if (curBook->mem.mfile) {
                auCommPrepareBook(&aco, buf);
                if (curBook == buf) {
                   applyAutocomms(EVENT_TERMCHANGED, NULL, NULL, false, curBook);
-                  // restore curPor/curBook and a few other things
+                  //restore curPor/curBook and a few other things
                   auCommRestoreBook(&aco);
                }
             }
@@ -1024,10 +1017,10 @@ set_termname(CS termName) {
 
 #if defined(EXITFREE)
 
-#include <term.h>       // declares cur_term
+#include <term.h>       //declares cur_term
 
-// If supported, delete "cur_term", which caches terminal related entries.
-// Avoid that valgrind reports possibly lost memory.
+//If supported, delete "cur_term", which caches terminal related entries.
+//Avoid that valgrind reports possibly lost memory.
 pub void
 free_cur_term(void) {
    if (cur_term)
@@ -1043,9 +1036,9 @@ invoke_tgetent(CS tbuf, CS terminalName) {
    //Note: Valgrind may report a leak here, because the library keeps one text buffer around that
    //we can't ever free.
    int i = TGETENT(tbuf, terminalName);
-   if  (i < 0          // -1 is always an error
+   if  (i < 0          //-1 is always an error
  # ifdef TGETENT_ZERO_ERR
-      || i == 0       // sometimes zero is also an error
+      || i == 0       //sometimes zero is also an error
  # endif
      ) {
 
@@ -1063,7 +1056,7 @@ invoke_tgetent(CS tbuf, CS terminalName) {
    return NULL;
 }
 
-// Some versions of tgetstr() have been reported to return -1 instead of NULL. Fix that here.
+//Some versions of tgetstr() have been reported to return -1 instead of NULL. Fix that here.
 private CS
 eeTgetstr(CS s, Byte **pp) {
    CS p = TGETSTR(s, pp);
@@ -1092,10 +1085,10 @@ getlinecol(Arr(long) cols, Arr(long) rows) {
       *rows = tgetnum("li");
 }
 
-// Get a string entry from the termcap and add it to the list of recognizedTermcodesP.
-// Used for <t_xx> special keys.
-// Give an error message for failure when not sourcing. If force given, replace an existing entry.
-// Return FAIL if the entry was not found, OK if the entry was added.
+//Get a string entry from the termcap and add it to the list of recognizedTermcodesP.
+//Used for <t_xx> special keys.
+//Give an error message for failure when not sourcing. If force given, replace an existing entry.
+//Return FAIL if the entry was not found, OK if the entry was added.
 pub int
 add_termcap_entry(CS name, int force) {
    CS string;
@@ -1103,14 +1096,14 @@ add_termcap_entry(CS name, int force) {
    Byte tstrbuf[TBUFSZ];
    CS tp = tstrbuf;
 
-   if (!force && find_termcode(name) != NULL)       // it's already there
+   if (!force && find_termcode(name) != NULL)       //it's already there
       return OK;
 
    CS term = termCodesG[KS_NAME];
-   if (term == S"")       // 'term' not defined yet
+   if (term == S"")       //'term' not defined yet
       return FAIL;
 
-   // Search in external terminfos
+   //Search in external terminfos
    CS errorMsg = invoke_tgetent(tbuf, term);
    if (!errorMsg) {
       string = TGETSTR(name, &tp);
@@ -1139,7 +1132,7 @@ termInitTerminfo(CS name) {
 
    CS termName = name;
    if (termName && *termName == ZERO)
-      termName = null;       // empty name is equal to no name
+      termName = null;       //empty name is equal to no name
 
    if (!termName)
       termName = mch_getenv(S"TERM");
@@ -1161,10 +1154,10 @@ termInitTerminfo(CS name) {
 //add one to allow mch_write() to append a ZERO
 private Byte out_buf[OUT_SIZE + 1];
 
-private int out_pos = 0;   // number of chars in out_buf
+private int out_pos = 0;   //number of chars in out_buf
 
-// Since the maximum number of SGR parameters shown as a normal value range is
-// 16, the escape sequence length can be 4 * 16 + lead + tail.
+//Since the maximum number of SGR parameters shown as a normal value range is
+//16, the escape sequence length can be 4 * 16 + lead + tail.
 #define MAX_ESC_SEQ_LEN   80
 
 //flush the output buffer and redraw the cursor.
@@ -1173,7 +1166,7 @@ out_flush(void) {
    if (out_pos == 0)
       return;
 
-   // set out_pos to 0 before ui_write, to avoid recursiveness
+   //set out_pos to 0 before ui_write, to avoid recursiveness
    int len = out_pos;
    out_pos = 0;
    ui_write(out_buf, len, false);
@@ -1181,27 +1174,27 @@ out_flush(void) {
       out_buf[len] = ZERO;
       lo("raw %s output: \"%s\"", "terminal", out_buf);
       if (ch_log_output == true)
-         ch_log_output = false;  // only log once
+         ch_log_output = false;  //only log once
    }
 }
 
-// out_char(c): put a byte into the output buffer.
-//      Flush it if it becomes full.
-// This should not be used for outputting text on the screen (use functions
-// like msg_puts() and screen_putchar() for that).
+//out_char(c): put a byte into the output buffer.
+//     Flush it if it becomes full.
+//This should not be used for outputting text on the screen (use functions
+//like msg_puts() and screen_putchar() for that).
 pub void
 out_char(unsigned c) {
-   if (c == '\n')   // turn LF into CR-LF (CRMOD doesn't seem to do this)
+   if (c == '\n')   //turn LF into CR-LF (CRMOD doesn't seem to do this)
       out_char('\r');
 
    out_buf[out_pos++] = c;
 
-   // For testing we flush each time.
+   //For testing we flush each time.
    if (out_pos >= OUT_SIZE || p_wd)
       out_flush();
 }
 
-// Output "c" like out_char(), but don't flush when p_wd is set.
+//Output "c" like out_char(), but don't flush when p_wd is set.
 private int
 out_char_nf(int c) {
    out_buf[out_pos++] = (unsigned)c;
@@ -1219,14 +1212,14 @@ out_char_nf(int c) {
 //functions like msg_puts() and screen_putchar() for that).
 pub void
 out_str_nf(CS s) {
-   // avoid terminal strings being split up
+   //avoid terminal strings being split up
    if (out_pos > OUT_SIZE - MAX_ESC_SEQ_LEN)
       out_flush();
 
    for (CS p = s; *p != ZERO; ++p)
       out_char_nf(*p);
 
-   // For testing we write one string at a time.
+   //For testing we write one string at a time.
    if (p_wd)
       out_flush();
 }
@@ -1279,7 +1272,7 @@ term_enable_mouse(int enable) {
 
 pub void
 term_set_winpos(int x, int y) {
-   // Can't handle a negative value here
+   //Can't handle a negative value here
    if (x < 0)
       x = 0;
    if (y < 0)
@@ -1287,7 +1280,7 @@ term_set_winpos(int x, int y) {
    OUT_STR(TGOTO(termCodesG[KS_CWP], y, x));
 }
 
-// Return true if we can request the terminal for a response.
+//Return true if we can request the terminal for a response.
 private int
 can_get_termresponse(void) {
     return cur_tmode == TMODE_RAW
@@ -1295,14 +1288,14 @@ can_get_termresponse(void) {
        && (is_not_a_term() || (isatty(1) && isatty(read_cmd_fd)));
 }
 
-// Set "status" to STATUS_SENT.
+//Set "status" to STATUS_SENT.
 private void
 requestSent(TermRequest* status) {
    status->progress = STATUS_SENT;
    status->start = time(NULL);
 }
 
-// Return true if any of the requests are in STATUS_SENT.
+//Return true if any of the requests are in STATUS_SENT.
 private int
 termrequest_any_pending(void) {
    Tyme now = time(NULL);
@@ -1312,7 +1305,7 @@ termrequest_any_pending(void) {
          if (requestsP[i]->start > 0 && now > 0
                && requestsP[i]->start + 2 < now
          )
-            // Sent the request more than 2 seconds ago and didn't get a response, assume it failed.
+            //Sent the request more than 2 seconds ago and didn't get a response, assume it failed.
             requestsP[i]->progress = STATUS_FAIL;
          else
             return true;
@@ -1325,7 +1318,7 @@ private int winpos_x = -1;
 private int winpos_y = -1;
 private int did_request_winpos = 0;
 
-// Try getting the Eegl window position from the terminal. Return OK or FAIL.
+//Try getting the Eegl window position from the terminal. Return OK or FAIL.
 pub int
 term_get_winpos(int* x, int* y, Long timeout) {
    int count = 0;
@@ -1341,7 +1334,7 @@ term_get_winpos(int* x, int* y, Long timeout) {
    OUT_STR(termCodesG[KS_CGP]);
    out_flush();
 
-   // Try reading the result for "timeout" msec.
+   //Try reading the result for "timeout" msec.
    while (count++ <= timeout / 10 && !gotInterruptG) {
       (void)vpeekc_nomap();
       if (winpos_x >= 0 && winpos_y >= 0) {
@@ -1357,7 +1350,7 @@ term_get_winpos(int* x, int* y, Long timeout) {
    winpos_x = prev_winpos_x;
    winpos_y = prev_winpos_y;
    if (timeout < 10 && prev_winpos_y >= 0 && prev_winpos_x >= 0) {
-      // Polling: return previous values if we have them.
+      //Polling: return previous values if we have them.
       *x = winpos_x;
       *y = winpos_y;
       return OK;
@@ -1386,7 +1379,7 @@ termApplyUnderColor(Byte n) {
    OUT_STR(TGOTO("\033[4;58;5;%dm", 0, n));
 }
 
-// Make sure we have a valid set or terminal options. Replace all null entries by empty string
+//Make sure we have a valid set or terminal options. Replace all null entries by empty string
 pub void
 ttest(int pairs) {
    //MUST have "cm": cursor motion.
@@ -1400,7 +1393,7 @@ ttest(int pairs) {
       scroll_region = false;
 
    if (pairs) {
-      // optional pairs. TP goes to normal mode for TI (invert) and TB (bold)
+      //optional pairs. TP goes to normal mode for TI (invert) and TB (bold)
       if (termCodesG[KS_ME] == null) {
          termCodesG[KS_MD] = null;
          termCodesG[KS_MR] = null;
@@ -1419,7 +1412,7 @@ ttest(int pairs) {
          termCodesG[KS_CZR] = null;
       }
 
-      // termCodesG[KS_VE] is needed even though termCodesG[KS_VI] is not defined
+      //termCodesG[KS_VE] is needed even though termCodesG[KS_VI] is not defined
       if (!termCodesG[KS_VE])
          termCodesG[KS_VI] = null;
 
@@ -1430,7 +1423,7 @@ ttest(int pairs) {
          termCodesG[KS_MD] = termCodesG[KS_SO];
       }
 
-      // if 'so' or 'se' is not defined, use 'mr' and 'me'
+      //if 'so' or 'se' is not defined, use 'mr' and 'me'
       if (!termCodesG[KS_SO]) {
          termCodesG[KS_SE] = termCodesG[KS_ME];
          if (!termCodesG[KS_MR])
@@ -1439,7 +1432,7 @@ ttest(int pairs) {
             termCodesG[KS_SO] = termCodesG[KS_MR];
       }
 
-      // if 'ZH' or 'ZR' is not defined, use 'mr' and 'me'
+      //if 'ZH' or 'ZR' is not defined, use 'mr' and 'me'
       if (!termCodesG[KS_CZH]) {
          termCodesG[KS_CZR] = termCodesG[KS_ME];
          if (!termCodesG[KS_MR])
@@ -1448,13 +1441,13 @@ ttest(int pairs) {
             termCodesG[KS_CZH] = termCodesG[KS_MR];
       }
 
-      // "Sb" and "Sf" come in pairs
+      //"Sb" and "Sf" come in pairs
       if (!termCodesG[KS_CSB] || !termCodesG[KS_CSF]) {
          termCodesG[KS_CSB] = null;
          termCodesG[KS_CSF] = null;
       }
 
-      // "AB" and "AF" come in pairs
+      //"AB" and "AF" come in pairs
       if (!termCodesG[KS_CAB] || !termCodesG[KS_CAF]) {
          termCodesG[KS_CAB] = null;
          termCodesG[KS_CAF] = null;
@@ -1464,7 +1457,7 @@ ttest(int pairs) {
 }
 
 //Represent the given Ulong as individual bytes, with the most significant
-// byte first, and store them in dst.
+//byte first, and store them in dst.
 pub void
 add_long_to_buf(Ulong val, CS dst) {
    for (int i = 1; i <= (int)sizeof(Ulong); i++) {
@@ -1493,9 +1486,9 @@ get_long_from_buf(CS buffer, Ulong* val) {
    return len;
 }
 
-// Read the next num_bytes bytes from buffer, and store them in bytes.  Assume
-// that buffer has been through inchar().   Returns the actual number of bytes used
-// from buf (between num_bytes and num_bytes*2), or -1 if not enough bytes were available.
+//Read the next num_bytes bytes from buffer, and store them in bytes.  Assume
+//that buffer has been through inchar().   Returns the actual number of bytes used
+//from buf (between num_bytes and num_bytes*2), or -1 if not enough bytes were available.
 pub int
 get_bytes_from_buf(CS buffer, CS bytes, int num_bytes) {
    int len = 0;
@@ -1506,7 +1499,7 @@ get_bytes_from_buf(CS buffer, CS bytes, int num_bytes) {
       if ((c = buffer[len++]) == ZERO)
          return -1;
       if (c == K_SPECIAL) {
-         if (buffer[len] == ZERO || buffer[len + 1] == ZERO)       // cannot happen?
+         if (buffer[len] == ZERO || buffer[len + 1] == ZERO)       //cannot happen?
             return -1;
          if (buffer[len++] == (int)KS_ZERO)
             c = ZERO;
@@ -1523,22 +1516,22 @@ get_bytes_from_buf(CS buffer, CS bytes, int num_bytes) {
    return len;
 }
 
-// Check if the new shell size is valid, correct it if it's too small or way too big.
+//Check if the new shell size is valid, correct it if it's too small or way too big.
 pub void
 check_shellsize(void) {
-   // need room for one window and command line
+   //need room for one window and command line
    if (visibleRowsG < minRowsForAllTabs())
       visibleRowsG = minRowsForAllTabs();
    clampScreenSize();
 
-   // make sure these values are not invalid
+   //make sure these values are not invalid
    if (commlineRowG >= visibleRowsG)
       commlineRowG = visibleRowsG - 1;
    if (msgRowG >= visibleRowsG)
       msgRowG = visibleRowsG - 1;
 }
 
-// Limit visibleRowsG and visibleColsG to avoid an overflow in visibleRowsG * visibleColsG.
+//Limit visibleRowsG and visibleColsG to avoid an overflow in visibleRowsG * visibleColsG.
 pub void
 clampScreenSize(void) {
    if (visibleColsG < MIN_COLUMNS)
@@ -1564,7 +1557,7 @@ win_new_shellsize(void) {
    }
    if (old_Rows != visibleRowsG) {
       old_Rows = visibleRowsG;
-      shell_new_rows();   // update window sizes
+      shell_new_rows();   //update window sizes
    }
 }
 
@@ -1624,7 +1617,7 @@ set_shellsize_inner(int width, int height, int mustset) {
    if (stateG != MODE_ASKMORE && stateG != MODE_EXTERNCMD && stateG != MODE_CONFIRM)
       screenclear();
    else
-      screen_start();       // don't know where cursor is now
+      screen_start();       //don't know where cursor is now
 
    if (starting != NO_SCREEN) {
 
@@ -1633,7 +1626,7 @@ set_shellsize_inner(int width, int height, int mustset) {
 
       //We only redraw when it's needed:
       //- While at the more prompt or executing an external command, don't
-      //  redraw, but position the cursor.
+      // redraw, but position the cursor.
       //- While editing the command line, only redraw that.
       //- Otherwise, redraw right now, and position the cursor.
       //Always need to call drawUpdateScreen() or screenalloc(), to make
@@ -1658,7 +1651,7 @@ set_shellsize_inner(int width, int height, int mustset) {
                setcursor();
          }
       }
-      cursor_on();       // redrawing may have switched it off
+      cursor_on();       //redrawing may have switched it off
    }
    out_flush();
 }
@@ -1668,11 +1661,11 @@ set_shellsize(int width, int height, int mustset) {
    static int busy = false;
    static int do_run = false;
 
-   if (width < 0 || height < 0)    // just checking...
+   if (width < 0 || height < 0)    //just checking...
       return;
 
    if (stateG == MODE_HITRETURN || stateG == MODE_SETWSIZE) {
-      // postpone the resizing
+      //postpone the resizing
       stateG = MODE_SETWSIZE;
       return;
    }
@@ -1759,13 +1752,13 @@ termSetMode(TermInputMode tmode) {
    //mode. When we think the terminal is normal, don't try to set it to normal again, because that 
    //causes problems (logout!) on some machines.
    if (tmode != cur_tmode) {
-      // May need to check for termCodesG[KS_CRV] response and recognizedTermcodesP, it
-      // doesn't work in Cooked mode, an external program may get them.
+      //May need to check for termCodesG[KS_CRV] response and recognizedTermcodesP, it
+      //doesn't work in Cooked mode, an external program may get them.
       if (tmode != TMODE_RAW && termrequest_any_pending())
          (void)vpeekc_nomap();
       handleUnansweredRequests();
       if (tmode != TMODE_RAW)
-         mch_setmouse(false);   // switch mouse off
+         mch_setmouse(false);   //switch mouse off
 
       //Disable bracketed paste and modifyOtherKeys in cooked mode.
       //Avoid doing this too often, on some terminals the codes are not handled properly.
@@ -1774,17 +1767,17 @@ termSetMode(TermInputMode tmode) {
 
          if (tmode != TMODE_RAW) {
             out_str(termCodesG[KS_CBD]);
-            out_str_t_TE();   // possibly disables modifyOtherKeys
+            out_str_t_TE();   //possibly disables modifyOtherKeys
          } else {
-            out_str_t_BE();   // enable bracketed paste mode (should be before mch_termSetMode().
-            out_str_t_TI();   // possibly enables modifyOtherKeys
+            out_str_t_BE();   //enable bracketed paste mode (should be before mch_termSetMode().
+            out_str_t_TI();   //possibly enables modifyOtherKeys
          }
       }
       out_flush();
-      mch_termSetMode(tmode);   // machine specific function
+      mch_termSetMode(tmode);   //machine specific function
       cur_tmode = tmode;
       if (tmode == TMODE_RAW)
-          setmouse();      // may switch mouse on
+          setmouse();      //may switch mouse on
       out_flush();
    }
 }
@@ -1796,10 +1789,10 @@ starttermcap(void) {
 
    MAY_WANT_TO_LOG_THIS;
 
-   out_str(termCodesG[KS_TI]);         // start termcap mode
-   out_str_t_TI();         // start "raw" mode
-   out_str(termCodesG[KS_KS]);         // start "keypad transmit" mode
-   out_str_t_BE();         // enable bracketed paste mode
+   out_str(termCodesG[KS_TI]);         //start termcap mode
+   out_str_t_TI();         //start "raw" mode
+   out_str(termCodesG[KS_KS]);         //start "keypad transmit" mode
+   out_str_t_BE();         //enable bracketed paste mode
 
    //Enable xterm's focus reporting mode when 'esckeys' is set.
    if (termCodesG[KS_FE] != S"")
@@ -1807,7 +1800,7 @@ starttermcap(void) {
 
    out_flush();
    termcap_active = true;
-   screen_start();         // don't know where cursor is now
+   screen_start();         //don't know where cursor is now
 }
 
 pub void
@@ -1820,24 +1813,24 @@ termStopTerminfo(void) {
 
    //May need to discard termCodesG[KS_CRV], termCodesG[KS_U7] or termCodesG[KS_RBG] response.
    if (termrequest_any_pending()) {
-      // Give the terminal a chance to respond.
+      //Give the terminal a chance to respond.
       mch_delay(100L, 0);
 #ifdef TCIFLUSH
-      // Discard data received but not read.
+      //Discard data received but not read.
       if (isExitingG)
          tcflush(fileno(stdin), TCIFLUSH);
 #endif
    }
-   // Check for recognizedTermcodesP first, otherwise an external program may get them.
+   //Check for recognizedTermcodesP first, otherwise an external program may get them.
    handleUnansweredRequests();
    MAY_WANT_TO_LOG_THIS;
 
-   // Disable xterm's focus reporting mode if 'esckeys' is set.
+   //Disable xterm's focus reporting mode if 'esckeys' is set.
    if (termCodesG[KS_FD] != S"")
       out_str(termCodesG[KS_FD]);
 
    out_str(termCodesG[KS_CBD]);
-   out_str(termCodesG[KS_KE]);         // stop "keypad transmit" mode
+   out_str(termCodesG[KS_KE]);         //stop "keypad transmit" mode
    out_flush();
    termcap_active = false;
 
@@ -1848,12 +1841,12 @@ termStopTerminfo(void) {
    //If we are (or were) using the Kitty keyboard protocol and t_te is not empty (possibly 
    //switching screens) then output t_TE both before and after outputting t_te.
    if (termCodesG[KS_TE] != S"")
-      out_str_t_TE();      // probably disables the kitty keyboard protocol
+      out_str_t_TE();      //probably disables the kitty keyboard protocol
 
-   out_str(termCodesG[KS_TE]);  // stop termcap mode
-   cursor_on();    // just in case it is still off
-   out_str_t_TE(); // stop "raw" mode, modifyOtherKeys and Kitty keyboard protocol
-   screen_start(); // don't know where cursor is now
+   out_str(termCodesG[KS_TE]);  //stop termcap mode
+   cursor_on();    //just in case it is still off
+   out_str_t_TE(); //stop "raw" mode, modifyOtherKeys and Kitty keyboard protocol
+   screen_start(); //don't know where cursor is now
    out_flush();
 }
 
@@ -1952,10 +1945,10 @@ scroll_start(void) {
    MAY_WANT_TO_LOG_THIS;
    out_str(termCodesG[KS_VS]);
    out_str(termCodesG[KS_CVS]);
-   screen_start();      // don't know where cursor is now
+   screen_start();      //don't know where cursor is now
 }
 
-// True if cursor is not visible
+//True if cursor is not visible
 private int cursor_is_off = false;
 
 //True if cursor is not visible due to an ongoing cursor-less sleep
@@ -1976,38 +1969,38 @@ cursor_on(void) {
       cursor_on_force();
 }
 
-// Disable the cursor.
+//Disable the cursor.
 pub void
 cursor_off(void) {
    if (fullScreenG && !cursor_is_off) {
-      out_str(termCodesG[KS_VI]);       // disable cursor
+      out_str(termCodesG[KS_VI]);       //disable cursor
       cursor_is_off = true;
    }
 }
 
-// Disable the cursor and mark it disabled by cursor-less sleep
+//Disable the cursor and mark it disabled by cursor-less sleep
 pub void
 cursor_sleep(void) {
    cursor_is_asleep = true;
    cursor_off();
 }
 
-// Enable the cursor and mark it not disabled by cursor-less sleep
+//Enable the cursor and mark it not disabled by cursor-less sleep
 pub void
 cursor_unsleep(void) {
    cursor_is_asleep = false;
    cursor_on();
 }
 
-// Set cursor shape to match Insert or Replace mode.
+//Set cursor shape to match Insert or Replace mode.
 pub void
 term_cursor_mode(int forced) {
    static int showing_mode = -1;
 
-   // Only do something when redrawing the screen and we can restore the mode.
+   //Only do something when redrawing the screen and we can restore the mode.
    if (!fullScreenG) {
       if (forced && initial_cursor_shape > 0)
-         // Restore to initial values.
+         //Restore to initial values.
          termSetCursorShape(initial_cursor_shape, initial_cursor_blink);
       return;
    }
@@ -2018,7 +2011,7 @@ term_cursor_mode(int forced) {
          showing_mode = MODE_INSERT;
       }
    } ei (forced || showing_mode != MODE_NORMAL) {
-      out_str(TC_CURSOR_SHAPES[cursorNormalG]); // non-Insert mode cursor
+      out_str(TC_CURSOR_SHAPES[cursorNormalG]); //non-Insert mode cursor
       showing_mode = MODE_NORMAL;
    }
 }
@@ -2028,9 +2021,9 @@ term_cursor_color(CS color) {
    if (termCodesG[KS_CSC] == S"")
       return;
 
-   out_str(termCodesG[KS_CSC]);      // set cursor color start
+   out_str(termCodesG[KS_CSC]);      //set cursor color start
    out_str_nf(color);
-   out_str(termCodesG[KS_CEC]);      // set cursor color end
+   out_str(termCodesG[KS_CEC]);      //set cursor color end
    out_flush();
 }
 
@@ -2050,9 +2043,9 @@ termSetCursorShape(int shape, int blink) {
    } else {
       int do_blink = blink;
 
-      // t_SH is empty: try setting just the blink state.
-      // The blink flags are XORed together, if the initial blinking from
-      // style and shape differs, we need to invert the flag here.
+      //t_SH is empty: try setting just the blink state.
+      //The blink flags are XORed together, if the initial blinking from
+      //style and shape differs, we need to invert the flag here.
       if (blink_state_is_inverted())
          do_blink = !blink;
 
@@ -2074,7 +2067,7 @@ scroll_region_set(Portal* wp, int off) {
    OUT_STR(TGOTO( termCodesG[KS_CS], wp->windowRow + wp->height - 1, wp->windowRow + off));
    if (termCodesG[KS_CSV] != S"" && wp->width != visibleColsG)
       OUT_STR(TGOTO(termCodesG[KS_CSV], wp->windowCol + wp->width - 1, wp->windowCol));
-   screen_start();          // don't know where cursor is now
+   screen_start();          //don't know where cursor is now
 }
 
 //Reset scrolling region to the whole screen.
@@ -2083,23 +2076,23 @@ scroll_region_reset(void) {
    OUT_STR(TGOTO(termCodesG[KS_CS], (int)visibleRowsG - 1, 0));
    if (termCodesG[KS_CSV] != S"")
       OUT_STR(TGOTO(termCodesG[KS_CSV], (int)visibleColsG - 1, 0));
-   screen_start();          // don't know where cursor is now
+   screen_start();          //don't know where cursor is now
 }
 
 
-// List of terminal codes that are currently recognized.
+//List of terminal codes that are currently recognized.
 
 typedef struct {
-   Byte name[2];       // termcap name of entry
-   CS code;       // terminal code (in allocated memory)
-   int len;       // STRLEN(code)
-   int modlen;       // length of part before ";*~".
+   Byte name[2];       //termcap name of entry
+   CS code;       //terminal code (in allocated memory)
+   int len;       //STRLEN(code)
+   int modlen;       //length of part before ";*~".
 } TermCode;
 
 private Arr(TermCode) recognizedTermcodesP = NULL;
 
-private Unt recognizedCap = 0; // number of entries that recognizedTermcodesP[] can hold
-private Unt recognizedLen = 0;       // current number of entries in recognizedTermcodesP[]
+private Unt recognizedCap = 0; //number of entries that recognizedTermcodesP[] can hold
+private Unt recognizedLen = 0;       //current number of entries in recognizedTermcodesP[]
 
 private int endsInStar(Text code);
 
@@ -2112,10 +2105,10 @@ clear_termcodes(void) {
 
    BC = "";
    UP = "";
-   PC = ZERO;         // set pad character to ZERO
+   PC = ZERO;         //set pad character to ZERO
    ospeed = 0;
 
-   needToGatherTermLeaders = true;      // need to fill termLeaderG[]
+   needToGatherTermLeaders = true;      //need to fill termLeaderG[]
 }
 
 #define ATC_FROM_TERM 55
@@ -2130,7 +2123,7 @@ adjust_modlen(int idx) {
       return;
 
    recognizedTermcodesP[idx].modlen = recognizedTermcodesP[idx].len - 1 - j;
-   // For "CSI[@;X" the "@" is not included in "modlen".
+   //For "CSI[@;X" the "@" is not included in "modlen".
    if (recognizedTermcodesP[idx].code[recognizedTermcodesP[idx].modlen - 1] == '@')
       --recognizedTermcodesP[idx].modlen;
 }
@@ -2156,7 +2149,7 @@ termAddRecognizedTermcode(CS name, CS string, Boole isAtcFromTerm) {
 
    needToGatherTermLeaders = true;
 
-   // need to make space for more entries
+   //need to make space for more entries
    if (recognizedLen == recognizedCap) {
       recognizedCap += 20;
       new_tc = ALLOC_MULT(TermCode, recognizedCap);
@@ -2176,7 +2169,7 @@ termAddRecognizedTermcode(CS name, CS string, Boole isAtcFromTerm) {
       if (recognizedTermcodesP[i].name[0] == name[0]) {
          if (recognizedTermcodesP[i].name[1] < name[1])
             continue;
-         // Exact match: May replace old code.
+         //Exact match: May replace old code.
          if (recognizedTermcodesP[i].name[1] == name[1]) {
             if (isAtcFromTerm == ATC_FROM_TERM
                  && (j = endsInStar((Text){recognizedTermcodesP[i].code, recognizedTermcodesP[i].len})) > 0
@@ -2201,7 +2194,7 @@ termAddRecognizedTermcode(CS name, CS string, Boole isAtcFromTerm) {
             }
          }
       }
-      // Found alphabetically larger entry, move rest to insert new entry
+      //Found alphabetically larger entry, move rest to insert new entry
       action = S"Adding";
       for (Unt j = recognizedLen; j > i; --j)
          recognizedTermcodesP[j] = recognizedTermcodesP[j - 1];
@@ -2218,8 +2211,8 @@ termAddRecognizedTermcode(CS name, CS string, Boole isAtcFromTerm) {
    ++recognizedLen;
 }
 
-// Some function keys may include modifiers, but the terminfo entries
-// do not indicate that.  Insert ";*" where we expect modifiers might appear.
+//Some function keys may include modifiers, but the terminfo entries
+//do not indicate that.  Insert ";*" where we expect modifiers might appear.
 private void
 accept_modifiers_for_function_keys(void) {
    RegMatch regmatch;
@@ -2231,7 +2224,7 @@ accept_modifiers_for_function_keys(void) {
       if (!regmatch.regprog)
          return;
 
-      // skip PasteStart and PasteEnd
+      //skip PasteStart and PasteEnd
       if (recognizedTermcodesP[i].name[0] == 'P'
          && (recognizedTermcodesP[i].name[1] == 'S' || recognizedTermcodesP[i].name[1] == 'E')
       )
@@ -2257,7 +2250,7 @@ accept_modifiers_for_function_keys(void) {
 //Return 0 if not found, 2 for ;*X and 1 for *X.
 private int
 endsInStar(Text code) {
-   // Shortest is <M-O>*X.  With ; shortest is <CSI>@;*X
+   //Shortest is <M-O>*X.  With ; shortest is <CSI>@;*X
    if (code.len >= 3 && code.c[code.len - 2] == '*') {
       return (code.len >= 5 && code.c[code.len - 3] == ';') ? 2 : 1;
    }
@@ -2275,7 +2268,7 @@ find_termcode(CS name) {
 
 pub void
 del_termcode(CS name) {
-   if (!recognizedTermcodesP)   // nothing there yet
+   if (!recognizedTermcodesP)   //nothing there yet
       return;
 
    needToGatherTermLeaders = true;
@@ -2286,7 +2279,7 @@ del_termcode(CS name) {
          return;
       }
    }
-   // not found. Give error message?
+   //not found. Give error message?
 }
 
 private void
@@ -2311,7 +2304,7 @@ set_mouse_topline(Portal* po) {
    orig_topfill = po->topFill;
 }
 
-// true if the top line and top fill of window 'wp' matches the saved topline and topfill.
+//true if the top line and top fill of window 'wp' matches the saved topline and topfill.
 pub int
 is_mouse_topline(Portal* po) {
    return orig_topline == po->topLine && orig_topfill == po->topFill;
@@ -2330,7 +2323,7 @@ termPutStrIntoTypeBuf(int offset, int slen, Text newText){
       if (insertIntoTypebuf(newText.c + slen, REMAP_YES, offset, false, false) == FAIL)
          return FAIL;
 
-   // Careful: del_typebuf() and insertIntoTypebuf() may have reallocated typeBufG.c[]!
+   //Careful: del_typebuf() and insertIntoTypebuf() may have reallocated typeBufG.c[]!
    MEMMOVE(typeBufG.c + typeBufG.currPos + offset, newText.c, (Unt)newText.len);
    return OK;
 }
@@ -2348,7 +2341,7 @@ putStrIntoBuf(
    int extra = newText.len - slen;
    newText.c[newText.len - 1] = ZERO;
    if (extra < 0)
-      // remove matched characters
+      //remove matched characters
       MEMMOVE(buffer.c + offset, buffer.c + offset - extra, (Unt)(*bufLen + offset + extra));
    ei (extra > 0) {
       //Insert the extra space we need. If there is insufficient space, return -1.
@@ -2376,7 +2369,7 @@ putStr(
    }
 }
 
-// Decode a modifier number as xterm provides it into MOD_MASK bits.
+//Decode a modifier number as xterm provides it into MOD_MASK bits.
 pub Unt
 decode_modifiers(int n) {
    int code = n - 1;
@@ -2390,7 +2383,7 @@ decode_modifiers(int n) {
       modifiers |= MOD_MASK_CTRL;
    if (code & 8)
       modifiers |= MOD_MASK_META;
-   // Any further modifiers are silently dropped.
+   //Any further modifiers are silently dropped.
 
    return modifiers;
 }
@@ -2402,8 +2395,8 @@ modifiers2keycode(Unt modifiers, Unt* key, OUT CS string) {
    if (modifiers == 0)
       return 0;
 
-   // Some keys have the modifier included.  Need to handle that here to
-   // make mappings work.  This may result in a special key, such as K_S_TAB.
+   //Some keys have the modifier included.  Need to handle that here to
+   //make mappings work.  This may result in a special key, such as K_S_TAB.
    *key = simplify_key(*key, &modifiers);
    if (modifiers != 0) {
       string[new_slen++] = K_SPECIAL;
@@ -2413,7 +2406,7 @@ modifiers2keycode(Unt modifiers, Unt* key, OUT CS string) {
    return new_slen;
 }
 
-// Handle a cursor position report.
+//Handle a cursor position report.
 private void
 handle_u7_response(int* arg, CS, int) {
    if (arg[0] == 2 && arg[1] >= 2) {
@@ -2448,7 +2441,7 @@ add_key_to_buf(Unt key, OUT CS buffer) {
    return idx;
 }
 
-// Shared between handle_key_with_modifier() and handle_csi_function_key().
+//Shared between handle_key_with_modifier() and handle_csi_function_key().
 private int
 putKeyModifiersIntoTypeBuf(
    Unt key_arg,
@@ -2478,10 +2471,10 @@ putKeyModifiersIntoTypeBuf(
    return new_slen - csi_len + offset;
 }
 
-// Handle a sequence with key and modifier, one of:
-//   {lead}27;{modifier};{key}~
-//   {lead}{key};{modifier}u
-// Return the difference in length.
+//Handle a sequence with key and modifier, one of:
+//  {lead}27;{modifier};{key}~
+//  {lead}{key};{modifier}u
+//Return the difference in length.
 private int
 handle_key_with_modifier(
    int arg[static 3],
@@ -2494,13 +2487,13 @@ handle_key_with_modifier(
    Unt key = trail == 'u' ? arg[0] : arg[2];
    Unt modifiers = decode_modifiers(arg[1]);
 
-   // Some terminals do not apply the Shift modifier to the key.  To make
-   // mappings consistent we do it here.  TODO: support more keys.
+   //Some terminals do not apply the Shift modifier to the key.  To make
+   //mappings consistent we do it here.  TODO: support more keys.
    if ((modifiers & MOD_MASK_SHIFT) && key >= 'a' && key <= 'z')
       key += 'A' - 'a';
 
-   // Putting Esc in the buffer creates ambiguity, it can be the start of an
-   // escape sequence.  Use K_ESC to avoid that.
+   //Putting Esc in the buffer creates ambiguity, it can be the start of an
+   //escape sequence.  Use K_ESC to avoid that.
    if (key == ESC)
       key = K_ESC;
 
@@ -2509,7 +2502,7 @@ handle_key_with_modifier(
    );
 }
 
-// Handle a sequence with key without a modifier: {lead}{key}u. Return the difference in length.
+//Handle a sequence with key without a modifier: {lead}{key}u. Return the difference in length.
 private int
 handle_key_without_modifier(
    int arg[static 3],
@@ -2536,10 +2529,10 @@ handle_key_without_modifier(
    return newSlen - csiLen + offset;
 }
 
-// CSI function key without or with modifiers:
-//   {lead}[ABCDEFHPQRS]
-//   {lead}1;{modifier}[ABCDEFHPQRS]
-// Return 0 when not recognized, a positive number when recognized.
+//CSI function key without or with modifiers:
+//  {lead}[ABCDEFHPQRS]
+//  {lead}1;{modifier}[ABCDEFHPQRS]
+//Return 0 when not recognized, a positive number when recognized.
 private int
 handle_csi_function_key(
    int argc,
@@ -2553,21 +2546,21 @@ handle_csi_function_key(
 ) {
    key_name[0] = 'k';
    switch (trail) {
-   case 'A': key_name[1] = 'u'; break;  // K_UP
-   case 'B': key_name[1] = 'd'; break;  // K_DOWN
-   case 'C': key_name[1] = 'r'; break;  // K_RIGHT
-   case 'D': key_name[1] = 'l'; break;  // K_LEFT
+   case 'A': key_name[1] = 'u'; break;  //K_UP
+   case 'B': key_name[1] = 'd'; break;  //K_DOWN
+   case 'C': key_name[1] = 'r'; break;  //K_RIGHT
+   case 'D': key_name[1] = 'l'; break;  //K_LEFT
 
-   // case 'S""': keypad BEGIN - not supported
-   case 'F': key_name[0] = '@'; key_name[1] = '7'; break;  // K_END
-   case 'H': key_name[1] = 'h'; break;  // K_HOME
+   //case 'S""': keypad BEGIN - not supported
+   case 'F': key_name[0] = '@'; key_name[1] = '7'; break;  //K_END
+   case 'H': key_name[1] = 'h'; break;  //K_HOME
 
-   case 'P': key_name[1] = '1'; break;  // K_F1
-   case 'Q': key_name[1] = '2'; break;  // K_F2
-   case 'R': key_name[1] = '3'; break;  // K_F3
-   case 'S': key_name[1] = '4'; break;  // K_F4
+   case 'P': key_name[1] = '1'; break;  //K_F1
+   case 'Q': key_name[1] = '2'; break;  //K_F2
+   case 'R': key_name[1] = '3'; break;  //K_F3
+   case 'S': key_name[1] = '4'; break;  //K_F4
 
-   default: return 0;  // not recognized
+   default: return 0;  //not recognized
    }
 
    int key = TERMCAP2KEY(key_name[0], key_name[1]);
@@ -2576,25 +2569,25 @@ handle_csi_function_key(
    return csi_len;
 }
 
-// Handle a CSI escape sequence.
-// - Xterm version string.
+//Handle a CSI escape sequence.
+//- Xterm version string.
 //
-// - Response to XTQMODKEYS: "{lead} > 4 ; Pv m".
+//- Response to XTQMODKEYS: "{lead} > 4 ; Pv m".
 //
-// - Cursor position report: {lead}{row};{col}R
-//   The final byte must be 'R'. It is used for checking the ambiguous-width character state.
+//- Cursor position report: {lead}{row};{col}R
+//  The final byte must be 'R'. It is used for checking the ambiguous-width character state.
 //
-// - window position reply: {lead}3;{x};{y}t
+//- window position reply: {lead}3;{x};{y}t
 //
-// - key with modifiers when modifyOtherKeys is enabled or the Kitty keyboard protocol is used:
-//       {lead}27;{modifier};{key}~
-//       {lead}{key};{modifier}u
+//- key with modifiers when modifyOtherKeys is enabled or the Kitty keyboard protocol is used:
+//      {lead}27;{modifier};{key}~
+//      {lead}{key};{modifier}u
 //
-// - function key with or without modifiers:
-//   {lead}[ABCDEFHPQRS]
-//   {lead}1;{modifier}[ABCDEFHPQRS]
+//- function key with or without modifiers:
+//  {lead}[ABCDEFHPQRS]
+//  {lead}1;{modifier}[ABCDEFHPQRS]
 //
-// Return 0 for no match, -1 for partial match, > 0 for full match.
+//Return 0 for no match, -1 for partial match, > 0 for full match.
 private int
 handleControlSequenceIntroducer(
    CS tp,
@@ -2606,14 +2599,14 @@ handleControlSequenceIntroducer(
    CS key_name,
    int* slen
 ){
-   int first = -1;  // optional char right after {lead}
-   int trail;        // char that ends CSI sequence
-   int arg[3] = {-1, -1, -1};   // argument numbers
-   int argc = 0;      // number of arguments
+   int first = -1;  //optional char right after {lead}
+   int trail;        //char that ends CSI sequence
+   int arg[3] = {-1, -1, -1};   //argument numbers
+   int argc = 0;      //number of arguments
    Byte* ap = argp;
    int csi_len;
 
-   // Check for non-digit after CSI.
+   //Check for non-digit after CSI.
    if (!EE_ISDIGIT(*ap))
       first = *ap++;
 
@@ -2623,12 +2616,12 @@ handleControlSequenceIntroducer(
       first = -1;
       --ap;
     } else {
-      // Find up to three argument numbers.
+      //Find up to three argument numbers.
       for (argc = 0; argc < 3; ) {
          if (ap >= tp + len)
             return -1;
          if (*ap == ';')
-            arg[argc++] = -1;  // omitted number
+            arg[argc++] = -1;  //omitted number
          ei (EE_ISDIGIT(*ap)) {
             arg[argc] = 0;
             for (;;) {
@@ -2669,19 +2662,19 @@ handleControlSequenceIntroducer(
       *slen = csi_len;
    }
 
-   // Function key starting with CSI:
-   //   {lead}[ABCDEFHPQRS]
-   //   {lead}1;{modifier}[ABCDEFHPQRS]
+   //Function key starting with CSI:
+   //  {lead}[ABCDEFHPQRS]
+   //  {lead}1;{modifier}[ABCDEFHPQRS]
    ei (first == -1 && ASCII_ISUPPER(trail) && (argc == 0 || (argc == 2 && arg[0] == 1))) {
       int res = handle_csi_function_key(argc, arg, trail,
                   csi_len, OUT key_name, offset, OUT buffer, OUT bufLen);
       return res <= 0 ? res : len + res;
    }
 
-   // Cursor position report: {lead}{row};{col}R
-   // Eat it when there are 2 arguments and it ends in 'R'. Also when u7_status is not "sent", it
-   // may be from a previous Eegl that just exited. But not for <S-F3>, it sends something
-   // similar, check for row and column to make sense.
+   //Cursor position report: {lead}{row};{col}R
+   //Eat it when there are 2 arguments and it ends in 'R'. Also when u7_status is not "sent", it
+   //may be from a previous Eegl that just exited. But not for <S-F3>, it sends something
+   //similar, check for row and column to make sense.
    ei (first == -1 && argc == 2 && trail == 'R') {
       handle_u7_response(arg, tp, csi_len);
       key_name[0] = (int)KS_EXTRA;
@@ -2689,11 +2682,11 @@ handleControlSequenceIntroducer(
       *slen = csi_len;
    }
 
-   // Check blinking cursor from xterm:
-   // {lead}?12;1$y       set
-   // {lead}?12;2$y       not set
+   //Check blinking cursor from xterm:
+   //{lead}?12;1$y       set
+   //{lead}?12;2$y       not set
    //
-   // {lead} can be <Esc>[ or CSI
+   //{lead} can be <Esc>[ or CSI
    ei (cursorBlinkingRequestS.progress == STATUS_SENT
        && first == '?'
        && ap == argp + 6
@@ -2709,13 +2702,13 @@ handleControlSequenceIntroducer(
       *slen = csi_len;
       applyAutocomms(EVENT_TERMRESPONSEALL, S"cursorblink", NULL, false, curBook);
    }
-   // Kitty keyboard protocol status response: CSI ? flags u
+   //Kitty keyboard protocol status response: CSI ? flags u
    ei (first == '?' && argc == 1 && trail == 'u') {
-      // The protocol has various "progressive enhancement flags" values, but
-      // we only check for zero and non-zero here.
+      //The protocol has various "progressive enhancement flags" values, but
+      //we only check for zero and non-zero here.
       if (arg[0] != '0') {
-         // Reset seenModifyOtherKeys just in case some key combination has
-         // been seen that set it before we get the status response.
+         //Reset seenModifyOtherKeys just in case some key combination has
+         //been seen that set it before we get the status response.
          seenModifyOtherKeys = false;
       }
 
@@ -2724,12 +2717,12 @@ handleControlSequenceIntroducer(
       *slen = csi_len;
    }
 
-   // Check for a window position response from the terminal:
-   //       {lead}3;{x};{y}t
+   //Check for a window position response from the terminal:
+   //      {lead}3;{x};{y}t
    ei (did_request_winpos && argc == 3 && arg[0] == 3 && trail == 't') {
       winpos_x = arg[1];
       winpos_y = arg[2];
-      // got finished code: consume it
+      //got finished code: consume it
       key_name[0] = (int)KS_EXTRA;
       key_name[1] = (int)KE_IGNORE;
       *slen = csi_len;
@@ -2738,21 +2731,21 @@ handleControlSequenceIntroducer(
           winPositionRequestS.progress = STATUS_GOT;
    }
 
-   // Key with modifier:
-   //   {lead}27;{modifier};{key}~
-   //   {lead}{key};{modifier}u
-   // Even though we only handle four modifiers and the {modifier} value should be 16 or lower, we
-   // accept all modifier values to avoid the raw sequence to be passed through.
+   //Key with modifier:
+   //  {lead}27;{modifier};{key}~
+   //  {lead}{key};{modifier}u
+   //Even though we only handle four modifiers and the {modifier} value should be 16 or lower, we
+   //accept all modifier values to avoid the raw sequence to be passed through.
    ei ((arg[0] == 27 && argc == 3 && trail == '~') || (argc == 2 && trail == 'u')) {
       return len + handle_key_with_modifier(arg, trail, csi_len, offset, OUT buffer, bufLen);
    }
 
-   // Key without modifier (Kitty sends this for Esc): {lead}{key}u
+   //Key without modifier (Kitty sends this for Esc): {lead}{key}u
    ei (argc == 1 && trail == 'u') {
       return len + handle_key_without_modifier(arg, csi_len, offset, OUT buffer, bufLen);
    }
 
-   // else: Unknown CSI sequence.  We could drop it, but then the user can't create a map for it.
+   //else: Unknown CSI sequence.  We could drop it, but then the user can't create a map for it.
    return 0;
 }
 
@@ -2780,15 +2773,15 @@ handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen) {
    LOG_TRN("Received DCS response: %s", (char*)tp);
    int j = 1 + (tp[0] == ESC);
    if (len < j + 3)
-      i = len; // need more chars
+      i = len; //need more chars
    ei ((argp[1] != '+' && argp[1] != '$')
        || (argp[2] != 'r' && argp[2] != 'R'))
-      i = 0; // no match
+      i = 0; //no match
    ei (argp[1] == '+') {
-      // key code response
+      //key code response
       for (i = j; i < len; ++i) {
          if ((tp[i] == ESC && i + 1 < len && tp[i + 1] == '\\') || tp[i] == STERM) {
-            // handle a key code response, drop a resource response
+            //handle a key code response, drop a resource response
             if (i - j >= 3 && argp[2] == 'r')
                got_code_from_term(tp + j, i);
             key_name[0] = (int)KS_EXTRA;
@@ -2798,8 +2791,8 @@ handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen) {
          }
       }
    } else {
-      // Probably the cursor shape response.  Make sure that "i"
-      // is equal to "len" when there are not sufficient characters.
+      //Probably the cursor shape response.  Make sure that "i"
+      //is equal to "len" when there are not sufficient characters.
       for (i = j + 3; i < len; ++i) {
          if (  (i - j == 3 && !SAFE_isdigit(tp[i]))
             || (i - j == 4 && tp[i] != ' ')
@@ -2811,9 +2804,9 @@ handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen) {
          if ((i - j == 6 && tp[i] == STERM) || (i - j == 7 && tp[i] == '\\')) {
             int number = argp[3] - '0';
 
-            // 0, 1 = block blink, 2 = block
-            // 3 = underline blink, 4 = underline
-            // 5 = vertical bar blink, 6 = vertical bar
+            //0, 1 = block blink, 2 = block
+            //3 = underline blink, 4 = underline
+            //5 = vertical bar blink, 6 = vertical bar
             number = number == 0 ? 1 : number;
             initial_cursor_shape = (number + 1) / 2;
             //The blink flag is actually inverted, compared to the value set with termCodesG[KS_SH].
@@ -2831,7 +2824,7 @@ handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen) {
    }
 
    if (i == len) {
-      // These codes arrive many together, each code can be truncated at any point.
+      //These codes arrive many together, each code can be truncated at any point.
       LOG_TR1("not enough characters for XT");
       return FAIL;
    }
@@ -2882,7 +2875,7 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
    Unt modifiers;
    CS modifiers_start = NULL;
    Unt key;
-   int new_slen;   // Length of what will replace the termcode
+   int new_slen;   //Length of what will replace the termcode
    Byte string[MAX_KEY_CODE_LEN + 1];
    Unt j;
 
@@ -2904,13 +2897,13 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
          if (offset >= typeBufG.validLen)
             break;
          readPos = typeBufG.c + typeBufG.currPos + offset;
-         len = typeBufG.validLen - offset;   // length of the input
+         len = typeBufG.validLen - offset;   //length of the input
       }
 
       //Don't check characters after K_SPECIAL, those are already
       //translated terminal chars (avoid translating ~@^Hx).
       if (*readPos == K_SPECIAL) {
-         offset += 2;   // there are always 2 extra characters
+         offset += 2;   //there are always 2 extra characters
          continue;
       }
 
@@ -2926,9 +2919,9 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
          continue;
 
       readPos[len] = ZERO;
-      keyName[0] = ZERO;   // no key name found yet
-      keyName[1] = ZERO;   // no key name found yet
-      modifiers = 0;      // no modifiers yet
+      keyName[0] = ZERO;   //no key name found yet
+      keyName[1] = ZERO;   //no key name found yet
+      modifiers = 0;      //no modifiers yet
 
       {
       int  mouseIndexFound = -1;
@@ -2977,19 +2970,19 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
                      ++count;
                      (void)parseLong(&nr);
                      if (nr >= readPos + len)
-                        return -1;   // partial sequence
+                        return -1;   //partial sequence
                      if (*nr != ';')
                         break;
                      ++nr;
                      if (nr >= readPos + len)
-                        return -1;   // partial sequence
+                        return -1;   //partial sequence
                   }
                   if (count < 4)
-                     continue;   // no match
+                     continue;   //no match
                }
             }
             if (looks_like_mouse_start) {
-               // Only use it when there is no other match.
+               //Only use it when there is no other match.
                if (mouseIndexFound < 0)
                   mouseIndexFound = idx;
             } else {
@@ -3008,19 +3001,19 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
          if (recoTc.modlen > 0 && mouseIndexFound < 0) {
             modslen = recoTc.modlen;
             if (STRNCMP(recoTc.code, readPos, (Unt)(MIN(len, modslen))) == 0) {
-               if (len <= modslen)   // got a partial sequence
-                  return -1;      // need to get more chars
+               if (len <= modslen)   //got a partial sequence
+                  return -1;      //need to get more chars
 
                if (readPos[modslen] == recoTc.code[slen - 1])
-                  // no modifiers
+                  //no modifiers
                   slen = modslen + 1;
                ei (readPos[modslen] != ';' && modslen == slen - 3)
-                  // no match for "code;*X" with "code;"
+                  //no match for "code;*X" with "code;"
                   continue;
                ei (recoTc.code[modslen] == '@'
                       && (readPos[modslen] != '1' || readPos[modslen + 1] != ';')
                )
-                  // no match for "<Esc>[@" with "<Esc>[1;"
+                  //no match for "<Esc>[@" with "<Esc>[1;"
                   continue;
                else {
                   //Skip over the digits, the final char must follow. URXVT can use a negative 
@@ -3030,14 +3023,14 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
                          || readPos[j] == '-' || readPos[j] == ';'); ++j)
                      {}
                   ++j;
-                  if (len < j)   // got a partial sequence
-                     return -1;  // need to get more chars
+                  if (len < j)   //got a partial sequence
+                     return -1;  //need to get more chars
                   if (readPos[j - 1] != recoTc.code[slen - 1])
-                     continue;   // no match
+                     continue;   //no match
 
                   modifiers_start = readPos + slen - 2;
 
-                  // Match!  Convert modifier bits.
+                  //Match!  Convert modifier bits.
                   int n = atoi((char *)modifiers_start);
                   modifiers |= decode_modifiers(n);
 
@@ -3056,27 +3049,27 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
       }
 
       if (keyName[0] == ZERO) {
-         // Mouse codes of DEC and pterm start with <ESC>[.  When detecting the start of these
-         // mouse codes they might as well be another key code or terminal response.
+         //Mouse codes of DEC and pterm start with <ESC>[.  When detecting the start of these
+         //mouse codes they might as well be another key code or terminal response.
          Byte *argp = readPos + (readPos[0] == ESC ? 2 : 1);
-         // Check for responses from the terminal starting with {lead}:
-         // "<Esc>[" or CSI followed by [0-9>?].
-         // Also for function keys without a modifier:
-         // "<Esc>[" or CSI followed by [ABCDEFHPQRS].
+         //Check for responses from the terminal starting with {lead}:
+         //"<Esc>[" or CSI followed by [0-9>?].
+         //Also for function keys without a modifier:
+         //"<Esc>[" or CSI followed by [ABCDEFHPQRS].
          //
-         // - Xterm version string: {lead}>{x};{vers};{y}c
-         //   Also eat other possible responses to t_RV, rxvt returns "{lead}?1;2c".
+         //- Xterm version string: {lead}>{x};{vers};{y}c
+         //  Also eat other possible responses to t_RV, rxvt returns "{lead}?1;2c".
          //
-         // - Response to XTQMODKEYS: "{lead} > 4 ; Pv m".
+         //- Response to XTQMODKEYS: "{lead} > 4 ; Pv m".
          //
-         // - Cursor position report: {lead}{row};{col}R
-         //   The final byte must be 'R'. It is used for checking the ambiguous-width character state
+         //- Cursor position report: {lead}{row};{col}R
+         //  The final byte must be 'R'. It is used for checking the ambiguous-width character state
          //
-         // - window position reply: {lead}3;{x};{y}t
+         //- window position reply: {lead}3;{x};{y}t
          //
-         // - key with modifiers when modifyOtherKeys is enabled:
-         //       {lead}27;{modifier};{key}~
-         //       {lead}{key};{modifier}u
+         //- key with modifiers when modifyOtherKeys is enabled:
+         //      {lead}27;{modifier};{key}~
+         //      {lead}{key};{modifier}u
          if (((readPos[0] == ESC && len >= 3 && readPos[1] == '[')
                || (readPos[0] == CSI && len >= 2))
                    && firstOccurrence(S"0123456789>?ABCDEFHPQRS", *argp) != NULL
@@ -3094,7 +3087,7 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
          }
          //Check for key code response from xterm, starting with <Esc>P or DCS
          //It would only be needed with this condition:
-         //       (check_for_codes || cursorStyleRequestS.progress == STATUS_SENT)
+         //      (check_for_codes || cursorStyleRequestS.progress == STATUS_SENT)
          //Now this is always done so that DCS codes don't mess up things.
          ei ((readPos[0] == ESC && len >= 2 && readPos[1] == 'P') || readPos[0] == DCS) {
             if (handle_dcs(readPos, argp, len, keyName, &slen) == FAIL)
@@ -3103,7 +3096,7 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
       }
 
       if (keyName[0] == ZERO)
-          continue;       // No match at this position, try next one
+          continue;       //No match at this position, try next one
 
       //We only get here when we have a complete termcode match
 
@@ -3137,10 +3130,10 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
 
       key = handleXKeys(TERMCAP2KEY(keyName[0], keyName[1]));
 
-      // Add any modifier codes to our string.
+      //Add any modifier codes to our string.
       new_slen = modifiers2keycode(modifiers, &key, OUT string);
 
-      // Finally, add the special key code to our string
+      //Finally, add the special key code to our string
       keyName[0] = KEY2TERMCAP0(key);
       keyName[1] = KEY2TERMCAP1(key);
       if (keyName[0] == KS_KEY) {
@@ -3163,7 +3156,7 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
 
    LOG_TR1("normal character");
 
-   return 0;             // no match found
+   return 0;             //no match found
 }
 
 //Try to get the code for "t_kb" from the stty setting
@@ -3183,7 +3176,7 @@ get_stty(void) {
    buffer[1] = ZERO;
    termAddRecognizedTermcode(S"kb", buffer, false);
 
-   // If <BS> and <DEL> are now the same, redefine <DEL>.
+   //If <BS> and <DEL> are now the same, redefine <DEL>.
    CS p = find_termcode((CS)"kD");
    if (p && p[0] == buffer[0] && p[1] == buffer[1])
       do_fixdel(NULL);
@@ -3229,8 +3222,8 @@ mch_termSetMode(TermInputMode tmode) {
 
    tnew = told;
    if (tmode == TMODE_RAW) {
-      // ~ICRNL enables typing ^V^M
-      // ~IXON disables CTRL-S stopping output, so that it can be mapped.
+      //~ICRNL enables typing ^V^M
+      //~IXON disables CTRL-S stopping output, so that it can be mapped.
       tnew.c_iflag &= ~(ICRNL | IXON);
       tnew.c_lflag &= ~(ICANON | ECHO | ISIG | ECHOE
 # if defined(IEXTEN)
@@ -3238,7 +3231,7 @@ mch_termSetMode(TermInputMode tmode) {
 # endif
                );
 # ifdef ONLCR
-      // Don't map NL -> CR NL, we do it ourselves. Also disable expanding tabs if possible.
+      //Don't map NL -> CR NL, we do it ourselves. Also disable expanding tabs if possible.
 #  ifdef XTABS
       tnew.c_oflag &= ~(ONLCR | XTABS);
 #  else
@@ -3249,25 +3242,25 @@ mch_termSetMode(TermInputMode tmode) {
 #   endif
 #  endif
 # endif
-      tnew.c_cc[VMIN] = 1;      // return after 1 char
-      tnew.c_cc[VTIME] = 0;      // don't wait
+      tnew.c_cc[VMIN] = 1;      //return after 1 char
+      tnew.c_cc[VTIME] = 0;      //don't wait
    } ei (tmode == TMODE_SLEEP) {
       tnew.c_lflag &= ~(ICANON | ECHO);
-      tnew.c_cc[VMIN] = 1;   // return after 1 char
-      tnew.c_cc[VTIME] = 0;  // don't wait
+      tnew.c_cc[VMIN] = 1;   //return after 1 char
+      tnew.c_cc[VTIME] = 0;  //don't wait
    }
 
    {
    int   n = 10;
 
-   // A signal may cause tcsetattr() to fail (e.g., SIGCONT).  Retry a few times.
+   //A signal may cause tcsetattr() to fail (e.g., SIGCONT).  Retry a few times.
    while (tcsetattr(read_cmd_fd, TCSANOW, &tnew) == -1 && errno == EINTR && n > 0)
        --n;
    }
    mch_cur_tmode = tmode;
 }
 
-// Set the mouse termcode, depending on the 'term' and 'ttymouse' options.
+//Set the mouse termcode, depending on the 'term' and 'ttymouse' options.
 pub void
 check_mouse_termcode(void) {
    set_mouse_termcode(KS_SGR_MOUSE, S"\233<*M");
@@ -3280,13 +3273,13 @@ check_mouse_termcode(void) {
 //}}}
 //{{{modifier key tables
 
-// functions that use lookup tables for various things, generally to do with special key codes.
+//functions that use lookup tables for various things, generally to do with special key codes.
 
-// Some useful tables.
+//Some useful tables.
 struct modmasktable {
-   Short modMaskG; // Bit-mask for particular key modifier
-   Short mod_flag; // Bit(s) for particular key modifier
-   Byte name;      // Single letter name of modifier
+   Short modMaskG; //Bit-mask for particular key modifier
+   Short mod_flag; //Bit(s) for particular key modifier
+   Byte name;      //Single letter name of modifier
 } modMaskTable[] = {
    {MOD_MASK_ALT,         MOD_MASK_ALT,    'M'},
    {MOD_MASK_META,        MOD_MASK_META,   'T'},
@@ -3295,10 +3288,10 @@ struct modmasktable {
    {MOD_MASK_MULTI_CLICK, MOD_MASK_2CLICK, '2'},
    {MOD_MASK_MULTI_CLICK, MOD_MASK_3CLICK, '3'},
    {MOD_MASK_MULTI_CLICK, MOD_MASK_4CLICK, '4'},
-   // 'A' must be the last one
+   //'A' must be the last one
    {MOD_MASK_ALT,         MOD_MASK_ALT,    'A'},
    {0, 0, ZERO}
-   // NOTE: when adding an entry, update MAX_KEY_NAME_LEN!
+   //NOTE: when adding an entry, update MAX_KEY_NAME_LEN!
 };
 
 //Shifted key terminal codes and their unshifted equivalent.
@@ -3306,48 +3299,48 @@ struct modmasktable {
 #define MOD_KEYS_ENTRY_SIZE 5
 
 private Byte modifier_keys_table[] = {
-//  mod mask       with modifier      without modifier
-   MOD_MASK_SHIFT, '&', '9',         '@', '1',   // begin
-   MOD_MASK_SHIFT, '&', '0',         '@', '2',   // cancel
-   MOD_MASK_SHIFT, '*', '1',         '@', '4',   // command
-   MOD_MASK_SHIFT, '*', '2',         '@', '5',   // copy
-   MOD_MASK_SHIFT, '*', '3',         '@', '6',   // create
-   MOD_MASK_SHIFT, '*', '4',         'k', 'D',   // delete char
-   MOD_MASK_SHIFT, '*', '5',         'k', 'L',   // delete line
-   MOD_MASK_SHIFT, '*', '7',         '@', '7',   // end
-   MOD_MASK_CTRL,  KS_EXTRA, (int)KE_C_END,   '@', '7',   // end
-   MOD_MASK_SHIFT, '*', '9',         '@', '9',   // exit
-   MOD_MASK_SHIFT, '*', '0',         '@', '0',   // find
-   MOD_MASK_SHIFT, '#', '1',         '%', '1',   // help
-   MOD_MASK_SHIFT, '#', '2',         'k', 'h',   // home
-   MOD_MASK_CTRL,  KS_EXTRA, (int)KE_C_HOME,   'k', 'h',   // home
-   MOD_MASK_SHIFT, '#', '3',         'k', 'I',   // insert
-   MOD_MASK_SHIFT, '#', '4',         'k', 'l',   // left arrow
-   MOD_MASK_CTRL,  KS_EXTRA, (int)KE_C_LEFT,   'k', 'l',   // left arrow
-   MOD_MASK_SHIFT, '%', 'a',         '%', '3',   // message
-   MOD_MASK_SHIFT, '%', 'b',         '%', '4',   // move
-   MOD_MASK_SHIFT, '%', 'c',         '%', '5',   // next
-   MOD_MASK_SHIFT, '%', 'd',         '%', '7',   // options
-   MOD_MASK_SHIFT, '%', 'e',         '%', '8',   // previous
-   MOD_MASK_SHIFT, '%', 'f',         '%', '9',   // print
-   MOD_MASK_SHIFT, '%', 'g',         '%', '0',   // redo
-   MOD_MASK_SHIFT, '%', 'h',         '&', '3',   // replace
-   MOD_MASK_SHIFT, '%', 'i',         'k', 'r',   // right arr.
-   MOD_MASK_CTRL,  KS_EXTRA, (int)KE_C_RIGHT,   'k', 'r',   // right arr.
-   MOD_MASK_SHIFT, '%', 'j',         '&', '5',   // resume
-   MOD_MASK_SHIFT, '!', '1',         '&', '6',   // save
-   MOD_MASK_SHIFT, '!', '2',         '&', '7',   // suspend
-   MOD_MASK_SHIFT, '!', '3',         '&', '8',   // undo
-   MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_UP,   'k', 'u',   // up arrow
-   MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_DOWN,   'k', 'd',   // down arrow
+// mod mask       with modifier      without modifier
+   MOD_MASK_SHIFT, '&', '9',         '@', '1',   //begin
+   MOD_MASK_SHIFT, '&', '0',         '@', '2',   //cancel
+   MOD_MASK_SHIFT, '*', '1',         '@', '4',   //command
+   MOD_MASK_SHIFT, '*', '2',         '@', '5',   //copy
+   MOD_MASK_SHIFT, '*', '3',         '@', '6',   //create
+   MOD_MASK_SHIFT, '*', '4',         'k', 'D',   //delete char
+   MOD_MASK_SHIFT, '*', '5',         'k', 'L',   //delete line
+   MOD_MASK_SHIFT, '*', '7',         '@', '7',   //end
+   MOD_MASK_CTRL,  KS_EXTRA, (int)KE_C_END,   '@', '7',   //end
+   MOD_MASK_SHIFT, '*', '9',         '@', '9',   //exit
+   MOD_MASK_SHIFT, '*', '0',         '@', '0',   //find
+   MOD_MASK_SHIFT, '#', '1',         '%', '1',   //help
+   MOD_MASK_SHIFT, '#', '2',         'k', 'h',   //home
+   MOD_MASK_CTRL,  KS_EXTRA, (int)KE_C_HOME,   'k', 'h',   //home
+   MOD_MASK_SHIFT, '#', '3',         'k', 'I',   //insert
+   MOD_MASK_SHIFT, '#', '4',         'k', 'l',   //left arrow
+   MOD_MASK_CTRL,  KS_EXTRA, (int)KE_C_LEFT,   'k', 'l',   //left arrow
+   MOD_MASK_SHIFT, '%', 'a',         '%', '3',   //message
+   MOD_MASK_SHIFT, '%', 'b',         '%', '4',   //move
+   MOD_MASK_SHIFT, '%', 'c',         '%', '5',   //next
+   MOD_MASK_SHIFT, '%', 'd',         '%', '7',   //options
+   MOD_MASK_SHIFT, '%', 'e',         '%', '8',   //previous
+   MOD_MASK_SHIFT, '%', 'f',         '%', '9',   //print
+   MOD_MASK_SHIFT, '%', 'g',         '%', '0',   //redo
+   MOD_MASK_SHIFT, '%', 'h',         '&', '3',   //replace
+   MOD_MASK_SHIFT, '%', 'i',         'k', 'r',   //right arr.
+   MOD_MASK_CTRL,  KS_EXTRA, (int)KE_C_RIGHT,   'k', 'r',   //right arr.
+   MOD_MASK_SHIFT, '%', 'j',         '&', '5',   //resume
+   MOD_MASK_SHIFT, '!', '1',         '&', '6',   //save
+   MOD_MASK_SHIFT, '!', '2',         '&', '7',   //suspend
+   MOD_MASK_SHIFT, '!', '3',         '&', '8',   //undo
+   MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_UP,   'k', 'u',   //up arrow
+   MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_DOWN,   'k', 'd',   //down arrow
 
-                        // vt100 F1
+                        //vt100 F1
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_XF1,   KS_EXTRA, (int)KE_XF1,
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_XF2,   KS_EXTRA, (int)KE_XF2,
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_XF3,   KS_EXTRA, (int)KE_XF3,
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_XF4,   KS_EXTRA, (int)KE_XF4,
 
-   MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F1,   'k', '1',   // F1
+   MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F1,   'k', '1',   //F1
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F2,   'k', '2',
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F3,   'k', '3',
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F4,   'k', '4',
@@ -3356,7 +3349,7 @@ private Byte modifier_keys_table[] = {
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F7,   'k', '7',
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F8,   'k', '8',
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F9,   'k', '9',
-   MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F10,   'k', ';',   // F10
+   MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F10,   'k', ';',   //F10
 
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F11,   'F', '1',
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F12,   'F', '2',
@@ -3388,7 +3381,7 @@ private Byte modifier_keys_table[] = {
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F36,   'F', 'Q',
    MOD_MASK_SHIFT, KS_EXTRA, (int)KE_S_F37,   'F', 'R',
 
-                        // TAB pseudo code
+                        //TAB pseudo code
    MOD_MASK_SHIFT, 'k', 'B', KS_EXTRA, (int)KE_TAB,
 
    ZERO
@@ -3398,14 +3391,14 @@ private Byte modifier_keys_table[] = {
 //{{{codes and special chars
 
 typedef struct {
-   Boole enabled;       // is this entry available?
-   int key;          // special key code or ascii value
-   Text name;          // name of key
-   Boole is_alt;          // is an alternative name
+   Boole enabled;       //is this entry available?
+   int key;          //special key code or ascii value
+   Text name;          //name of key
+   Boole is_alt;          //is an alternative name
 } KeyNameEntry;
 
 private KeyNameEntry keyNamesTable[] = {
-// Must be sorted by the 'name.c' field in ascending order because it is used by bsearch()!
+//Must be sorted by the 'name.c' field in ascending order because it is used by bsearch()!
    {true, K_BS, tConst("BackSpace"), true},
    {true, '|', tConst("Bar"), false},
    {true, K_BS, tConst("BS"), false},
@@ -3558,7 +3551,7 @@ private KeyNameEntry keyNamesTable[] = {
    {true, K_XUP, tConst("xUp"), false},
    {true, K_ZEND, tConst("zEnd"), false},
    {true, K_ZHOME, tConst("zHome"), false}
-    // NOTE: When adding a long name update MAX_KEY_NAME_LEN.
+    //NOTE: When adding a long name update MAX_KEY_NAME_LEN.
 };
 
 pub CS
@@ -3584,17 +3577,17 @@ get_key_name(int i) {
 //contain 'B', a backslash can be used instead of a CTRL-V.
 //
 //Flags:
-//  REPTERM_FROM_PART   see above
-//  REPTERM_DO_LT   also translate <lt>
-//  REPTERM_SPECIAL   always accept <key> notation
-//  REPTERM_NO_SIMPLIFY   do not simplify <C-H> to 0x08 and set 8th bit for <A-x>
+// REPTERM_FROM_PART   see above
+// REPTERM_DO_LT   also translate <lt>
+// REPTERM_SPECIAL   always accept <key> notation
+// REPTERM_NO_SIMPLIFY   do not simplify <C-H> to 0x08 and set 8th bit for <A-x>
 //
 //"didSimplify" is set when some <C-H> or <A-x> code was simplified, unless it is NULL.
 pub CS
 replace_termcodes(
    CS from,
    CS* bufP,
-   ScriptId sid_arg,   // script ID to use for <SID>, or 0 to use scriptPosG
+   ScriptId sid_arg,   //script ID to use for <SID>, or 0 to use scriptPosG
    Unt flags,
    OUT Boole* didSimplify,
    Boole recognizeRawKeycodes
@@ -3608,35 +3601,35 @@ replace_termcodes(
    CS src = from;
 
    //Allocate space for the translation.  Worst case a single character is
-   // replaced by 6 bytes (shifted special key), plus a ZERO at the end.
-   // In the rare case more might be needed ga_grow() must be called again.
+   //replaced by 6 bytes (shifted special key), plus a ZERO at the end.
+   //In the rare case more might be needed ga_grow() must be called again.
    ga_init2(&ga, 1L, 100);
-   if (ga_grow(&ga, (int)(STRLEN(src) * 6 + 1)) == FAIL) { // out of memory
+   if (ga_grow(&ga, (int)(STRLEN(src) * 6 + 1)) == FAIL) { //out of memory
       *bufP = NULL;
       return from;
    }
-   CS result = ga.c;   // buffer for resulting string
+   CS result = ga.c;   //buffer for resulting string
 
-   // Check for #n at start only: function key n
+   //Check for #n at start only: function key n
    if ((flags & REPTERM_FROM_PART) && src[0] == '#' && EE_ISDIGIT(src[1])) {
       result[dlen++] = K_SPECIAL;
       result[dlen++] = 'k';
       if (src[1] == '0')
-         result[dlen++] = ';';   // #0 is F10 is "k;"
+         result[dlen++] = ';';   //#0 is F10 is "k;"
       else
-         result[dlen++] = src[1];   // #3 is F3 is "k3"
+         result[dlen++] = src[1];   //#3 is F3 is "k3"
       src += 2;
    }
 
-   // Copy each byte from *from to result[dlen]
+   //Copy each byte from *from to result[dlen]
    while (*src != ZERO) {
       //check for special key codes, like "<C-S-LeftMouse>"
       if ((flags & REPTERM_DO_LT) || STRNCMP(src, "<lt>", 4) != 0) {
-         // Change <SID>Func to K_SNR <script-nr> _Func.  This name is used
-         // for script-local user functions.
-         // (room: 5 * 6 = 30 bytes; needed: 3 + <nr> + 1 <= 14)
-         // Also change <SID>name.Func to K_SNR <import-script-nr> _Func.
-         // Only if "name" is recognized as an import.
+         //Change <SID>Func to K_SNR <script-nr> _Func.  This name is used
+         //for script-local user functions.
+         //(room: 5 * 6 = 30 bytes; needed: 3 + <nr> + 1 <= 14)
+         //Also change <SID>name.Func to K_SNR <import-script-nr> _Func.
+         //Only if "name" is recognized as an import.
          if (STRNICMP(src, "<SID>", 5) == 0) {
             if (sid_arg < 0 || (sid_arg == 0 && scriptPosG.sid <= 0))
                emsg(_(e_using_sid_not_in_script_context));
@@ -3674,7 +3667,7 @@ replace_termcodes(
            result[dlen++] = recognizedTermcodesP[i].name[0];
            result[dlen++] = recognizedTermcodesP[i].name[1];
            src += recognizedTermcodesP[i].len;
-           // If terminal code matched, continue after it.
+           //If terminal code matched, continue after it.
            continue;
         }
      }
@@ -3697,7 +3690,7 @@ replace_termcodes(
      }
      CS s;
      if (len != 0) {
-        // Allow up to 8 * 6 characters for "mapleader".
+        //Allow up to 8 * 6 characters for "mapleader".
         if (p == NULL || *p == ZERO || STRLEN(p) > 8 * 6)
            s = (CS)"\\";
         else
@@ -3712,7 +3705,7 @@ replace_termcodes(
      //For "from" side the CTRL-V at the end is included, for the "to" part it is removed.
      key = *src;
      if (key == Ctrl_V) {
-        ++src;            // skip CTRL-V or backslash
+        ++src;            //skip CTRL-V or backslash
         if (*src == ZERO) {
            if (flags & REPTERM_FROM_PART)
               result[dlen++] = key;
@@ -3720,7 +3713,7 @@ replace_termcodes(
         }
      }
 
-      // skip multibyte char correctly
+      //skip multibyte char correctly
       for (i = utfCharLen(src); i > 0; --i) {
          //If the character is K_SPECIAL, replace it with K_SPECIAL KS_SPECIAL KE_FILLER.
          //If compiled with the GUI replace CSI with K_CSI.
@@ -3735,7 +3728,7 @@ replace_termcodes(
    }
    result[dlen] = ZERO;
 
-   // Copy the new string to allocated memory.
+   //Copy the new string to allocated memory.
    *bufP = copyStr(result);
    eeglFree(result);
    return *bufP;
@@ -3747,7 +3740,7 @@ simplify_key(Unt key, Unt* modifiers) {
    if (!(*modifiers & (MOD_MASK_SHIFT | MOD_MASK_CTRL)))
       return key;
 
-   // TAB is a special case
+   //TAB is a special case
    if (key == TAB && (*modifiers & MOD_MASK_SHIFT)) {
       *modifiers &= ~MOD_MASK_SHIFT;
       return K_S_TAB;
@@ -3780,13 +3773,13 @@ find_term_bykeys(CS src) {
    return UNT;
 }
 
-// Gather the first characters in the terminal key codes into a string.
-// Used to speed up termTryParseTermcode().
+//Gather the first characters in the terminal key codes into a string.
+//Used to speed up termTryParseTermcode().
 private void
 gatherTermLeaders(void) {
    int len = 0;
    if (check_for_codes || termCodesG[KS_CRS] != S"") {
-      termLeaderG[len] = DCS; // the termcode response starts with DCS in 8-bit mode
+      termLeaderG[len] = DCS; //the termcode response starts with DCS in 8-bit mode
       len++;
    }
    termLeaderG[len] = ZERO;
@@ -3813,15 +3806,15 @@ show_termcodes(Unt flags) {
    int cols;
    int len;
 
-#define INC3 27       // try to make three columns
-#define INC2 40       // try to make two columns
-#define GAP   2       // spaces between columns
+#define INC3 27       //try to make three columns
+#define INC2 40       //try to make two columns
+#define GAP   2       //spaces between columns
 
-   if (recognizedLen == 0)       // no terminal codes (must be GUI)
+   if (recognizedLen == 0)       //no terminal codes (must be GUI)
       return;
    Arr(int) items = ALLOC_MULT(int, recognizedLen);
 
-   // Highlight title
+   //Highlight title
    msg_puts_title(_("\n--- Terminal keys ---"));
 
    //Do the loop three times:
@@ -3844,21 +3837,21 @@ show_termcodes(Unt flags) {
             items[item_count++] = i;
       }
 
-      // display the items
+      //display the items
       if (run <= 2) {
          cols = (visibleColsG + GAP) / (run == 1 ? INC3 : INC2);
          if (cols == 0)
             cols = 1;
          rows = (item_count + cols - 1) / cols;
-      } else   // run == 3
+      } else   //run == 3
          rows = item_count;
       for (row = 0; row < rows && !gotInterruptG; ++row) {
-         msg_putchar('\n');         // go to next line
-         if (gotInterruptG)         // 'q' typed in more
+         msg_putchar('\n');         //go to next line
+         if (gotInterruptG)         //'q' typed in more
             break;
          col = 0;
          for (int i = row; i < item_count; i += rows) {
-            msgColG = col;         // make columns
+            msgColG = col;         //make columns
             show_one_termcode(recognizedTermcodesP[items[i]].name, recognizedTermcodesP[items[i]].code, true);
             if (run == 2)
                col += INC2;
@@ -3914,7 +3907,7 @@ get_special_key_name(Unt c, int modifiers) {
    string[0] = '<';
    int idx = 1;
 
-   // Key that stands for a normal character.
+   //Key that stands for a normal character.
    if (IS_SPECIAL(c) && KEY2TERMCAP0(c) == KS_KEY)
       c = KEY2TERMCAP1(c);
 
@@ -3932,7 +3925,7 @@ get_special_key_name(Unt c, int modifiers) {
       }
    }
 
-   // try to find the key in the special key table
+   //try to find the key in the special key table
    int table_idx = termFindSpecialKey_in_table(c);
 
    //When not a known special key, and not a printable character, try to extract modifiers.
@@ -3940,7 +3933,7 @@ get_special_key_name(Unt c, int modifiers) {
       if (table_idx < 0 && (!bookIsCharPrintable(c) || (c & 0x7f) == ' ') && (c & 0x80)) {
          c &= 0x7f;
          modifiers |= MOD_MASK_ALT;
-         // try again, to find the un-alted key in the special key table
+         //try again, to find the un-alted key in the special key table
          table_idx = termFindSpecialKey_in_table(c);
       }
       if (table_idx < 0 && !bookIsCharPrintable(c) && c < ' ') {
@@ -3949,7 +3942,7 @@ get_special_key_name(Unt c, int modifiers) {
       }
    }
 
-   // translate the modifier into a string
+   //translate the modifier into a string
    for (int i = 0; modMaskTable[i].name != 'A'; i++) {
       if ((modifiers & modMaskTable[i].modMaskG) == modMaskTable[i].mod_flag) {
          string[idx++] = modMaskTable[i].name;
@@ -3957,14 +3950,14 @@ get_special_key_name(Unt c, int modifiers) {
       }
    }
 
-   if (table_idx < 0) {// unknown special key, may output t_xx
+   if (table_idx < 0) {//unknown special key, may output t_xx
       if (IS_SPECIAL(c)) {
          string[idx++] = 'z';
          string[idx++] = 'z';
          string[idx++] = KEY2TERMCAP0(c);
          string[idx++] = KEY2TERMCAP1(c);
       }
-      // Not a special key, only modifiers, output directly
+      //Not a special key, only modifiers, output directly
       else {
          len = mb_char2len(c);
          if (len == 1 && bookIsCharPrintable(c))
@@ -3977,7 +3970,7 @@ get_special_key_name(Unt c, int modifiers) {
                string[idx++] = *s++;
          }
       }
-   } else {// use name of special key
+   } else {//use name of special key
       Text* s = &keyNamesTable[table_idx].name;
 
       if (s->len + idx + 2 <= MAX_KEY_NAME_LEN) {
@@ -3998,7 +3991,7 @@ get_special_key_name(Unt c, int modifiers) {
 //Return the key code, or 0 if not found.
 pub int
 get_special_key_code(CS name) {
-   // If it's <t_xx> we get the code for xx from the termcap
+   //If it's <t_xx> we get the code for xx from the termcap
    if (name[0] == 'z' && name[1] == 'z' && name[2] != ZERO && name[3] != ZERO) {
       Byte string[3] = {name[2], name[3], ZERO};
       if (add_termcap_entry(string, false) == OK)
@@ -4018,8 +4011,8 @@ get_special_key_code(CS name) {
       );
       if (entry && entry->enabled) {
          Unt key = (Unt)entry->key;
-         // Both TAB and K_TAB have name "Tab", and it's unspecified which
-         // one bsearch() will return. TAB is the expected one.
+         //Both TAB and K_TAB have name "Tab", and it's unspecified which
+         //one bsearch() will return. TAB is the expected one.
          return key == K_TAB ? TAB : key;
       }
    }
@@ -4027,7 +4020,7 @@ get_special_key_code(CS name) {
    return 0;
 }
 
-// Show one termcode entry. Output goes into IObuff[]
+//Show one termcode entry. Output goes into IObuff[]
 pub int
 show_one_termcode(CS name, CS code, int printit) {
    int len;
@@ -4070,22 +4063,22 @@ show_one_termcode(CS name, CS code, int printit) {
    return len;
 }
 
-// For Xterm >= 140 compiled with OPT_TCAP_QUERY: Obtain the actually used termcap codes from the
-// terminal itself. We get them one by one to avoid a very long response string.
+//For Xterm >= 140 compiled with OPT_TCAP_QUERY: Obtain the actually used termcap codes from the
+//terminal itself. We get them one by one to avoid a very long response string.
 private int xt_index_in = 0;
 private int xt_index_out = 0;
 
 private void
 req_more_codes_from_term(void) {
-   Byte buffer[32];  // extra size to shut up LGTM
+   Byte buffer[32];  //extra size to shut up LGTM
    int old_idx = xt_index_out;
 
    //Don't do anything when going to exit.
    if (isExitingG)
       return;
 
-   // Send up to 10 more requests out than we received.  Avoid sending too
-   // many, there can be a buffer overflow somewhere.
+   //Send up to 10 more requests out than we received.  Avoid sending too
+   //many, there can be a buffer overflow somewhere.
    while (xt_index_out < xt_index_in + 10 && (Unt)xt_index_out < ARRAY_LENGTH(key_names)) {
       CS key = key_names[xt_index_out];
 
@@ -4099,17 +4092,17 @@ req_more_codes_from_term(void) {
       ++xt_index_out;
    }
 
-   // Send the codes out right away.
+   //Send the codes out right away.
    if (xt_index_out != old_idx)
       out_flush();
 }
 
-// Decode key code response from xterm:
-// '<Esc>P1+r<name>=<string><Esc>\' if it is enabled/supported
-// '<Esc>P0+r<Esc>\'                if it not enabled
-// A "0" instead of the "1" indicates a code that isn't supported.
-// Both <name> and <string> are encoded in hex.
-// "code" points to the "0" or "1".
+//Decode key code response from xterm:
+//'<Esc>P1+r<name>=<string><Esc>\' if it is enabled/supported
+//'<Esc>P0+r<Esc>\'                if it not enabled
+//A "0" instead of the "1" indicates a code that isn't supported.
+//Both <name> and <string> are encoded in hex.
+//"code" points to the "0" or "1".
 private void
 got_code_from_term(CS code, int len) {
 # define XT_LEN 100
@@ -4119,10 +4112,10 @@ got_code_from_term(CS code, int len) {
    int j = 0;
    int c;
 
-   // A '1' means the code is supported, a '0' means it isn't. If it is supported, there must be a
-   // '=' following When half the length is > XT_LEN we can't use it.
+   //A '1' means the code is supported, a '0' means it isn't. If it is supported, there must be a
+   //'=' following When half the length is > XT_LEN we can't use it.
    if (code[0] == '1' && (code[7] == '=' || code[9] == '=') && len / 2 < XT_LEN) {
-      // Get the name from the response and find it in the table.
+      //Get the name from the response and find it in the table.
       name[0] = hexhex2nr(code + 3);
       name[1] = hexhex2nr(code + 5);
       if (code[9] == '=')
@@ -4149,11 +4142,11 @@ got_code_from_term(CS code, int len) {
                && name[0] == recognizedTermcodesP[i].name[0] 
                && name[1] == recognizedTermcodesP[i].name[1]
          ) {
-            // Existing entry with the same name and code - skip.
+            //Existing entry with the same name and code - skip.
             lo("got_code_from_term(): Entry %c%c did not change", name[0], name[1]);
          } else {
             if (i != UNT) {
-               // Delete an existing entry using the same code.
+               //Delete an existing entry using the same code.
                lo("got_code_from_term(): Deleting entry %c%c with matching keys %s",
                      recognizedTermcodesP[i].name[0], recognizedTermcodesP[i].name[1], str);
                del_termcode_idx(i);
@@ -4164,7 +4157,7 @@ got_code_from_term(CS code, int len) {
       }
    }
 
-   // May request more codes now that we received one.
+   //May request more codes now that we received one.
    ++xt_index_in;
    req_more_codes_from_term();
 }
@@ -4184,7 +4177,7 @@ handleUnansweredRequests(void) {
    ++allow_keys;
    for (;;) {
       Unt c = vpeekc();
-      if (c == ZERO)       // nothing available
+      if (c == ZERO)       //nothing available
          break;
 
       //If a response is recognized it's replaced with K_IGNORE, must read it from the input 
@@ -4213,24 +4206,24 @@ private int grey_ramp[] = {
 };
 
 private const Byte ansi_table[16][3] = {
-//   R    G    B
-  {  0,   0,   0}, // black
-  {224,   0,   0}, // dark red
-  {  0, 224,   0}, // dark green
-  {224, 224,   0}, // dark yellow / brown
-  {  0,   0, 224}, // dark blue
-  {224,   0, 224}, // dark magenta
-  {  0, 224, 224}, // dark cyan
-  {224, 224, 224}, // light grey
+//  R    G    B
+  {  0,   0,   0}, //black
+  {224,   0,   0}, //dark red
+  {  0, 224,   0}, //dark green
+  {224, 224,   0}, //dark yellow / brown
+  {  0,   0, 224}, //dark blue
+  {224,   0, 224}, //dark magenta
+  {  0, 224, 224}, //dark cyan
+  {224, 224, 224}, //light grey
 
-  {128, 128, 128}, // dark grey
-  {255,  64,  64}, // light red
-  { 64, 255,  64}, // light green
-  {255, 255,  64}, // yellow
-  { 64,  64, 255}, // light blue
-  {255,  64, 255}, // light magenta
-  { 64, 255, 255}, // light cyan
-  {255, 255, 255}, // white
+  {128, 128, 128}, //dark grey
+  {255,  64,  64}, //light red
+  { 64, 255,  64}, //light green
+  {255, 255,  64}, //yellow
+  { 64,  64, 255}, //light blue
+  {255,  64, 255}, //light magenta
+  { 64, 255, 255}, //light cyan
+  {255, 255, 255}, //white
 };
 
 
@@ -4262,14 +4255,14 @@ cterm_color2rgb(int nr, Byte* r, Byte* g, Byte* b, Byte* ansi_idx) {
       *b = ansi_table[idx][2];
       *ansi_idx = idx + 1;
    } ei (nr < 232) {
-      // 216 color cube
+      //216 color cube
       idx = nr - 16;
       *r = cube_value[idx / 36 % 6];
       *g = cube_value[idx / 6  % 6];
       *b = cube_value[idx      % 6];
       *ansi_idx = ANSI_INDEX_NONE;
    } ei (nr < 256) {
-      // 24 grey scale ramp
+      //24 grey scale ramp
       idx = nr - 232;
       *r = grey_ramp[idx];
       *g = grey_ramp[idx];
@@ -4296,7 +4289,7 @@ term_replace_keycodes(CS ta_buf, int ta_len, int len_arg) {
          Unt modifiers = ta_buf[i + 2];
          Unt key = ta_buf[i + 3];
 
-         // Try to use the modifier to modify the key.  In any case drop the modifier.
+         //Try to use the modifier to modify the key.  In any case drop the modifier.
          MEMMOVE(ta_buf + i + 1, ta_buf + i + 4, (Unt)(len - i - 3));
          len -= 3;
          if (key < 0x80)
@@ -4328,14 +4321,14 @@ private int
 extractModifiers(Unt key, OUT Unt* modifiers, Boole doSimplify, OUT Boole* didSimplify) {
    if ((*modifiers & MOD_MASK_SHIFT) && ASCII_ISALPHA(key)) {
       key = TOUPPER_ASC(key);
-      // With <C-S-a> we keep the shift modifier. But with <S-a>, <A-S-a> and <S-A> we don't
+      //With <C-S-a> we keep the shift modifier. But with <S-a>, <A-S-a> and <S-A> we don't
       if (doSimplify || *modifiers == MOD_MASK_SHIFT
             || *modifiers == (MOD_MASK_SHIFT | MOD_MASK_ALT)
             || *modifiers == (MOD_MASK_SHIFT | MOD_MASK_META))
          *modifiers &= ~MOD_MASK_SHIFT;
     }
 
-   // <C-H> and <C-h> mean the same thing, always use "H"
+   //<C-H> and <C-h> mean the same thing, always use "H"
    if ((*modifiers & MOD_MASK_CTRL) && ASCII_ISALPHA(key))
       key = TOUPPER_ASC(key);
 
@@ -4344,7 +4337,7 @@ extractModifiers(Unt key, OUT Unt* modifiers, Boole doSimplify, OUT Boole* didSi
    ) {
       key = charMinusCtrl(key);
       *modifiers &= ~MOD_MASK_CTRL;
-      // <C-@> is <ZERO>
+      //<C-@> is <ZERO>
       if (key == ZERO)
          key = K_ZERO;
       if (didSimplify) {
@@ -4353,9 +4346,9 @@ extractModifiers(Unt key, OUT Unt* modifiers, Boole doSimplify, OUT Boole* didSi
       }
    }
 
-   if (doSimplify && (*modifiers & MOD_MASK_ALT) && key < 0x80) { // avoid creating a lead byte
+   if (doSimplify && (*modifiers & MOD_MASK_ALT) && key < 0x80) { //avoid creating a lead byte
       key |= 0x80;
-      *modifiers &= ~MOD_MASK_ALT;   // remove the ALT (META) modifier
+      *modifiers &= ~MOD_MASK_ALT;   //remove the ALT (META) modifier
       if (didSimplify) {
          *didSimplify = true;
       }
@@ -4382,8 +4375,8 @@ pub int
 termFindSpecialKey(
    OUT Byte** srcp,
    OUT Unt* modp,
-   Unt flags,      // FSK_ values
-   OUT Boole* didSimplify // found <C-H> or <A-x>
+   Unt flags,      //FSK_ values
+   OUT Boole* didSimplify //found <C-H> or <A-x>
 ){
    CS end_of_name;
    CS bp;
@@ -4397,18 +4390,18 @@ termFindSpecialKey(
    CS src = *srcp;
    if (src[0] != '<')
       return 0;
-   if (src[1] == '*')       // <*xxx>: do not simplify
+   if (src[1] == '*')       //<*xxx>: do not simplify
       ++src;
 
-   // Find end of modifier list
+   //Find end of modifier list
    CS last_dash = src;
    for (bp = src + 1; *bp == '-' || eeIsNormalIdentifierChar(*bp); bp++) {
       if (*bp == '-') {
          last_dash = bp;
          if (bp[1] != ZERO) {
             l = utfCharLen(bp + 1);
-            // Anything accepted, like <C-?>. <C-"> or <M-"> are not special in strings as " is
-            // the string delimiter. With a backslash it works: <M-\">
+            //Anything accepted, like <C-?>. <C-"> or <M-"> are not special in strings as " is
+            //the string delimiter. With a backslash it works: <M-\">
             if (!(in_string && bp[1] == '"') && bp[l + 1] == '>')
                bp += l;
             ei (in_string && bp[1] == '\\' && bp[2] == '"' && bp[3] == '>')
@@ -4416,7 +4409,7 @@ termFindSpecialKey(
           }
       }
       if (bp[0] == 'z' && bp[1] == 'z' && bp[2] && bp[3])
-         bp += 3;   // skip t_xx, xx may be '-' or '>'
+         bp += 3;   //skip t_xx, xx may be '-' or '>'
       ei (STRNICMP(bp, "char-", 5) == 0) {
          readLongNumber(bp + 5, NULL, &l, STR2NR_ALL, NULL, NULL, 0, true, NULL);
          if (l == 0) {
@@ -4428,24 +4421,24 @@ termFindSpecialKey(
       }
    }
 
-   if (*bp == '>') {// found matching '>'
+   if (*bp == '>') {//found matching '>'
       end_of_name = bp + 1;
 
-      // Which modifiers are given?
+      //Which modifiers are given?
       modifiers = 0x0;
       for (bp = src + 1; bp < last_dash; bp++) {
          if (*bp != '-') {
             bit = nameToModMask(*bp);
             if (bit == 0x0)
-               break;   // Illegal modifier name
+               break;   //Illegal modifier name
             modifiers |= bit;
          }
       }
 
-      // Legal modifier name.
+      //Legal modifier name.
       if (bp >= last_dash) {
          if (STRNICMP(last_dash + 1, "char-", 5) == 0 && EE_ISDIGIT(last_dash[6])) {
-            // <Char-123> or <Char-033> or <Char-0x33>
+            //<Char-123> or <Char-033> or <Char-0x33>
             readLongNumber(last_dash + 6, NULL, &l, STR2NR_ALL, NULL, &n, 0, true, NULL);
             if (l == 0) {
                emsg(_(e_invalid_argument));
@@ -4455,7 +4448,7 @@ termFindSpecialKey(
          } else {
             int off = 1;
 
-            // Modifier with single letter, or special key name.
+            //Modifier with single letter, or special key name.
             if (in_string && last_dash[1] == '\\' && last_dash[2] == '"')
                off = 2;
             l = utfCharLen(last_dash + off);
@@ -4490,7 +4483,7 @@ termFindSpecialKey(
                   key = K_ESC;
             }
 
-            // Normal Key with modifier: Try to make a single byte code.
+            //Normal Key with modifier: Try to make a single byte code.
             if (!IS_SPECIAL(key))
                key = extractModifiers(
                      key, OUT &modifiers, (flags & FSK_SIMPLIFY) > 0, OUT didSimplify
@@ -4519,7 +4512,7 @@ may_adjust_key_for_ctrl(int modifiers, Unt key) {
       return key;
 
    if (ASCII_ISALPHA(key)) {
-      check_no_reduce_keys();  // may update the no_reduce_keys flag
+      check_no_reduce_keys();  //may update the no_reduce_keys flag
       return no_reduce_keys == 0 ? TOUPPER_ASC(key) : key;
    }
    if (key == '2')
@@ -4609,9 +4602,9 @@ pub int
 trans_special(
    OUT Byte** srcp,
    CS dst,
-   Unt flags,      // FSK_ values
-   int escape_ks,   // escape K_SPECIAL bytes in the character
-   OUT Boole* didSimplify  // FSK_SIMPLIFY and found <C-H> or <A-x>
+   Unt flags,      //FSK_ values
+   int escape_ks,   //escape K_SPECIAL bytes in the character
+   OUT Boole* didSimplify  //FSK_SIMPLIFY and found <C-H> or <A-x>
 ){
    Unt modifiers = 0;
 
@@ -4625,36 +4618,36 @@ trans_special(
 //}}}
 //{{{pty
 
-// The stuff in this section mostly comes from the "screen" program.
-// Included with permission from Juergen Weigert.
-// Copied from "pty.c".  "putenv.c" was used for putenv() in misc2.c.
+//The stuff in this section mostly comes from the "screen" program.
+//Included with permission from Juergen Weigert.
+//Copied from "pty.c".  "putenv.c" was used for putenv() in misc2.c.
 //
-// It has been modified to work better with Eegl.
-// The parts that are not used in Eegl have been deleted.
-// See the "screen" sources for the complete stuff.
+//It has been modified to work better with Eegl.
+//The parts that are not used in Eegl have been deleted.
+//See the "screen" sources for the complete stuff.
 //
-// This specific version is distributed under the Eegl license (attribution by
-// Juergen Weigert), the GPL applies to the original version, see the copyright notice below.
+//This specific version is distributed under the Eegl license (attribution by
+//Juergen Weigert), the GPL applies to the original version, see the copyright notice below.
 
-// Copyright (c) 1993
-//   Juergen Weigert (jnweiger@immd4.informatik.uni-erlangen.de)
-//   Michael Schroeder (mlschroe@immd4.informatik.uni-erlangen.de)
-// Copyright (c) 1987 Oliver Laumann
+//Copyright (c) 1993
+//  Juergen Weigert (jnweiger@immd4.informatik.uni-erlangen.de)
+//  Michael Schroeder (mlschroe@immd4.informatik.uni-erlangen.de)
+//Copyright (c) 1987 Oliver Laumann
 //
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2, or (at your option)
-// any later version.
+//This program is free software; you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation; either version 2, or (at your option)
+//any later version.
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program (see the file COPYING); if not, write to the
-// Free Software Foundation, Inc.,
-// 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
+//You should have received a copy of the GNU General Public License
+//along with this program (see the file COPYING); if not, write to the
+//Free Software Foundation, Inc.,
+//59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
 
 #include <signal.h>
 
@@ -4666,7 +4659,7 @@ trans_special(
 # include <sys/pty.h>
 #endif
 
-// if no PTYRANGE[01] is in the config file, we pick a default
+//if no PTYRANGE[01] is in the config file, we pick a default
 #ifndef PTYRANGE0
 # define PTYRANGE0 "qprs"
 #endif
@@ -4674,12 +4667,12 @@ trans_special(
 # define PTYRANGE1 "0123456789abcdef"
 #endif
 
-// Open all ptys with O_NOCTTY, just to be on the safe side.
+//Open all ptys with O_NOCTTY, just to be on the safe side.
 #ifndef O_NOCTTY
 # define O_NOCTTY 0
 #endif
 
-// These should be in stdlib.h, but it depends on _XOPEN_SOURCE.
+//These should be in stdlib.h, but it depends on _XOPEN_SOURCE.
 pub char *ptsname(int);
 int unlockpt(int);
 pub int grantpt(int);
@@ -4688,7 +4681,7 @@ int posix_openpt(int flags);
 private void
 initmaster(int f) {
    tcflush(f, TCIOFLUSH);
-   (void)ioctl(f, TIOCEXCL, (char *) 0); // lock the pty device
+   (void)ioctl(f, TIOCEXCL, (char *) 0); //lock the pty device
 }
 
 //This causes a hang on some systems, but is required for a properly working
@@ -4708,12 +4701,12 @@ setup_slavepty(int fd) {
 pub int
 openpty(char **ttyn) {
    int f;
-   static Byte TtyName[32];  // used for opening a new pty-pair
+   static Byte TtyName[32];  //used for opening a new pty-pair
 
    if ((f = posix_openpt(O_RDWR | O_NOCTTY | O_EXTRA)) == -1)
       return -1;
 
-   // SIGCHLD set to SIG_DFL for grantpt() because it fork()s and exec()s pt_chmod
+   //SIGCHLD set to SIG_DFL for grantpt() because it fork()s and exec()s pt_chmod
    CS m;
    sighandler_T sigcld = mch_signal(SIGCHLD, SIG_DFL);
    if ((m = (CS)ptsname(f)) == NULL || grantpt(f) || unlockpt(f)) {
@@ -4728,7 +4721,7 @@ openpty(char **ttyn) {
    return f;
 }
 
-// Call isatty(fd)
+//Call isatty(fd)
 pub int
 mch_isatty(int fd) {
    return isatty(fd);

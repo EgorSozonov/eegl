@@ -17,53 +17,53 @@
 #if defined(DO_DECLARE_COMMANDS) || defined(DECLARE_COMMANDS_FOR_INDEXING)\
    || defined(DECLARE_COMMANDS_FLAGS)
 
-#define RANGE     0x001 // allow a linespecs
-#define BANG      0x002 // allow a ! after the command name
-#define EXTRA     0x004 // allow extra args after command name
-#define XFILE     0x008 // expand wildcards in extra part
-#define NOSPC_IN_EXTRA  0x010 // no spaces allowed in the extra part
-#define DFLALL    0x020 // default file range is 1,$
-#define WHOLEFOLD 0x040 // extend range to include whole fold also when less than 2 numbers given
-#define NEEDARG   0x080 // argument required
-#define TRLBAR    0x100 // check for trailing vertical bar
-#define REGSTR    0x200 // allow "x for register designation
-#define COUNT     0x400 // allow count in argument, after command
-#define NOTRLCOM  0x800 // no trailing comment allowed
-#define ZERO_LINE_OK 0x1000  // zero line number allowed
-#define CTRLV     0x2000  // do not remove CTRL-V from argument
-#define CMDARG    0x4000  // allow "+command" argument
-#define BUFNAME   0x8000  // accepts book name
-#define BUFUNL    0x10000 // accepts unlisted book too
-#define ARGOPT    0x20000 // allow "++opt=val" argument
-#define COMMPORT  0x80000 // allowed in command line portal
-#define MODIFY    0x100000 // forbidden in non-'modifiable' book
-#define FLAGS     0x200000 // allow flags after count in argument
-#define EXPAND    0x800000 // expands wildcards later
-#define LOCK_OK   0x1000000 // command can be executed when textlock is set; when missing, 
-                               // disallows editing another book when curbuf_lock is set
-#define NONWHITE_OK 0x2000000 // command can be followed by non-white
-#define KEEPSCRIPT  0x4000000 // keep sctx of where command was invoked
-#define EXPR_ARG    0x8000000 // argument is an expression
+#define RANGE           0x001 //allow a linespecs
+#define BANG            0x002 //allow a ! after the command name
+#define EXTRA           0x004 //allow extra args after command name
+#define XFILE           0x008 //expand wildcards in extra part
+#define NOSPC_IN_EXTRA  0x010 //no spaces allowed in the extra part
+#define DFLALL          0x020 //default file range is 1,$
+#define WHOLEFOLD       0x040 //extend range to include whole fold also when less than 2 numbers given
+#define NEEDARG         0x080 //argument required
+#define TRLBAR          0x100 //check for trailing vertical bar
+#define REGSTR          0x200 //allow "x for register designation
+#define COUNT           0x400 //allow count in argument, after command
+#define NOTRLCOM        0x800 //no trailing comment allowed
+#define ZERO_LINE_OK   0x1000 //zero line number allowed
+#define CTRLV          0x2000 //do not remove CTRL-V from argument
+#define CMDARG         0x4000 //allow "+command" argument
+#define BUFNAME        0x8000 //accepts book name
+#define BUFUNL        0x10000 //accepts unlisted book too
+#define ARGOPT        0x20000 //allow "++opt=val" argument
+#define COMMPORT      0x80000 //allowed in command line portal
+#define MODIFY       0x100000 //forbidden in non-'modifiable' book
+#define FLAGS        0x200000 //allow flags after count in argument
+#define EXPAND       0x800000 //expands wildcards later
+#define LOCK_OK     0x1000000 //command can be executed when textlock is set; when missing, 
+                              //disallows editing another book when curbuf_lock is set
+#define NONWHITE_OK 0x2000000 //command can be followed by non-white
+#define KEEPSCRIPT  0x4000000 //keep sctx of where command was invoked
+#define EXPR_ARG    0x8000000 //argument is an expression
 
-#define FILES (XFILE | EXTRA) // multiple extra files allowed
-#define FILE1 (FILES | NOSPC_IN_EXTRA) // 1 file, defaults to current file
-#define WORD1 (EXTRA | NOSPC_IN_EXTRA) // one extra word allowed
+#define FILES (XFILE | EXTRA) //multiple extra files allowed
+#define FILE1 (FILES | NOSPC_IN_EXTRA) //1 file, defaults to current file
+#define WORD1 (EXTRA | NOSPC_IN_EXTRA) //one extra word allowed
 
 #endif
 
 
-#ifdef DO_DECLARE_COMMANDS // Full table 
+#ifdef DO_DECLARE_COMMANDS //Full table 
 
 #define C(a, b, c, d, e) {(CS)b, STRLEN_LITERAL(b), c, (Ulong)(d), e}
 
 typedef void (*CommFn) (Invocation* invo);
 
 typedef struct {
-   Arr(Byte) name;   // name of the command
-   Unt   nameLen;   // length of the command name
-   CommFn   fn;   // function for this command
-   Ulong   flags;   // flags declared above
-   CommandAddress   addressKind;   // flag for address type
+   Arr(Byte) name;//name of the command
+   Unt nameLen;   //length of the command name
+   CommFn fn;     //function for this command
+   Ulong flags;   //flags declared above
+   CommandAddress addressKind; //flag for address type
 } CommandDef; 
 
 static CommandDef commands[] =
@@ -71,12 +71,12 @@ static CommandDef commands[] =
 #endif
 
 
-#ifdef DECLARE_COMMANDS_FOR_INDEXING // List for generation of indices in indices/createIndices.c
+#ifdef DECLARE_COMMANDS_FOR_INDEXING //List for generation of indices in indices/createIndices.c
 
 typedef struct {
-   Arr(Byte) name;   // name of the command
-   Ulong flags;   // flags declared above
-   CommandAddress   addressKind;   // flag for address type
+   Arr(Byte) name; //name of the command
+   Ulong flags;    //flags declared above
+   CommandAddress  addressKind;   //flag for address type
 } CommandForIndexing;
 
 #define C(a, b, c, d, e)  {(Byte *)b, (Ulong)(d), e}
@@ -88,18 +88,18 @@ static CommandForIndexing commands[] =
 #ifdef DECLARE_COMMANDS_ENUM
 
 typedef enum {
-   ADDR_LINES,       // book line numbers
-   ADDR_PORTALS,    // portal number
-   ADDR_ARGUMENTS,    // argument number
-   ADDR_LOADED_BUFFERS, // book number of loaded book
-   ADDR_BUFFERS,    // book number
-   ADDR_TABS,       // tab number
-   ADDR_TABS_RELATIVE,    // Tab page that only relative
-   ADDR_QUICKFIX_VALID, // quickfix list valid entry number
-   ADDR_QUICKFIX,    // quickfix list entry number
-   ADDR_UNSIGNED,    // positive count or zero, defaults to 1
-   ADDR_OTHER,       // something else, use line number for '$', '%', etc.
-   ADDR_NONE       // no range used
+   ADDR_LINES,          //book line numbers
+   ADDR_PORTALS,        //portal number
+   ADDR_ARGUMENTS,      //argument number
+   ADDR_LOADED_BUFFERS, //book number of loaded book
+   ADDR_BUFFERS,        //book number
+   ADDR_TABS,           //tab number
+   ADDR_TABS_RELATIVE,  //Tab page that only relative
+   ADDR_QUICKFIX_VALID, //quickfix list valid entry number
+   ADDR_QUICKFIX,       //quickfix list entry number
+   ADDR_UNSIGNED,       //positive count or zero, defaults to 1
+   ADDR_OTHER,          //something else, use line number for '$', '%', etc.
+   ADDR_NONE            //no range used
 } CommandAddress;
 
 
@@ -112,10 +112,10 @@ enum CommIndex
 
 #if defined(DO_DECLARE_COMMANDS) || defined(DECLARE_COMMANDS_ENUM)\
    || defined(DECLARE_COMMANDS_FOR_INDEXING)
-// This array declares and defines all built-in Commands. The order in which commands are listed 
-// is SIGNIFICANT -- ambiguous abbreviations are always resolved to be the first possible match
-// (e.g. "r" is taken to mean "read", not "rewind", because "read" comes before "rewind").
-// Unsupported commands are included to avoid ambiguities.
+//This array declares and defines all built-in Commands. The order in which commands are listed 
+//is SIGNIFICANT -- ambiguous abbreviations are always resolved to be the first possible match
+//(e.g. "r" is taken to mean "read", not "rewind", because "read" comes before "rewind").
+//Unsupported commands are included to avoid ambiguities.
 {
 C(C_abbreviate, "abbreviate", c_abbreviate, 
       EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE
@@ -610,7 +610,7 @@ C(C_xunmap,   "xunmap", c_unmap, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, A
 C(C_yank, "yank", c_operators, RANGE|WHOLEFOLD|REGSTR|COUNT|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),
 C(C_z, "z",      c_z, RANGE|WHOLEFOLD|BANG|EXTRA|FLAGS|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),
 
-// commands that don't start with a letter
+//commands that don't start with a letter
 C(C_bang,      "!", c_bang, RANGE|WHOLEFOLD|BANG|FILES|COMMPORT|LOCK_OK|NONWHITE_OK, ADDR_LINES),
 C(C_pound,   "#", c_print, RANGE|WHOLEFOLD|COUNT|FLAGS|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),
 C(C_and, "&", c_substitute, RANGE|WHOLEFOLD|EXTRA|COMMPORT|LOCK_OK|MODIFY|NONWHITE_OK, ADDR_LINES),
@@ -627,7 +627,7 @@ C(C_tilde, "~", c_substitute,
       RANGE|WHOLEFOLD|EXTRA|COMMPORT|LOCK_OK|MODIFY|NONWHITE_OK, ADDR_LINES
 ),
 
-// commands that start with an uppercase letter
+//commands that start with an uppercase letter
 C(C_Next,      "Next", c_previous, EXTRA|RANGE|COUNT|BANG|CMDARG|ARGOPT|TRLBAR, ADDR_OTHER),
 C(C_Print,   "Print",   c_print, RANGE|WHOLEFOLD|COUNT|FLAGS|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),
 C(C_StrictSubstitute,   "Substitute",   c_substitute, 
@@ -636,9 +636,9 @@ C(C_StrictSubstitute,   "Substitute",   c_substitute,
 
 
 #ifdef DECLARE_COMMANDS_ENUM
-   COUNT_COMMANDS,      // MUST be after all real commands!
-   C_USER = -1,   // User-defined command
-   C_USER_BUF = -2   // User-defined command local to buffer
+   COUNT_COMMANDS,      //MUST be after all real commands!
+   C_USER = -1,   //User-defined command
+   C_USER_BUF = -2   //User-defined command local to buffer
 #endif
 };
 
@@ -648,12 +648,12 @@ C(C_StrictSubstitute,   "Substitute",   c_substitute,
 #ifdef DECLARE_COMMANDS_ENUM
 
 typedef enum CommIndex CommIndex;
-#define FORCE_BIN 1      // ":edit ++bin file"
-#define FORCE_NOBIN 2      // ":edit ++nobin file"
+#define FORCE_BIN 1      //":edit ++bin file"
+#define FORCE_NOBIN 2      //":edit ++nobin file"
 
-// Values for "flags"
-#define EXFLAG_LIST   0x01  // 'l': list
-#define EXFLAG_NR   0x02    // '#': number
-#define EXFLAG_PRINT   0x04 // 'p': print
+//Values for "flags"
+#define EXFLAG_LIST   0x01  //'l': list
+#define EXFLAG_NR   0x02    //'#': number
+#define EXFLAG_PRINT   0x04 //'p': print
 
 #endif

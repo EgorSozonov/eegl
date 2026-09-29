@@ -67,7 +67,7 @@ CS get_key_name(int i);
 CS replace_termcodes(
    CS from,
    CS* bufP,
-   ScriptId sid_arg,   // script ID to use for <SID>, or 0 to use scriptPosG
+   ScriptId sid_arg,   //script ID to use for <SID>, or 0 to use scriptPosG
    Unt flags,
    OUT Boole* didSimplify,
    Boole recognizeRawKeycodes
@@ -83,17 +83,17 @@ int term_replace_keycodes(CS ta_buf, int ta_len, int len_arg);
 int termFindSpecialKey(
    OUT Byte** srcp,
    OUT Unt* modp,
-   Unt flags,      // FSK_ values
-   OUT Boole* didSimplify // found <C-H> or <A-x>
+   Unt flags,      //FSK_ values
+   OUT Boole* didSimplify //found <C-H> or <A-x>
 );
 int termFindSpecialKey_in_table(int c);
 int special_to_buf(Unt key, Unt modifiers, int escape_ks, OUT CS dst);
 int trans_special(
    OUT Byte** srcp,
    CS dst,
-   Unt flags,      // FSK_ values
-   int escape_ks,   // escape K_SPECIAL bytes in the character
-   OUT Boole* didSimplify  // FSK_SIMPLIFY and found <C-H> or <A-x>
+   Unt flags,      //FSK_ values
+   int escape_ks,   //escape K_SPECIAL bytes in the character
+   OUT Boole* didSimplify  //FSK_SIMPLIFY and found <C-H> or <A-x>
 );
 int setup_slavepty(int fd);
 int openpty(char **ttyn);

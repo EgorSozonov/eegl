@@ -14,21 +14,21 @@
 
 #include "base.h"
 
-// ============ the header file puzzle: order matters =========
+//============ the header file puzzle: order matters =========
 
-// Defined to the size of an int
+//Defined to the size of an int
 #define SIZEOF_INT 4
 
-// Defined to the size of a long
+//Defined to the size of a long
 #define SIZEOF_LONG 8
 
-// Define to nanoseconds field of struct stat
+//Define to nanoseconds field of struct stat
 #define ST_MTIM_NSEC st_mtim.tv_nsec
 
-// Define if tgetent() returns zero for an error
+//Define if tgetent() returns zero for an error
 #define TGETENT_ZERO_ERR 0
 
-// user ID of root
+//user ID of root
 #define ROOT_UID 0
 
 //How many Unicode symbols to combine max
@@ -42,11 +42,11 @@
 
 #include <ctype.h>
 #include <unistd.h>
-#include <inttypes.h> // for PRIu64
+#include <inttypes.h> //for PRIu64
 
 //# include <sys/param.h>
 
-// always use unlink() to remove files
+//always use unlink() to remove files
 #define eeMkdir(x, y) mkdir((char *)(x), y)
 #define mch_rmdir(x) rmdir((char *)(x))
 #define mch_remove(x) unlink((char *)(x))
@@ -72,7 +72,7 @@ typedef struct pollfd PollFd;
 //Note: if MAXNAMLEN has the wrong value, you will get error messages
 //for not being able to open the swap file.
 #if !defined(MAXNAMLEN)
-# define MAXNAMLEN 512          // for all other Unix
+# define MAXNAMLEN 512          //for all other Unix
 #endif
 
 #define BASENAMELEN   (MAXNAMLEN - 5)
@@ -93,30 +93,30 @@ typedef struct pollfd PollFd;
 
 #define SYNTAX_FNAME   "$EEGLRUNTIME/ftype/%s.vim"
 
-#define DFLT_BDIR    "$HOME/.local/state/eegl"    // default for 'backupdir'
+#define DFLT_BDIR    "$HOME/.local/state/eegl"    //default for 'backupdir'
 
-#define DFLT_DIR     ".,~/tmp,/var/tmp,/tmp" // default for 'directory'
+#define DFLT_DIR     ".,~/tmp,/var/tmp,/tmp" //default for 'directory'
 
 #ifndef DFLT_VDIR
-#define DFLT_VDIR    "$HOME/.config/eegl/view"       // default for 'viewdir'
+#define DFLT_VDIR    "$HOME/.config/eegl/view"       //default for 'viewdir'
 #define XDG_VDIR    "~/.config/eegl/view"
 #endif
 
 #define DFLT_ERRORFILE      "errors.err"
 
-// Try several directories to put the temp files.
+//Try several directories to put the temp files.
 #define TEMPDIRNAMES  "$TMPDIR", "/tmp", ".", "$HOME"
 #define TEMPNAMELEN    256
 
-// Special wildcards that need to be handled by the shell
+//Special wildcards that need to be handled by the shell
 #define SPECIAL_WILDCHAR    "`'{" //}
 
 //Unix has plenty of memory, use large buffers
-#define CMDBUFFSIZE 1024   // size of the command processing buffer
+#define CMDBUFFSIZE 1024   //size of the command processing buffer
 
 
 #ifndef DFLT_MAXMEM
-#define DFLT_MAXMEM   (12*1024)    // use up to 12 Mbytes for a buffer
+#define DFLT_MAXMEM   (12*1024)    //use up to 12 Mbytes for a buffer
 #endif
 
 
@@ -128,7 +128,7 @@ typedef struct pollfd PollFd;
 
 #include <sys/ioctl.h>
 
-// use fork/exec to start the shell
+//use fork/exec to start the shell
 
 #include <sys/wait.h>
 
@@ -164,7 +164,7 @@ typedef struct pollfd PollFd;
 #define SHELL_ESC_CHARS ((Byte *)" \t\n*?[{`$\\%#'\"|!<>();&")
 #define BUFFER_ESC_CHARS ((Byte *)" \t\n*?[`$\\%#'\"|!<")
 
-// length of a buffer to store a number in ASCII (64 bits binary + NUL)
+//length of a buffer to store a number in ASCII (64 bits binary + NUL)
 #define NUMBUFLEN 65
 
 typedef unsigned char Byte;
@@ -189,18 +189,18 @@ typedef Byte Byte;
 //Define the version number, name, etc.
 //The patchlevel is in included_patches[], in version.c.
 
-// Trick to turn a number into a string.
+//Trick to turn a number into a string.
 #define EE_TOSTR_(a)  #a
 #define EE_TOSTR(a)   EE_TOSTR_(a)
 
-// Values that change for a new release.
+//Values that change for a new release.
 #define EEGL_VERSION_MAJOR      0
 #define EEGL_VERSION_MINOR      9
 #define EEGL_VERSION_BUILD      285
 #define EEGL_VERSION_BUILD_BCD      0x11d
 #define EEGL_VERSION_DATE_ONLY      "2025 Oct 15"
 
-// Values based on the above
+//Values based on the above
 #define EEGL_VERSION_MAJOR_STR  EE_TOSTR(EEGL_VERSION_MAJOR)
 #define EEGL_VERSION_MINOR_STR  EE_TOSTR(EEGL_VERSION_MINOR)
 #define EEGL_VERSION_100        (EEGL_VERSION_MAJOR * 100 + EEGL_VERSION_MINOR)
@@ -210,7 +210,7 @@ typedef Byte Byte;
 #define EEGL_VERSION_PATCHLEVEL 0
 #endif
 
-// Patchlevel with leading zeros
+//Patchlevel with leading zeros
 #if EEGL_VERSION_PATCHLEVEL < 10
 #define LEADZERO(x) 000 ## x
 #elif EEGL_VERSION_PATCHLEVEL < 100
@@ -237,7 +237,7 @@ typedef Byte Byte;
 
 //}}}
 
-// Minimal portal dimensions. Must be positive
+//Minimal portal dimensions. Must be positive
 #define MIN_PORTAL_WIDTH 10
 #define MIN_PORTAL_HEIGHT 10
 
@@ -279,21 +279,21 @@ typedef Byte Byte;
 
 #define LTOREQ_POS(a, b) (LT_POS(a, b) || EQUAL_POS(a, b))
 
-// LINEEMPTY() - return TRUE if the line is empty
+//LINEEMPTY() - return TRUE if the line is empty
 #define LINEEMPTY(p) (*ml_get(p) == ZERO)
 
-// return TRUE if the current book is empty
+//return TRUE if the current book is empty
 #define CURBOOK_EMPTY() (curBook->mem.lineCount == 1 && *ml_get((LineNr)1) == ZERO)
 
 //{{{static maps
 
-// This counts the number of args
+//This counts the number of args
 #define NARGS_SEQ(_0,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,\
       _22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_34,_35,_36,_37,_38,N,...) N
 #define NARGS(...) NARGS_SEQ(__VA_ARGS__, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25,\
       24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
 
-// Map an operator to every argument at compile time
+//Map an operator to every argument at compile time
 #define SMAP(op, ...) GLUE(SMAP_, NARGS(__VA_ARGS__))(op, __VA_ARGS__)
 #define SMAP_1(m, x0) m(x0)
 #define SMAP_2(m, x0, x1) m(x0), m(x1)
@@ -339,8 +339,8 @@ typedef Byte Byte;
    SMAP_3(m, x16, x17, x18)
    
    
-// Map an operator to first element of every pair, and assemble them into pairs
-// SMAP1((int), a, b, c, d) => {(int)(a), b}, {(int)(c), d}
+//Map an operator to first element of every pair, and assemble them into pairs
+//SMAP1((int), a, b, c, d) => {(int)(a), b}, {(int)(c), d}
 #define SMAP1(op, ...) GLUE(SMAP1_, NARGS(__VA_ARGS__))(op, __VA_ARGS__)
 #define SMAP1_2(m, x0, y0) { m(x0), y0 }
 #define SMAP1_4(m, x0, y0, x1, y1) {m(x0), y0}, {m(x1), y1}
@@ -447,7 +447,7 @@ typedef Byte Byte;
 #define MB_CASEFOLD(c)  (utf_fold(c))
 
 
-// Returns empty string if it is NULL.
+//Returns empty string if it is NULL.
 #define EMPTY_IF_NULL(x) ((x) ? (x) : (Byte *)"")
 
 //Adjust chars in a language according to 'langmap' option. NOTE that there is no noticeable 
@@ -488,7 +488,7 @@ typedef Byte Byte;
 # define PLINES_WIN_NOFILL(w, l, h) plines_win_nofill((w), (l), (h))
 
 #include <float.h>
-  // for isnan() and isinf()
+  //for isnan() and isinf()
 #include <math.h>
 
 # ifdef USING_FLOAT_STUFF
@@ -532,10 +532,10 @@ typedef Byte Byte;
    s.len = 0; \
     } while (0)
 
-// Whether a command index indicates a user command.
+//Whether a command index indicates a user command.
 #define IS_USER_COMMAND(idx) ((int)(idx) < 0)
 
-// Give an error in curPor is a popup window and evaluate to TRUE.
+//Give an error in curPor is a popup window and evaluate to TRUE.
 #define PORTAL_IS_POPUP(po) ((po)->pup.flags != 0)
 
 
@@ -604,11 +604,11 @@ typedef Byte Byte;
 #define FOR_ALL_SPELL_LANGS(slang) \
     for ((slang) = first_lang; (slang) != NULL; (slang) = (slang)->sl_next)
 
-// Iterate over all the items in a List
+//Iterate over all the items in a List
 #define FOR_ALL_LIST_ITEMS(l, li) \
     for ((li) = (l) == NULL ? NULL : (l)->first; (li) != NULL; (li) = (li)->next)
 
-// Iterate over all the items in a hash table
+//Iterate over all the items in a hash table
 #define FOR_ALL_HASHTAB_ITEMS(ht, hi, todo) \
     for ((hi) = (ht)->array; (todo) > 0; ++(hi))
 
@@ -628,18 +628,18 @@ typedef Byte Byte;
 #include <inttypes.h>
 #include <wctype.h>
 
-// for offsetof()
+//for offsetof()
 #include <stddef.h>
 
 
-// ================ end of the header file puzzle ===============
+//================ end of the header file puzzle ===============
 
-// The _() stuff is for using gettext().  It is a no-op when libintl.h is not
-// found or the +multilang feature is disabled.
-// Use NGETTEXT(single, multi, number) to get plural behavior:
-// - single - message for singular form
-// - multi  - message for plural form
-// - number - the count
+//The _() stuff is for using gettext().  It is a no-op when libintl.h is not
+//found or the +multilang feature is disabled.
+//Use NGETTEXT(single, multi, number) to get plural behavior:
+//- single - message for singular form
+//- multi  - message for plural form
+//- number - the count
 #include <libintl.h>
 #define _(x) (CS)gettext((char *)(x))
 #define NGETTEXT(x, xs, n) (CS)ngettext((char*)(x), (char*)(xs), (n))
@@ -655,11 +655,11 @@ typedef Byte Byte;
 //w_valid is supposed to be used only in screen.c.  From other files, use the
 //functions that set or reset the flags.
 //
-// VALID_BOTLINE    VALID_BOTLINE_AP
-//     on                  on         w_botline valid
-//    off                  on         w_botline approximated
-//    off                 off         w_botline not valid
-//     on                 off         not possible
+//VALID_BOTLINE    VALID_BOTLINE_AP
+//    on                  on         w_botline valid
+//   off                  on         w_botline approximated
+//   off                 off         w_botline not valid
+//    on                 off         not possible
 #define VALID_WROW       0x01   //w_wrow (window row) is valid
 #define VALID_WCOL       0x02   //w_wcol (window col) is valid
 #define VALID_VIRTCOL    0x04   //w_virtcol (file col) is valid
@@ -669,14 +669,14 @@ typedef Byte Byte;
 #define VALID_BOTLINE_AP 0x40   //w_botline is approximated
 #define VALID_TOPLINE    0x80   //w_topline is valid (for cursor position)
 
-// flags used in w_popup_handled
+//flags used in w_popup_handled
 #define POPUP_HANDLED_1 0x01    //used by mouse_find_win()
 #define POPUP_HANDLED_2 0x02    //used by popup_do_filter()
 #define POPUP_HANDLED_3 0x04    //used by popup_check_cursor_pos()
 #define POPUP_HANDLED_4 0x08    //used by may_update_popup_mask()
 #define POPUP_HANDLED_5 0x10    //used by update_popups()
 
-// Terminal hiliting decoration flags
+//Terminal hiliting decoration flags
 #define DECO_NONE         0
 #define DECO_INVERSE      1
 #define DECO_BOLD         2
@@ -686,7 +686,7 @@ typedef Byte Byte;
 #define DECO_UNDERDASH   32 
 #define DECO_ALTERED_BG  64
 
-// special attribute addition: Put message in history
+//special attribute addition: Put message in history
 #define MSG_HIST     64
 
 #define EMPTY_DECO  (Decoration){.hiId = SHORT, .fieldPresence = 0, .flags = 0}
@@ -705,24 +705,24 @@ typedef Byte Byte;
 #define MODE_LANGMAP     0x20  //Language mapping, can be combined with MODE_INSERT and MODE_CMDLINE
 #define MODE_TERMINAL    0x80  //Terminal mode
 
-#define MAP_ALL_MODES    0xff    // all mode bits used for mapping
+#define MAP_ALL_MODES    0xff    //all mode bits used for mapping
 
-#define MODE_NORMAL_BUSY (0x1000 | MODE_NORMAL) // Normal mode, busy with a command
-#define MODE_HITRETURN   (0x2000 | MODE_NORMAL) // waiting for return or command
-#define MODE_ASKMORE     0x3000   // Asking if you want --more--
-#define MODE_SETWSIZE    0x4000   // window size has changed
-#define MODE_EXTERNCMD   0x5000   // executing an external command
-#define MODE_SHOWMATCH   (0x6000 | MODE_INSERT) // show matching paren
-#define MODE_CONFIRM     0x7000   // ":confirm" prompt
+#define MODE_NORMAL_BUSY (0x1000 | MODE_NORMAL) //Normal mode, busy with a command
+#define MODE_HITRETURN   (0x2000 | MODE_NORMAL) //waiting for return or command
+#define MODE_ASKMORE     0x3000   //Asking if you want --more--
+#define MODE_SETWSIZE    0x4000   //window size has changed
+#define MODE_EXTERNCMD   0x5000   //executing an external command
+#define MODE_SHOWMATCH   (0x6000 | MODE_INSERT) //show matching paren
+#define MODE_CONFIRM     0x7000   //":confirm" prompt
 #define MODE_ALL         0xffff
 
-#define MODE_MAX_LENGTH   4 // max mode length used by get_mode(), including the terminating NUL
+#define MODE_MAX_LENGTH   4 //max mode length used by get_mode(), including the terminating NUL
 
-// directions
+//directions
 #define FORWARD   1
 #define BACKWARD 20
 
-// flags for books
+//flags for books
 #define BF_RECOVERED   0x01 //book has been recovered
 #define BF_CHECK_RO    0x02 //need to check readonly when loading file into book (set by ":e",
                             //may be reset by ":book")
@@ -832,14 +832,14 @@ typedef Byte Byte;
 #define WILD_ICASE           0x100
 #define WILD_ALLLINKS        0x200
 #define WILD_IGNORE_COMPLETESLASH   0x400
-#define WILD_NOERROR         0x800  // sets EW_NOERROR
+#define WILD_NOERROR         0x800  //sets EW_NOERROR
 #define WILD_BUFLASTUSED    0x1000
 #define BOOK_DIFF_FILTER    0x2000
 #define WILD_KEEP_SOLE_ITEM 0x4000
 #define WILD_MAY_EXPAND_PATTERN 0x8000
-#define WILD_FUNC_TRIGGER  0x10000 // called from wildtrigger()
+#define WILD_FUNC_TRIGGER  0x10000 //called from wildtrigger()
 
-// Flags for expand_wildcards()
+//Flags for expand_wildcards()
 #define EW_DIR          0x01  //include directory names
 #define EW_FILE         0x02  //include file names
 #define EW_NOTFOUND     0x04  //include not found names
@@ -852,8 +852,8 @@ typedef Byte Byte;
 #define EW_NOERROR     0x200  //no error for bad regexp
 #define EW_NOTWILD     0x400  //add match with literal name if exists
 #define EW_KEEPDOLLAR  0x800  //do not escape $, $var is expanded
-// Note: mostly EW_NOTFOUND and EW_SILENT are mutually exclusive: EW_NOTFOUND
-// is used when executing commands and EW_SILENT for interactive expanding.
+//Note: mostly EW_NOTFOUND and EW_SILENT are mutually exclusive: EW_NOTFOUND
+//is used when executing commands and EW_SILENT for interactive expanding.
 #define EW_ALLLINKS   0x1000  //also links not pointing to existing file
 #define EW_SHELLCMD   0x2000  //called from expand_shellcmd(), don't check if executable in $PATH
 #define EW_DODOT      0x4000  //also files starting with a dot
@@ -866,7 +866,7 @@ typedef Byte Byte;
 
 #define P_ENDCOL(wp)  ((wp)->windowCol + (wp)->width)
 
-// Values for the find_pattern_in_path() function args 'type' and 'action':
+//Values for the find_pattern_in_path() function args 'type' and 'action':
 #define FIND_ANY    1
 #define FIND_DEFINE 2
 #define CHECK_PATH  3
@@ -877,7 +877,7 @@ typedef Byte Byte;
 #define ACTION_SHOW_ALL 4
 #define ACTION_EXPAND   5
 
-// Values for 'options' argument in do_search() and searchit()
+//Values for 'options' argument in do_search() and searchit()
 #define SEARCH_REV    0x01  //go in reverse of previous dir.
 #define SEARCH_ECHO   0x02  //echo the search command and handle options
 #define SEARCH_MSG    0x0c  //give messages (yes, it's not 0x04)
@@ -892,7 +892,7 @@ typedef Byte Byte;
 #define SEARCH_PEEK  0x800  //peek for typed char, cancel search
 #define SEARCH_COL  0x1000  //start at specified column instead of zero
 
-// Values for file_name_in_line()
+//Values for file_name_in_line()
 #define FNAME_MESS   1 //give error message
 #define FNAME_EXP    2 //expand to path
 #define FNAME_HYP    4 //check for hypertext link
@@ -901,12 +901,12 @@ typedef Byte Byte;
                        //file instead of the current directory
 #define FNAME_UNESC 32 //remove backslashes used for escaping
 
-// Values for buflist_getfile()
+//Values for buflist_getfile()
 #define GETF_SETMARK 0x01   //set pcmark before jumping
 #define GETF_ALT     0x02   //jumping to alternate file (not buf num)
 #define GETF_SWITCH  0x04   //respect 'switchbuf' settings when jumping
 
-// Return values of getfile()
+//Return values of getfile()
 #define GETFILE_ERROR       1   //normal error
 #define GETFILE_NOT_WRITTEN 2   //"not written" error
 #define GETFILE_SAME_FILE   0   //success, same file
@@ -914,7 +914,7 @@ typedef Byte Byte;
 #define GETFILE_UNUSED       8
 #define GETFILE_SUCCESS(x)  ((x) <= 0)
 
-// Values for bookNew() flags
+//Values for bookNew() flags
 #define BLN_CURBOOK      1 //may re-use curBook for new book
 #define BLN_LISTED       2 //put new book in book list
 #define BLN_DUMMY        4 //allocating dummy book
@@ -925,14 +925,14 @@ typedef Byte Byte;
 #define BLN_NOCURWIN   128 //book is not associated with curPor
 #define BLN_MODIFIABLE 256 //book should be modifiable
 
-// Values for "noremap" argument of ins_typebuf().  Also used for
-// map->m_noremap and menu->noremap[].
+//Values for "noremap" argument of ins_typebuf().  Also used for
+//map->m_noremap and menu->noremap[].
 #define REMAP_YES      0    //allow remapping
 #define REMAP_NONE   4294967295   //no remapping
 #define REMAP_SCRIPT 4294967294   //remap script-local mappings only
 #define REMAP_SKIP   4294967293   //no remapping for first char
 
-// Values for channel:callShellImpl() second argument
+//Values for channel:callShellImpl() second argument
 #define SHELL_FILTER     1  //filtering text
 #define SHELL_EXPAND     2  //expanding wildcards
 #define SHELL_COOKED     4  //set term to cooked mode
@@ -942,12 +942,12 @@ typedef Byte Byte;
 #define SHELL_WRITE     64  //write lines from book
 #define SHELL_SHOW_MSG 128  //show shell messages
 
-// Values returned by mch_nodetype()
+//Values returned by mch_nodetype()
 #define NODE_NORMAL   0  //file or directory, check with mch_isdir()
 #define NODE_WRITABLE 1  //something we can write to (character device, fifo, socket, ..)
 #define NODE_OTHER    2  //non-writable thing (e.g., block device)
 
-// Values for readfile() flags
+//Values for readfile() flags
 #define READ_NEW        0x01 //read a file into a new book
 #define READ_FILTER     0x02 //read filter output
 #define READ_STDIN      0x04 //read from stdin
@@ -958,12 +958,12 @@ typedef Byte Byte;
 #define READ_NOWINENTER 0x80 //do not trigger BufWinEnter
 #define READ_NOFILE    0x100 //do not read a file, do trigger BufReadCmd
 
-// Values for change_indent()
+//Values for change_indent()
 #define INDENT_SET   1 //set indent
 #define INDENT_INC   2 //increase indent
 #define INDENT_DEC   3 //decrease indent
 
-// Values for action argument for bookDo() and closeBook()
+//Values for action argument for bookDo() and closeBook()
 #define DOBOOK_GOTO      0  //go to specified book
 #define DOBOOK_SPLIT     1  //split portal and go to specified book
 #define DOBOOK_UNLOAD    2  //unload specified book(s)
@@ -973,44 +973,44 @@ typedef Byte Byte;
 #define DOBOOK_WIPE       4 //delete specified book(s) really
 #define DOBOOK_WIPE_REUSE 5 //like DOBUF_WIPE and keep number for reuse
 
-// Values for flags argument of bookDo()
+//Values for flags argument of bookDo()
 #define DOBOOK_FORCEIT  1  //:cmd!
 #define DOBOOK_NOPOPUP  2  //skip popup portal books
 #define DOBOOK_SKIPHELP 4  //skip or keep help books depending on kind of the starting book
 
-// Values for start argument for bookDo()
+//Values for start argument for bookDo()
 #define DOBOOK_CURRENT 0   //"count" book from current book
 #define DOBOOK_FIRST   1   //"count" book from first book
 #define DOBOOK_LAST    2   //"count" book from last book
 #define DOBOOK_MOD     3   //"count" mod. book from current book
 
-// Values for sub_cmd and which_pat argument for search_regcomp()
-// Also used for which_pat argument for searchit()
-#define RE_SEARCH  0   // save/use pat in/from search_pattern
-#define RE_SUBST   1   // save/use pat in/from subst_pattern
-#define RE_BOTH    2   // save pat in both patterns
-#define RE_LAST    2   // use last used pattern if "pat" is NULL
+//Values for sub_cmd and which_pat argument for search_regcomp()
+//Also used for which_pat argument for searchit()
+#define RE_SEARCH  0   //save/use pat in/from search_pattern
+#define RE_SUBST   1   //save/use pat in/from subst_pattern
+#define RE_BOTH    2   //save pat in both patterns
+#define RE_LAST    2   //use last used pattern if "pat" is NULL
 
-// Second argument for eeRegexec().
-#define RE_MAGIC   1   // 'magic' option
-#define RE_STRING  2   // match in string instead of book text
-#define RE_STRICT  4   // don't allow [abc] without ]
-#define RE_AUTO    8   // automatic engine selection
+//Second argument for eeRegexec().
+#define RE_MAGIC   1   //'magic' option
+#define RE_STRING  2   //match in string instead of book text
+#define RE_STRICT  4   //don't allow [abc] without ]
+#define RE_AUTO    8   //automatic engine selection
 
-// values for reg_do_extmatch
-# define REX_SET   1   // to allow \z\(...\),
-# define REX_USE   2   // to allow \z\1 et al.
+//values for reg_do_extmatch
+# define REX_SET   1   //to allow \z\(...\),
+# define REX_USE   2   //to allow \z\1 et al.
 # define REX_ALL   (REX_SET | REX_USE)
 
-// Return values for fullpathcmp()
-// Note: can use (fullpathcmp() & FPC_SAME) to check for equal files
-#define FPC_SAME   1   // both exist and are the same file.
-#define FPC_DIFF   2   // both exist and are different files.
-#define FPC_NOTX   4   // both don't exist.
-#define FPC_DIFFX  6   // one of them doesn't exist.
-#define FPC_SAMEX  7   // both don't exist and file names are same.
+//Return values for fullpathcmp()
+//Note: can use (fullpathcmp() & FPC_SAME) to check for equal files
+#define FPC_SAME   1   //both exist and are the same file.
+#define FPC_DIFF   2   //both exist and are different files.
+#define FPC_NOTX   4   //both don't exist.
+#define FPC_DIFFX  6   //one of them doesn't exist.
+#define FPC_SAMEX  7   //both don't exist and file names are same.
 
-// flags for do_ecmd()
+//flags for do_ecmd()
 #define ECMD_HIDE       0x01   //don't free the current book
 #define ECMD_SET_HELP   0x02   //set kind = BUF_HELP flag of (new) book before opening file
 #define ECMD_OLDBUF     0x04   //use existing book if it exists
@@ -1020,29 +1020,29 @@ typedef Byte Byte;
 #define ECMD_NOWINENTER 0x40   //do not trigger BufWinEnter
 #define ECMD_MODIFIABLE 0x80   //set the @modifiable flag for the new book
 
-// for lnum argument in do_ecmd()
-#define ECMD_LASTL (LineNr)0   // use last position in loaded file
-#define ECMD_LAST  ((LineNr)-1)   // use last position in all files
-#define ECMD_ONE   (LineNr)1   // use first line
+//for lnum argument in do_ecmd()
+#define ECMD_LASTL (LineNr)0   //use last position in loaded file
+#define ECMD_LAST  ((LineNr)-1)   //use last position in all files
+#define ECMD_ONE   (LineNr)1   //use first line
 
-// flags for do_cmdline()
-#define DOCMD_VERBOSE  0x01   // included command in error message
-#define DOCMD_NOWAIT   0x02   // don't call wait_return() and friends
-#define DOCMD_REPEAT   0x04   // repeat exec. until getline() returns NULL
-#define DOCMD_KEYTYPED 0x08   // don't reset keyWasTypedG
-#define DOCMD_EXCRESET 0x10   // reset exception environment (for debugging)
-#define DOCMD_KEEPLINE 0x20   // keep typed line for repeating with "."
+//flags for do_cmdline()
+#define DOCMD_VERBOSE  0x01   //included command in error message
+#define DOCMD_NOWAIT   0x02   //don't call wait_return() and friends
+#define DOCMD_REPEAT   0x04   //repeat exec. until getline() returns NULL
+#define DOCMD_KEYTYPED 0x08   //don't reset keyWasTypedG
+#define DOCMD_EXCRESET 0x10   //reset exception environment (for debugging)
+#define DOCMD_KEEPLINE 0x20   //keep typed line for repeating with "."
 
-// flags for beginline()
-#define BL_WHITE   1   // cursor on first non-white in the line
-#define BL_SOL     2   // use 'sol' option
-#define BL_FIX     4   // don't leave cursor on a NUL
+//flags for beginline()
+#define BL_WHITE   1   //cursor on first non-white in the line
+#define BL_SOL     2   //use 'sol' option
+#define BL_FIX     4   //don't leave cursor on a NUL
 
-// flags for buf_copy_options()
+//flags for buf_copy_options()
 #define BCO_ENTER   1  //going to enter the book
 #define BCO_ALWAYS  2  //always copy the options
 
-// flags for do_put()
+//flags for do_put()
 #define PUT_FIXINDENT     1   //make indent look nice
 #define PUT_CURSEND       2   //leave cursor after end of new text
 #define PUT_CURSLINE      4   //leave cursor on last line of new text
@@ -1051,12 +1051,12 @@ typedef Byte Byte;
 #define PUT_LINE_FORWARD 32   //put linewise register below Visual sel.
 #define PUT_BLOCK_INNER  64   //in block mode, do not add trailing spaces
 
-// flags for set_indent()
+//flags for set_indent()
 #define SIN_CHANGED  1   //call changed_bytes() when line changed
 #define SIN_INSERT   2   //insert indent before existing text
 #define SIN_UNDO     4   //save line for undo before changing it
 
-// flags for openLine()
+//flags for openLine()
 #define OPENLINE_DELSPACES    0x01 //delete spaces after cursor
 #define OPENLINE_DO_COM       0x02 //format comments
 #define OPENLINE_KEEPTRAIL    0x04 //keep trailing spaces
@@ -1065,7 +1065,7 @@ typedef Byte Byte;
 #define OPENLINE_FORMAT       0x20 //formatting long comment
 #define OPENLINE_FORCE_INDENT 0x40 //use second_line_indent without indent logic
 
-// Values for do_tag().
+//Values for do_tag().
 #define DT_TAG     1   //jump to newer position or same tag again
 #define DT_POP     2   //jump to older position
 #define DT_NEXT    3   //jump to next match of same tag
@@ -1079,7 +1079,7 @@ typedef Byte Byte;
 #define DT_LTAG   11   //tag using location list
 #define DT_FREE   99   //free cached matches
 
-// flags for find_tags().
+//flags for find_tags().
 #define TAG_HELP         1   //only search for help tags
 #define TAG_NAMES        2   //only return name of tag
 #define TAG_REGEXP       4   //use tag pattern as regexp
@@ -1098,16 +1098,16 @@ typedef Byte Byte;
 #define EE_WARNING   2
 #define EE_INFO      3
 #define EE_QUESTION  4
-#define EE_LAST_TYPE 4   // sentinel value
+#define EE_LAST_TYPE 4   //sentinel value
 
-// Return values for functions like gui_yesnocancel()
+//Return values for functions like gui_yesnocancel()
 #define EE_YES        2
 #define EE_NO         3
 #define EE_CANCEL     4
 #define EE_ALL        5
 #define EE_DISCARDALL 6
 
-// arguments for win_split()
+//arguments for win_split()
 #define WSP_ROOM        0x01 //require enough room
 #define WSP_VERT        0x02 //split/equalize vertically
 #define WSP_HOR         0x04 //equalize horizontally
@@ -1119,33 +1119,33 @@ typedef Byte Byte;
 #define WSP_NEWLOC     0x100 //don't copy location list
 #define WSP_FORCE_ROOM 0x200 //ignore "not enough room" errors
 
-// flags for check_changed()
-#define CCGD_AW       1   // do autowrite if book was changed
-#define CCGD_MULTWIN  2   // check also when several wins for the buf
-#define CCGD_FORCEIT  4   // ! used
-#define CCGD_ALLBOOKS 8   // may write all books
-#define CCGD_EXCMD   16   // may suggest using !
+//flags for check_changed()
+#define CCGD_AW       1   //do autowrite if book was changed
+#define CCGD_MULTWIN  2   //check also when several wins for the buf
+#define CCGD_FORCEIT  4   //! used
+#define CCGD_ALLBOOKS 8   //may write all books
+#define CCGD_EXCMD   16   //may suggest using !
 
-// "flags" values for option-setting functions.
-// When OPT_GLOBAL and OPT_LOCAL are both missing, set both local and global values, get local value
+//"flags" values for option-setting functions.
+//When OPT_GLOBAL and OPT_LOCAL are both missing, set both local and global values, get local value
 #define OPT_GLOBAL    0x02 //use global value
 #define OPT_LOCAL     0x04 //use local value
 #define OPT_ONECOLUMN 0x40 //list options one per line
 #define OPT_NO_REDRAW 0x80 //ignore redraw flags on option
 
-// Values for "starting"
+//Values for "starting"
 #define NO_SCREEN   2   //no screen updating yet
 #define NO_BOOKS    1   //not all books loaded yet
-//         0      not starting anymore
+//        0      not starting anymore
 
-// Values for swap_exists_action: what to do when swap file already exists
+//Values for swap_exists_action: what to do when swap file already exists
 #define SEA_NONE     0   //don't use dialog
 #define SEA_DIALOG   1   //use dialog when possible
 #define SEA_QUIT     2   //quit editing the file
 #define SEA_RECOVER  3   //recover the file
 #define SEA_READONLY 4   //no dialog, mark book as read-only
 
-// Special values for current_sctx.sc_sid.
+//Special values for current_sctx.sc_sid.
 #define SID_CMDARG    (-2)   //for "--cmd" argument
 #define SID_CARG      (-3)   //for "-c" argument
 #define SID_ENV       (-4)   //for sourcing environment variable
@@ -1153,7 +1153,7 @@ typedef Byte Byte;
 #define SID_NONE      (-6)   //don't set scriptID
 #define SID_WINLAYOUT (-7)   //changing window size
 
-// Events for autocommands. Must be kept in sync with "autocmd.c:autoEvents".
+//Events for autocommands. Must be kept in sync with "autocmd.c:autoEvents".
 enum AutoEvent {
    EVENT_BUFADD = 0,      //after adding a book to the book list
    EVENT_BUFCREATE,       //NOT USED: BufCreate == BufAdd
@@ -1194,7 +1194,7 @@ enum AutoEvent {
    EVENT_FILEAPPENDPRE,   //before appending to a file
    EVENT_FILECHANGEDRO,   //before first change to read-only file
    EVENT_FILECHANGEDSHELL,//after shell command that changed file
-   EVENT_FILECHANGEDSHELLPOST,   // after (not) reloading changed file
+   EVENT_FILECHANGEDSHELLPOST,   //after (not) reloading changed file
    EVENT_FILEREADCMD,     //read from a file using command
    EVENT_FILEREADPOST,    //after reading a file
    EVENT_FILEREADPRE,     //before reading a file
@@ -1256,7 +1256,7 @@ enum AutoEvent {
    EVENT_WINRESIZED,      //after a portal was resized
    EVENT_PORTSCROLLED,    //after a portal was scrolled or resized
 
-   NUM_EVENTS,            // MUST be the last one
+   NUM_EVENTS,            //MUST be the last one
 };
 
 typedef enum AutoEvent AutoEvent;
@@ -1274,17 +1274,17 @@ typedef enum {
    OVERLAY_DECO_UNDERDASH
 } OverlayDeco;
 
-// Boolean constants
+//Boolean constants
 #ifndef TRUE
-# define FALSE  0   // note: this is an int, not a long!
+# define FALSE  0   //note: this is an int, not a long!
 # define TRUE   1
 #endif
-#define MAYBE   2   // sometimes used for a variant on TRUE
+#define MAYBE   2   //sometimes used for a variant on TRUE
 
 //If "--log logfile" was used or ch_logfile() was called then log some or all terminal output.
 # define MAY_WANT_TO_LOG_THIS if (ch_log_output == FALSE) ch_log_output = TRUE;
 
-// Operator IDs; The order must correspond to juggle.c:opchars!
+//Operator IDs; The order must correspond to juggle.c:opchars!
 #define OP_NOP           0 //no pending operation
 #define OP_DELETE        1 //"d"  delete operator
 #define OP_YANK          2 //"y"  yank operator
@@ -1317,14 +1317,14 @@ typedef enum {
 #define OP_ADD          29 //"<C-A>" Add to the number or alphabetic character
 #define OP_SUB          30 //"<C-X>" Subtract from the number or alphabetic character
 
-// Motion types, used for operators and for yank/delete registers.
+//Motion types, used for operators and for yank/delete registers.
 #define MCHAR   0      //character-wise movement/register
 #define MLINE   1      //line-wise movement/register
 #define MBLOCK  2      //block-wise register
 
 #define MAUTO 0xff     //Decide between MLINE/MCHAR
 
-// Minimum screen size
+//Minimum screen size
 #define MIN_COLUMNS    12  //minimal columns for screen
 #define MIN_LINES       2  //minimal lines for screen
 #define MIN_COMMHEIGHT  1  //minimal height for command line
@@ -1332,16 +1332,16 @@ typedef enum {
 #define VISIBLE_HEIGHT(wp) ((wp)->height)
 #define QF_WINHEIGHT   10  //default height for quickfix window
 
-// Buffer sizes
+//Buffer sizes
 #ifndef CMDBUFFSIZE
-# define CMDBUFFSIZE   256   // size of the command processing buffer
+# define CMDBUFFSIZE   256   //size of the command processing buffer
 #endif
 
-#define LSIZE       512      // max. size of a line in the tags file
+#define LSIZE       512      //max. size of a line in the tags file
 
-#define IOSIZE      (1024+1)   // file i/o and sprintf buffer size
+#define IOSIZE      (1024+1)   //file i/o and sprintf buffer size
 
-#define DIALOG_MSG_SIZE 1000   // buffer size for dialog_msg()
+#define DIALOG_MSG_SIZE 1000   //buffer size for dialog_msg()
 
 #define MSG_BUF_LEN 480   //length of buffer for small messages
 #define MSG_BUF_CLEN (MSG_BUF_LEN / 6) //cell length (worst case: utf-8 takes 6 bytes for one cell)
@@ -1349,14 +1349,14 @@ typedef enum {
 //Maximum length of key sequence to be mapped.
 #define MAXMAPLEN   50
 
-// maximum length of a function name, including SID and NUL
+//maximum length of a function name, including SID and NUL
 #define MAX_FUNC_NAME_LEN   200
 
-// Size in bytes of the hash used in the undo file.
+//Size in bytes of the hash used in the undo file.
 #define UNDO_HASH_SIZE 32
 
 #ifdef BINARY_FILE_IO
-# define WRITEBIN   "wb"   // no CR-LF translation
+# define WRITEBIN   "wb"   //no CR-LF translation
 # define READBIN    "rb"
 # define APPENDBIN  "ab"
 #else
@@ -1372,14 +1372,14 @@ typedef enum {
 #endif
 
 #ifndef W_OK
-# define W_OK 2      // for systems that don't have W_OK in unistd.h
+# define W_OK 2      //for systems that don't have W_OK in unistd.h
 #endif
 #ifndef R_OK
-# define R_OK 4      // for systems that don't have R_OK in unistd.h
+# define R_OK 4      //for systems that don't have R_OK in unistd.h
 #endif
 
-// Allocate memory for one type and cast the returned pointer to have the
-// compiler check the types.
+//Allocate memory for one type and cast the returned pointer to have the
+//compiler check the types.
 #define ALLOC_ONE(type)  (type *)alloc(sizeof(type))
 #define ALLOC_ONE_ID(type, id)  (type *)alloc_id(sizeof(type), id)
 #define ALLOC_MULT(type, count)  (type *)alloc(sizeof(type) * (count))
@@ -1409,27 +1409,27 @@ typedef enum {
 //destination and mess up the screen.
 #define PERROR(msg)          (void)showErrFmtMsg("%s: %s", (char *)(msg), strerror(errno))
 
-typedef unsigned short DisplayTick;   // display tick type
+typedef unsigned short DisplayTick;   //display tick type
 
-// MAXCOL used to be INT_MAX, but with 64 bit ints that results in running
-// out of memory when trying to allocate a very long line.
-#define MAXCOL  0x7fffffffL    // maximum column number
+//MAXCOL used to be INT_MAX, but with 64 bit ints that results in running
+//out of memory when trying to allocate a very long line.
+#define MAXCOL  0x7fffffffL    //maximum column number
 
-#define SHOWCMD_COLS 10        // columns needed by shown command
+#define SHOWCMD_COLS 10        //columns needed by shown command
 
 #ifndef mch_memmove
 # define mch_memmove(to, from, len) memmove((char*)(to), (char*)(from), (Unt)(len))
 #endif
 
-// fnamecmp() is used to compare file names.
-// (this does not account for maximum name lengths and things like "../dir",
-// thus it is not 100% accurate!)
+//fnamecmp() is used to compare file names.
+//(this does not account for maximum name lengths and things like "../dir",
+//thus it is not 100% accurate!)
 #define fnamecmp(x, y) STRCMP((Byte *)(x), (Byte *)(y))
 
 #define eeWriteToFile(fd, buf, count)  write((fd), (char *)(buf), (Unt) (count))
 
 //EXTERN is only defined in main.c. That's where global variables are actually defined
-#ifdef EXTERN // main.c
+#ifdef EXTERN //main.c
 # ifndef INIT
 #define INIT(x) x
 #define INIT2(a, b) = {a, b}
@@ -1438,7 +1438,7 @@ typedef unsigned short DisplayTick;   // display tick type
 #define INIT5(a, b, c, d, e) = {a, b, c, d, e}
 #define INIT6(a, b, c, d, e, f) = {a, b, c, d, e, f}
 # endif
-#else // all other files
+#else //all other files
 #define EXTERN extern
 #define INIT(x)
 #define INIT2(a, b)
@@ -1453,7 +1453,7 @@ typedef unsigned short DisplayTick;   // display tick type
 //plus six following composing characters of three bytes each.
 #define MB_MAXBYTES   21
 
-// Use tv_fsec for fraction of second (micro or nano) of ProfTime
+//Use tv_fsec for fraction of second (micro or nano) of ProfTime
 #define PROF_NSEC 1
 typedef struct timespec ProfTime;
 #define PROF_GET_TIME(tm) clock_gettime(CLOCK_MONOTONIC, tm)
@@ -1472,7 +1472,7 @@ typedef int Socket;
 //{{{:::options and default values
 
 
-// Formatting options for p_fo @formatoptions
+//Formatting options for p_fo @formatoptions
 #define FO_WRAP         't'
 #define FO_WRAP_COMS    'c'
 #define FO_RET_COMS     'r'
@@ -1484,66 +1484,66 @@ typedef int Socket;
 #define FO_INS_VI       'v'
 #define FO_INS_LONG     'l'
 #define FO_INS_BLANK    'b'
-#define FO_MBYTE_BREAK  'm'   // break before/after multi-byte char
-#define FO_MBYTE_JOIN   'M'   // no space before/after multi-byte char
-#define FO_MBYTE_JOIN2  'B'   // no space between multi-byte chars
+#define FO_MBYTE_BREAK  'm'   //break before/after multi-byte char
+#define FO_MBYTE_JOIN   'M'   //no space before/after multi-byte char
+#define FO_MBYTE_JOIN2  'B'   //no space between multi-byte chars
 #define FO_ONE_LETTER   '1'
-#define FO_WHITE_PAR    'w'   // trailing white space continues paragr.
-#define FO_AUTO         'a'   // automatic formatting
-#define FO_RIGOROUS_TW  ']'     // respect textwidth rigorously
-#define FO_REMOVE_COMS  'j'   // remove comment leaders when joining lines
-#define FO_PERIOD_ABBR  'p'   // don't break a single space after a period
+#define FO_WHITE_PAR    'w'   //trailing white space continues paragr.
+#define FO_AUTO         'a'   //automatic formatting
+#define FO_RIGOROUS_TW  ']'     //respect textwidth rigorously
+#define FO_REMOVE_COMS  'j'   //remove comment leaders when joining lines
+#define FO_PERIOD_ABBR  'p'   //don't break a single space after a period
 
-// flags for @comments option
-#define COM_NEST     'n'   // comments strings nest
-#define COM_BLANK    'b'   // needs blank after string
-#define COM_START    's'   // start of comment
-#define COM_MIDDLE   'm'   // middle of comment
-#define COM_END      'e'   // end of comment
-#define COM_AUTO_END 'x'   // last char of end closes comment
-#define COM_FIRST    'f'      // first line comment only
-#define COM_LEFT     'l'       // left adjusted
-#define COM_RIGHT    'r'      // right adjusted
-#define COM_NOBACK   'O'     // don't use for "O" command
-#define COM_ALL      "nbsmexflrO"   // all flags for 'comments' option
-#define COM_MAX_LEN  50      // maximum length of a part
+//flags for @comments option
+#define COM_NEST     'n'   //comments strings nest
+#define COM_BLANK    'b'   //needs blank after string
+#define COM_START    's'   //start of comment
+#define COM_MIDDLE   'm'   //middle of comment
+#define COM_END      'e'   //end of comment
+#define COM_AUTO_END 'x'   //last char of end closes comment
+#define COM_FIRST    'f'      //first line comment only
+#define COM_LEFT     'l'       //left adjusted
+#define COM_RIGHT    'r'      //right adjusted
+#define COM_NOBACK   'O'     //don't use for "O" command
+#define COM_ALL      "nbsmexflrO"   //all flags for 'comments' option
+#define COM_MAX_LEN  50      //maximum length of a part
 
-// flags for @statusline option
-#define STL_FILEPATH     'f'      // path of file in book
-#define STL_FULLPATH     'F'      // full path of file in book
-#define STL_FILENAME     't'      // last part (tail) of file path
-#define STL_COLUMN       'c'      // column og cursor
-#define STL_VIRTCOL      'v'      // virtual column
-#define STL_VIRTCOL_ALT  'V'      // - with 'if different' display
-#define STL_LINE         'l'      // line number of cursor
-#define STL_NUMLINES     'L'      // number of lines in book
-#define STL_BUFNO        'n'      // current book number
-#define STL_KEYMAP       'k'      // 'keymap' when active
-#define STL_OFFSET       'o'      // offset of character under cursor
-#define STL_OFFSET_X     'O'      // - in hexadecimal
-#define STL_BYTEVAL      'b'      // byte value of character
-#define STL_BYTEVAL_X    'B'      // - in hexadecimal
-#define STL_HELPFLAG     'h'      // window is showing a help file
-#define STL_HELPFLAG_ALT 'H'      // - other display
-#define STL_FILETYPE     'y'      // 'filetype'
-#define STL_FILETYPE_ALT 'Y'      // - other display
-#define STL_PREVIEWFLAG  'w'      // window is showing the preview buf
-#define STL_PREVIEWFLAG_ALT 'W'      // - other display
-#define STL_MODIFIED     'm'      // modified flag
-#define STL_MODIFIED_ALT 'M'      // - other display
-#define STL_QUICKFIX     'q'      // quickfix window description
-#define STL_PERCENTAGE   'p'      // percentage through file
-#define STL_ALTPERCENT   'P'      // percentage as TOP BOT ALL or NN%
-#define STL_ARGLISTSTAT  'a'      // argument list status as (x of y)
-#define STL_PAGENUM      'N'      // page number (when printing)
-#define STL_SHOWCMD      'S'      // @showcmd book
-#define STL_EE_EXPR      '{'      // start of expression to substitute
-#define STL_SEPARATE     '='      // separation between alignment sections
-#define STL_TRUNCMARK    '<'      // truncation mark if line is too long
-#define STL_USER_HL      '*'      // highlight from (User)1..9 or 0
-#define STL_HIGHLIGHT    '#'      // highlight name
-#define STL_TABPAGENR    'T'      // tab label nr
-#define STL_TABCLOSENR   'X'      // tab close nr
+//flags for @statusline option
+#define STL_FILEPATH     'f'      //path of file in book
+#define STL_FULLPATH     'F'      //full path of file in book
+#define STL_FILENAME     't'      //last part (tail) of file path
+#define STL_COLUMN       'c'      //column og cursor
+#define STL_VIRTCOL      'v'      //virtual column
+#define STL_VIRTCOL_ALT  'V'      //- with 'if different' display
+#define STL_LINE         'l'      //line number of cursor
+#define STL_NUMLINES     'L'      //number of lines in book
+#define STL_BUFNO        'n'      //current book number
+#define STL_KEYMAP       'k'      //'keymap' when active
+#define STL_OFFSET       'o'      //offset of character under cursor
+#define STL_OFFSET_X     'O'      //- in hexadecimal
+#define STL_BYTEVAL      'b'      //byte value of character
+#define STL_BYTEVAL_X    'B'      //- in hexadecimal
+#define STL_HELPFLAG     'h'      //window is showing a help file
+#define STL_HELPFLAG_ALT 'H'      //- other display
+#define STL_FILETYPE     'y'      //'filetype'
+#define STL_FILETYPE_ALT 'Y'      //- other display
+#define STL_PREVIEWFLAG  'w'      //window is showing the preview buf
+#define STL_PREVIEWFLAG_ALT 'W'      //- other display
+#define STL_MODIFIED     'm'      //modified flag
+#define STL_MODIFIED_ALT 'M'      //- other display
+#define STL_QUICKFIX     'q'      //quickfix window description
+#define STL_PERCENTAGE   'p'      //percentage through file
+#define STL_ALTPERCENT   'P'      //percentage as TOP BOT ALL or NN%
+#define STL_ARGLISTSTAT  'a'      //argument list status as (x of y)
+#define STL_PAGENUM      'N'      //page number (when printing)
+#define STL_SHOWCMD      'S'      //@showcmd book
+#define STL_EE_EXPR      '{'      //start of expression to substitute
+#define STL_SEPARATE     '='      //separation between alignment sections
+#define STL_TRUNCMARK    '<'      //truncation mark if line is too long
+#define STL_USER_HL      '*'      //highlight from (User)1..9 or 0
+#define STL_HIGHLIGHT    '#'      //highlight name
+#define STL_TABPAGENR    'T'      //tab label nr
+#define STL_TABCLOSENR   'X'      //tab close nr
 #define STL_ALL          (S"fFtcvVlLknoObBrRhHmYyWwMqpPaNS{#")
 
 //Kinds of status lines
@@ -1551,7 +1551,7 @@ typedef int Socket;
 #define STATLINE_STATUSLINE  2
 #define STATLINE_RULERFORMAT 3
 
-// flags used for parsed @wildmode
+//flags used for parsed @wildmode
 #define WIM_FULL        0x01
 #define WIM_LONGEST     0x02
 #define WIM_LIST        0x04
@@ -1559,13 +1559,13 @@ typedef int Socket;
 #define WIM_NOSELECT    0x10
 
 
-// The following are actual variables for the options
+//The following are actual variables for the options
 
-EXTERN Boole p_asd;     // @autoshelldir
-EXTERN CS p_tsrfu; // @thesaurusfunc
-EXTERN Boole p_aw;      // @autowrite
-EXTERN Boole p_awa;     // @autowriteall
-EXTERN Boole p_bk;      // @backup
+EXTERN Boole p_asd;     //@autoshelldir
+EXTERN CS p_tsrfu; //@thesaurusfunc
+EXTERN Boole p_aw;      //@autowrite
+EXTERN Boole p_awa;     //@autowriteall
+EXTERN Boole p_bk;      //@backup
 #define BKC_YES           0x001
 #define BKC_AUTO          0x002
 #define BKC_NO            0x004
@@ -1590,21 +1590,21 @@ EXTERN Unt cot_flags;   //flags from @completeopt
 EXTERN Boole p_ac;      //@autocomplete
 EXTERN long p_acl;      //@autocompletedelay
 
-// Keep in sync with option.c:p_cot_values
+//Keep in sync with option.c:p_cot_values
 #define COT_MENU        0x001
 #define COT_MENUONE     0x002
-#define COT_ANY_MENU    0x003   // combination of menu flags
-#define COT_LONGEST     0x004   // FALSE: insert full match, TRUE: insert longest prefix
+#define COT_ANY_MENU    0x003   //combination of menu flags
+#define COT_LONGEST     0x004   //FALSE: insert full match, TRUE: insert longest prefix
 #define COT_POPUP       0x010
 #define COT_POPUPHIDDEN 0x020
-#define COT_ANY_PREVIEW 0x038   // combination of preview flags
-#define COT_NOINSERT    0x040   // FALSE: select & insert, TRUE: noinsert
-#define COT_NOSELECT    0x080   // FALSE: select & insert, TRUE: noselect
-#define COT_NOSORT      0x200   // TRUE: fuzzy match without qsort score
-#define COT_PREINSERT   0x400   // TRUE: preinsert
-#define COT_NEAREST     0x800   // TRUE: prioritize matches close to cursor
+#define COT_ANY_PREVIEW 0x038   //combination of preview flags
+#define COT_NOINSERT    0x040   //FALSE: select & insert, TRUE: noinsert
+#define COT_NOSELECT    0x080   //FALSE: select & insert, TRUE: noselect
+#define COT_NOSORT      0x200   //TRUE: fuzzy match without qsort score
+#define COT_PREINSERT   0x400   //TRUE: preinsert
+#define COT_NEAREST     0x800   //TRUE: prioritize matches close to cursor
 #define COT_PREVIEW     0x008
-#define COT_FUZZY       0x100   // TRUE: fuzzy match enabled
+#define COT_FUZZY       0x100   //TRUE: fuzzy match enabled
 
 EXTERN long   p_ph;      //@pumheight
 EXTERN long   p_pw;      //@pumwidth
@@ -1619,7 +1619,7 @@ EXTERN CS p_debug;  //@debug
 EXTERN CS p_dip;    //@diffopt
 EXTERN CS p_dex;    //@diffexpr
 EXTERN Byte p_ead;    //@eadirection
-#define EAD_VERTICAL   1 // must be >0
+#define EAD_VERTICAL   1 //must be >0
 #define EAD_HORIZONTAL 2
 #define EAD_BOTH       3
 
@@ -1627,7 +1627,7 @@ EXTERN Boole p_ea;       //@equalalways
 EXTERN CS globOpt;  //@errorfile
 EXTERN int   p_eof;      //@endoffile
 EXTERN CS p_ei;     //@eventignore
-EXTERN long foldLevelStart; // @foldlevelstart
+EXTERN long foldLevelStart; //@foldlevelstart
 EXTERN Unt p_fdo;        //@foldopen
 //keep in sync with option.c:p_fdo_values
 #define FDO_ALL      0x001
@@ -1641,21 +1641,21 @@ EXTERN Unt p_fdo;        //@foldopen
 #define FDO_INSERT   0x100
 #define FDO_UNDO     0x200
 #define FDO_JUMP     0x400
-EXTERN CS p_fp;     // @formatprg
-EXTERN Boole  p_fs;      // @fsync
-EXTERN CS p_cpp;    // @completepopup
+EXTERN CS p_fp;     //@formatprg
+EXTERN Boole  p_fs;      //@fsync
+EXTERN CS p_cpp;    //@completepopup
 EXTERN Byte cursorNormalG;   //@cursorNormal
 EXTERN Byte cursorInsertG;   //@cursorInsert
-EXTERN long   p_hh;      // @helpheight
-EXTERN CS p_hlg;    // @helplang
-EXTERN Boole   p_hls;     // @hlsearch
-EXTERN long   p_hi;      // @history
-EXTERN Boole   p_ic;      // @ignorecase
-EXTERN CS p_imaf;   // @imactivatefunc
-EXTERN CS p_imsf;   // @imstatusfunc
-EXTERN int   p_imcmdline;// @imcmdline
-EXTERN int   p_imdisable;// @imdisable
-EXTERN Boole   p_is;       // @incsearch
+EXTERN long   p_hh;      //@helpheight
+EXTERN CS p_hlg;    //@helplang
+EXTERN Boole   p_hls;     //@hlsearch
+EXTERN long   p_hi;      //@history
+EXTERN Boole   p_ic;      //@ignorecase
+EXTERN CS p_imaf;   //@imactivatefunc
+EXTERN CS p_imsf;   //@imstatusfunc
+EXTERN int   p_imcmdline;//@imcmdline
+EXTERN int   p_imdisable;//@imdisable
+EXTERN Boole   p_is;       //@incsearch
 EXTERN CS p_isf;    //@isfname
 EXTERN CS p_isi;    //@isident
 EXTERN CS p_ise;    //@isexpand
@@ -1664,7 +1664,7 @@ EXTERN CS p_kp;     //@keywordprg
 EXTERN CS p_kpc;    //@keyprotocol
 EXTERN CS p_langmap;//@langmap
 
-// Characters from the @listchars option
+//Characters from the @listchars option
 typedef struct {
    Unt eol;
    Unt ext;
@@ -1681,7 +1681,7 @@ typedef struct {
    //Unt conceal;
 } ListChars;
 
-// Characters from the @fillchars option
+//Characters from the @fillchars option
 typedef struct {
    Unt   stl;
    Unt   stlnc;
@@ -1698,22 +1698,22 @@ typedef struct {
    Unt truncrl;
 } FillChars;
 
-EXTERN CS p_lcs;    // @listchars
-EXTERN ListChars listCharsG;     // @listchars characters
+EXTERN CS p_lcs;    //@listchars
+EXTERN ListChars listCharsG;     //@listchars characters
 EXTERN CS p_fcs;    //@fillchars
-EXTERN FillChars fillCharsG;     // @fillchars characters
+EXTERN FillChars fillCharsG;     //@fillchars characters
 EXTERN Boole p_intro;//@intro
 EXTERN Boole p_lrm;  //@langremap
 EXTERN Boole p_lz;   //@lazyredraw
 EXTERN Boole p_more; //@more
-EXTERN Boole makeOpenWhenDoneG; // @makeOpenWhenDone
+EXTERN Boole makeOpenWhenDoneG; //@makeOpenWhenDone
 EXTERN CS p_mef;     //@makeef
 EXTERN long p_mfd;   //@maxfuncdepth
 EXTERN long p_mm;    //@maxmem
 EXTERN long p_mmp;   //@maxmempattern
 EXTERN CS p_mopt;    //@messagesopt
 EXTERN long p_msc;   //@maxsearchcount
-EXTERN Boole p_modifiable; // command-line option "-R" (or "-M" - same thing)
+EXTERN Boole p_modifiable; //command-line option "-R" (or "-M" - same thing)
 EXTERN long p_mouset;//@mousetime
 EXTERN CS p_nf;      //@nrformats
 EXTERN CS p_opfunc;  //@operatorfunc
@@ -1748,7 +1748,7 @@ EXTERN Boole p_sol;  //@startofline
 EXTERN CS p_lpSuff;  //@lowPrioSuffixes
 EXTERN Boole p_sws;  //@swapsync
 EXTERN Unt p_swb;    //@switchbuf
-// Keep in sync with option.c:p_swb_values
+//Keep in sync with option.c:p_swb_values
 #define SWB_USEOPEN  0x001
 #define SWB_USETAB   0x002
 #define SWB_SPLIT    0x004
@@ -1784,7 +1784,7 @@ EXTERN long   p_ut;   //@updatetime
 EXTERN CS p_eeglinfo; //@eeglinfo
 EXTERN CS p_eeglinfofile; //@eeglinfofile
 EXTERN long p_verbose;//@verbose
-EXTERN CS p_vfile;    // @verbosefile
+EXTERN CS p_vfile;    //@verbosefile
 EXTERN Unt p_wop;     //@wildoptions
 
 //Sync with option.c:p_wop_values
@@ -1807,7 +1807,7 @@ EXTERN int p_wa;     //@writeany
 EXTERN long p_wd;    //@writedelay
 
 
-// Value for b_p_ul indicating the global value must be used.
+//Value for b_p_ul indicating the global value must be used.
 #define NO_LOCAL_UNDOLEVEL (-123456)
 
 #define ERR_BUFLEN 80
@@ -1815,7 +1815,7 @@ EXTERN long p_wd;    //@writedelay
 //}}}
 
 #define DECLARE_COMMANDS_ENUM
-#include "commands.h"       // Command declarations
+#include "commands.h"       //Command declarations
 #undef DECLARE_COMMANDS_ENUM
 
 //{{{:::structs
@@ -1847,21 +1847,21 @@ DEFINE_SLICE_HEADER(Ulong)
 EXTERN Polystring globalStringOptionsG;      //Storage for all the global string options
 
 
-// Position in file or book.
+//Position in file or book.
 typedef struct {
    LineNr lnum;  //line number
    ColNr col;    //column number
    ColNr coladd; //extra virtual column
 } Pos;
 
-// Same, but without coladd.
+//Same, but without coladd.
 typedef struct {
-   LineNr lnum;   // line number
-   ColNr col;   // column number
+   LineNr lnum;   //line number
+   ColNr col;   //column number
 } PosNoVirt;
 #define GA_EMPTY    {0, 0, 0, 0, NULL}
 
-// On rare systems "char" is unsigned, sometimes we really want a signed 8-bit value.
+//On rare systems "char" is unsigned, sometimes we really want a signed 8-bit value.
 typedef signed char SignedByte;
 
 //}}}
@@ -1877,11 +1877,11 @@ declStruct(Job);
 
 declStruct(PortInfo);
 declStruct(Frame);
-typedef int         ScriptId;      // script ID
+typedef int         ScriptId;      //script ID
 declStruct(Book);
-declStruct(Terminal); // defined in ui.c
+declStruct(Terminal); //defined in ui.c
 
-typedef struct FuncDict FuncDict; // used in script.c
+typedef struct FuncDict FuncDict; //used in script.c
 declStruct(Callback);
 
 //}}}
@@ -1931,9 +1931,9 @@ typedef enum {
    OPTION_STRING,
    OPTION_NUM,
    OPTION_BOOLE,
-   OPTION_ENUM,  // represented as a Byte
-   OPTION_FLAGS, // represented as an Unt
-   OPTION_CALLBACK     // pointer to callback function
+   OPTION_ENUM,  //represented as a Byte
+   OPTION_FLAGS, //represented as an Unt
+   OPTION_CALLBACK     //pointer to callback function
 } OptionValueTag;
 
 typedef struct {
@@ -1963,7 +1963,7 @@ typedef struct {
 #define optFlag(x) (OptionValue){.tag = OPTION_FLAGS, .flags = (x)}
 #define optCallback(x) (OptionValue){.tag = OPTION_CALLBACK, .callback = (x)}
 
-// For modifying
+//For modifying
 typedef struct {
    OptionValueTag tag;
    union {
@@ -1987,9 +1987,9 @@ typedef struct {
 //function.  When stored with a function, mapping, option, etc. "sc_lnum" is
 //the line number in the script "sc_sid".
 typedef struct {
-   ScriptId sid;      // script ID
-   int      seq;      // sourcing sequence number
-   LineNr   lineNr;   // line number in script
+   ScriptId sid;      //script ID
+   int      seq;      //sourcing sequence number
+   LineNr   lineNr;   //line number in script
 } ScriptPos;
 
 //}}}
@@ -2012,7 +2012,7 @@ typedef struct {
 
 typedef Byte VTermDeco;
 
-// This is ScreenCell without the characters, thus much smaller.
+//This is ScreenCell without the characters, thus much smaller.
 typedef struct {
    VTermDeco flags;
    VTermColor fg;
@@ -2025,21 +2025,21 @@ typedef struct {
 } ScreenCell;
 
 typedef struct {
-   VTermColor fg; // foreground, always from original hiId group
-   VTermColor bg; // background, always from original hiId group
-   VTermColor under; // underline color, possibly from merging hilites
-   VTermDeco flags; // HL_BOLD, underline etc. Result from possibly merging hilites
+   VTermColor fg; //foreground, always from original hiId group
+   VTermColor bg; //background, always from original hiId group
+   VTermColor under; //underline color, possibly from merging hilites
+   VTermDeco flags; //HL_BOLD, underline etc. Result from possibly merging hilites
    Byte fieldPresence; //HI_* constants
-   Short hiId; // original hilite group id
+   Short hiId; //original hilite group id
 } Decoration;
 
-// marks: positions in a file (a normal mark is a lnum/col pair, the same as a file position)
-#define NMARKS      ('z' - 'a' + 1)   // max. # of named marks
-#define EXTRA_MARKS   10      // marks 0-9
-#define JUMPLISTSIZE   100      // max. # of marks in jump list
-#define TAGSTACKSIZE   20      // max. # of tags in tag stack
+//marks: positions in a file (a normal mark is a lnum/col pair, the same as a file position)
+#define NMARKS      ('z' - 'a' + 1)   //max. # of named marks
+#define EXTRA_MARKS   10      //marks 0-9
+#define JUMPLISTSIZE   100      //max. # of marks in jump list
+#define TAGSTACKSIZE   20      //max. # of tags in tag stack
 
-// PortLocal.foldMethod values
+//PortLocal.foldMethod values
 #define FOLD_INDENT 0
 #define FOLD_MARKER 1
 #define FOLD_EXPR 2
@@ -2048,30 +2048,30 @@ typedef struct {
 //Info used to pass info about a fold from the fold-detection code to the
 //code that displays the folds.
 typedef struct foldinfo {
-   int fi_level;     // level of the fold; when this is zero the other fields are invalid
-   int fi_lnum;      // line number where fold starts
-   int fi_low_level; // lowest fold level that starts in the same line
+   int fi_level;     //level of the fold; when this is zero the other fields are invalid
+   int fi_lnum;      //line number where fold starts
+   int fi_low_level; //lowest fold level that starts in the same line
 } FoldInfo;
 
 typedef struct filemark {
-   Pos   mark;      // cursor position
-   int      fnum;      // file number
+   Pos   mark;      //cursor position
+   int      fnum;      //file number
 } FileMark;
 
-// Xtended file mark: also has a file name
+//Xtended file mark: also has a file name
 typedef struct xfilemark {
    FileMark   fmark;
-   Byte   *fname;      // file name, used when fnum == 0
+   Byte   *fname;      //file name, used when fnum == 0
    Tyme   time_set;
 } FileMarkExt;
 
-// The taggy struct is used to store the information about a :tag command.
+//The taggy struct is used to store the information about a :tag command.
 typedef struct taggy {
-   CS tagname;   // tag name
-   FileMark fmark;    // cursor position BEFORE ":tag"
-   Unt cur_match;  // match number
-   int cur_fnum;   // book number used for cur_match
-   Arr(Byte) user_data;   // used with tagfunc
+   CS tagname;   //tag name
+   FileMark fmark;    //cursor position BEFORE ":tag"
+   Unt cur_match;  //match number
+   int cur_fnum;   //book number used for cur_match
+   Arr(Byte) user_data;   //used with tagfunc
 } Taggy;
 
 #include "indices/optionCounts.h"
@@ -2098,12 +2098,12 @@ typedef struct {
 #undef OPTIONS_LIST_PORTAL
 #undef OPTIONS_FIELDS
 
-   Boole foldEnableSave;  // @foldenable saved for diff mode
+   Boole foldEnableSave;  //@foldenable saved for diff mode
    int foldLevelSaved;
-   Byte foldMethodSaved;  // @foldmethod saved for diff mode
-   int diffSaved; // options were saved for starting diff mode
-   int wrapSaved;   // @wrap state saved for diff mode
-   ScriptPos scriptLocs[OPTION_PORTAL_COUNT];   // script locations for portal-local options
+   Byte foldMethodSaved;  //@foldmethod saved for diff mode
+   int diffSaved; //options were saved for starting diff mode
+   int wrapSaved;   //@wrap state saved for diff mode
+   ScriptPos scriptLocs[OPTION_PORTAL_COUNT];   //script locations for portal-local options
    Polystring stringOptions;      //Storage for all the string options
 } PortalOptions;
 
@@ -2115,91 +2115,91 @@ typedef struct {
 //2. The portal-local options for a book work in a similar way.
 //The portal-info is kept in a list at portInfos. It is kept in most-recently-used order.
 struct PortInfo {
-   PortInfo* next;   // next entry or NULL for last entry
-   PortInfo* prev;   // previous entry or NULL for first entry
-   Portal* portal;   // pointer to portal that did set wi_fpos
-   Pos wi_fpos;   // last cursor position in the file
-   PortalOptions opt;      // portal-local options
-   Boole isOptChanged;   // TRUE when wi_opt has useful values
-   Boole foldManual;   // copy of Portal.foldManual
-   ArrayList folds;   // clone of Portal.folds
-   Unt wi_changelistidx; // copy of w_changelistidx
+   PortInfo* next;   //next entry or NULL for last entry
+   PortInfo* prev;   //previous entry or NULL for first entry
+   Portal* portal;   //pointer to portal that did set wi_fpos
+   Pos wi_fpos;   //last cursor position in the file
+   PortalOptions opt;      //portal-local options
+   Boole isOptChanged;   //TRUE when wi_opt has useful values
+   Boole foldManual;   //copy of Portal.foldManual
+   ArrayList folds;   //clone of Portal.folds
+   Unt wi_changelistidx; //copy of w_changelistidx
 };
 
-// Structure to store info about the Visual area.
+//Structure to store info about the Visual area.
 typedef struct {
-   Pos   vi_start;   // start pos of last VIsual
-   Pos   vi_end;      // end position of last VIsual
-   int      vi_mode;   // VIsual_mode of last VIsual
-   ColNr   vi_curswant;   // MAXCOL from w_curswant
-   int kind; // linewise, block or vertical visual mode?
+   Pos   vi_start;   //start pos of last VIsual
+   Pos   vi_end;      //end position of last VIsual
+   int      vi_mode;   //VIsual_mode of last VIsual
+   ColNr   vi_curswant;   //MAXCOL from w_curswant
+   int kind; //linewise, block or vertical visual mode?
 } VisualInfo;
 
 //structures used for undo
 
-// One line saved for undo.  After the ZERO terminated text there might be text
-// properties, thus ul_len can be larger than STRLEN(ul_line) + 1.
+//One line saved for undo.  After the ZERO terminated text there might be text
+//properties, thus ul_len can be larger than STRLEN(ul_line) + 1.
 typedef struct {
-   CS ul_line;   // text of the line
-   long ul_len;      // length of the line including ZERO, plus text properties
-   ColNr ul_textlen;   // length of the line excluding ZERO and any text properties
+   CS ul_line;   //text of the line
+   long ul_len;      //length of the line including ZERO, plus text properties
+   ColNr ul_textlen;   //length of the line excluding ZERO and any text properties
 } UndoLine;
 
 declStruct(UndoEntry);
 declStruct(UndoHeader);
 struct UndoEntry {
-   UndoEntry* ue_next;   // pointer to next entry in list
-   LineNr ue_top;      // number of line above undo block
-   LineNr ue_bot;      // number of line below undo block
-   LineNr ue_lcount;   // linecount when u_save called
-   UndoLine* ue_array;   // array of lines in undo block
-   long ue_size;   // number of lines in ue_array
+   UndoEntry* ue_next;   //pointer to next entry in list
+   LineNr ue_top;      //number of line above undo block
+   LineNr ue_bot;      //number of line below undo block
+   LineNr ue_lcount;   //linecount when u_save called
+   UndoLine* ue_array;   //array of lines in undo block
+   long ue_size;   //number of lines in ue_array
 #ifdef U_DEBUG
-   int ue_magic;   // magic number to check allocation
+   int ue_magic;   //magic number to check allocation
 #endif
 };
 
 struct UndoHeader {
-   // The following have a pointer and a number. The number is used when
-   // reading the undo file in u_read_undo()
+   //The following have a pointer and a number. The number is used when
+   //reading the undo file in u_read_undo()
    union {
-      UndoHeader* ptr;   // pointer to next undo header in list
+      UndoHeader* ptr;   //pointer to next undo header in list
       long seq;
    } next;
    union {
-      UndoHeader* ptr;   // pointer to previous header in list
+      UndoHeader* ptr;   //pointer to previous header in list
       long seq;
    } prev;
    union {
-      UndoHeader* ptr;   // pointer to next header for alt. redo
+      UndoHeader* ptr;   //pointer to next header for alt. redo
       long seq;
    } altNext;
    union {
-      UndoHeader* ptr;   // pointer to previous header for alt. redo
+      UndoHeader* ptr;   //pointer to previous header for alt. redo
       long seq;
    } altPrev;
-   long   uh_seq;      // sequence number, higher == newer undo
-   int      uh_walk;   // used by undo_time()
-   UndoEntry* uh_entry;   // pointer to first entry
-   UndoEntry* uh_getbot_entry; // pointer to where ue_bot must be set
-   Pos   uh_cursor;   // cursor position before saving
+   long   uh_seq;      //sequence number, higher == newer undo
+   int      uh_walk;   //used by undo_time()
+   UndoEntry* uh_entry;   //pointer to first entry
+   UndoEntry* uh_getbot_entry; //pointer to where ue_bot must be set
+   Pos   uh_cursor;   //cursor position before saving
    long   uh_cursor_vcol;
-   int      uh_flags;   // see below
-   Pos   uh_namedm[NMARKS];   // marks before undo/after redo
-   VisualInfo uh_visual;   // Visual areas before undo/after redo
-   Tyme   uh_time;   // timestamp when the change was made
-   long   uh_save_nr;   // set when the file was saved after the changes in this block
+   int      uh_flags;   //see below
+   Pos   uh_namedm[NMARKS];   //marks before undo/after redo
+   VisualInfo uh_visual;   //Visual areas before undo/after redo
+   Tyme   uh_time;   //timestamp when the change was made
+   long   uh_save_nr;   //set when the file was saved after the changes in this block
 #ifdef U_DEBUG
-   int      uh_magic;   // magic number to check allocation
+   int      uh_magic;   //magic number to check allocation
 #endif
 };
 
-// values for uh_flags
-#define UH_CHANGED  0x01   // wasModified flag before undo/after redo
-#define UH_EMPTYBUF 0x02   // book was empty
+//values for uh_flags
+#define UH_CHANGED  0x01   //wasModified flag before undo/after redo
+#define UH_EMPTYBUF 0x02   //book was empty
 
-// structures used in undo.c
-#define ALIGN_LONG   // longword alignment and use filler byte
+//structures used in undo.c
+#define ALIGN_LONG   //longword alignment and use filler byte
 #define ALIGN_SIZE (sizeof(long))
 
 #define ALIGN_MASK (ALIGN_SIZE - 1)
@@ -2207,7 +2207,7 @@ struct UndoHeader {
 //}}}
 //{{{memfile
 
-// things used in memfile.c
+//things used in memfile.c
 
 declStruct(BlockHeader);
 declStruct(MemFile);
@@ -2220,20 +2220,20 @@ declStruct(MfHashItem);
 declStruct(TextChunk);
 declStruct(TextHeader);
 
-// structure used to store one block of the stuff/redo/recording buffers
+//structure used to store one block of the stuff/redo/recording buffers
 struct TextChunk {
-   TextChunk* next;   // pointer to next text chunk
-   Unt b_strlen;   // length of b_str, excluding the ZERO
-   Byte b_str[1];   // contents (actually longer)
+   TextChunk* next;   //pointer to next text chunk
+   Unt b_strlen;   //length of b_str, excluding the ZERO
+   Byte b_str[1];   //contents (actually longer)
 };
 
-// header used for the stuff buffer and the redo buffer
+//header used for the stuff buffer and the redo buffer
 struct TextHeader {
-   TextChunk first;   // first (dummy) block of list
-   TextChunk* bh_curr;   // text chunk for appending
-   int bh_index;   // index for reading
-   int bh_space;   // space in bh_curr for appending
-   int bh_create_newblock;   // create a new block?
+   TextChunk first;   //first (dummy) block of list
+   TextChunk* bh_curr;   //text chunk for appending
+   int bh_index;   //index for reading
+   int bh_space;   //space in bh_curr for appending
+   int bh_create_newblock;   //create a new block?
 };
 
 typedef struct {
@@ -2242,9 +2242,9 @@ typedef struct {
 } SaveRedo;
 
 typedef enum {
-   XP_PREFIX_NONE,   // prefix not used
-   XP_PREFIX_NO,   // "no" prefix for bool option
-   XP_PREFIX_INV,   // "inv" prefix for bool option
+   XP_PREFIX_NONE,   //prefix not used
+   XP_PREFIX_NO,   //"no" prefix for bool option
+   XP_PREFIX_INV,   //"inv" prefix for bool option
 } ExpandPrefixKind;
 
 //}}}
@@ -2258,20 +2258,20 @@ declStruct(RegProg);
 //This goes up to the tenth (index 9), referenced with "\9".
 #define NSUBEXP  10
 
-// Structure to be used for single-line matching. Sub-match "no" starts at "startp[no]" and ends 
-// just before "endp[no]". When there is no match, the pointer is NULL.
+//Structure to be used for single-line matching. Sub-match "no" starts at "startp[no]" and ends 
+//just before "endp[no]". When there is no match, the pointer is NULL.
 typedef struct {
    RegProg* regprog;
    Byte* startp[NSUBEXP];
    Byte* endp[NSUBEXP];
-   ColNr rm_matchcol;   // match start without "\zs"
+   ColNr rm_matchcol;   //match start without "\zs"
    int rm_ic;
 } RegMatch;
 
 
-// Structure used to store external references: "\z\(\)" to "\z\1".
-// Use a reference count to avoid the need to copy this around.  When it goes
-// from 1 to zero the matches need to be freed.
+//Structure used to store external references: "\z\(\)" to "\z\1".
+//Use a reference count to avoid the need to copy this around.  When it goes
+//from 1 to zero the matches need to be freed.
 typedef struct {
    short   refcnt;
    Byte* matches[NSUBEXP];
@@ -2286,12 +2286,12 @@ typedef struct {
    RegProg* regprog;
    PosNoVirt startpos[NSUBEXP];
    PosNoVirt endpos[NSUBEXP];
-   ColNr rmm_matchcol;   // match start without "\zs"
+   ColNr rmm_matchcol;   //match start without "\zs"
    Boole rmm_ic;
-   ColNr rmm_maxcol;   // when not zero: maximum column
+   ColNr rmm_maxcol;   //when not zero: maximum column
 } RegMultilineMatch;
 
-// Flags used by eeRegsub() and eeRegsub_both()
+//Flags used by eeRegsub() and eeRegsub_both()
 #define REGSUB_COPY      1
 #define REGSUB_MAGIC     2
 #define REGSUB_BACKSLASH 4
@@ -2301,46 +2301,46 @@ typedef struct {
 //For @hlsearch there is one pattern for all portals.  For ":match" and the
 //match functions there is a different pattern for each portal.
 typedef struct {
-   RegMultilineMatch rm; // points to the regexp program; contains last
-            // found match (may continue in next line)
-   Book* book;       // the book to search for a match
-   LineNr lnum;       // the line to search for a match
-   OverlayDeco extra; // decoration to be used for a match
-   Short currHiId;   // decorations currently active in drawLineOnScreen()
-   LineNr first_lnum; // first lnum to search for multi-line pat
-   ColNr startcol;   // in win_line() points to char where HL starts
-   ColNr endcol;       // in win_line() points to char where HL ends
-   Boole is_addpos;  // position specified directly by matchaddpos(). TRUE/FALSE
-   Boole has_cursor; // TRUE if the cursor is inside the match, used for CurSearch
+   RegMultilineMatch rm; //points to the regexp program; contains last
+            //found match (may continue in next line)
+   Book* book;       //the book to search for a match
+   LineNr lnum;       //the line to search for a match
+   OverlayDeco extra; //decoration to be used for a match
+   Short currHiId;   //decorations currently active in drawLineOnScreen()
+   LineNr first_lnum; //first lnum to search for multi-line pat
+   ColNr startcol;   //in win_line() points to char where HL starts
+   ColNr endcol;       //in win_line() points to char where HL ends
+   Boole is_addpos;  //position specified directly by matchaddpos(). TRUE/FALSE
+   Boole has_cursor; //TRUE if the cursor is inside the match, used for CurSearch
 } Match;
 
-// Same as PosNoVirt, but with additional field len.
+//Same as PosNoVirt, but with additional field len.
 typedef struct {
-   LineNr lnum;   // line number
-   ColNr col;   // column number
-   int len;   // length: 0 - to the end of line
+   LineNr lnum;   //line number
+   ColNr col;   //column number
+   int len;   //length: 0 - to the end of line
 } PosNoVirtLen;
 
-// provides a linked list for storing match items for ":match", matchadd() and matchaddpos()
+//provides a linked list for storing match items for ":match", matchadd() and matchaddpos()
 declStruct(MatchItem);
 struct MatchItem {
    MatchItem* next;
-   int id;      // match ID
-   int priority;   // match priority
+   int id;      //match ID
+   int priority;   //match priority
 
-   // Either a pattern is defined (mit_pattern is not ZERO) or a list of
-   // positions is given (mit_pos is not NULL and mit_pos_count > 0).
-   Byte* pattern;   // pattern to hilite
-   RegMultilineMatch match;   // regexp program for pattern
+   //Either a pattern is defined (mit_pattern is not ZERO) or a list of
+   //positions is given (mit_pos is not NULL and mit_pos_count > 0).
+   Byte* pattern;   //pattern to hilite
+   RegMultilineMatch match;   //regexp program for pattern
 
-   Arr(PosNoVirtLen) pos; // positions
-   int      posLen;   // nr of entries in mit_pos
-   int      currPos;   // internal position counter
-   LineNr   topLnum;   // top book line
-   LineNr   bottLnum;   // bottom book line
+   Arr(PosNoVirtLen) pos; //positions
+   int      posLen;   //nr of entries in mit_pos
+   int      currPos;   //internal position counter
+   LineNr   topLnum;   //top book line
+   LineNr   bottLnum;   //bottom book line
 
-   Match mit_hl;      // struct for doing the actual highlighting
-   Short hiId;   // highlight group ID
+   Match mit_hl;      //struct for doing the actual highlighting
+   Short hiId;   //highlight group ID
 };
 
 //}}}
@@ -2350,7 +2350,7 @@ struct MatchItem {
 //conditional command.
 #define CSTACK_LEN   50
 
-// Struct used by those that are using an item in a list.
+//Struct used by those that are using an item in a list.
 declStruct(ListWatch);
 declStruct(ListItem);
 declStruct(ForInfo);
@@ -2358,17 +2358,17 @@ declStruct(ForInfo);
 //A list used for saving values of "emsg_silent".  Used by ex_try() to save the
 //value of "emsg_silent" if it was non-zero.  When this is done, the CSF_SILENT flag below is set.
 
-// type of getline() last argument
+//type of getline() last argument
 typedef enum {
-   GETLINE_NONE,       // do not concatenate any lines
-   GETLINE_CONCAT_CONT,    // concatenate continuation lines with backslash
-   GETLINE_CONCAT_CONTBAR, // concatenate continuation lines with \ and |
-   GETLINE_CONCAT_ALL      // concatenate continuation and Vim9 # comment lines
+   GETLINE_NONE,       //do not concatenate any lines
+   GETLINE_CONCAT_CONT,    //concatenate continuation lines with backslash
+   GETLINE_CONCAT_CONTBAR, //concatenate continuation lines with \ and |
+   GETLINE_CONCAT_ALL      //concatenate continuation and Vim9 # comment lines
 } GetlineAlgo;
 
 typedef CS (*LineGetter)(Unt, void *, int, GetlineAlgo);
 
-// An invocation of a Command
+//An invocation of a Command
 struct Invocation {
    CS comm;         //the name of the command (except for :make)
    CommIndex id;    //the index for the command
@@ -2420,27 +2420,27 @@ typedef struct {
    Arena* a;
 } Fuzzy;
 
-// used for completion on the command line
+//used for completion on the command line
 typedef struct expand {
    Text input;   //start of item to expand, guaranteed to be part of fullInput
    CS fullInput; //text being completed
    Unt context;       //type of expansion, EXPAND_* constants
    ExpandPrefixKind xp_prefix;
    CS completionFn;
-   ScriptPos scriptCtx;// SCTX for completion function
-   int backslash;      // one of the XP_BS_ values
-   int isShell;  // TRUE for a shell command, more characters need to be escaped
-   int xp_col; // cursor position in line
-   Unt xp_selected; // selected index in completion
-   CS orig; // originally expanded string
-   ExpandMatch files; // list of files
+   ScriptPos scriptCtx;//SCTX for completion function
+   int backslash;      //one of the XP_BS_ values
+   int isShell;  //TRUE for a shell command, more characters need to be escaped
+   int xp_col; //cursor position in line
+   Unt xp_selected; //selected index in completion
+   CS orig; //originally expanded string
+   ExpandMatch files; //list of files
 #define EXPAND_BUF_LEN 256
-   Byte matchBuilder[EXPAND_BUF_LEN]; // buffer for returned match
-   Byte searchDirection; // Direction of search
-   Pos xp_pre_incsearch_pos; // Cursor position before incsearch
+   Byte matchBuilder[EXPAND_BUF_LEN]; //buffer for returned match
+   Byte searchDirection; //Direction of search
+   Pos xp_pre_incsearch_pos; //Cursor position before incsearch
 } Expand;
 
-// values for backslash
+//values for backslash
 #define XP_BS_NONE    0 //nothing special for backslashes
 #define XP_BS_ONE   0x1 //uses one backslash before a space
 #define XP_BS_THREE 0x2 //uses three backslashes before a space
@@ -2449,109 +2449,109 @@ typedef struct expand {
 //Variables shared between getcommline(), redrawcommline() and others.
 //These need to be saved when using CTRL-R |, that's why they are in a structure.
 typedef struct {
-   CS commBuf;   // pointer to command line buffer
-   int cmdbufflen;   // length of commbuff
-   int cmdlen;      // number of chars in command line
-   int cmdpos;      // current cursor position
-   int cmdspos;   // cursor column on screen
-   int cmdfirstc;   // ':', '/', '?', '=', '>' or ZERO
-   int cmdindent;   // number of spaces before commline
-   CS cmdprompt;   // message in front of commline
-   int cmdattr;   // attributes for prompt
-   int overstrike; // Typing mode on the command line. Shared by getcommline() and put_on_cmdline()
-   Expand* xpc;      // struct being used for expansion, xp_pattern. may point into cmdbuff
-   Unt context;   // type of expansion
-   Arr(Byte) completionFn;   // user-defined expansion arg
-   int input_fn;   // when TRUE Invoked for input() function
+   CS commBuf;   //pointer to command line buffer
+   int cmdbufflen;   //length of commbuff
+   int cmdlen;      //number of chars in command line
+   int cmdpos;      //current cursor position
+   int cmdspos;   //cursor column on screen
+   int cmdfirstc;   //':', '/', '?', '=', '>' or ZERO
+   int cmdindent;   //number of spaces before commline
+   CS cmdprompt;   //message in front of commline
+   int cmdattr;   //attributes for prompt
+   int overstrike; //Typing mode on the command line. Shared by getcommline() and put_on_cmdline()
+   Expand* xpc;      //struct being used for expansion, xp_pattern. may point into cmdbuff
+   Unt context;   //type of expansion
+   Arr(Byte) completionFn;   //user-defined expansion arg
+   int input_fn;   //when TRUE Invoked for input() function
 } CommlineInfo;
 
-// Command modifiers ":vertical", ":browse", ":confirm" and ":hide" set a flag.
-// This needs to be saved for recursive commands, put them in a structure for easy manipulation.
+//Command modifiers ":vertical", ":browse", ":confirm" and ":hide" set a flag.
+//This needs to be saved for recursive commands, put them in a structure for easy manipulation.
 typedef struct {
-   Unt cmod_flags;      // CMOD_ flags
-#define CMOD_SILENT       0x0002   // ":silent"
-#define CMOD_ERRSILENT    0x0004   // ":silent!"
-#define CMOD_UNSILENT     0x0008   // ":unsilent"
-#define CMOD_NOAUTOCMD    0x0010   // ":noautocmd"
-#define CMOD_HIDE         0x0020   // ":hide"
-#define CMOD_BROWSE       0x0040   // ":browse" - invoke file dialog
-#define CMOD_CONFIRM      0x0080   // ":confirm" - invoke yes/no dialog
-#define CMOD_KEEPALT      0x0100   // ":keepalt"
-#define CMOD_KEEPMARKS    0x0200   // ":keepmarks"
-#define CMOD_KEEPJUMPS    0x0400   // ":keepjumps"
-#define CMOD_LOCKMARKS    0x0800   // ":lockmarks"
-#define CMOD_KEEPPATTERNS 0x1000   // ":keeppatterns"
-#define CMOD_NOSWAPFILE   0x2000   // ":noswapfile"
+   Unt cmod_flags;      //CMOD_ flags
+#define CMOD_SILENT       0x0002   //":silent"
+#define CMOD_ERRSILENT    0x0004   //":silent!"
+#define CMOD_UNSILENT     0x0008   //":unsilent"
+#define CMOD_NOAUTOCMD    0x0010   //":noautocmd"
+#define CMOD_HIDE         0x0020   //":hide"
+#define CMOD_BROWSE       0x0040   //":browse" - invoke file dialog
+#define CMOD_CONFIRM      0x0080   //":confirm" - invoke yes/no dialog
+#define CMOD_KEEPALT      0x0100   //":keepalt"
+#define CMOD_KEEPMARKS    0x0200   //":keepmarks"
+#define CMOD_KEEPJUMPS    0x0400   //":keepjumps"
+#define CMOD_LOCKMARKS    0x0800   //":lockmarks"
+#define CMOD_KEEPPATTERNS 0x1000   //":keeppatterns"
+#define CMOD_NOSWAPFILE   0x2000   //":noswapfile"
 
-   int cmod_split;      // flags for win_split()
-   int cmod_tab;      // > 0 when ":tab" was used
-   RegMatch   cmod_filter_regmatch;   // set by :filter /pat/
-   int cmod_filter_force;   // set for :filter!
+   int cmod_split;      //flags for win_split()
+   int cmod_tab;      //> 0 when ":tab" was used
+   RegMatch   cmod_filter_regmatch;   //set by :filter /pat/
+   int cmod_filter_force;   //set for :filter!
 
-   int cmod_verbose;      // 0 if not set, > 0 to set 'verbose' to cmod_verbose - 1
+   int cmod_verbose;      //0 if not set, > 0 to set 'verbose' to cmod_verbose - 1
 
-   // values for undo_cmdmod()
-   CS cmod_save_ei;      // saved value of 'eventignore'
-   long cmod_verbose_save;   // if 'verbose' was set: value of p_verbose plus one
-   int cmod_save_msg_silent;   // if non-zero: saved value of msg_silent + 1
-   int cmod_save_msg_scroll;   // for restoring msg_scroll
-   int cmod_did_esilent;   // incremented when emsg_silent is
+   //values for undo_cmdmod()
+   CS cmod_save_ei;      //saved value of 'eventignore'
+   long cmod_verbose_save;   //if 'verbose' was set: value of p_verbose plus one
+   int cmod_save_msg_silent;   //if non-zero: saved value of msg_silent + 1
+   int cmod_save_msg_scroll;   //for restoring msg_scroll
+   int cmod_did_esilent;   //incremented when emsg_silent is
 } CommandModifier;
 
 //}}}
 //{{{memfile
 
-// Flags when calling ml_updatechunk()
+//Flags when calling ml_updatechunk()
 # define ML_CHNK_ADDLINE 1
 # define ML_CHNK_DELLINE 2
 # define ML_CHNK_UPDLINE 3
 declStruct(InfoPtr);
 declStruct(MemChunkSize);
 
-// the memline structure holds all the information about a memline
+//the memline structure holds all the information about a memline
 typedef struct memline {
-   LineNr   lineCount;   // number of lines in the book
-   MemFile* mfile;   // pointer to associated memfile
-   Arr(InfoPtr) ml_stack;   // stack of pointer blocks (array of IPTRs)
-   int      ml_stack_top;   // current top of ml_stack
-   int      ml_stack_size;   // total number of entries in ml_stack
+   LineNr   lineCount;   //number of lines in the book
+   MemFile* mfile;   //pointer to associated memfile
+   Arr(InfoPtr) ml_stack;   //stack of pointer blocks (array of IPTRs)
+   int      ml_stack_top;   //current top of ml_stack
+   int      ml_stack_size;   //total number of entries in ml_stack
 
-#define ML_EMPTY        0x01   // empty book
-#define ML_LINE_DIRTY   0x02   // cached line was changed and allocated
-#define ML_LOCKED_DIRTY 0x04   // ml_locked was changed
-#define ML_LOCKED_POS   0x08   // ml_locked needs positive block number
+#define ML_EMPTY        0x01   //empty book
+#define ML_LINE_DIRTY   0x02   //cached line was changed and allocated
+#define ML_LOCKED_DIRTY 0x04   //ml_locked was changed
+#define ML_LOCKED_POS   0x08   //ml_locked needs positive block number
    Unt flags;
 
-   ColNr   lineLen;   // length of the cached line + ZERO + text properties
-   ColNr   lineTextLen;// length of the cached line + ZERO, 0 if not known yet
-   LineNr   ml_line_lnum;   // line number of cached line, 0 if not valid
+   ColNr   lineLen;   //length of the cached line + ZERO + text properties
+   ColNr   lineTextLen;//length of the cached line + ZERO, 0 if not known yet
+   LineNr   ml_line_lnum;   //line number of cached line, 0 if not valid
    CS cachedLine;
 
-   BlockHeader* locked;   // block used by last ml_get
-   LineNr   lockedLow;   // first line in locked
-   LineNr   lockedHigh;   // last line in locked
-   int      lockedInsertedLines;  // number of lines inserted in ml_locked
+   BlockHeader* locked;   //block used by last ml_get
+   LineNr   lockedLow;   //first line in locked
+   LineNr   lockedHigh;   //last line in locked
+   int      lockedInsertedLines;  //number of lines inserted in ml_locked
    MemChunkSize* ml_chunksize;
    int      ml_numchunks;
    int      ml_usedchunks;
 } MemBuf;
 
-// Values for the flags argument of ml_delete_flags().
-#define ML_DEL_MESSAGE      1   // may give a "No lines in book" message
-#define ML_DEL_UNDO         2   // called from undo, do not update textprops
-#define ML_DEL_NOPROP       4   // splitting data block, do not update textprops
+//Values for the flags argument of ml_delete_flags().
+#define ML_DEL_MESSAGE      1   //may give a "No lines in book" message
+#define ML_DEL_UNDO         2   //called from undo, do not update textprops
+#define ML_DEL_NOPROP       4   //splitting data block, do not update textprops
 
-// Values for the flags argument of ml_append_int().
-#define ML_APPEND_NEW       1   // starting to edit a new file
-#define ML_APPEND_MARK      2   // mark the new line
-#define ML_APPEND_UNDO      4   // called from undo
-#define ML_APPEND_NOPROP    8   // do not continue textprop from previous line
+//Values for the flags argument of ml_append_int().
+#define ML_APPEND_NEW       1   //starting to edit a new file
+#define ML_APPEND_MARK      2   //mark the new line
+#define ML_APPEND_UNDO      4   //called from undo
+#define ML_APPEND_NOPROP    8   //do not continue textprop from previous line
 
-// Filter to find a list of files. Useful for making lists of project files for grepping
+//Filter to find a list of files. Useful for making lists of project files for grepping
 typedef struct {
-   Arr(Byte) subdir; // like "src", where to search for files
-   Arr(Byte) includedExtensions; // like "c,h,cpp"
-   Arr(Byte) excludedSubdirs; // like ".git,.vscode,node_modules"
+   Arr(Byte) subdir; //like "src", where to search for files
+   Arr(Byte) includedExtensions; //like "c,h,cpp"
+   Arr(Byte) excludedSubdirs; //like ".git,.vscode,node_modules"
 } FileFilter;
 
 //}}}
@@ -2560,44 +2560,44 @@ typedef struct {
 //Structure defining text properties.  These stick with the text.
 //When stored in memline they are after the text, lineLen is larger than STRLEN(ml_line_ptr) + 1.
 typedef struct TextProp {
-   ColNr col;    // start column (one based, in bytes)
-   ColNr len;    // length in bytes, when tp_id is negative used for left padding plus 1
-   int id;      // identifier
-   int type;    // property type
-   int flags;   // TEXT_PROP_ values
-   int leftPad; // left padding between text line and virtual text
+   ColNr col;    //start column (one based, in bytes)
+   ColNr len;    //length in bytes, when tp_id is negative used for left padding plus 1
+   int id;      //identifier
+   int type;    //property type
+   int flags;   //TEXT_PROP_ values
+   int leftPad; //left padding between text line and virtual text
 } TextProp;
 
-#define TEXT_PROP_CONT_NEXT 0x1   // property continues in next line
-#define TEXT_PROP_CONT_PREV 0x2   // property was continued from prev line
+#define TEXT_PROP_CONT_NEXT 0x1   //property continues in next line
+#define TEXT_PROP_CONT_PREV 0x2   //property was continued from prev line
 
-// without these text is placed after the end of the line
-#define TEXT_PROP_ALIGN_RIGHT 0x010   // virtual text is right-aligned
-#define TEXT_PROP_ALIGN_ABOVE 0x020   // virtual text above the line
-#define TEXT_PROP_ALIGN_BELOW 0x040   // virtual text on next screen line
-#define TEXT_PROP_WRAP        0x080   // virtual text wraps - when missing text is truncated
-#define TEXT_PROP_START_INCL  0x100   // "start_incl" copied from proptype
+//without these text is placed after the end of the line
+#define TEXT_PROP_ALIGN_RIGHT 0x010   //virtual text is right-aligned
+#define TEXT_PROP_ALIGN_ABOVE 0x020   //virtual text above the line
+#define TEXT_PROP_ALIGN_BELOW 0x040   //virtual text on next screen line
+#define TEXT_PROP_WRAP        0x080   //virtual text wraps - when missing text is truncated
+#define TEXT_PROP_START_INCL  0x100   //"start_incl" copied from proptype
 
-#define PROP_TEXT_MIN_CELLS   4       // minimum number of cells to use for the text, even when truncating
+#define PROP_TEXT_MIN_CELLS   4       //minimum number of cells to use for the text, even when truncating
 
-// Structure defining a property type.
+//Structure defining a property type.
 typedef struct PropType {
-   int id;      // value used for tp_id
-   int ty;    // number used for tp_type
-   int hilite;   // hiliting
-   int priority;// priority
-   int flags;   // PT_FLAG_ values
-   Byte name[1]; // property type name, actually longer
+   int id;      //value used for tp_id
+   int ty;    //number used for tp_type
+   int hilite;   //hiliting
+   int priority;//priority
+   int flags;   //PT_FLAG_ values
+   Byte name[1]; //property type name, actually longer
 } PropType;
 
-#define PT_FLAG_INS_START_INCL   1   // insert at start included in property
-#define PT_FLAG_INS_END_INCL   2   // insert at end included in property
-#define PT_FLAG_COMBINE      4   // combine with syntax highlight
-#define PT_FLAG_OVERRIDE   8   // override any highlight
+#define PT_FLAG_INS_START_INCL   1   //insert at start included in property
+#define PT_FLAG_INS_END_INCL   2   //insert at end included in property
+#define PT_FLAG_COMBINE      4   //combine with syntax highlight
+#define PT_FLAG_OVERRIDE   8   //override any highlight
 
 declStruct(SignEntry);
 
-// Sign hiliting. Used by the screen refresh routines.
+//Sign hiliting. Used by the screen refresh routines.
 typedef struct {
    int typeNr;
    void* icon;
@@ -2612,19 +2612,19 @@ typedef struct {
 //}}}
 //{{{messages
 
-// Argument list: Array of file names.
-// Used for the global argument list and the argument lists local to a window.
+//Argument list: Array of file names.
+//Used for the global argument list and the argument lists local to a window.
 typedef struct {
-   ArrayList al_ga;      // growarray with the array of file names
-   int al_refcount;   // number of windows using this arglist
-   int id;      // id of this arglist
+   ArrayList al_ga;      //growarray with the array of file names
+   int al_refcount;   //number of windows using this arglist
+   int id;      //id of this arglist
 } EeArgList;
 
 //For each argument remember the file name as it was given, and the book number that contains 
 //the expanded file name (required for when ":cd" is used).
 typedef struct ArgFileEntry {
-   CS fname;   // file name as specified
-   int fnum;   // book number with expanded file name
+   CS fname;   //file name as specified
+   int fnum;   //book number with expanded file name
 } ArgFileEntry;
 
 #define GARGLIST   ((ArgFileEntry *)argListG.al_ga.c)
@@ -2635,41 +2635,41 @@ typedef struct ArgFileEntry {
 #define ARGCOUNT   (curPor->argList->al_ga.len)
 #define WARGCOUNT(wp)   (wp->argList->al_ga.len)
 
-// There is no CSF_IF, the lack of CSF_WHILE, CSF_FOR and CSF_TRY means ":if" was used.
-# define CSF_TRUE   0x0001   // condition was TRUE
-# define CSF_ACTIVE   0x0002   // current state is active
-# define CSF_ELSE   0x0004   // ":else" has been passed
-# define CSF_WHILE   0x0008   // is a ":while"
-# define CSF_FOR   0x0010   // is a ":for"
-# define CSF_BLOCK   0x0020   // is a "{" block
+//There is no CSF_IF, the lack of CSF_WHILE, CSF_FOR and CSF_TRY means ":if" was used.
+# define CSF_TRUE   0x0001   //condition was TRUE
+# define CSF_ACTIVE   0x0002   //current state is active
+# define CSF_ELSE   0x0004   //":else" has been passed
+# define CSF_WHILE   0x0008   //is a ":while"
+# define CSF_FOR   0x0010   //is a ":for"
+# define CSF_BLOCK   0x0020   //is a "{" block
 
-# define CSF_TRY   0x0100   // is a ":try"
-# define CSF_FINALLY   0x0200   // ":finally" has been passed
-# define CSF_CATCH   0x0400   // ":catch" has been seen
-# define CSF_THROWN   0x0800   // exception thrown to this try conditional
-# define CSF_CAUGHT   0x1000  // exception caught by this try conditional
-# define CSF_FINISHED   0x2000  // CSF_CAUGHT was handled by finish_exception()
-# define CSF_SILENT   0x4000   // "emsg_silent" reset by ":try"
-// Note that CSF_ELSE is only used when CSF_TRY and CSF_WHILE are unset
-// (an ":if"), and CSF_SILENT is only used when CSF_TRY is set.
+# define CSF_TRY   0x0100   //is a ":try"
+# define CSF_FINALLY   0x0200   //":finally" has been passed
+# define CSF_CATCH   0x0400   //":catch" has been seen
+# define CSF_THROWN   0x0800   //exception thrown to this try conditional
+# define CSF_CAUGHT   0x1000  //exception caught by this try conditional
+# define CSF_FINISHED   0x2000  //CSF_CAUGHT was handled by finish_exception()
+# define CSF_SILENT   0x4000   //"emsg_silent" reset by ":try"
+//Note that CSF_ELSE is only used when CSF_TRY and CSF_WHILE are unset
+//(an ":if"), and CSF_SILENT is only used when CSF_TRY is set.
 
-# define CSF_FUNC_DEF   0x8000   // a function was defined in this block
+# define CSF_FUNC_DEF   0x8000   //a function was defined in this block
 
 //What's pending for being reactivated at the ":endtry" of this try conditional:
-# define CSTP_NONE   0   // nothing pending in ":finally" clause
-# define CSTP_ERROR   1   // an error is pending
-# define CSTP_INTERRUPT   2   // an interrupt is pending
-# define CSTP_THROW   4   // a throw is pending
-# define CSTP_BREAK   8   // ":break" is pending
-# define CSTP_CONTINUE   16   // ":continue" is pending
-# define CSTP_RETURN   24   // ":return" is pending
-# define CSTP_FINISH   32   // ":finish" is pending
+# define CSTP_NONE   0   //nothing pending in ":finally" clause
+# define CSTP_ERROR   1   //an error is pending
+# define CSTP_INTERRUPT   2   //an interrupt is pending
+# define CSTP_THROW   4   //a throw is pending
+# define CSTP_BREAK   8   //":break" is pending
+# define CSTP_CONTINUE   16   //":continue" is pending
+# define CSTP_RETURN   24   //":return" is pending
+# define CSTP_FINISH   32   //":finish" is pending
 
-// Flags for the cs_lflags item in CondStack.
-# define CSL_HAD_LOOP    1   // just found ":while" or ":for"
-# define CSL_HAD_ENDLOOP 2   // just found ":endwhile" or ":endfor"
-# define CSL_HAD_CONT    4   // just found ":continue"
-# define CSL_HAD_FINA    8   // just found ":finally"
+//Flags for the cs_lflags item in CondStack.
+# define CSL_HAD_LOOP    1   //just found ":while" or ":for"
+# define CSL_HAD_ENDLOOP 2   //just found ":endwhile" or ":endfor"
+# define CSL_HAD_CONT    4   //just found ":continue"
+# define CSL_HAD_FINA    8   //just found ":finally"
 
 //A list of error messages that can be converted to an exception.  "throw_msg"
 //is only set in the first element of the list.  Usually, it points to the
@@ -2677,41 +2677,41 @@ typedef struct ArgFileEntry {
 //message in the list.  See cause_errthrow().
 typedef struct MsgList MsgList;
 struct MsgList {
-   MsgList   *next;      // next of several messages in a row
-   CS msg;      // original message, allocated
-   CS throw_msg;   // msg to throw: usually original one
-   CS sfile;      // value from estack_sfile(), allocated
-   long   slnum;      // line number for "sfile"
+   MsgList   *next;      //next of several messages in a row
+   CS msg;      //original message, allocated
+   CS throw_msg;   //msg to throw: usually original one
+   CS sfile;      //value from estack_sfile(), allocated
+   long   slnum;      //line number for "sfile"
 };
 
-// The exception types.
+//The exception types.
 typedef enum {
-   ET_USER,      // exception caused by ":throw" command
-   ET_ERROR,      // error exception
-   ET_INTERRUPT,   // interrupt exception triggered by Ctrl-C
+   ET_USER,      //exception caused by ":throw" command
+   ET_ERROR,      //error exception
+   ET_INTERRUPT,   //interrupt exception triggered by Ctrl-C
 } ExceptionKind;
 
 typedef struct Exception Exception;
 struct Exception {
-   ExceptionKind   type;      // exception type
-   CS value;      // exception value
-   MsgList* messages;   // message(s) causing error exception
-   CS throw_name;   // name of the throw point
-   LineNr      throw_lnum;   // line number of the throw point
-   List* stacktrace;   // stacktrace
-   Exception* caught;   // next exception on the caught stack
+   ExceptionKind   type;      //exception type
+   CS value;      //exception value
+   MsgList* messages;   //message(s) causing error exception
+   CS throw_name;   //name of the throw point
+   LineNr      throw_lnum;   //line number of the throw point
+   List* stacktrace;   //stacktrace
+   Exception* caught;   //next exception on the caught stack
 };
 
-// Structure to save the error/interrupt/exception state between calls to
-// enter_cleanup() and leave_cleanup().  Must be allocated as an automatic
-// variable by the (common) caller of these functions.
+//Structure to save the error/interrupt/exception state between calls to
+//enter_cleanup() and leave_cleanup().  Must be allocated as an automatic
+//variable by the (common) caller of these functions.
 typedef struct {
-   int pending;      // error/interrupt/exception state
-   Exception* exception;   // exception value
+   int pending;      //error/interrupt/exception state
+   Exception* exception;   //exception value
 } Cleanup;
 
-// Exception state that is saved and restored when calling timer callback
-// functions and deferred functions.
+//Exception state that is saved and restored when calling timer callback
+//functions and deferred functions.
 typedef struct {
    Exception* currentException;
    int didThrow;
@@ -2722,23 +2722,23 @@ typedef struct {
 
 declStruct(SyntaxState);
 
-// Used for the typeahead buffer: typebuf.
+//Used for the typeahead buffer: typebuf.
 typedef struct {
-   CS c;   // The contents. Vbuffer for typed characters
-   CS noremap;   // mapping flags for characters in c[]
-   int len;   // length of c[]
-   int currPos;      // current position in c[]
-   int validLen;   // number of valid bytes in tb_buf[]
-   int mappedLen;   // nr of mapped bytes in tb_buf[]
-   int silentCnt;   // nr of silently mapped bytes in tb_buf[]
-   int noAbbrCnt; // nr of bytes without abbrev. in tb_buf[]
-   int changeCnt;   // nr of time tb_buf was changed; never zero
+   CS c;   //The contents. Vbuffer for typed characters
+   CS noremap;   //mapping flags for characters in c[]
+   int len;   //length of c[]
+   int currPos;      //current position in c[]
+   int validLen;   //number of valid bytes in tb_buf[]
+   int mappedLen;   //nr of mapped bytes in tb_buf[]
+   int silentCnt;   //nr of silently mapped bytes in tb_buf[]
+   int noAbbrCnt; //nr of bytes without abbrev. in tb_buf[]
+   int changeCnt;   //nr of time tb_buf was changed; never zero
 } Typeahead;
 
-// Struct to hold the saved typeahead for save_typeahead().
+//Struct to hold the saved typeahead for save_typeahead().
 typedef struct {
    Typeahead      save_typebuf;
-   int         typebuf_valid;       // TRUE when save_typebuf valid
+   int         typebuf_valid;       //TRUE when save_typebuf valid
    Unt         old_char;
    int         oldModMask;
    TextHeader   save_readbuf1;
@@ -2746,56 +2746,56 @@ typedef struct {
    Byte      *save_inputbuf;
 } TypeaheadSave;
 
-// Structure used for the command line history.
+//Structure used for the command line history.
 typedef struct HistoryEntry {
-   int      hisnum;      // identifying number
-   int      eeglinfo;   // when TRUE hisstr comes from eeglinfo
-   Byte   *hisstr;   // actual entry, separator char after the ZERO
-   Unt   hisstrlen;   // length of hisstr (excluding the ZERO)
-   Tyme   time_set;   // when it was typed, zero if unknown
+   int      hisnum;      //identifying number
+   int      eeglinfo;   //when TRUE hisstr comes from eeglinfo
+   Byte   *hisstr;   //actual entry, separator char after the ZERO
+   Unt   hisstrlen;   //length of hisstr (excluding the ZERO)
+   Tyme   time_set;   //when it was typed, zero if unknown
 } HistoryEntry;
 
 #define CONV_NONE      0
 
-// Structure used for mappings and abbreviations.
+//Structure used for mappings and abbreviations.
 typedef struct mapblock MapBlock;
 struct mapblock {
-   MapBlock* next;  // next mapblock in list
-   MapBlock* alt;   // pointer to mapblock of the same mapping
-                    // with an alternative form of m_keys, or NULL iff there is no such mapblock
-   CS lhs;   // mapped from, lhs
-   CS rhs;      // mapped to, rhs
-   CS origRhs;   // rhs as entered by the user
-   int keylen;   // strlen(m_keys)
-   int mode;      // valid mode
-   int simplified;   // lhs was simplified: don't use this mapping
-   Unt noremap;   // if non-zero no re-mapping for m_str
-   char silent;   // <silent> used, don't echo commands
-   char nowait;   // <nowait> used
-   char expr;      // <expr> used, m_str is an expression
-   ScriptPos scriptCtx;   // SCTX where map was defined
+   MapBlock* next;  //next mapblock in list
+   MapBlock* alt;   //pointer to mapblock of the same mapping
+                    //with an alternative form of m_keys, or NULL iff there is no such mapblock
+   CS lhs;   //mapped from, lhs
+   CS rhs;      //mapped to, rhs
+   CS origRhs;   //rhs as entered by the user
+   int keylen;   //strlen(m_keys)
+   int mode;      //valid mode
+   int simplified;   //lhs was simplified: don't use this mapping
+   Unt noremap;   //if non-zero no re-mapping for m_str
+   char silent;   //<silent> used, don't echo commands
+   char nowait;   //<nowait> used
+   char expr;      //<expr> used, m_str is an expression
+   ScriptPos scriptCtx;   //SCTX where map was defined
 };
 
 
-// Used for hiliting in the status line
+//Used for hiliting in the status line
 typedef struct {
    CS start;
-   Short hiId;      // 0: no HL, 1-9: User HL, < 0 for syn ID
+   Short hiId;      //0: no HL, 1-9: User HL, < 0 for syn ID
 } StatusLineHilite;
 
 //}}}
 //{{{hash tables
 
-// Syntax items - usually book-specific.
+//Syntax items - usually book-specific.
 
-// Item for an EeSet hash set.  "hi_key" can be one of three values:
-// NULL:      Never been used
-// HI_KEY_REMOVED: Entry was removed
-// Otherwise: Used item, pointer to the actual key; this usually is
-//            inside the item, subtract an offset to locate the item.
-//            This reduces the size of hashitem by 1/3.
+//Item for an EeSet hash set.  "hi_key" can be one of three values:
+//NULL:      Never been used
+//HI_KEY_REMOVED: Entry was removed
+//Otherwise: Used item, pointer to the actual key; this usually is
+//           inside the item, subtract an offset to locate the item.
+//           This reduces the size of hashitem by 1/3.
 typedef struct {
-   Ulong hi_hash;   // cached hash number of hi_key
+   Ulong hi_hash;   //cached hash number of hi_key
    Byte* hi_key;
    Unt len;
 } EeSetItem;
@@ -2804,26 +2804,26 @@ typedef struct {
 #define HI_KEY_REMOVED &hash_removed
 #define HASHITEM_EMPTY(hi) ((hi)->len == 0 || (hi)->hi_key == &hash_removed)
 
-// Initial size for a hashtable. Our items are relatively small and growing
-// is expensive, thus use 16 as a start.  Must be a power of 2.
-// This allows for storing 10 items (2/3 of 16) before a resize is needed.
+//Initial size for a hashtable. Our items are relatively small and growing
+//is expensive, thus use 16 as a start.  Must be a power of 2.
+//This allows for storing 10 items (2/3 of 16) before a resize is needed.
 #define HT_INIT_SIZE 16
 #define HTFLAGS_ERROR  0x01 //Set when growing failed, can't add more items before growing works.
 #define HTFLAGS_FROZEN 0x02 //Trying to add or remove an item will result in an error message.
 
 //Hash set for arbitrary on-heap data
 typedef struct EeSet {
-   Ulong   mask;   // mask used for hash value (nr of items in array is "ht_mask" + 1)
-   Ulong   count;   // number of items present
-   Ulong   occupied;   // number of items used + removed
-   int     changes;   // incremented when adding or removing an item
-   int     ht_locked;   // counter for hash_lock()
-   Unt     flags;   // HTFLAGS_ values
-   EeSetItem* array;   // points to the array, allocated when it's not "ht_smallarray"
-   EeSetItem smallArray[HT_INIT_SIZE];   // initial array
+   Ulong   mask;   //mask used for hash value (nr of items in array is "ht_mask" + 1)
+   Ulong   count;   //number of items present
+   Ulong   occupied;   //number of items used + removed
+   int     changes;   //incremented when adding or removing an item
+   int     ht_locked;   //counter for hash_lock()
+   Unt     flags;   //HTFLAGS_ values
+   EeSetItem* array;   //points to the array, allocated when it's not "ht_smallarray"
+   EeSetItem smallArray[HT_INIT_SIZE];   //initial array
 } EeSet;
 
-typedef Ulong Hash;      // Type for hi_hash
+typedef Ulong Hash;      //Type for hi_hash
 
 
 //Struct that holds both a normal function name and a PartiallyApplied, as used for a callback 
@@ -2846,30 +2846,30 @@ declStruct(JsonQ);
 declStruct(CbNode);
 declStruct(Channel);
 typedef enum {
-   VAR_UNKNOWN = 0,   // not set, any type or "void" allowed
-   VAR_ANY,      // used for "any" type
-   VAR_VOID,      // no value (function not returning anything)
-   VAR_BOOL,      // "v_number" is used: VVAL_TRUE or VVAL_FALSE
-   VAR_NUMBER,      // "v_number" is used
-   VAR_FLOAT,      // "v_float" is used
-   VAR_STRING,      // "v_string" is used
-   VAR_BLOB,      // "v_blob" is used
-   VAR_FUNC,      // "v_string" is function name
-   VAR_PARTIAL,   // "v_partial" is used
-   VAR_LIST,      // "v_list" is used
-   VAR_BAG,      // "v_dict" is used
-   VAR_JOB,      // "v_job" is used
-   VAR_CHANNEL   // "v_channel" is used
+   VAR_UNKNOWN = 0,   //not set, any type or "void" allowed
+   VAR_ANY,      //used for "any" type
+   VAR_VOID,      //no value (function not returning anything)
+   VAR_BOOL,      //"v_number" is used: VVAL_TRUE or VVAL_FALSE
+   VAR_NUMBER,      //"v_number" is used
+   VAR_FLOAT,      //"v_float" is used
+   VAR_STRING,      //"v_string" is used
+   VAR_BLOB,      //"v_blob" is used
+   VAR_FUNC,      //"v_string" is function name
+   VAR_PARTIAL,   //"v_partial" is used
+   VAR_LIST,      //"v_list" is used
+   VAR_BAG,      //"v_dict" is used
+   VAR_JOB,      //"v_job" is used
+   VAR_CHANNEL   //"v_channel" is used
 } VarTag;
 
-// A type specification.
+//A type specification.
 struct TypeSpec {
    VarTag tag;
-   SignedByte argCount;    // for func, incl. vararg, -1 for unknown
-   SignedByte minArgCount; // number of non-optional arguments
-   Byte flags;             // TTFLAG_ values
-   TypeSpec* member;       // for list, dict, func return type
-   TypeSpec** args;        // func argument types, allocated
+   SignedByte argCount;    //for func, incl. vararg, -1 for unknown
+   SignedByte minArgCount; //number of non-optional arguments
+   Byte flags;             //TTFLAG_ values
+   TypeSpec* member;       //for list, dict, func return type
+   TypeSpec** args;        //func argument types, allocated
 };
 
 #define TTFLAG_VARARGS    0x01 //func args ends with "..."
@@ -2883,20 +2883,20 @@ struct TypeSpec {
 //}}}
 //{{{Vars
 
-// Structure to hold an internal variable without a name.
+//Structure to hold an internal variable without a name.
 struct Var {
    VarTag tag;
-   char lock;       // see below: VAR_LOCKED, VAR_FIXED
+   char lock;       //see below: VAR_LOCKED, VAR_FIXED
    union {
-      Long number;   // number value
-      double floatt;   // floating point number value
-      Arr(Byte) string;   // string value (can be NULL)
-      List* list;   // list value (nullable)
-      Bag* bag;   // dict value (can be NULL)
-      PartiallyApplied* partial;   // closure: function with args
-      Job* job;      // job value (can be NULL)
-      Channel* channel;   // channel value (can be NULL)
-      Blob* blob;   // blob value (can be NULL)
+      Long number;   //number value
+      double floatt;   //floating point number value
+      Arr(Byte) string;   //string value (can be NULL)
+      List* list;   //list value (nullable)
+      Bag* bag;   //dict value (can be NULL)
+      PartiallyApplied* partial;   //closure: function with args
+      Job* job;      //job value (can be NULL)
+      Channel* channel;   //channel value (can be NULL)
+      Blob* blob;   //blob value (can be NULL)
    };
 };
 
@@ -2905,38 +2905,38 @@ typedef enum {
    VAR_BOOK,
    VAR_PORTAL,
    VAR_TAB,
-   VAR_SCRIPT, // To delete
+   VAR_SCRIPT, //To delete
    VAR_LOCAL
 } VarLevel;
 
-// Values for "dv_scope".
+//Values for "dv_scope".
 #define VAR_SCOPE     1 //a:, e:, s:, etc. scope dictionaries
 #define VAR_DEF_SCOPE 2 //l:, g: scope dictionaries: here funcrefs are not
-                        // allowed to mask existing functions
+                        //allowed to mask existing functions
 
-// Values for "v_lock".
-#define VAR_LOCKED       1   // locked with lock(), can use unlock()
-#define VAR_FIXED        2   // locked forever
-#define VAR_ITEMS_LOCKED 4   // items of non-materialized list locked
+//Values for "v_lock".
+#define VAR_LOCKED       1   //locked with lock(), can use unlock()
+#define VAR_FIXED        2   //locked forever
+#define VAR_ITEMS_LOCKED 4   //items of non-materialized list locked
 
 //Argument for {getLval()}
 typedef struct {
-   Text name; // variable name
+   Text name; //variable name
    NULLABLE Var* returnVar;
    Boole unlet;
    Boole skip;
-   Unt flags;       // GLV_ values
+   Unt flags;       //GLV_ values
    int fneFlag;
 } GetLval;
 
 //}}}
 //{{{List
 
-// Structure to hold an item of a list: an internal variable without a name.
+//Structure to hold an item of a list: an internal variable without a name.
 struct ListItem {
-   ListItem* next;   // next item in list
-   ListItem* prev;   // previous item in list
-   Var c;      // the content of the list node
+   ListItem* next;   //next item in list
+   ListItem* prev;   //previous item in list
+   Var c;      //the content of the list node
 };
 
 
@@ -2944,84 +2944,84 @@ struct ListItem {
 //When created by range() it will at first have special value: first == &range_list_item;
 //and use lv_start, lv_end, lv_stride.
 struct List {
-   ListItem* first; // first item, NULL if none, &range_list_item for a non-materialized list
-   ListWatch* watcher;   // first watcher, NULL if none
+   ListItem* first; //first item, NULL if none, &range_list_item for a non-materialized list
+   ListWatch* watcher;   //first watcher, NULL if none
    union {
-      struct {   // used for non-materialized range list: "first" is &range_list_item
+      struct {   //used for non-materialized range list: "first" is &range_list_item
           Long start;
           Long end;
           int      stride;
       } nonmat;
-      struct {   // used for materialized list
-          ListItem* last;   // last item, NULL if none
-          ListItem* cachedItem;   // when not NULL item at index "lv_idx"
-          int      cachedInd;      // cached index of an item
+      struct {   //used for materialized list
+          ListItem* last;   //last item, NULL if none
+          ListItem* cachedItem;   //when not NULL item at index "lv_idx"
+          int      cachedInd;      //cached index of an item
       } mat;
    } lv_u;
-   TypeSpec* ty;   // current type, allocated by alloc_type()
-   List* copyList;   // copied list used by deepcopy()
-   List* usedNext;   // next list in used lists list
-   List* usedPrev;   // previous list in used lists list
-   Unt refCount;   // reference count
-   int len;      // number of items
-   int withItems;   // number of items following this struct that should not be freed
-   int copyId;   // ID used by deepcopy()
-   char lock;   // zero, VAR_LOCKED, VAR_FIXED
+   TypeSpec* ty;   //current type, allocated by alloc_type()
+   List* copyList;   //copied list used by deepcopy()
+   List* usedNext;   //next list in used lists list
+   List* usedPrev;   //previous list in used lists list
+   Unt refCount;   //reference count
+   int len;      //number of items
+   int withItems;   //number of items following this struct that should not be freed
+   int copyId;   //ID used by deepcopy()
+   char lock;   //zero, VAR_LOCKED, VAR_FIXED
 };
 
-// Static list with 10 items.  Use init_static_list() to initialize.
+//Static list with 10 items.  Use init_static_list() to initialize.
 typedef struct {
-   List list;   // must be first
+   List list;   //must be first
    ListItem items[10];
 } StaticList10;
 
 //}}}
 //{{{dictionaries
 
-// Structure to hold an item of a Dictionary. Also used for a variable.
-// The key is copied into "key" to avoid an extra alloc/free for it.
+//Structure to hold an item of a Dictionary. Also used for a variable.
+//The key is copied into "key" to avoid an extra alloc/free for it.
 typedef struct {
-   Var c; // content, a tagged variable
-   Byte flags;   // DI_FLAGS_ flags (only used for variable)
+   Var c; //content, a tagged variable
+   Byte flags;   //DI_FLAGS_ flags (only used for variable)
    Unt len;
-   Byte key[1];   // key (actually longer!)
+   Byte key[1];   //key (actually longer!)
 } DictItem;
 
 //A dictitem with a 16 character key (plus ZERO).  This is an efficient way to
 //have a fixed-size dictitem.
 #define DICTITEM16_KEY_LEN 16
 typedef struct {
-   Var c;      // type and value of the variable
-   Byte flags;   // DI_FLAGS_ flags (only used for variable)
+   Var c;      //type and value of the variable
+   Byte flags;   //DI_FLAGS_ flags (only used for variable)
    Unt len;
-   Byte key[DICTITEM16_KEY_LEN + 1];   // key
+   Byte key[DICTITEM16_KEY_LEN + 1];   //key
 } DictItem16;
 
-// Flags for "di_flags"
-#define DI_FLAGS_RO      0x01       // read-only variable
-#define DI_FLAGS_FIX      0x04       // fixed: no :unlet or remove()
-#define DI_FLAGS_LOCK      0x08       // locked variable
-#define DI_FLAGS_ALLOC      0x10       // separately allocated
-#define DI_FLAGS_RELOAD      0x20       // set when script sourced again
+//Flags for "di_flags"
+#define DI_FLAGS_RO      0x01       //read-only variable
+#define DI_FLAGS_FIX      0x04       //fixed: no :unlet or remove()
+#define DI_FLAGS_LOCK      0x08       //locked variable
+#define DI_FLAGS_ALLOC      0x10       //separately allocated
+#define DI_FLAGS_RELOAD      0x20       //set when script sourced again
 
-// Bag (hash map for scripting Vars)
+//Bag (hash map for scripting Vars)
 struct Bag {
-   Byte lock;   // zero, VAR_LOCKED, VAR_FIXED
-   Byte scope;   // zero, VAR_SCOPE, VAR_DEF_SCOPE
-   Unt refCount;   // reference count
-   int copyId;   // ID used by deepcopy()
-   EeSet hashTable;   // hashtab that refers to the items
-   TypeSpec* ty;   // current type, allocated by alloc_type()
-   Bag* dv_copydict;   // copied bag used by deepcopy()
-   Bag* dv_used_next;   // next bag in used bags list
-   Bag* dv_used_prev;   // previous bag in used bags list
+   Byte lock;   //zero, VAR_LOCKED, VAR_FIXED
+   Byte scope;   //zero, VAR_SCOPE, VAR_DEF_SCOPE
+   Unt refCount;   //reference count
+   int copyId;   //ID used by deepcopy()
+   EeSet hashTable;   //hashtab that refers to the items
+   TypeSpec* ty;   //current type, allocated by alloc_type()
+   Bag* dv_copydict;   //copied bag used by deepcopy()
+   Bag* dv_used_next;   //next bag in used bags list
+   Bag* dv_used_prev;   //previous bag in used bags list
 };
 
-// Structure to hold info about a blob.
+//Structure to hold info about a blob.
 struct Blob {
-   ArrayList c; // growarray with the data
-   Unt refCount; // reference count
-   char lock;    // zero, VAR_LOCKED, VAR_FIXED
+   ArrayList c; //growarray with the data
+   Unt refCount; //reference count
+   char lock;    //zero, VAR_LOCKED, VAR_FIXED
 };
 
 typedef int (*cfunc_T)(int argcount, Var *argvars, Var *rettv, void *state);
@@ -3030,89 +3030,89 @@ typedef void (*cfunc_free_T)(void *state);
 typedef struct FnCall FnCall;
 
 
-// Structure to hold info for a user function. When adding a field, check 
-// copy_lambda_to_global_func()
+//Structure to hold info for a user function. When adding a field, check 
+//copy_lambda_to_global_func()
 struct UserFunc {
-   int uf_varargs;   // variable nr of arguments (old style)
-   int uf_flags;   // FC_ flags
-   int uf_calls;   // nr of active calls
-   int uf_cleared;   // func_clear() was already called
+   int uf_varargs;   //variable nr of arguments (old style)
+   int uf_flags;   //FC_ flags
+   int uf_calls;   //nr of active calls
+   int uf_cleared;   //func_clear() was already called
 
-   ArrayList   args;   // arguments, including optional arguments
-   ArrayList   defaultArgs;   // default argument expressions
-   int uf_args_visible; // normally uf_args.len, less when compiling default argument expression.
+   ArrayList   args;   //arguments, including optional arguments
+   ArrayList   defaultArgs;   //default argument expressions
+   int uf_args_visible; //normally uf_args.len, less when compiling default argument expression.
 
-   Byte* uf_va_name;   // name from "...name" or NULL
-   TypeSpec* uf_va_type;   // type from "...name: type" or NULL
-   int uf_block_depth;   // nr of entries in uf_block_ids
-   int* uf_block_ids;   // blocks a :def function is defined inside
+   Byte* uf_va_name;   //name from "...name" or NULL
+   TypeSpec* uf_va_type;   //type from "...name: type" or NULL
+   int uf_block_depth;   //nr of entries in uf_block_ids
+   int* uf_block_ids;   //blocks a :def function is defined inside
 
-   ArrayList   lines;   // function lines
+   ArrayList   lines;   //function lines
 
-   int      uf_debug_tick;   // when last checked for a breakpoint in this function.
-   int      uf_has_breakpoint;  // TRUE when a breakpoint has been set in this function.
-   ScriptPos scriptCtx;   // SCTX where function was defined, used for s: variables;
-   Unt      refCount;   // reference count, see func_name_refcount()
+   int      uf_debug_tick;   //when last checked for a breakpoint in this function.
+   int      uf_has_breakpoint;  //TRUE when a breakpoint has been set in this function.
+   ScriptPos scriptCtx;   //SCTX where function was defined, used for s: variables;
+   Unt      refCount;   //reference count, see func_name_refcount()
 
-   FnCall   *uf_scoped;   // l: local variables for closure
+   FnCall   *uf_scoped;   //l: local variables for closure
 
-   Byte   *uf_name_exp;   // if "uf_name[]" starts with SNR the name with
-            // "<SNR>" as a string, otherwise NULL
-   Unt   uf_namelen;   // length of uf_name (excluding the ZERO)
-   Byte   uf_name[4];   // name of function (actual size equals name);
-            // can start with <SNR>123_ (<SNR> is K_SPECIAL KS_EXTRA KE_SNR)
+   Byte   *uf_name_exp;   //if "uf_name[]" starts with SNR the name with
+            //"<SNR>" as a string, otherwise NULL
+   Unt   uf_namelen;   //length of uf_name (excluding the ZERO)
+   Byte   uf_name[4];   //name of function (actual size equals name);
+            //can start with <SNR>123_ (<SNR> is K_SPECIAL KS_EXTRA KE_SNR)
 };
 
-// flags used in uf_flags
-#define FC_ABORT      0x01   // abort function on error
-#define FC_RANGE      0x02   // function accepts range
-#define FC_DICT       0x04   // Bag function, uses "self"
-#define FC_CLOSURE    0x08   // closure, uses outer scope variables
-#define FC_DELETED    0x10   // :delfunction used while uf_refcount > 0
-#define FC_REMOVED    0x20   // function redefined while uf_refcount > 0
-#define FC_DEAD       0x40   // function kept only for reference to dfunc
-#define FC_EXPORT     0x80   // "export def Func()"
-#define FC_NOARGS    0x100   // no a: variables in lambda
-#define FC_CFUNC     0x400   // defined as Lua C func
-#define FC_LAMBDA    0x800   // one line "return {expr}"
+//flags used in uf_flags
+#define FC_ABORT      0x01   //abort function on error
+#define FC_RANGE      0x02   //function accepts range
+#define FC_DICT       0x04   //Bag function, uses "self"
+#define FC_CLOSURE    0x08   //closure, uses outer scope variables
+#define FC_DELETED    0x10   //:delfunction used while uf_refcount > 0
+#define FC_REMOVED    0x20   //function redefined while uf_refcount > 0
+#define FC_DEAD       0x40   //function kept only for reference to dfunc
+#define FC_EXPORT     0x80   //"export def Func()"
+#define FC_NOARGS    0x100   //no a: variables in lambda
+#define FC_CFUNC     0x400   //defined as Lua C func
+#define FC_LAMBDA    0x800   //one line "return {expr}"
 
-#define MAX_FUNC_ARGS   20   // maximum number of function arguments
+#define MAX_FUNC_ARGS   20   //maximum number of function arguments
 
 #define MAX_MAPPING_RECURSION 128
-#define VAR_SHORT_LEN   20   // short variable name length
-#define FIXVAR_CNT   12   // number of fixed variables
+#define VAR_SHORT_LEN   20   //short variable name length
+#define FIXVAR_CNT   12   //number of fixed variables
 
 
-// Structure to hold info for a function that is currently being executed.
+//Structure to hold info for a function that is currently being executed.
 struct FnCall {
-   UserFunc* fn;   // function being called
-   int lineNr;   // next line to be executed
-   int fc_returned;   // ":return" used
-   struct  {       // fixed variables for arguments
-      DictItem   var;      // variable (without room for name)
-      Byte   room[VAR_SHORT_LEN];   // room for the name
+   UserFunc* fn;   //function being called
+   int lineNr;   //next line to be executed
+   int fc_returned;   //":return" used
+   struct  {       //fixed variables for arguments
+      DictItem   var;      //variable (without room for name)
+      Byte   room[VAR_SHORT_LEN];   //room for the name
    } fc_fixvar[FIXVAR_CNT];
-   Bag localVars;   // l: local function variables
-   DictItem localVarsVar;   // variable for l: scope
+   Bag localVars;   //l: local function variables
+   DictItem localVarsVar;   //variable for l: scope
    
-   Bag argVars;   // a: function argument variables
-   DictItem argVarsVar;   // variable for the a: scope
-   List arguments;   // list for a:000
-   ListItem fc_l_listitems[MAX_FUNC_ARGS];   // listitems for a:000
+   Bag argVars;   //a: function argument variables
+   DictItem argVarsVar;   //variable for the a: scope
+   List arguments;   //list for a:000
+   ListItem fc_l_listitems[MAX_FUNC_ARGS];   //listitems for a:000
    
-   Var   *fc_returnVar;   // return value
-   LineNr fc_breakpoint;   // next line with breakpoint or zero
-   int fc_dbg_tick;   // debug_tick when breakpoint was set
+   Var   *fc_returnVar;   //return value
+   LineNr fc_breakpoint;   //next line with breakpoint or zero
+   int fc_dbg_tick;   //debug_tick when breakpoint was set
 
-   ArrayList fc_defer;   // functions to be called on return
+   ArrayList fc_defer;   //functions to be called on return
 
-   FnCall* fc_caller;   // calling function or NULL; or next fncall in
-            // list pointed to by previous_funccal.
+   FnCall* fc_caller;   //calling function or NULL; or next fncall in
+            //list pointed to by previous_funccal.
 
-   // for closure
-   Unt refCount;   // number of user functions that reference this funccal
-   int copyId;   // for garbage collection
-   ArrayList   fc_ufuncs;   // list of UserFunc* which keep a reference to "fc_func"
+   //for closure
+   Unt refCount;   //number of user functions that reference this funccal
+   int copyId;   //for garbage collection
+   ArrayList   fc_ufuncs;   //list of UserFunc* which keep a reference to "fc_func"
 };
 
 declStruct(FnCallEntry);
@@ -3121,7 +3121,7 @@ struct FnCallEntry {
    FnCallEntry* next;
 };
 
-// From user function to hashitem and back.
+//From user function to hashitem and back.
 #define UF2HIKEY(fp) ((fp)->uf_name)
 #define HIKEY2UF(p)  ((UserFunc *)((p) - offsetof(UserFunc, uf_name)))
 #define HI2UF(hi)     HIKEY2UF((hi)->hi_key)
@@ -3129,128 +3129,128 @@ struct FnCallEntry {
 //}}}
 //{{{scripting
 
-// Holds the hash table with variables local to each sourced script.
-// Each item holds a variable (nameless) that points to the Bag.
+//Holds the hash table with variables local to each sourced script.
+//Each item holds a variable (nameless) that points to the Bag.
 typedef struct {
    DictItem   sv_var;
    Bag   sv_dict;
 } ScriptVar;
 
-// Entry for "sn_all_vars".  Contains the s: variables from sn_vars plus the block-local ones.
+//Entry for "sn_all_vars".  Contains the s: variables from sn_vars plus the block-local ones.
 typedef struct SnAllVars SnAllVars;
 struct SnAllVars {
-   SnAllVars* next;     // var with same name but different block
-   int blockId;     // block ID where declared
-   int indInVarVals; // index in sn_var_vals
+   SnAllVars* next;     //var with same name but different block
+   int blockId;     //block ID where declared
+   int indInVarVals; //index in sn_var_vals
 
    //So long as the variable is valid (block it was defined in is still
    //active) "sav_di" is used.  It is set to NULL when leaving the block,
    //then sav_tv and sav_flags are used.
-   DictItem *sav_di;      // dictitem with di_key and c
-   Var sav_tv;      // type and value of the variable
-   Byte sav_flags;   // DI_FLAGS_ flags (only used for variable)
-   Byte sav_key[1];   // key (actually longer!)
+   DictItem *sav_di;      //dictitem with di_key and c
+   Var sav_tv;      //type and value of the variable
+   Byte sav_flags;   //DI_FLAGS_ flags (only used for variable)
+   Byte sav_key[1];   //key (actually longer!)
 };
 
-// In the sn_all_vars hashtab item "hi_key" points to "sav_key" in a SnAllVars.
-// This makes it possible to store and find the SnAllVars.
-// SAV2HIKEY() converts a SnAllVars pointer to a set value key pointer.
-// HIKEY2SAV() converts a set value key pointer to a SnAllVars pointer.
-// HI2SAV() converts a set value pointer to a SnAllVars pointer.
+//In the sn_all_vars hashtab item "hi_key" points to "sav_key" in a SnAllVars.
+//This makes it possible to store and find the SnAllVars.
+//SAV2HIKEY() converts a SnAllVars pointer to a set value key pointer.
+//HIKEY2SAV() converts a set value key pointer to a SnAllVars pointer.
+//HI2SAV() converts a set value pointer to a SnAllVars pointer.
 #define SAV2HIKEY(sav) ((sav)->sav_key)
 #define HIKEY2SAV(p)  ((SnAllVars *)(p - offsetof(SnAllVars, sav_key)))
 #define HI2SAV(hi)     HIKEY2SAV((hi)->hi_key)
 
-#define SVFLAG_TYPE_ALLOCATED   1  // call free_type() for "sv_type"
-#define SVFLAG_EXPORTED      2  // "export let var = val"
-#define SVFLAG_ASSIGNED      4  // assigned a value
+#define SVFLAG_TYPE_ALLOCATED   1  //call free_type() for "sv_type"
+#define SVFLAG_EXPORTED      2  //"export let var = val"
+#define SVFLAG_ASSIGNED      4  //assigned a value
 
-// Entry for "sn_var_vals".  Used for script-local variables.
+//Entry for "sn_var_vals".  Used for script-local variables.
 typedef struct {
-   Arr(Byte) sv_name;   // points into "sn_all_vars" di_key
-   Var* sv_tv;      // points into "sn_vars" or "sn_all_vars" c
+   Arr(Byte) sv_name;   //points into "sn_all_vars" di_key
+   Var* sv_tv;      //points into "sn_vars" or "sn_all_vars" c
    TypeSpec* sv_type;
-   int sv_flags;   // SVFLAG_ values above
-   int sv_const;   // 0, ASSIGN_CONST or ASSIGN_FINAL
+   int sv_flags;   //SVFLAG_ values above
+   int sv_const;   //0, ASSIGN_CONST or ASSIGN_FINAL
 } Svar;
 
 typedef struct {
-   CS imp_name;       // name imported as (allocated)
-   ScriptId imp_sid;       // script ID of "from"
-   int imp_flags;       // IMP_FLAGS_ values
+   CS imp_name;       //name imported as (allocated)
+   ScriptId imp_sid;       //script ID of "from"
+   int imp_flags;       //IMP_FLAGS_ values
 } Imported;
 
-#define IMP_FLAGS_RELOAD   2   // script reloaded, OK to redefine
-#define IMP_FLAGS_AUTOLOAD 4   // script still needs to be loaded
+#define IMP_FLAGS_RELOAD   2   //script reloaded, OK to redefine
+#define IMP_FLAGS_AUTOLOAD 4   //script still needs to be loaded
 
-// Info about an encountered script.
-// When sn_state has SN_STATE_NOT_LOADED, it has not been sourced yet.
+//Info about an encountered script.
+//When sn_state has SN_STATE_NOT_LOADED, it has not been sourced yet.
 typedef struct {
-   CS sn_name;       // full path of script file
-   int sn_script_seq;       // latest ScriptPos sc_seq value
+   CS sn_name;       //full path of script file
+   int sn_script_seq;       //latest ScriptPos sc_seq value
 
    //When non-zero, the script ID of the actually sourced script. Used if a
    //script is used by a name which has a symlink, we list both names, but
    //only the linked-to script is actually sourced.
    int sn_sourced_sid;
 
-   // "sn_vars" stores the s: variables currently valid.  When leaving a block
-   // variables local to that block are removed.
+   //"sn_vars" stores the s: variables currently valid.  When leaving a block
+   //variables local to that block are removed.
    ScriptVar* sn_vars;
 
-   // Stores all the existing variables as a list of Svar, so
-   // that they can be quickly found by index. Also stores the type.
-   ArrayList sn_var_vals; // Arr(Svar)
+   //Stores all the existing variables as a list of Svar, so
+   //that they can be quickly found by index. Also stores the type.
+   ArrayList sn_var_vals; //Arr(Svar)
 
-   ArrayList sn_imports;   // imported items, imported_T
-   ArrayList sn_type_list;   // keeps types used by variables
-   int sn_current_block_id; // ID for current block, 0 for outer
-   int sn_last_block_id;  // Unique ID for each script block
+   ArrayList sn_imports;   //imported items, imported_T
+   ArrayList sn_type_list;   //keeps types used by variables
+   int sn_current_block_id; //ID for current block, 0 for outer
+   int sn_last_block_id;  //Unique ID for each script block
 
-   int sn_state;   // SN_STATE_ values
-   Boole sn_syml_checked;// flag: this has been checked for sym link
+   int sn_state;   //SN_STATE_ values
+   Boole sn_syml_checked;//flag: this has been checked for sym link
 } ScriptItem;
 
-#define SN_STATE_NEW         0   // newly loaded script, nothing done
-#define SN_STATE_NOT_LOADED  1   // script located but not loaded
-#define SN_STATE_RELOAD      2   // script loaded before, nothing done
+#define SN_STATE_NEW         0   //newly loaded script, nothing done
+#define SN_STATE_NOT_LOADED  1   //script located but not loaded
+#define SN_STATE_RELOAD      2   //script loaded before, nothing done
 
-// Struct passed through eval() functions.
-// See EVALARG_EVALUATE for a fixed value with eval_flags set to EVAL_EVALUATE.
+//Struct passed through eval() functions.
+//See EVALARG_EVALUATE for a fixed value with eval_flags set to EVAL_EVALUATE.
 typedef struct {
-   int eval_flags;       // EVAL_ flag values below
-   int eval_break_count;   // nr of line breaks consumed
+   int eval_flags;       //EVAL_ flag values below
+   int eval_break_count;   //nr of line breaks consumed
 
-   // copied from Invocation when "getline" is "getsourceline". Can be NULL.
+   //copied from Invocation when "getline" is "getsourceline". Can be NULL.
    LineGetter eval_getline;
-   void* eval_cookie;       // argument for eval_getline()
+   void* eval_cookie;       //argument for eval_getline()
 
-   // Used to collect lines while parsing them, so that they can be
-   // concatenated later.  Used when "eval_ga.ga_itemsize" is not zero.
-   // "eval_ga.c" is a list of pointers to lines.
-   // "eval_freega" list pointers that need to be freed after concatenating.
+   //Used to collect lines while parsing them, so that they can be
+   //concatenated later.  Used when "eval_ga.ga_itemsize" is not zero.
+   //"eval_ga.c" is a list of pointers to lines.
+   //"eval_freega" list pointers that need to be freed after concatenating.
    ArrayList eval_ga;
    ArrayList eval_freega;
 
-   // pointer to the last line obtained with getsourceline()
+   //pointer to the last line obtained with getsourceline()
    CS eval_tofree;
 
-   // array with lines of an inline function
+   //array with lines of an inline function
    ArrayList eval_tofree_ga;
 
-   // set when "arg" points into the last entry of "eval_tofree_ga"
+   //set when "arg" points into the last entry of "eval_tofree_ga"
    int eval_using_cmdline;
 
 } EvalCtx;
 
-// Flag for expression evaluation.
-#define EVAL_EVALUATE       1       // when missing don't actually evaluate
+//Flag for expression evaluation.
+#define EVAL_EVALUATE       1       //when missing don't actually evaluate
 
-// Struct passed between functions dealing with function call execution.
+//Struct passed between functions dealing with function call execution.
 //
-// "fe_argv_func", when not NULL, can be used to fill in arguments only when the
-// invoked function uses them.  It is called like this:
-//   new_argcount = fe_argv_func(current_argcount, argv, partial_argcount, called_func)
+//"fe_argv_func", when not NULL, can be used to fill in arguments only when the
+//invoked function uses them.  It is called like this:
+//  new_argcount = fe_argv_func(current_argcount, argv, partial_argcount, called_func)
 //
 typedef struct {
    int (* fe_argv_func)(int, Var *, int);
@@ -3277,16 +3277,16 @@ struct PartiallyApplied {
 };
 
 typedef struct {
-   Unt group; // augroup id or AUGROUP_ALL
-   NULLABLE CS commandBody; // the body of the new command, or null if we are not creating
-   Boole deleteExisting; // delete any existing autocommands?
+   Unt group; //augroup id or AUGROUP_ALL
+   NULLABLE CS commandBody; //the body of the new command, or null if we are not creating
+   Boole deleteExisting; //delete any existing autocommands?
    Boole once;
    Boole nested;
 } AutoCommCreation;
 
 typedef struct AutoPatComm AutoPatComm;
 
-// Entry in the execution stack "exestack".
+//Entry in the execution stack "exestack".
 typedef enum {
    ETYPE_TOP,      //toplevel
    ETYPE_SCRIPT,   //sourcing script, use es_info.sctx
@@ -3304,27 +3304,27 @@ typedef struct {
    CS name;     //replaces "sourcing_name"
    CallFrame ty;
    union {
-      ScriptPos* sctx;    // script info
-      UserFunc* ufunc;    // function info
-      AutoPatComm* aucmd; // autocommand info
-      Exception* except;  // exception info
+      ScriptPos* sctx;    //script info
+      UserFunc* ufunc;    //function info
+      AutoPatComm* aucmd; //autocommand info
+      Exception* except;  //exception info
    } info;
    
-   ScriptPos sctxSaved;   // saved current_sctx when calling function
+   ScriptPos sctxSaved;   //saved current_sctx when calling function
 } Estack;
 
 //}}}
 //{{{channels & jobs
 
-// Information returned by get_tty_info().
+//Information returned by get_tty_info().
 typedef struct {
-   int backspace;   // what the Backspace key produces
-   int enter;      // what the Enter key produces
-   int interrupt;   // interrupt character
-   int nl_does_cr;   // TRUE when a NL is expanded to CR-NL on output
+   int backspace;   //what the Backspace key produces
+   int enter;      //what the Enter key produces
+   int interrupt;   //interrupt character
+   int nl_does_cr;   //TRUE when a NL is expanded to CR-NL on output
 } TtyInfo;
 
-// Structures to hold info about a Channel.
+//Structures to hold info about a Channel.
 struct ReadChunk {
    Arr(Byte) c;
    Ulong   len;
@@ -3342,7 +3342,7 @@ struct JsonQ {
    Var   *jq_value;
    JsonQ   *jq_next;
    JsonQ   *jq_prev;
-   int      jq_no_callback; // TRUE when no callback was found
+   int      jq_no_callback; //TRUE when no callback was found
 };
 
 struct CbNode {
@@ -3352,23 +3352,23 @@ struct CbNode {
    CbNode   *cq_prev;
 };
 
-// mode for a channel
+//mode for a channel
 typedef enum {
    CH_MODE_NL = 0,
    CH_MODE_RAW,
    CH_MODE_JSON,
-   CH_MODE_LSP      // Language Server Protocol (http + json)
+   CH_MODE_LSP      //Language Server Protocol (http + json)
 } ChannelMode;
 
 typedef enum {
-   JIO_PIPE,       // default
+   JIO_PIPE,       //default
    JIO_NULL,
    JIO_FILE,
    JIO_BUFFER,
    JIO_OUT
 } JobIoMode;
 
-// Ordering matters, it is used in for loops: IN is last, only SOCK/OUT/ERR are polled.
+//Ordering matters, it is used in for loops: IN is last, only SOCK/OUT/ERR are polled.
 typedef enum {
    PART_SOCK = 0,
    PART_OUT,
@@ -3382,69 +3382,69 @@ typedef enum {
 typedef struct timeval Elapsed;
 
 
-#define JO_MODE           0x0001   // channel mode
-#define JO_IN_MODE        0x0002   // stdin mode
-#define JO_OUT_MODE       0x0004   // stdout mode
-#define JO_ERR_MODE       0x0008   // stderr mode
-#define JO_CALLBACK       0x0010   // channel callback
-#define JO_OUT_CALLBACK   0x0020   // stdout callback
-#define JO_ERR_CALLBACK   0x0040   // stderr callback
-#define JO_CLOSE_CALLBACK 0x0080   // "close_cb"
-#define JO_WAITTIME       0x0100   // only for ch_open()
-#define JO_TIMEOUT        0x0200   // all timeouts
-#define JO_OUT_TIMEOUT    0x0400   // stdout timeouts
-#define JO_ERR_TIMEOUT    0x0800   // stderr timeouts
-#define JO_PART           0x1000   // "part"
-#define JO_ID             0x2000   // "id"
-#define JO_STOPONEXIT     0x4000   // "stoponexit"
-#define JO_EXIT_CB        0x8000   // "exit_cb"
-#define JO_OUT_IO         0x10000   // "out_io"
-#define JO_ERR_IO         0x20000   // "err_io" (JO_OUT_IO << 1)
-#define JO_IN_IO          0x40000   // "in_io" (JO_OUT_IO << 2)
-#define JO_OUT_NAME       0x80000   // "out_name"
-#define JO_ERR_NAME       0x100000   // "err_name" (JO_OUT_NAME << 1)
-#define JO_IN_NAME        0x200000   // "in_name" (JO_OUT_NAME << 2)
-#define JO_IN_TOP         0x400000   // "in_top"
-#define JO_IN_BOT         0x800000   // "in_bot"
-#define JO_OUT_BUF        0x1000000   // "out_buf"
-#define JO_ERR_BUF        0x2000000   // "err_buf" (JO_OUT_BUF << 1)
-#define JO_IN_BUF         0x4000000   // "in_buf" (JO_OUT_BUF << 2)
-#define JO_CHANNEL        0x8000000   // "channel"
-#define JO_BLOCK_WRITE    0x10000000   // "block_write"
-#define JO_OUT_MODIFIABLE 0x20000000   // "out_modifiable"
-#define JO_ERR_MODIFIABLE 0x40000000   // "err_modifiable" (JO_OUT_ << 1)
+#define JO_MODE           0x0001   //channel mode
+#define JO_IN_MODE        0x0002   //stdin mode
+#define JO_OUT_MODE       0x0004   //stdout mode
+#define JO_ERR_MODE       0x0008   //stderr mode
+#define JO_CALLBACK       0x0010   //channel callback
+#define JO_OUT_CALLBACK   0x0020   //stdout callback
+#define JO_ERR_CALLBACK   0x0040   //stderr callback
+#define JO_CLOSE_CALLBACK 0x0080   //"close_cb"
+#define JO_WAITTIME       0x0100   //only for ch_open()
+#define JO_TIMEOUT        0x0200   //all timeouts
+#define JO_OUT_TIMEOUT    0x0400   //stdout timeouts
+#define JO_ERR_TIMEOUT    0x0800   //stderr timeouts
+#define JO_PART           0x1000   //"part"
+#define JO_ID             0x2000   //"id"
+#define JO_STOPONEXIT     0x4000   //"stoponexit"
+#define JO_EXIT_CB        0x8000   //"exit_cb"
+#define JO_OUT_IO         0x10000   //"out_io"
+#define JO_ERR_IO         0x20000   //"err_io" (JO_OUT_IO << 1)
+#define JO_IN_IO          0x40000   //"in_io" (JO_OUT_IO << 2)
+#define JO_OUT_NAME       0x80000   //"out_name"
+#define JO_ERR_NAME       0x100000   //"err_name" (JO_OUT_NAME << 1)
+#define JO_IN_NAME        0x200000   //"in_name" (JO_OUT_NAME << 2)
+#define JO_IN_TOP         0x400000   //"in_top"
+#define JO_IN_BOT         0x800000   //"in_bot"
+#define JO_OUT_BUF        0x1000000   //"out_buf"
+#define JO_ERR_BUF        0x2000000   //"err_buf" (JO_OUT_BUF << 1)
+#define JO_IN_BUF         0x4000000   //"in_buf" (JO_OUT_BUF << 2)
+#define JO_CHANNEL        0x8000000   //"channel"
+#define JO_BLOCK_WRITE    0x10000000   //"block_write"
+#define JO_OUT_MODIFIABLE 0x20000000   //"out_modifiable"
+#define JO_ERR_MODIFIABLE 0x40000000   //"err_modifiable" (JO_OUT_ << 1)
 #define JO_ALL            0x7fffffff
 
-#define JO2_OUT_MSG       0x0001   // "out_msg"
-#define JO2_ERR_MSG       0x0002   // "err_msg" (JO_OUT_ << 1)
-#define JO2_TERM_NAME       0x0004   // "term_name"
-#define JO2_TERM_FINISH       0x0008   // "term_finish"
-#define JO2_ENV          0x0010   // "env"
-#define JO2_CWD          0x0020   // "cwd"
-#define JO2_TERM_ROWS       0x0040   // "term_rows"
-#define JO2_TERM_COLS       0x0080   // "term_cols"
-#define JO2_VERTICAL       0x0100   // "vertical"
-#define JO2_CURPOR       0x0200   // "curpor"
-#define JO2_HIDDEN       0x0400   // "hidden"
-#define JO2_TERM_OPENCMD    0x0800   // "term_opencmd"
-#define JO2_EOF_CHARS       0x1000   // "eof_chars"
-#define JO2_NORESTORE       0x2000   // "norestore"
-#define JO2_TERM_KILL       0x4000   // "term_kill"
-#define JO2_ANSI_COLORS       0x8000   // "ansi_colors"
-#define JO2_TTY_TYPE       0x10000   // "tty_type"
-#define JO2_BUFNR       0x20000   // "bufnr"
-#define JO2_TERM_API       0x40000   // "term_api"
-#define JO2_TERM_HIGHLIGHT  0x80000   // "highlight"
+#define JO2_OUT_MSG       0x0001   //"out_msg"
+#define JO2_ERR_MSG       0x0002   //"err_msg" (JO_OUT_ << 1)
+#define JO2_TERM_NAME       0x0004   //"term_name"
+#define JO2_TERM_FINISH       0x0008   //"term_finish"
+#define JO2_ENV          0x0010   //"env"
+#define JO2_CWD          0x0020   //"cwd"
+#define JO2_TERM_ROWS       0x0040   //"term_rows"
+#define JO2_TERM_COLS       0x0080   //"term_cols"
+#define JO2_VERTICAL       0x0100   //"vertical"
+#define JO2_CURPOR       0x0200   //"curpor"
+#define JO2_HIDDEN       0x0400   //"hidden"
+#define JO2_TERM_OPENCMD    0x0800   //"term_opencmd"
+#define JO2_EOF_CHARS       0x1000   //"eof_chars"
+#define JO2_NORESTORE       0x2000   //"norestore"
+#define JO2_TERM_KILL       0x4000   //"term_kill"
+#define JO2_ANSI_COLORS       0x8000   //"ansi_colors"
+#define JO2_TTY_TYPE       0x10000   //"tty_type"
+#define JO2_BUFNR       0x20000   //"bufnr"
+#define JO2_TERM_API       0x40000   //"term_api"
+#define JO2_TERM_HIGHLIGHT  0x80000   //"highlight"
 
 #define JO_MODE_ALL   (JO_MODE + JO_IN_MODE + JO_OUT_MODE + JO_ERR_MODE)
 #define JO_CB_ALL \
     (JO_CALLBACK + JO_OUT_CALLBACK + JO_ERR_CALLBACK + JO_CLOSE_CALLBACK)
 #define JO_TIMEOUT_ALL   (JO_TIMEOUT + JO_OUT_TIMEOUT + JO_ERR_TIMEOUT)
 
-// Options for job and channel commands.
+//Options for job and channel commands.
 typedef struct {
-   int set;      // JO_ bits for values that were set
-   int set1;   // JO2_ bits for values that were set
+   int set;      //JO_ bits for values that were set
+   int set1;   //JO2_ bits for values that were set
 
    ChannelMode mode;
    ChannelMode jo_in_mode;
@@ -3452,9 +3452,9 @@ typedef struct {
    ChannelMode jo_err_mode;
    int      jo_noblock;
 
-   JobIoMode  ioMode[4];   // PART_SOCK, PART_OUT, PART_ERR, PART_IN
+   JobIoMode  ioMode[4];   //PART_SOCK, PART_OUT, PART_ERR, PART_IN
    Byte nameText[4][NUMBUFLEN];
-   Byte* name[4];   // not allocated!
+   Byte* name[4];   //not allocated!
    int      ioText[4];
    int      jo_pty;
    int      jo_modifiable[4];
@@ -3464,14 +3464,14 @@ typedef struct {
    LineNr   jo_in_top;
    LineNr   jo_in_bot;
 
-   void (*finishNativeCb)(void); // native C function to call when the job finishes
+   void (*finishNativeCb)(void); //native C function to call when the job finishes
    Callback   jo_callback;
    
-   void (*outNativeCb)(Arr(Byte)); // callbacks for the "stdout" file descriptor. If the native one is present,
-   Callback   jo_out_cb; // only it is called.
+   void (*outNativeCb)(Arr(Byte)); //callbacks for the "stdout" file descriptor. If the native one is present,
+   Callback   jo_out_cb; //only it is called.
    
-   void (*errNativeCb)(Arr(Byte)); // callbacks for the "error" file descriptor. If the native one is present,
-   Callback   jo_err_cb; // only it is called.
+   void (*errNativeCb)(Arr(Byte)); //callbacks for the "error" file descriptor. If the native one is present,
+   Callback   jo_err_cb; //only it is called.
    
    Callback   closeCb;
    Callback   exitCb;
@@ -3480,16 +3480,16 @@ typedef struct {
    int      jo_timeout;
    int      jo_out_timeout;
    int      jo_err_timeout;
-   int      jo_block_write;   // for testing only
+   int      jo_block_write;   //for testing only
    int      part;
    int      id;
    Byte   jo_stoponexit_buf[NUMBUFLEN];
    Byte   *jo_stoponexit;
-   Bag* env;   // environment variables
+   Bag* env;   //environment variables
    Byte   cwdText[NUMBUFLEN];
    Byte* currentWorkingDir;
 
-   // when non-zero run the job in a terminal window of this size
+   //when non-zero run the job in a terminal window of this size
    int      jo_term_rows;
    int      jo_term_cols;
    int      vertical;
@@ -3508,12 +3508,12 @@ typedef struct {
    Byte   *jo_term_kill;
    Byte   jo_term_highlight_buf[NUMBUFLEN];
    Byte   *jo_term_highlight;
-   int      jo_tty_type;       // first character of "tty_type"
+   int      jo_tty_type;       //first character of "tty_type"
    Byte   jo_term_api_buf[NUMBUFLEN];
    Byte   *jo_term_api;
 } JobOptions;
 
-// Structure used for listeners added with listener_add().
+//Structure used for listeners added with listener_add().
 typedef struct Listener Listener;
 struct Listener {
    Listener* next;
@@ -3521,12 +3521,12 @@ struct Listener {
    Callback callback;
 };
 
-// Status of a job.  Order matters!
+//Status of a job.  Order matters!
 typedef enum {
    JOB_FAILED,
    JOB_STARTED,
-   JOB_ENDED,       // detected job done
-   JOB_FINISHED,   // job done and cleanup done
+   JOB_ENDED,       //detected job done
+   JOB_FINISHED,   //job done and cleanup done
 } JobStatus;
 
 typedef pid_t ProId;
@@ -3540,20 +3540,20 @@ declStruct(ListStack);
 //}}}
 //{{{timer
 
-// Structure used for iterating over dictionary items. Initialize with dict_iterate_start().
+//Structure used for iterating over dictionary items. Initialize with dict_iterate_start().
 typedef struct {
    Ulong dit_todo;
    EeSetItem* dit_hi;
 } DictIterator;
 
-// values for b_syn_spell: what to do with toplevel text
+//values for b_syn_spell: what to do with toplevel text
 #define SYNSPL_DEFAULT 0   //spell check if @Spell not defined
 #define SYNSPL_TOP     1   //spell check toplevel text
 #define SYNSPL_NOTOP   2   //don't spell check toplevel text
 
-// values for b_syn_foldlevel: how to compute foldlevel on a line
-#define SYNFLD_START   0   // use level of item at start of line
-#define SYNFLD_MINIMUM   1   // use lowest local minimum level on line
+//values for b_syn_foldlevel: how to compute foldlevel on a line
+#define SYNFLD_START   0   //use level of item at start of line
+#define SYNFLD_MINIMUM   1   //use lowest local minimum level on line
 
 declStruct(LocationStack);
 
@@ -3562,12 +3562,12 @@ struct Timer {
    long   id;
    Timer* next;
    Timer* prev;
-   ProfTime due;          // when the callback is to be invoked
-   char tr_firing;       // when TRUE callback is being called
-   char tr_paused;       // when TRUE callback is not invoked
-   char tr_keep;       // when TRUE keep timer after it fired
-   int tr_repeat;       // number of times to repeat, -1 forever
-   long tr_interval;       // msec
+   ProfTime due;          //when the callback is to be invoked
+   char tr_firing;       //when TRUE callback is being called
+   char tr_paused;       //when TRUE callback is not invoked
+   char tr_keep;       //when TRUE keep timer after it fired
+   int tr_repeat;       //number of times to repeat, -1 forever
+   long tr_interval;       //msec
    Callback callback;
    int tr_emsg_count;
 };
@@ -3581,7 +3581,7 @@ typedef enum {
    POPPOS_BOTRIGHT,
    POPPOS_TOPRIGHT,
    POPPOS_CENTER,
-   POPPOS_BOTTOM,   // bottom of popup just above the command line
+   POPPOS_BOTTOM,   //bottom of popup just above the command line
    POPPOS_NONE
 } PopupPosition;
 
@@ -3595,20 +3595,20 @@ typedef enum {
 //}}}
 //{{{Book
 
-// Syntax block data. These are items normally related to a book.  But when using ":ownsyntax",
-// a portal may have its own instance.
+//Syntax block data. These are items normally related to a book.  But when using ":ownsyntax",
+//a portal may have its own instance.
 typedef struct {
-   EeSet keywords;      // syntax keywords hash table
-   EeSet keywordsIgnoreCase;      // idem, ignore case
-   int      b_syn_error;      // TRUE when error occurred in HL
-   int      redrawTime;      // TRUE when 'redrawtime' reached
-   int      b_syn_ic;      // ignore case for :syn cmds
-   int      foldLevel;   // how to compute foldlevel on a line
-   int      synSpell;      // SYNSPL_ values
-   ArrayList   syntaxPatterns;      // table for syntax patterns
-   ArrayList   syntaxClusters;      // table for syntax clusters
-   int      spellClusterId;   // @Spell cluster ID or 0
-   int      noSpellClusterId;   // @NoSpell cluster ID or 0
+   EeSet keywords;      //syntax keywords hash table
+   EeSet keywordsIgnoreCase;      //idem, ignore case
+   int      b_syn_error;      //TRUE when error occurred in HL
+   int      redrawTime;      //TRUE when 'redrawtime' reached
+   int      b_syn_ic;      //ignore case for :syn cmds
+   int      foldLevel;   //how to compute foldlevel on a line
+   int      synSpell;      //SYNSPL_ values
+   ArrayList   syntaxPatterns;      //table for syntax patterns
+   ArrayList   syntaxClusters;      //table for syntax clusters
+   int      spellClusterId;   //@Spell cluster ID or 0
+   int      noSpellClusterId;   //@NoSpell cluster ID or 0
    int b_syn_containedin;   //TRUE when there is an item with a "containedin" argument
    int      syncFlags;   //flags about how to sync
    Short   syncHiId;     //group to sync on
@@ -3625,41 +3625,41 @@ typedef struct {
                          //start of that line (col == 0).  This avoids having to recompute 
                          //the syntax state too often. It is allocated to hold the state for all 
                          //displayed lines, and states for 1 out of about 20 other lines.
-   int len;   // number of entries in b_sst_array[]
+   int len;   //number of entries in b_sst_array[]
    SyntaxState   *first; //pointer to first used entry in b_sst_array[] or NULL
    SyntaxState   *firstFree; //pointer to first free entry in b_sst_array[] or NULL
-   int      freeCount; // number of free entries in array[]
+   int      freeCount; //number of free entries in array[]
    LineNr checkAfterLnum; //entries after this lnum need to be checked for validity 
                           //(MAXLNUM means no check needed)
    Short   lastDisplayTick;
 
-   // for spell checking
+   //for spell checking
    ArrayList   b_langp;     //list of pointers to slang_T, see spell.c
    Byte midwordFlags[256];  //flags: is midword char
    CS multibyteMidwordChars;   //multi-byte midword chars
    CS spellFile; 
    CS spellLang;
-   CS spellOpts;       // 'spelloptions'
-   Byte   b_syn_chartab[32];  // syntax iskeyword option
+   CS spellOpts;       //'spelloptions'
+   Byte   b_syn_chartab[32];  //syntax iskeyword option
 } SyntaxBlock;
 
-// order must be synchronized with p_buftype_values below
-#define BOOK_NORMAL   0  // ordinary book
+//order must be synchronized with p_buftype_values below
+#define BOOK_NORMAL   0  //ordinary book
 #define BOOK_NOFILE   1
 #define BOOK_NOWRITE  2
-#define BOOK_LOCATION 3 // location list book
-#define BOOK_HELP     4    // help book - used for help files, won't use a swap file.
+#define BOOK_LOCATION 3 //location list book
+#define BOOK_HELP     4    //help book - used for help files, won't use a swap file.
 #define BOOK_TERMINAL 5
 #define BOOK_ACWRITE  6
 #define BOOK_PROMPT   7
 #define BOOK_POPUP    8
 
-// Must be in sync with p_buftype_values
+//Must be in sync with p_buftype_values
 #define p_buftypeValuesLen 10
 
 EXTERN CS p_buftype_values[] 
 #ifdef MAIN_C
-// must be in sync with eegl.h:p_buftypeValuesLen
+//must be in sync with eegl.h:p_buftypeValuesLen
 = (CS[]){ SMAP((CS),
    "normal", "nofile", "nowrite", "location", "help", "terminal", "acwrite", "prompt", "popup", 
    "spell"
@@ -3669,21 +3669,21 @@ EXTERN CS p_buftype_values[]
 
 //Info used in undo.c
 typedef struct {
-   UndoHeader* oldHead; // pointer to oldest header
-   UndoHeader* newHead; // newest header; may not be valid if b_u_curhead is not NULL
-   UndoHeader* currHead;   // pointer to current header
-   int countHeaders;   // current number of headers
-   int synced;   // entry lists are synced
-   long seqLast;   // last used undo sequence number
-   long saveNrLast; // counter for last file write
-   long seqCurr;   // uh_seq of header below which we are now
-   Tyme timeCurr;   // uh_time of header below which we are now
-   long saveNrCurr; // file write nr after which we are now
+   UndoHeader* oldHead; //pointer to oldest header
+   UndoHeader* newHead; //newest header; may not be valid if b_u_curhead is not NULL
+   UndoHeader* currHead;   //pointer to current header
+   int countHeaders;   //current number of headers
+   int synced;   //entry lists are synced
+   long seqLast;   //last used undo sequence number
+   long saveNrLast; //counter for last file write
+   long seqCurr;   //uh_seq of header below which we are now
+   Tyme timeCurr;   //uh_time of header below which we are now
+   long saveNrCurr; //file write nr after which we are now
 
-   // variables for "U" command in undo.c
-   UndoLine   line;   // saved line for "U" command
-   LineNr   lineLnum; // line number of line in u_line
-   ColNr   lineCol;   // optional column number
+   //variables for "U" command in undo.c
+   UndoLine   line;   //saved line for "U" command
+   LineNr   lineLnum; //line number of line in u_line
+   ColNr   lineCol;   //optional column number
 } Undo;
 
 //{{{options local to a book
@@ -3700,7 +3700,7 @@ typedef enum {
 
 EXTERN Polystring bookStringOptionsG;      //Storage for all the string options
 
-// They're here because their value depends on the type or contents of the file being edited
+//They're here because their value depends on the type or contents of the file being edited
 typedef struct {
 #define OPTIONS_FIELDS
 #define OPTIONS_LIST_BOOK
@@ -3709,7 +3709,7 @@ typedef struct {
 #undef OPTIONS_FIELDS
    
    
-   // flags for use of ":lmap" 
+   //flags for use of ":lmap" 
    long b_p_iminsert;    //input mode for insert
    long b_p_imsearch;    //input mode for search
 #define B_IMODE_USE_INSERT (-1)	//	Use b_p_iminsert value for search
@@ -3719,7 +3719,7 @@ typedef struct {
 #define B_IMODE_LAST 2
    
    Boole initialized;   //set when all options were initialized
-   ScriptPos scriptLocs[OPTION_BOOK_COUNT]; // script locations for all book-local options
+   ScriptPos scriptLocs[OPTION_BOOK_COUNT]; //script locations for all book-local options
    Polystring stringOptions;      //Storage for all the string options
 } BookOptions;
 
@@ -3732,111 +3732,111 @@ typedef struct {
 //A book is new if the associated file has never been loaded yet.
 
 struct Book { //:Book
-   MemBuf   mem;      // associated memline (also contains line count)
+   MemBuf   mem;      //associated memline (also contains line count)
 
-   Book* next;   // links in list of books
+   Book* next;   //links in list of books
    Book* prev;
 
-   int countPortals;   // nr of portals open into this book
+   int countPortals;   //nr of portals open into this book
 
-   Unt flags;   // various BF_ flags
-   int locked;   // Book is being closed or referenced, don't let autocommands wipe it out
-   int lockedSplit;  // Book is being closed, don't allow opening more portals into it
+   Unt flags;   //various BF_ flags
+   int locked;   //Book is being closed or referenced, don't let autocommands wipe it out
+   int lockedSplit;  //Book is being closed, don't allow opening more portals into it
 
    //fullFileName has the full path of the file (NULL for no name).
    //shortFileName is the name as the user typed it (or NULL).
    //currFileName is the same as shortFileName, unless ":cd" has been done,
-   //     then it is the same as fullFileName (NULL for no name).
+   //    then it is the same as fullFileName (NULL for no name).
    CS fullFileName;  //full path file name, allocated
    CS shortFileName; //short file name, allocated, may be equal to full name
    CS currFileName;  //current file name, points to short or full file name
    CS swapName;      //file name of the swap (temporary copy)
 
-   int isDevNumValid; // TRUE when b_dev has a valid number
-   dev_t devNum;      // device number
-   ino_t inode;      // inode number
-   int fiNum;    // book number for this file.
-   Byte keyContainer[SIZEOF_INT * 2 + 1]; // key used for buf_hashtab, holds fiNum as hex string
-   Text key; // points into keyContainer
+   int isDevNumValid; //TRUE when b_dev has a valid number
+   dev_t devNum;      //device number
+   ino_t inode;      //inode number
+   int fiNum;    //book number for this file.
+   Byte keyContainer[SIZEOF_INT * 2 + 1]; //key used for buf_hashtab, holds fiNum as hex string
+   Text key; //points into keyContainer
 
-   Boole wasModified; // 'modified': Set to TRUE if something in the
-                      // file has been changed and not written out.
-   DictItem16 changedTick; // holds the b:changedtick value in
-                           // changedTick.c.number; incremented for each change, also for undo
+   Boole wasModified; //'modified': Set to TRUE if something in the
+                      //file has been changed and not written out.
+   DictItem16 changedTick; //holds the b:changedtick value in
+                           //changedTick.c.number; incremented for each change, also for undo
 #define CHANGEDTICK(buf) ((buf)->changedTick.c.number)
 
-   Long lastChangeTick;   // b:changedtick when TextChanged was last triggered.
-   Long lastChangeTickPum; // b:changedtick for TextChangedP
-   Long lastChangeTickInsert;   // b:changedtick for TextChangedI
+   Long lastChangeTick;   //b:changedtick when TextChanged was last triggered.
+   Long lastChangeTickPum; //b:changedtick for TextChangedP
+   Long lastChangeTickInsert;   //b:changedtick for TextChangedI
 
-   Boole isBeingSaved;   // Set to TRUE if we are in the middle of saving the book.
+   Boole isBeingSaved;   //Set to TRUE if we are in the middle of saving the book.
 
-   // Changes to a book require updating of the display.  To minimize the
-   // work, remember changes made and update everything at once.
-   int needsRedraw;   // TRUE when there are changes since the last time the display was updated
-   LineNr needsRedrawTop;   // topmost lnum that was changed
-   LineNr needsRedrawBott;   // lnum below last changed line, AFTER the change
-   long lineCountDiff;  // number of extra book lines inserted; negative when lines were deleted
+   //Changes to a book require updating of the display.  To minimize the
+   //work, remember changes made and update everything at once.
+   int needsRedraw;   //TRUE when there are changes since the last time the display was updated
+   LineNr needsRedrawTop;   //topmost lnum that was changed
+   LineNr needsRedrawBott;   //lnum below last changed line, AFTER the change
+   long lineCountDiff;  //number of extra book lines inserted; negative when lines were deleted
 
-   PortInfo* portInfos;   // list of last used info for each window
+   PortInfo* portInfos;   //list of last used info for each window
 
-   long modifiedTime;   // last change time of original file
-   long modifiedTimeNs;   // nanoseconds of last change time
-   long readTime;   // last change time when reading
-   long readTimeNs;  // nanoseconds of last read time
-   FileOffset origSize;   // size of original file in bytes
-   int origMode;   // mode of original file
-   Tyme lastUsed;   // time when the book was last used; used for eeglinfo
+   long modifiedTime;   //last change time of original file
+   long modifiedTimeNs;   //nanoseconds of last change time
+   long readTime;   //last change time when reading
+   long readTimeNs;  //nanoseconds of last read time
+   FileOffset origSize;   //size of original file in bytes
+   int origMode;   //mode of original file
+   Tyme lastUsed;   //time when the book was last used; used for eeglinfo
 
-   Pos namedMarks[NMARKS]; // current named marks (mark.c)
+   Pos namedMarks[NMARKS]; //current named marks (mark.c)
    CS fileType;
 
-   // These variables are set when VIsual_active becomes FALSE
+   //These variables are set when VIsual_active becomes FALSE
    VisualInfo visual;
-   Pos lastCursor;   // cursor position when last unloading this book
-   Pos lastInsert;   // where Insert mode was left
-   Pos lastChange;   // position of last change: '. mark
+   Pos lastCursor;   //cursor position when last unloading this book
+   Pos lastInsert;   //where Insert mode was left
+   Pos lastChange;   //position of last change: '. mark
 
-   // the changelist contains old change positions
+   //the changelist contains old change positions
    Pos changeList[JUMPLISTSIZE];
-   Unt changeListLen;   // number of active entries
-   Boole newChange;      // set by u_savecommon()
+   Unt changeListLen;   //number of active entries
+   Boole newChange;      //set by u_savecommon()
 
    //Character table, only used in book.c for @iskeyword
    //32 bytes of 8 bits: 1 bit per character 0-255.
    Byte charsForKeywords[32];
 
-   // Table used for mappings local to a book.
+   //Table used for mappings local to a book.
    MapBlock* localMappings[256];
 
-   // First abbreviation local to a book.
+   //First abbreviation local to a book.
    MapBlock* firstAbbr;
 
-   // User commands local to the book.
+   //User commands local to the book.
    ArrayList   userCommands;
-   // start and end of an operator, also used for '[ and ']
+   //start and end of an operator, also used for '[ and ']
    Pos opStart;
-   Pos opStartOrig;  // used for juggle.c:op_insert
+   Pos opStartOrig;  //used for juggle.c:op_insert
    Pos opEnd;
 
-   int haveReadEeglinfoMarks;   // Have we read eeglinfo marks yet?
+   int haveReadEeglinfoMarks;   //Have we read eeglinfo marks yet?
 
-   int modifiedWasSet;   // did ":set modified"
-   int didFiletype;      // FileType event found
-   int keepFiletype;   // value for did_filetype when starting to execute autocommands
+   int modifiedWasSet;   //did ":set modified"
+   int didFiletype;      //FileType event found
+   int keepFiletype;   //value for did_filetype when starting to execute autocommands
 
-   // Set by the apply_autocmds_group function if the given event is equal to
-   // EVENT_FILETYPE. Used by the readfile function in order to determine if
-   // EVENT_BUFREADPOST triggered the EVENT_FILETYPE.
+   //Set by the apply_autocmds_group function if the given event is equal to
+   //EVENT_FILETYPE. Used by the readfile function in order to determine if
+   //EVENT_BUFREADPOST triggered the EVENT_FILETYPE.
    //
-   // Relying on this value requires one to reset it prior calling apply_autocmds_group().
+   //Relying on this value requires one to reset it prior calling apply_autocmds_group().
    int auDidFileType;
 
    Undo undo;
 
-   int scanned;       // ^N/^P have scanned this book
+   int scanned;       //^N/^P have scanned this book
 
-   Byte kind;         // BOOK_ constants
+   Byte kind;         //BOOK_ constants
    BookOptions o;
    
    Boole hasLocationEntry;
@@ -3852,40 +3852,40 @@ struct Book { //:Book
 
    Listener* listener;
    List* recordedChanges;
-   int hasTextprop;   // TRUE when text props were added
-   EeSet* propTypes;   // text property types local to book
-   PropType** propArray;   // entries of b_proptypes sorted on tp_id
-   ArrayList   textPropText; // stores text for props, index by (-id - 1)
+   int hasTextprop;   //TRUE when text props were added
+   EeSet* propTypes;   //text property types local to book
+   PropType** propArray;   //entries of b_proptypes sorted on tp_id
+   ArrayList   textPropText; //stores text for props, index by (-id - 1)
 
    //When a book is created, it starts without a swap file.  b_may_swap is then set to indicate
    //that a swap file may be opened later.  It is reset if a swap file could not be opened.
    int maySwap;
-   int didWarnReadonly; // Set to 1 if user has been warned on first change of a read-only file
+   int didWarnReadonly; //Set to 1 if user has been warned on first change of a read-only file
 
-   CS promptText;      // set by prompt_setprompt()
-   Callback promptCallback;   // set by prompt_setcallback()
-   Callback promptInterrupt;   // set by prompt_setinterrupt()
-   int promptInsert;   // value for restart_edit when entering a prompt book portal.
+   CS promptText;      //set by prompt_setprompt()
+   Callback promptCallback;   //set by prompt_setcallback()
+   Callback promptInterrupt;   //set by prompt_setinterrupt()
+   int promptInsert;   //value for restart_edit when entering a prompt book portal.
 
-   SyntaxBlock syntax;      // Info related to syntax highlighting.  w_s
-            // normally points to this, but some portals may use a different SyntaxBlock.
+   SyntaxBlock syntax;      //Info related to syntax highlighting.  w_s
+            //normally points to this, but some portals may use a different SyntaxBlock.
 
-   SignEntry* signList;      // list of placed signs
+   SignEntry* signList;      //list of placed signs
 
-   int writeToChannel; // TRUE when appended lines are written to a channel.
+   int writeToChannel; //TRUE when appended lines are written to a channel.
 
-   int mappedCtrlC; // modes where CTRL-C is mapped
+   int mappedCtrlC; //modes where CTRL-C is mapped
    CS syntaxName;
 
-   Terminal* term;   // When not NULL this book is for a terminal portal.
-   int diffFailed;   // internal diff failed for this book
-}; // Book
+   Terminal* term;   //When not NULL this book is for a terminal portal.
+   int diffFailed;   //internal diff failed for this book
+}; //Book
 
 //}}}
 //{{{diff mode
 
-// Stuff for diff mode.
-# define DB_COUNT 8   // up to eight books can be diff'ed
+//Stuff for diff mode.
+# define DB_COUNT 8   //up to eight books can be diff'ed
 
 //Each diffblock defines where a block of lines starts in each of the books and how many lines it
 //occupies in that book.  When the lines are missing in the book the df_count[] is zero. This 
@@ -3901,17 +3901,17 @@ struct Book { //:Book
 //changes within the block, used for highlighting.
 declStruct(DiffBlock);
 
-// Each entry stores a single inline change within a diff block. Line numbers
-// are recorded as relative offsets, and columns are byte offsets, not character counts.
-// Ranges are [start,end), with the end being exclusive.
+//Each entry stores a single inline change within a diff block. Line numbers
+//are recorded as relative offsets, and columns are byte offsets, not character counts.
+//Ranges are [start,end), with the end being exclusive.
 typedef struct {
-   ColNr dc_start[DB_COUNT];   // byte offset of start of range in the line
-   ColNr dc_end[DB_COUNT];   // 1 past byte offset of end of range in line
-   int dc_start_lnum_off[DB_COUNT];   // starting line offset
-   int dc_end_lnum_off[DB_COUNT];   // end line offset
+   ColNr dc_start[DB_COUNT];   //byte offset of start of range in the line
+   ColNr dc_end[DB_COUNT];   //1 past byte offset of end of range in line
+   int dc_start_lnum_off[DB_COUNT];   //starting line offset
+   int dc_end_lnum_off[DB_COUNT];   //end line offset
 }DifflineChange;
 
-// Describes a single line's list of inline changes. Use diff_change_parse() to parse this.
+//Describes a single line's list of inline changes. Use diff_change_parse() to parse this.
 typedef struct {
    DifflineChange *changes;
    int num_changes;
@@ -3937,28 +3937,28 @@ typedef enum {
 //topframeG to find the current tab.
 declStruct(Tab);
 struct Tab {        //:Tab
-   Tab* next;       // next tab or NULL
-   Frame* topframe;   // topframe for the portals
-   Portal* curPor;     // current portal in this tab
-   Portal* prevPor;    // previous portal in this tab
-   Portal* firstPor;   // first portal in this tab
-   Portal* lastPor;    // last portal in this tab
-   Portal* firstPopupPort; // first popup portal in this Tab
-   NULLABLE Portal* previewPortal; // the preview portal in this Tab
-   long old_Rows;    // Rows when tab was left
-   long old_Columns; // Columns when tab was left, -1 when calling shell_new_columns() postponed
-   int old_coloff;  // Column offset when tab was left
-   long  ch_used;       // value of @commheight when frame size was set
-   CS localdir;   // absolute path of local directory or NULL
-   CS prevdir;   // previous directory
+   Tab* next;       //next tab or NULL
+   Frame* topframe;   //topframe for the portals
+   Portal* curPor;     //current portal in this tab
+   Portal* prevPor;    //previous portal in this tab
+   Portal* firstPor;   //first portal in this tab
+   Portal* lastPor;    //last portal in this tab
+   Portal* firstPopupPort; //first popup portal in this Tab
+   NULLABLE Portal* previewPortal; //the preview portal in this Tab
+   long old_Rows;    //Rows when tab was left
+   long old_Columns; //Columns when tab was left, -1 when calling shell_new_columns() postponed
+   int old_coloff;  //Column offset when tab was left
+   long  ch_used;       //value of @commheight when frame size was set
+   CS localdir;   //absolute path of local directory or NULL
+   CS prevdir;   //previous directory
 
    DiffBlock* first_diff;
    Book* diffbuf[DB_COUNT];
-   int diff_invalid;   // list of diffs is outdated
-   int diff_update;   // update diffs before redrawing
-   Frame *(snapshot[SNAP_COUNT]);  // window layout snapshots
-   DictItem tabVar;       // variable for "t:" Dictionary
-   Arr(Bag) vars;       // internal variables, local to tab
+   int diff_invalid;   //list of diffs is outdated
+   int diff_update;   //update diffs before redrawing
+   Frame *(snapshot[SNAP_COUNT]);  //window layout snapshots
+   DictItem tabVar;       //variable for "t:" Dictionary
+   Arr(Bag) vars;       //internal variables, local to tab
 };
 
 //Structure to cache info for displayed lines in lines[]. Each logical line has one entry.
@@ -3969,120 +3969,120 @@ struct Tab {        //:Tab
 //is actually in the book.  When wl_valid is FALSE, the entries can only be used to count the 
 //number of displayed lines used. wl_lnum and wl_lastlnum are invalid too.
 typedef struct w_line {
-   LineNr   bookLnum;   // book line number for logical line
-   Short   height;   // height in screen lines
-   Boole   isValid;   // whether values are valid for text in book
-   Boole   isFolded;   // whether this is a range of folded lines
-   LineNr   lastBookLnum;   // last book line number for logical line
+   LineNr   bookLnum;   //book line number for logical line
+   Short   height;   //height in screen lines
+   Boole   isValid;   //whether values are valid for text in book
+   Boole   isFolded;   //whether this is a range of folded lines
+   LineNr   lastBookLnum;   //last book line number for logical line
 } PortLine;
 
 //Portals are kept in a tree of frames. Each frame has a column (FR_COL)
 //or row (FR_ROW) layout or is a leaf, which has a portal.
 struct Frame { //:Frame
-   char   layout;   // FR_LEAF, FR_COL or FR_ROW
+   char   layout;   //FR_LEAF, FR_COL or FR_ROW
    Unt      width;
-   Unt      newWidth;   // new width used in win_equal_rec()
+   Unt      newWidth;   //new width used in win_equal_rec()
    Unt      height;
-   Unt      newHeight;   // new height used in win_equal_rec()
-   Frame* parent;   // containing frame or NULL
-   Frame* next;   // frame right or below in same parent, NULL for last
-   Frame* prev;   // frame left or above in same parent, NULL for first
-   // child and port are mutually exclusive
-   Frame* child;   // first contained frame
-   Portal* port;   // window that fills this frame; for a snapshot set to the current portal
+   Unt      newHeight;   //new height used in win_equal_rec()
+   Frame* parent;   //containing frame or NULL
+   Frame* next;   //frame right or below in same parent, NULL for last
+   Frame* prev;   //frame left or above in same parent, NULL for first
+   //child and port are mutually exclusive
+   Frame* child;   //first contained frame
+   Portal* port;   //window that fills this frame; for a snapshot set to the current portal
 };
 
-#define FR_LEAF  0   // frame is a leaf
-#define FR_ROW   1   // frame with a row of windows
-#define FR_COL   2   // frame with a column of windows
+#define FR_LEAF  0   //frame is a leaf
+#define FR_ROW   1   //frame with a row of windows
+#define FR_COL   2   //frame with a column of windows
 
 //}}}
 //{{{portal
 
-// Structure to store last cursor position and topline.  Used by check_lnums() and reset_lnums().
+//Structure to store last cursor position and topline.  Used by check_lnums() and reset_lnums().
 typedef struct {
-   int topLineSave;   // original topline value
-   int topLineCorr;   // corrected topline value
-   Pos cursor_save;   // original cursor position
-   Pos cursor_corr;   // corrected cursor position
+   int topLineSave;   //original topline value
+   int topLineCorr;   //corrected topline value
+   Pos cursor_save;   //original cursor position
+   Pos cursor_corr;   //corrected cursor position
 } PosSave;
 
 typedef struct {
-   int min;       // minimum width for breakindent
-   int shift;       // additional shift for breakindent
-   int showBreak;       // sbr in 'briopt'
-   int list;      // additional indent for lists
-   int vcol;       // indent for specific column
+   int min;       //minimum width for breakindent
+   int shift;       //additional shift for breakindent
+   int showBreak;       //sbr in 'briopt'
+   int list;      //additional indent for lists
+   int vcol;       //indent for specific column
 } BreakIndent;
 
-// Data about popup kind of portals
+//Data about popup kind of portals
 typedef struct {
-   int flags;      // POPF_ values
-   int handled;    // POPUP_HANDLE[0-9] flags
+   int flags;      //POPF_ values
+   int handled;    //POPUP_HANDLE[0-9] flags
    Arr(Byte)    title;
    PopupPosition   pos;
-   int      fixed;      // do not shift popup to fit on screen
-   int      propType;  // when not zero: textprop type ID
-   Portal* propPort;  // portal to search for textprop
-   int propId;    // when not zero: textprop ID
+   int      fixed;      //do not shift popup to fit on screen
+   int      propType;  //when not zero: textprop type ID
+   Portal* propPort;  //portal to search for textprop
+   int propId;    //when not zero: textprop ID
    int zIndex;
-   int minHeight;      // "minheight" for popup portal
-   int minWidth;       // "minwidth" for popup portal
-   int maxHeight;      // "maxheight" for popup portal
-   int maxWidth;       // "maxwidth" for popup portal
-   int maxWidthOpt;       // maxwidth from option
-   int wantLine;       // "line" for popup portal
-   int wantCol;        // "col" for popup portal
-   int firstLine;      // "firstline" for popup portal
-   int wantScrollbar; // when zero don't use a scrollbar
-   int hasScrollbar;  // 1 if scrollbar displayed, 0 otherwise
-   CS scrollbarHilite; // "scrollbarhighlight"
-   CS thumbHilite; // "thumbhighlight"
-   int padding[4]; // padding top/right/bot/left
-   int border[4];  // border top/right/bot/left
-   CS borderHilite[4];  // border highlight
-   int borderChar[8];   // border characters
+   int minHeight;      //"minheight" for popup portal
+   int minWidth;       //"minwidth" for popup portal
+   int maxHeight;      //"maxheight" for popup portal
+   int maxWidth;       //"maxwidth" for popup portal
+   int maxWidthOpt;       //maxwidth from option
+   int wantLine;       //"line" for popup portal
+   int wantCol;        //"col" for popup portal
+   int firstLine;      //"firstline" for popup portal
+   int wantScrollbar; //when zero don't use a scrollbar
+   int hasScrollbar;  //1 if scrollbar displayed, 0 otherwise
+   CS scrollbarHilite; //"scrollbarhighlight"
+   CS thumbHilite; //"thumbhighlight"
+   int padding[4]; //padding top/right/bot/left
+   int border[4];  //border top/right/bot/left
+   CS borderHilite[4];  //border highlight
+   int borderChar[8];   //border characters
 
-   int leftOff;    // columns left of the screen
-   int rightOff;   // columns right of the screen
-   Long lastChangedTick; // b:changedtick of popup book when position was computed
-   Long propChangedTick; // b:changedtick of book with
-                 // w_popup_prop_type when position was computed
-   int propTopline; // w_topline of portal with
-                  // w_popup_prop_type when position was computed
-   LineNr lastCurline; // last known cursor.lnum of portal with "cursorline" set
-   Callback closeCb;       // popup close callback
-   Callback filterCb;       // popup filter callback
-   int filterErrors;    // popup filter error count
-   int filterMode;       // mode when filter callback is used
+   int leftOff;    //columns left of the screen
+   int rightOff;   //columns right of the screen
+   Long lastChangedTick; //b:changedtick of popup book when position was computed
+   Long propChangedTick; //b:changedtick of book with
+                 //w_popup_prop_type when position was computed
+   int propTopline; //w_topline of portal with
+                  //w_popup_prop_type when position was computed
+   LineNr lastCurline; //last known cursor.lnum of portal with "cursorline" set
+   Callback closeCb;       //popup close callback
+   Callback filterCb;       //popup filter callback
+   int filterErrors;    //popup filter error count
+   int filterMode;       //mode when filter callback is used
 
-   Portal* curPor;    // close popup if curPor differs
-   LineNr lnum;       // close popup if cursor not on this line
-   ColNr minCol;    // close popup if cursor before this col
-   ColNr maxCol;    // close popup if cursor after this col
-   int mouseRow;  // close popup if mouse moves away
-   int mouseMinCol;  // close popup if mouse moves away
-   int mouseMaxCol;  // close popup if mouse moves away
-   PopupClosing close;     // allow closing the popup with the mouse
+   Portal* curPor;    //close popup if curPor differs
+   LineNr lnum;       //close popup if cursor not on this line
+   ColNr minCol;    //close popup if cursor before this col
+   ColNr maxCol;    //close popup if cursor after this col
+   int mouseRow;  //close popup if mouse moves away
+   int mouseMinCol;  //close popup if mouse moves away
+   int mouseMaxCol;  //close popup if mouse moves away
+   PopupClosing close;     //allow closing the popup with the mouse
 
-   List* mask;         // list of lists for "mask"
-   CS maskCells; // cached mask cells
-   int maskHeight; // height of w_popup_mask_cells
-   int maskWidth;  // width of w_popup_mask_cells
-   Timer* timer;     // timer for closing popup portal
+   List* mask;         //list of lists for "mask"
+   CS maskCells; //cached mask cells
+   int maskHeight; //height of w_popup_mask_cells
+   int maskWidth;  //width of w_popup_mask_cells
+   Timer* timer;     //timer for closing popup portal
 } PortalPopup;
 
 typedef struct {
-   Pos pos;       // cursor position shown in ruler (ie. status line)
-   ColNr virtCol;       // virtcol shown in ruler
-   LineNr topLine;       // topline shown in ruler
-   LineNr lineCount;    // line count used for ruler
-   int topFill;       // topfill shown in ruler
-   char isLineEmpty;       // TRUE if ruler shows 0-1 (empty line)
-} Ruler; // row, col shown in status line
+   Pos pos;       //cursor position shown in ruler (ie. status line)
+   ColNr virtCol;       //virtcol shown in ruler
+   LineNr topLine;       //topline shown in ruler
+   LineNr lineCount;    //line count used for ruler
+   int topFill;       //topfill shown in ruler
+   char isLineEmpty;       //TRUE if ruler shows 0-1 (empty line)
+} Ruler; //row, col shown in status line
 
-// Structure which contains all information that belongs to a portal
-// All row numbers are relative to the start of the portal, except windowRow.
+//Structure which contains all information that belongs to a portal
+//All row numbers are relative to the start of the portal, except windowRow.
 struct Portal { //:Portal
    int id;         //unique portal ID
    Book* book;     //book we are a portal into
@@ -4119,12 +4119,12 @@ struct Portal { //:Portal
    ColNr skipCol; //starting screen column for the first line in the portal; used when @wrap is 
                   //on; does not include win_col_off()
 
-   int emptyRowCount;   // number of ~ rows in portal
-   int fillerRowCount;  // number of filler rows at the end of the portal
+   int emptyRowCount;   //number of ~ rows in portal
+   int fillerRowCount;  //number of filler rows at the end of the portal
 
-   // six fields that are only used when there is a WinScrolled autocommand
-   LineNr lastTopline; // last known value for topLine
-   int lastTopFill; // last known value for topfill
+   //six fields that are only used when there is a WinScrolled autocommand
+   LineNr lastTopline; //last known value for topLine
+   int lastTopFill; //last known value for topfill
    ColNr lastLeftCol;  //last known value for w_leftcol
    ColNr lastSkipCol;  //last known value for w_skipcol
    Unt lastWidth;        //last known value for w_width
@@ -4137,13 +4137,13 @@ struct Portal { //:Portal
    int prevPortRow;  //previous portrow used for 'splitkeep'
    Unt prevHeight;   //previous height used for 'splitkeep'
    
-   int scroll; // scroll height
+   int scroll; //scroll height
 
    int windowCol;    //Leftmost column of portal in window
    Unt width;        //Width of portal, excluding separation.
    int vsepWidth;    //Number of separator columns (0 or 1).
 
-   PosSave cursorSaved; // backup of cursor pos and topline
+   PosSave cursorSaved; //backup of cursor pos and topline
    int needFixCursor;//if TRUE cursor may be invalid
 
    PortalPopup pup;
@@ -4151,67 +4151,67 @@ struct Portal { //:Portal
    Unt flags;        //WFLAG_ flags
 
 ///////////////////////////////////////////////////////////////////
-// === start of cached values ===
+//=== start of cached values ===
 ///////////////////////////////////////////////////////////////////
-   // Recomputing is minimized by storing the result of computations. Use functions in draw.c to 
-   // check if they are valid and to update. cacheState is a bitfield of flags, which indicate if 
-   // specific values are valid or need to be recomputed. See draw.c for values.
+   //Recomputing is minimized by storing the result of computations. Use functions in draw.c to 
+   //check if they are valid and to update. cacheState is a bitfield of flags, which indicate if 
+   //specific values are valid or need to be recomputed. See draw.c for values.
    int cacheState;
-   Pos lastKnownCursor;      // last known position of cursor, used to adjust cacheState
-   ColNr lastKnownLeftCol; // last known w_leftcol
-   ColNr lastKnownSkipCol; // last known w_skipcol
+   Pos lastKnownCursor;      //last known position of cursor, used to adjust cacheState
+   ColNr lastKnownLeftCol; //last known w_leftcol
+   ColNr lastKnownSkipCol; //last known w_skipcol
 
-   // w_cline_height is the number of physical lines taken by the book line
-   // that the cursor is on.  We use this to avoid extra calls to plines().
-   Unt cursorLineHeight; // current size of cursor line
-   int isCursorLineFolded; // cursor line is folded
-   int cursorLineRow;    // starting row of the cursor line
-   ColNr virtCol;  // column number of the cursor in the book line, as opposed to the column 
-                     // number we're at on the screen. This makes a difference on lines which span
-                     // more than one screen line or when w_leftcol is non-zero
+   //w_cline_height is the number of physical lines taken by the book line
+   //that the cursor is on.  We use this to avoid extra calls to plines().
+   Unt cursorLineHeight; //current size of cursor line
+   int isCursorLineFolded; //cursor line is folded
+   int cursorLineRow;    //starting row of the cursor line
+   ColNr virtCol;  //column number of the cursor in the book line, as opposed to the column 
+                     //number we're at on the screen. This makes a difference on lines which span
+                     //more than one screen line or when w_leftcol is non-zero
 
-   ColNr virtColFirstChar; // offset for w_virtcol when there are virtual text properties 
-                               // above the line
-#define WFLAG_WCOL_OFF_ADDED 1 // popup border and padding were added to cursorCol
-#define WFLAG_WROW_OFF_ADDED 2 // popup border and padding were added to cursorRow
+   ColNr virtColFirstChar; //offset for w_virtcol when there are virtual text properties 
+                               //above the line
+#define WFLAG_WCOL_OFF_ADDED 1 //popup border and padding were added to cursorCol
+#define WFLAG_WROW_OFF_ADDED 2 //popup border and padding were added to cursorRow
    //The cursor position in the portal. This is related to positions in 
    //the portal, not in the display or book, thus cursorRow is relative to windowRow.
-   int cursorRow, cursorCol; // cursor position in portal
+   int cursorRow, cursorCol; //cursor position in portal
 
-   // Info about the lines currently in the portal is remembered to avoid recomputing it every 
-   // time.  The allocated size of lines[] is visibleRowsG. Only the validLines entries are 
-   // actually valid. When the display is up-to-date lines[0].wl_lnum is equal to topLine
-   // and lines[validLines - 1].wl_lnum is equal to bottomLine.
-   // Between changing text and updating the display lines[] represents what is currently 
-   // displayed.  wl_valid is reset to indicate this. This is used for efficient redrawing.
-   int validLines;     // number of valid entries
+   //Info about the lines currently in the portal is remembered to avoid recomputing it every 
+   //time.  The allocated size of lines[] is visibleRowsG. Only the validLines entries are 
+   //actually valid. When the display is up-to-date lines[0].wl_lnum is equal to topLine
+   //and lines[validLines - 1].wl_lnum is equal to bottomLine.
+   //Between changing text and updating the display lines[] represents what is currently 
+   //displayed.  wl_valid is reset to indicate this. This is used for efficient redrawing.
+   int validLines;     //number of valid entries
    Arr(PortLine) lines;
 
-   ArrayList folds;  // array of nested folds
-   Boole foldManual; // when TRUE: some folds are opened/closed manually
-   Boole foldNeedsRecomputation; // when TRUE: folding needs to be recomputed
-   int numberColWidth;      // width of 'number' and 'relativenumber' column being used
-   TermCellColor termHiliteGroupName;    // cache for term color of a portal's "hiliteGroupName"
+   ArrayList folds;  //array of nested folds
+   Boole foldManual; //when TRUE: some folds are opened/closed manually
+   Boole foldNeedsRecomputation; //when TRUE: folding needs to be recomputed
+   int numberColWidth;      //width of 'number' and 'relativenumber' column being used
+   TermCellColor termHiliteGroupName;    //cache for term color of a portal's "hiliteGroupName"
 ///////////////////////////////////////////////////////////////////
-// === end of cached values ===
+//=== end of cached values ===
 ///////////////////////////////////////////////////////////////////
 
-   Unt redrawType;   // type of redraw to be performed on portal
-   int rowsToUpdate;    // number of portal lines to update when w_redr_type is UPD_REDRAW_TOP
-   LineNr redrawTop;  // when != 0: first line needing redraw
-   LineNr redrawBott;  // when != 0: last line needing redraw
-   Boole statusLineNeedsRedraw; // if TRUE status line must be redrawn
+   Unt redrawType;   //type of redraw to be performed on portal
+   int rowsToUpdate;    //number of portal lines to update when w_redr_type is UPD_REDRAW_TOP
+   LineNr redrawTop;  //when != 0: first line needing redraw
+   LineNr redrawBott;  //when != 0: last line needing redraw
+   Boole statusLineNeedsRedraw; //if TRUE status line must be redrawn
 
-   // remember what is shown in the ruler for this portal (if 'ruler' set)
+   //remember what is shown in the ruler for this portal (if 'ruler' set)
    Ruler ruler;
-   int altFnum;       // alternate file (for # and CTRL-^)
+   int altFnum;       //alternate file (for # and CTRL-^)
 
-   EeArgList* argList;       // pointer to arglist for this window
-   int argListInd;       // current index in argument list (can be out of range!)
-   Boole isNotValid;  // editing another file than w_arg_idx
+   EeArgList* argList;       //pointer to arglist for this window
+   int argListInd;       //current index in argument list (can be out of range!)
+   Boole isNotValid;  //editing another file than w_arg_idx
 
-   CS localDir;       // absolute path of local directory or NULL
-   CS prevdir;       // previous directory
+   CS localDir;       //absolute path of local directory or NULL
+   CS prevdir;       //previous directory
 
    //Options local to a portal.
    //They are local because they influence the layout of the portal or depend on the portal layout.
@@ -4219,15 +4219,15 @@ struct Portal { //:Portal
 
    BreakIndent breakIndent;
    long scbindPos;
-   DictItem wVar;          // variable for "w:" Dictionary
-   Bag* internalVars;     // internal variables, local to portal
+   DictItem wVar;          //variable for "w:" Dictionary
+   Bag* internalVars;     //internal variables, local to portal
 
-   // The prev_pcmark field is used to check whether we really did jump to
-   // a new line after setting the w_pcmark.  If not, then we revert to using the previous w_pcmark.
-   Pos prevContextMark;   // previous context mark
-   Pos prevPrevContextMark;   // previous w_pcmark
+   //The prev_pcmark field is used to check whether we really did jump to
+   //a new line after setting the w_pcmark.  If not, then we revert to using the previous w_pcmark.
+   Pos prevContextMark;   //previous context mark
+   Pos prevPrevContextMark;   //previous w_pcmark
 
-   // the jumplist contains old cursor positions
+   //the jumplist contains old cursor positions
    FileMarkExt   jumpList[JUMPLISTSIZE];
    int jumpListLen;   //number of active entries
    int jumpListInd;   //current position
@@ -4235,17 +4235,17 @@ struct Portal { //:Portal
    MatchItem* firstMatch; //head of match list
    int nextMatchId;   //next match ID
 
-   // the tagstack grows from 0 upwards:
-   // entry 0: older
-   // entry 1: newer
-   // entry 2: newest
+   //the tagstack grows from 0 upwards:
+   //entry 0: older
+   //entry 1: newer
+   //entry 2: newest
    Taggy tagStack[TAGSTACKSIZE]; //the tag stack
    Unt tagStackInd;              //idx just below active entry
    Unt tagStackLen;              //number of tags on stack
 
-   // fraction is the fractional row of the cursor within the window, from
-   // 0 at the top row to FRACTION_MULT at the last row.
-   // prev_fraction_row was the actual cursor row when fraction was last calculated.
+   //fraction is the fractional row of the cursor within the window, from
+   //0 at the top row to FRACTION_MULT at the last row.
+   //prev_fraction_row was the actual cursor row when fraction was last calculated.
    int fraction;
    int prevFraction;
 
@@ -4260,30 +4260,30 @@ struct Portal { //:Portal
 
 declStruct(ClipBoard);
 
-// Arguments for operators.
+//Arguments for operators.
 typedef struct Operator {
-   Unt opTy;   // current pending operator type
-   int regname;   // register to use for the operator
-   int motion_type;   // type of the current cursor motion
-   int motion_force;   // force motion type: 'v', 'V' or CTRL-V
-   int end_adjusted;   // backed up b_op_end one char (only used by do_format())
-   Pos start;      // start of the operator
-   Pos end;      // end of the operator
-   Pos cursor_start;   // cursor position before motion for "gw"
-   long line_count;   // number of lines from op_start to op_end (inclusive)
-   int empty;      // op_start and op_end the same (only used by do_change())
-   Boole use_reg_one;   // TRUE if delete uses reg 1 even when not linewise
-   Boole inclusive;   // TRUE if char motion is inclusive (only valid when motion_type is MCHAR)
-   Boole is_VIsual;   // operator on Visual area
-   Boole block_mode;   // current operator is Visual block mode
-   ColNr start_vcol;   // start col for block mode operator
-   ColNr end_vcol;   // end col for block mode operator
-   long  prev_opcount;   // ca.opcount saved for K_CURSORHOLD
-   long  prev_count0;   // ca.count0 saved for K_CURSORHOLD
-   int excludeTrailingWhitespace;   // exclude trailing whitespace for yank of a block
+   Unt opTy;   //current pending operator type
+   int regname;   //register to use for the operator
+   int motion_type;   //type of the current cursor motion
+   int motion_force;   //force motion type: 'v', 'V' or CTRL-V
+   int end_adjusted;   //backed up b_op_end one char (only used by do_format())
+   Pos start;      //start of the operator
+   Pos end;      //end of the operator
+   Pos cursor_start;   //cursor position before motion for "gw"
+   long line_count;   //number of lines from op_start to op_end (inclusive)
+   int empty;      //op_start and op_end the same (only used by do_change())
+   Boole use_reg_one;   //TRUE if delete uses reg 1 even when not linewise
+   Boole inclusive;   //TRUE if char motion is inclusive (only valid when motion_type is MCHAR)
+   Boole is_VIsual;   //operator on Visual area
+   Boole block_mode;   //current operator is Visual block mode
+   ColNr start_vcol;   //start col for block mode operator
+   ColNr end_vcol;   //end col for block mode operator
+   long  prev_opcount;   //ca.opcount saved for K_CURSORHOLD
+   long  prev_count0;   //ca.count0 saved for K_CURSORHOLD
+   int excludeTrailingWhitespace;   //exclude trailing whitespace for yank of a block
 } Operator;
 
-// Arguments for Normal mode commands.
+//Arguments for Normal mode commands.
 typedef struct {
    Arr(Operator) oper; //Operators
    Unt prechar;    //prefix character (optional, always 'g')
@@ -4303,7 +4303,7 @@ typedef struct {
 //}}}
 //{{{cursor
 
-// values for retval:
+//values for retval:
 #define CA_COMMAND_BUSY   1 //skip restarting edit() once
 #define CA_NO_ADJ_OP_END  2 //don't adjust operator end
 
@@ -4314,242 +4314,242 @@ typedef struct {
 //}}}
 //{{{MainParams
 
-// Struct to save values in before executing autocommands for a book that is not current.
+//Struct to save values in before executing autocommands for a book that is not current.
 typedef struct {
-   int use_autoCommPort_idx;  // index in aucmd_win[] if >= 0
-   int save_curPor_id;       // ID of saved curPor
-   int new_curPor_id;       // ID of new curPor
-   int save_prevPor_id;    // ID of saved prevPor
-   BookRef   newCurBook;       // new curBook
-   CS localdir;       // saved value of tp_localdir
-   CS globaldir;       // saved value of globaldir
-   int save_VIsual_active; // saved VIsual_active
-   int save_State;       // saved State
-   int save_prompt_insert; // saved b_prompt_insert
+   int use_autoCommPort_idx;  //index in aucmd_win[] if >= 0
+   int save_curPor_id;       //ID of saved curPor
+   int new_curPor_id;       //ID of new curPor
+   int save_prevPor_id;    //ID of saved prevPor
+   BookRef   newCurBook;       //new curBook
+   CS localdir;       //saved value of tp_localdir
+   CS globaldir;       //saved value of globaldir
+   int save_VIsual_active; //saved VIsual_active
+   int save_State;       //saved State
+   int save_prompt_insert; //saved b_prompt_insert
 } AutocommSave;
 
-// Used for popup menu items.
+//Used for popup menu items.
 typedef struct {
-   CS pum_text;      // main menu text
-   CS pum_kind;      // extra kind text (may be truncated)
-   CS pum_extra;      // extra menu text (may be truncated)
-   CS pum_info;      // extra info
-   int pum_cpt_source_idx;   // index of completion source in 'cpt'
-   Decoration abbreviationDeco;   // hilite decoration for abbr
-   Decoration kindDeco;   // hilite decoration for kind
+   CS pum_text;      //main menu text
+   CS pum_kind;      //extra kind text (may be truncated)
+   CS pum_extra;      //extra menu text (may be truncated)
+   CS pum_info;      //extra info
+   int pum_cpt_source_idx;   //index of completion source in 'cpt'
+   Decoration abbreviationDeco;   //hilite decoration for abbr
+   Decoration kindDeco;   //hilite decoration for kind
 } PopupItem;
 
 declStruct(FileSearchCtx);
 
-// Structure used for get_tagfname().
+//Structure used for get_tagfname().
 typedef struct {
-   CS tn_tags;   // value of @tags when starting
-   CS tn_np;      // current position in tn_tags
+   CS tn_tags;   //value of @tags when starting
+   CS tn_np;      //current position in tn_tags
    int tn_did_filefind_init;
    int tn_hf_idx;
    FileSearchCtx* searchCtx;
 } TagName;
 
-// types for expressions.
+//types for expressions.
 typedef enum {
    EXPR_UNKNOWN = 0,
-   EXPR_EQUAL,      // ==
-   EXPR_NEQUAL,   // !=
-   EXPR_GREATER,   // >
-   EXPR_GEQUAL,   // >=
-   EXPR_SMALLER,   // <
-   EXPR_SEQUAL,   // <=
-   EXPR_MATCH,      // =~
-   EXPR_NOMATCH,  // !~
-   EXPR_IS,       // is
-   EXPR_ISNOT,    // isnot
-   // used with ISN_OPNR
-   EXPR_ADD,      // +
-   EXPR_SUB,      // -
-   EXPR_MULT,     // *
-   EXPR_DIV,      // /
-   EXPR_REM,      // %
-   EXPR_LSHIFT,   // <<
-   EXPR_RSHIFT,   // >>
-   // used with ISN_ADDLIST
-   EXPR_COPY,     // create new list
-   EXPR_APPEND    // append to first list
+   EXPR_EQUAL,      //==
+   EXPR_NEQUAL,   //!=
+   EXPR_GREATER,   //>
+   EXPR_GEQUAL,   //>=
+   EXPR_SMALLER,   //<
+   EXPR_SEQUAL,   //<=
+   EXPR_MATCH,      //=~
+   EXPR_NOMATCH,  //!~
+   EXPR_IS,       //is
+   EXPR_ISNOT,    //isnot
+   //used with ISN_OPNR
+   EXPR_ADD,      //+
+   EXPR_SUB,      //-
+   EXPR_MULT,     //*
+   EXPR_DIV,      ///
+   EXPR_REM,      //%
+   EXPR_LSHIFT,   //<<
+   EXPR_RSHIFT,   //>>
+   //used with ISN_ADDLIST
+   EXPR_COPY,     //create new list
+   EXPR_APPEND    //append to first list
 } ExprType;
 
-// Structure used for reading in json_decode().
+//Structure used for reading in json_decode().
 declStruct(JsReader);
 struct JsReader {
-   Byte* js_buf;   // text to be decoded
-   Byte* js_end;   // ZERO in js_buf
-   int js_used;    // bytes used from js_buf
+   Byte* js_buf;   //text to be decoded
+   Byte* js_end;   //ZERO in js_buf
+   int js_used;    //bytes used from js_buf
    int (*js_fill)(JsReader *);
             //function to fill the buffer or NULL; returns TRUE when the buffer was filled
-   void* js_cookie;   // can be used by js_fill
-   int js_cookie_arg;   // can be used by js_fill
+   void* js_cookie;   //can be used by js_fill
+   int js_cookie_arg;   //can be used by js_fill
 };
 
 
-// values for "portalLayout"
+//values for "portalLayout"
 #define WIN_HOR  1 //"-o" horizontally split portals
 #define WIN_VER  2 //"-O" vertically split portals
 #define WIN_TABS 3 //"-p" portals on tabs
 
 //Lvalue. Structure returned by get_lval() and used by set_var_lval(). For a plain name:
-//  "name"       points to the variable name.
-//  "exp_name"  is NULL.
-//  "tv"       is NULL
+// "name"       points to the variable name.
+// "exp_name"  is NULL.
+// "tv"       is NULL
 //For a magic braces name:
-//  "name"       points to the expanded variable name.
-//  "exp_name"  is non-NULL, to be freed later.
-//  "tv"       is NULL
+// "name"       points to the expanded variable name.
+// "exp_name"  is non-NULL, to be freed later.
+// "tv"       is NULL
 //For an index in a list:
-//  "name"       points to the (expanded) variable name.
-//  "exp_name"  NULL or non-NULL, to be freed later.
-//  "tv"       points to the (first) list item value
-//  "li"       points to the (first) list item
-//  "range", "n1", "n2" and "empty2" indicate what items are used.
+// "name"       points to the (expanded) variable name.
+// "exp_name"  NULL or non-NULL, to be freed later.
+// "tv"       points to the (first) list item value
+// "li"       points to the (first) list item
+// "range", "n1", "n2" and "empty2" indicate what items are used.
 //For an existing Bag item:
-//  "name"       points to the (expanded) variable name.
-//  "exp_name"  NULL or non-NULL, to be freed later.
-//  "tv"       points to the dict item value
-//  "newkey"    is NULL
+// "name"       points to the (expanded) variable name.
+// "exp_name"  NULL or non-NULL, to be freed later.
+// "tv"       points to the dict item value
+// "newkey"    is NULL
 //For a non-existing Bag item:
-//  "name"       points to the (expanded) variable name.
-//  "exp_name"  NULL or non-NULL, to be freed later.
-//  "tv"       points to the Dictionary Var
-//  "newkey"    is the key for the new item.
+// "name"       points to the (expanded) variable name.
+// "exp_name"  NULL or non-NULL, to be freed later.
+// "tv"       points to the Dictionary Var
+// "newkey"    is the key for the new item.
 typedef struct {
-   Text name;   // start of variable name (can be NULL)
-   Text expandedName;   // NULL or expanded name in allocated memory.
-   Var* var;   // Typeval of item being used. 
-               // If "newkey" isn't NULL, it's the Bag to which to add the item.
-   ListItem   *ll_li;      // The list item or NULL.
-   List   *ll_list;   // The list or NULL.
-   int      ll_range;   // TRUE when a [i:j] range was used
-   int      ll_empty2;   // Second index is empty: [i:]
-   long   ll_n1;      // First index for list
-   long   ll_n2;      // Second index for list range
-   Bag* bag;   // The Bag or NULL
-   DictItem   *ll_di;      // The dictitem or NULL
-   Text newKey;   // New key for Bag in alloc. mem or NULL.
-   Blob   *ll_blob;   // The Blob or NULL
-   UserFunc   *ll_ufunc;   // The function or NULL
+   Text name;   //start of variable name (can be NULL)
+   Text expandedName;   //NULL or expanded name in allocated memory.
+   Var* var;   //Typeval of item being used. 
+               //If "newkey" isn't NULL, it's the Bag to which to add the item.
+   ListItem   *ll_li;      //The list item or NULL.
+   List   *ll_list;   //The list or NULL.
+   int      ll_range;   //TRUE when a [i:j] range was used
+   int      ll_empty2;   //Second index is empty: [i:]
+   long   ll_n1;      //First index for list
+   long   ll_n2;      //Second index for list range
+   Bag* bag;   //The Bag or NULL
+   DictItem   *ll_di;      //The dictitem or NULL
+   Text newKey;   //New key for Bag in alloc. mem or NULL.
+   Blob   *ll_blob;   //The Blob or NULL
+   UserFunc   *ll_ufunc;   //The function or NULL
    int      isRoot;   //TRUE if ll_tv is the lval_root, like a plain object/class. ll_tv is variable
 } Lval;
 
-// Scope for changing directory
+//Scope for changing directory
 typedef enum {
-   CDSCOPE_GLOBAL,   // :cd
-   CDSCOPE_TABPAGE,   // :tcd
-   CDSCOPE_WINDOW   // :lcd
+   CDSCOPE_GLOBAL,   //:cd
+   CDSCOPE_TABPAGE,   //:tcd
+   CDSCOPE_WINDOW   //:lcd
 } CdScopeKind;
 
-// argument for mouse_find_win()
+//argument for mouse_find_win()
 typedef enum {
-   IGNORE_POPUP,   // only check non-popup windows
-   FIND_POPUP,      // also find popup windows
-   FAIL_POPUP      // return NULL if mouse on popup window
+   IGNORE_POPUP,   //only check non-popup windows
+   FIND_POPUP,      //also find popup windows
+   FAIL_POPUP      //return NULL if mouse on popup window
 } MouseFindKind;
 
-// Symbolic names for some registers.
+//Symbolic names for some registers.
 #define DELETION_REGISTER   36
 #define STAR_REGISTER      37
-#define PLUS_REGISTER   STAR_REGISTER       // there is only one
+#define PLUS_REGISTER   STAR_REGISTER       //there is only one
 #define TILDE_REGISTER      (PLUS_REGISTER + 1)
 
 #define NUM_REGISTERS      (TILDE_REGISTER + 1)
 
-// Used by block_prep, op_delete and op_yank for blockwise operators.
-// Also op_change, op_shift, op_insert, op_replace - AKelly
+//Used by block_prep, op_delete and op_yank for blockwise operators.
+//Also op_change, op_shift, op_insert, op_replace - AKelly
 typedef struct BlockDef {
-   int startspaces;   // 'extra' cols before first char
-   int endspaces;   // 'extra' cols after last char
-   int textlen;   // chars in block
-   Byte* textstart;   // pointer to 1st char (partially) in block
-   ColNr textcol;   // index of chars (partially) in block
-   ColNr start_vcol;   // start col of 1st char wholly inside block
-   ColNr end_vcol;   // start col of 1st char wholly after block
-   int is_short;   // TRUE if line is too short to fit in block
-   int is_MAX;      // TRUE if curswant==MAXCOL when starting
-   int is_oneChar;   // TRUE if block within one character
-   int pre_whitesp;   // screen cols of ws before block
-   int pre_whitesp_c;   // chars of ws before block
-   ColNr end_char_vcols;   // number of vcols of post-block char
-   ColNr start_char_vcols; // number of vcols of pre-block char
+   int startspaces;   //'extra' cols before first char
+   int endspaces;   //'extra' cols after last char
+   int textlen;   //chars in block
+   Byte* textstart;   //pointer to 1st char (partially) in block
+   ColNr textcol;   //index of chars (partially) in block
+   ColNr start_vcol;   //start col of 1st char wholly inside block
+   ColNr end_vcol;   //start col of 1st char wholly after block
+   int is_short;   //TRUE if line is too short to fit in block
+   int is_MAX;      //TRUE if curswant==MAXCOL when starting
+   int is_oneChar;   //TRUE if block within one character
+   int pre_whitesp;   //screen cols of ws before block
+   int pre_whitesp_c;   //chars of ws before block
+   ColNr end_char_vcols;   //number of vcols of post-block char
+   ColNr start_char_vcols; //number of vcols of pre-block char
 } BlockDef;
 
-// Each yank register has an array of pointers to lines.
+//Each yank register has an array of pointers to lines.
 typedef struct {
    Arr(Text) y_array;
-   LineNr y_size;      // number of lines in y_array
-   Byte y_type;      // MLINE, MCHAR or MBLOCK
-   ColNr y_width;   // only set if y_type == MBLOCK
+   LineNr y_size;      //number of lines in y_array
+   Byte y_type;      //MLINE, MCHAR or MBLOCK
+   ColNr y_width;   //only set if y_type == MBLOCK
    Tyme y_time_set;
 } YankReg;
 
-// Optional extra arguments for searchit().
+//Optional extra arguments for searchit().
 typedef struct {
-   LineNr sa_stop_lnum;   // stop after this line number when != 0
-   long sa_tm;      // timeout limit or zero
-   int sa_timed_out;   // set when timed out
-   int sa_wrapped;   // search wrapped around
+   LineNr sa_stop_lnum;   //stop after this line number when != 0
+   long sa_tm;      //timeout limit or zero
+   int sa_timed_out;   //set when timed out
+   int sa_wrapped;   //search wrapped around
 } SearchitArg;
 
-// The offset for a search command. Note: only spats[0].off is really used
+//The offset for a search command. Note: only spats[0].off is really used
 typedef struct {
-   int dir;      // search direction, '/' or '?'
-   int line;      // search has line offset
-   int end;      // search set cursor at end
-   long   off;      // line or char offset
+   int dir;      //search direction, '/' or '?'
+   int line;      //search has line offset
+   int end;      //search set cursor at end
+   long   off;      //line or char offset
 } SearchOffset;
 
-// A search pattern and its attributes are stored in a spat struct
+//A search pattern and its attributes are stored in a spat struct
 typedef struct {
-   Text pat;// the pattern (in allocated memory) or NULL
-   int magic;   // magicness of the pattern
-   Boole no_scs;   // no smartcase for this pattern
+   Text pat;//the pattern (in allocated memory) or NULL
+   int magic;   //magicness of the pattern
+   Boole no_scs;   //no smartcase for this pattern
    SearchOffset off;
 } SearchPattern;
 
-#define WRITEBUFSIZE   8192   // size of normal write buffer
+#define WRITEBUFSIZE   8192   //size of normal write buffer
 
 //Magicness of a pattern, used by regexp code.
 //The order and values matter:
-//  magic <= MAGIC_OFF includes MAGIC_NONE
-//  magic >= MAGIC_ON  includes MAGIC_ALL
+// magic <= MAGIC_OFF includes MAGIC_NONE
+// magic >= MAGIC_ON  includes MAGIC_ALL
 typedef enum {
-   MAGIC_NONE = 1,      // "\V" very unmagic
-   MAGIC_OFF = 2,      // "\M" or 'magic' off
-   MAGIC_ON = 3,      // "\m" or 'magic'
-   MAGIC_ALL = 4      // "\v" very magic
+   MAGIC_NONE = 1,      //"\V" very unmagic
+   MAGIC_OFF = 2,      //"\M" or 'magic' off
+   MAGIC_ON = 3,      //"\m" or 'magic'
+   MAGIC_ALL = 4      //"\v" very magic
 } Magic;
 
 #define WHERE_INIT {NULL, 0, WT_UNKNOWN}
 
-// Structure used by switch_win() to pass values to restore_win()
+//Structure used by switch_win() to pass values to restore_win()
 typedef struct {
    Portal* curPor;
    Tab* currTab;
-   int samePortal;       // VIsual_active was not reset
+   int samePortal;       //VIsual_active was not reset
    int isVisualActive;
 } SwitchPort;
 
-// Argument for lbr_chartabsize().
+//Argument for lbr_chartabsize().
 typedef struct {
    Portal* cts_win;
-   Byte* cts_line;      // start of the line
-   Byte* cts_ptr;      // current position in line
-   int cts_bri_size;      // cached size of 'breakindent', or -1 if not computed yet
-   int cts_text_prop_count;   // number of text props; when zero cts_text_props is not used
-   TextProp* cts_text_props;   // text props (allocated)
-   char cts_has_prop_with_text;   // TRUE if a property inserts text
-   int cts_cur_text_width;   // width of current inserted text
-   int cts_prop_lines;      // nr of properties above or below
-   int cts_first_char;      // width text props above the line
-   int cts_with_trailing;   // include size of trailing props with last character
-   int cts_start_incl;      // prop has true "start_incl" arg
-   int cts_vcol;      // virtual column at current position
-   int cts_max_head_vcol;   // see win_lbr_chartabsize()
+   Byte* cts_line;      //start of the line
+   Byte* cts_ptr;      //current position in line
+   int cts_bri_size;      //cached size of 'breakindent', or -1 if not computed yet
+   int cts_text_prop_count;   //number of text props; when zero cts_text_props is not used
+   TextProp* cts_text_props;   //text props (allocated)
+   char cts_has_prop_with_text;   //TRUE if a property inserts text
+   int cts_cur_text_width;   //width of current inserted text
+   int cts_prop_lines;      //nr of properties above or below
+   int cts_first_char;      //width text props above the line
+   int cts_with_trailing;   //include size of trailing props with last character
+   int cts_start_incl;      //prop has true "start_incl" arg
+   int cts_vcol;      //virtual column at current position
+   int cts_max_head_vcol;   //see win_lbr_chartabsize()
 } CharTableSize;
 
 typedef enum {
@@ -4575,7 +4575,7 @@ typedef struct {
    Boole wasValueChecked;
    //Option value changed.  Used for the @filetype and @syntax options.
    Boole wasValueChanged;
-   Polystring* buf; // Buffer for all the string options
+   Polystring* buf; //Buffer for all the string options
    ErrBuilder errb;
 } OptionChange;
 
@@ -4584,14 +4584,14 @@ typedef enum {
    POPUP_ATCURSOR,
    POPUP_BEVAL,
    POPUP_NOTIFICATION,
-   POPUP_MESSAGE_WIN,   // similar to POPUP_NOTIFICATION
+   POPUP_MESSAGE_WIN,   //similar to POPUP_NOTIFICATION
    POPUP_DIALOG,
    POPUP_MENU,
-   POPUP_PREVIEW,   // preview window
-   POPUP_INFO      // popup menu info
+   POPUP_PREVIEW,   //preview window
+   POPUP_INFO      //popup menu info
 } PopupKind;
 
-// Defined as signed, to return -1 on error
+//Defined as signed, to return -1 on error
 typedef struct {
    int cs_xpixel;
    int cs_ypixel;
@@ -4603,14 +4603,14 @@ typedef enum {
    WAYLAND_SELECTION_PRIMARY    = 0x2,
 } WaylandSelection;
 
-// Callback when another client wants us to send data to them
+//Callback when another client wants us to send data to them
 typedef void (*wayland_cb_send_data_func_T)(
    const char *mime_type,
    int fd,
    WaylandSelection type
 );
 
-// Callback when the selection is lost (data source object overwritten)
+//Callback when the selection is lost (data source object overwritten)
 typedef void (*wayland_cb_selection_cancelled_func_T)(WaylandSelection type);
 
 //}}}
@@ -4619,7 +4619,7 @@ typedef void (*wayland_cb_selection_cancelled_func_T)(WaylandSelection type);
 declStruct(SpellLang);
 declStruct(SpellTab);
 
-// Values for "what" argument of spell_add_word()
+//Values for "what" argument of spell_add_word()
 #define SPELL_ADD_GOOD   0
 #define SPELL_ADD_BAD   1
 #define SPELL_ADD_RARE   2
@@ -4628,26 +4628,26 @@ declStruct(SpellTab);
 //{{{balloons
 
 typedef enum {
-   ShS_NEUTRAL,         // nothing showing or pending
-   ShS_PENDING,         // data requested from debugger
-   ShS_UPDATE_PENDING,         // switching information displayed
-   ShS_SHOWING            // the balloon is being displayed
+   ShS_NEUTRAL,         //nothing showing or pending
+   ShS_PENDING,         //data requested from debugger
+   ShS_UPDATE_PENDING,         //switching information displayed
+   ShS_SHOWING            //the balloon is being displayed
 } BeState;
 
 typedef struct BalloonEvalStruct {
-   int         ts;      // tab size for this book
-   Byte      *msg;      // allocated: current text
+   int         ts;      //tab size for this book
+   Byte      *msg;      //allocated: current text
 } BalloonEval;
 
-#define EVAL_OFFSET_X 15 // displacement of balloon topleft corner from pointer
+#define EVAL_OFFSET_X 15 //displacement of balloon topleft corner from pointer
 #define EVAL_OFFSET_Y 10
 
 //}}}
 //}}}
 
-// enumeration of alloc IDs.
-// Used by test_alloc_fail() to test memory allocation failures.
-// Each entry must be on exactly one line, GetAllocId() depends on that.
+//enumeration of alloc IDs.
+//Used by test_alloc_fail() to test memory allocation failures.
+//Each entry must be on exactly one line, GetAllocId() depends on that.
 typedef enum {
    aid_none = 0,
    aid_ll_dirname_start,
@@ -4685,26 +4685,26 @@ typedef enum {
    aid_last
 } AllocId;
 
-// Values for "do_profiling".
+//Values for "do_profiling".
 #define PROF_NONE   0 //profiling not started
 #define PROF_YES    1 //profiling busy
 #define PROF_PAUSED 2 //profiling paused
 
-// Codes for mouse button events in lower three bits:
+//Codes for mouse button events in lower three bits:
 #define MOUSE_LEFT    0x00
 #define MOUSE_MIDDLE  0x01
 #define MOUSE_RIGHT   0x02
 #define MOUSE_RELEASE 0x03
 
-#define MOUSE_X1  0x300 // Mouse-button X1 (6th)
-#define MOUSE_X2  0x400 // Mouse-button X2
+#define MOUSE_X1  0x300 //Mouse-button X1 (6th)
+#define MOUSE_X2  0x400 //Mouse-button X2
 
-#define MOUSE_MOVE 0x700    // report mouse moved
+#define MOUSE_MOVE 0x700    //report mouse moved
 
-// 0x20 is reserved by xterm
+//0x20 is reserved by xterm
 #define MOUSE_DRAG   (0x40 | MOUSE_RELEASE)
 
-// flags for jump_to_mouse()
+//flags for jump_to_mouse()
 #define MOUSE_FOCUS        0x01 //need to stay in this window
 #define MOUSE_MAY_VIS      0x02 //may start Visual mode
 #define MOUSE_DID_MOVE     0x04 //only act when mouse has moved
@@ -4712,17 +4712,17 @@ typedef enum {
 #define MOUSE_MAY_STOP_VIS 0x10 //may stop Visual mode
 #define MOUSE_RELEASED     0x20 //button was released
 
-// used for v_number in VAR_BOOL
-#define VVAL_FALSE  0L   // VAR_BOOL
-#define VVAL_TRUE   1L   // VAR_BOOL
+//used for v_number in VAR_BOOL
+#define VVAL_FALSE  0L   //VAR_BOOL
+#define VVAL_TRUE   1L   //VAR_BOOL
 
-// There are five history tables:
-#define HIST_CMD     0   // colon commands
-#define HIST_SEARCH  1   // search commands
-#define HIST_EXPR    2   // expressions (from entering = register)
-#define HIST_INPUT   3   // input() lines
-#define HIST_DEBUG   4   // debug commands
-#define HIST_COUNT   5   // number of history tables
+//There are five history tables:
+#define HIST_CMD     0   //semicolon commands
+#define HIST_SEARCH  1   //search commands
+#define HIST_EXPR    2   //expressions (from entering = register)
+#define HIST_INPUT   3   //input() lines
+#define HIST_DEBUG   4   //debug commands
+#define HIST_COUNT   5   //number of history tables
 
 
 #if (defined(__GNUC__) || defined(__clang__))
@@ -4742,22 +4742,22 @@ typedef enum {
 # define ATTRIBUTE_COLD
 #endif
 
-// Mode for bracketed_paste().
+//Mode for bracketed_paste().
 typedef enum {
-   PASTE_INSERT,   // insert mode
-   PASTE_CMDLINE,   // command line
-   PASTE_EX,      // ex mode line
-   PASTE_ONE_CHAR   // return first character
+   PASTE_INSERT,   //insert mode
+   PASTE_CMDLINE,   //command line
+   PASTE_EX,      //ex mode line
+   PASTE_ONE_CHAR   //return first character
 } PasteMode;
 
-// Argument for prepare_tagpreview()
+//Argument for prepare_tagpreview()
 typedef enum {
    USEPOPUP_NONE,
-   USEPOPUP_NORMAL,   // use info popup
-   USEPOPUP_HIDDEN   // use info popup initially hidden
+   USEPOPUP_NORMAL,   //use info popup
+   USEPOPUP_HIDDEN   //use info popup initially hidden
 } UsePopup;
 
-// Argument for estack_sfile().
+//Argument for estack_sfile().
 typedef enum {
    ESTACK_NONE,
    ESTACK_SFILE,
@@ -4765,27 +4765,27 @@ typedef enum {
    ESTACK_SCRIPT,
 } EstackArg;
 
-// errors for when calling a function
+//errors for when calling a function
 typedef enum {
-   FCERR_NONE,      // no error
-   FCERR_UNKNOWN,   // unknown function
-   FCERR_TOOMANY,   // too many arguments
-   FCERR_TOOFEW,   // too few arguments
-   FCERR_SCRIPT,   // missing script context
-   FCERR_DICT,      // missing dict
-   FCERR_OTHER,   // another kind of error
-   FCERR_DELETED,   // function was deleted
-   FCERR_NOTMETHOD,   // function cannot be used as a method
-   FCERR_FAILED,   // error while executing the function
+   FCERR_NONE,      //no error
+   FCERR_UNKNOWN,   //unknown function
+   FCERR_TOOMANY,   //too many arguments
+   FCERR_TOOFEW,   //too few arguments
+   FCERR_SCRIPT,   //missing script context
+   FCERR_DICT,      //missing dict
+   FCERR_OTHER,   //another kind of error
+   FCERR_DELETED,   //function was deleted
+   FCERR_NOTMETHOD,   //function cannot be used as a method
+   FCERR_FAILED,   //error while executing the function
 } FnError;
 
 //Array indexes used for cp_text[].
 typedef enum {
-   CPT_ABBR,      // "abbr"
-   CPT_KIND,      // "kind"
-   CPT_MENU,      // "menu"
-   CPT_INFO,      // "info"
-   CPT_COUNT,      // Number of entries
+   CPT_ABBR,      //"abbr"
+   CPT_KIND,      //"kind"
+   CPT_MENU,      //"menu"
+   CPT_INFO,      //"info"
+   CPT_COUNT,      //Number of entries
 } CpItem;
 
 //{{{termdefs
@@ -4794,7 +4794,7 @@ typedef enum {
 //to perform various operations. All of the sequences here are optional, except "cm" (cursor motion)
 
 
-// Index of the terminfo codes, with their capability names and example values.
+//Index of the terminfo codes, with their capability names and example values.
 #define KS_NAME   0 //name of this terminal entry. foot
 #define KS_CE     1 //clear to end of line. el. \e[K
 #define KS_AL     2 //add new blank line. il1. \e[L
@@ -4889,7 +4889,7 @@ typedef enum {
 //#define Widget int
 //#define XImage int
 
-// These prototypes cannot be produced automatically.
+//These prototypes cannot be produced automatically.
 int smsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
 #define smsg(a, ...) smsg0((char const*)(a), ##__VA_ARGS__)
 
@@ -4899,11 +4899,11 @@ int smsgDeco0(char, char const*, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 int smsgDecoKeep0(char, char const*, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 #define smsgDecoKeep(a, fmt, ...) smsgDecoKeep0(a, (char const*)fmt, ##__VA_ARGS__);
 
-// These prototypes cannot be produced automatically.
+//These prototypes cannot be produced automatically.
 int showErrFmtMsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
 #define showErrFmtMsg(a, ...) showErrFmtMsg0((char const*)a, ##__VA_ARGS__)
 
-// These prototypes cannot be produced automatically.
+//These prototypes cannot be produced automatically.
 void internalErrFmtMsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
 #define internalErrFmtMsg(a, ...) internalErrFmtMsg0((char const*)a, ##__VA_ARGS__)
 int eeSnprintfAdd0(CS, Unt, char const *, ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
@@ -4920,7 +4920,7 @@ int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
 #define eeVarPrintf(a, b, fmt, ...) eeVarPrintf0((char*)a, b, (char const*)fmt, ##__VA_ARGS__)
 
 
-// Not generated automatically so that we can add an extra attribute.
+//Not generated automatically so that we can add an extra attribute.
 void ch_log(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 void lo(const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(1, 2);
 void ch_error(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
@@ -4934,19 +4934,19 @@ void ch_error(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 
 //{{{:::globals: global variables and messages
 
-// Number of Rows and Columns in the screen.
-// Must be long to be able to use them as options in option.c.
-// Note: Use screenLinesRowsG and screenLinesColsG to access items in ScreenLines[].
-// They may have different values when the screen wasn't (re)allocated yet
-// after setting Rows or Columns (e.g., when starting up).
-EXTERN long visibleRowsG         // nr of rows in the screen
+//Number of Rows and Columns in the screen.
+//Must be long to be able to use them as options in option.c.
+//Note: Use screenLinesRowsG and screenLinesColsG to access items in ScreenLines[].
+//They may have different values when the screen wasn't (re)allocated yet
+//after setting Rows or Columns (e.g., when starting up).
+EXTERN long visibleRowsG         //nr of rows in the screen
 #ifdef MAIN_C
           = 24L
 #endif
 ;
-EXTERN long visibleColsG INIT(= 80);   // nr of columns in the screen
+EXTERN long visibleColsG INIT(= 80);   //nr of columns in the screen
 
-EXTERN CS username INIT(= null); // cached result of mch_get_user_name()
+EXTERN CS username INIT(= null); //cached result of mch_get_user_name()
 
 EXTERN CS termCodesG[]; //current terminal output strings, defined in term.c
 //Contains currently used terminal codes (strings used to communicate with the terminal).
@@ -4955,30 +4955,30 @@ EXTERN CS termCodesG[]; //current terminal output strings, defined in term.c
 EXTERN CS termCodesG[KS_LAST + 1];
 
 //Note: before the screen is initialized and when out of memory these can be null.
-EXTERN Boole wrapSearchG INIT(= true); // search wraps on file end
+EXTERN Boole wrapSearchG INIT(= true); //search wraps on file end
 
-EXTERN int screenLinesRowsG INIT(= 0);   // actual size of ScreenLines[]
-EXTERN int screenLinesColsG INIT(= 0);   // actual size of ScreenLines[]
+EXTERN int screenLinesRowsG INIT(= 0);   //actual size of ScreenLines[]
+EXTERN int screenLinesColsG INIT(= 0);   //actual size of ScreenLines[]
 
-// Last known cursor position. Positioning the cursor is reduced by remembering the last position.
-// Mostly used by windgoto() and draw.c:screen_char().
+//Last known cursor position. Positioning the cursor is reduced by remembering the last position.
+//Mostly used by windgoto() and draw.c:screen_char().
 EXTERN int screenCursRowG INIT(= 0);
 EXTERN int screenCursColG INIT(= 0);
 
-// last lnum where CurSearch was displayed
+//last lnum where CurSearch was displayed
 EXTERN LineNr searchLastLnumG INIT(= 0);
 
-// do hilite search results?
+//do hilite search results?
 EXTERN Boole hiliteSearchG INIT(= false);
 
-// volatile because it is used in signal handler sig_winch().
+//volatile because it is used in signal handler sig_winch().
 typedef sig_atomic_t SigAtomic;
 EXTERN volatile SigAtomic doResizeG INIT(= FALSE);
 EXTERN Unt* tabIndsG INIT(= NULL);
 
 EXTERN CS projectDirG INIT(= null);   //project directory if started in project mode
 
-// Array with size Rows x Columns containing zindex of popups.
+//Array with size Rows x Columns containing zindex of popups.
 EXTERN Arr(Short) popupMaskG INIT(= NULL);
 EXTERN Arr(Short) popupMaskNextG INIT(= NULL);
 //Array with flags for transparent cells of current popup.
@@ -4993,7 +4993,7 @@ EXTERN int screenZindexG INIT(= 0);
 
 //When vgetc() is called, it sets modMaskG to the set of modifiers that are
 //held down based on the MOD_MASK_* symbols that are read first.
-EXTERN Unt modMaskG INIT(= 0);      // current key modifiers
+EXTERN Unt modMaskG INIT(= 0);      //current key modifiers
 
 //The value of "mod_mask" and the unmodified character in vgetc() after it has
 //called vgetorpeek() enough times.
@@ -5007,68 +5007,68 @@ EXTERN int vgetcOrigCharG INIT(= 0);
 //update_screen()
 EXTERN Unt commlineRowG;
 
-EXTERN Boole redrawCommlineG INIT(= false);   // commline must be redrawn
-EXTERN Boole redrawModeG INIT(= false);   // mode must be redrawn
+EXTERN Boole redrawCommlineG INIT(= false);   //commline must be redrawn
+EXTERN Boole redrawModeG INIT(= false);   //mode must be redrawn
 EXTERN Boole mustClearCommlineG INIT(= false);
-EXTERN Boole isModeDisplayedG INIT(= false);   // mode is being displayed
+EXTERN Boole isModeDisplayedG INIT(= false);   //mode is being displayed
 
-EXTERN Boole executingFromRegG INIT(= false);   // executing register
+EXTERN Boole executingFromRegG INIT(= false);   //executing register
 
-// Variables for Insert mode completion.
-EXTERN CS editSubmodeMsgG INIT(= NULL); // msg for CTRL-X submode
-EXTERN CS editSubmodePreMsgG INIT(= NULL); // prepended to edit_submode
-EXTERN CS editSubmodeExtraMsgG INIT(= NULL);// appended to edit_submode
-EXTERN Unt editSubmodeHiG;   // hilite method for extra info
+//Variables for Insert mode completion.
+EXTERN CS editSubmodeMsgG INIT(= NULL); //msg for CTRL-X submode
+EXTERN CS editSubmodePreMsgG INIT(= NULL); //prepended to edit_submode
+EXTERN CS editSubmodeExtraMsgG INIT(= NULL);//appended to edit_submode
+EXTERN Unt editSubmodeHiG;   //hilite method for extra info
 
-// Functions for putting characters into the command line while keeping ScreenLines[] updated.
+//Functions for putting characters into the command line while keeping ScreenLines[] updated.
 EXTERN int msgColG;
 EXTERN Unt msgRowG;
-EXTERN int msg_scrolled; // Number of screen lines that portals have
-                           // scrolled because of printing messages.
+EXTERN int msg_scrolled; //Number of screen lines that portals have
+                           //scrolled because of printing messages.
 EXTERN int msg_scrolled_ign INIT(= FALSE);
-            // when TRUE don't set need_wait_return in msgPutsDeco() when msg_scrolled is non-zero
+            //when TRUE don't set need_wait_return in msgPutsDeco() when msg_scrolled is non-zero
 
-EXTERN Arr(Byte) msgAfterRedrawG INIT(= NULL); // msg to be shown after redraw
-EXTERN int decoAfterRedrawG INIT(= 0);  // hilite deco for msgAfterRedrawG
-EXTERN int keep_msg_more INIT(= FALSE); // msgAfterRedrawG was set by msgmore()
-EXTERN Boole needFileinfoG INIT(= false); // do fileinfo() after redraw
-EXTERN int msg_scroll INIT(= FALSE);    // msg_start() will scroll
-EXTERN int msg_didout INIT(= FALSE);    // msg_outstr() was used in line
-EXTERN int msg_didany INIT(= FALSE);    // msg_outstr() was used at all
-EXTERN int msg_nowait INIT(= FALSE);    // don't wait for this msg
-EXTERN int emsg_off INIT(= 0);          // don't display errors for now, unless 'debug' is set
-EXTERN int info_message INIT(= FALSE);  // printing informative message
-EXTERN int msg_hist_off INIT(= FALSE);  // don't add messages to history
-EXTERN int need_clr_eos INIT(= FALSE);  // need to clear text before displaying a message.
-EXTERN int emsg_skip INIT(= 0);         // don't display errors for expression that is skipped
-EXTERN int emsg_severe INIT(= FALSE);   // use message of next of several emsg() calls for throw
-                                        // used by assert_fails()
+EXTERN Arr(Byte) msgAfterRedrawG INIT(= NULL); //msg to be shown after redraw
+EXTERN int decoAfterRedrawG INIT(= 0);  //hilite deco for msgAfterRedrawG
+EXTERN int keep_msg_more INIT(= FALSE); //msgAfterRedrawG was set by msgmore()
+EXTERN Boole needFileinfoG INIT(= false); //do fileinfo() after redraw
+EXTERN int msg_scroll INIT(= FALSE);    //msg_start() will scroll
+EXTERN int msg_didout INIT(= FALSE);    //msg_outstr() was used in line
+EXTERN int msg_didany INIT(= FALSE);    //msg_outstr() was used at all
+EXTERN int msg_nowait INIT(= FALSE);    //don't wait for this msg
+EXTERN int emsg_off INIT(= 0);          //don't display errors for now, unless 'debug' is set
+EXTERN int info_message INIT(= FALSE);  //printing informative message
+EXTERN int msg_hist_off INIT(= FALSE);  //don't add messages to history
+EXTERN int need_clr_eos INIT(= FALSE);  //need to clear text before displaying a message.
+EXTERN int emsg_skip INIT(= 0);         //don't display errors for expression that is skipped
+EXTERN int emsg_severe INIT(= FALSE);   //use message of next of several emsg() calls for throw
+                                        //used by assert_fails()
 EXTERN CS emsg_assert_fails_msg INIT(= NULL);
 EXTERN long emsg_assert_fails_lnum INIT(= 0);
 EXTERN CS emsg_assert_fails_context INIT(= NULL);
 
-EXTERN int anyEmsgG; // incremented by emsg() when a message is displayed or thrown
-EXTERN int uncaught_emsg; // number of times emsg() was called and did show a message
-EXTERN int called_emsg;          // always incremented by emsg()
-EXTERN int inEchoPortalG;          // executing ":echowindow"
-EXTERN int ex_exitval INIT(= 0);       // exit value for ex mode
-EXTERN int emsg_on_display INIT(= FALSE);   // there is an error message
-EXTERN Boole anyRegexEmsgG INIT(= false);  // did eeRegexec() call emsg()?
+EXTERN int anyEmsgG; //incremented by emsg() when a message is displayed or thrown
+EXTERN int uncaught_emsg; //number of times emsg() was called and did show a message
+EXTERN int called_emsg;          //always incremented by emsg()
+EXTERN int inEchoPortalG;          //executing ":echowindow"
+EXTERN int ex_exitval INIT(= 0);       //exit value for ex mode
+EXTERN int emsg_on_display INIT(= FALSE);   //there is an error message
+EXTERN Boole anyRegexEmsgG INIT(= false);  //did eeRegexec() call emsg()?
 
-EXTERN int no_wait_return INIT(= 0);   // don't wait for return for now
-EXTERN int need_wait_return INIT(= 0); // need to wait for return later
+EXTERN int no_wait_return INIT(= 0);   //don't wait for return for now
+EXTERN int need_wait_return INIT(= 0); //need to wait for return later
 EXTERN int did_wait_return INIT(= FALSE); //wait_return() was used and nothing written since then
 
-EXTERN Boole quitMoreG INIT(= false);    // 'q' hit at "--more--" msg
-EXTERN Boole newlineOnExitG INIT(= false);   // did msg in altern. screen
-EXTERN Unt extraInterruptCharG INIT(= 0);       // extra interrupt character
+EXTERN Boole quitMoreG INIT(= false);    //'q' hit at "--more--" msg
+EXTERN Boole newlineOnExitG INIT(= false);   //did msg in altern. screen
+EXTERN Unt extraInterruptCharG INIT(= 0);       //extra interrupt character
 
-EXTERN int vgetcBusyG INIT(= 0);         // when inside vgetc() then > 0
+EXTERN int vgetcBusyG INIT(= 0);         //when inside vgetc() then > 0
 
 //Lines left before a "more" message.  Ex mode needs to be able to reset this
 //after you type something.
-EXTERN int   lines_left INIT(= -1);       // lines left for listing
-EXTERN int   msg_no_more INIT(= FALSE);  // don't use more prompt, truncate messages
+EXTERN int   lines_left INIT(= -1);       //lines left for listing
+EXTERN int   msg_no_more INIT(= FALSE);  //don't use more prompt, truncate messages
 
 EXTERN Boole frozenOptionsG INIT(= false);
 
@@ -5083,10 +5083,10 @@ EXTERN ArrayList   exestack INIT5(0, 0, sizeof(Estack), 50, NULL);
 //Script context being sourced or was sourced to define the current function.
 EXTERN ScriptPos scriptPosG INIT3(0, 0, 0);
 
-EXTERN int   debug_break_level INIT(= -1);   // break below this level
-EXTERN int   debug_did_msg INIT(= FALSE);   // did "debug mode" message
-EXTERN int   debug_tick INIT(= 0);      // breakpoint change count
-EXTERN int   debug_backtrace_level INIT(= 0); // breakpoint backtrace level
+EXTERN int   debug_break_level INIT(= -1);   //break below this level
+EXTERN int   debug_did_msg INIT(= FALSE);   //did "debug mode" message
+EXTERN int   debug_tick INIT(= 0);      //breakpoint change count
+EXTERN int   debug_backtrace_level INIT(= 0); //breakpoint backtrace level
 EXTERN ArrayList script_items INIT5(0, 0, sizeof(ScriptItem *), 20, NULL);
 # define SCRIPT_ITEM(id)    (((ScriptItem **)script_items.c)[(id) - 1])
 # define SCRIPT_ID_VALID(id)    ((id) > 0 && (id) <= script_items.len)
@@ -5100,19 +5100,19 @@ EXTERN ArrayList script_items INIT5(0, 0, sizeof(ScriptItem *), 20, NULL);
 //caught or made pending.  Only valid when did_throw is TRUE.
 EXTERN Exception* current_exception;
 
-// did_throw: An exception is being thrown.  Reset when the exception is caught
-// or as long as it is pending in a finally clause.
+//did_throw: An exception is being thrown.  Reset when the exception is caught
+//or as long as it is pending in a finally clause.
 EXTERN int did_throw INIT(= FALSE);
 
-// need_rethrow: set to TRUE when a throw that cannot be handled in do_cmdline()
-// must be propagated to the cstack of the previously called do_cmdline().
+//need_rethrow: set to TRUE when a throw that cannot be handled in do_cmdline()
+//must be propagated to the cstack of the previously called do_cmdline().
 EXTERN int need_rethrow INIT(= FALSE);
 
-// check_cstack: set to TRUE when a ":finish" or ":return" that cannot be
-// handled in do_cmdline() must be propagated to the cstack of the previously called do_cmdline().
+//check_cstack: set to TRUE when a ":finish" or ":return" that cannot be
+//handled in do_cmdline() must be propagated to the cstack of the previously called do_cmdline().
 EXTERN int check_cstack INIT(= FALSE);
 
-// Number of nested try conditionals (across function calls and ":source" commands).
+//Number of nested try conditionals (across function calls and ":source" commands).
 EXTERN int trylevel INIT(= 0);
 
 //When "force_abort" is TRUE, always skip commands after an error message, even after the outermost
@@ -5152,46 +5152,46 @@ EXTERN Boole garbage_collect_at_exit INIT(= false);
 
 EXTERN Boole   did_source_packages INIT(= false);
 
-// Magic number used for EeSetItem "hi_key" value indicating a deleted item. Only the address is used
+//Magic number used for EeSetItem "hi_key" value indicating a deleted item. Only the address is used
 EXTERN Byte hash_removed;
 
-EXTERN int   scroll_region INIT(= FALSE); // term supports scroll region
+EXTERN int   scroll_region INIT(= FALSE); //term supports scroll region
 
-// Flags to indicate an additional string for hilite name completion.
-EXTERN int hiComplIncludeNoneG INIT(= 0);   // when 1 include "None"
-EXTERN int hiComplIncludeDefaultG INIT(= 0);   // when 1 include "default"
-EXTERN int hiComplIncludeLinkG INIT(= 0);   // when 2 include "link" and "clear"
+//Flags to indicate an additional string for hilite name completion.
+EXTERN int hiComplIncludeNoneG INIT(= 0);   //when 1 include "None"
+EXTERN int hiComplIncludeDefaultG INIT(= 0);   //when 1 include "default"
+EXTERN int hiComplIncludeLinkG INIT(= 0);   //when 2 include "link" and "clear"
 
-// When highlight_match is TRUE, hilite a match starting at the cursor position. 
-// Search_match_lines is the number of lines after the match (0 for a match within one line), 
-// search_match_endcol the column number of the character just after the match in the last line.
-EXTERN Boole highlight_match INIT(= false); // show search match pos
-EXTERN LineNr search_match_lines;       // lines of matched string
-EXTERN ColNr search_match_endcol;       // col nr of match end
-EXTERN LineNr search_first_line INIT(= 0);     // for :{FIRST},{last}s/pat
-EXTERN LineNr search_last_line INIT(= MAXLNUM); // for :{first},{LAST}s/pat
+//When highlight_match is TRUE, hilite a match starting at the cursor position. 
+//Search_match_lines is the number of lines after the match (0 for a match within one line), 
+//search_match_endcol the column number of the character just after the match in the last line.
+EXTERN Boole highlight_match INIT(= false); //show search match pos
+EXTERN LineNr search_match_lines;       //lines of matched string
+EXTERN ColNr search_match_endcol;       //col nr of match end
+EXTERN LineNr search_first_line INIT(= 0);     //for :{FIRST},{last}s/pat
+EXTERN LineNr search_last_line INIT(= MAXLNUM); //for :{first},{LAST}s/pat
 
-EXTERN Boole no_smartcase INIT(= false);   // don't use 'smartcase' once
+EXTERN Boole no_smartcase INIT(= false);   //don't use 'smartcase' once
 
-EXTERN Boole need_check_timestamps INIT(= false); // need to check file timestamps asap
-EXTERN Boole did_check_timestamps INIT(= false); // did check timestamps recently
-EXTERN int no_check_timestamps INIT(= 0);   // Don't check timestamps
-
-
-EXTERN Arr(Decoration) decorationsG; // The text decorations table used for drawing. See hilite.c
-EXTERN int countDecosG; // length of decorationsG
+EXTERN Boole need_check_timestamps INIT(= false); //need to check file timestamps asap
+EXTERN Boole did_check_timestamps INIT(= false); //did check timestamps recently
+EXTERN int no_check_timestamps INIT(= 0);   //Don't check timestamps
 
 
-// When TRUE skip calling terminal_loop() once.  Used when typing ':' at the more prompt
+EXTERN Arr(Decoration) decorationsG; //The text decorations table used for drawing. See hilite.c
+EXTERN int countDecosG; //length of decorationsG
+
+
+//When TRUE skip calling terminal_loop() once.  Used when typing ':' at the more prompt
 EXTERN Boole skip_term_loop INIT(= false);
 EXTERN VTermColor defaultFgColorG INIT(= 7);
 EXTERN VTermColor defaultBgColorG INIT(= 0);
 EXTERN Boole currentlyBoldG INIT(= false);
 
-EXTERN Boole autocmd_busy INIT(= false);   // Is apply_autocmds() busy?
-EXTERN Boole autocmd_no_enter INIT(= false); // Buf/WinEnter autocmds disabled
-EXTERN Boole autocmd_no_leave INIT(= false); // Buf/WinLeave autocmds disabled
-EXTERN Boole movingTabsForbiddenG INIT(= false);  // moving tabpages around disallowed
+EXTERN Boole autocmd_busy INIT(= false);   //Is apply_autocmds() busy?
+EXTERN Boole autocmd_no_enter INIT(= false); //Buf/WinEnter autocmds disabled
+EXTERN Boole autocmd_no_leave INIT(= false); //Buf/WinLeave autocmds disabled
+EXTERN Boole movingTabsForbiddenG INIT(= false);  //moving tabpages around disallowed
 
 //When deleting the current book, another one must be loaded. If we know
 //which one is preferred, auNewCurBookG is set to it
@@ -5203,22 +5203,22 @@ EXTERN BookRef auNewCurBookG INIT3(NULL, 0, 0);
 EXTERN Arr(Book) auPendingFreeBooksG INIT(= NULL);
 EXTERN Arr(Portal) auPendingFreePortalsG INIT(= NULL);
 
-// Mouse coordinates, set by check_termcode(). Can be negative if mouse is outside the window
+//Mouse coordinates, set by check_termcode(). Can be negative if mouse is outside the window
 EXTERN int mouseRowG;
 EXTERN int mouseColG;
 EXTERN int mouseDraggingG INIT(= 0);    //extending Visual area with mouse dragging
 
-// Value set from 'diffopt'.
+//Value set from 'diffopt'.
 EXTERN int diff_context INIT(= 6);      //context for folds
 EXTERN int linematch_lines INIT(= 0);   //number of lines for diff line match
 EXTERN Boole diff_need_scrollbind INIT(= false);
 
-// While redrawing the screen this flag is set.  It means the screen size
-// ('lines' and 'rows') must not be changed and prevents recursive updating.
+//While redrawing the screen this flag is set.  It means the screen size
+//('lines' and 'rows') must not be changed and prevents recursive updating.
 EXTERN Boole updating_screen INIT(= false);
 
-// While computing a statusline and the like we do not want any w_redr_type or
-// must_redraw to be set.
+//While computing a statusline and the like we do not want any w_redr_type or
+//must_redraw to be set.
 EXTERN Boole redraw_not_allowed INIT(= false);
 
 //While closing portals or books, messages should not be handled to avoid
@@ -5229,16 +5229,16 @@ EXTERN Boole dont_parse_messages INIT(= false);
 //All regular portals are linked in a list. "firstpor" points to the first entry, "lastpor" to the 
 //last entry (can be the same as firstwin) and "curpor" to the currently active portal.
 //When switching tabs these swapped with the pointers in "Tab".
-EXTERN Portal* firstPor;      // first portal
-EXTERN Portal* lastPor;      // last portal
-EXTERN Portal* prevPor INIT(= NULL);   // previous portal (may equal curPor)
+EXTERN Portal* firstPor;      //first portal
+EXTERN Portal* lastPor;      //last portal
+EXTERN Portal* prevPor INIT(= NULL);   //previous portal (may equal curPor)
 #define ONLY_ONE_PORTAL (firstPor == lastPor)
 
-EXTERN Portal* curPor;   // currently active portal
+EXTERN Portal* curPor;   //currently active portal
 
-// When executing autocommands for a book without any portals, a special portal is created to 
-// handle the side effects.  When autocommands nest we may need more than one.  Allow for up to 
-// five, if more are needed something crazy is happening.
+//When executing autocommands for a book without any portals, a special portal is created to 
+//handle the side effects.  When autocommands nest we may need more than one.  Allow for up to 
+//five, if more are needed something crazy is happening.
 #define AUCMD_PORTAL_COUNT 5
 
 typedef struct {
@@ -5248,29 +5248,29 @@ typedef struct {
 
 EXTERN AutoCommPort autoCommPortG[AUCMD_PORTAL_COUNT];
 
-EXTERN Portal* firstPopupPortG;      // first global popup portal
-EXTERN Portal* popupDragPortG INIT(= NULL);   // popup window being dragged
+EXTERN Portal* firstPopupPortG;      //first global popup portal
+EXTERN Portal* popupDragPortG INIT(= NULL);   //popup window being dragged
 
-// Set to TRUE if there is any visible popup portal.
+//Set to TRUE if there is any visible popup portal.
 EXTERN Boole popup_visible INIT(= false);
 
-// Set to TRUE if a visible popup window may use a MOUSE_MOVE event
+//Set to TRUE if a visible popup window may use a MOUSE_MOVE event
 EXTERN Boole popup_uses_mouse_move INIT(= false);
 
 EXTERN int textPropFrozenG INIT(= 0);
 
-// when TRUE computing the cursor position ignores text properties.
+//when TRUE computing the cursor position ignores text properties.
 EXTERN Boole ignore_text_props INIT(= false);
 
-// When set the popup menu will redraw soon using the pum_win_ values. Do not
-// draw over the poup menu area to avoid flicker.
+//When set the popup menu will redraw soon using the pum_win_ values. Do not
+//draw over the poup menu area to avoid flicker.
 EXTERN Boole pum_will_redraw INIT(= false);
 
-// The portal layout is kept in a tree of frames. topframe points to the root of the tree.
-EXTERN Frame   *topframeG;   // root of the portal frame tree
+//The portal layout is kept in a tree of frames. topframe points to the root of the tree.
+EXTERN Frame   *topframeG;   //root of the portal frame tree
 
-// Tabs are alternative topframes.  "firstTabG" points to the first
-// one in the list, "curtab" is the current one. "lastUsedTabG" is the last used one.
+//Tabs are alternative topframes.  "firstTabG" points to the first
+//one in the list, "curtab" is the current one. "lastUsedTabG" is the last used one.
 EXTERN Tab* firstTabG;
 EXTERN Tab* curtab;
 EXTERN Tab* lastUsedTabG;
@@ -5278,81 +5278,81 @@ EXTERN Boole needRedrawTabpanelG INIT(= false);
 
 //All boks are linked in a list. 'firstBook' points to the first entry,
 //'lastBook' to the last entry and 'curBook' to the currently active book.
-EXTERN Book* firstBook INIT(= NULL);   // first book in the global linked list
-EXTERN Book* lastBook INIT(= NULL);   // last book
-EXTERN Book* curBook INIT(= NULL);   // currently active book
+EXTERN Book* firstBook INIT(= NULL);   //first book in the global linked list
+EXTERN Book* lastBook INIT(= NULL);   //last book
+EXTERN Book* curBook INIT(= NULL);   //currently active book
 
-// List of files being edited (global argument list).  curPor->argList points
-// to this when the window is using the global argument list.
-EXTERN EeArgList argListG;          // global argument list
-EXTERN int max_alist_id INIT(= 0);       // the previous argument list id
-EXTERN int arg_had_last INIT(= FALSE); // accessed last file in argListG
+//List of files being edited (global argument list).  curPor->argList points
+//to this when the window is using the global argument list.
+EXTERN EeArgList argListG;          //global argument list
+EXTERN int max_alist_id INIT(= 0);       //the previous argument list id
+EXTERN int arg_had_last INIT(= FALSE); //accessed last file in argListG
 
-EXTERN int rulerWidthG;      // @rulerformat: width of ruler when non-zero
-EXTERN int shownCommandColG; // column for shown command
+EXTERN int rulerWidthG;      //@rulerformat: width of ruler when non-zero
+EXTERN int shownCommandColG; //column for shown command
 
-EXTERN DIR* eeTempDir_dpG INIT(= NULL); // File descriptor of temp dir
-EXTERN CS eeTempDirG INIT(= NULL); // Name of Eegl's own temp dir. Ends with a slash.
+EXTERN DIR* eeTempDir_dpG INIT(= NULL); //File descriptor of temp dir
+EXTERN CS eeTempDirG INIT(= NULL); //Name of Eegl's own temp dir. Ends with a slash.
 
-// When starting or exiting some things are done differently (e.g. screen updating).
+//When starting or exiting some things are done differently (e.g. screen updating).
 EXTERN int   starting INIT(= NO_SCREEN);
-            // first NO_SCREEN, then NO_BUFFERS and then set to 0 when starting up finished
+            //first NO_SCREEN, then NO_BUFFERS and then set to 0 when starting up finished
 EXTERN Boole isExitingG INIT(= false); //TRUE when planning to exit Eegl. Might
                                        //still keep on running if there is a changed book.
 EXTERN Boole really_exiting INIT(= false);
-            // TRUE when we are sure to exit, e.g., after a deadly signal
-EXTERN int   v_dying INIT(= 0); // internal value of v:dying
-EXTERN Boole stdout_isatty INIT(= true);   // is stdout a terminal?
+            //TRUE when we are sure to exit, e.g., after a deadly signal
+EXTERN int   v_dying INIT(= 0); //internal value of v:dying
+EXTERN Boole stdout_isatty INIT(= true);   //is stdout a terminal?
 
 #if defined(EXITFREE)
-EXTERN Boole   entered_free_all_mem INIT(= false); // TRUE when in or after free_all_mem()
+EXTERN Boole   entered_free_all_mem INIT(= false); //TRUE when in or after free_all_mem()
 #endif
-// volatile because it is used in signal handler deathtrap().
+//volatile because it is used in signal handler deathtrap().
 EXTERN volatile sig_atomic_t fullScreenG INIT(= FALSE);
-            // TRUE when doing full-screen output otherwise only writing some messages
+            //TRUE when doing full-screen output otherwise only writing some messages
 
 EXTERN int textlock INIT(= 0);
-            // non-zero when changing text and jumping to
-            // another window or editing another book is not allowed
+            //non-zero when changing text and jumping to
+            //another window or editing another book is not allowed
 
 EXTERN int curBookLock INIT(= 0);
-            // non-zero when the current book can't be changed.  Used for FileChangedRO.
+            //non-zero when the current book can't be changed.  Used for FileChangedRO.
 EXTERN int allBookLock INIT(= 0);
-            // non-zero when no book name can be changed, no book can be deleted and current 
-            // directory can't be changed. Used for SwapExists et al.
+            //non-zero when no book name can be changed, no book can be deleted and current 
+            //directory can't be changed. Used for SwapExists et al.
 
-EXTERN Boole silentModeG INIT(= false); // set to TRUE when "-s" commandline argument used for ex
+EXTERN Boole silentModeG INIT(= false); //set to TRUE when "-s" commandline argument used for ex
 
-EXTERN Pos VIsual;      // start position of active Visual selection
+EXTERN Pos VIsual;      //start position of active Visual selection
 EXTERN Boole VIsual_active INIT(= false);
-            // whether Visual mode is active
+            //whether Visual mode is active
 EXTERN Boole VIsual_select_exclu_adj INIT(= false);
-            // whether incremented cursor during exclusive selection
+            //whether incremented cursor during exclusive selection
 EXTERN int VIsual_reselect;
-            // whether to restart the selection after a
-            // Select mode mapping or menu
+            //whether to restart the selection after a
+            //Select mode mapping or menu
 
-EXTERN Unt VIsual_mode INIT(= 'v'); // type of Visual mode
+EXTERN Unt VIsual_mode INIT(= 'v'); //type of Visual mode
 
-EXTERN Boole isRedoVisualBusy INIT(= false); // TRUE when redoing Visual
+EXTERN Boole isRedoVisualBusy INIT(= false); //TRUE when redoing Visual
 
-// The Visual area is remembered for reselection.
-EXTERN int   resel_VIsual_mode INIT(= ZERO);   // 'v', 'V', or Ctrl-V
-EXTERN LineNr   resel_VIsual_line_count;   // number of lines
-EXTERN ColNr   resel_VIsual_vcol;      // nr of cols or end col
+//The Visual area is remembered for reselection.
+EXTERN int   resel_VIsual_mode INIT(= ZERO);   //'v', 'V', or Ctrl-V
+EXTERN LineNr   resel_VIsual_line_count;   //number of lines
+EXTERN ColNr   resel_VIsual_vcol;      //nr of cols or end col
 
-// When pasting text with the middle mouse button in visual mode with
-// restart_edit set, remember where it started so we can set Insstart.
+//When pasting text with the middle mouse button in visual mode with
+//restart_edit set, remember where it started so we can set Insstart.
 EXTERN Pos   where_paste_started;
 
-// This flag is used to make auto-indent work right on lines where only a
-// <RETURN> or <ESC> is typed. It is set when an auto-indent is done, and
-// reset when any other editing is done on the line. If an <ESC> or <RETURN>
-// is received, and didAindentG is TRUE, the line is truncated.
+//This flag is used to make auto-indent work right on lines where only a
+//<RETURN> or <ESC> is typed. It is set when an auto-indent is done, and
+//reset when any other editing is done on the line. If an <ESC> or <RETURN>
+//is received, and didAindentG is TRUE, the line is truncated.
 EXTERN Boole didAindentG INIT(= false);
 
-// Column of first char after autoindent.  0 when no autoindent done.  Used
-// when 'backspace' is 0, to avoid backspacing over autoindent.
+//Column of first char after autoindent.  0 when no autoindent done.  Used
+//when 'backspace' is 0, to avoid backspacing over autoindent.
 EXTERN ColNr ai_col INIT(= 0);
 
 //This is a character which will end a start-middle-end comment when typed as
@@ -5361,51 +5361,51 @@ EXTERN ColNr ai_col INIT(= 0);
 //comment end in 'comments'. It is only valid when didAindentG is TRUE.
 EXTERN Unt end_comment_pending INIT(= ZERO);
 
-// This flag is set after a ":syncbind" to let the check_scrollbind() function
-// know that it should not attempt to perform scrollbinding due to the scroll
-// that was a result of the ":syncbind." (Otherwise, check_scrollbind() will
-// undo some of the work done by ":syncbind.")  -ralston
+//This flag is set after a ":syncbind" to let the check_scrollbind() function
+//know that it should not attempt to perform scrollbinding due to the scroll
+//that was a result of the ":syncbind." (Otherwise, check_scrollbind() will
+//undo some of the work done by ":syncbind.")  -ralston
 EXTERN Boole did_syncbind INIT(= false);
 
 //This flag is set when a smart indent has been performed. When the next typed
 //character is a '{', the inserted tab will be deleted again.
 EXTERN Boole didSindentG INIT(= false);
 
-// This flag is set after an auto indent. If the next typed character is a '}',
-// one indent will be removed.
+//This flag is set after an auto indent. If the next typed character is a '}',
+//one indent will be removed.
 EXTERN Boole can_si INIT(= false);
 
-// This flag is set after an "O" command. If the next typed character is a '{',
-// one indent will be removed.
+//This flag is set after an "O" command. If the next typed character is a '{',
+//one indent will be removed.
 EXTERN Boole can_si_back INIT(= false);
 
-EXTERN int   old_indent INIT(= 0);   // for ^^D command in insert mode
+EXTERN int   old_indent INIT(= 0);   //for ^^D command in insert mode
 
-EXTERN Pos   saved_cursor      // w_cursor before formatting text.
+EXTERN Pos   saved_cursor      //w_cursor before formatting text.
 #ifdef MAIN_C
           = {0, 0, 0}
 #endif
           ;
 
-// Stuff for insert mode.
-EXTERN Pos   insertStartG;      // This is where the latest insert/append mode started.
+//Stuff for insert mode.
+EXTERN Pos   insertStartG;      //This is where the latest insert/append mode started.
 
-// This is where the latest insert/append mode started. In contrast to
-// Insstart, this won't be reset by certain keys and is needed for
-// op_insert(), to detect correctly where inserting by the user started.
+//This is where the latest insert/append mode started. In contrast to
+//Insstart, this won't be reset by certain keys and is needed for
+//op_insert(), to detect correctly where inserting by the user started.
 EXTERN Pos   insertStartOrigG;
 
-// These flags are set based upon 'fileencoding'.
-// The characters are internally stored as UTF-8 (to avoid trouble with ZERO)
-#define DBCS_JPN    932   // japan
-#define DBCS_JPNU  9932   // euc-jp
-#define DBCS_KOR    949   // korea
-#define DBCS_KORU  9949   // euc-kr
-#define DBCS_CHS    936   // chinese
-#define DBCS_CHSU  9936   // euc-cn
-#define DBCS_CHT    950   // taiwan
-#define DBCS_CHTU  9950   // euc-tw
-#define DBCS_2BYTE    1   // 2byte-
+//These flags are set based upon 'fileencoding'.
+//The characters are internally stored as UTF-8 (to avoid trouble with ZERO)
+#define DBCS_JPN    932   //japan
+#define DBCS_JPNU  9932   //euc-jp
+#define DBCS_KOR    949   //korea
+#define DBCS_KORU  9949   //euc-kr
+#define DBCS_CHS    936   //chinese
+#define DBCS_CHSU  9936   //euc-cn
+#define DBCS_CHT    950   //taiwan
+#define DBCS_CHTU  9950   //euc-tw
+#define DBCS_2BYTE    1   //2byte-
 #define DBCS_DEBUG (-1)
 
 //To speed up BYTELEN() we fill a table with the byte lengths
@@ -5415,7 +5415,7 @@ EXTERN Byte utf8CharLens[256];
 //There are other variables that modify the state:
 //"Visual_mode"   When State is MODE_NORMAL or MODE_INSERT.
 //"finish_op"     When State is MODE_NORMAL, after typing the operator and
-//                before typing the motion command.
+//               before typing the motion command.
 //"motion_force"  Last motion_force  from visualOperator()
 //"debug_mode"    Debug mode.
 EXTERN Unt stateG INIT(= MODE_NORMAL);
@@ -5423,23 +5423,23 @@ EXTERN Unt stateG INIT(= MODE_NORMAL);
 EXTERN Boole debug_mode INIT(= false);
 
 EXTERN Operator* currOperatorG INIT(= NULL);
-EXTERN Boole finish_op INIT(= false);// TRUE while an operator is pending
-EXTERN long opcount INIT(= 0);   // count for pending operator
-EXTERN int motion_force INIT(= 0); // motion force for pending operator
+EXTERN Boole finish_op INIT(= false);//TRUE while an operator is pending
+EXTERN long opcount INIT(= 0);   //count for pending operator
+EXTERN int motion_force INIT(= 0); //motion force for pending operator
 
 
-EXTERN int ex_no_reprint INIT(= FALSE); // no need to print after z or p
+EXTERN int ex_no_reprint INIT(= FALSE); //no need to print after z or p
 
-EXTERN int reg_recording INIT(= 0);   // register for recording  or zero
-EXTERN int reg_executing INIT(= 0);   // register being executed or zero
-// Flag set when peeking a character and found the end of executed register
+EXTERN int reg_recording INIT(= 0);   //register for recording  or zero
+EXTERN int reg_executing INIT(= 0);   //register being executed or zero
+//Flag set when peeking a character and found the end of executed register
 EXTERN int pending_end_reg_executing INIT(= FALSE);
 
-// Set when a modifyOtherKeys sequence was seen, then simplified mappings will
-// no longer be used.  To be combined with modify_otherkeys_state.
+//Set when a modifyOtherKeys sequence was seen, then simplified mappings will
+//no longer be used.  To be combined with modify_otherkeys_state.
 EXTERN int seenModifyOtherKeys INIT(= FALSE);
 
-// The state for the modifyOtherKeys level
+//The state for the modifyOtherKeys level
 typedef enum {
    //Initially we have no clue if the protocol is on or off.
    MOKS_INITIAL,
@@ -5455,240 +5455,240 @@ typedef enum {
    MOKS_AFTER_T_TE,
 } MokState;
 
-// Set when a response to XTQMODKEYS was received. Only works for xterm
-// version 377 and later.
+//Set when a response to XTQMODKEYS was received. Only works for xterm
+//version 377 and later.
 EXTERN MokState modify_otherkeys_state INIT(= MOKS_INITIAL);
 
-EXTERN Boole no_mapping INIT(= false);   // currently no mapping allowed
-EXTERN int isZeroJustANumberG INIT(= 0); // if "0" is interpreted as a number, not the action
-EXTERN Boole allow_keys INIT(= false);   // allow key codes when no_mapping is set
-EXTERN Boole no_reduce_keys INIT(= false);  // do not apply Ctrl, Shift and Alt to the key
-EXTERN int no_u_sync INIT(= 0);      // Don't call u_sync()
-EXTERN int u_sync_once INIT(= 0);   // Call u_sync() once when evaluating an expression
+EXTERN Boole no_mapping INIT(= false);   //currently no mapping allowed
+EXTERN int isZeroJustANumberG INIT(= 0); //if "0" is interpreted as a number, not the action
+EXTERN Boole allow_keys INIT(= false);   //allow key codes when no_mapping is set
+EXTERN Boole no_reduce_keys INIT(= false);  //do not apply Ctrl, Shift and Alt to the key
+EXTERN int no_u_sync INIT(= 0);      //Don't call u_sync()
+EXTERN int u_sync_once INIT(= 0);   //Call u_sync() once when evaluating an expression
 
-EXTERN int restart_edit INIT(= 0);   // call edit when next cmd finished
-EXTERN int arrow_used; // Normally FALSE, set to TRUE after hitting cursor key in insert mode.
-               // Used by vgetorpeek() to decide when to call u_sync()
-EXTERN Boole ins_at_eol INIT(= false); // put cursor after eol when restarting edit after CTRL-O
+EXTERN int restart_edit INIT(= 0);   //call edit when next cmd finished
+EXTERN int arrow_used; //Normally FALSE, set to TRUE after hitting cursor key in insert mode.
+               //Used by vgetorpeek() to decide when to call u_sync()
+EXTERN Boole ins_at_eol INIT(= false); //put cursor after eol when restarting edit after CTRL-O
 
-EXTERN Boole no_abbr INIT(= true);   // TRUE when no abbreviations loaded
+EXTERN Boole no_abbr INIT(= true);   //TRUE when no abbreviations loaded
 
 #ifdef USE_EXE_NAME
-EXTERN CS exe_name;      // the name of the executable
+EXTERN CS exe_name;      //the name of the executable
 #endif
 
-EXTERN int   mapped_ctrl_c INIT(= FALSE); // modes where CTRL-C is mapped
-EXTERN int   ctrl_c_interrupts INIT(= TRUE);   // CTRL-C sets gotInterruptG
+EXTERN int   mapped_ctrl_c INIT(= FALSE); //modes where CTRL-C is mapped
+EXTERN int   ctrl_c_interrupts INIT(= TRUE);   //CTRL-C sets gotInterruptG
 
-EXTERN CommandModifier   commModifierG;         // Command modifiers
-EXTERN int   stickyCommandModifiersG INIT(= 0); // used by :execute
+EXTERN CommandModifier   commModifierG;         //Command modifiers
+EXTERN int   stickyCommandModifiersG INIT(= 0); //used by :execute
 
-EXTERN int   msg_silent INIT(= 0);   // don't print messages
-EXTERN int   emsg_silent INIT(= 0);   // don't print error messages
-EXTERN int   emsg_silent_def INIT(= 0);  // value of emsg_silent when a :def
-                   // function is called
-EXTERN int   emsg_noredir INIT(= 0);   // don't redirect error messages
-EXTERN Boole   cmd_silent INIT(= false); // don't echo the command line
+EXTERN int   msg_silent INIT(= 0);   //don't print messages
+EXTERN int   emsg_silent INIT(= 0);   //don't print error messages
+EXTERN int   emsg_silent_def INIT(= 0);  //value of emsg_silent when a :def
+                   //function is called
+EXTERN int   emsg_noredir INIT(= 0);   //don't redirect error messages
+EXTERN Boole   cmd_silent INIT(= false); //don't echo the command line
 
-EXTERN Boole   in_assert_fails INIT(= false);   // assert_fails() active
+EXTERN Boole   in_assert_fails INIT(= false);   //assert_fails() active
 
 EXTERN Boole  swapEnabledG INIT(= true); //Swap files enabled
 EXTERN Text swapDirG; //Directory for swap files
-EXTERN int   swap_exists_action INIT(= SEA_NONE); // For dialog when swap file already exists.
-EXTERN Boole   swap_exists_did_quit INIT(= false); // Selected "quit" at the dialog.
+EXTERN int   swap_exists_action INIT(= SEA_NONE); //For dialog when swap file already exists.
+EXTERN Boole   swap_exists_did_quit INIT(= false); //Selected "quit" at the dialog.
 
-EXTERN CS IObuff;      // sprintf's are done in this buffer, size is IOSIZE
-EXTERN CS nameBuffG;      // file names are expanded in this array, size is MAXPATHL
-EXTERN Byte msg_buf[MSG_BUF_LEN];   // small buffer for messages
+EXTERN CS IObuff;      //sprintf's are done in this buffer, size is IOSIZE
+EXTERN CS nameBuffG;      //file names are expanded in this array, size is MAXPATHL
+EXTERN Byte msg_buf[MSG_BUF_LEN];   //small buffer for messages
 
 
-// When non-zero, postpone redrawing.
+//When non-zero, postpone redrawing.
 EXTERN int   isRedrawingDisabledG INIT(= 0);
 
-EXTERN Boole recoveryModeG INIT(= false); // Set to TRUE for "-r" option
+EXTERN Boole recoveryModeG INIT(= false); //Set to TRUE for "-r" option
 
-// Typeahead buffer. Used for getting input from the keyboard
+//Typeahead buffer. Used for getting input from the keyboard
 EXTERN Typeahead typeBufG
 
 #ifdef MAIN_C
           = {NULL, NULL, 0, 0, 0, 0, 0, 0, 0}
 #endif
           ;
-// Flag used to indicate that vgetorpeek() returned a char like Esc when the
-// :normal argument was exhausted.
+//Flag used to indicate that vgetorpeek() returned a char like Esc when the
+//:normal argument was exhausted.
 EXTERN int   typebuf_was_empty INIT(= FALSE);
 
-EXTERN int   ex_normal_busy INIT(= 0);   // recursiveness of ex_normal()
-EXTERN int   in_feedkeys INIT(= 0);       // ex_normal_busy set in feedkeys()
-EXTERN int   ex_normal_lock INIT(= 0);   // forbid use of ex_normal()
+EXTERN int   ex_normal_busy INIT(= 0);   //recursiveness of ex_normal()
+EXTERN int   in_feedkeys INIT(= 0);       //ex_normal_busy set in feedkeys()
+EXTERN int   ex_normal_lock INIT(= 0);   //forbid use of ex_normal()
 
-EXTERN int   ignore_script INIT(= FALSE);  // ignore script input
-EXTERN int   stop_insert_mode;   // for ":stopinsert" and 'insertmode'
+EXTERN int   ignore_script INIT(= FALSE);  //ignore script input
+EXTERN int   stop_insert_mode;   //for ":stopinsert" and 'insertmode'
 
-EXTERN Boole keyWasTypedG;      // TRUE if user typed current char
-EXTERN Boole keyWasStuffedG;      // TRUE if current char from stuffbuf
-EXTERN int maptick INIT(= 0);   // tick for each non-mapped char
+EXTERN Boole keyWasTypedG;      //TRUE if user typed current char
+EXTERN Boole keyWasStuffedG;      //TRUE if current char from stuffbuf
+EXTERN int maptick INIT(= 0);   //tick for each non-mapped char
 
-EXTERN Unt   mustRedrawG INIT(= 0);       // type of redraw necessary (UPD_* constants)
-EXTERN Boole skip_redraw INIT(= FALSE);  // skip redraw once
-EXTERN Boole do_redraw INIT(= FALSE);    // extra redraw once
-EXTERN Boole diffNeedsRedrawG INIT(= false); // need to call diff_redraw()
-// flag set when 'redrawtime' timeout has been set
+EXTERN Unt   mustRedrawG INIT(= 0);       //type of redraw necessary (UPD_* constants)
+EXTERN Boole skip_redraw INIT(= FALSE);  //skip redraw once
+EXTERN Boole do_redraw INIT(= FALSE);    //extra redraw once
+EXTERN Boole diffNeedsRedrawG INIT(= false); //need to call diff_redraw()
+//flag set when 'redrawtime' timeout has been set
 EXTERN Boole redrawtime_limit_set INIT(= FALSE);
 
 EXTERN Boole need_highlight_changed INIT(= TRUE);
 
 #define NSCRIPT 15
-EXTERN FILE* scriptin[NSCRIPT];       // streams to read script from
-EXTERN int curscript INIT(= 0);       // index in scriptin[]
-EXTERN FILE* scriptout  INIT(= NULL);   // stream to write script to
-EXTERN int  read_cmd_fd INIT(= 0);       // fd to read commands from
+EXTERN FILE* scriptin[NSCRIPT];       //streams to read script from
+EXTERN int curscript INIT(= 0);       //index in scriptin[]
+EXTERN FILE* scriptout  INIT(= NULL);   //stream to write script to
+EXTERN int  read_cmd_fd INIT(= 0);       //fd to read commands from
 
-// Set to TRUE when an interrupt signal occurred.
-// Volatile because it is used in signal handler catch_sigint().
+//Set to TRUE when an interrupt signal occurred.
+//Volatile because it is used in signal handler catch_sigint().
 EXTERN volatile sig_atomic_t gotInterruptG INIT(= FALSE);
 
-// Set to TRUE when SIGUSR1 signal was detected.
-// Volatile because it is used in signal handler catch_sigint().
+//Set to TRUE when SIGUSR1 signal was detected.
+//Volatile because it is used in signal handler catch_sigint().
 EXTERN volatile sig_atomic_t got_sigusr1 INIT(= FALSE);
 
 #ifdef USE_TERM_CONSOLE
-EXTERN int   term_console INIT(= FALSE); // set to TRUE when console used
+EXTERN int   term_console INIT(= FALSE); //set to TRUE when console used
 #endif
 
-EXTERN int   termcap_active INIT(= FALSE);   // set by starttermcap()
+EXTERN int   termcap_active INIT(= FALSE);   //set by starttermcap()
 
-EXTERN TermInputMode   cur_tmode INIT(= TMODE_COOK);   // input terminal mode
-// Current terminal mode from mch_termSetMode(). Can differ from cur_tmode.
+EXTERN TermInputMode   cur_tmode INIT(= TMODE_COOK);   //input terminal mode
+//Current terminal mode from mch_termSetMode(). Can differ from cur_tmode.
 EXTERN TermInputMode mch_cur_tmode INIT(= TMODE_COOK);
 
 
-EXTERN int   bangredo INIT(= FALSE);       // set to TRUE with ! command
-EXTERN int   searchcmdlen;          // length of previous search cmd
-EXTERN int   reg_do_extmatch INIT(= 0);  // Used when compiling regexp:
-                   // REX_SET to allow \z\(...\),
-                   // REX_USE to allow \z\1 et al.
-EXTERN RegExternalMatch* re_extmatch_in INIT(= NULL); // Used by eeRegexec():
-                   // strings for \z\1...\z\9
-EXTERN RegExternalMatch* re_extmatch_out INIT(= NULL); // Set by eeRegexec()
-                   // to store \z\(...\) matches
+EXTERN int   bangredo INIT(= FALSE);       //set to TRUE with ! command
+EXTERN int   searchcmdlen;          //length of previous search cmd
+EXTERN int   reg_do_extmatch INIT(= 0);  //Used when compiling regexp:
+                   //REX_SET to allow \z\(...\),
+                   //REX_USE to allow \z\1 et al.
+EXTERN RegExternalMatch* re_extmatch_in INIT(= NULL); //Used by eeRegexec():
+                   //strings for \z\1...\z\9
+EXTERN RegExternalMatch* re_extmatch_out INIT(= NULL); //Set by eeRegexec()
+                   //to store \z\(...\) matches
 
-EXTERN int   did_outofmem_msg INIT(= FALSE); // set after out of memory msg
-EXTERN int   did_swapwrite_msg INIT(= FALSE); // set after swap write error msg
-EXTERN int   undo_off INIT(= FALSE);       // undo switched off for now
-EXTERN int   global_busy INIT(= 0);       // set when :global is executing
-EXTERN int   listcmd_busy INIT(= FALSE); // set when :argdo, :windo or :bufdo is executing
-EXTERN Byte   last_mode[MODE_MAX_LENGTH] INIT(= "n"); // for ModeChanged event
-EXTERN CS lastCommlineG INIT(= S""); // last command line (for ":")
-EXTERN CS repeatCommlineG INIT(= S""); // command line for "."
-EXTERN CS newLastCommlineG INIT(= S"");   // new value for lastCommlineG
-EXTERN CS autocmd_fname INIT(= S""); // fname for <afile> on commline
-EXTERN int   autocmd_fname_full;        // autocmd_fname is full path
-EXTERN int   autocmd_bufnr INIT(= 0);     // fnum for <abuf> on commline
-EXTERN CS autocmd_match INIT(= S""); // name for <amatch> on commline
+EXTERN int   did_outofmem_msg INIT(= FALSE); //set after out of memory msg
+EXTERN int   did_swapwrite_msg INIT(= FALSE); //set after swap write error msg
+EXTERN int   undo_off INIT(= FALSE);       //undo switched off for now
+EXTERN int   global_busy INIT(= 0);       //set when :global is executing
+EXTERN int   listcmd_busy INIT(= FALSE); //set when :argdo, :windo or :bufdo is executing
+EXTERN Byte   last_mode[MODE_MAX_LENGTH] INIT(= "n"); //for ModeChanged event
+EXTERN CS lastCommlineG INIT(= S""); //last command line (for ":")
+EXTERN CS repeatCommlineG INIT(= S""); //command line for "."
+EXTERN CS newLastCommlineG INIT(= S"");   //new value for lastCommlineG
+EXTERN CS autocmd_fname INIT(= S""); //fname for <afile> on commline
+EXTERN int   autocmd_fname_full;        //autocmd_fname is full path
+EXTERN int   autocmd_bufnr INIT(= 0);     //fnum for <abuf> on commline
+EXTERN CS autocmd_match INIT(= S""); //name for <amatch> on commline
 
-EXTERN int   did_cursorhold INIT(= TRUE);  // set when CursorHold triggered
-EXTERN Pos   last_cursormoved         // for CursorMoved event
+EXTERN int   did_cursorhold INIT(= TRUE);  //set when CursorHold triggered
+EXTERN Pos   last_cursormoved         //for CursorMoved event
 # ifdef MAIN_C
           = {0, 0, 0}
 # endif
           ;
 
-EXTERN int   postponed_split INIT(= 0);  // for CTRL-W CTRL-] command
-EXTERN int   postponed_split_flags INIT(= 0);  // args for win_split()
-EXTERN int   postponed_split_tab INIT(= 0);  // commModifierG.cmod_tab
-EXTERN int   g_do_tagpreview INIT(= 0);  // for tag preview commands: height of preview portal
-EXTERN int   g_tag_at_cursor INIT(= FALSE); // whether the tag command comes
-                   // from the command line (0) or was invoked as a normal command (1)
+EXTERN int   postponed_split INIT(= 0);  //for CTRL-W CTRL-] command
+EXTERN int   postponed_split_flags INIT(= 0);  //args for win_split()
+EXTERN int   postponed_split_tab INIT(= 0);  //commModifierG.cmod_tab
+EXTERN int   g_do_tagpreview INIT(= 0);  //for tag preview commands: height of preview portal
+EXTERN int   g_tag_at_cursor INIT(= FALSE); //whether the tag command comes
+                   //from the command line (0) or was invoked as a normal command (1)
 
 
-EXTERN Byte   *escape_chars INIT(= (Byte *)" \t\\\"|"); // need backslash in cmd line
+EXTERN Byte   *escape_chars INIT(= (Byte *)" \t\\\"|"); //need backslash in cmd line
                    
 EXTERN int concatenateBackslashesG INIT(= TRUE);                   
 
-EXTERN int   keep_help_flag INIT(= FALSE); // doing :ta from help file
+EXTERN int   keep_help_flag INIT(= FALSE); //doing :ta from help file
 
-EXTERN int  redir_off INIT(= FALSE);   // no redirection for a moment
-EXTERN FILE *redir_fd INIT(= NULL);   // message redirection file
-EXTERN int  redir_reg INIT(= 0);   // message redirection register
-EXTERN int  redir_vname INIT(= 0);   // message redirection variable
-EXTERN int  redir_execute INIT(= 0);   // execute() redirection
+EXTERN int  redir_off INIT(= FALSE);   //no redirection for a moment
+EXTERN FILE *redir_fd INIT(= NULL);   //message redirection file
+EXTERN int  redir_reg INIT(= 0);   //message redirection register
+EXTERN int  redir_vname INIT(= 0);   //message redirection variable
+EXTERN int  redir_execute INIT(= 0);   //execute() redirection
 
-EXTERN Byte   langmap_mapchar[256];   // mapping for language keys
+EXTERN Byte   langmap_mapchar[256];   //mapping for language keys
 
 EXTERN int  wild_menu_showing INIT(= 0);
-#define WM_SHOWN     1      // wildmenu showing
-#define WM_SCROLLED  2      // wildmenu showing with scroll
+#define WM_SHOWN     1      //wildmenu showing
+#define WM_SCROLLED  2      //wildmenu showing with scroll
 
-EXTERN Boole breakat_flags[256];   // which characters are in 'breakat'
+EXTERN Boole breakat_flags[256];   //which characters are in 'breakat'
 
-// These are in main.c, call initLongVersion() before use.
+//These are in main.c, call initLongVersion() before use.
 extern CS Version;
 EXTERN CS homedir INIT(= NULL);
 
-// When a window has a local directory, the absolute path of the global
-// current directory is stored here (in allocated memory).  If the current
-// directory is not a local directory, globaldir is NULL.
+//When a window has a local directory, the absolute path of the global
+//current directory is stored here (in allocated memory).  If the current
+//directory is not a local directory, globaldir is NULL.
 EXTERN CS globaldir INIT(= NULL);
 
 EXTERN int   disable_fold_update INIT(= 0);
 
-// Whether 'keymodel' contains "stopsel" and "startsel".
+//Whether 'keymodel' contains "stopsel" and "startsel".
 EXTERN int   km_stopsel INIT(= FALSE);
 EXTERN int   km_startsel INIT(= FALSE);
 
-EXTERN int   commPortTypeG INIT(= 0);   // type of commline portal or 0
-EXTERN Unt   commPortResultG INIT(= 0); // result of commline portal or 0
-EXTERN Book* commPortBookG INIT(= NULL); // book of commline portal or NULL
-EXTERN Book* msgG INIT(= NULL); // book of messages
-EXTERN Portal* commPortPortG INIT(= NULL); // portal of commmline portal or NULL
+EXTERN int   commPortTypeG INIT(= 0);   //type of commline portal or 0
+EXTERN Unt   commPortResultG INIT(= 0); //result of commline portal or 0
+EXTERN Book* commPortBookG INIT(= NULL); //book of commline portal or NULL
+EXTERN Book* msgG INIT(= NULL); //book of messages
+EXTERN Portal* commPortPortG INIT(= NULL); //portal of commmline portal or NULL
 
 EXTERN Byte no_lines_msg[]   INIT(= "--No lines in book--");
 
-// When ":global" is used to number of substitutions and changed lines is
-// accumulated until it's finished.
-// Also used for ":spellrepall".
-EXTERN long   sub_nsubs;   // total number of substitutions
-EXTERN LineNr   sub_nlines;   // total number of lines changed
+//When ":global" is used to number of substitutions and changed lines is
+//accumulated until it's finished.
+//Also used for ":spellrepall".
+EXTERN long   sub_nsubs;   //total number of substitutions
+EXTERN LineNr   sub_nlines;   //total number of lines changed
 
 EXTERN BalloonEval   *balloonEval INIT(= NULL);
 EXTERN int      balloonEvalForTerm INIT(= FALSE);
 
-EXTERN int   typebuf_was_filled INIT(= FALSE); // received text from client or from feedkeys()
+EXTERN int   typebuf_was_filled INIT(= FALSE); //received text from client or from feedkeys()
 
-EXTERN CS serverName INIT(= NULL);   // name of the server
+EXTERN CS serverName INIT(= NULL);   //name of the server
 
-EXTERN int   term_is_xterm INIT(= FALSE);   // xterm-like 'term'
+EXTERN int   term_is_xterm INIT(= FALSE);   //xterm-like 'term'
 
-// Set to TRUE when an operator is being executed with virtual editing, MAYBE
-// when no operator is being executed, FALSE otherwise.
+//Set to TRUE when an operator is being executed with virtual editing, MAYBE
+//when no operator is being executed, FALSE otherwise.
 EXTERN int   virtual_op INIT(= MAYBE);
 
-// Display tick, incremented for each call to update_screen()
+//Display tick, incremented for each call to update_screen()
 EXTERN DisplayTick   display_tick INIT(= 0);
 
-// Line in which spell checking wasn't hilited because it touched the
-// cursor position in Insert mode.
+//Line in which spell checking wasn't hilited because it touched the
+//cursor position in Insert mode.
 EXTERN LineNr      spell_redraw_lnum INIT(= 0);
 
-// Set when the cursor line needs to be redrawn.
+//Set when the cursor line needs to be redrawn.
 EXTERN int      need_cursor_line_redraw INIT(= FALSE);
 
-// Some messages that can be shared are included here.
+//Some messages that can be shared are included here.
 EXTERN char top_bot_msg[]   INIT(= "search hit TOP, continuing at BOTTOM");
 EXTERN char bot_top_msg[]   INIT(= "search hit BOTTOM, continuing at TOP");
 EXTERN char line_msg[]       INIT(= " line ");
 
-EXTERN FILE *time_fd INIT(= NULL);  // where to write startup timing
+EXTERN FILE *time_fd INIT(= NULL);  //where to write startup timing
 
-// set by alloc_fail(): ID
+//set by alloc_fail(): ID
 EXTERN AllocId  alloc_fail_id INIT(= aid_none);
-// set by alloc_fail(), when zero alloc() returns NULL
+//set by alloc_fail(), when zero alloc() returns NULL
 EXTERN int  alloc_fail_countdown INIT(= -1);
-// set by alloc_fail(), number of times alloc() returns NULL
+//set by alloc_fail(), number of times alloc() returns NULL
 EXTERN int  alloc_fail_repeat INIT(= 0);
 
-// flags set by test_override()
+//flags set by test_override()
 EXTERN int  disable_char_avail_for_testing INIT(= FALSE);
 EXTERN int  disable_redraw_for_testing INIT(= FALSE);
 EXTERN int  ignore_redraw_flag_for_testing INIT(= FALSE);
@@ -5705,26 +5705,26 @@ EXTERN int  ignore_unreachable_code_for_testing INIT(= FALSE);
 EXTERN int  in_free_unref_items INIT(= FALSE);
 
 EXTERN int  did_add_timer INIT(= FALSE);
-EXTERN int  timer_busy INIT(= 0);   // when timer is inside vgetc() then > 0
-EXTERN int  input_busy INIT(= 0);   // when inside get_user_input() then > 0
+EXTERN int  timer_busy INIT(= 0);   //when timer is inside vgetc() then > 0
+EXTERN int  input_busy INIT(= 0);   //when inside get_user_input() then > 0
 
 EXTERN int  bevalexpr_due_set INIT(= FALSE);
 EXTERN ProfTime bevalexpr_due;
 
 EXTERN Tyme time_for_testing INIT(= 0);
 
-EXTERN char echoDecoFlagsG INIT(= 0);   // decoration flags used for ":echo"
+EXTERN char echoDecoFlagsG INIT(= 0);   //decoration flags used for ":echo"
 
-// Abort conversion to string after a recursion error.
+//Abort conversion to string after a recursion error.
 EXTERN int  did_echo_string_emsg INIT(= FALSE);
 
-// Used for checking if local variables or arguments used in a lambda.
+//Used for checking if local variables or arguments used in a lambda.
 EXTERN int *eval_lavars_used INIT(= NULL);
 
-// Used for lv_first in a non-materialized range() list.
+//Used for lv_first in a non-materialized range() list.
 EXTERN ListItem range_list_item;
 
-// Passed to an eval() function to enable evaluation.
+//Passed to an eval() function to enable evaluation.
 EXTERN EvalCtx EVALARG_EVALUATE
 # ifdef MAIN_C
    = {EVAL_EVALUATE, 0, NULL, NULL, GA_EMPTY, GA_EMPTY, NULL,
@@ -5739,11 +5739,11 @@ EXTERN char *chanFdNames[]
 # endif
       ;
 
-// Whether a redraw is needed for appending a line to a book.
+//Whether a redraw is needed for appending a line to a book.
 EXTERN int channel_need_redraw INIT(= FALSE);
 
-// This flag is set when outputting a terminal control code and reset in
-// out_flush() when characters have been written.
+//This flag is set when outputting a terminal control code and reset in
+//out_flush() when characters have been written.
 EXTERN int ch_log_output INIT(= FALSE);
 
 EXTERN int did_repeated_msg INIT(= 0);
@@ -5751,21 +5751,21 @@ EXTERN int did_repeated_msg INIT(= 0);
 # define REPEATED_MSG_SAFESTATE     2
 
 
-// Skip porta.fixCursor() call for 'splitkeep' when cmdwin is closed.
+//Skip porta.fixCursor() call for 'splitkeep' when cmdwin is closed.
 EXTERN int skipPortFixCursorG INIT(= FALSE);
-// Skip portal.fixScroll() call for 'splitkeep' when closing tab page.
+//Skip portal.fixScroll() call for 'splitkeep' when closing tab page.
 EXTERN int skipPortFixScrollG INIT(= FALSE);
-// Skip update_topline() call while executing win_fix_scroll().
+//Skip update_topline() call while executing win_fix_scroll().
 EXTERN int skipUpdateToplineG INIT(= FALSE);
 
-// 'showcmd' buffer shared between normal.c and statusline code
+//'showcmd' buffer shared between normal.c and statusline code
 #define SHOWCMD_BUFLEN (SHOWCMD_COLS + 1 + 30)
 EXTERN Byte showcmd_buf[SHOWCMD_BUFLEN];
 
-// If we've already warned about missing/unavailable clipboard
+//If we've already warned about missing/unavailable clipboard
 EXTERN int did_warn_clipboard INIT(= FALSE);
 
-EXTERN int wayland_display_fd; // Wayland display file descriptor; set by wayland_init_client()
+EXTERN int wayland_display_fd; //Wayland display file descriptor; set by wayland_init_client()
 
 
 //}}}
@@ -6018,7 +6018,7 @@ EXTERN Byte e_function_name_must_start_with_capital_or_s_str[]
    INIT(= "E128: Function name must start with a capital or \"s:\": %s");
 EXTERN Byte e_function_name_required[]
    INIT(= "E129: Function name required");
-// E130 unused
+//E130 unused
 EXTERN Byte e_cannot_delete_function_str_it_is_in_use[]
    INIT(= "E131: Cannot delete function %s: It is in use");
 EXTERN Byte e_function_call_depth_is_higher_than_maxfuncdepth[]
@@ -6155,7 +6155,7 @@ EXTERN Byte e_no_digraphs_version[]
    INIT(= "E196: No digraphs in this version");
 EXTERN Byte e_cannot_set_language_to_str[]
    INIT(= "E197: Cannot set language to \"%s\"");
-// E198 unused
+//E198 unused
 EXTERN Byte e_active_window_or_buffer_changed_or_deleted[]
    INIT(= "E199: Active portal or book changed or deleted");
 EXTERN Byte e_readpre_autocommands_made_file_unreadable[]
@@ -6237,7 +6237,7 @@ EXTERN Byte e_eegl_instance_registry_property_is_badly_formed_deleted[]
    INIT(= "E251: EEGL instance registry property is badly formed.  Deleted!");
 EXTERN Byte e_cannot_allocate_color_str[]
    INIT(= "E254: Cannot allocate color %s");
-// E256 unused
+//E256 unused
 EXTERN Byte e_cstag_tag_not_founc[]
    INIT(= "E257: cstag: Tag not found");
 EXTERN Byte e_unable_to_send_to_client[]
@@ -6258,15 +6258,15 @@ EXTERN Byte e_cannot_use_function_as_method_str[]
    INIT(= "E276: Cannot use function as a method: %s");
 EXTERN Byte e_unable_to_read_server_reply[]
    INIT(= "E277: Unable to read a server reply");
-// E278 unused
-// E281 unused
+//E278 unused
+//E281 unused
 EXTERN Byte e_cannot_read_from_str_2[]
    INIT(= "E282: Cannot read from \"%s\"");
 EXTERN Byte e_no_marks_matching_str[]
    INIT(= "E283: No marks matching \"%s\"");
 EXTERN Byte e_list_or_number_required[]
    INIT(= "E290: List or number required");
-// E291 unused
+//E291 unused
 EXTERN Byte e_invalid_count_for_del_bytes_nr[]
    INIT(= "E292: Invalid count for del_bytes(): %ld");
 EXTERN Byte e_block_was_not_locked[]
@@ -6407,7 +6407,7 @@ EXTERN Byte e_langmap_extra_characters_after_semicolon_str[]
    INIT(= "E358: 'langmap': Extra characters after semicolon: %s");
 EXTERN Byte e_screen_mode_setting_not_supported[]
    INIT(= "E359: Screen mode setting not supported");
-// E361 unused
+//E361 unused
 EXTERN Byte e_using_boolean_value_as_float[]
    INIT(= "E362: Using a boolean value as a Float");
 EXTERN Byte e_pattern_uses_more_memory_than_maxmempattern[]
@@ -6466,7 +6466,7 @@ EXTERN Byte e_didnt_find_region_item_for_str[]
    INIT(= "E394: Didn't find region item for %s");
 EXTERN Byte e_contains_argument_not_accepted_here[]
    INIT(= "E395: Contains argument not accepted here");
-// E396 unused
+//E396 unused
 EXTERN Byte e_filename_required[]
    INIT(= "E397: Filename required");
 EXTERN Byte e_missing_equal_str[]
@@ -6678,24 +6678,24 @@ EXTERN Byte e_no_autocommand_match_name_to_substitute_for_amatch[]
 EXTERN Byte e_no_source_file_name_to_substitute_for_sfile[]
    INIT(= "E498: No :source file name to substitute for \"<sfile>\"");
 EXTERN Byte e_empty_file_name_for_percent_or_hash_only_works_with_ph[]
-   // xgettext:no-c-format
+   //xgettext:no-c-format
    INIT(= "E499: Empty file name for '%' or '#', only works with \":p:h\"");
 EXTERN Byte e_evaluates_to_an_empty_string[]
    INIT(= "E500: Evaluates to an empty string");
 EXTERN Byte e_at_end_of_file[]
    INIT(= "E501: At end-of-file");
-   // E502
+   //E502
 EXTERN Byte e_is_a_directory[]
    INIT(= "is a directory");
-   // E503
+   //E503
 EXTERN Byte e_is_not_file_or_writable_device[]
    INIT(= "is not a file or writable device");
 EXTERN Byte e_str_is_not_file_or_writable_device[]
    INIT(= "E503: \"%s\" is not a file or writable device");
 EXTERN Byte e_coffee_currently_not_available[]
    INIT(= "E503: Coffee is currently not available");
-   // E504
-   // E505
+   //E504
+   //E505
 EXTERN Byte e_is_read_only_add_bang_to_override[]
    INIT(= "is read-only (add ! to override)");
 EXTERN Byte e_str_is_read_only_add_bang_to_override[]
@@ -6760,7 +6760,7 @@ EXTERN Byte e_illegal_character_str[]
    INIT(= "E539: Illegal character <%s>");
 EXTERN Byte e_unclosed_expression_sequence[]
    INIT(= "E540: Unclosed expression sequence");
-// E541 unused
+//E541 unused
 EXTERN Byte e_unbalanced_groups[]
    INIT(= "E542: Unbalanced groups");
 EXTERN Byte e_keymap_file_not_found[]
@@ -6803,23 +6803,23 @@ EXTERN Byte e_no_cscope_connections[]
    INIT(= "E567: No cscope connections");
 EXTERN Byte e_duplicate_cscope_database_not_added[]
    INIT(= "E568: Duplicate cscope database not added");
-// E569 unused
+//E569 unused
 EXTERN Byte e_fatal_error_in_cs_manage_matches[]
    INIT(= "E570: Fatal error in cs_manage_matches");
 EXTERN Byte e_invalid_server_id_used_str[]
    INIT(= "E573: Invalid server id used: %s");
 EXTERN Byte e_unknown_register_type_nr[]
    INIT(= "E574: Unknown register type %d");
-   // E575
+   //E575
 EXTERN Byte e_illegal_starting_char[]
    INIT(= "Illegal starting char");
-   // E576
+   //E576
 EXTERN Byte e_nonr_missing_gt[]
    INIT(= "Missing '>'");
-   // E577
+   //E577
 EXTERN Byte e_illegal_register_name[]
    INIT(= "Illegal register name");
-// E578 unused
+//E578 unused
 EXTERN Byte e_if_nesting_too_deep[]
    INIT(= "E579: :if nesting too deep");
 EXTERN Byte e_block_nesting_too_deep[]
@@ -6882,8 +6882,8 @@ EXTERN Byte e_using_special_as_number[]
    INIT(= "E611: Using a Special as a Number");
 EXTERN Byte e_too_many_signs_defined[]
    INIT(= "E612: Too many signs defined");
-// E614 unused (deleted)
-// E615 unused
+//E614 unused (deleted)
+//E615 unused
 EXTERN Byte e_object_required_for_argument_nr[]
    INIT(= "E616: Object required for argument %d");
 EXTERN Byte e_could_not_fork_for_cscope[]
@@ -6892,7 +6892,7 @@ EXTERN Byte e_str_write_while_not_connected[]
    INIT(= "E630: %s(): Write while not connected");
 EXTERN Byte e_str_write_failed[]
    INIT(= "E631: %s(): Write failed");
-// E653 unused
+//E653 unused
 EXTERN Byte e_missing_delimiter_after_search_pattern_str[]
    INIT(= "E654: Missing delimiter after search pattern: %s");
 EXTERN Byte e_too_many_symbolic_links_cycle[]
@@ -7162,7 +7162,7 @@ EXTERN Byte e_invalid_id_nr_must_be_greater_than_or_equal_to_one_2[]
 EXTERN Byte e_id_not_found_nr[]
    INIT(= "E803: ID not found: %d");
 EXTERN Byte e_cannot_use_percent_with_float[]
-   // xgettext:no-c-format
+   //xgettext:no-c-format
    INIT(= "E804: Cannot use '%' with Float");
 EXTERN Byte e_using_float_as_number[]
    INIT(= "E805: Using a Float as a Number");
@@ -7214,7 +7214,7 @@ EXTERN Byte e_conflicts_with_value_of_listchars[]
    INIT(= "E834: Conflicts with value of 'listchars'");
 EXTERN Byte e_conflicts_with_value_of_fillchars[]
    INIT(= "E835: Conflicts with value of 'fillchars'");
-// E839 unused
+//E839 unused
 EXTERN Byte e_complete_function_deleted_text[]
    INIT(= "E840: Completion function deleted text");
 EXTERN Byte e_reserved_name_cannot_be_used_for_user_defined_command[]
@@ -7252,7 +7252,7 @@ EXTERN Byte e_cannot_use_g_here[]
 EXTERN Byte e_not_allowed_for_terminal_in_popup_portal[]
    INIT(= "E863: Not allowed for a terminal in a popup portal");
 EXTERN Byte e_percent_hash_can_only_be_followed_by_zero_one_two_automatic_engine_will_be_used[]
-   // xgettext:no-c-format
+   //xgettext:no-c-format
    INIT(= "E864: \\%#= can only be followed by 0, 1, or 2. The automatic engine will be used");
 EXTERN Byte e_nfa_regexp_end_encountered_prematurely[]
    INIT(= "E865: (NFA) Regexp end encountered prematurely");
@@ -7366,7 +7366,7 @@ EXTERN Byte e_io_file_requires_name_to_be_set[]
    INIT(= "E920: _io file requires _name to be set");
 EXTERN Byte e_invalid_callback_argument[]
    INIT(= "E921: Invalid callback argument");
-// E922 unused
+//E922 unused
 EXTERN Byte e_second_argument_of_function_must_be_list_or_dict[]
    INIT(= "E923: Second argument of function() must be a list or a dict");
 EXTERN Byte e_current_window_was_closed[]
@@ -7424,7 +7424,7 @@ EXTERN Byte e_file_changed_while_writing[]
 EXTERN Byte e_cannot_convert_between_str_and_str[]
    INIT(= "E950: Cannot convert between %s and %s");
 EXTERN Byte e_percent_value_too_large[]
-   // xgettext:no-c-format
+   //xgettext:no-c-format
    INIT(= "E951: \\% value too large");
 EXTERN Byte e_autocommand_caused_recursive_behavior[]
    INIT(= "E952: Autocommand caused recursive behavior");
@@ -7512,7 +7512,7 @@ EXTERN Byte e_tabpage_not_found_nr[]
    INIT(= "E997: Tabpage not found: %d");
 EXTERN Byte e_reduce_of_an_empty_str_with_no_initial_value[]
    INIT(= "E998: Reduce of an empty %s with no initial value");
-// E1000 unused
+//E1000 unused
 EXTERN Byte e_variable_not_found_str[]
    INIT(= "E1001: Variable not found: %s");
 EXTERN Byte e_syntax_error_at_str[]
@@ -7588,7 +7588,7 @@ EXTERN Byte e_catch_unreachable_after_catch_all[]
 EXTERN Byte e_cannot_use_reserved_name_str[]
    INIT(= "E1034: Cannot use reserved name %s");
 EXTERN Byte e_percent_requires_number_arguments[]
-   // xgettext:no-c-format
+   //xgettext:no-c-format
    INIT(= "E1035: % requires number arguments");
 EXTERN Byte e_char_requires_number_or_float_arguments[]
    INIT(= "E1036: %c requires number or float arguments");
@@ -7600,8 +7600,8 @@ EXTERN Byte e_invalid_command_after_export[]
    INIT(= "E1043: Invalid command after :export");
 EXTERN Byte e_export_with_invalid_argument[]
    INIT(= "E1044: Export with invalid argument");
-// E1045 not used
-// E1046 not used
+//E1045 not used
+//E1046 not used
 EXTERN Byte e_syntax_error_in_import_str[]
    INIT(= "E1047: Syntax error in import: %s");
 EXTERN Byte e_item_not_found_in_script_str[]
@@ -7658,7 +7658,7 @@ EXTERN Byte e_no_white_space_allowed_after_dot[]
    INIT(= "E1074: No white space allowed after dot");
 EXTERN Byte e_namespace_not_supported_str[]
    INIT(= "E1075: Namespace not supported: %s");
-// E1076 unused (was deleted)
+//E1076 unused (was deleted)
 EXTERN Byte e_missing_argument_type_for_str[]
    INIT(= "E1077: Missing argument type for %s");
 EXTERN Byte e_invalid_command_nested_did_you_mean_plusplus_nested[]
@@ -7675,7 +7675,7 @@ EXTERN Byte e_missing_backtick[]
    INIT(= "E1083: Missing backtick");
 EXTERN Byte e_not_callable_type_str[]
    INIT(= "E1085: Not a callable type: %s");
-// E1086 unused
+//E1086 unused
 EXTERN Byte e_cannot_use_index_when_declaring_variable[]
    INIT(= "E1087: Cannot use an index when declaring a variable");
 EXTERN Byte e_script_cannot_import_itself[]
@@ -7718,7 +7718,7 @@ PLURAL_MSG(e_one_argument_too_many, "E1106: One argument too many",
 
 EXTERN Byte e_string_list_dict_or_blob_required[]
    INIT(= "E1107: String, List, Bag or Blob required");
-// E1108 unused
+//E1108 unused
 EXTERN Byte e_list_item_nr_is_not_list[]
    INIT(= "E1109: List item %d is not a List");
 EXTERN Byte e_list_item_nr_does_not_contain_3_numbers[]
@@ -7773,7 +7773,7 @@ EXTERN Byte e_using_string_as_bool_str[]
    INIT(= "E1135: Using a String as a Boole: \"%s\"");
 EXTERN Byte e_cmd_mapping_must_end_with_cr_before_second_cmd[]
    INIT(= "E1136: <Cmd> mapping must end with <CR> before second <Cmd>");
-// E1137 unused
+//E1137 unused
 EXTERN Byte e_using_bool_as_number[]
    INIT(= "E1138: Using a Boole as a Number");
 EXTERN Byte e_missing_matching_bracket_after_dict_key[]
@@ -7974,7 +7974,7 @@ EXTERN Byte e_string_list_or_blob_required_for_argument_nr[]
    INIT(= "E1252: String, List or Blob required for argument %d");
 EXTERN Byte e_string_list_tuple_or_blob_required_for_argument_nr[]
    INIT(= "E1253: String, List or Blob required for argument %d");
-// E1253 unused
+//E1253 unused
 EXTERN Byte e_cannot_use_script_variable_in_for_loop[]
    INIT(= "E1254: Cannot use script variable in for loop");
 EXTERN Byte e_cmd_mapping_must_end_with_cr[]
@@ -8091,13 +8091,13 @@ EXTERN Byte e_invalid_object_variable_declaration_str[]
    INIT(= "E1317: Invalid object variable declaration: %s");
 EXTERN Byte e_not_valid_command_in_class_str[]
    INIT(= "E1318: Not a valid command in a class: %s");
-// E1319 unused
+//E1319 unused
 EXTERN Byte e_using_object_as_number[]
    INIT(= "E1320: Using an Object as a Number");
-// E1321 unused
+//E1321 unused
 EXTERN Byte e_using_object_as_float[]
    INIT(= "E1322: Using an Object as a Float");
-// E1323 unused
+//E1323 unused
 EXTERN Byte e_using_object_as_string[]
    INIT(= "E1324: Using an Object as a String");
 EXTERN Byte e_method_not_found_on_class_str_str[]
@@ -8118,14 +8118,14 @@ EXTERN Byte e_public_variable_name_cannot_start_with_underscore_str[]
    INIT(= "E1332: public variable name cannot start with underscore: %s");
 EXTERN Byte e_cannot_access_protected_variable_str[]
    INIT(= "E1333: Cannot access protected variable \"%s\" in class \"%s\"");
-// E1334 unused
+//E1334 unused
 EXTERN Byte e_variable_is_not_writable_str[]
    INIT(= "E1335: Variable \"%s\" in class \"%s\" is not writable");
 EXTERN Byte e_internal_error_shortmess_too_long[]
    INIT(= "E1336: Internal error: shortmess too long");
 EXTERN Byte e_class_variable_str_not_found_in_class_str[]
    INIT(= "E1337: Class variable \"%s\" not found in class \"%s\"");
-// E1338 unused
+//E1338 unused
 EXTERN Byte e_cannot_add_textprop_with_text_after_using_textprop_with_negative_id[]
    INIT(= "E1339: Cannot add a textprop with text after using a textprop with a negative id");
 EXTERN Byte e_argument_already_declared_in_class_str[]
@@ -8425,7 +8425,7 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
    
 //}}}
 
-// Note: a NULL argument for eeRealloc() is not portable, don't use it.
+//Note: a NULL argument for eeRealloc() is not portable, don't use it.
 #if defined(MEM_PROFILE)
 #define eeRealloc(ptr, size) memReallocWithProfiling((ptr), (size))
 #else
@@ -8438,89 +8438,82 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 //Don't call MB_BYTE2LEN(b) with b > 255!
 #define MB_BYTE2LEN_CHECK(b) (((b) > 255) ? 1 : utf8CharLens[b])
 
-// values for eeHandleSignal() that are not a signal
+//values for eeHandleSignal() that are not a signal
 #define SIGNAL_BLOCK   (-1)
-#define SIGNAL_UNBLOCK  (-2)
+#define SIGNAL_UNBLOCK (-2)
 
-// last argument for do_source()
+//last argument for do_source()
 #define DOSO_NONE  0
-#define DOSO_INIT  1   // loading init.vim file
+#define DOSO_INIT  1   //loading init.vim file
 
-// flags for read_eeglinfo() and children
-#define EIF_WANT_INFO       1   // load non-mark info
-#define EIF_WANT_MARKS      2   // load file marks
-#define EIF_ONLY_CURBOOK    4   // bail out after loading marks for curBook
-#define EIF_FORCEIT         8   // overwrite info already read
-#define EIF_GET_OLDFILES   16   // load v:oldfiles
+//flags for buf_freeall()
+#define BFA_DEL          1   //bbook is going to be deleted
+#define BFA_WIPE         2   //book is going to be wiped out
+#define BFA_KEEP_UNDO    4   //do not free undo information
+#define BFA_IGNORE_ABORT 8   //do not abort for aborting()
 
-// flags for buf_freeall()
-#define BFA_DEL          1   // bbook is going to be deleted
-#define BFA_WIPE         2   // book is going to be wiped out
-#define BFA_KEEP_UNDO    4   // do not free undo information
-#define BFA_IGNORE_ABORT 8   // do not abort for aborting()
-
-// direction for nv_mousescroll() and ins_mousescroll()
-#define MSCR_DOWN      0   // DOWN must be FALSE
+//direction for nv_mousescroll() and ins_mousescroll()
+#define MSCR_DOWN      0   //DOWN must be FALSE
 #define MSCR_UP        1
 #define MSCR_LEFT   (-1)
 #define MSCR_RIGHT  (-2)
 
 #define KEYLEN_INCOMPLETE_KEYCODE (-1)
 #define KEYLEN_INCOMPLETE_MAPPING (-2)
-#define KEYLEN_REMOVED  9999   // keylen value for removed sequence
+#define KEYLEN_REMOVED  9999   //keylen value for removed sequence
 
-// Flags for get_reg_contents
+//Flags for get_reg_contents
 #define GREG_NO_EXPR  1 //Do not allow expression register
 #define GREG_EXPR_SRC 2 //Return expression itself for "=" register
 #define GREG_LIST     4 //Return list
 
-// Options for json_encode() and json_decode.
-#define JSON_NO_NONE 1   // v:none item not allowed
-#define JSON_NL      2   // append a NL
+//Options for json_encode() and json_decode.
+#define JSON_NO_NONE 1   //v:none item not allowed
+#define JSON_NL      2   //append a NL
 
-// Used for flags of doInPath()
-#define DIP_ALL       0x01   // all matches, not just the first one
-#define DIP_DIR       0x02   // find directories instead of files.
-#define DIP_ERR       0x04   // give an error message when none found.
-#define DIP_START   0x08   // also use "start" directory in 'packpath'
-#define DIP_OPT       0x10   // also use "opt" directory in 'packpath'
-#define DIP_NORTP   0x20   // do not use 'runtimepath'
-#define DIP_NOAFTER 0x40   // skip "after" directories
-#define DIP_AFTER   0x80   // only use "after" directories
+//Used for flags of doInPath()
+#define DIP_ALL       0x01   //all matches, not just the first one
+#define DIP_DIR       0x02   //find directories instead of files.
+#define DIP_ERR       0x04   //give an error message when none found.
+#define DIP_START   0x08   //also use "start" directory in 'packpath'
+#define DIP_OPT       0x10   //also use "opt" directory in 'packpath'
+#define DIP_NORTP   0x20   //do not use 'runtimepath'
+#define DIP_NOAFTER 0x40   //skip "after" directories
+#define DIP_AFTER   0x80   //only use "after" directories
 
-// Used by the garbage collector.
+//Used by the garbage collector.
 #define COPYID_INC 2
 #define COPYID_MASK (~0x1)
 
 #define FOLD_TEXT_LEN 51  //buffer size for get_foldtext()
 
-// Values for trans_function_name() argument:
-#define TFN_INT         0x01   // internal function name OK
-#define TFN_QUIET       0x02   // no error messages
-#define TFN_NO_AUTOLOAD 0x04   // do not use script autoloading
-#define TFN_NO_DEREF    0x08   // do not dereference a Funcref
-#define TFN_READ_ONLY   0x10   // will not change the var
-#define TFN_NO_DECL     0x20   // only used for GLV_NO_DECL
-#define TFN_NEW_FUNC    0x40   // defining a new function
-#define TFN_ASSIGN_WITH_OP 0x80  // only for GLV_ASSIGN_WITH_OP
-#define TFN_IN_CLASS    0x100   // function in a class
+//Values for trans_function_name() argument:
+#define TFN_INT         0x01   //internal function name OK
+#define TFN_QUIET       0x02   //no error messages
+#define TFN_NO_AUTOLOAD 0x04   //do not use script autoloading
+#define TFN_NO_DEREF    0x08   //do not dereference a Funcref
+#define TFN_READ_ONLY   0x10   //will not change the var
+#define TFN_NO_DECL     0x20   //only used for GLV_NO_DECL
+#define TFN_NEW_FUNC    0x40   //defining a new function
+#define TFN_ASSIGN_WITH_OP 0x80  //only for GLV_ASSIGN_WITH_OP
+#define TFN_IN_CLASS    0x100   //function in a class
 
-// Values for get_lval() flags argument:
-#define GLV_QUIET   TFN_QUIET   // no error messages
-#define GLV_NO_AUTOLOAD   TFN_NO_AUTOLOAD   // do not use script autoloading
-#define GLV_READ_ONLY   TFN_READ_ONLY   // will not change the var
-#define GLV_NO_DECL   TFN_NO_DECL   // assignment without :var or :let
-#define GLV_ASSIGN_WITH_OP TFN_ASSIGN_WITH_OP // assignment with operator
-#define GLV_PREFER_FUNC   0x10000      // prefer function above variable
-#define GLV_FOR_LOOP   0x20000      // assigning to a loop variable
+//Values for get_lval() flags argument:
+#define GLV_QUIET   TFN_QUIET   //no error messages
+#define GLV_NO_AUTOLOAD   TFN_NO_AUTOLOAD   //do not use script autoloading
+#define GLV_READ_ONLY   TFN_READ_ONLY   //will not change the var
+#define GLV_NO_DECL   TFN_NO_DECL   //assignment without :var or :let
+#define GLV_ASSIGN_WITH_OP TFN_ASSIGN_WITH_OP //assignment with operator
+#define GLV_PREFER_FUNC   0x10000      //prefer function above variable
+#define GLV_FOR_LOOP   0x20000      //assigning to a loop variable
 
 #define DO_NOT_FREE_CNT 99999   //refcount for dict or list that should not be freed.
 
-// flags for find_name_end()
+//flags for find_name_end()
 #define FNE_INCL_BR       1   //include [] in name
 #define FNE_CHECK_START   2   //check name starts with valid character
 
-// stat macros
+//stat macros
 #ifndef S_ISREG
 # ifdef S_IFREG
 #  define S_ISREG(m)   (((m) & S_IFMT) == S_IFREG)
@@ -8562,40 +8555,40 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 #define ELAPSED_FUNC(v) elapsed(&(v))
 long elapsed(TimeVal* start_tv);
 
-// Replacement for nchar used by nv_replace().
+//Replacement for nchar used by nv_replace().
 #define REPLACE_CR_NCHAR    4294967295
 #define REPLACE_NL_NCHAR    4294967294
 
-// Flags for adjust_prop_columns()
+//Flags for adjust_prop_columns()
 #define APC_SAVE_FOR_UNDO  1   //call u_savesub() before making changes
 #define APC_SUBSTITUTE     2   //text is replaced, not inserted
 #define APC_INDENT         4   //changing indent
 
-// Flags for replace_termcodes()
+//Flags for replace_termcodes()
 #define REPTERM_FROM_PART   1
 #define REPTERM_DO_LT       2
 #define REPTERM_SPECIAL     4
 #define REPTERM_NO_SIMPLIFY 8
 
-// Flags for termFindSpecialKey()
-#define FSK_KEYCODE     0x01   // prefer key code, e.g. K_DEL instead of DEL
-#define FSK_KEEP_X_KEY  0x02   // don't translate xHome to Home key
-#define FSK_IN_STRING   0x04   // TRUE in string, double quote is escaped
-#define FSK_SIMPLIFY    0x08   // simplify <C-H> and <A-x>
-#define FSK_FROM_PART   0x10   // left-hand-side of mapping
+//Flags for termFindSpecialKey()
+#define FSK_KEYCODE     0x01   //prefer key code, e.g. K_DEL instead of DEL
+#define FSK_KEEP_X_KEY  0x02   //don't translate xHome to Home key
+#define FSK_IN_STRING   0x04   //TRUE in string, double quote is escaped
+#define FSK_SIMPLIFY    0x08   //simplify <C-H> and <A-x>
+#define FSK_FROM_PART   0x10   //left-hand-side of mapping
 
-// Flags for mch_delay.
+//Flags for mch_delay.
 #define MCH_DELAY_IGNOREINPUT 1
 #define MCH_DELAY_SETTMODE    2
 
 //Fuzzy matching
-#define FUZZY_MATCH_MAX_LEN   1024 // max characters that can be matched
-#define FUZZY_SCORE_NONE   INT_MIN // invalid fuzzy score
+#define FUZZY_MATCH_MAX_LEN   1024 //max characters that can be matched
+#define FUZZY_SCORE_NONE   INT_MIN //invalid fuzzy score
 
 //flags for equal_type()
 #define ETYPE_ARG_UNKNOWN 1
 
-// flags used by copyStr_fnameescape()
+//flags used by copyStr_fnameescape()
 #define VSE_NONE   0
 #define VSE_SHELL  1   //escape for a shell command
 #define VSE_BOOK   2   //escape for a ":book" command
@@ -8617,9 +8610,9 @@ long elapsed(TimeVal* start_tv);
 
 typedef struct dirent DirEntry;
 
-#define FNAME_ILLEGAL "\"*?><|" // illegal characters in a file name
+#define FNAME_ILLEGAL "\"*?><|" //illegal characters in a file name
 
-void __attribute__((noinline)) __bp(); // breakpoints for debugger
+void __attribute__((noinline)) __bp(); //breakpoints for debugger
 #define _bp(cond) if (cond) {__bp();}
 #define tConst(literal) (Text){.c = (CS)literal, .len = sizeof(literal) - 1}
 
@@ -8659,4 +8652,4 @@ void __attribute__((noinline)) __bp(); // breakpoints for debugger
 # define SIG_HOLD   ((SigHandler)-2)
 #endif
 
-#endif // EEGL__H
+#endif //EEGL__H

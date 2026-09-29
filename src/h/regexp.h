@@ -44,9 +44,9 @@ Boole eeRegexec(RegMatch* rmp, Byte *line, ColNr col);
 int eeRegexec_nl(RegMatch *rmp, Byte *line, ColNr col);
 Long eeRegexec_multi(
    RegMultilineMatch *rmp,
-   Portal* port, // portal in which to search or NULL
-   Book* book,  // book in which to search
-   LineNr lnum, // nr of line to start looking for match
-   ColNr col,   // column to start looking for match
-   int* timed_out // flag is set when timeout limit reached
+   Portal* port, //portal in which to search or NULL
+   Book* book,  //book in which to search
+   LineNr lnum, //nr of line to start looking for match
+   ColNr col,   //column to start looking for match
+   int* timed_out //flag is set when timeout limit reached
 );

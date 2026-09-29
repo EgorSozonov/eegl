@@ -11263,7 +11263,7 @@ startEditingFile(
       if (!isExitingG && p_verbose == 0)
          msg_scroll = false;
       if (!msg_scroll)   // wait a bit when overwriting an error msg
-         check_for_delay(false);
+         drawCheckShouldBeDelay(false);
       msg_start();
       msg_scroll = msg_scroll_save;
       msg_scrolled_ign = true;

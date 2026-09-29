@@ -36,20 +36,20 @@ void f_filecopy(Arr(Var) argvars, Var* returnVar);
 CS fiExpandAndCopy(NULLABLE CS fname, int force);
 Boole eeFexists(CS fname);
 int expand_wildcards_eval(
-   Arr(CS) pattern,      // pointer to input pattern
-   Unt flags,  // EW_DIR, etc.
+   Arr(CS) pattern,      //pointer to input pattern
+   Unt flags,  //EW_DIR, etc.
    OUT ExpandMatch* files
 );
 int expand_wildcards(
-   int num_pat, // number of input patterns
-   Arr(CS) pat, // array of input patterns
-   Unt flags,   // EW_DIR, etc.
+   int num_pat, //number of input patterns
+   Arr(CS) pat, //array of input patterns
+   Unt flags,   //EW_DIR, etc.
    OUT ExpandMatch* files
 );
 int gen_expand_wildcards(
-   int num_pat,   // number of input patterns
-   Arr(CS) pat,   // array of input patterns
-   Unt flags,      // EW_* flags
+   int num_pat,   //number of input patterns
+   Arr(CS) pat,   //array of input patterns
+   Unt flags,      //EW_* flags
    OUT ExpandMatch* matches
 );
 void addFile(OUT ExpandMatch* matches, CS fName, Unt flags);
@@ -58,19 +58,19 @@ int same_directory(CS f1, CS f2);
 int fullpathcmp(
    CS s1,
    CS s2,
-   int checkname,      // when both don't exist, check file names
+   int checkname,      //when both don't exist, check file names
    int expandenv
 );
 int mch_dirname(CS buf, int len);
 CS home_replace_save(Book* book, CS inputFname);
 CS homeReplaceA(Book* book, CS inputFname, Arena* a);
 int modify_fname(
-   CS src,      // string with modifiers
-   int tilde_file,   // "~" is a file name, not $HOME
-   Unt* usedlen,   // characters after src that are used
-   OUT CS* fnamep,   // file name so far
-   OUT CS* bufp,      // buffer for allocated file name or NULL
-   Unt* fnamelen   // length of fnamep
+   CS src,      //string with modifiers
+   int tilde_file,   //"~" is a file name, not $HOME
+   Unt* usedlen,   //characters after src that are used
+   OUT CS* fnamep,   //file name so far
+   OUT CS* bufp,      //buffer for allocated file name or NULL
+   Unt* fnamelen   //length of fnamep
 );
 void home_replace(
    CS src, //input file name
@@ -84,10 +84,10 @@ FileSearchCtx* eeFindFile_init(
    CS stopdirs,
    int level,
    Boole free_visited,
-   Unt find_what, // FINDFILE_DIR, FINDFILE_FILE or FINDFILE_BOTH for both.
+   Unt find_what, //FINDFILE_DIR, FINDFILE_FILE or FINDFILE_BOTH for both.
    NULLABLE OUT FileSearchCtx* search_ctx_arg,
-   Boole tagfile,   // expanding names of tags files
-   CS rel_fname   // file name to use for "."
+   Boole tagfile,   //expanding names of tags files
+   CS rel_fname   //file name to use for "."
 );
 int eeChdir(CS new_dir);
 int eeChdirfile(CS fname, char *trigger_autocmd);
@@ -97,10 +97,10 @@ CS eeFindFile(FileSearchCtx* search_ctx_arg);
 CS findFileInPath(
    Text fname,
    Unt  options,
-   Boole first,      // use count'th matching file name
-   CS rel_fname,   // file name searching relative to
-   OUT Byte** file_to_find,   // modified copy of file name
-   OUT FileSearchCtx** searchCtx   // state of the search
+   Boole first,      //use count'th matching file name
+   CS rel_fname,   //file name searching relative to
+   OUT Byte** file_to_find,   //modified copy of file name
+   OUT FileSearchCtx** searchCtx   //state of the search
 );
 void free_findfile(void);
 CS grab_file_name(long count, OUT LineNr* file_lnum);
@@ -110,15 +110,15 @@ CS file_name_in_line(
    int col,
    int options,
    long count,
-   CS rel_fname,   // file we are searching relative to
-   OUT LineNr* file_lnum   // line number after the file name
+   CS rel_fname,   //file we are searching relative to
+   OUT LineNr* file_lnum   //line number after the file name
 );
 CS find_file_name_in_path(
    CS ptr,
    int len,
    Unt options,
    long count,
-   CS rel_fname   // file we are searching relative to
+   CS rel_fname   //file we are searching relative to
 );
 Unt simplify_filename(CS filename);
 int mch_has_exp_wildcard(CS p);
@@ -139,7 +139,7 @@ int readfile(
    LineNr from,
    LineNr lines_to_skip,
    LineNr lines_to_read,
-   Invocation* invo,         // can be NULL!
+   Invocation* invo,         //can be NULL!
    Unt flags
 );
 int read_blob(FILE* fd, Var* returnVar, FileOffset offset, FileOffset size_arg);
@@ -168,25 +168,25 @@ int mch_nodetype(CS name);
 void eeDelTempDir(void);
 CS eeTempName(int, int);
 int match_file_pat(
-   CS pattern,      // pattern to match with
-   RegProg** prog,         // pre-compiled regprog or NULL
-   CS fname,         // full path of file name
-   CS sfname,      // short file name or NULL
-   CS tail,         // tail of path
-   Boole allow_dirs      // allow matching with dir
+   CS pattern,      //pattern to match with
+   RegProg** prog,         //pre-compiled regprog or NULL
+   CS fname,         //full path of file name
+   CS sfname,      //short file name or NULL
+   CS tail,         //tail of path
+   Boole allow_dirs      //allow matching with dir
 );
 int match_file_list(CS list, CS sfname, CS ffname);
 CS file_pat_to_reg_pat(
    CS pat,
-   CS pat_end,   // first char after pattern or NULL
-   OUT Boole* allow_dirs   // Result passed back out in here
+   CS pat_end,   //first char after pattern or NULL
+   OUT Boole* allow_dirs   //Result passed back out in here
 );
 Long fiReadEintr(int fd, OUT void* buf, Unt bufsize);
 long write_eintr(int fd, void *buf, Unt bufsize);
 CS fiGetShellOutput(
    CS cmd,
-   NULLABLE CS infile, // optional input file name
-   Unt flags,          // can be SHELL_SILENT
+   NULLABLE CS infile, //optional input file name
+   Unt flags,          //can be SHELL_SILENT
    OUT int* ret_len
 );
 void f_system(Var* argvars, Var* returnVar);

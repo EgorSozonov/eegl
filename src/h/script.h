@@ -80,9 +80,9 @@ int debug_has_expr_breakpoint(void);
 void c_breakdel(Invocation* invo);
 void c_breaklist(Invocation*);
 LineNr dbg_find_breakpoint(
-   int      file,       // true for a file, false for a function
-   Byte   *fname,       // file or function name
-   LineNr   after       // after this line number
+   int      file,       //true for a file, false for a function
+   Byte   *fname,       //file or function name
+   LineNr   after       //after this line number
 );
 void dbg_breakpoint(Byte *name, LineNr lnum);
 Boole scrIsCommlineFuzzyCompletable(CS fuzzystr);
@@ -102,7 +102,7 @@ int cmdline_compl_is_fuzzy(void);
 CS expandWildcard(
    OUT Expand* xp,
    CS str,
-   CS orig,       // allocated copy of original of expanded string
+   CS orig,       //allocated copy of original of expanded string
    Unt      options,
    int      mode
 );
@@ -115,26 +115,26 @@ void set_expand_context(Expand *xp);
 void setCompletionContextForCommand(
    OUT Expand* xp,
    Text searchPattern,
-   int col,        // position of cursor
-   Boole use_ccline // use ccline for info
+   int col,        //position of cursor
+   Boole use_ccline //use ccline for info
 );
 int expandCommline(
    Expand* xp,
-   CS str,      // start of command line
-   int col,      // position of cursor
+   CS str,      //start of command line
+   int col,      //position of cursor
    OUT ExpandMatch* matches
 );
 int expandFromContext(
    Expand   *xp,
    CS pat,
-   Unt options, // WILD_ flags
+   Unt options, //WILD_ flags
    OUT ExpandMatch* matches
 );
 int expandGeneric(
    CS pat,
    Expand* xp,
    RegMatch* regmatch,
-   CS (*fn)(Expand *, int), // return a string from the list
+   CS (*fn)(Expand *, int), //return a string from the list
    int      escaped,
    OUT ExpandMatch* matches
 );
@@ -155,15 +155,15 @@ void clear_hist_entry(HistoryEntry *hisptr);
 int in_history(
     int       type,
     Byte  *str,
-    int       move_to_front,   // Move the entry to the front if it exists
+    int       move_to_front,   //Move the entry to the front if it exists
     int       sep,
-    int       writing)      // ignore entries read from eeglinfo
+    int       writing)      //ignore entries read from eeglinfo
 ;
 void scrAddToHistory(
    int histype,
    Text newEntry,
-   int in_map,      // consider maptick when inside a mapping
-   int sep      // separator character used (search hist)
+   int in_map,      //consider maptick when inside a mapping
+   int sep      //separator character used (search hist)
 );
 void f_histadd(Arr(Var) argvars, Var* returnVar);
 void f_histdel(Arr(Var) argvars, Var* returnVar);
@@ -180,16 +180,16 @@ int parse_pattern_and_range(
 void cmdline_init(void);
 CS getCommline(
    Unt firstc,
-   long count,   // only used for incremental search
-   int indent,   // indent for inside conditionals
+   long count,   //only used for incremental search
+   int indent,   //indent for inside conditionals
    GetlineAlgo
 );
 Arr(Byte) getcmdline_prompt(
    Unt      firstc,
-   CS prompt,   // command line prompt
-   char      deco,      // decorations for prompt
-   int      context,   // type of expansion
-   CS completionFn)   // user-defined expansion argument
+   CS prompt,   //command line prompt
+   char      deco,      //decorations for prompt
+   int      context,   //type of expansion
+   CS completionFn)   //user-defined expansion argument
 ;
 int check_opt_wim(void);
 int text_locked(void);
@@ -199,9 +199,9 @@ int text_or_buf_locked(void);
 int curBookLocked(void);
 int allbuf_locked(void);
 CS scrGetTypedCommand(
-   Unt  c,      // normally ':', NUL for ":append"
+   Unt  c,      //normally ':', NUL for ":append"
    void*,
-   int indent,      // indent for inside conditionals
+   int indent,      //indent for inside conditionals
    GetlineAlgo options
 );
 int cmdline_overstrike(void);
@@ -244,10 +244,10 @@ void get_user_input(
 void f_wildtrigger(Arr(Var), Var*);
 CS find_ucmd(
    Invocation   *invo,
-   Byte   *p,    // end of the command (possibly including count)
-   int      *full,    // set to true for a full match
-   Expand   *xp,    // used for completion, NULL otherwise
-   OUT Unt* context // completion flags or NULL
+   Byte   *p,    //end of the command (possibly including count)
+   int      *full,    //set to true for a full match
+   Expand   *xp,    //used for completion, NULL otherwise
+   OUT Unt* context //completion flags or NULL
 );
 CS set_context_in_user_cmd(Expand *xp, CS arg_in);
 CS set_context_in_user_cmdarg(
@@ -306,12 +306,12 @@ int get_func_arguments(
    int* argcount
 );
 int get_func_tv(
-   CS name,      // name of the function
-   int len,      // length of "name" or -1 to use strlen()
+   CS name,      //name of the function
+   int len,      //length of "name" or -1 to use strlen()
    Var* returnVar,
-   Byte   **arg,      // argument, pointing to the '('
-   EvalCtx* evalarg,   // for line continuation
-   FnExe* funcexe)   // various values
+   Byte   **arg,      //argument, pointing to the '('
+   EvalCtx* evalarg,   //for line continuation
+   FnExe* funcexe)   //various values
 ;
 Byte * fname_trans_sid(
    Byte       *name,
@@ -357,35 +357,35 @@ int func_call(
 int get_callback_depth(void);
 int call_callback(
    Callback   *callback,
-   int      len,      // length of "name" or -1 to use strlen()
-   Var   *returnVar,      // return value goes here
-   int      argcount,   // number of "argvars"
-   Var   *argvars)   // vars for arguments, must have "argcount" PLUS ONE elements!
+   int      len,      //length of "name" or -1 to use strlen()
+   Var   *returnVar,      //return value goes here
+   int      argcount,   //number of "argvars"
+   Var   *argvars)   //vars for arguments, must have "argcount" PLUS ONE elements!
 ;
 Long call_callback_retnr(
    Callback   *callback,
-   int      argcount,   // number of "argvars"
-   Var   *argvars)   // vars for arguments, must have "argcount" PLUS ONE elements!
+   int      argcount,   //number of "argvars"
+   Var   *argvars)   //vars for arguments, must have "argcount" PLUS ONE elements!
 ;
 void user_func_error(FnError error, Byte *name, int found_var);
 int call_func(
-   Arr(Byte) funcname,   // name of the function
-   int      len,      // length of "name" or -1 to use strlen()
-   Var   *returnVar,      // return value goes here
-   int      argcount_in,   // number of "argvars"
-   Var   *argvars_in,   // vars for arguments, must have "argcount" PLUS ONE elements!
-   FnExe   *funcexe)   // more arguments
+   Arr(Byte) funcname,   //name of the function
+   int      len,      //length of "name" or -1 to use strlen()
+   Var   *returnVar,      //return value goes here
+   int      argcount_in,   //number of "argvars"
+   Var   *argvars_in,   //vars for arguments, must have "argcount" PLUS ONE elements!
+   FnExe   *funcexe)   //more arguments
 ;
 int call_simple_func(
-   CS funcname,   // name of the function
-   Unt len,      // length of "name"
-   OUT Var* returnVar      // return value goes here
+   CS funcname,   //name of the function
+   Unt len,      //length of "name"
+   OUT Var* returnVar      //return value goes here
 );
 CS printable_func_name(UserFunc *fp);
 CS trans_function_name(
    OUT CS* name,
    OUT Boole* is_global,
-   Boole skip,      // only find the end, don't evaluate
+   Boole skip,      //only find the end, don't evaluate
    Unt flags
 );
 CS get_scriptlocal_funcname(CS funcname);
@@ -440,8 +440,8 @@ int set_ref_in_func(CS name, UserFunc* fp_in, int copyID);
 UserFunc * define_function(Invocation* invo, ArrayList* lines_to_free);
 void c_function(Invocation* invo);
 int var_wrong_func_name(
-   Text name,    // points to start of variable name
-   int    new_var)  // true when creating the variable
+   Text name,    //points to start of variable name
+   int    new_var)  //true when creating the variable
 ;
 void scrRemoveAutocommsFromBook(Book* book);
 Boole auGroupExists(CS name);
@@ -457,21 +457,21 @@ void do_autocmd(CS arg_in, int forceit);
 int autoEventImpl(AutoEvent event, CS pat, AutoCommCreation creation);
 int do_doautocmd(
    CS arg_start,
-   Boole do_msg,       // give message for no matching autocmds?
+   Boole do_msg,       //give message for no matching autocmds?
    OUT Boole* didSomething
 );
 void c_doautoall(Invocation* invo);
 void auCommPrepareBook(
-   AutocommSave* aco,      // structure to save values in
-   Book* book      // new curBook
+   AutocommSave* aco,      //structure to save values in
+   Book* book      //new curBook
 );
 void auCommRestoreBook(AutocommSave* aco) ;
 int applyAutocomms(
    AutoEvent   event,
-   CS fname,       // NULL or empty means use actual file name
-   CS fname_io,  // fname to use for <afile> on cmdline
-   Boole force,       // when true, ignore autocmd_busy
-   Book* book       // buffer for <abuf>
+   CS fname,       //NULL or empty means use actual file name
+   CS fname_io,  //fname to use for <afile> on cmdline
+   Boole force,       //when true, ignore autocmd_busy
+   Book* book       //buffer for <abuf>
 );
 int auCommApplyWithInvo(
    AutoEvent event,
@@ -483,11 +483,11 @@ int auCommApplyWithInvo(
 );
 int applyAutocommsRetval(
    AutoEvent   event,
-   CS fname,      // NULL or empty means use actual file name
-   CS fname_io,   // fname to use for <afile> on cmdline
-   Boole force,     // when true, ignore autocmd_busy
-   Book* book,      // book for <abuf>
-   int* retval    // pointer to caller's retval
+   CS fname,      //NULL or empty means use actual file name
+   CS fname_io,   //fname to use for <afile> on cmdline
+   Boole force,     //when true, ignore autocmd_busy
+   Book* book,      //book for <abuf>
+   int* retval    //pointer to caller's retval
 );
 int trigger_cursorhold(void);
 int has_winresized(void);

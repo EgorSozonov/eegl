@@ -23,9 +23,9 @@ Unt portMakePortals(Unt count, Boole vertical);
 int splitPortalmove(Portal* po, int size, Unt flags);
 void portMoveAfter(Portal* port0, Portal* port1);
 void portEqualizeHeight(
-   Portal* next_curPor,   // pointer to current portal to be or NULL
-   int current,   // do only frame with current portal
-   Byte dir   // EAD_* constants, or 0 for using p_ead
+   Portal* next_curPor,   //pointer to current portal to be or NULL
+   int current,   //do only frame with current portal
+   Byte dir   //EAD_* constants, or 0 for using p_ead
 );
 void leavingPortal(Portal* port);
 void enteringPortal(Portal* port);
@@ -42,10 +42,10 @@ void closePortal_othertab(Portal* port, int free_buf, Tab *t);
 void portFreeAll(void);
 Portal * portRemoveFrame(
    Portal* port,
-   OUT Byte* dirp,  // set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
-   Tab* t,      // tab "port" is in, NULL for current
-   OUT Frame** unflat_altfr // if not NULL, set to pointer of frame that got the space, and it 
-                            // is not flattened
+   OUT Byte* dirp,  //set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
+   Tab* t,      //tab "port" is in, NULL for current
+   OUT Frame** unflat_altfr //if not NULL, set to pointer of frame that got the space, and it 
+                            //is not flattened
 );
 void portCloseOthers(Boole message);
 void unloadTab(Tab *t);
@@ -98,13 +98,13 @@ int plines(LineNr lnum);
 int plines_win(
    Portal   *wp,
    LineNr   lnum,
-   int      limit_winheight)   // when true limit to portal height
+   int      limit_winheight)   //when true limit to portal height
 ;
 int plines_nofill(LineNr lnum);
 int plines_win_nofill(
     Portal   *wp,
     LineNr   lnum,
-    int      limit_winheight)   // when true limit to portal height
+    int      limit_winheight)   //when true limit to portal height
 ;
 int plines_win_nofold(Portal *wp, LineNr lnum);
 int plines_m_win(Portal *wp, LineNr first, LineNr last, int max);
@@ -122,7 +122,7 @@ void reset_lnums(void);
 int make_snapshot(int idx);
 void restore_snapshot(
    int      idx,
-   int      close_curPor)       // closing current portal
+   int      close_curPor)       //closing current portal
 ;
 int getLastPortId(void);
 int portalLocked(Portal* po);
@@ -133,8 +133,8 @@ Portal * getPortAndTab(int id, OUT Tab** result);
 Portal * portFindByNr(Var* vp, Tab* t);
 Portal * portFindByNrOrId(Var *vp);
 Portal * find_tabwin(
-    Var* needle,   // VAR_UNKNOWN for current portal
-    Var* tvp,   // VAR_UNKNOWN for current tab
+    Var* needle,   //VAR_UNKNOWN for current portal
+    Var* tvp,   //VAR_UNKNOWN for current tab
     Tab** ptp
 );
 void f_gettabinfo(Arr(Var) argvars, Var* returnVar);
@@ -186,8 +186,8 @@ Boole getFoldsPortal(
    LineNr lnum,
    LineNr* firstp,
    LineNr* lastp,
-   int      cache,      // when true: use cached values of portal
-   OUT FoldInfo* infop      // where to store fold info
+   Boole cache,      //when true: use cached values of portal
+   OUT FoldInfo* infop      //where to store fold info
 );
 int lineFolded(Portal *po, LineNr lnum);
 long foldedCount(Portal* po, LineNr lnum, OUT FoldInfo* infop);
@@ -196,9 +196,9 @@ void closeFoldRecurse(LineNr lnum);
 void opFoldRange(
    LineNr first,
    LineNr last,
-   Boole opening,   // true to open, false to close
-   Boole recurse,   // true to do it recursively
-   Boole had_visual   // true when Visual selection used
+   Boole opening,   //true to open, false to close
+   Boole recurse,   //true to do it recursively
+   Boole had_visual   //true when Visual selection used
 );
 void openFold(LineNr lnum, Long count);
 void openFoldRecurse(LineNr lnum);
@@ -337,12 +337,12 @@ int find_word_under_cursor(
    int mouserow,
    int mousecol,
    int getword,
-   Unt flags,   // flags for find_ident_at_pos()
-   Portal** winp,   // may be NULL
-   LineNr* lnump,   // may be NULL
+   Unt flags,   //flags for find_ident_at_pos()
+   Portal** winp,   //may be NULL
+   LineNr* lnump,   //may be NULL
    OUT CS* textp,
-   int* colp,   // column where mouse hovers, can be NULL
-   int* startcolp // column where text starts, can be NULL
+   int* colp,   //column where mouse hovers, can be NULL
+   int* startcolp //column where text starts, can be NULL
 );
 int get_beval_info(
    BalloonEval* beval,

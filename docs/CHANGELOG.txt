@@ -273,6 +273,7 @@
 [ ] keymodel? (p_km)
 [ ] alloc_type?
 [ ] regex match syntax coloring ?
+[-] @relativenumber (always on)
 [-] SYN_TIME_LIMIT (no reason, syntax coloring is fast now)
 [-] tuples (too complex for a simple dynamic scripting language)
 [-] EVENT_OPTIONSET (too hard)
@@ -337,8 +338,13 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] Transition to pure 256-color palette and removal of double-width symbols
 [ ] Project dir and src dir settings at command line (-P and -Psrc options)
 [ ] Replace VimScript with Eyr
+[ ] Snippets phase 1: a function and a command that accepts 1 or two args (snippet name and
+optionally a param). A file where named snippets are read from. Running the command with a visual
+selection automatically replaces the selection with the snippet where the value of the
+selection has been used as argument.
+[ ] Snippets phase 2: an interactive portal when > 1 parameters
 [ ] @errorformat is unsuitable for an option: it should be per-filetype. We need a new event type
-   to control via autocommands: the IsCodeChange. Scratch buffers are created with isCode = false. 
+   to control via autocommands: the IsCodeChange. Scratch books are created with isCode = false. 
    Then when they are saved with .txt, .json, .yaml or without file extension, they stay that way.
    But if they are saved with another extension, they get isCode = true and the IsCodeChange fires.
    The existing @errorformat should be repurposed as a global option that the autocommand can 

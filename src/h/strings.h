@@ -36,14 +36,14 @@ long parseLong_quoted(OUT CS* pp);
 int eeIsBlankLine(CS lbuf);
 void readLongNumber(
    CS start,
-   OUT int* prep,    // type of number 0 = decimal, 'x' or 'X' is hex, 'b' or 'B' is bin
-   OUT int* len,     // detected length of number
-   int what,     // what numbers to recognize
-   OUT Long* nptr, // signed result
-   OUT Ulong* unptr,  // unsigned result
-   int maxlen,   // max length of string to check
-   Boole strict,   // check strictly
-   Boole* overflow  // when not NULL set to true for overflow
+   OUT int* prep,    //type of number 0 = decimal, 'x' or 'X' is hex, 'b' or 'B' is bin
+   OUT int* len,     //detected length of number
+   int what,     //what numbers to recognize
+   OUT Long* nptr, //signed result
+   OUT Ulong* unptr,  //unsigned result
+   int maxlen,   //max length of string to check
+   Boole strict,   //check strictly
+   Boole* overflow  //when not NULL set to true for overflow
 );
 int hex2nr(int c);
 int hexhex2nr(CS p);

@@ -35,7 +35,7 @@ void fillRowsWithTwoChars(
    Unt c2,
    Decoration deco
 );
-void check_for_delay(int check_msg_scroll);
+void drawCheckShouldBeDelay(Boole check_msg_scroll);
 Boole screen_valid(Boole doclear);
 void screenalloc(Boole doclear);
 void free_screenlines(void);
@@ -47,11 +47,11 @@ void windgoto(int row, int col);
 void setcursor(void);
 void setcursor_mayforce(int force);
 int insertLinesIntoPortal(
-   Portal   *po,
-   int      row,
-   int      line_count,
-   int      invalid,
-   int      mayclear
+   Portal* po,
+   int row,
+   int line_count,
+   int invalid,
+   int mayclear
 );
 int deleteLinesFromPortal(
    Portal   *po,
@@ -59,7 +59,7 @@ int deleteLinesFromPortal(
    int      line_count,
    int      invalid,
    int      mayclear,
-   Unt      clearHiId       // for clearing lines
+   Unt      clearHiId       //for clearing lines
 );
 int drawInsertLines(
    int off,
@@ -67,16 +67,16 @@ int drawInsertLines(
    int line_count,
    int end,
    int clearHiId,
-   Portal* po       // NULL or portal to use width from
+   Portal* po       //NULL or portal to use width from
 );
 int screen_del_lines(
    int      off,
    int      row,
    int      line_count,
    int      end,
-   int      force,      // even when line_count > p_ttyscroll
-   Int      clearHiId,   // used for clearing lines
-   Portal* po      // NULL or portal to use width from
+   int      force,      //even when line_count > p_ttyscroll
+   Int      clearHiId,   //used for clearing lines
+   Portal* po      //NULL or portal to use width from
 );
 int skip_showmode(void);
 int showmode(void);
@@ -121,20 +121,13 @@ void redrawPortRangeLater(Portal* po, LineNr first, LineNr last);
 int text_prop_position(
    Portal* po,
    TextProp* t,
-   int vcol,       // current text column
-   int scr_col,       // current screen column
-   int* countExtraBytes,       // nr of bytes for virtual text
-   Byte** extraBytes,       // virtual text
-   OUT int* numDecoCells,       // decoration cells, NULL if not used
-   int* toSkipBeforeDeco,   // cells to skip deco, NULL if not used
-   int do_skip       // skip_cells is not zero
-);
-int drawLineOnScreen(
-   Portal* port,
-   LineNr lnum,
-   int startrow,
-   int endrow,
-   int drawingOnlyNumberCol
+   int vcol,       //current text column
+   int scr_col,       //current screen column
+   int* countExtraBytes,       //nr of bytes for virtual text
+   Byte** extraBytes,       //virtual text
+   OUT int* numDecoCells,       //decoration cells, NULL if not used
+   int* toSkipBeforeDeco,   //cells to skip deco, NULL if not used
+   int do_skip       //skip_cells is not zero
 );
 void f_screenattr(Arr(Var) argvars, Var* returnVar);
 void f_screenchar(Arr(Var) argvars, Var* returnVar);

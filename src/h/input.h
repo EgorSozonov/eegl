@@ -74,18 +74,18 @@ int getwhitecols_curline(void);
 void format_lines(LineNr   line_count, int avoid_fex);
 CS inputInitCharLens(void);
 int mb_get_class(CS p);
-int inpGetClassForBook(CS p, Book* book);
-int utfc_ptr2char(CS p, OUT int* pcc);
+Unt inpGetClassForBook(CS p, Book* book);
+Unt utfc_ptr2char(CS p, OUT Unt* pcc);
 int utfc_ptr2char_len(
     CS p,
-    OUT int* pcc,   // return: composing chars, last one is 0
+    OUT Unt* pcc,   //composing chars, last one will be 0
     int maxlen
 );
-int utf_class(int c);
+Unt utf_class(int c);
 void mb_adjust_cursor(void);
 void mb_adjustpos(Book* book, Pos *lp);
 void f_charclass(Arr(Var) argvars, Var* returnVar);
-int utf_class_buf(Unt c, Book* book);
+Unt utf_class_buf(Unt c, Book* book);
 int mb_char2cells(int c);
 int utf_uint2cells(Unt c);
 CS sanitizeStr(CS s);
@@ -93,14 +93,14 @@ void show_utf8(void);
 void trans_characters(CS buf, int bufsize);
 int mb_ptr2cells(CS p);
 int mb_ptr2cells_len(CS p, int size);
-int mb_string2cells(CS p, int len);
+Unt mb_string2cells(CS p, int len);
 CS findWordStart(CS ptr);
 int do_mouse(
-   Operator* oper,  // operator argument, can be NULL
-   Unt c,           // K_LEFTMOUSE, etc
-   Unt dir,         // Direction to 'put' if necessary
+   Operator* oper,  //operator argument, can be NULL
+   Unt c,           //K_LEFTMOUSE, etc
+   Unt dir,         //Direction to 'put' if necessary
    long count,
-   int fixindent    // PUT_FIXINDENT if fixing indent necessary
+   int fixindent    //PUT_FIXINDENT if fixing indent necessary
 );
 void ins_mouse(int c);
 void ins_mousescroll(int dir);
@@ -112,8 +112,8 @@ void setmouse(void);
 void mouseResetDragPortal(void);
 Unt jump_to_mouse(
    Unt flags,
-   OUT Boole* inclusive,   // used for inclusive operator, can be NULL
-   Unt which_button   // MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE
+   OUT Boole* inclusive,   //used for inclusive operator, can be NULL
+   Unt which_button   //MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE
 );
 void nv_mousescroll(ActionArg* cap);
 void nv_mouse(ActionArg* cap);

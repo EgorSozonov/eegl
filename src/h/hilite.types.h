@@ -5,7 +5,7 @@
 #define HLF_NONE     0 //No decorations
 #define HLF_NONTEXT  1 //Non-text
 #define HLF_FLOAT    2 //Normal float
-#define HLF_AT       3 // characters at end of screen, characters that don't really exist in the text
+#define HLF_AT       3 //characters at end of screen, characters that don't really exist in the text
 #define HLF_D        4 //directories in CTRL-D listing
 #define HLF_E        5 //error messages
 #define HLF_W        6 //warning messages

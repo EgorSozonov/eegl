@@ -8,7 +8,7 @@ int eval_to_bool(
    CS arg,
    OUT Boole* error,
    Invocation* invo,
-   Boole skip,       // only parse, don't execute
+   Boole skip,       //only parse, don't execute
    Boole use_simple_function
 );
 Boole eval_expr_valid_arg(Var *tv);
@@ -22,7 +22,7 @@ int eval_expr_typval(
 CS eval_to_string_skip(
    CS arg,
    Invocation* invo,
-   int      skip)       // only parse, don't execute
+   int      skip)       //only parse, don't execute
 ;
 void init_evalarg(EvalCtx *evalarg);
 void clear_evalarg(EvalCtx* evalarg, Invocation* invo);
@@ -43,7 +43,7 @@ Boole letImpl(
    OUT Lval* lval,
    Var* returnVar,
    Boole copy,
-   Unt flags, // ASSIGN_CONST, ASSIGN_NO_DECL
+   Unt flags, //ASSIGN_CONST, ASSIGN_NO_DECL
    NULLABLE CS op
 );
 Boole evalLetVarSimple(CS name, Var* newValue);
@@ -80,9 +80,9 @@ CS echo_string(
 ;
 Pos* var2fpos(
    Var* varp,
-   int dollar_lnum,   // true when $ is last line
-   int* fnum,      // set to fnum for '0, 'A, etc.
-   int charcol)   // return character column
+   int dollar_lnum,   //true when $ is last line
+   int* fnum,      //set to fnum for '0, 'A, etc.
+   int charcol)   //return character column
 ;
 int list2fpos(
    Var* arg,
@@ -99,7 +99,7 @@ int handle_subscript(
    OUT CS* arg,
    Var   *returnVar,
    EvalCtx   *evalarg,
-   int      verbose)   // give error messages
+   int      verbose)   //give error messages
 ;
 int item_copy(
    Var   *from,
@@ -123,7 +123,7 @@ CS do_string_sub(
    CS sub,
    Var* expr,
    Byte* flags,
-   Unt* ret_len      // length of returned buffer
+   Unt* ret_len      //length of returned buffer
 );
 void evalvars_clear(void);
 int garbage_collect_globvars(int copyID);
@@ -229,7 +229,6 @@ void execute_cmds_from_string(CS str);
 CS get_list_line(Unt, void* cookie, int, GetlineAlgo);
 void execute_common(Arr(Var) argvars, Var* returnVar, int arg_off);
 void f_exists(Var* argvars, Var* returnVar);
-void f_has(Arr(Var) argvars, Var* returnVar);
 int dynamic_feature(CS feature);
 void f_hlID(Arr(Var) argvars, Var* returnVar);
 void f_hlexists(Arr(Var) argvars, Var* returnVar);
@@ -238,15 +237,15 @@ void f_id(Arr(Var) argvars, Var* returnVar);
 void f_len(Arr(Var) argvars, Var* returnVar);
 void range_list_materialize(List *list);
 long do_searchpair(
-   CS spat,       // start pattern
-   CS mpat,       // middle pattern
-   CS epat,       // end pattern
-   Unt dir,       // BACKWARD or FORWARD
-   Var* skip,       // skip expression
-   Unt flags,       // SP_SETPCMARK and other SP_ values
+   CS spat,       //start pattern
+   CS mpat,       //middle pattern
+   CS epat,       //end pattern
+   Unt dir,       //BACKWARD or FORWARD
+   Var* skip,       //skip expression
+   Unt flags,       //SP_SETPCMARK and other SP_ values
    Pos* match_pos,
-   LineNr lnum_stop,  // stop at this line if not zero
-   long time_limit // stop after this many msec
+   LineNr lnum_stop,  //stop at this line if not zero
+   long time_limit //stop after this many msec
 );
 int aborting(void);
 void update_force_abort(void);

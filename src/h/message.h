@@ -20,20 +20,20 @@ int msgOuttransLenDeco(Text slice, char flags);
 void msg_make(CS arg);
 int msg_outtrans_special(
    CS strstart,
-   int from,   // true for lhs of a mapping
-   int maxlen  // screen columns, 0 for unlimited
+   int from,   //true for lhs of a mapping
+   int maxlen  //screen columns, 0 for unlimited
 );
 CS str2special_save(
    Byte  *str,
-   int       replace_spaces,   // true to replace " " with "<Space>".
-            // used for the lhs of mapping and keytrans().
-   int       replace_lt      // true to replace "<" with "<lt>".
+   int       replace_spaces,   //true to replace " " with "<Space>".
+            //used for the lhs of mapping and keytrans().
+   int       replace_lt      //true to replace "<" with "<lt>".
 );
 CS str2special(
    Byte** sp,
-   int      replace_spaces,   // true to replace " " with "<Space>".
-            // used for the lhs of mapping and keytrans().
-   int  replace_lt)   // true to replace "<" with "<lt>".
+   int      replace_spaces,   //true to replace " " with "<Space>".
+            //used for the lhs of mapping and keytrans().
+   int  replace_lt)   //true to replace "<" with "<lt>".
 ;
 void str2specialbuf(Byte *sp, OUT Byte *builder, int len);
 void msg_prt_line(CS s, int list);
@@ -70,8 +70,8 @@ int do_dialog(
    Byte* message,
    Byte* buttons,
    int dfltbutton,
-   Byte*,   // IObuff for inputdialog(), NULL otherwise
-   int ex_cmd       // when true pressing : accepts default and starts a Command
+   Byte*,   //IObuff for inputdialog(), NULL otherwise
+   int ex_cmd       //when true pressing : accepts default and starts a Command
 );
 int eeDialog_yesno(
     int      type,

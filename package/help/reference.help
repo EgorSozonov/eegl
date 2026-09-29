@@ -3011,22 +3011,6 @@ limit syntax highlighting is disabled until |CTRL-L| is used.
 This is used to avoid that Eegl hangs when using a very complicated pattern.
 
 
-@@relativenumber         Portal. Boolean. Default = on
-   
-Show the line number relative to the line with the cursor in front of
-each line. Relative line numbers help you use the |count| you can
-precede some vertical motion commands (e.g. j k + -) with, without
-having to calculate it yourself. Especially useful in combination with
-other commands (e.g. y d c < > gq gw =).
-The @numberwidth option can be used to set the room used for the line number.
-When a long, wrapped line doesn't start with the first character, '-'
-characters are put before the number.
-See |hl-LineNr|  and |hl-CursorLineNr| for the highlighting used for the number.
-
-The number in front of the cursor line also depends on the value of
-@number, see |number_relativenumber| for all combinations of the two options.
-
-
 @@rulerformat            Global. String. Default = off
    
 When this option is not empty, it determines the content of the ruler

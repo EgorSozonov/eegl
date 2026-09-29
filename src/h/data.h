@@ -75,11 +75,11 @@ void f_list2str(Arr(Var) argvars, Var* returnVar);
 void f_sort(Arr(Var) argvars, Var* returnVar);
 void f_uniq(Arr(Var) argvars, Var* returnVar);
 int filter_map_one(
-   Var*,         // original value
-   Var* expr,       // callback
+   Var*,         //original value
+   Var* expr,       //callback
    FilterMap filtermap,
-   Var* newtv,       // for map() and mapnew(): new value
-   int* remp      // for filter(): remove flag
+   Var* newtv,       //for map() and mapnew(): new value
+   int* remp      //for filter(): remove flag
 );
 void f_filter(Arr(Var) argvars, Var* returnVar);
 void f_map(Arr(Var) argvars, Var* returnVar);
@@ -178,9 +178,9 @@ CS tv_stringify(Var* varp, CS buf);
 int tv_check_lock(Var* tv, Text name, Boole use_gettext);
 void copy_tv(OUT Var* to, Var* from);
 int daCompareVars(
-   Var* tv1,   // first operand
-   Var* tv2,   // second operand
-   ExprType type,   // operator
+   Var* tv1,   //first operand
+   Var* tv2,   //second operand
+   ExprType type,   //operator
    Boole ignoreCase
 );
 int daCompareVars_list(

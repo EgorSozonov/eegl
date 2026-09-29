@@ -34,7 +34,7 @@
 #include "h/wheel.h"
 #include "h/window.h"
 
-#include <locale.h> // for LC_MESSAGES et al
+#include <locale.h> //for LC_MESSAGES et al
 
 //{{{info & types
 
@@ -43,14 +43,14 @@
 //- If it's a numeric option, add a setter callback and perform necessary bounds checks there
 //- If it's a list of flags, add some code in setStringImpl(), search for WW_ALL.
 //- Add documentation!  One line in manual/manual.help, full description in
-//  noncode/help/reference.help, and any other related places.
+// noncode/help/reference.help, and any other related places.
 //When making changes:
 //- Adjust the help for the option in PREFIX /share/eegl/doc/reference.help.
 
 //{{{enums
 
 
-// Option Flags
+//Option Flags
 
 #define P_GLOBAL        0x01 //Global option
 #define P_PORTAL        0x02 //Portal-local option
@@ -64,7 +64,7 @@
 #define P_EXPAND       0x200 //environment expansion. NOTE: P_EXPAND can never be used for local or 
                              //hidden options!
 
-            // when option changed, what to display:
+            //when option changed, what to display:
 #define P_RSTAT        0x400 //redraw status lines
 #define P_REDRAW_PORT  0x800 //redraw current portal and recompute text
 #define P_RBUF        0x1000 //redraw current buffer and recompute text
@@ -99,9 +99,9 @@ typedef enum {
 #define DFLT_EFM   "%*[^\"]\"%f\"%*\\D%l: %m,\"%f\"%*\\D%l: %m,%-Gg%\\?make[%*\\d]: *** [%f:%l:%m,%-Gg%\\?make: *** [%f:%l:%m,%-G%f:%l: (Each undeclared identifier is reported only once,%-G%f:%l: for each function it appears in.),%-GIn file included from %f:%l:%c:,%-GIn file included from %f:%l:%c\\,,%-GIn file included from %f:%l:%c,%-GIn file included from %f:%l,%-G%*[ ]from %f:%l:%c,%-G%*[ ]from %f:%l:,%-G%*[ ]from %f:%l\\,,%-G%*[ ]from %f:%l,%f:%l:%c:%m,%f(%l):%m,%f:%l:%m,\"%f\"\\, line %l%*\\D%c%*[^ ] %m,%D%*\\a[%*\\d]: Entering directory %*[`']%f',%X%*\\a[%*\\d]: Leaving directory %*[`']%f',%D%*\\a: Entering directory %*[`']%f',%X%*\\a: Leaving directory %*[`']%f',%DMaking %*\\a in %f,%f|%l| %m"
 
 #define DFLT_TEXTAUTO false
-#define FO_ALL      "tcro/q2vlb1mMBn,aw]jp"   // for c_set()
+#define FO_ALL      "tcro/q2vlb1mMBn,aw]jp"   //for c_set()
 
-// characters for p_ww option:
+//characters for p_ww option:
 #define WW_ALL      "bshl<>[]~"
 
 //}}}
@@ -124,12 +124,12 @@ typedef CS (*OptionValidator)(OptionChange* cha);
 //option value is expanded for cmdline completion.
 typedef struct {
    OptionRef ref;
-   // The original option value, escaped.
+   //The original option value, escaped.
    OptionValue origValue;
 
-   // True if using set+= instead of set=
+   //True if using set+= instead of set=
    Boole append;
-   // If we would like to add the original option value as the first choice.
+   //If we would like to add the original option value as the first choice.
    Boole includeOrigVal;
 
    //Regex from the cmdline, for matching potential options against.
@@ -137,9 +137,9 @@ typedef struct {
    //The expansion context.
    Expand* expand;
 
-   // The full argument passed to :set. For example, if the user inputs
-   // ':set dip=icase,algorithm:my<Tab>', @expand->pattern will only have
-   // 'my', but @setArg will contain the whole 'icase,algorithm:my'.
+   //The full argument passed to :set. For example, if the user inputs
+   //':set dip=icase,algorithm:my<Tab>', @expand->pattern will only have
+   //'my', but @setArg will contain the whole 'icase,algorithm:my'.
    CS setArg;
 } OptExpand;
 
@@ -172,8 +172,8 @@ typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
    for (Option* o = OPTIONS_BOOK; o < OPTIONS_BOOK + OPTION_BOOK_COUNT; o++)
    
 typedef struct { //:Option
-   CS fullName;   // full option name
-   OptionValue defaultValue; // default value for option
+   CS fullName;   //full option name
+   OptionValue defaultValue; //default value for option
    
    //callback function to validate and apply the change as well as the post-processing
    OptionSetter setter;
@@ -183,13 +183,13 @@ typedef struct { //:Option
    OptionExpander expander;
 
    Unt flags;  
-   ScriptPos scriptPos;   // script context where the option was last set
+   ScriptPos scriptPos;   //script context where the option was last set
    union {
       struct {
-         OptionValue val; // the global value of a local option
-         Unt offset;      // the offset from struct start. Otherwise, UNT
+         OptionValue val; //the global value of a local option
+         Unt offset;      //the offset from struct start. Otherwise, UNT
       } local;
-      OptionRef reference; // for global options
+      OptionRef reference; //for global options
    } c;
 } Option;
 
@@ -379,8 +379,8 @@ private CS did_set_commentstring(OptionChange *cha);
 private CS setBackupCopy(OptionChange* cha);
 private int expand_set_backupcopy(OptExpand* args, OUT ExpandMatch* matches);
 private int checkBreakIndent(
-   CS briopt,  // when NULL: use "po->o.breakIndent"
-   Portal* po       // when NULL: only check "briopt"
+   CS briopt,  //when NULL: use "po->o.breakIndent"
+   Portal* po       //when NULL: only check "briopt"
 );
 private CS setBreakindentOpt(OptionChange* cha);
 private int expandBreakindentOpt(OptExpand* args, OUT ExpandMatch* matches);
@@ -437,23 +437,23 @@ private SetScope expandOptionScopeS = SET_GLOBAL;
 private Boole expandAppendS = false;
 private int expandStartColS = 0;
 
-// Return true if option "p" has its default value.
+//Return true if option "p" has its default value.
 private int
 isOptionAtDefault(Option* o, OptionRef ref) {
    if (o->defaultValue.tag == OPTION_NUM)
       return (*ref.num == o->defaultValue.num);
    if (o->defaultValue.tag == OPTION_BOOLE)
       return (*ref.boole == o->defaultValue.boole);
-   // OPTION_STRING
+   //OPTION_STRING
    return (STRCMP(*ref.string, o->defaultValue.string) == 0);
 }
 
 //private Boole
 //eqRef(OptionRef a, OptionRef b) {
-//   return (a.tag == OPTION_BOOLE && b.tag == OPTION_BOOLE && a.boole == b.boole)
-//       || (a.tag == OPTION_NUM && b.tag == OPTION_NUM && a.num == b.num)
-//       || (a.tag == OPTION_STRING && b.tag == OPTION_STRING && a.string == b.string)
-//   ; 
+//  return (a.tag == OPTION_BOOLE && b.tag == OPTION_BOOLE && a.boole == b.boole)
+//      || (a.tag == OPTION_NUM && b.tag == OPTION_NUM && a.num == b.num)
+//      || (a.tag == OPTION_STRING && b.tag == OPTION_STRING && a.string == b.string)
+//  ; 
 //}
 
 //Set the default value of a string option from @Option.defaultValue.
@@ -487,10 +487,10 @@ setBoolImpl(
    Boole oldValue = *ref.boole;
    CS errmsg = NULL;
 
-   // Remember where the option was set.
+   //Remember where the option was set.
    setScriptPos(OUT o, setScope, scriptPosG);
 
-   // Handle side effects of changing a bool option.
+   //Handle side effects of changing a bool option.
    if (o->setter) {
       OptionChange cha;
       CLEAR_FIELD(cha);
@@ -553,7 +553,7 @@ set_init_default_backupskip(void) {
          plen = (int)STRLEN_LITERAL("/tmp");
       } else {
          p = eeglGetEnv((CS)names[i]);
-         plen = 0;       // will be calculated below
+         plen = 0;       //will be calculated below
       }
       if (p && *p != ZERO) {
          Byte* item;
@@ -605,7 +605,7 @@ set_init_default_cdpath(void) {
       return;
 
    CS buffer = alloc((STRLEN(cdpath) << 1) + 2);
-   buffer[0] = ',';       // start with ",", current dir first
+   buffer[0] = ',';       //start with ",", current dir first
    int j = 1;
    for (int i = 0; cdpath[i] != ZERO; ++i) {
       if (cdpath[i] == ':') {
@@ -629,7 +629,7 @@ setDefault(Option* o, SetScope setScope){
    OptionRef ref = getRefInScope(o, setScope);
    
    if (o->defaultValue.tag == OPTION_STRING) {
-      // Use optChangeStringOptionDirect() for local options to handle freeing and allocating the value
+      //Use optChangeStringOptionDirect() for local options to handle freeing and allocating the value
       if ((o->flags & (P_BOOK|P_PORTAL)) != 0) {
          changeStringOptionDirectImpl(o, o->defaultValue.string, setScope, 0);
       } else {
@@ -651,7 +651,7 @@ setDefault(Option* o, SetScope setScope){
       Unt defaultValue = o->defaultValue.flags;
       *ref.flags = defaultValue;
       *getRefInScope(o, setScope).flags = defaultValue;
-   } else {  // OPTION_BOOLE
+   } else {  //OPTION_BOOLE
       *ref.boole = o->defaultValue.boole;
    }
 
@@ -679,8 +679,8 @@ optFreeAllOptions(void) {
 }
 #endif
 
-// Parse the @cursorNormal and @cursorInsert options
-// Return error message for an illegal option, NULL otherwise.
+//Parse the @cursorNormal and @cursorInsert options
+//Return error message for an illegal option, NULL otherwise.
 private Byte
 parseCursorShape(CS input) {
    if (STRCMP(input, "block") == 0) {
@@ -692,7 +692,7 @@ parseCursorShape(CS input) {
    }
 }
 
-// Initialize the options, part two: After getting visibleRowsG and visibleColsG and setting 'term'
+//Initialize the options, part two: After getting visibleRowsG and visibleColsG and setting 'term'
 pub void
 optInit1(void) {
    didset_options();
@@ -705,11 +705,11 @@ optInit1(void) {
 //of "lang" are used.
 private void
 set_helplang_default(CS lang) {
-   if (!lang)   // safety check
+   if (!lang)   //safety check
       return;
 
    Unt langlen = STRLEN(lang);
-   if (langlen < 2)   // safety check
+   if (langlen < 2)   //safety check
       return;
 
    Option* o = findOption(S"helplang");
@@ -717,12 +717,12 @@ set_helplang_default(CS lang) {
       return;
 
    p_hlg = copySubstr(lang, langlen);
-   // zh_CN becomes "cn", zh_TW becomes "tw"
+   //zh_CN becomes "cn", zh_TW becomes "tw"
    if (STRNICMP(p_hlg, "zh_", 3) == 0 && langlen >= 5) {
       p_hlg[0] = TOLOWER_ASC(p_hlg[3]);
       p_hlg[1] = TOLOWER_ASC(p_hlg[4]);
    }
-   // any C like setting, such as C.UTF-8, becomes "en"
+   //any C like setting, such as C.UTF-8, becomes "en"
    ei (langlen >= 1 && *p_hlg == 'C') {
       p_hlg[0] = 'e';
       p_hlg[1] = 'n';
@@ -734,7 +734,7 @@ set_helplang_default(CS lang) {
 //Can't use optChangeStringOptionDirect(), because we need to remove the backslashes.
 private CS
 stropt_copy_value( CS arg) {
-   // get a bit too much
+   //get a bit too much
    Unt newlen = STRLEN(arg) + 1;
    CS newVal = alloc(newlen);
    CS s = newVal;
@@ -745,7 +745,7 @@ stropt_copy_value( CS arg) {
       int i;
 
       if (*arg == '\\' && arg[1] != ZERO)
-         ++arg;   // remove backslash
+         ++arg;   //remove backslash
       if ((i = utfCharLen(arg)) > 1) {
          //copy multibyte char
          MEMMOVE(s, arg, (Unt)i);
@@ -760,16 +760,16 @@ stropt_copy_value( CS arg) {
 }
 
 //Get the string value specified for a ":set" command. The following set options are supported:
-//  set {o}={val}
+// set {o}={val}
 private CS
 getNewValOfStringOption(Option* o, OUT CS* argp, OUT CS* origval_arg) {
    CS arg = *argp;
    CS origVal = *origval_arg;
    CS save_arg = NULL;
 
-   ++arg;   // consume the `=` or `:`
+   ++arg;   //consume the `=` or `:`
 
-   // Copy the new string into allocated memory.
+   //Copy the new string into allocated memory.
    CS newVal = stropt_copy_value(arg);
 
    //Expand environment variables and ~.
@@ -778,7 +778,7 @@ getNewValOfStringOption(Option* o, OUT CS* argp, OUT CS* origval_arg) {
       return newVal;
 
    if (save_arg)
-      arg = save_arg;  // arg was temporarily changed, restore it
+      arg = save_arg;  //arg was temporarily changed, restore it
    *argp = arg;
    *origval_arg = origVal;
 
@@ -834,7 +834,7 @@ setStringImpl(
    CLEAR_FIELD(cha);
    OptionRef ref = getRefInScope(o, setScope);
 
-   // Check for a "normal" directory or file name in some options.
+   //Check for a "normal" directory or file name in some options.
    if (checkIllegalPathNames(o, ref))
       errmsg = e_invalid_argument;
    else {
@@ -843,7 +843,7 @@ setStringImpl(
       cha.oldVal.string = oldVal;
       cha.newVal.string = newVal;
       cha.buf = getPolystring(o, setScope);
-      if (setter) { // normal option updatin'
+      if (setter) { //normal option updatin'
          //Invoke the option specific callback to validate and apply the new option value.
          errmsg = setter(&cha);
       } else {
@@ -995,7 +995,7 @@ setNumericImpl(
    setScriptPos(o, setScope, scriptPosG);
    o->flags |= P_WAS_SET;
 
-   computeColumnsForRulerAndCommand();             // in case @columns changed
+   computeColumnsForRulerAndCommand();             //in case @columns changed
 
    if (curPor->cursWant != MAXCOL
           && (o->flags & (P_CURSWANT | P_RALL)) != 0
@@ -1019,7 +1019,7 @@ parseAndSetNumeric(OUT Option* o, CS arg, SetScope setScope) {
    //[-]0-9       set number
    //other       error
    if (*arg == '-' || EE_ISDIGIT(*arg)) {
-      // Allow negative (for @undolevels) and hex numbers.
+      //Allow negative (for @undolevels) and hex numbers.
       int i; 
       readLongNumber(arg, NULL, OUT &i, STR2NR_ALL, OUT &newValue, NULL, 0, true, NULL);
       if (i == 0 || (arg[i] != ZERO && !SPACE_OR_TAB(arg[i]))) {
@@ -1093,13 +1093,13 @@ setImpl(Option* o, OptionValue newValue, SetScope setScope) {
       break;
    }
    
-   // Remember where the option was set.
+   //Remember where the option was set.
    setScriptPos(OUT o, setScope, scriptPosG);
    o->flags |= P_WAS_SET;
    
    if (newValue.tag != OPTION_STRING) {
 
-      computeColumnsForRulerAndCommand(); // in case @ruler or @showcmd changed
+      computeColumnsForRulerAndCommand(); //in case @ruler or @showcmd changed
 
       if (curPor->cursWant != MAXCOL
               && (o->flags & (P_CURSWANT | P_RALL)) != 0
@@ -1139,7 +1139,7 @@ setFromString(OUT Option* o, CS arg, CS newVal, SetScope setScope) {
       goto end;
    }
    if (o->defaultValue.tag != OPTION_STRING) {
-      computeColumnsForRulerAndCommand(); // in case @ruler or @showcmd changed
+      computeColumnsForRulerAndCommand(); //in case @ruler or @showcmd changed
 
       if (curPor->cursWant != MAXCOL
               && (o->flags & (P_CURSWANT | P_RALL)) != 0
@@ -1162,7 +1162,7 @@ private CS
 parseAndSetImpl(Option* o, CS arg, SetScope setScope) {
    CS errmsg = NULL;
    
-   // Copy the new string into allocated memory.
+   //Copy the new string into allocated memory.
    CS newVal = stropt_copy_value(arg);
 
    //Expand environment variables and ~.
@@ -1173,7 +1173,7 @@ parseAndSetImpl(Option* o, CS arg, SetScope setScope) {
 
 private CS
 tryFindOptionFromCommand(OUT Option** o, OUT CS* arg) {
-   // find end of name
+   //find end of name
    int len = 0;
    while (ASCII_ISALNUM((*arg)[len]))
       ++len;
@@ -1181,8 +1181,8 @@ tryFindOptionFromCommand(OUT Option** o, OUT CS* arg) {
    if (len == 0)
       return e_invalid_argument;
 
-   // remember character after option name
-   Unt afterchar = (*arg)[len];   // character just after option name
+   //remember character after option name
+   Unt afterchar = (*arg)[len];   //character just after option name
    (*arg)[len] = ZERO;
    *o = findOption(*arg);
    (*arg)[len] = afterchar;
@@ -1201,12 +1201,12 @@ parseAndSet(SetScope setScope, OUT CS* arg) {
 
    *arg = skipwhite(*arg);
 
-   Unt nextchar = (*arg)[0];   // next non-white char after option name
+   Unt nextchar = (*arg)[0];   //next non-white char after option name
    if (nextchar != '=') {
       return e_use_get_not_set_for_reading_options;
    }
-   *arg = skipwhite(*arg + 1); // consume `=`
-   // Make sure the option value can be changed.
+   *arg = skipwhite(*arg + 1); //consume `=`
+   //Make sure the option value can be changed.
    if (frozenOptionsG && setScope == SET_GLOBAL)
       return e_options_are_frozen;
    
@@ -1230,7 +1230,7 @@ stringToChar(CS arg, Boole multi_byte) {
       return find_key_option(arg + 1, true);
    if (*arg == '^' && arg[1] != ZERO) {
       int key = charMinusCtrl(arg[1]);
-      if (key == 0)      // ^@ is <ZERO>
+      if (key == 0)      //^@ is <ZERO>
          key = K_ZERO;
       return key;
    }
@@ -1264,7 +1264,7 @@ expandEnvVarsInStringOption(Option* o, CS newVal) {
       return null;
 
    doExpandEnvVarsWithEscaped(OUT nameBuffTextG, newVal, false, null);
-   if (eq(nameBuffG, newVal))   // they are the same
+   if (eq(nameBuffG, newVal))   //they are the same
       return newVal;
 
    return copyStr(nameBuffG);
@@ -1284,11 +1284,11 @@ optGetScriptPos(CS name) {
 //Called after an option changed: check if something needs to be redrawn.
 private void
 check_redraw(Unt flags) {
-   // Careful: P_RCLR and P_RALL are a combination of other P_ flags
+   //Careful: P_RCLR and P_RALL are a combination of other P_ flags
    int      doclear = (flags & P_RCLR) == P_RCLR;
    int      all = ((flags & P_RALL) == P_RALL || doclear);
 
-   if ((flags & P_RSTAT) || all)   // mark all status lines dirty
+   if ((flags & P_RSTAT) || all)   //mark all status lines dirty
       status_redraw_all();
 
    if ((flags & P_RBUF) || (flags & P_REDRAW_PORT) || all) {
@@ -1310,14 +1310,14 @@ check_redraw(Unt flags) {
 pub OptionValue
 optGetValue(OUT Unt* flagsp, CS name, int scope) {
    Option* o = findOption(name);
-   if (!o) {        // option not in the table
+   if (!o) {        //option not in the table
       return (OptionValue){};
    }
 
    OptionRef ref = getRefInScope(o, scope);
 
    if (flagsp)
-      // Return the P_xxxx option flags.
+      //Return the P_xxxx option flags.
       *flagsp = o->flags;
 
    OptionValue retVal = (OptionValue){.tag = ref.tag};
@@ -1339,7 +1339,7 @@ optIsFnOption(Unt flags) {
    return (flags & P_FUNC) > 0;
 }
 
-// Set option "varname" to the value of "varp" for the current buffer/portal.
+//Set option "varname" to the value of "varp" for the current buffer/portal.
 pub void
 optSetFromVar(CS varname, Var *varp) {
    Byte   nbuf[NUMBUFLEN];
@@ -1367,8 +1367,8 @@ optSetFromVar(CS varname, Var *varp) {
       optChangeAndReportError(varname, optVal, SET_LOCAL);
 }
 
-// Escape an option value that can be used on the command-line with :set.
-// Caller needs to free the returned string, unless NULL is returned.
+//Escape an option value that can be used on the command-line with :set.
+//Caller needs to free the returned string, unless NULL is returned.
 private CS
 escape_option_str_cmdline(CS var) {
    //A backslash is required before some characters. This is the reverse of what happens in c_set()
@@ -1408,7 +1408,7 @@ matchString(
    return false;
 }
 
-// Expansion handler for `:set=` or `:set+=` when the option has a custom expansion handler.
+//Expansion handler for `:set=` or `:set+=` when the option has a custom expansion handler.
 pub int
 optExpandForSet(Expand* xp, RegMatch* regmatch, OUT ExpandMatch* matches){
    if (!expandOptionS || expandOptionS->expander) {
@@ -1457,7 +1457,7 @@ toString(Option* o, SetScope scope) {
       } else {
          STRCPY(nameBuffG, S"false");
       }
-   } ei (ref.tag == OPTION_STRING) {   // P_STRING
+   } ei (ref.tag == OPTION_STRING) {   //P_STRING
       if (*ref.string) {
          if ((o->flags & P_EXPAND) != 0)
             home_replace(*ref.string, nameBuffG, MAXPATHL, false);
@@ -1502,7 +1502,7 @@ readOptionFlags(OptionChange* cha, Arr(CS) validValues, OUT Unt *flagp) {
          ) {
             newVal += len + (newVal[len] == ',');
             newFlags |= (1 << i);
-            break;      // check next item in newVal list
+            break;      //check next item in newVal list
          }
       }
    }
@@ -1626,14 +1626,14 @@ printOptionGroup(
       printSingleOption(o, SET_GLOBAL, printFlags, which, run, OUT items, OUT &item_count);
    }
 
-   // display the items
+   //display the items
    int rows;
    if (run == 0) {
       int cols = (visibleColsG + GAP - 3) / INC;
       if (cols == 0)
          cols = 1;
       rows = (item_count + cols - 1) / cols;
-   } else   // run == 1
+   } else   //run == 1
       rows = (int)item_count;
    for (int row = 0; row < rows && !gotInterruptG; ++row) {
       msg_putchar('\n');  //go to next line
@@ -1641,7 +1641,7 @@ printOptionGroup(
          break;
       int col = 0;
       for (int i = row; i < (int)item_count; i += rows) {
-         msgColG = col;   // make columns
+         msgColG = col;   //make columns
          showoneopt(items[i], SET_LOCAL);
          showoneopt(items[i], SET_GLOBAL);
          col += INC;
@@ -1653,15 +1653,15 @@ printOptionGroup(
 
 //showoneopt: show the value of one option.
 private void
-showoneopt(Option* o, SetScope setScope) {   // OPT_LOCAL or OPT_GLOBAL
+showoneopt(Option* o, SetScope setScope) {   //OPT_LOCAL or OPT_GLOBAL
    Boole save_silent = silentModeG;
 
    silentModeG = false;
-   info_message = true;   // use mch_msg(), not mch_errmsg()
+   info_message = true;   //use mch_msg(), not mch_errmsg()
 
    OptionRef ref = getRefInScope(o, setScope);
 
-   // for @modified' we also need to check if 'ff' changed.
+   //for @modified' we also need to check if 'ff' changed.
    if (o->defaultValue.tag == OPTION_BOOLE
          && (ref.boole == &curBook->wasModified ? !bookWasChanged(curBook) : !(*(ref.boole)))
    )
@@ -1673,7 +1673,7 @@ showoneopt(Option* o, SetScope setScope) {   // OPT_LOCAL or OPT_GLOBAL
    msg_puts(o->fullName);
    if (o->defaultValue.tag != OPTION_BOOLE) {
       msg_putchar('=');
-      // put value string in nameBuffG
+      //put value string in nameBuffG
       toString(o, setScope);
       msg_outtrans(nameBuffG);
    }
@@ -1701,7 +1701,7 @@ makefoldset(FILE *fd) {
 ////Return true if "val" is a valid @filetype name. Also used for @syntax and @keymap.
 //private int
 //valid_filetype(CS val) {
-//   return valid_name(val, S".-_");
+//  return valid_name(val, S".-_");
 //}
 
 private Byte
@@ -1723,7 +1723,7 @@ check_stl_option(CS s) {
    ErrBuilder errb = (ErrBuilder){.c = errbuf, .len = ERR_BUFLEN};
 
    while (*s) {
-      // Check for valid keys after % sequences
+      //Check for valid keys after % sequences
       while (*s && *s != '%')
          s++;
       if (!*s)
@@ -1761,7 +1761,7 @@ check_stl_option(CS s) {
          int reevaluate = (*++s == '%');
 
          if (reevaluate && *++s == '}')
-            // "}" is not allowed immediately after "%{%"
+            //"}" is not allowed immediately after "%{%"
             return illegal_char(OUT &errb, '}');
          while ((*s != '}' || (reevaluate && s[-1] != '%')) && *s)
             s++;
@@ -1777,7 +1777,7 @@ check_stl_option(CS s) {
 //}}}
 //{{{setter functions (validation, option setting and postprocessing actions)
 
-// Process the updated @balloonevalterm option value.
+//Process the updated @balloonevalterm option value.
 private CS
 did_set_balloonevalterm(OptionChange* cha) {
    updateStringRef(cha);
@@ -1799,11 +1799,11 @@ optSetBinary(OptionChange* cha) {
    //The option values that are changed when @binary changes are
    //copied when @binary is set and restored when @binary is reset.
    if (newVal) {
-      curBook->o.textWidth = 0;   // no automatic line wrap
-      curBook->o.wrapMargin = 0;  // no automatic line wrap
-      curBook->o.expandTab = 0;   // no expandtab
+      curBook->o.textWidth = 0;   //no automatic line wrap
+      curBook->o.wrapMargin = 0;  //no automatic line wrap
+      curBook->o.expandTab = 0;   //no expandtab
    }
-   // Remember where the dependent option were reset
+   //Remember where the dependent option were reset
    CS options[] = {S "textwidth", S"wrapmargin", S"expandtab"};
    
    for (Unt i = 0; i < 3; ++i) {
@@ -1820,7 +1820,7 @@ resizeOrPlanResizingWindow() {
    if (fullScreenG)
       set_shellsize((int)visibleColsG, (int)visibleRowsG, true);
    else {
-      // Postpone the resizing; check the size and cmdline position for messages.
+      //Postpone the resizing; check the size and cmdline position for messages.
       check_shellsize();
       if (commlineRowG > visibleRowsG - commlineHeightG && visibleRowsG > commlineHeightG)
          commlineRowG = visibleRowsG - commlineHeightG;
@@ -1830,7 +1830,7 @@ resizeOrPlanResizingWindow() {
 private CS
 setVisibleLines(OptionChange* cha) {
    if (updating_screen) {
-      // Changing the window size is not allowed while updating the screen.
+      //Changing the window size is not allowed while updating the screen.
       return null;
    }
    if (cha->newVal.num < minRowsForAllTabs() && fullScreenG) {
@@ -1849,7 +1849,7 @@ setVisibleLines(OptionChange* cha) {
 private CS
 setVisibleCols(OptionChange* cha) {
    if (updating_screen) {
-      // Changing the window size is not allowed while updating the screen.
+      //Changing the window size is not allowed while updating the screen.
       return null;
    }
    
@@ -1871,7 +1871,7 @@ setVisibleCols(OptionChange* cha) {
 //Process the updated @buflisted
 private CS
 setBookListed(OptionChange* cha) {
-   // when @buflisted changes, trigger autocommands
+   //when @buflisted changes, trigger autocommands
    updateBoolRef(cha);
    if (cha->oldVal.boole != curBook->o.bookListed) {
       applyAutocomms(
@@ -1886,7 +1886,7 @@ setCommHeight(OptionChange* cha) {
    long oldVal = cha->oldVal.num;
    long newVal = cha->newVal.num;
 
-   // if cmdHeight changed value, change the command line height
+   //if cmdHeight changed value, change the command line height
    if (newVal < MIN_COMMHEIGHT) {
       return e_argument_must_be_positive;
    }
@@ -1942,7 +1942,7 @@ did_set_foldlevel(OptionChange* cha) {
 
 private CS
 did_set_hlsearch(OptionChange* cha) {
-   // when @hlsearch is set or reset: reset hiliteSearchG
+   //when @hlsearch is set or reset: reset hiliteSearchG
    updateBoolRef(cha);
    setHlsearch(true);
    return NULL;
@@ -1950,7 +1950,7 @@ did_set_hlsearch(OptionChange* cha) {
 
 private CS
 did_set_ignorecase(OptionChange* cha) {
-   // when @ignorecase is set or reset and @hlsearch is set, redraw
+   //when @ignorecase is set or reset and @hlsearch is set, redraw
    updateBoolRef(cha);
    if (cha->newVal.boole)
       redraw_all_later(UPD_SOME_VALID);
@@ -1967,14 +1967,14 @@ private CS
 did_set_numberwidth(OptionChange* cha) {
    CS errmsg = NULL;
    long new = cha->newVal.num;
-   // @numberwidth must be positive
+   //@numberwidth must be positive
    if (new < 1) {
       return e_argument_must_be_positive;
    } ei (new > 20) {
       return e_invalid_argument;
    }
    updateNumRef(cha);
-   curPor->lineCountSaved = 0; // trigger a redraw
+   curPor->lineCountSaved = 0; //trigger a redraw
 
    return errmsg;
 }
@@ -1985,7 +1985,7 @@ did_set_maxsearchcount(OptionChange* cha) {
    long new = cha->newVal.num;
    if (new <= 0)
       return e_argument_must_be_positive;
-   ei (new > 9999) // if you increase this limit, also increase search.c:SEARCH_STAT_BUF_LEN
+   ei (new > 9999) //if you increase this limit, also increase search.c:SEARCH_STAT_BUF_LEN
       return e_invalid_argument;
       
    updateNumRef(cha);
@@ -2018,10 +2018,10 @@ did_set_swapfile(OptionChange* cha) {
    updateStringRef(cha);
    //when @swapfile is set, create swapfile, when reset remove swapfile
    if (curBook->o.swapFile && swapEnabledG)
-      memOpenSwapFile(curBook);      // create the swap file
+      memOpenSwapFile(curBook);      //create the swap file
    else
-      // no need to reset curBook->maySwap, memOpenSwapFile() will check buf->o.swapFile
-      mf_close_file(curBook, true);   // remove the swap file
+      //no need to reset curBook->maySwap, memOpenSwapFile() will check buf->o.swapFile
+      mf_close_file(curBook, true);   //remove the swap file
    return NULL;
 }
 
@@ -2047,7 +2047,7 @@ did_set_textwidth(OptionChange* cha) {
 private CS
 did_set_undofile(OptionChange* cha) {
    updateBoolRef(cha);
-   // Only take action when the option was set.
+   //Only take action when the option was set.
    if (!cha->newVal.boole)
       return NULL;
 
@@ -2072,7 +2072,7 @@ did_set_undofile(OptionChange* cha) {
    return NULL;
 }
 
-// Process the new @undolevels option value.
+//Process the new @undolevels option value.
 private CS
 did_set_undolevels(OptionChange* cha) {
    if (cha->newVal.num < 0) {
@@ -2087,7 +2087,7 @@ private CS
 did_set_wildchar(OptionChange* cha){
    long new = cha->newVal.num;
 
-   // Don't allow key values that wouldn't work as wildchar.
+   //Don't allow key values that wouldn't work as wildchar.
    if (new == Ctrl_C || new == '\n' || new == '\r' || new == K_KENTER)
       return e_invalid_argument;
 
@@ -2108,7 +2108,7 @@ setWinHeight(OptionChange* cha) {
    }
 
    updateNumRef(cha);
-   // Change portal height NOW
+   //Change portal height NOW
    if (!ONLY_ONE_PORTAL && curPor->height < new)
       portSetHeight((int)new, curPor);
 
@@ -2123,7 +2123,7 @@ setHelpHeight(OptionChange* cha) {
       return e_argument_must_not_be_negative;
    }
 
-   // Change portal height NOW
+   //Change portal height NOW
    if (!ONLY_ONE_PORTAL && curBook->kind == BOOK_HELP && curPor->height < new)
       portSetHeight((int)new, curPor);
 
@@ -2142,7 +2142,7 @@ did_set_winwidth(OptionChange* cha) {
       return e_winwidth_cannot_be_smaller_than_winminwidth;
    }
 
-   // Change portal width NOW
+   //Change portal width NOW
    updateNumRef(cha);
    if (!ONLY_ONE_PORTAL && curPor->width < new)
       portSetWidth((int)new, curPor);
@@ -2153,7 +2153,7 @@ did_set_winwidth(OptionChange* cha) {
 //Process the updated @wrap value.
 private CS
 did_set_wrap(OptionChange* cha) {
-   // Set leftCol or skipCol to zero.
+   //Set leftCol or skipCol to zero.
    if (cha->newVal.boole)
       curPor->leftCol = 0;
    else
@@ -2229,7 +2229,7 @@ setNonNegative(OptionChange* cha) {
    return null;
 }
 
-// Call optChangeValue() and when an error is returned report it.
+//Call optChangeValue() and when an error is returned report it.
 pub void
 optChangeAndReportError(
    CS name,
@@ -2258,12 +2258,12 @@ find_key_option(CS arg_arg, Boole has_lt) {
       if (!has_lt || arg[4] == '>')
          key = TERMCAP2KEY(arg[2], arg[3]);
    } ei (has_lt) {
-      --arg;             // put arg at the '<'
+      --arg;             //put arg at the '<'
       Unt modifiers = 0;
       key = termFindSpecialKey(
             OUT &arg, OUT &modifiers, FSK_KEYCODE | FSK_KEEP_X_KEY | FSK_SIMPLIFY, NULL
       );
-      if (modifiers != 0)          // can't handle modifiers here
+      if (modifiers != 0)          //can't handle modifiers here
          key = 0;
    }
    return key;
@@ -2280,7 +2280,7 @@ printSingleOption(
       if ((printFlags & OPT_ONECOLUMN) != 0)
          len = visibleColsG;
       ei (o->defaultValue.tag == OPTION_BOOLE)
-         len = 1;      // a toggle option fits always
+         len = 1;      //a toggle option fits always
       else {
          toString(o, setScope);
          len = (int)STRLEN(o->fullName) + eeglStrSize(nameBuffG) + 1;
@@ -2293,7 +2293,7 @@ printSingleOption(
 //After copying portal options: update variables depending on options.
 pub void
 afterCopyPortOpt(Portal* po) {
-   // Set leftCol or skipCol to zero.
+   //Set leftCol or skipCol to zero.
    if (po->o.wrap)
       po->leftCol = 0;
    else
@@ -2304,7 +2304,7 @@ afterCopyPortOpt(Portal* po) {
 private CS
 copyOptionVal(OUT Polystring* buf, CS val) {
    if (!val)
-      return null;  // no need to allocate memory
+      return null;  //no need to allocate memory
    int len = STRLEN(val) + 1;
    CS valueInBuffer = buf->c + buf->len; 
    memcpy(valueInBuffer, val, len);
@@ -2331,11 +2331,11 @@ copyPortOpt(PortalOptions* t, PortalOptions* s) {
 #undef OPTIONS_LIST_PORTAL
 #undef OPTIONS_COPY
 
-   // Copy the script context so that we know where the value was last set.
+   //Copy the script context so that we know where the value was last set.
    MEMMOVE(t->scriptLocs, s->scriptLocs, sizeof(t->scriptLocs));
 }
 
-// Free the allocated memory inside a PortalOptions.
+//Free the allocated memory inside a PortalOptions.
 pub void
 optClearPortOptions(PortalOptions* t) {
    free(t->stringOptions.c);
@@ -2356,12 +2356,12 @@ expand1(OUT Expand* xp, Option* o, CS argend) {
    if (o->defaultValue.tag == OPTION_NUM)
       return;
 
-   // Only string options below
+   //Only string options below
 
-   // Options that have P_EXPAND are considered to all use file/dir expansion.
+   //Options that have P_EXPAND are considered to all use file/dir expansion.
    if ((o->flags & P_EXPAND) != 0) {
       xp->context = EXPAND_FILES;
-      // for some options, we need three backslashes for a space
+      //for some options, we need three backslashes for a space
       if ((o->flags & P_EXPAND_3_BS) != 0)
          xp->backslash = XP_BS_THREE;
       else
@@ -2384,7 +2384,7 @@ expand1(OUT Expand* xp, Option* o, CS argend) {
    //Triple-backslashed escaped file names (e.g. @path) can also be delimited by space.
    if ((o->flags & (P_EXPAND|P_COMMA|P_COLON)) != 0) {
       for (CS p = argend - 1; p >= xp->input.c; --p) {
-         // count number of backslashes before ' ' or ',' or ':'
+         //count number of backslashes before ' ' or ',' or ':'
          if (*p == ' ' || *p == ',' || (*p == ':' && (o->flags & P_COLON) != 0)) {
             CS backslashStart = p;
             while (backslashStart > xp->input.c && *(backslashStart - 1) == '\\')
@@ -2429,12 +2429,12 @@ optInitExpandContextForSet(
    
    while (p > arg) {
       CS backslashStart = p;
-      // count number of backslashes before ' ' or ','
+      //count number of backslashes before ' ' or ','
       if (*p == ' ' || *p == ',') {
          while (backslashStart > arg && *(backslashStart - 1) == '\\')
             --backslashStart;
       }
-      // break at a space with an even number of backslashes
+      //break at a space with an even number of backslashes
       if (*p == ' ' && ((p - backslashStart) & 1) == 0) {
          ++p;
          break;
@@ -2445,7 +2445,7 @@ optInitExpandContextForSet(
    xp->input = mbText(arg);
    Unt nextchar;
    Option* o;
-   // Allow `*` wildcard
+   //Allow `*` wildcard
    while (ASCII_ISALNUM(*p) || *p == '_' || *p == '*')
       p++;
    if (*p == ZERO)
@@ -2499,7 +2499,7 @@ optExpandOldOption(OUT ExpandMatch* matches) {
    CS var = NULL;
 
    if (expandOptionS) {
-      // put string of option value in nameBuffG
+      //put string of option value in nameBuffG
       toString(expandOptionS, expandOptionScopeS);
       var = nameBuffG;
    }
@@ -2556,10 +2556,10 @@ optSetCallback(OUT Callback* cb, CS new) {
        || (STRNCMP(new, "function(", 9) == 0)
        || (STRNCMP(new, "funcref(", 8) == 0)
    )
-      // Lambda expression or a funcref
+      //Lambda expression or a funcref
       tv = eval_expr(new, NULL);
    else {
-      // treat everything else as a function name string
+      //treat everything else as a function name string
       tv = allocStringVar(copyStr(new));
    }
    if (tv == NULL)
@@ -2689,7 +2689,7 @@ setDiffopt(OptionChange* cha) {
    return NULL;
 }
 
-// Note: Keep this in sync with diffopt_changed()
+//Note: Keep this in sync with diffopt_changed()
 private CS p_dip_values[] = {SMAP((CS), 
    "filler", "anchor", "context:", "iblank", "icase", "iwhite", 
    "iwhiteall", "iwhiteeol", "horizontal", "vertical", "closeoff", "hiddenoff",  
@@ -2708,14 +2708,14 @@ expandDiffopt(OptExpand* args, OUT ExpandMatch* matches) {
    Expand *xp = args->expand;
 
    if (xp->input.c > args->setArg && *(xp->input.c - 1) == ':') {
-      // Within "algorithm:", we have a subgroup of possible options.
+      //Within "algorithm:", we have a subgroup of possible options.
       int algo_len = sizeof("algorithm:") - 1;
       if (xp->input.c - args->setArg >= algo_len 
             && STRNCMP(xp->input.c - algo_len, "algorithm:", algo_len) == 0
       ) {
          return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_dip_algorithm_values));
       }
-      // Within "inline:", we have a subgroup of possible options.
+      //Within "inline:", we have a subgroup of possible options.
       int inline_len = sizeof("inline:") - 1;
       if (xp->input.c - args->setArg >= inline_len &&
          STRNCMP(xp->input.c - inline_len, "inline:", inline_len) == 0
@@ -2732,7 +2732,7 @@ private CS p_popup_option_align_values[] = {S"item", S"menu"};
 
 private CS p_popup_option_border_values[] = {S"on", S"off"};
 
-// Note: Keep this in sync with portal.c:parse_popup_option()
+//Note: Keep this in sync with portal.c:parse_popup_option()
 private CS p_popup_option_values[] = {SMAP((CS), 
    "height:", "width:", "highlight:", "border:", "align:"
 )};
@@ -2742,7 +2742,7 @@ expand_set_popupoption(OptExpand* args, OUT ExpandMatch* matches) {
    Expand *xp = args->expand;
 
    if (xp->input.c > args->setArg && *(xp->input.c - 1) == ':') {
-      // Within "highlight:"/"border:"/"align:", we have a subgroup of possible options.
+      //Within "highlight:"/"border:"/"align:", we have a subgroup of possible options.
       int border_len = (int)STRLEN("border:");
       if (xp->input.c - args->setArg >= border_len &&
          STRNCMP(xp->input.c - border_len, "border:", border_len) == 0
@@ -2759,7 +2759,7 @@ expand_set_popupoption(OptExpand* args, OUT ExpandMatch* matches) {
       if (xp->input.c - args->setArg >= highlight_len &&
          STRNCMP(xp->input.c - highlight_len, "highlight:", highlight_len) == 0
       ){
-          // Return the list of all highlight names
+          //Return the list of all highlight names
           return optionCompletionExpand(OUT matches, args, &getHiliteGroupNameAsCString);
       }
       return FAIL;
@@ -2774,7 +2774,7 @@ setCursorInsert(OptionChange* cha) {
    if (newShape >= 3)
       return e_invalid_argument;
    cursorInsertG = newShape;
-   return null; // success
+   return null; //success
 }
 
 private CS
@@ -2799,7 +2799,7 @@ did_set_helplang(OptionChange* cha) {
       return null;
    }
    
-   // Check for "", "ab", "ab,cd", etc.
+   //Check for "", "ab", "ab,cd", etc.
    for (Byte *s = new; *s != ZERO; s += 3) {
       if (s[1] == ZERO || ((s[2] != ',' || s[3] == ZERO) && s[2] != ZERO)) {
          return e_invalid_argument;
@@ -2871,23 +2871,23 @@ setEeglinfo(OptionChange* cha) {
    CS errmsg = NULL;
 
    for (CS s = new; *s != ZERO;) {
-      // Check it's a valid character
+      //Check it's a valid character
       if (firstOccurrence(S"!\"%'/:<@cfhnrs", *s) == NULL) {
          errmsg = illegal_char(OUT &cha->errb, *s);
          break;
       }
-      if (*s == 'n')   // name is always last one
+      if (*s == 'n')   //name is always last one
           break;
-      ei (*s == 'r') {// skip until next ','
+      ei (*s == 'r') {//skip until next ','
           while (*++s && *s != ',')
              {}
       } ei (*s == '%') {
-          // optional number
+          //optional number
           while (eeIsDigit(*++s))
              {}
       } ei (*s == '!' || *s == 'h' || *s == 'c')
-          ++s;      // no extra chars
-      else {     // must have a number
+          ++s;      //no extra chars
+      else {     //must have a number
          while (eeIsDigit(*++s))
              {}
 
@@ -2935,7 +2935,7 @@ expand_set_whichwrap(OptExpand* args, OUT ExpandMatch* matches) {
    return expand_set_opt_listflag(OUT matches, args, (CS)WW_ALL);
 }
 
-// Note: Keep this in sync with check_opt_wim()
+//Note: Keep this in sync with check_opt_wim()
 private CS p_wim_values[] = {SMAP((CS), "full", "longest", "list", "lastused", "noselect")};
 
 private CS
@@ -3026,7 +3026,7 @@ expand_set_foldmethod(OptExpand* args, OUT ExpandMatch *matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_fdm_values));
 }
 
-// keep in sync with eegl.h:FDO_ flags
+//keep in sync with eegl.h:FDO_ flags
 private CS p_fdo_values[] = {SMAP((CS), 
    "all", "block", "hor", "mark", "percent", "quickfix", "search", "tag", "insert", "undo", "jump"
 )};
@@ -3052,7 +3052,7 @@ setIsopt(OptionChange* cha) {
    //'isident', 'iskeyword' or 'isfname' option: refill g_chartab[]
    //If the new option is invalid, use old value.
    if (bookInitCharsForKeywordsForCurbook() == FAIL) {
-      return e_invalid_argument;   // error in value
+      return e_invalid_argument;   //error in value
    }
    updateStringRef(cha);
    return NULL;
@@ -3133,12 +3133,12 @@ parse_status_rulerformat(OptionChange* cha) {
    int      wid;
 
    CS new = cha->newVal.string;
-   if (new)   // reset rulerWidthG first
+   if (new)   //reset rulerWidthG first
       rulerWidthG = 0;
    CS s = new;
    if (new && *s == '%') {
-      // set rulerWidthG if 'ruf' starts with "%99("
-      if (*++s == '-')   // ignore a '-'
+      //set rulerWidthG if 'ruf' starts with "%99("
+      if (*++s == '-')   //ignore a '-'
          s++;
       wid = parseLong(&s);
       if (wid && *s == '(' && (errmsg = check_stl_option(new)) == NULL)
@@ -3150,7 +3150,7 @@ parse_status_rulerformat(OptionChange* cha) {
             errmsg = check_stl_option(new);
       }
    }
-   // check 'statusline' only if it doesn't start with "%!"
+   //check 'statusline' only if it doesn't start with "%!"
    ei (new || s[0] != '%' || s[1] != '!')
       errmsg = check_stl_option(s);
    if (new && !errmsg)
@@ -3177,14 +3177,14 @@ did_set_tabpanelopt(OptionChange* cha) {
 
 private CS p_tplo_align_values[] = {S"left", S"right"};
 
-// Note: Keep this in sync with ui.c:tabpanelopt_changed()
+//Note: Keep this in sync with ui.c:tabpanelopt_changed()
 private CS p_tplo_values[] = {SMAP((CS), "align:", "columns:", "vert")};
 
 private int
 expand_set_tabpanelopt(OptExpand* args, OUT ExpandMatch* matches) {
    Expand *xp = args->expand;
    if (xp->input.c > args->setArg && *(xp->input.c - 1) == ':') {
-      // Within "align:", we have a subgroup of possible options.
+      //Within "align:", we have a subgroup of possible options.
       int align_len = (int)STRLEN("align:");
       if (xp->input.c - args->setArg >= align_len 
             && STRNCMP(xp->input.c - align_len, "align:", align_len) == 0
@@ -3199,7 +3199,7 @@ expand_set_tabpanelopt(OptExpand* args, OUT ExpandMatch* matches) {
 
 private CS p_scbopt_values[] = {SMAP((CS), "ver", "hor", "jump")};
 
-// The @scrollopt option is changed.
+//The @scrollopt option is changed.
 private CS
 setScrollopt(OptionChange* cha) {
    Unt new;
@@ -3268,7 +3268,7 @@ expand_set_switchbook(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_swb_values));
 }
 
-// Keep in sync with portal.c:TCL_ flags
+//Keep in sync with portal.c:TCL_ flags
 private CS p_tcl_values[] = {S"left", S"uselast"};
 
 private CS
@@ -3285,7 +3285,7 @@ expand_set_tabclose(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_tcl_values));
 }
 
-// Keep in sync with SWB_ flags
+//Keep in sync with SWB_ flags
 private CS tagCaseValues[] = {SMAP((CS), "followic", "ignore", "match", "followscs", "smart")};
 
 private CS
@@ -3309,7 +3309,7 @@ setTerm(OptionChange* cha) {
    if (set_termname(cha->newVal.string) == FAIL)
       return e_not_found_in_termcap;
 
-   // Screen colors may have changed.
+   //Screen colors may have changed.
    redraw_later_clear();
 
    return NULL;
@@ -3365,7 +3365,7 @@ expand_set_buftype(OptExpand* args, OUT ExpandMatch* matches) {
 
 private CS
 setListChars(OptionChange* cha) {
-   // only apply the global value to "curPor" when it does not have a local value
+   //only apply the global value to "curPor" when it does not have a local value
    ErrBuilder errb = {};
    CS errmsg = drawSetListChars(cha->newVal.string, OUT &errb);
    if (errmsg)
@@ -3381,7 +3381,7 @@ setListChars(OptionChange* cha) {
 
 private CS
 setFillChars(OptionChange* cha) {
-   // only apply the global value to "curPor" when it does not have a local value
+   //only apply the global value to "curPor" when it does not have a local value
    ErrBuilder errb = {};
    CS errmsg = drawSetFillChars(cha->newVal.string, OUT &errb);
    if (errmsg)
@@ -3463,7 +3463,7 @@ setBackupCopy(OptionChange* cha) {
          + (int)((newVal & BKC_YES) != 0)
          + (int)((newVal & BKC_NO) != 0) != 1
    ){
-      // Must have exactly one of "auto", "yes"  and "no".
+      //Must have exactly one of "auto", "yes"  and "no".
       showErrFmtMsg(_(e_illegal_combination_of_flags_str), "backupcopy");
       return e_illegal_combination_of_flags_str;
    }
@@ -3477,7 +3477,7 @@ expand_set_backupcopy(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(backupCopyValues));
 }
 
-// Note: Keep this in sync with checkBreakIndent()
+//Note: Keep this in sync with checkBreakIndent()
 private CS brioptValues[] = {SMAP((CS), "shift:", "min:", "sbr", "list:", "column:")};
 
 //Check "briopt" as @breakindentopt and update the members of "po".
@@ -3485,8 +3485,8 @@ private CS brioptValues[] = {SMAP((CS), "shift:", "min:", "sbr", "list:", "colum
 //Return FAIL for failure, OK otherwise.
 private int
 checkBreakIndent(
-   CS briopt,  // when NULL: use "po->o.breakIndent"
-   Portal* po       // when NULL: only check "briopt"
+   CS briopt,  //when NULL: use "po->o.breakIndent"
+   Portal* po       //when NULL: only check "briopt"
 ){
    int bri_shift = 0;
    long bri_min = 20;
@@ -3500,7 +3500,7 @@ checkBreakIndent(
    }
 
    while (*p != ZERO) {
-      // Note: Keep this in sync with p_briopt_values
+      //Note: Keep this in sync with p_briopt_values
       if (STRNCMP(p, brioptValues[0], 6) == 0
           && ((p[6] == '-' && EE_ISDIGIT(p[7])) || EE_ISDIGIT(p[6]))
       ) {
@@ -3548,7 +3548,7 @@ setBreakindentOpt(OptionChange* cha) {
       return e_invalid_argument;
 
    updateStringRef(cha);
-   // list setting requires a redraw
+   //list setting requires a redraw
    if (ref.string == &curPor->o.breakIndentOpt && curPor->breakIndent.list)
       redraw_all_later(UPD_NOT_VALID);
 
@@ -3574,11 +3574,11 @@ setComplete(OptionChange* cha) {
       bufferPtr = buffer;
       escape = 0;
 
-      // Extract substring while handling escaped commas
+      //Extract substring while handling escaped commas
       while (*p && (*p != ',' || escape) && bufferPtr < (buffer + LSIZE - 1)) {
          if (*p == '\\' && *(p + 1) == ',') {
-            escape = 1;  // Mark escape mode
-            p++;         // Skip '\'
+            escape = 1;  //Mark escape mode
+            p++;         //Skip '\'
          } else {
             escape = 0;
             *bufferPtr++ = *p;
@@ -3594,7 +3594,7 @@ setComplete(OptionChange* cha) {
             && *(buffer + 1) != '^')
          char_before = *buffer;
       else {
-         // Test for a number after '^'
+         //Test for a number after '^'
          if ((t = firstOccurrence(buffer, '^')) != NULL) {
             *t++ = ZERO;
             if (!*t)
@@ -3611,7 +3611,7 @@ setComplete(OptionChange* cha) {
       }
       if (char_before != ZERO)
          return illegal_char_after_chr(OUT &cha->errb, char_before);
-      // Skip comma and spaces
+      //Skip comma and spaces
       while (*p == ',' || *p == ' ')
          p++;
    }
@@ -3669,7 +3669,7 @@ private Option OPTIONS_PORTAL[] = {
 #undef PORTAL_OPTION_DEFS
 };
 
-// Set portal options to their default values
+//Set portal options to their default values
 pub void
 initPortalOptions(PortalOptions* o) {
 #define OPTIONS_INIT_PORTAL
@@ -3723,7 +3723,7 @@ calcDefaultStringValuesLen(Arr(Option) opts, Unt count) {
    Unt totalLen = 0;
    for (Option* o = opts; o < opts + count; o++) {
       if (o->defaultValue.tag == OPTION_STRING && (o->defaultValue.string)) {
-         totalLen += (STRLEN(o->defaultValue.string) + 1); // +1 for the ZERO
+         totalLen += (STRLEN(o->defaultValue.string) + 1); //+1 for the ZERO
       }
    }
    return totalLen;
@@ -3734,7 +3734,7 @@ calcGlobalStringValuesLen() {
    Unt totalLen = 0;
    FOR_GLOBAL(o) {
       if (o->defaultValue.tag == OPTION_STRING && (*o->c.reference.string)) {
-         totalLen += (STRLEN(*o->c.reference.string) + 1); // +1 for the ZERO
+         totalLen += (STRLEN(*o->c.reference.string) + 1); //+1 for the ZERO
       }
    }
    return totalLen;
@@ -3746,7 +3746,7 @@ calcLocalStringsLength(Arr(Option) opts, Unt count) {
    for (Unt i = 0; i < count; i++) {
       Option* o = opts + i;
       if (o->defaultValue.tag == OPTION_STRING && o->c.local.val.string) {
-         totalLen += (STRLEN(o->c.local.val.string) + 1); // +1 for the ZERO
+         totalLen += (STRLEN(o->c.local.val.string) + 1); //+1 for the ZERO
       }
    }
    return totalLen;
@@ -3766,7 +3766,7 @@ copyDefaultsToGlobalStringValues(OUT Polystring* bui, Arr(Option) opts, Unt coun
             && (o->flags & P_NODEFAULT) == 0 
             && (o->defaultValue.string)
       ) {
-         Unt len = STRLEN(o->defaultValue.string) + 1; // +1 for the ZERO
+         Unt len = STRLEN(o->defaultValue.string) + 1; //+1 for the ZERO
          memcpy(wr, o->defaultValue.string, len);
          if ((o->flags & P_GLOBAL) > 0) {
             *(o->c.reference.string) = wr;
@@ -3815,7 +3815,7 @@ updateStringRef(OptionChange* cha) {
    
    //allocate new val at buffer's tail
    if (cha->setScope == SET_LOCAL) {
-      // copy all local string opts except the old one into the buffer
+      //copy all local string opts except the old one into the buffer
       CS wr = cha->buf->c;
       *cha->ref.string = new;
       if (cha->buf == &curBook->o.stringOptions) {
@@ -3849,7 +3849,7 @@ updateStringRef(OptionChange* cha) {
             if (*o->c.reference.string == cha->oldVal.string) {
                
             } ei (o->defaultValue.tag == OPTION_STRING) {
-               Unt len = STRLEN(*o->c.reference.string) + 1; // +1 for the ZERO
+               Unt len = STRLEN(*o->c.reference.string) + 1; //+1 for the ZERO
                if (len > 1) {
                   memcpy(wr, *o->c.reference.string, len);
                   wr += len;
@@ -3860,7 +3860,7 @@ updateStringRef(OptionChange* cha) {
          eeglFree(cha->buf->c);
          *cha->buf = buf;
       } ei (cha->buf == &bookStringOptionsG) {
-      } else { // &portalStringOptionsG
+      } else { //&portalStringOptionsG
          Arr(Option) opts;
          Unt count;
          if (cha->buf == &bookStringOptionsG) {
@@ -3881,7 +3881,7 @@ updateStringRef(OptionChange* cha) {
             if (o->c.local.val.string == cha->oldVal.string) {
                
             } ei (o->defaultValue.tag == OPTION_STRING) {
-               Unt len = STRLEN(o->c.local.val.string) + 1; // +1 for the ZERO
+               Unt len = STRLEN(o->c.local.val.string) + 1; //+1 for the ZERO
                if (len > 1) {
                   memcpy(wr, o->c.local.val.string, len);
                   wr += len;
@@ -3972,7 +3972,7 @@ optInit0() {
 }
 
 private void
-printOptions(ToPrint which) {  // OPT_LOCAL and/or OPT_GLOBAL
+printOptions(ToPrint which) {  //OPT_LOCAL and/or OPT_GLOBAL
    //Hilite title
    msg_puts_title(_("\n--- Global option values ---"));
    msg_puts_title(_("\n--- Local option values ---"));
@@ -4034,13 +4034,13 @@ put_setstring(
       if (size >= MAXPATHL && (flags & P_COMMA) != 0 && firstOccurrence(*ref.string, ',') != NULL) {
          part = alloc(size);
 
-         // write line break to clear the option, e.g. ':set rtp='
+         //write line break to clear the option, e.g. ':set rtp='
          if (put_eol(fd) == FAIL)
              goto fail;
 
          p = buffer;
          while (*p != ZERO) {
-            // for each comma separated option part, append value to the option, :set rtp+=value
+            //for each comma separated option part, append value to the option, :set rtp+=value
             if (fprintf(fd, "%s %s+=", cmd, name) < 0)
                goto fail;
             (void)strCutPathFromListOfPaths(OUT &p, OUT part, size,  S",");
@@ -4075,7 +4075,7 @@ put_setnum(FILE* fd, CS cmd, CS name, OptionRef ref) {
    if (fprintf(fd, "%s %s=", cmd, name) < 0)
       return FAIL;
    if (wildcharUseKeyname(ref, &wc)) {
-      // print 'wildchar' and 'wildcharm' as a key name
+      //print 'wildchar' and 'wildcharm' as a key name
       if (fputs((char *)get_special_key_name((int)wc, 0), fd) < 0)
          return FAIL;
    } ei (fprintf(fd, "%ld", *ref.num) < 0)
@@ -4101,15 +4101,15 @@ put_setbool(
 //
 //There are three values for "optFlags":
 //OPT_GLOBAL:         Write global option values and fresh values of
-//           buffer-local options (used for start of a session
-//           file).
+//          buffer-local options (used for start of a session
+//          file).
 //OPT_GLOBAL + OPT_LOCAL: Idem, add fresh values of portal-local options for
-//           curPor (used for a vimrc file).
+//          curPor (used for a vimrc file).
 //OPT_LOCAL:         Write buffer-local option values for curBook, fresh
-//           and local values for portal-local options of
-//           curPor.  Local values are also written when at the
-//           default value, because an autocommand may have set them when doing ":edit file" 
-//           and the user has set them back at the default or fresh value.
+//          and local values for portal-local options of
+//          curPor.  Local values are also written when at the
+//          default value, because an autocommand may have set them when doing ":edit file" 
+//          and the user has set them back at the default or fresh value.
 //(fresh value = value used for a new buffer or portal for a local option).
 //
 //Return FAIL on error, OK otherwise.
@@ -4124,7 +4124,7 @@ writeOptionsAsSet(FILE *) {
          if ((p->flags & P_NO_MKRC) == 0
             && ((pri == 1) == ((p->flags & P_PRI_MKRC) != 0))
          ){
-            // Global values are only written when not at the default value.
+            //Global values are only written when not at the default value.
             OptionRef ref = getRefInScope(p, SET_GLOBAL);
             if (isOptionAtDefault(p, ref))
                continue;
@@ -4135,14 +4135,14 @@ writeOptionsAsSet(FILE *) {
    return OK;
 }
 
-// Set the scriptPos for an option, taking care of setting the buffer- or portal-local value
+//Set the scriptPos for an option, taking care of setting the buffer- or portal-local value
 private void
 setScriptPos(Option* o, SetScope scope, ScriptPos scriptPos) {
    ScriptPos newScriptPos = scriptPos;
    newScriptPos.lineNr += SOURCING_LNUM;
 
-   // Remember where the option was set.  For local options need to do that
-   // in the buffer or portal structure.
+   //Remember where the option was set.  For local options need to do that
+   //in the buffer or portal structure.
    if (scope == SET_GLOBAL)
       o->scriptPos = newScriptPos;
    else { 
@@ -4178,7 +4178,7 @@ setDefaultValuesForAllOptions(SetScope setScope) {
       } 
    }
    
-   // The @scroll must be computed for all portals.
+   //The @scroll must be computed for all portals.
    Portal* port;
    Tab* t;
    FOR_ALL_TAB_PORTALS(t, port) {
@@ -4214,7 +4214,7 @@ optSetLocalOptionsToDefault(Portal *wp, Boole doBook) {
    curBook = curPor->book;
 }
 
-// ":get". Print the value of an option
+//":get". Print the value of an option
 pub void
 c_get(Invocation* invo) {
    SetScope scope;
@@ -4225,7 +4225,7 @@ c_get(Invocation* invo) {
    } 
       
    CS arg = invo->arg;
-   Boole didShow = false;   // already showed one value
+   Boole didShow = false;   //already showed one value
    if (*arg == ZERO) {
       printOptions(PRINT_NONTERMINAL);
       didShow = true;
@@ -4251,7 +4251,7 @@ c_get(Invocation* invo) {
       scope = SET_GLOBAL;
    }
    
-   // print value
+   //print value
    if (didShow)
       msg_putchar('\n');    //cursor below last one
    else {
@@ -4259,29 +4259,29 @@ c_get(Invocation* invo) {
       didShow = true;       //remember that we did a line
    }
    showoneopt(o, scope);
-//   OptionRef ref = getRefInScope(o, scope);
-//   if (p_verbose > 0) {
-//      // Mention where the option was last set.
-//      if (eqRef(ref, o->reference))
-//         lastSetMsg(od.scriptPos);
-//      ei ((int)od.scope & PV_PORTAL)
-//         lastSetMsg(curPor->o.scriptLocs[od.scope & PV_ID_MASK]);
-//      ei ((int)od.scope & PV_BUF)
-//         lastSetMsg(curBook->o.scriptLocs[od.scope & PV_ID_MASK]);
-//    }
+//  OptionRef ref = getRefInScope(o, scope);
+//  if (p_verbose > 0) {
+//     //Mention where the option was last set.
+//     if (eqRef(ref, o->reference))
+//        lastSetMsg(od.scriptPos);
+//     ei ((int)od.scope & PV_PORTAL)
+//        lastSetMsg(curPor->o.scriptLocs[od.scope & PV_ID_MASK]);
+//     ei ((int)od.scope & PV_BUF)
+//        lastSetMsg(curBook->o.scriptLocs[od.scope & PV_ID_MASK]);
+//   }
    
    return;
    
 theend:
    if (silentModeG && didShow) {
-      // After displaying option values in silent mode.
+      //After displaying option values in silent mode.
       silentModeG = false;
-      info_message = true;   // use mch_msg(), not mch_errmsg()
+      info_message = true;   //use mch_msg(), not mch_errmsg()
       msg_putchar('\n');
-      cursor_on();      // msg_start() switches it off
+      cursor_on();      //msg_start() switches it off
       out_flush();
       silentModeG = true;
-      info_message = false;   // use mch_msg(), not mch_errmsg()
+      info_message = false;   //use mch_msg(), not mch_errmsg()
    }
 }
 
@@ -4298,7 +4298,7 @@ c_set(Invocation* invo) {
    SetScope setScope = (invo->id == C_setglobal) ? SET_GLOBAL : SET_LOCAL;
    
    CS arg = invo->arg;
-   Boole didShow = false;   // already showed one value
+   Boole didShow = false;   //already showed one value
 
    //Byte errbuf[ERR_BUFLEN];
    CS startarg = arg;
@@ -4313,11 +4313,11 @@ c_set(Invocation* invo) {
          MEMMOVE(IObuff + i, startarg, (arg - startarg));
          IObuff[i + (arg - startarg)] = ZERO;
       }
-      // make sure all characters are printable
+      //make sure all characters are printable
       trans_characters(IObuff, IOSIZE);
 
-      ++no_wait_return;      // wait_return() done later
-      emsg(IObuff);   // show error highlighted
+      ++no_wait_return;      //wait_return() done later
+      emsg(IObuff);   //show error highlighted
       --no_wait_return;
 
       return;
@@ -4326,14 +4326,14 @@ c_set(Invocation* invo) {
    arg = skipwhite(arg);
 
    if (silentModeG && didShow) {
-      // After displaying option values in silent mode.
+      //After displaying option values in silent mode.
       silentModeG = false;
-      info_message = true;   // use mch_msg(), not mch_errmsg()
+      info_message = true;   //use mch_msg(), not mch_errmsg()
       msg_putchar('\n');
-      cursor_on();      // msg_start() switches it off
+      cursor_on();      //msg_start() switches it off
       out_flush();
       silentModeG = true;
-      info_message = false;   // use mch_msg(), not mch_errmsg()
+      info_message = false;   //use mch_msg(), not mch_errmsg()
    }
 }
 
@@ -4348,7 +4348,7 @@ findOption(CS arg) {
    Short searchStart = FIRST_LETTER_INDICES[firstLetterInd];
    Short searchEnd = FIRST_LETTER_INDICES[firstLetterInd + 1];
 
-   // match full name
+   //match full name
    for (Short i = searchStart; i < searchEnd; i++) {
       if (eq(arg, NAME_INDICES[i].name)) {
          Unt complexInd = NAME_INDICES[i].index;
@@ -4364,11 +4364,11 @@ findOption(CS arg) {
    return null;
 }
 
-// Get portal- or book-local options.
+//Get portal- or book-local options.
 pub Bag*
 getBookOrPortOptions(Boole bufopt) {
    Bag* b = allocBag();
-   if (bufopt) { // book-local
+   if (bufopt) { //book-local
       FOR_BOOK(o) {
          if (o->defaultValue.tag == OPTION_STRING)
             bagAddString(b, o->fullName, o->c.local.val.string);
@@ -4502,7 +4502,7 @@ pub void
 optsCopyToBook(OUT Book* book, Unt flags) {
    Boole shouldCopy = !book->o.initialized && (flags & BCO_ENTER) != 0;
    if (shouldCopy || (flags & BCO_ALWAYS) != 0) {
-      // Always free the allocated callbacks.
+      //Always free the allocated callbacks.
       optFreeBookCallbacks(book);
       copyGlobalToBookImpl(OUT book);
    }
@@ -4522,7 +4522,7 @@ optExpandOption(
    OUT ExpandMatch* matches
 ){
    int match;
-   int ic = regmatch->rm_ic;   // remember the ignore-case flag
+   int ic = regmatch->rm_ic;   //remember the ignore-case flag
    Fuzzy fuzzy = {.c = null, .len = 0, .a = matches->a};
 
    Boole doFuzzy = canFuzzy && scrIsCommlineFuzzyCompletable(fuzzystr);
@@ -4669,7 +4669,7 @@ optionCompletionExpand_cb(Expand *xp, int idx) {
       if (set_opt_callback_orig_option)
          return set_opt_callback_orig_option;
       else
-         return S""; // empty strings are ignored
+         return S""; //empty strings are ignored
    }
    return set_opt_callback_func(xp, idx - 1);
 }
@@ -4681,7 +4681,7 @@ optionCompletionExpand(OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Ex
    set_opt_callback_func = func;
 
    int ret = expandGeneric(
-       S"", // not using fuzzy as currently EXPAND_STRING_OPTION doesn't use it
+       S"", //not using fuzzy as currently EXPAND_STRING_OPTION doesn't use it
        args->expand,
        args->oe_regmatch,
        optionCompletionExpand_cb,
@@ -4697,7 +4697,7 @@ optionCompletionExpand(OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Ex
 private CS
 get_eventignore_name(Expand *xp, int idx) {
    int subtract = *xp->input.c == '-';
-   // 'eventignore(win)' allows special keyword "all" in addition to all event names.
+   //'eventignore(win)' allows special keyword "all" in addition to all event names.
    if (!subtract && idx == 0)
       return S"all";
 
@@ -4716,12 +4716,12 @@ do_spelllang_source(void) {
    CS p;
    CS q = curPor->ownSyntax->spellLang;
 
-   // Skip the first name if it is "cjk".
+   //Skip the first name if it is "cjk".
    if (STRNCMP(q, "cjk,", 4) == 0)
       q += 4;
 
-   // They could set 'spellcapcheck' depending on the language.  Use the first
-   // name in 'spelllang' up to '_region' or '.encoding'.
+   //They could set 'spellcapcheck' depending on the language.  Use the first
+   //name in 'spelllang' up to '_region' or '.encoding'.
    for (p = q; *p != ZERO; ++p) {
       if (!ASCII_ISALNUM(*p) && *p != '-')
          break;
@@ -4737,7 +4737,7 @@ do_spelllang_source(void) {
 
 private CS
 get_locale_val(int what) {
-   // Obtain the locale value from the libraries.
+   //Obtain the locale value from the libraries.
    CS loc = (CS)setlocale(what, NULL);
    return loc;
 }
@@ -4768,8 +4768,8 @@ init_locale(void) {
    {
    int   mustfree = false;
 
-   // doExpandEnv() doesn't work yet, because g_chartab[] is not
-   // initialized yet, call eeglGetEnv() directly
+   //doExpandEnv() doesn't work yet, because g_chartab[] is not
+   //initialized yet, call eeglGetEnv() directly
    CS p = eeglGetEnv((CS)"EEGLRUNTIME");
    if (p && *p != ZERO) {
       eeSnprintf(nameBuffG, MAXPATHL, "%s/lang", p);
@@ -4792,9 +4792,9 @@ c_language(Invocation* invo) {
 
    name = invo->arg;
 
-   // Check for "messages {name}", "ctype {name}" or "time {name}" argument.
-   // Allow abbreviation, but require at least 3 characters to avoid
-   // confusion with a two letter language name "me" or "ct".
+   //Check for "messages {name}", "ctype {name}" or "time {name}" argument.
+   //Allow abbreviation, but require at least 3 characters to avoid
+   //confusion with a two letter language name "me" or "ct".
    CS p = skiptowhite(invo->arg);
    if ((*p == ZERO || SPACE_OR_TAB(*p)) && p - invo->arg >= 3) {
       if (STRNICMP(invo->arg, "messages", p - invo->arg) == 0) {
@@ -4828,11 +4828,11 @@ c_language(Invocation* invo) {
       if (!loc)
           showErrFmtMsg(_(e_cannot_set_language_to_str), name);
       else {
-          // Need to do this for GNU gettext, otherwise cached translations will be used again.
+          //Need to do this for GNU gettext, otherwise cached translations will be used again.
           extern int _nl_msg_cat_cntr;
 
           ++_nl_msg_cat_cntr;
-          // Reset $LC_ALL, otherwise it would overrule everything.
+          //Reset $LC_ALL, otherwise it would overrule everything.
           eeSetenv(S"LC_ALL", S"");
 
           if (what != LC_TIME && what != LC_COLLATE) {
@@ -4841,7 +4841,7 @@ c_language(Invocation* invo) {
             if (what == LC_ALL) {
                eeSetenv(S"LANG", name);
 
-               // Clear $LANGUAGE because GNU gettext uses it.
+               //Clear $LANGUAGE because GNU gettext uses it.
                eeSetenv(S"LANGUAGE", (CS)"");
             }
             if (what != LC_CTYPE) {
@@ -4855,7 +4855,7 @@ c_language(Invocation* invo) {
    }
 }
 
-private Arr(CS) locales = NULL;   // Array of all available locales
+private Arr(CS) locales = NULL;   //Array of all available locales
 private Unt countLocales = 0;
 private Boole did_init_locales = false;
 

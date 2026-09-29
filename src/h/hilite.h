@@ -27,7 +27,7 @@ void syntax_end_parsing(Portal *wp, LineNr lnum);
 int syntax_check_changed(LineNr lnum);
 Decoration syntGetDeco(
    ColNr col,
-   int keep_state   // keep state of char at "col"
+   int keep_state   //keep state of char at "col"
 );
 void syntax_clear(SyntaxBlock *block);
 void reset_synblock(Portal* wp);
@@ -43,8 +43,8 @@ int syn_get_id(
    Portal   *wp,
    long   lnum,
    ColNr   col,
-   int      trans,      // remove transparency
-   int      keep_state  // keep state of char at "col"
+   int      trans,      //remove transparency
+   int      keep_state  //keep state of char at "col"
 );
 int syn_get_stack_item(int i);
 int syn_get_foldlevel(Portal *po, long lnum);

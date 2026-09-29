@@ -2,26 +2,26 @@ CS did_set_tagfunc(OptionChange *cha);
 void free_tagfunc_option(void);
 int set_ref_in_tagfunc(int copyID);
 int do_tag(
-   CS tag,      // tag (pattern) to jump to
+   CS tag,      //tag (pattern) to jump to
    Unt type,
    int count,
-   Boole forceit,   // :ta with !
-   Boole verbose   // print "tag not found" message
+   Boole forceit,   //:ta with !
+   Boole verbose   //print "tag not found" message
 );
 void tag_freematch(void);
 void do_tags(Invocation*);
 int find_tags(
-   CS pat,         // pattern to search for
+   CS pat,         //pattern to search for
    Unt flags,
-   int mincount,      // MAXCOL: find all matches. other: minimal number of matches
-   CS buf_ffname,      // name of buffer for priority
+   int mincount,      //MAXCOL: find all matches. other: minimal number of matches
+   CS buf_ffname,      //name of buffer for priority
    OUT ExpandMatch* matches
 );
 void free_tag_stuff(void);
 int get_tagfname(
-   TagName   *tnp,   // holds status info
-   int      first,   // true when first file name is wanted
-   OUT CS buf)   // pointer to buffer of MAXPATHL chars
+   TagName   *tnp,   //holds status info
+   int      first,   //true when first file name is wanted
+   OUT CS buf)   //pointer to buffer of MAXPATHL chars
 ;
 void tagname_free(TagName *tnp);
 void tagstack_clear_entry(Taggy* item);

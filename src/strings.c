@@ -23,7 +23,7 @@
 #include <ctype.h>   //for islower()
 #include <stdlib.h>  //for atol()
 #include <sys/stat.h>
-#include <time.h> // for time()
+#include <time.h> //for time()
 
 //{{{types
 
@@ -66,13 +66,13 @@ private void initDict1(Arena* a, int size, Arr(Unt) temp, OUT DictStringInt128* 
 
 typedef struct ArenaChunk ArenaChunk;
 
-struct ArenaChunk { // :ArenaChunk
+struct ArenaChunk { //:ArenaChunk
    Unt size;
    ArenaChunk* next;
-   char memory[]; // flexible array member
+   char memory[]; //flexible array member
 };
 
-struct Arena { // :Arena
+struct Arena { //:Arena
    ArenaChunk* firstChunk;
    ArenaChunk* currChunk;
    int currInd;
@@ -97,11 +97,11 @@ createArena() { //:createArena
 
 private Unt
 calculateChunkSize(Unt allocSize) { //:calculateChunkSize
-// Calculates memory for a new chunk. Memory is quantized and is always 32 bytes less
-// 32 for any possible padding malloc might use internally,
-// so that the total allocation size is a good even number of OS memory pages
+//Calculates memory for a new chunk. Memory is quantized and is always 32 bytes less
+//32 for any possible padding malloc might use internally,
+//so that the total allocation size is a good even number of OS memory pages
    Unt fullMemory = sizeof(ArenaChunk) + allocSize + 32;
-   // struct header + main memory chunk + space for malloc bookkeep
+   //struct header + main memory chunk + space for malloc bookkeep
 
    int mallocMemory = fullMemory < CHUNK_QUANT
                   ? CHUNK_QUANT
@@ -114,16 +114,16 @@ calculateChunkSize(Unt allocSize) { //:calculateChunkSize
 
 pub void*
 allocateOnArena(Unt allocSize, Arena* a) { //:allocateOnArena
-// Allocate memory in the arena, malloc'ing a new chunk if needed
+//Allocate memory in the arena, malloc'ing a new chunk if needed
    if ((Unt)a->currInd + allocSize >= a->currChunk->size) {
       if (a->currChunk->next != null && a->currChunk->next->size < allocSize) {
-         // the next chunk is big enough, so we skip the rest of this chunk and move on
+         //the next chunk is big enough, so we skip the rest of this chunk and move on
 #ifndef FREESTANDING_STRINGS 
          lo("reusing cleared memory from the arena!");
 #endif 
          a->currChunk = a->currChunk->next;
          a->currInd = 0;
-      } else { // we need to allocate new chunk
+      } else { //we need to allocate new chunk
 
          Unt newSize = calculateChunkSize(allocSize);
          ArenaChunk* newChunk = malloc(newSize);
@@ -131,9 +131,9 @@ allocateOnArena(Unt allocSize, Arena* a) { //:allocateOnArena
             perror("malloc error when allocating arena chunk");
             exit(EXIT_FAILURE);
          };
-         // sizeof counts everything but the flexible array member, that's why we subtract it
+         //sizeof counts everything but the flexible array member, that's why we subtract it
          newChunk->size = newSize - sizeof(ArenaChunk);
-         newChunk->next = a->currChunk->next; // if the arena has a (small) tail, don't lose it
+         newChunk->next = a->currChunk->next; //if the arena has a (small) tail, don't lose it
 
          a->currChunk->next = newChunk;
          a->currChunk = newChunk;
@@ -151,7 +151,7 @@ allocateOnArena(Unt allocSize, Arena* a) { //:allocateOnArena
 
 pub void
 deleteArena(Arena* ar) { //:deleteArena
-// Returns memory of the arena to the OS
+//Returns memory of the arena to the OS
    ArenaChunk* curr = ar->firstChunk;
    while (curr != null) {
       ArenaChunk* nextToFree = curr->next;
@@ -163,14 +163,14 @@ deleteArena(Arena* ar) { //:deleteArena
 
 //private void
 //clearArena(Arena* a) { //:clearArena
-//// Clears the memory of the arena for reuse. Does not free memory.
-//   a->currChunk = a->firstChunk;
-//   a->currInd = 0;
+////Clears the memory of the arena for reuse. Does not free memory.
+//  a->currChunk = a->firstChunk;
+//  a->currInd = 0;
 //}
 
 pub void
 arenaTryFree(void* start, Unt len, Arena* a) {
-// If this memory span is at the very end of this arena, then free it by rewinding
+//If this memory span is at the very end of this arena, then free it by rewinding
    if ((void*)&(a->currChunk->memory) + (a->currInd - len) == start) {
       a->currInd -= len;
    }
@@ -179,12 +179,12 @@ arenaTryFree(void* start, Unt len, Arena* a) {
 //}}}
 //{{{charset (utf-8)
 
-#define URL_SLASH      1      // path_is_url() has found "://"
-#define URL_BACKSLASH  2      // path_is_url() has found ":\\"
+#define URL_SLASH      1      //path_is_url() has found "://"
+#define URL_BACKSLASH  2      //path_is_url() has found ":\\"
 
-// Lookup table to quickly get the length in bytes of a UTF-8 character from the first byte of a 
-// UTF-8 string. Bytes which are illegal when used as the first byte have a 1.
-// The ZERO byte has length 1.
+//Lookup table to quickly get the length in bytes of a UTF-8 character from the first byte of a 
+//UTF-8 string. Bytes which are illegal when used as the first byte have a 1.
+//The ZERO byte has length 1.
 private Byte utf8LenTable[256] = {
    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -194,7 +194,7 @@ private Byte utf8LenTable[256] = {
    3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1
 };
 
-// Like utf8LenTable above, but using a zero for illegal lead bytes.
+//Like utf8LenTable above, but using a zero for illegal lead bytes.
 private Byte utf8LenTable_zero[256] = {
    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -211,7 +211,7 @@ private Byte utf8LenTable_zero[256] = {
 //Do not include composing characters, of course.
 pub Unt
 mb_ptr2char(Byte* p) {
-   if (p[0] < 0x80)   // be quick for ASCII
+   if (p[0] < 0x80)   //be quick for ASCII
       return (Unt)p[0];
 
    int len = utf8LenTable_zero[p[0]];
@@ -241,7 +241,7 @@ mb_ptr2char(Byte* p) {
          }
       }
    }
-   // Illegal value, just return the first byte
+   //Illegal value, just return the first byte
    return p[0];
 }
 
@@ -264,9 +264,9 @@ str_foldcase(
 #define STR_CHAR(i)  (buf ? buf[i] : GA_CHAR(i))
 #define STR_PTR(i)   (buf ? buf + (i) : GA_PTR(i))
 
-   // Copy "str" into "buf" or allocated memory, unmodified.
+   //Copy "str" into "buf" or allocated memory, unmodified.
    if (buf) {
-      if (len >= bufLen)       // Ugly!
+      if (len >= bufLen)       //Ugly!
          len = bufLen - 1;
       MEMMOVE(buf, str, (Unt)len);
       buf[len] = ZERO;
@@ -279,7 +279,7 @@ str_foldcase(
       GA_CHAR(len) = ZERO;
    }
 
-   // Make each character lower case.
+   //Make each character lower case.
    Unt i = 0;
    while (STR_CHAR(i) != ZERO) {
       int c = mb_ptr2char(STR_PTR(i));
@@ -296,7 +296,7 @@ str_foldcase(
             if (nlen > olen) {
                if (buf ? len + nlen - olen >= bufLen : ga_grow(&ga, nlen - olen + 1) == FAIL
                ) {
-                  // out of memory, keep old char
+                  //out of memory, keep old char
                   lc = c;
                   nlen = olen;
                }
@@ -313,7 +313,7 @@ str_foldcase(
          }
          (void)mb_char2bytes(lc, STR_PTR(i));
       }
-      // skip to next multi-byte char
+      //skip to next multi-byte char
       i += utfCharLen(STR_PTR(i));
    }
 
@@ -343,7 +343,7 @@ transchar_hex(CS buf, int c) {
    buf[++i] = ZERO;
 }
 
-// Skip over ' ' and '\t'.
+//Skip over ' ' and '\t'.
 pub CS
 skipwhite(CS q) {
    CS p = q;
@@ -352,7 +352,7 @@ skipwhite(CS q) {
    return p;
 }
 
-// Skip over ' '
+//Skip over ' '
 pub CS
 skipSpace(CS q) {
    CS p = q;
@@ -362,7 +362,7 @@ skipSpace(CS q) {
    return p;
 }
 
-// skip over ' ', '\t' and '\n'.
+//skip over ' ', '\t' and '\n'.
 pub CS
 skipwhite_and_nl(CS q) {
    CS p = q;
@@ -377,12 +377,12 @@ getwhitecols(CS p) {
    return skipwhite(p) - p;
 }
 
-// skip over digits
+//skip over digits
 pub CS
 skipdigits(CS q) {
    CS p = q;
 
-   while (EE_ISDIGIT(*p))   // skip to next non-digit
+   while (EE_ISDIGIT(*p))   //skip to next non-digit
       ++p;
    return p;
 }
@@ -393,52 +393,52 @@ eeIsBDigit(int c) {
    return (c == '0' || c == '1');
 }
 
-// skip over binary digits
+//skip over binary digits
 pub CS
 skipbin(CS q) {
    CS p = q;
 
-   while (eeIsBDigit(*p))   // skip to next non-digit
+   while (eeIsBDigit(*p))   //skip to next non-digit
       ++p;
    return p;
 }
 
-// skip over digits and hex characters
+//skip over digits and hex characters
 pub CS
 skiphex(CS q) {
    CS p = q;
 
-   while (eeIsXDigit(*p))   // skip to next non-digit
+   while (eeIsXDigit(*p))   //skip to next non-digit
       ++p;
    return p;
 }
 
 
-// skip to bin digit (or ZERO after the string)
+//skip to bin digit (or ZERO after the string)
 pub CS
 skiptobin(CS q) {
    CS p = q;
-   while (*p != ZERO && !eeIsBDigit(*p))   // skip to next digit
+   while (*p != ZERO && !eeIsBDigit(*p))   //skip to next digit
       ++p;
    return p;
 }
 
-// skip to digit (or ZERO after the string)
+//skip to digit (or ZERO after the string)
 pub CS
 skiptodigit(CS q) {
    CS p = q;
 
-   while (*p != ZERO && !EE_ISDIGIT(*p))   // skip to next digit
+   while (*p != ZERO && !EE_ISDIGIT(*p))   //skip to next digit
       ++p;
    return p;
 }
 
-// skip to hex character (or ZERO after the string)
+//skip to hex character (or ZERO after the string)
 pub CS
 skiptohex(CS q) {
    CS p = q;
 
-   while (*p != ZERO && !eeIsXDigit(*p))   // skip to next digit
+   while (*p != ZERO && !eeIsXDigit(*p))   //skip to next digit
       ++p;
    return p;
 }
@@ -504,7 +504,7 @@ eeglToLower(Unt c) {
       return TOLOWER_ASC(c);
 }
 
-// skiptowhite: skip over text until ' ' or '\t' or ZERO.
+//skiptowhite: skip over text until ' ' or '\t' or ZERO.
 pub CS
 skiptowhite(CS p) {
    while (*p != ' ' && *p != '\t' && *p != ZERO)
@@ -512,7 +512,7 @@ skiptowhite(CS p) {
    return p;
 }
 
-// skiptowhite_esc: Like skiptowhite(), but also skip escaped chars
+//skiptowhite_esc: Like skiptowhite(), but also skip escaped chars
 pub CS
 skiptowhite_esc(CS p) {
    while (*p != ' ' && *p != '\t' && *p != ZERO) {
@@ -523,7 +523,7 @@ skiptowhite_esc(CS p) {
    return p;
 }
 
-// "a b c d" -> "d"
+//"a b c d" -> "d"
 pub CS
 skipToLastSpace(CS p) {
    CS lastSpace = null;
@@ -534,19 +534,19 @@ skipToLastSpace(CS p) {
    return lastSpace ? lastSpace : p;
 }
 
-// Get a number from a string and skip over it.
+//Get a number from a string and skip over it.
 pub long
 parseLong(OUT CS* pp) {
    CS p = *pp;
    long retval = atol((char *)p);
-   if (*p == '-')      // skip negative sign
+   if (*p == '-')      //skip negative sign
       ++p;
-   p = skipdigits(p);      // skip to next non-digit
+   p = skipdigits(p);      //skip to next non-digit
    *pp = p;
    return retval;
 }
 
-// Get a number from a string and skip over it. Allow for embedded single quotes.
+//Get a number from a string and skip over it. Allow for embedded single quotes.
 pub long
 parseLong_quoted(OUT CS* pp) {
    CS str = *pp;
@@ -571,7 +571,7 @@ parseLong_quoted(OUT CS* pp) {
    return retval;
 }
 
-// Return true if "lbuf" is empty or only contains blanks.
+//Return true if "lbuf" is empty or only contains blanks.
 pub int
 eeIsBlankLine(CS lbuf) {
    CS p = skipwhite(lbuf);
@@ -581,11 +581,11 @@ eeIsBlankLine(CS lbuf) {
 //Convert a string into a long and/or unsigned long, taking care of
 //hexadecimal and binary numbers.  Accepts a '-' sign.
 //If "prep" is not NULL, returns a flag to indicate the type of the number:
-// 0       decimal
-// 'B'       bin
-// 'b'       bin
-// 'X'       hex
-// 'x'       hex
+//0       decimal
+//'B'       bin
+//'b'       bin
+//'X'       hex
+//'x'       hex
 //If "len" is not NULL, the length of the number in characters is returned.
 //If "nptr" is not NULL, the signed result is returned in it.
 //If "unptr" is not NULL, the unsigned result is returned in it.
@@ -598,17 +598,17 @@ eeIsBlankLine(CS lbuf) {
 pub void
 readLongNumber(
    CS start,
-   OUT int* prep,    // type of number 0 = decimal, 'x' or 'X' is hex, 'b' or 'B' is bin
-   OUT int* len,     // detected length of number
-   int what,     // what numbers to recognize
-   OUT Long* nptr, // signed result
-   OUT Ulong* unptr,  // unsigned result
-   int maxlen,   // max length of string to check
-   Boole strict,   // check strictly
-   Boole* overflow  // when not NULL set to true for overflow
+   OUT int* prep,    //type of number 0 = decimal, 'x' or 'X' is hex, 'b' or 'B' is bin
+   OUT int* len,     //detected length of number
+   int what,     //what numbers to recognize
+   OUT Long* nptr, //signed result
+   OUT Ulong* unptr,  //unsigned result
+   int maxlen,   //max length of string to check
+   Boole strict,   //check strictly
+   Boole* overflow  //when not NULL set to true for overflow
 ){
    CS ptr = start;
-   int pre = 0;      // default is decimal
+   int pre = 0;      //default is decimal
    int negative = false;
    Ulong un = 0;
 
@@ -620,33 +620,33 @@ readLongNumber(
       ++ptr;
    }
 
-   // Recognize hex, and bin.
+   //Recognize hex, and bin.
    if (ptr[0] == '0' && ptr[1] != '8' && ptr[1] != '9' && (maxlen == 0 || maxlen > 1)) {
       pre = ptr[1];
       if ((what & STR2NR_HEX)
             && (pre == 'X' || pre == 'x') && eeIsXDigit(ptr[2])
             && (maxlen == 0 || maxlen > 2)
       )
-         // hexadecimal
+         //hexadecimal
          ptr += 2;
       ei ((what & STR2NR_BIN)
             && (pre == 'B' || pre == 'b') && eeIsBDigit(ptr[2])
             && (maxlen == 0 || maxlen > 2))
-         // binary
+         //binary
          ptr += 2;
-      else { // decimal
+      else { //decimal
          pre = 0;
       }
    }
 
-   // Do the conversion manually to avoid sscanf() quirks.
+   //Do the conversion manually to avoid sscanf() quirks.
    int n = 1;
    if (pre == 'B' || pre == 'b' || ((what & STR2NR_BIN) && (what & STR2NR_FORCE))) {
-      // bin
+      //bin
       if (pre != 0)
-          n += 2;       // skip over "0b"
+          n += 2;       //skip over "0b"
       while ('0' <= *ptr && *ptr <= '1') {
-         // avoid ubsan error for overflow
+         //avoid ubsan error for overflow
          if (un <= ULONG_MAX / 2)
             un = 2 * un + (Ulong)(*ptr - '0');
          else {
@@ -664,11 +664,11 @@ readLongNumber(
          }
       }
    } ei (pre != 0 || ((what & STR2NR_HEX) && (what & STR2NR_FORCE))) {
-      // hex
+      //hex
       if (pre != 0)
-          n += 2;       // skip over "0x"
+          n += 2;       //skip over "0x"
       while (eeIsXDigit(*ptr)) {
-         // avoid ubsan error for overflow
+         //avoid ubsan error for overflow
          if (un <= ULONG_MAX / 16)
             un = 16 * un + (Ulong)hex2nr(*ptr);
          else {
@@ -686,11 +686,11 @@ readLongNumber(
          }
       }
    } else {
-      // decimal
+      //decimal
       while (EE_ISDIGIT(*ptr)) {
          Ulong    digit = (Ulong)(*ptr - '0');
 
-         // avoid ubsan error for overflow
+         //avoid ubsan error for overflow
          if (un < ULONG_MAX / 10
              || (un == ULONG_MAX / 10 && digit <= ULONG_MAX % 10))
             un = 10 * un + digit;
@@ -710,7 +710,7 @@ readLongNumber(
       }
    }
 
-   // Check for an alphanumeric character immediately following, that is most likely a typo.
+   //Check for an alphanumeric character immediately following, that is most likely a typo.
    if (strict && n - 1 != maxlen && ASCII_ISALNUM(*ptr))
       return;
 
@@ -719,8 +719,8 @@ readLongNumber(
    if (len)
       *len = (int)(ptr - start);
    if (nptr) {
-      if (negative) {  // account for leading '-' for decimal numbers
-          // avoid ubsan error for overflow
+      if (negative) {  //account for leading '-' for decimal numbers
+          //avoid ubsan error for overflow
          if (un > LONG_MAX) {
             *nptr = LONG_MIN;
             if (overflow)
@@ -728,7 +728,7 @@ readLongNumber(
          } else
             *nptr = -(Long)un;
       } else {
-         // prevent a large unsigned number to become negative
+         //prevent a large unsigned number to become negative
          if (un > LONG_MAX) {
             un = LONG_MAX;
             if (overflow)
@@ -752,7 +752,7 @@ hex2nr(int c) {
    return c - '0';
 }
 
-// Convert two hex characters to a byte. Return -1 if one of the characters is not hex.
+//Convert two hex characters to a byte. Return -1 if one of the characters is not hex.
 pub int
 hexhex2nr(CS p) {
    if (!eeIsXDigit(p[0]) || !eeIsXDigit(p[1]))
@@ -771,7 +771,7 @@ rem_backslash(CS filename) {
    return (filename[0] == '\\' && filename[1] != ZERO);
 }
 
-// Halve the number of backslashes in a file name argument.
+//Halve the number of backslashes in a file name argument.
 pub void
 backslash_halve(CS p) {
    for ( ; *p; ++p) {
@@ -794,11 +794,11 @@ backslash_halve_save(CS p) {
 pub void
 transchar_nonprint(CS charbuf, int c) {
    if (c == NL)
-      c = ZERO;      // we use newline in place of a ZERO
+      c = ZERO;      //we use newline in place of a ZERO
 
-   ei (c <= 0x7f) {       // 0x00 - 0x1f and 0x7f
+   ei (c <= 0x7f) {       //0x00 - 0x1f and 0x7f
       charbuf[0] = '^';
-      charbuf[1] = c ^ 0x40;      // DEL displayed as ^?
+      charbuf[1] = c ^ 0x40;      //DEL displayed as ^?
       charbuf[2] = ZERO;
    } else {
       transchar_hex(charbuf, c);
@@ -819,13 +819,13 @@ private Unt
 utf_safe_read_char_adv(OUT CS* s, OUT Unt* n){
    Unt c;
 
-   if (*n == 0) // end of buffer
+   if (*n == 0) //end of buffer
       return 0;
 
    int k = utf8LenTable_zero[**s];
 
    if (k == 1) {
-      // ASCII character or ZERO
+      //ASCII character or ZERO
       (*n)--;
       return *(*s)++;
    }
@@ -840,19 +840,19 @@ utf_safe_read_char_adv(OUT CS* s, OUT Unt* n){
       //representation is U+00C3 (UTF-8: 0xC3 0x83), so need to check that special case too.
       //It's safe even if n=1, else we would have k=2 > n.
       if (c != (int)(**s) || (c == 0xC3 && (*s)[1] == 0x83)) {
-          // byte sequence was successfully decoded
+          //byte sequence was successfully decoded
           *s += k;
           *n -= k;
           return c;
       }
    }
 
-   // byte sequence is incomplete or illegal
+   //byte sequence is incomplete or illegal
    return UNT;
 }
 
-// Get the length of a UTF-8 byte sequence, excluding any following composing characters.
-// Return 0 for "". Return 1 for an illegal byte sequence.
+//Get the length of a UTF-8 byte sequence, excluding any following composing characters.
+//Return 0 for "". Return 1 for an illegal byte sequence.
 pub Unt
 utf_ptr2len(CS p) {
    if (*p == ZERO)
@@ -891,10 +891,10 @@ pub Unt
 utf_ptr2len_len(Byte const* p, int size) {
    Unt len = utf8LenTable[*p];
    if (len == 1)
-      return 1;   // ZERO, ascii or illegal lead byte
+      return 1;   //ZERO, ascii or illegal lead byte
    Unt m;
    if ((int)len > size)
-      m = size;   // incomplete byte sequence.
+      m = size;   //incomplete byte sequence.
    else
       m = len;
    for (Unt i = 1; i < m; ++i) {
@@ -904,8 +904,8 @@ utf_ptr2len_len(Byte const* p, int size) {
    return len;
 }
 
-// Return the number of bytes the UTF-8 encoding of character "c" takes.
-// This does not include composing characters.
+//Return the number of bytes the UTF-8 encoding of character "c" takes.
+//This does not include composing characters.
 pub Unt
 mb_char2len(Unt c) {
    if (c < 0x80)
@@ -921,32 +921,32 @@ mb_char2len(Unt c) {
    return 6;
 }
 
-// Convert Unicode character "c" to UTF-8 string in "buf[]". Returns the number of bytes.
+//Convert Unicode character "c" to UTF-8 string in "buf[]". Returns the number of bytes.
 pub int
 mb_char2bytes(Unt c, CS buf) {
-   if (c < 0x80)   { // 7 bits
+   if (c < 0x80)   { //7 bits
       buf[0] = c;
       return 1;
    }
-   if (c < 0x800) {    // 11 bits
+   if (c < 0x800) {    //11 bits
       buf[0] = 0xc0 + (c >> 6);
       buf[1] = 0x80 + (c & 0x3f);
       return 2;
    }
-   if (c < 0x10000) {      // 16 bits
+   if (c < 0x10000) {      //16 bits
       buf[0] = 0xe0 + (c >> 12);
       buf[1] = 0x80 + ((c >> 6) & 0x3f);
       buf[2] = 0x80 + (c & 0x3f);
       return 3;
    }
-   if (c < 0x200000) {     // 21 bits
+   if (c < 0x200000) {     //21 bits
       buf[0] = 0xf0 + (c >> 18);
       buf[1] = 0x80 + ((c >> 12) & 0x3f);
       buf[2] = 0x80 + ((c >> 6) & 0x3f);
       buf[3] = 0x80 + (c & 0x3f);
       return 4;
    }
-   if (c < 0x4000000) {     // 26 bits
+   if (c < 0x4000000) {     //26 bits
       buf[0] = 0xf8 + (c >> 24);
       buf[1] = 0x80 + ((c >> 18) & 0x3f);
       buf[2] = 0x80 + ((c >> 12) & 0x3f);
@@ -954,7 +954,7 @@ mb_char2bytes(Unt c, CS buf) {
       buf[4] = 0x80 + (c & 0x3f);
       return 5;
    }
-   // 31 bits
+   //31 bits
    buf[0] = 0xfc + (c >> 30);
    buf[1] = 0x80 + ((c >> 24) & 0x3f);
    buf[2] = 0x80 + ((c >> 18) & 0x3f);
@@ -964,7 +964,7 @@ mb_char2bytes(Unt c, CS buf) {
    return 6;
 }
 
-// utf_iscomposing() with different argument type for libvterm.
+//utf_iscomposing() with different argument type for libvterm.
 pub int
 utf_iscomposing_uint(Unt c) {
    return utf_iscomposing(c);
@@ -972,18 +972,18 @@ utf_iscomposing_uint(Unt c) {
 
 pub Boole
 utf_islower(Unt a){
-   // German sharp s is lower case but has no upper case equivalent.
+   //German sharp s is lower case but has no upper case equivalent.
    return (utf_toupper(a) != a) || a == 0xdf;
 }
 
 //Return the lower-case equivalent of "a", which is a UCS-4 character. Use simple case folding.
 pub Unt
 utf_tolower(Unt a) {
-   // Use ASCII style tolower().
+   //Use ASCII style tolower().
    if (a < 128)
       return TOLOWER_ASC(a);
 
-   // If towlower() is available and handles Unicode, use it.
+   //If towlower() is available and handles Unicode, use it.
    return towlower(a);
 }
 
@@ -1282,7 +1282,7 @@ utf_convert(Unt a, ConvertStruct table[], int tableSize) {
    int start = 0;
    int end = entries;
    while (start < end) {
-      // need to search further
+      //need to search further
       int mid = (end + start) / 2;
       if (table[mid].rangeEnd < a)
          start = mid + 1;
@@ -1302,7 +1302,7 @@ utf_convert(Unt a, ConvertStruct table[], int tableSize) {
 pub Unt
 utf_fold(Unt a) {
    if (a < 0x80)
-      // be fast for ASCII
+      //be fast for ASCII
       return a >= 0x41 && a <= 0x5a ? a + 32 : a;
    return utf_convert(a, foldCase, (int)sizeof(foldCase));
 }
@@ -1310,7 +1310,7 @@ utf_fold(Unt a) {
 //Return the upper-case equivalent of "a", which is a UCS-4 character.  Use simple case folding.
 pub Unt
 utf_toupper(Unt a) {
-   // Use ASCII style toupper().
+   //Use ASCII style toupper().
    if (a < 128)
       return TOUPPER_ASC(a);
 
@@ -1334,14 +1334,14 @@ caseInsensitiveCompareNChars(CS s1, CS s2, Unt nn) {
    return utf_strnicmp(s1, s2, nn, nn);
 }
 
-// Return true if "c" is in the sorted "table[size / sizeof(Interval)]".
+//Return true if "c" is in the sorted "table[size / sizeof(Interval)]".
 private Boole
 intable(Arr(Interval) table, Unt size, Unt c) {
-   // first quick check for Latin1 etc. characters
+   //first quick check for Latin1 etc. characters
    if ((long)c < table[0].first)
       return false;
 
-   // binary search in table
+   //binary search in table
    int bot = 0;
    int top = (int)(size / sizeof(Interval) - 1);
    while (top >= bot) {
@@ -1356,10 +1356,10 @@ intable(Arr(Interval) table, Unt size, Unt c) {
    return false;
 }
 
-// Sorted list of non-overlapping intervals of all Emoji characters,
-// based on http://unicode.org/emoji/charts/emoji-list.html
-// Generated by ../runtime/tools/unicode.vim.
-// Excludes 0x00a9 and 0x00ae because they are considered latin1.
+//Sorted list of non-overlapping intervals of all Emoji characters,
+//based on http://unicode.org/emoji/charts/emoji-list.html
+//Generated by ../runtime/tools/unicode.vim.
+//Excludes 0x00a9 and 0x00ae because they are considered latin1.
 private Interval emoji_all[] = {
     {0x203c, 0x203c},
     {0x2049, 0x2049},
@@ -1517,8 +1517,8 @@ strInEmojiTable(Unt c) {
 
 pub Boole
 strInDoubleWidthTable(Unt c) {
-   // Sorted list of non-overlapping intervals of East Asian double width
-   // characters, generated with ../runtime/tools/unicode.vim.
+   //Sorted list of non-overlapping intervals of East Asian double width
+   //characters, generated with ../runtime/tools/unicode.vim.
    static Interval doublewidth[] = {
       {0x1100, 0x115f},
       {0x231a, 0x231b},
@@ -1647,8 +1647,8 @@ strInDoubleWidthTable(Unt c) {
    return intable(doublewidth, sizeof(doublewidth), c);
 }
 
-// Sorted list of non-overlapping intervals of East Asian Ambiguous
-// characters, generated with ../runtime/tools/unicode.vim.
+//Sorted list of non-overlapping intervals of East Asian Ambiguous
+//characters, generated with ../runtime/tools/unicode.vim.
 private Interval ambiguous[] = {
    {0x00a1, 0x00a1},
    {0x00a4, 0x00a4},
@@ -1863,18 +1863,18 @@ mb_head_off(CS base, CS p) {
    CS s;
    int len;
 
-   if (*p < 0x80)      // be quick for ASCII
+   if (*p < 0x80)      //be quick for ASCII
       return 0;
 
-   // Skip backwards over trailing bytes: 10xx.xxxx. Skip backwards again if on a composing char.
+   //Skip backwards over trailing bytes: 10xx.xxxx. Skip backwards again if on a composing char.
    for (q = p; ; --q) {
-      // Move s to the last byte of this char.
+      //Move s to the last byte of this char.
       for (s = q; (s[1] & 0xc0) == 0x80; ++s)
          {}
-      // Move q to the first byte of this char.
+      //Move q to the first byte of this char.
       while (q > base && (*q & 0xc0) == 0x80)
          --q;
-      // Check for illegal sequence. Do allow an illegal byte after where we started.
+      //Check for illegal sequence. Do allow an illegal byte after where we started.
       len = utf8LenTable[*q];
       if (len != (int)(s - q + 1) && len != (int)(p - q + 1))
          return 0;
@@ -1892,19 +1892,19 @@ mb_head_off(CS base, CS p) {
    return (int)(p - q);
 }
 
-// Whether space is NOT allowed before/after 'c'.
+//Whether space is NOT allowed before/after 'c'.
 pub int
 utf_eat_space(int cc){
-    return ((cc >= 0x2000 && cc <= 0x206F)   // General punctuations
-       || (cc >= 0x2e00 && cc <= 0x2e7f)   // Supplemental punctuations
-       || (cc >= 0x3000 && cc <= 0x303f)   // CJK symbols and punctuations
-       || (cc >= 0xff01 && cc <= 0xff0f)   // Full width ASCII punctuations
-       || (cc >= 0xff1a && cc <= 0xff20)   // ..
-       || (cc >= 0xff3b && cc <= 0xff40)   // ..
-       || (cc >= 0xff5b && cc <= 0xff65));   // ..
+    return ((cc >= 0x2000 && cc <= 0x206F)   //General punctuations
+       || (cc >= 0x2e00 && cc <= 0x2e7f)   //Supplemental punctuations
+       || (cc >= 0x3000 && cc <= 0x303f)   //CJK symbols and punctuations
+       || (cc >= 0xff01 && cc <= 0xff0f)   //Full width ASCII punctuations
+       || (cc >= 0xff1a && cc <= 0xff20)   //..
+       || (cc >= 0xff3b && cc <= 0xff40)   //..
+       || (cc >= 0xff5b && cc <= 0xff65));   //..
 }
 
-// Whether line break is allowed before "cc".
+//Whether line break is allowed before "cc".
 pub Boole
 utf_allow_break_before(Unt cc) {
    static const Unt BOL_prohibition_punct[] = {
@@ -1918,39 +1918,39 @@ utf_allow_break_before(Unt cc) {
       '?', //[
       ']', //{
       '}',
-      0x2019, // ’ right single quotation mark
-      0x201d, // ” right double quotation mark
-      0x2020, // † dagger
-      0x2021, // ‡ double dagger
-      0x2026, // … horizontal ellipsis
-      0x2030, // ‰ per mille sign
-      0x2031, // ‱ per ten thousand sign
-      0x203c, // ‼ double exclamation mark
-      0x2047, // ⁇ double question mark
-      0x2048, // ⁈ question exclamation mark
-      0x2049, // ⁉ exclamation question mark
-      0x2103, // ℃ degree celsius
-      0x2109, // ℉ degree fahrenheit
-      0x3001, // 、 ideographic comma
-      0x3002, // 。 ideographic full stop
-      0x3009, // 〉 right angle bracket
-      0x300b, // 》 right double angle bracket
-      0x300d, // 」 right corner bracket
-      0x300f, // 』 right white corner bracket
-      0x3011, // 】 right black lenticular bracket
-      0x3015, // 〕 right tortoise shell bracket
-      0x3017, // 〗 right white lenticular bracket
-      0x3019, // 〙 right white tortoise shell bracket
-      0x301b, // 〛 right white square bracket
-      0xff01, // ！ fullwidth exclamation mark
-      0xff09, // ） fullwidth right parenthesis
-      0xff0c, // ， fullwidth comma
-      0xff0e, // ． fullwidth full stop
-      0xff1a, // ： fullwidth colon
-      0xff1b, // ； fullwidth semicolon
-      0xff1f, // ？ fullwidth question mark
-      0xff3d, // ］ fullwidth right square bracket
-      0xff5d, // ｝ fullwidth right curly bracket
+      0x2019, //’ right single quotation mark
+      0x201d, //” right double quotation mark
+      0x2020, //† dagger
+      0x2021, //‡ double dagger
+      0x2026, //… horizontal ellipsis
+      0x2030, //‰ per mille sign
+      0x2031, //‱ per ten thousand sign
+      0x203c, //‼ double exclamation mark
+      0x2047, //⁇ double question mark
+      0x2048, //⁈ question exclamation mark
+      0x2049, //⁉ exclamation question mark
+      0x2103, //℃ degree celsius
+      0x2109, //℉ degree fahrenheit
+      0x3001, //、 ideographic comma
+      0x3002, //。 ideographic full stop
+      0x3009, //〉 right angle bracket
+      0x300b, //》 right double angle bracket
+      0x300d, //」 right corner bracket
+      0x300f, //』 right white corner bracket
+      0x3011, //】 right black lenticular bracket
+      0x3015, //〕 right tortoise shell bracket
+      0x3017, //〗 right white lenticular bracket
+      0x3019, //〙 right white tortoise shell bracket
+      0x301b, //〛 right white square bracket
+      0xff01, //！ fullwidth exclamation mark
+      0xff09, //） fullwidth right parenthesis
+      0xff0c, //， fullwidth comma
+      0xff0e, //． fullwidth full stop
+      0xff1a, //： fullwidth colon
+      0xff1b, //； fullwidth semicolon
+      0xff1f, //？ fullwidth question mark
+      0xff3d, //］ fullwidth right square bracket
+      0xff5d, //｝ fullwidth right curly bracket
    };
 
    int first = 0;
@@ -1980,22 +1980,22 @@ utf_allow_break_after(Unt cc) {
       '[', //]
       '`',
       '{', //}
-      //0x2014, // — em dash
-      0x2018, // ‘ left single quotation mark
-      0x201c, // “ left double quotation mark
-      //0x2053, // ～ swung dash
-      0x3008, // 〈 left angle bracket
-      0x300a, // 《 left double angle bracket
-      0x300c, // 「 left corner bracket
-      0x300e, // 『 left white corner bracket
-      0x3010, // 【 left black lenticular bracket
-      0x3014, // 〔 left tortoise shell bracket
-      0x3016, // 〖 left white lenticular bracket
-      0x3018, // 〘 left white tortoise shell bracket
-      0x301a, // 〚 left white square bracket
-      0xff08, // （ fullwidth left parenthesis
-      0xff3b, // ［ fullwidth left square bracket
-      0xff5b, // ｛ fullwidth left curly bracket
+      //0x2014, //— em dash
+      0x2018, //‘ left single quotation mark
+      0x201c, //“ left double quotation mark
+      //0x2053, //～ swung dash
+      0x3008, //〈 left angle bracket
+      0x300a, //《 left double angle bracket
+      0x300c, //「 left corner bracket
+      0x300e, //『 left white corner bracket
+      0x3010, //【 left black lenticular bracket
+      0x3014, //〔 left tortoise shell bracket
+      0x3016, //〖 left white lenticular bracket
+      0x3018, //〘 left white tortoise shell bracket
+      0x301a, //〚 left white square bracket
+      0xff08, //（ fullwidth left parenthesis
+      0xff3b, //［ fullwidth left square bracket
+      0xff5b, //｛ fullwidth left curly bracket
    };
 
    int first = 0;
@@ -2019,16 +2019,16 @@ utf_allow_break_after(Unt cc) {
 //Whether line break is allowed between "cc" and "ncc".
 pub int
 utf_allow_break(Unt cc, Unt ncc) {
-   // don't break between two-letter punctuations
+   //don't break between two-letter punctuations
    if (cc == ncc
-       && (cc == 0x2014 // em dash
-         || cc == 0x2026)) // horizontal ellipsis
+       && (cc == 0x2014 //em dash
+         || cc == 0x2026)) //horizontal ellipsis
       return false;
 
    return utf_allow_break_after(cc) && utf_allow_break_before(ncc);
 }
 
-// Copy a character from "*fp" to "*tp" and advance the pointers.
+//Copy a character from "*fp" to "*tp" and advance the pointers.
 pub void
 mb_copy_char(OUT CS* fp, OUT CS* tp) {
    int l = utfCharLen(*fp);
@@ -2059,11 +2059,11 @@ mb_tail_off(CS base, CS p) {
    if (*p == ZERO)
       return 0;
 
-   // Find the last character that is 10xx.xxxx
+   //Find the last character that is 10xx.xxxx
    int i;
    for (i = 0; (p[i + 1] & 0xc0) == 0x80; ++i)
        ;
-   // Check for illegal sequence.
+   //Check for illegal sequence.
    int j;
    for (j = 0; p - j > base; ++j) {
       if ((p[-j] & 0xc0) != 0x80)
@@ -2083,20 +2083,20 @@ utf_valid_string(CS s, CS end) {
    while (end == NULL ? *p != ZERO : p < end) {
       int l = utf8LenTable_zero[*p];
       if (l == 0)
-          return false;   // invalid lead byte
+          return false;   //invalid lead byte
       if (end != NULL && p + l > end)
-          return false;   // incomplete byte sequence
+          return false;   //incomplete byte sequence
       ++p;
       while (--l > 0)
           if ((*p++ & 0xc0) != 0x80)
-         return false;   // invalid trail byte
+         return false;   //invalid trail byte
    }
    return true;
 }
 
-// Return a pointer to the character before "*p", if there is one.
+//Return a pointer to the character before "*p", if there is one.
 pub CS
-mb_prevptr(CS line, CS p) {   // start of the string
+mb_prevptr(CS line, CS p) {   //start of the string
    if (p > line)
       MB_PTR_BACK(line, p);
    return p;
@@ -2117,7 +2117,7 @@ mb_charlen(CS str) {
    return count;
 }
 
-// Like mb_charlen() but for a string with specified length.
+//Like mb_charlen() but for a string with specified length.
 pub int
 mb_charlen_len(CS str, int len) {
    CS p = str;
@@ -2140,9 +2140,9 @@ mb_unescape(OUT CS* pp) {
    int m = 0;
    CS str = *pp;
 
-   // Must translate K_SPECIAL KS_SPECIAL KE_FILLER to K_SPECIAL and CSI
-   // KS_EXTRA KE_CSI to CSI.
-   // Maximum length of a utf-8 character is 4 bytes.
+   //Must translate K_SPECIAL KS_SPECIAL KE_FILLER to K_SPECIAL and CSI
+   //KS_EXTRA KE_CSI to CSI.
+   //Maximum length of a utf-8 character is 4 bytes.
    for (n = 0; str[n] != ZERO && m < 4; ++n) {
       if (str[n] == K_SPECIAL && str[n + 1] == KS_SPECIAL && str[n + 2] == KE_FILLER) {
          buf[m++] = K_SPECIAL;
@@ -2151,7 +2151,7 @@ mb_unescape(OUT CS* pp) {
          buf[m++] = CSI;
          n += 2;
       } ei (str[n] == K_SPECIAL) {
-         break;      // a special key can't be a multibyte char
+         break;      //a special key can't be a multibyte char
       } else {
           buf[m++] = str[n];
       } 
@@ -2163,7 +2163,7 @@ mb_unescape(OUT CS* pp) {
          return buf;
       }
 
-      // Bail out quickly for ASCII.
+      //Bail out quickly for ASCII.
       if (buf[0] < 128)
          break;
     }
@@ -2176,8 +2176,8 @@ mb_unescape(OUT CS* pp) {
 //drawn on top of the preceding character. Based on code from Markus Kuhn.
 pub Boole
 utf_iscomposing(Unt c) {
-   // Sorted list of non-overlapping intervals.
-   // Generated by ../runtime/tools/unicode.vim.
+   //Sorted list of non-overlapping intervals.
+   //Generated by ../runtime/tools/unicode.vim.
    static Interval combining[] = {
       {0x0300, 0x036f},
       {0x0483, 0x0489},
@@ -2542,8 +2542,8 @@ utf_iscomposing(Unt c) {
 //Only for characters of 0x100 and above!
 pub Boole
 utf_printable(Unt c) {
-   // Sorted list of non-overlapping intervals.
-   // 0xd800-0xdfff is reserved for UTF-16, actually illegal.
+   //Sorted list of non-overlapping intervals.
+   //0xd800-0xdfff is reserved for UTF-16, actually illegal.
    static Interval nonprint[] = {
       {0x070f, 0x070f}, {0x180b, 0x180e}, {0x200b, 0x200f}, {0x202a, 0x202e},
       {0x2060, 0x206f}, {0xd800, 0xdfff}, {0xfeff, 0xfeff}, {0xfff9, 0xfffb},
@@ -2557,7 +2557,7 @@ utf_printable(Unt c) {
 //}}}
 //{{{directory name
 
-// Append a sub-directory name to DirName. Ensure that the underlying array end with a slash.
+//Append a sub-directory name to DirName. Ensure that the underlying array end with a slash.
 pub void
 appendSubDir(CS subDir, OUT DirName* dn) {
    Int const rawLen = STRLEN(subDir);
@@ -2585,7 +2585,7 @@ appendSubDir(CS subDir, OUT DirName* dn) {
    dn->c[len] = ZERO;
 }
 
-// Remove one subdirectory from DirName. Return false if impossible (because it's already empty)
+//Remove one subdirectory from DirName. Return false if impossible (because it's already empty)
 pub Boole
 removeSubDir(OUT DirName* restrict dn) {
    CS p = (CS)dn->c + dn->len - 2;
@@ -2602,7 +2602,7 @@ removeSubDir(OUT DirName* restrict dn) {
 //}}}
 //{{{chunky strings
 
-// Linked lists of array chars living in an Arena. Very useful for file path construction
+//Linked lists of array chars living in an Arena. Very useful for file path construction
 
 pub declStruct(ChunkString);
 
@@ -2641,7 +2641,7 @@ appendToChunkyString(Arr(Byte const) c, ChunkyString* chunky) {
    chunky->len += len;
 }
 
-// Linearize a chunky string into a contiguous ZERO-terminated string in the same arena
+//Linearize a chunky string into a contiguous ZERO-terminated string in the same arena
 pub CS
 toStringChunky(ChunkyString* chunky) {
    CS contiguous = allocateArray(chunky->len + 1, Byte, chunky->a);
@@ -2657,30 +2657,30 @@ toStringChunky(ChunkyString* chunky) {
 //}}}
 //{{{unicode
 
-// Return the number of bytes the UTF-8 encoding of the character at "p" takes.
-// This includes following composing characters.
+//Return the number of bytes the UTF-8 encoding of the character at "p" takes.
+//This includes following composing characters.
 pub Unt
 utfCharLen(CS p) {
    int b0 = *p;
    if (b0 == ZERO)
       return 0;
-   if (b0 < 0x80 && p[1] < 0x80)   // be quick for ASCII
+   if (b0 < 0x80 && p[1] < 0x80)   //be quick for ASCII
       return 1;
       
-   // Skip over first UTF-8 char, stopping at a ZERO byte.
+   //Skip over first UTF-8 char, stopping at a ZERO byte.
    Unt len = utf_ptr2len(p);
 
-   // Check for illegal byte.
+   //Check for illegal byte.
    if (len == 1 && b0 >= 0x80)
       return 1;
 
-   // Check for composing characters.  We can handle only the first 6, but
-   // skip all of them (otherwise the cursor would get stuck).
+   //Check for composing characters.  We can handle only the first 6, but
+   //skip all of them (otherwise the cursor would get stuck).
    for (;;) {
       if (p[len] < 0x80 || !UTF_COMPOSINGLIKE(p + prevlen, p + len))
           return len;
 
-      // Skip over composing char
+      //Skip over composing char
       len += utf_ptr2len(p + len);
    }
 }
@@ -2694,13 +2694,13 @@ utfCharLen_len(Byte* p, int size) {
 
    if (size < 1 || *p == ZERO)
       return 0;
-   if (p[0] < 0x80 && (size == 1 || p[1] < 0x80)) // be quick for ASCII
+   if (p[0] < 0x80 && (size == 1 || p[1] < 0x80)) //be quick for ASCII
       return 1;
 
-   // Skip over first UTF-8 char, stopping at a ZERO byte.
+   //Skip over first UTF-8 char, stopping at a ZERO byte.
    len = utf_ptr2len_len(p, size);
 
-   // Check for illegal byte and incomplete byte sequence.
+   //Check for illegal byte and incomplete byte sequence.
    if ((len == 1 && p[0] >= 0x80) || len > size)
       return 1;
 
@@ -2721,7 +2721,7 @@ utfCharLen_len(Byte* p, int size) {
       if (!UTF_COMPOSINGLIKE(p + prevlen, p + len))
          break;
 
-      // Skip over composing char
+      //Skip over composing char
       len += len_next_char;
    }
    return len;
@@ -2764,7 +2764,7 @@ skipTo(Text inp, CS t) {
 }
 
 //"asdf,bcjk"  => "asdf,bcjk"
-// ^                   ^
+//^                   ^
 pub CS
 skipToComma(CS s) {
    for (; *s != ZERO && *s != ','; s++)
@@ -2774,7 +2774,7 @@ skipToComma(CS s) {
 
 //Skip to next part of an option argument: Skip space and comma.
 //"asdf,  bcjk"  => "asdf,  bcjk"
-//     ^                    ^
+//    ^                    ^
 pub CS
 skip_to_option_part(CS p) {
    if (*p == ',')
@@ -2796,7 +2796,7 @@ skipLine(CS s) {
 
 #define USING_FLOAT_STUFF
 
-// Copy "string" into newly allocated memory.
+//Copy "string" into newly allocated memory.
 pub CS
 copyStr(CS string) {
    Unt len = STRLEN(string) + 1;
@@ -2916,8 +2916,8 @@ freePolystring(OUT Polystring* poly) {
    eeglFree(poly->c);
 }
 
-// Copy up to "len" bytes of "string" into the arena and terminate with a ZERO.
-// The allocated memory always has size "len + 1", even when "string" is shorter.
+//Copy up to "len" bytes of "string" into the arena and terminate with a ZERO.
+//The allocated memory always has size "len + 1", even when "string" is shorter.
 pub CS
 copySubstrA(CS string, Unt len, Arena* a) {
    CS p = allocateArray(len + 1, Byte, a);
@@ -2926,7 +2926,7 @@ copySubstrA(CS string, Unt len, Arena* a) {
    return p;
 }
 
-// Copy a text into newly allocated memory and terminate with a ZERO.
+//Copy a text into newly allocated memory and terminate with a ZERO.
 pub Text
 copyText(Text slice) {
    CS retVal = alloc(slice.len + 1);
@@ -2943,13 +2943,13 @@ copyStrA(CS string, Arena* a) {
    return p;
 }
 
-// Same as copyStr(), but any characters found in esc_chars are preceded by a backslash.
+//Same as copyStr(), but any characters found in esc_chars are preceded by a backslash.
 pub CS
 copyStr_escaped(CS string, CS escChars) {
    return copyStr_escaped_ext(string, escChars, '\\', false, null);
 }
 
-// Same as copyStr(), but any characters found in esc_chars are preceded by a backslash.
+//Same as copyStr(), but any characters found in esc_chars are preceded by a backslash.
 pub CS
 copyStrEscapedA(CS string, CS escChars, Arena* a) {
    return copyStr_escaped_ext(string, escChars, '\\', false, a);
@@ -2962,19 +2962,19 @@ pub CS
 copyStr_escaped_ext(CS string, CS esc_chars, Unt cc, Boole bsl, Arena* a) {
    int l;
 
-   // First count the number of backslashes required.
-   // Then allocate the memory and insert them.
-   Unt length = 1;            // count the trailing ZERO
+   //First count the number of backslashes required.
+   //Then allocate the memory and insert them.
+   Unt length = 1;            //count the trailing ZERO
    CS p;
    for (p = string; *p; p++) {
       if ((l = utfCharLen(p)) > 1) {
-         length += l;      // count a multibyte char
+         length += l;      //count a multibyte char
          p += l - 1;
          continue;
       }
       if (firstOccurrence(esc_chars, *p) != NULL || (bsl && rem_backslash(p)))
-         ++length;         // count a backslash
-      ++length;         // count an ordinary char
+         ++length;         //count a backslash
+      ++length;         //count an ordinary char
    }
    CS escaped_string = a ? allocateArray(length, Byte, a) : alloc(length);
    CS p2 = escaped_string;
@@ -2982,7 +2982,7 @@ copyStr_escaped_ext(CS string, CS esc_chars, Unt cc, Boole bsl, Arena* a) {
       if ((l = utfCharLen(p)) > 1) {
          MEMMOVE(p2, p, (Unt)l);
          p2 += l;
-         p += l - 1;      // skip multibyte char
+         p += l - 1;      //skip multibyte char
          continue;
       }
       if (firstOccurrence(esc_chars, *p) != NULL || (bsl && rem_backslash(p)))
@@ -3008,7 +3008,7 @@ splitByCharIntoArray(CS inp, Byte delimiter, OUT Unt* len) {
    for (Unt i = 0; inp[i] != ZERO; i++) {
       if (inp[i] == delimiter && inp[i + 1] != delimiter) {
          int chunkLen = inp + i - prev;
-         CS chunk = alloc(chunkLen + 1); // +1 for the ZERO
+         CS chunk = alloc(chunkLen + 1); //+1 for the ZERO
          memcpy(chunk, prev, chunkLen);
          chunk[chunkLen] = ZERO;
          result[resultInd] = chunk;
@@ -3020,7 +3020,7 @@ splitByCharIntoArray(CS inp, Byte delimiter, OUT Unt* len) {
    return result;
 }
 
-// "a b c" -> ["a" "b" "c"]
+//"a b c" -> ["a" "b" "c"]
 pub ArrayList
 splitBySpace(CS inp) {
    ArrayList split;
@@ -3123,7 +3123,7 @@ strup_save(CS orig) {
       int c = mb_ptr2char(p);
       Unt l = utf_ptr2len(p);
       if (c == 0) {
-         // overlong sequence, use only the first byte
+         //overlong sequence, use only the first byte
          c = *p;
          l = 1;
       }
@@ -3183,7 +3183,7 @@ strlow_save(CS orig) {
       int c = mb_ptr2char(p);
       Unt l = utf_ptr2len(p);
       if (c == 0) {
-         // overlong sequence, use only the first byte
+         //overlong sequence, use only the first byte
          c = *p;
          l = 1;
       }
@@ -3246,9 +3246,9 @@ compareAscii(CS s1, CS s2, Unt len) {
    while (len > 0) {
       i = TOLOWER_ASC(*s1) - TOLOWER_ASC(*s2);
       if (i != 0)
-         break;         // this character is different
+         break;         //this character is different
       if (*s1 == ZERO)
-         break;         // strings match until ZERO
+         break;         //strings match until ZERO
       ++s1;
       ++s2;
       --len;
@@ -3265,7 +3265,7 @@ firstOccurrence(CS string, Unt c) {
       while (*p != ZERO) {
          int l = utfCharLen(p);
 
-         // Avoid matching an illegal byte here.
+         //Avoid matching an illegal byte here.
          if ((Unt)mb_ptr2char(p) == c && l > 1)
             return p;
          p += l;
@@ -3330,7 +3330,7 @@ eeStrpbrk(CS s, CS charset) {
    return NULL;
 }
 
-// Sort an array of strings.
+//Sort an array of strings.
 private int
 stringComparer(void const *s1, void const*s2) {
     return STRCMP(*(char **)s1, *(char **)s2);
@@ -3341,7 +3341,7 @@ sortStrings(Arr(CS) files, int count) {
    qsort((void *)files, (Unt)count, sizeof(CS), stringComparer);
 }
 
-// Return true if string "s" contains a non-ASCII character (128 or higher). false for null
+//Return true if string "s" contains a non-ASCII character (128 or higher). false for null
 pub int
 has_non_ascii(CS s) {
    if (s) {
@@ -3353,7 +3353,7 @@ has_non_ascii(CS s) {
    return false;
 }
 
-// Concatenate two strings and return the result in allocated memory.
+//Concatenate two strings and return the result in allocated memory.
 pub CS
 concat_str(CS str0, CS str1) {
    Unt l = str0 ? STRLEN(str0) : 0;
@@ -3369,7 +3369,7 @@ concat_str(CS str0, CS str1) {
    return dest;
 }
 
-// Reverse text into allocated memory. Return the allocated string
+//Reverse text into allocated memory. Return the allocated string
 pub CS
 reverse_text(CS s) {
    Unt len = STRLEN(s);
@@ -3420,7 +3420,7 @@ string_quote(CS str, int function) {
    return s;
 }
 
-// Count the number of times "needle" occurs in string "haystack". Case is ignored if "ic" is true.
+//Count the number of times "needle" occurs in string "haystack". Case is ignored if "ic" is true.
 pub long
 string_count(CS haystack, CS needle, int ic) {
    long   n = 0;
@@ -3457,7 +3457,7 @@ string_count(CS haystack, CS needle, int ic) {
 //by Mark Martinec <mark.martinec@ijs.si>, Version 2.2, 2000-10-06.
 //Included with permission.  It was heavily modified to fit in Eegl.
 //The original code, including useful comments, can be found here:
-//  http://www.ijs.si/software/snprintf/
+// http://www.ijs.si/software/snprintf/
 //
 //This snprintf() only supports the following conversion specifiers:
 //s, c, d, u, o, x, X, p  (and synonyms: i, D, U, O - see below)
@@ -3487,7 +3487,7 @@ string_count(CS haystack, CS needle, int ic) {
 //eeVarPrintf0() can be invoked with either "va_list" or a list of
 //"Var".  When the latter is not used it must be NULL.
 
-// Like vsnprintf() but append to the string.
+//Like vsnprintf() but append to the string.
 pub int
 eeSnprintfAdd0(CS str, Unt str_m, const char *fmt, ...) {
    va_list ap;
@@ -3595,7 +3595,7 @@ fileExtension(Text fName) {
    }
 }
 
-// Does haystack start with needle?
+//Does haystack start with needle?
 pub Boole
 startsWith(Text haystack, Text needle) {
    if (needle.len > haystack.len) {
@@ -3625,14 +3625,14 @@ initBase64Table(void) {
    if (wasInitialized)
       return;
 
-   // Unsupported characters are set to 0xFF
+   //Unsupported characters are set to 0xFF
    memset(base64DecodingTableG, 0xFF, sizeof(base64DecodingTableG));
 
-   // Initialize the index for the base64 alphabets
+   //Initialize the index for the base64 alphabets
    for (Unt i = 0; i < STRLEN_LITERAL(base64Table); i++)
       base64DecodingTableG[base64Table[i]] = (Byte)i;
 
-   // base64 padding character
+   //base64 padding character
    base64DecodingTableG['='] = 0;
 
    wasInitialized = true;
@@ -3675,7 +3675,7 @@ decodeBase64ToArrayList(OUT ArrayList* ret, Text base64) {
 
    initBase64Table();
 
-   Unt decodedLen = (base64.len / 4) * 3; // decodedLen >= 3
+   Unt decodedLen = (base64.len / 4) * 3; //decodedLen >= 3
    if (base64.c[base64.len - 1] == '=')
       decodedLen--;
    if (base64.c[base64.len - 2] == '=')
@@ -3696,7 +3696,7 @@ decodeBase64ToArrayList(OUT ArrayList* ret, Text base64) {
       Unt sextetD = base64DecodingTableG[base64.c[i++]];
 
       if (sextetA == 0xFF || sextetB == 0xFF || sextetC == 0xFF || sextetD == 0xFF) {
-         // Invalid character
+         //Invalid character
          *ret = decoded;
          return false;
       }
@@ -3716,8 +3716,8 @@ decodeBase64ToArrayList(OUT ArrayList* ret, Text base64) {
          j++;
       }
       if (j == decodedLen) {
-         // Check for invalid padding bytes (based on the
-         // "Base64 Malleability in Practice" ACM paper).
+         //Check for invalid padding bytes (based on the
+         //"Base64 Malleability in Practice" ACM paper).
          if ((base64.c[base64.len - 2] == '=' && ((sextetB & 0xF) != 0))
             || ((base64.c[base64.len - 1] == '=') && ((sextetC & 0x3) != 0))
          ) {
@@ -3739,7 +3739,7 @@ decodeBase64(OUT CS* ret, Text base64) {
       goto malformedInput;
    } 
    Unt unpaddedLen = base64.len;
-   Unt decodedFromUnpaddedLen = base64.len / 4 * 3; // decodedLen >= 3
+   Unt decodedFromUnpaddedLen = base64.len / 4 * 3; //decodedLen >= 3
    Unt decodedFromPaddedLen = 0;
    if (base64.c[base64.len - 1] == '=') {
       decodedFromPaddedLen++;
@@ -3764,7 +3764,7 @@ decodeBase64(OUT CS* ret, Text base64) {
       Unt sextetD = base64DecodingTableG[base64.c[i++]];
 
       if (sextetA == 0xFF || sextetB == 0xFF || sextetC == 0xFF || sextetD == 0xFF) {
-         // Invalid character
+         //Invalid character
          goto malformedInput;
       }
 
@@ -3824,23 +3824,23 @@ path_is_url(CS p) {
 //Check if "fname" starts with "name://".
 pub Boole
 strStartsWithUrl(CS fname) {
-   // We accept alphabetic characters and a dash in scheme part.
-   // RFC 3986 allows for more, but it increases the risk of matching non-URL text.
+   //We accept alphabetic characters and a dash in scheme part.
+   //RFC 3986 allows for more, but it increases the risk of matching non-URL text.
 
-   // first character must be alpha
+   //first character must be alpha
    if (!ASCII_ISALPHA(*fname))
       return false;
 
-   // check body: alpha or dash
+   //check body: alpha or dash
    CS p;
    for (p = fname + 1; (ASCII_ISALPHA(*p) || (*p == '-')); ++p)
       {}
 
-   // check last char is not a dash
+   //check last char is not a dash
    if (p[-1] == '-')
       return false;
 
-   // "://" must follow
+   //"://" must follow
    return path_is_url(p);
 }
 
@@ -3855,21 +3855,21 @@ shorten_dir_len(CS str, int trim_len) {
    CS tail = fiGetShortFiName(str);
    CS d = str;
    for (CS s = str; ; ++s) {
-      if (s >= tail) {        // copy the whole tail
+      if (s >= tail) {        //copy the whole tail
          *d++ = *s;
          if (*s == ZERO)
             break;
-      } ei (*s == '/') {     // copy '/' and next char
+      } ei (*s == '/') {     //copy '/' and next char
          *d++ = *s;
          skip = false;
          dirchunk_len = 0;
       } ei (!skip) {
-         *d++ = *s;         // copy next char
-         if (*s != '~' && *s != '.') { // and leading "~" and "."
-            ++dirchunk_len; // only count word chars for the size
+         *d++ = *s;         //copy next char
+         if (*s != '~' && *s != '.') { //and leading "~" and "."
+            ++dirchunk_len; //only count word chars for the size
 
-            // keep copying chars until we have our preferred length (or
-            // until the above if/else branches move us along)
+            //keep copying chars until we have our preferred length (or
+            //until the above if/else branches move us along)
             if (dirchunk_len >= trim_len)
                 skip = true;
          }
@@ -3914,10 +3914,10 @@ fiGetShortFiName(CS fname){
 
 //Get pointer to tail of "fname", including path separators.
 //Take care of "//". Always return a valid pointer.
-// "/etc/a" -> "/a", "/etc" -> "/etc"
+//"/etc/a" -> "/a", "/etc" -> "/etc"
 pub CS
 gettail_sep(CS fname){
-   CS p = skipInitialSlashes(fname);   // don't remove the '/' from "c:/file"
+   CS p = skipInitialSlashes(fname);   //don't remove the '/' from "c:/file"
    CS t = fiGetShortFiName(fname);
    while (t > p && after_pathsep(fname, t))
       --t;
@@ -3970,16 +3970,16 @@ pathcmp(CS p, CS q, int maxlen) {
       c1 = mb_ptr2char((CS)p + i);
       c2 = mb_ptr2char((CS)q + j);
 
-      // End of "p": check if "q" also ends or just has a slash.
+      //End of "p": check if "q" also ends or just has a slash.
       if (c1 == ZERO) {
-         if (c2 == ZERO)  // full match
+         if (c2 == ZERO)  //full match
             return 0;
          s = q;
          i = j;
          break;
       }
 
-      // End of "q": check if "p" just has a slash.
+      //End of "q": check if "p" just has a slash.
       if (c2 == ZERO) {
          s = p;
          break;
@@ -3990,7 +3990,7 @@ pathcmp(CS p, CS q, int maxlen) {
             return -1;
          if (c2 == '/')
             return 1;
-         return c1 - c2;  // no match
+         return c1 - c2;  //no match
       }
 
       i += utfCharLen((CS)p + i);
@@ -4013,7 +4013,7 @@ pathcmp(CS p, CS q, int maxlen) {
    return 1;
 }
 
-// Return true if "p" contains what looks like an environment variable. Allowing for escaping.
+//Return true if "p" contains what looks like an environment variable. Allowing for escaping.
 pub Boole
 hasEnvVar(CS p) {
    for ( ; *p; MB_PTR_ADV(p)) {
@@ -4033,7 +4033,7 @@ strCutPathFromListOfPaths(OUT CS* option, OUT CS buf, int maxlen, CS sep_chars){
    int len = 0;
    CS p = *option;
 
-   // skip '.' at start of option part, for 'suffixes'
+   //skip '.' at start of option part, for 'suffixes'
    if (*p == '.') {
       buf[len] = *p;
       len++;
@@ -4051,9 +4051,9 @@ strCutPathFromListOfPaths(OUT CS* option, OUT CS buf, int maxlen, CS sep_chars){
    }
    buf[len] = ZERO;
 
-   if (*p != ZERO && *p != ',')   // skip non-standard separator
+   if (*p != ZERO && *p != ',')   //skip non-standard separator
       ++p;
-   p = skip_to_option_part(p);   // p points to next file name
+   p = skip_to_option_part(p);   //p points to next file name
 
    *option = p;
    return len;
@@ -4065,7 +4065,7 @@ strMatchLowPrioSuffix(CS fname, CS suffixes){
    if (!suffixes)
       return false;
       
-#define MAXSUFLEN 30       // maximum length of a file suffix
+#define MAXSUFLEN 30       //maximum length of a file suffix
    Byte suf_buf[MAXSUFLEN];
 
    int fnamelen = (int)STRLEN(fname);
@@ -4075,7 +4075,7 @@ strMatchLowPrioSuffix(CS fname, CS suffixes){
       if (setsuflen == 0) {
          CS tail = fiGetShortFiName(fname);
 
-         // empty entry: match name without a '.'
+         //empty entry: match name without a '.'
          if (firstOccurrence(tail, '.') == NULL) {
             setsuflen = 1;
             break;
@@ -4128,12 +4128,12 @@ endsComm(CS c) { //:endsComm
 
 //private Short
 //hexDigit(int c) {
-//   if (isdigit(c))
-//      return c - '0';
-//   c = TOLOWER_ASC(c);
-//   if (c >= 'a' && c <= 'f')
-//      return c - 'a' + 10;
-//   return SHORT;
+//  if (isdigit(c))
+//     return c - '0';
+//  c = TOLOWER_ASC(c);
+//  if (c >= 'a' && c <= 'f')
+//     return c - 'a' + 10;
+//  return SHORT;
 //}
 
 //Return true if "val" is a valid name: only consists of alphanumeric ASCII
@@ -4179,14 +4179,14 @@ parse_hex_digit(int c) {
 //}}}
 //{{{arrayList
 
-// Clear an allocated growing array.
+//Clear an allocated growing array.
 pub void
 ga_clear(ArrayList* gap) {
     eeglFree(gap->c);
     ga_init(gap);
 }
 
-// Clear a growing array that contains a list of strings.
+//Clear a growing array that contains a list of strings.
 pub void
 ga_clear_strings(ArrayList* gap) {
    int i;
@@ -4198,7 +4198,7 @@ ga_clear_strings(ArrayList* gap) {
    ga_clear(gap);
 }
 
-// Copy a growing array that contains a list of strings.
+//Copy a growing array that contains a list of strings.
 pub int
 ga_copy_strings(ArrayList *from, ArrayList *to) {
    ga_init2(to, sizeof(CS), 1);
@@ -4214,7 +4214,7 @@ ga_copy_strings(ArrayList *from, ArrayList *to) {
    return OK;
 }
 
-// Initialize a growing array. Don't forget to set ga_itemsize and ga_growsize! Or use ga_init2()
+//Initialize a growing array. Don't forget to set ga_itemsize and ga_growsize! Or use ga_init2()
 pub void
 ga_init(ArrayList* gap) {
    gap->c = NULL;
@@ -4229,7 +4229,7 @@ ga_init2(ArrayList *gap, Unt itemsize, int growsize) {
    gap->ga_growsize = growsize;
 }
 
-// Make room in growing array "gap" for at least "n" items. FAIL for failure, OK otherwise.
+//Make room in growing array "gap" for at least "n" items. FAIL for failure, OK otherwise.
 pub int
 ga_grow(ArrayList *gap, int n) {
    if (gap->cap - gap->len < n)
@@ -4245,9 +4245,9 @@ ga_grow_inner(ArrayList* gap, int n) {
    if (n < gap->ga_growsize)
       n = gap->ga_growsize;
 
-   // A linear growth is very inefficient when the array grows big.  This
-   // is a compromise between allocating memory that won't be used and too
-   // many copy operations. A factor of 1.5 seems reasonable.
+   //A linear growth is very inefficient when the array grows big.  This
+   //is a compromise between allocating memory that won't be used and too
+   //many copy operations. A factor of 1.5 seems reasonable.
    if (n < gap->len / 2)
       n = gap->len / 2;
 
@@ -4287,8 +4287,8 @@ ga_concat_strings(ArrayList *gap, char *sep) {
    return s;
 }
 
-// Make a copy of string "p" and add it to "gap". When out of memory, 
-// nothing changes and FAIL is returned.
+//Make a copy of string "p" and add it to "gap". When out of memory, 
+//nothing changes and FAIL is returned.
 pub int
 ga_copy_string(ArrayList *gap, CS p) {
    CS cp = copyStr(p);
@@ -4302,7 +4302,7 @@ ga_copy_string(ArrayList *gap, CS p) {
    return OK;
 }
 
-// Add string "p" to "gap". When out of memory, FAIL is returned (caller may want to free "p").
+//Add string "p" to "gap". When out of memory, FAIL is returned (caller may want to free "p").
 pub int
 ga_add_string(ArrayList *gap, CS p) {
    if (ga_grow(gap, 1) == FAIL)
@@ -4312,9 +4312,9 @@ ga_add_string(ArrayList *gap, CS p) {
    return OK;
 }
 
-// Concatenate a string to a growarray which contains bytes.
-// When "s" is NULL memory allocation fails does not do anything.
-// Note: Does NOT copy the ZERO at the end!
+//Concatenate a string to a growarray which contains bytes.
+//When "s" is NULL memory allocation fails does not do anything.
+//Note: Does NOT copy the ZERO at the end!
 pub void
 ga_concat(ArrayList *gap, CS s) {
    if (s == NULL || *s == ZERO)
@@ -4326,7 +4326,7 @@ ga_concat(ArrayList *gap, CS s) {
     }
 }
 
-// Concatenate 'len' bytes from string 's' to a growarray. When "s" is NULL do not do anything.
+//Concatenate 'len' bytes from string 's' to a growarray. When "s" is NULL do not do anything.
 pub void
 ga_concat_len(ArrayList *gap, CS s, Unt len) {
    if (s == NULL || *s == ZERO || len == 0)
@@ -4337,7 +4337,7 @@ ga_concat_len(ArrayList *gap, CS s, Unt len) {
    }
 }
 
-// Append one byte to a growarray which contains bytes.
+//Append one byte to a growarray which contains bytes.
 pub int
 ga_append(ArrayList *gap, int c) {
    if (ga_grow(gap, 1) == FAIL)
@@ -4350,11 +4350,11 @@ ga_append(ArrayList *gap, int c) {
 //}}}
 //{{{doubly-linked list
 
-// Iterative merge sort for doubly linked list.
-// O(NlogN) worst case, and stable.
-//  - The list is divided into blocks of increasing size (1, 2, 4, 8, ...).
-//  - Each pair of blocks is merged in sorted order.
-//  - Merged blocks are reconnected to build the sorted list.
+//Iterative merge sort for doubly linked list.
+//O(NlogN) worst case, and stable.
+// - The list is divided into blocks of increasing size (1, 2, 4, 8, ...).
+// - Each pair of blocks is merged in sorted order.
+// - Merged blocks are reconnected to build the sorted list.
 pub void *
 mergesort_list(
    void *head,
@@ -4367,7 +4367,7 @@ mergesort_list(
    if (!head || !get_next(head))
       return head;
 
-   // Count length
+   //Count length
    int       n = 0;
    void*   curr = head;
    while (curr) {
@@ -4382,7 +4382,7 @@ mergesort_list(
       curr = head;
 
       while (curr) {
-         // Split two runs
+         //Split two runs
          void* left = curr;
          void* right = left;
          int       i;
@@ -4393,7 +4393,7 @@ mergesort_list(
          for (i = 0; i < size && next; ++i)
             next = get_next(next);
 
-         // Break links
+         //Break links
          void* l_end = right ? get_prev(right) : NULL;
          if (l_end)
             set_next(l_end, NULL);
@@ -4406,7 +4406,7 @@ mergesort_list(
          if (next)
             set_prev(next, NULL);
 
-         // Merge
+         //Merge
          void    *merged = NULL;
          void    *merged_tail = NULL;
 
@@ -4436,7 +4436,7 @@ mergesort_list(
             }
          }
 
-          // Connect to full list
+          //Connect to full list
          if (!new_head)
             new_head = merged;
          else {
@@ -4444,7 +4444,7 @@ mergesort_list(
             set_prev(merged, tail);
          }
 
-         // Move tail to end
+         //Move tail to end
          while (get_next(merged_tail))
             merged_tail = get_next(merged_tail);
          tail = merged_tail;
@@ -4461,19 +4461,19 @@ mergesort_list(
 //}}}
 //{{{sha256
 
-// FIPS-180-2 compliant SHA-256 implementation
-// GPL by Christophe Devine, applies to older version.
-// Modified for md5deep, in public domain.
-// Modified For Vim, Mohsin Ahmed,
-// (original link www.cs.albany.edu/~mosh no longer available)
-// Mohsin Ahmed states this work is distributed under the VIM License or GPL,
-// at your choice.
+//FIPS-180-2 compliant SHA-256 implementation
+//GPL by Christophe Devine, applies to older version.
+//Modified for md5deep, in public domain.
+//Modified For Vim, Mohsin Ahmed,
+//(original link www.cs.albany.edu/~mosh no longer available)
+//Mohsin Ahmed states this work is distributed under the VIM License or GPL,
+//at your choice.
 //
-// Eegl specific notes:
-// Functions exported by this file:
-//  1. sha256_key() hashes the password to 64 bytes char string.
-//  2. sha2_seed() generates a random header.
-//  sha256_self_test() is implicitly called once.
+//Eegl specific notes:
+//Functions exported by this file:
+// 1. sha256_key() hashes the password to 64 bytes char string.
+// 2. sha2_seed() generates a random header.
+// sha256_self_test() is implicitly called once.
 
 
 #define GET_UINT32(n, b, i)          \
@@ -4707,8 +4707,8 @@ sha256_finish(ContextSha256 *ctx, Byte digest[32]) {
    PUT_UINT32(ctx->state[7], digest, 28);
 }
 
-// Return hex digest of "buf[buf_len]" in a static array.
-// if "salt" is not NULL also do "salt[salt_len]".
+//Return hex digest of "buf[buf_len]" in a static array.
+//if "salt" is not NULL also do "salt[salt_len]".
 pub CS
 sha256_bytes(CS buf, int buf_len, CS salt, int salt_len) {
    Byte  sha256sum[32];
@@ -4729,17 +4729,17 @@ sha256_bytes(CS buf, int buf_len, CS salt, int salt_len) {
    return hexit;
 }
 
-// Return sha256(buf) as 64 hex chars in static array.
+//Return sha256(buf) as 64 hex chars in static array.
 pub CS
 sha256_key(CS buf, CS salt, int salt_len){
-   // No passwd means don't encrypt
+   //No passwd means don't encrypt
    if (!buf || *buf == ZERO)
       return S"";
 
    return sha256_bytes(buf, (int)STRLEN(buf), salt, salt_len);
 }
 
-// These are the standard FIPS-180-2 test vectors
+//These are the standard FIPS-180-2 test vectors
 
 private char* sha_self_test_msg[] = {
     "abc",
@@ -4753,7 +4753,7 @@ private char *sha_self_test_vector[] = {
    "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0"
 };
 
-// Perform a test on the SHA256 algorithm. Return FAIL or OK.
+//Perform a test on the SHA256 algorithm. Return FAIL or OK.
 pub int
 sha256_self_test(void) {
    int i, j;
@@ -4788,7 +4788,7 @@ sha256_self_test(void) {
       if (memcmp(output, sha_self_test_vector[i], 64)) {
           failures++;
           output[sizeof(output) - 1] = '\0';
-          // printf("sha256_self_test %d failed %s\n", i, output);
+          //printf("sha256_self_test %d failed %s\n", i, output);
       }
     }
     return failures > 0 ? FAIL : OK;
@@ -4799,7 +4799,7 @@ get_some_time(void) {
    return (Unt)time(NULL);
 }
 
-// Fill "header[header_len]" with random_data. Also "salt[salt_len]" when "salt" is not NULL.
+//Fill "header[header_len]" with random_data. Also "salt[salt_len]" when "salt" is not NULL.
 pub void
 sha2_seed(CS header, int header_len, CS salt, int salt_len) {
    static Byte random_data[1000];
@@ -4828,7 +4828,7 @@ sha2_seed(CS header, int header_len, CS salt, int salt_len) {
 //}}}
 //{{{searchin 'n' sortin'
 
-// Return index of key in a sorted array, or -1 if not found.
+//Return index of key in a sorted array, or -1 if not found.
 pub int
 binarySearch_Unt(Unt key, int start, int end, Arr(Unt) arr) {
    if (end <= start) {
@@ -4862,13 +4862,13 @@ binarySearch_Unt(Unt key, int start, int end, Arr(Unt) arr) {
 //}}}
 //{{{key-value pair
 
-// compare two Kv structs by case sensitive value
+//compare two Kv structs by case sensitive value
 pub int
 cmp_keyvalue_value(const void *a, const void *b) {
    return STRCMP(((Kv*)a)->value.c, ((Kv*)b)->value.c);
 }
 
-// compare two Kv structs by value with length
+//compare two Kv structs by value with length
 pub int
 cmp_keyvalue_value_n(const void *a, const void *b) {
    Kv *kv1 = (Kv *)a;
@@ -4877,7 +4877,7 @@ cmp_keyvalue_value_n(const void *a, const void *b) {
    return STRNCMP(kv1->value.c, kv2->value.c, MAX(kv1->value.len, kv2->value.len));
 }
 
-// compare two Kv structs by case insensitive value
+//compare two Kv structs by case insensitive value
 pub int
 cmp_keyvalue_value_i(const void *a, const void *b) {
     Kv *kv1 = (Kv *)a;
@@ -4886,7 +4886,7 @@ cmp_keyvalue_value_i(const void *a, const void *b) {
     return caseInsensitiveCompare(kv1->value.c, kv2->value.c);
 }
 
-// compare two Kv structs by case insensitive ASCII value with value.length
+//compare two Kv structs by case insensitive ASCII value with value.length
 pub int
 cmp_keyvalue_value_ni(const void *a, const void *b) {
     Kv *kv1 = (Kv *)a;
@@ -4899,22 +4899,22 @@ cmp_keyvalue_value_ni(const void *a, const void *b) {
 //}}}
 //{{{DictStringInt
 
-// Dictionary = a hash table that is filled once and then unchanged. As opposed to the more general
-// term "hash table" which is a data structure with arbitrary usage patterns.
-// This particular data structure is optimized in the following ways:
-// - it relies on a byte array that lives longer than itself and contains all the keys separated by
-// the zero char (e.g. "asdf\0bc jk\0" for the keys "asdf" and "bc jk")
-// - it stores strings as simple integers (offsets into the said byte array)
-// - its values are 4-byte ints
-// - after construction its length doesn't change (no key insertions or removals), though the values
-// themselves may be changed
+//Dictionary = a hash table that is filled once and then unchanged. As opposed to the more general
+//term "hash table" which is a data structure with arbitrary usage patterns.
+//This particular data structure is optimized in the following ways:
+//- it relies on a byte array that lives longer than itself and contains all the keys separated by
+//the zero char (e.g. "asdf\0bc jk\0" for the keys "asdf" and "bc jk")
+//- it stores strings as simple integers (offsets into the said byte array)
+//- its values are 4-byte ints
+//- after construction its length doesn't change (no key insertions or removals), though the values
+//themselves may be changed
 
 private Unt
 hashCode(Byte const* start) {
    Unt result = 5381;
    Byte const* p = start;
    for (int i = 0; p[i] != ZERO; i++) {
-      result = ((result << 5) + result) + p[i]; // hash*33 + c
+      result = ((result << 5) + result) + p[i]; //hash*33 + c
    }
    return result;
 }
@@ -4924,7 +4924,7 @@ hashOfText(Text s) {
    Unt result = 5381;
    Byte const* p = s.c;
    for (Unt i = 0; i < s.len; i++) {
-      result = ((result << 5) + result) + p[i]; // hash*33 + c
+      result = ((result << 5) + result) + p[i]; //hash*33 + c
    }
    return result;
 }
@@ -4938,14 +4938,14 @@ initDict0(Arr(Byte const) text, Int size, Arena* a, OUT Arr(Unt)* temp) {
    memset(dict->dict, 0, 128*4);
    dict->dict[128] = size;
    
-   // Temporary array which we'll free at end of function (since it's at the very end of the arena)
+   //Temporary array which we'll free at end of function (since it's at the very end of the arena)
    *temp = allocateOnArena(size*4, a);
    
-   // calculate the hashes and keys
+   //calculate the hashes and keys
    Byte const* ch = text;
    for (Int i = 0; i < size; i++) {
       Unt hash = hashCode(ch);
-      dict->hashes[i] = ch - text; // yep, initially the keys go into @hashes!
+      dict->hashes[i] = ch - text; //yep, initially the keys go into @hashes!
       (*temp)[i] = hash;
       dict->dict[hash >> 25]++;
       for (; *ch != ZERO; ch++) {
@@ -4954,7 +4954,7 @@ initDict0(Arr(Byte const) text, Int size, Arena* a, OUT Arr(Unt)* temp) {
    }
    dict->textLen = ch - text;
    
-   // Bucket counts -> bucket start indices
+   //Bucket counts -> bucket start indices
    Unt sumBefore = dict->dict[0];
    dict->dict[0] = 0;
    for (Int i = 1; i < 128; i++) {
@@ -4967,15 +4967,15 @@ initDict0(Arr(Byte const) text, Int size, Arena* a, OUT Arr(Unt)* temp) {
 
 private void
 initDict1(Arena* a, int size, Arr(Unt) temp, OUT DictStringInt128* dict) {
-   // After every key & value has been put, @dict now contains not starts of buckets but their ends.
-   // So not [0 5 7 .. 100 101 size] but [5 7 ... 101 size size]
-   // Shift all the elements right by 1 to restore
+   //After every key & value has been put, @dict now contains not starts of buckets but their ends.
+   //So not [0 5 7 .. 100 101 size] but [5 7 ... 101 size size]
+   //Shift all the elements right by 1 to restore
    for (Int i = 126; i > -1; i--) {
       dict->dict[i + 1] = dict->dict[i];
    }
    dict->dict[0] = 0;
    
-   // Now store the hashes into their correct buckets
+   //Now store the hashes into their correct buckets
    for (Int i = 0; i < size; i++) {
       Unt hash = temp[i];
       Unt ind = dict->dict[hash >> 25];
@@ -4983,7 +4983,7 @@ initDict1(Arena* a, int size, Arr(Unt) temp, OUT DictStringInt128* dict) {
       dict->dict[hash >> 25]++;
    }
    
-   // @dict needs the same shift again
+   //@dict needs the same shift again
    for (Int i = 126; i > -1; i--) {
       dict->dict[i + 1] = dict->dict[i];
    }
@@ -4996,7 +4996,7 @@ pub DictStringInt128* dictStringInt128New(Arr(Byte const) text, Arr(Int) values,
    Arr(Unt) temp;
    DictStringInt128* dict = initDict0(text, size, a, OUT &temp);
 
-   // Store the keys and values into their correct buckets
+   //Store the keys and values into their correct buckets
    for (Int i = 0; i < size; i++) {
       Unt bucket = temp[i] >> 25;
       Unt ind = dict->dict[bucket];
@@ -5008,12 +5008,12 @@ pub DictStringInt128* dictStringInt128New(Arr(Byte const) text, Arr(Int) values,
    return dict;
 }
 
-// Create a dictionary where values are just indices of names
+//Create a dictionary where values are just indices of names
 pub DictStringInt128* dictStringInt128NewJustIndices(Arr(Byte const) text, Int size, Arena* a) {
    Arr(Unt) temp;
    DictStringInt128* dict = initDict0(text, size, a, OUT &temp);
 
-   // Store the keys and values into their correct buckets
+   //Store the keys and values into their correct buckets
    for (Int i = 0; i < size; i++) {
       Unt bucket = temp[i] >> 25;
       Unt ind = dict->dict[bucket];
@@ -5058,11 +5058,11 @@ pub Boole containsKey_DictStringInt128(Arr(Byte const) needle, DictStringInt128*
 }
 
 pub Int get_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack) {
-   dictGetterFn(return haystack->c[i].value, return -1); // TODO throw exception
+   dictGetterFn(return haystack->c[i].value, return -1); //TODO throw exception
 }
 
 pub Int get_Text_DictStringInt128(Text needle, DictStringInt128* restrict haystack) {
-   dictGetterFn_Text(return haystack->c[i].value, return -1); // TODO throw exception
+   dictGetterFn_Text(return haystack->c[i].value, return -1); //TODO throw exception
 }
 
 pub Int getOrDefault_DictStringInt128(

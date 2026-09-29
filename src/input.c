@@ -30,77 +30,77 @@
 #include "h/wheel.h"
 #include "h/window.h"
 
-// These buffers are used for storing:
-// - stuffed characters: A command that is translated into another command.
-// - redo characters: will redo the last change.
-// - recorded characters: for the "q" command.
+//These buffers are used for storing:
+//- stuffed characters: A command that is translated into another command.
+//- redo characters: will redo the last change.
+//- recorded characters: for the "q" command.
 //
-// The bytes are stored like in the typeahead buffer:
-// - K_SPECIAL introduces a special key (two more bytes follow). A literal K_SPECIAL is stored as 
-// K_SPECIAL KS_SPECIAL KE_FILLER.
-//   A literal CSI is stored as CSI KS_EXTRA KE_CSI.
-// These translations are also done on multi-byte characters!
+//The bytes are stored like in the typeahead buffer:
+//- K_SPECIAL introduces a special key (two more bytes follow). A literal K_SPECIAL is stored as 
+//K_SPECIAL KS_SPECIAL KE_FILLER.
+//  A literal CSI is stored as CSI KS_EXTRA KE_CSI.
+//These translations are also done on multi-byte characters!
 //
-// Escaping CSI bytes is done by the system-specific input functions, called by ui_inchar().
-// Escaping K_SPECIAL is done by ingestChar(). Un-escaping is done by vgetc().
+//Escaping CSI bytes is done by the system-specific input functions, called by ui_inchar().
+//Escaping K_SPECIAL is done by ingestChar(). Un-escaping is done by vgetc().
 
-#define MINIMAL_SIZE 20         // minimal size for b_str
+#define MINIMAL_SIZE 20         //minimal size for b_str
 
 private TextHeader redobuff = {{NULL, 0, {ZERO}}, NULL, 0, 0, false};
 private TextHeader old_redobuff = {{NULL, 0, {ZERO}}, NULL, 0, 0, false};
 private TextHeader recordbuff = {{NULL, 0, {ZERO}}, NULL, 0, 0, false};
 
-private int TYPEAHEAD_CHAR = 0;      // typeahead char that's not flushed
-private Byte typedchars[MAXMAPLEN + 1] = { ZERO };  // typed chars before map
+private int TYPEAHEAD_CHAR = 0;      //typeahead char that's not flushed
+private Byte typedchars[MAXMAPLEN + 1] = { ZERO };  //typed chars before map
 private int typedchars_pos = 0;
 
-private Boole isMouseBelowBottomLineS INIT(= false);// mouse below last line
-private Boole isMouseRightOfEolS INIT(= false);         // mouse right of line
+private Boole isMouseBelowBottomLineS INIT(= false);//mouse below last line
+private Boole isMouseRightOfEolS INIT(= false);         //mouse right of line
 
 //When block_redo is true the redo buffer will not be changed. Used by edit() to repeat insertions.
 private int block_redo = false;
 
-private int keyNoremapG = 0;       // remapping flags
+private int keyNoremapG = 0;       //remapping flags
 
-// Variables used by vGetOrPeek() and inpFlushBuffers().
+//Variables used by vGetOrPeek() and inpFlushBuffers().
 //
-// [     mappedLen    | - -unmapped- -]
-// [ -invalid- | validLen | ZERO ]
-//             ^
-//             currPos 
-// typeBufG.c[] contains all characters that are not consumed yet.
-// typeBufG.c[typeBufG.currPos] is the first valid character.
-// typeBufG.c[typeBufG.currPos + typeBufG.validLen - 1] is the last valid char.
-// typeBufG.c[typeBufG.currPos + typeBufG.validLen] must be ZERO.
-// The head of the book may contain the result of mappings, abbreviations and @a commands. The 
-// length of this part is typeBufG.mappedLen.
-// typeBufG.silentCnt is the part where <silent> applies.
-// After the head are characters that come from the terminal.
-// typeBufG.noAbbrCnt is the number of characters in typeBufG.c that
-// should not be considered for abbreviations.
-// Some parts of typeBufG.c must be processed without custom mappings. These parts are remembered
-// in typeBufG.noremap[], which is the same length as typeBufG.c[] and
-// contains RM_NONE for the characters that are not to be remapped.
-// typeBufG.noremap[typeBufG.currPos] is the first valid flag.
-// (typeBufG has been put in globals.h, because termTryParseTermcode() needs it).
-#define RM_YES      0   // noremap: remap
-#define RM_NONE     1   // noremap: don't remap
-#define RM_SCRIPT   2   // noremap: remap local script mappings
-#define RM_ABBR     4   // noremap: don't remap, do abbrev.
+//[     mappedLen    | - -unmapped- -]
+//[ -invalid- | validLen | ZERO ]
+//            ^
+//            currPos 
+//typeBufG.c[] contains all characters that are not consumed yet.
+//typeBufG.c[typeBufG.currPos] is the first valid character.
+//typeBufG.c[typeBufG.currPos + typeBufG.validLen - 1] is the last valid char.
+//typeBufG.c[typeBufG.currPos + typeBufG.validLen] must be ZERO.
+//The head of the book may contain the result of mappings, abbreviations and @a commands. The 
+//length of this part is typeBufG.mappedLen.
+//typeBufG.silentCnt is the part where <silent> applies.
+//After the head are characters that come from the terminal.
+//typeBufG.noAbbrCnt is the number of characters in typeBufG.c that
+//should not be considered for abbreviations.
+//Some parts of typeBufG.c must be processed without custom mappings. These parts are remembered
+//in typeBufG.noremap[], which is the same length as typeBufG.c[] and
+//contains RM_NONE for the characters that are not to be remapped.
+//typeBufG.noremap[typeBufG.currPos] is the first valid flag.
+//(typeBufG has been put in globals.h, because termTryParseTermcode() needs it).
+#define RM_YES      0   //noremap: remap
+#define RM_NONE     1   //noremap: don't remap
+#define RM_SCRIPT   2   //noremap: remap local script mappings
+#define RM_ABBR     4   //noremap: don't remap, do abbrev.
 
-// typeBufG.c has three parts: room in front (for result of mappings), the
-// middle for typeahead and room for new characters.
+//typeBufG.c has three parts: room in front (for result of mappings), the
+//middle for typeahead and room for new characters.
 #define TYPELEN_INIT   (5 * (MAXMAPLEN + 3))
-private Byte typeBufG_init[TYPELEN_INIT];   // initial typeBufG.c
-private Byte noremapbuf_init[TYPELEN_INIT];   // initial typeBufG.noremap
+private Byte typeBufG_init[TYPELEN_INIT];   //initial typeBufG.c
+private Byte noremapbuf_init[TYPELEN_INIT];   //initial typeBufG.noremap
 
-private Unt lastRecordedLen = 0;   // number of last recorded chars
+private Unt lastRecordedLen = 0;   //number of last recorded chars
 
 private MapBlock* last_used_map = NULL;
 private int last_used_sid = -1;
 //{{{types
 
-// stateG for adding bytes to a recording or 'showcmd'.
+//stateG for adding bytes to a recording or 'showcmd'.
 typedef struct {
    Byte   buf[MB_MAXBYTES * 3 + 4];
    int      prev_c;
@@ -114,23 +114,23 @@ typedef struct {
    MapBlock* foundMapping;
    int maxMLen; //max_mlen
    int matchLen; //mlen
-   int currLen; // mp_match_len 
-   int wantTermcode; // 1 if termcode expected after maxMLen
+   int currLen; //mp_match_len 
+   int wantTermcode; //1 if termcode expected after maxMLen
    int keylen;
 } MatchFinding;
 
 typedef enum {
-   mrFail,    // failed, break loop
-   mrGet,     // get a character from typeahead
-   mrRetry,   // try to map again
-   mrNoMatch  // no matching mapping, get char
+   mrFail,    //failed, break loop
+   mrGet,     //get a character from typeahead
+   mrRetry,   //try to map again
+   mrNoMatch  //no matching mapping, get char
 } MapResult;
 
-// Argument for inpFlushBuffers().
+//Argument for inpFlushBuffers().
 pub typedef enum {
    FLUSH_MINIMAL,
-   FLUSH_TYPEAHEAD,   // flush current typebuf contents
-   FLUSH_INPUT      // flush typebuf and inchar() input
+   FLUSH_TYPEAHEAD,   //flush current typebuf contents
+   FLUSH_INPUT      //flush typebuf and inchar() input
 } FlushBuffers;
 
 //}}}
@@ -139,8 +139,8 @@ pub typedef enum {
 private void freeBuffer(TextHeader* buf);
 private CS get_buffcont(
    TextHeader* buffer,
-   Boole dozero,       // count == zero is not an error
-   OUT Unt* len       // the length of the returned buffer
+   Boole dozero,       //count == zero is not an error
+   OUT Unt* len       //the length of the returned buffer
 );
 private int appendDigitInt(int *value, int digit);
 private void add_buff(
@@ -189,7 +189,7 @@ private int do_mousescroll_horiz(Ulong leftcol);
 
 #define TTYM_SGR      0x80
 
-// Free and clear a buffer.
+//Free and clear a buffer.
 private void
 freeBuffer(TextHeader* buf) {
    TextChunk* np;
@@ -201,13 +201,13 @@ freeBuffer(TextHeader* buf) {
    buf->bh_curr = NULL;
 }
 
-// Return the contents of a buffer as a single string.
-// K_SPECIAL and CSI in the returned string are escaped.
+//Return the contents of a buffer as a single string.
+//K_SPECIAL and CSI in the returned string are escaped.
 private CS
 get_buffcont(
    TextHeader* buffer,
-   Boole dozero,       // count == zero is not an error
-   OUT Unt* len       // the length of the returned buffer
+   Boole dozero,       //count == zero is not an error
+   OUT Unt* len       //the length of the returned buffer
 ){
    Ulong count = 0;
    CS p = NULL;
@@ -215,7 +215,7 @@ get_buffcont(
    CS str;
    Unt i = 0;
 
-   // compute the total length of the string
+   //compute the total length of the string
    for (TextChunk* bp = buffer->first.next; bp != NULL; bp = bp->next)
       count += (Ulong)bp->b_strlen;
 
@@ -236,8 +236,8 @@ get_buffcont(
    return p;
 }
 
-// Return the contents of the record buffer as a single string and clear the record buffer.
-// K_SPECIAL and CSI in the returned string are escaped.
+//Return the contents of the record buffer as a single string and clear the record buffer.
+//K_SPECIAL and CSI in the returned string are escaped.
 pub CS
 get_recorded(void) {
    Unt len;
@@ -254,15 +254,15 @@ get_recorded(void) {
       p[len] = ZERO;
    }
 
-   // When stopping recording from Insert mode with CTRL-O q, also remove the CTRL-O.
+   //When stopping recording from Insert mode with CTRL-O q, also remove the CTRL-O.
    if (len > 0 && restart_edit != 0 && p[len - 1] == Ctrl_O)
       p[len - 1] = ZERO;
 
    return (p);
 }
 
-// Return the contents of the redo buffer as a single string.
-// K_SPECIAL and CSI in the returned string are escaped.
+//Return the contents of the redo buffer as a single string.
+//K_SPECIAL and CSI in the returned string are escaped.
 pub Text
 get_inserted(void) {
    Unt len = 0;
@@ -286,59 +286,59 @@ get_keystroke(void) {
    int save_mapped_ctrl_c = mapped_ctrl_c;
    int waited = 0;
 
-   mapped_ctrl_c = false;   // mappings are not used here
+   mapped_ctrl_c = false;   //mappings are not used here
    for (;;) {
       cursor_on();
       out_flush();
 
-      // Leave some room for termTryParseTermcode() to insert a key code into (max
-      // 5 chars plus ZERO).  And fixInputBuffer() can triple the number of bytes.
+      //Leave some room for termTryParseTermcode() to insert a key code into (max
+      //5 chars plus ZERO).  And fixInputBuffer() can triple the number of bytes.
       maxlen = (buflen - 6 - len) / 3;
       if (!buf)
          buf = alloc(buflen);
       ei (maxlen < 10) {
-         // Need some more space. This might happen when receiving a long escape sequence.
+         //Need some more space. This might happen when receiving a long escape sequence.
          buflen += 100;
          buf = eeRealloc(buf, buflen);
          maxlen = (buflen - 6 - len) / 3;
       }
       if (!buf) {
          do_outofmem_msg((Ulong)buflen);
-         return ESC;  // panic!
+         return ESC;  //panic!
       }
 
-      // First time: blocking wait.  Second time: wait up to 100ms for a terminal code to complete.
+      //First time: blocking wait.  Second time: wait up to 100ms for a terminal code to complete.
       count = ui_inchar(buf + len, maxlen, len == 0 ? -1L : 100L, 0);
       if (count > 0) {
-         // Replace zero and CSI by a special key code.
+         //Replace zero and CSI by a special key code.
          count = fixInputBuffer(buf + len, count);
          len += count;
          waited = 0;
       } ei (len > 0)
-          ++waited;       // keep track of the waiting time
+          ++waited;       //keep track of the waiting time
 
-      // Incomplete termcode and not timed out yet: get more characters
+      //Incomplete termcode and not timed out yet: get more characters
       if ((count = termTryParseTermcode(1, OUT (Text){buf, buflen}, OUT &len)) < 0
              && (!p_ttimeout || waited * 100L < (p_ttm < 0 ? p_tm : p_ttm))
       )
          continue;
 
-      if (count == KEYLEN_REMOVED) { // key code removed
+      if (count == KEYLEN_REMOVED) { //key code removed
          if (mustRedrawG != 0 && !need_wait_return 
                && (stateG & (MODE_COMMLINE | MODE_HITRETURN | MODE_ASKMORE)) == 0
          ) {
-            // Redrawing was postponed, do it now.
+            //Redrawing was postponed, do it now.
             drawUpdateScreen(0);
-            setcursor(); // put cursor back where it belongs
+            setcursor(); //put cursor back where it belongs
          }
          continue;
       }
-      if (count > 0)      // found a termcode: adjust length
+      if (count > 0)      //found a termcode: adjust length
          len = count;
-      if (len == 0)      // nothing typed yet
+      if (len == 0)      //nothing typed yet
          continue;
 
-      // Handle modifier and/or special key code.
+      //Handle modifier and/or special key code.
       c = buf[0];
       if (c == K_SPECIAL) {
          c = TO_SPECIAL(buf[1], buf[2]);
@@ -356,7 +356,7 @@ get_keystroke(void) {
           break;
       }
       if (utf8CharLens[c] > len)
-         continue;   // more bytes to get
+         continue;   //more bytes to get
       buf[len >= (int)buflen ? (int)buflen - 1 : len] = ZERO;
       c = mb_ptr2char(buf);
       if (c == extraInterruptCharG)
@@ -369,7 +369,7 @@ get_keystroke(void) {
    return c;
 }
 
-// For overflow detection, add a digit safely to an int value.
+//For overflow detection, add a digit safely to an int value.
 private int
 appendDigitInt(int *value, int digit) {
    int x = *value;
@@ -389,13 +389,13 @@ get_number(Boole allowColonToUpdate, int* mouse_used) {
    if (mouse_used)
       *mouse_used = false;
 
-   // When not printing messages, the user won't know what to type, return a
-   // zero (as if CR was hit).
+   //When not printing messages, the user won't know what to type, return a
+   //zero (as if CR was hit).
    if (msg_silent != 0)
       return 0;
 
    ++no_mapping;
-   ++allow_keys;      // no mapping here, but recognize keys
+   ++allow_keys;      //no mapping here, but recognize keys
    for (;;) {
       windgoto(msgRowG, msgColG);
       c = safe_vgetc();
@@ -417,7 +417,7 @@ get_number(Boole allowColonToUpdate, int* mouse_used) {
       } ei (n == 0 && c == ':' && allowColonToUpdate) {
          stuffcharReadbuff(':');
          commlineRowG = msgRowG;
-         skip_redraw = true;       // skip redraw once
+         skip_redraw = true;       //skip redraw once
          do_redraw = false;
          break;
       } ei (c == Ctrl_C || c == ESC || c == 'q') {
@@ -432,23 +432,23 @@ get_number(Boole allowColonToUpdate, int* mouse_used) {
 }
 
 
-// Add string "s" after the current block of buffer "buf".
-// K_SPECIAL and CSI should have been escaped already.
+//Add string "s" after the current block of buffer "buf".
+//K_SPECIAL and CSI should have been escaped already.
 private void
 add_buff(
    TextHeader* buf,
    CS s,
    long slen
-) {  // length of "s" or -1
+) {  //length of "s" or -1
    if (slen < 0)
       slen = (long)STRLEN(s);
-   if (slen == 0)            // don't add empty strings
+   if (slen == 0)            //don't add empty strings
       return;
 
-   if (buf->first.next == NULL) {  // first add to list
+   if (buf->first.next == NULL) {  //first add to list
       buf->bh_curr = &(buf->first);
       buf->bh_create_newblock = true;
-   } ei (buf->bh_curr == NULL) {  // buffer has already been read
+   } ei (buf->bh_curr == NULL) {  //buffer has already been read
       internalErrMsg(e_add_to_internal_buffer_that_was_already_read_from);
       return;
    } ei (buf->bh_index != 0) {
@@ -484,11 +484,11 @@ add_buff(
    }
 }
 
-// Delete "slen" bytes from the end of "buf". Only works when it was just added.
+//Delete "slen" bytes from the end of "buf". Only works when it was just added.
 private void
 deleteBufferTail(TextHeader *buf, int slen) {
    if (buf->bh_curr == NULL)
-      return;  // nothing to delete
+      return;  //nothing to delete
    if (buf->bh_curr->b_strlen < (Unt)slen)
       return;
 
@@ -497,7 +497,7 @@ deleteBufferTail(TextHeader *buf, int slen) {
    buf->bh_space += slen;
 }
 
-// Add number "n" to buffer "buf".
+//Add number "n" to buffer "buf".
 private void
 addNumToBuf(TextHeader *buf, long n) {
    Byte number[32];
@@ -506,8 +506,8 @@ addNumToBuf(TextHeader *buf, long n) {
    add_buff(buf, number, (long)numberlen);
 }
 
-// Add character 'c' to buffer "buf".
-// Translate special keys, ZERO, CSI, K_SPECIAL and multibyte characters.
+//Add character 'c' to buffer "buf".
+//Translate special keys, ZERO, CSI, K_SPECIAL and multibyte characters.
 private void
 addCharToBuf(TextHeader *buf, Unt c) {
    Byte bytes[MB_MAXBYTES + 1];
@@ -520,7 +520,7 @@ addCharToBuf(TextHeader *buf, Unt c) {
          c = bytes[i];
 
       if (IS_SPECIAL(c) || c == K_SPECIAL || c == ZERO) {
-         // translate special key code into three byte sequence
+         //translate special key code into three byte sequence
          temp[0] = K_SPECIAL;
          temp[1] = K_SECOND(c);
          temp[2] = K_THIRD(c);
@@ -535,15 +535,15 @@ addCharToBuf(TextHeader *buf, Unt c) {
    }
 }
 
-// First read ahead buffer. Used for translated commands.
+//First read ahead buffer. Used for translated commands.
 private TextHeader readbuf1 = {{NULL, 0, {ZERO}}, NULL, 0, 0, false};
 
-// Second read ahead buffer. Used for redo.
+//Second read ahead buffer. Used for redo.
 private TextHeader readbuf2 = {{NULL, 0, {ZERO}}, NULL, 0, 0, false};
 
-// Get one byte from the read buffers.  Use readbuf1 one first, use readbuf2
-// if that one is empty. If advance == true, go to the next char.
-// No translation is done K_SPECIAL and CSI are escaped.
+//Get one byte from the read buffers.  Use readbuf1 one first, use readbuf2
+//if that one is empty. If advance == true, go to the next char.
+//No translation is done K_SPECIAL and CSI are escaped.
 private int
 read_readbuffers(int advance) {
    Unt c = read_readbuf(&readbuf1, advance);
@@ -554,7 +554,7 @@ read_readbuffers(int advance) {
 
 private int
 read_readbuf(TextHeader* buf, int advance) {
-   if (buf->first.next == NULL)  // buffer is empty
+   if (buf->first.next == NULL)  //buffer is empty
       return ZERO;
 
    TextChunk* curr = buf->first.next;
@@ -570,32 +570,32 @@ read_readbuf(TextHeader* buf, int advance) {
    return c;
 }
 
-// Prepare the read buffers for reading (if they contain something).
+//Prepare the read buffers for reading (if they contain something).
 private void
 start_stuff(void) {
    if (readbuf1.first.next != NULL) {
       readbuf1.bh_curr = &(readbuf1.first);
-      readbuf1.bh_create_newblock = true;   // force a new block to be created (see add_buff())
+      readbuf1.bh_create_newblock = true;   //force a new block to be created (see add_buff())
    }
    if (readbuf2.first.next != NULL) {
       readbuf2.bh_curr = &(readbuf2.first);
-      readbuf2.bh_create_newblock = true;   // force a new block to be created (see add_buff())
+      readbuf2.bh_create_newblock = true;   //force a new block to be created (see add_buff())
    }
 }
 
-// Return true if the stuff buffer is empty.
+//Return true if the stuff buffer is empty.
 pub int
 stuff_empty(void) {
    return (readbuf1.first.next == NULL && readbuf2.first.next == NULL);
 }
 
-// Return true if readbuf1 is empty.  There may still be redo characters in redbuf2.
+//Return true if readbuf1 is empty.  There may still be redo characters in redbuf2.
 pub int
 readbuf1_empty(void) {
    return (readbuf1.first.next == NULL);
 }
 
-// Set a typeahead character that won't be flushed.
+//Set a typeahead character that won't be flushed.
 pub void
 typeahead_noflush(int c) {
    TYPEAHEAD_CHAR = c;
@@ -613,7 +613,7 @@ inpFlushBuffers(FlushBuffers flush_typeahead) {
       {}
 
    if (flush_typeahead == FLUSH_MINIMAL) {
-      // remove mapped characters at the start only, but only when enough space left in typeBufG
+      //remove mapped characters at the start only, but only when enough space left in typeBufG
       if (typeBufG.currPos + typeBufG.mappedLen >= typeBufG.len) {
          typeBufG.currPos = MAXMAPLEN;
          typeBufG.validLen = 0;
@@ -624,7 +624,7 @@ inpFlushBuffers(FlushBuffers flush_typeahead) {
       if (typeBufG.validLen == 0)
          typebuf_was_filled = false;
    } else {
-      // remove typeahead
+      //remove typeahead
       if (flush_typeahead == FLUSH_INPUT) {
           //We have to get all characters because we may delete the first part of an escape 
           //sequence. In an xterm we get one char at a time and we have to get them all.
@@ -633,8 +633,8 @@ inpFlushBuffers(FlushBuffers flush_typeahead) {
       }
       typeBufG.currPos = MAXMAPLEN;
       typeBufG.validLen = 0;
-      // Reset the flag that text received from a client or from feedkeys()
-      // was inserted in the typeahead buffer.
+      //Reset the flag that text received from a client or from feedkeys()
+      //was inserted in the typeahead buffer.
       typebuf_was_filled = false;
    }
    typeBufG.mappedLen = 0;
@@ -653,8 +653,8 @@ inpFlushIfNotSilent(void) {
    }
 }
 
-// The previous contents of the redo buffer is kept in old_redobuffer.
-// This is used for the CTRL-O <.> command in insert mode.
+//The previous contents of the redo buffer is kept in old_redobuffer.
+//This is used for the CTRL-O <.> command in insert mode.
 pub void
 ResetRedobuff(void) {
    if (block_redo)
@@ -665,7 +665,7 @@ ResetRedobuff(void) {
    redobuff.first.next = NULL;
 }
 
-// Discard the contents of the redo buffer and restore the previous redo buffer.
+//Discard the contents of the redo buffer and restore the previous redo buffer.
 pub void
 CancelRedo(void) {
    if (block_redo)
@@ -679,8 +679,8 @@ CancelRedo(void) {
       {}
 }
 
-// Save redobuff and old_redobuff to save_redobuff and save_old_redobuff.
-// Used before executing autocommands and user functions.
+//Save redobuff and old_redobuff to save_redobuff and save_old_redobuff.
+//Used before executing autocommands and user functions.
 pub void
 saveRedobuff(SaveRedo* save_redo) {
    save_redo->sr_redobuff = redobuff;
@@ -688,7 +688,7 @@ saveRedobuff(SaveRedo* save_redo) {
    save_redo->sr_old_redobuff = old_redobuff;
    old_redobuff.first.next = NULL;
 
-   // Make a copy, so that ":normal ." in a function works.
+   //Make a copy, so that ":normal ." in a function works.
    Unt slen;
    CS s = get_buffcont(&save_redo->sr_redobuff, false, &slen);
    if (s == NULL)
@@ -698,8 +698,8 @@ saveRedobuff(SaveRedo* save_redo) {
    eeglFree(s);
 }
 
-// Restore redobuff and old_redobuff from save_redobuff and save_old_redobuff.
-// Used after executing autocommands and user functions.
+//Restore redobuff and old_redobuff from save_redobuff and save_old_redobuff.
+//Used after executing autocommands and user functions.
 pub void
 restoreRedobuff(SaveRedo* save_redo) {
    freeBuffer(&redobuff);
@@ -718,19 +718,19 @@ inpAppendToRedoBuff(CS s) {
 //Append to Redo buffer literally, escaping special characters with CTRL-V.
 //K_SPECIAL and CSI are escaped as well.
 pub void
-inpAppendLitToRedoBuff(CS str, int len) {      // "len" = length of "str" or -1 for up to the ZERO
+inpAppendLitToRedoBuff(CS str, int len) {      //"len" = length of "str" or -1 for up to the ZERO
    if (block_redo)
       return;
       
    CS s = str;
    CS start;
    while (len < 0 ? *s != ZERO : s - str < len) {
-      // Put a string of normal characters in the redo buffer (that's faster).
+      //Put a string of normal characters in the redo buffer (that's faster).
       start = s;
       while (*s >= ' ' && *s < DEL && (len < 0 || s - str < len))
          ++s;
 
-      // Don't put '0' or '^' as last character, just in case a CTRL-D is typed next.
+      //Don't put '0' or '^' as last character, just in case a CTRL-D is typed next.
       if (*s == ZERO && (s[-1] == '0' || s[-1] == '^'))
          --s;
       if (s > start)
@@ -739,12 +739,12 @@ inpAppendLitToRedoBuff(CS str, int len) {      // "len" = length of "str" or -1 
       if (*s == ZERO || (len >= 0 && s - str >= len))
          break;
 
-      // Handle a special or multibyte character. Handle composing chars separately.
+      //Handle a special or multibyte character. Handle composing chars separately.
       Unt c = mb_cptr2char_adv(&s);
       if (c < ' ' || c == DEL || (*s == ZERO && (c == '0' || c == '^')))
          addCharToBuf(&redobuff, Ctrl_V);
 
-      // CTRL-V '0' must be inserted as CTRL-V 048
+      //CTRL-V '0' must be inserted as CTRL-V 048
       if (*s == ZERO && c == '0')
          add_buff(&redobuff, (CS)"048", 3L);
       else
@@ -752,8 +752,8 @@ inpAppendLitToRedoBuff(CS str, int len) {      // "len" = length of "str" or -1 
    }
 }
 
-// Append "s" to the redo buffer, leaving 3-byte special key codes unmodified
-// and escaping other K_SPECIAL and CSI bytes.
+//Append "s" to the redo buffer, leaving 3-byte special key codes unmodified
+//and escaping other K_SPECIAL and CSI bytes.
 pub void
 inpAppendSpecToRedoBuff(CS s) {
    if (block_redo)
@@ -761,7 +761,7 @@ inpAppendSpecToRedoBuff(CS s) {
 
    while (*s != ZERO) {
       if (*s == K_SPECIAL && s[1] != ZERO && s[2] != ZERO) {
-         // Insert special key literally.
+         //Insert special key literally.
          add_buff(&redobuff, s, 3L);
          s += 3;
       } else
@@ -769,29 +769,29 @@ inpAppendSpecToRedoBuff(CS s) {
    }
 }
 
-// Append a character to the redo buffer.
-// Translates special keys, ZERO, CSI, K_SPECIAL and multibyte characters.
+//Append a character to the redo buffer.
+//Translates special keys, ZERO, CSI, K_SPECIAL and multibyte characters.
 pub void
 AppendCharToRedobuff(Unt c) {
    if (!block_redo)
       addCharToBuf(&redobuff, c);
 }
 
-// Append a number to the redo buffer.
+//Append a number to the redo buffer.
 pub void
 inpAppendNumberToRedoBuff(long n) {
    if (!block_redo)
       addNumToBuf(&redobuff, n);
 }
 
-// Append string "s" to the stuff buffer. CSI and K_SPECIAL must already have been escaped.
+//Append string "s" to the stuff buffer. CSI and K_SPECIAL must already have been escaped.
 pub void
 stuffReadbuff(CS s) {
    add_buff(&readbuf1, s, -1L);
 }
 
-// Append string "s" to the redo stuff buffer.
-// CSI and K_SPECIAL must already have been escaped.
+//Append string "s" to the redo stuff buffer.
+//CSI and K_SPECIAL must already have been escaped.
 pub void
 stuffRedoReadbuff(CS s) {
    add_buff(&readbuf2, s, -1L);
@@ -802,13 +802,13 @@ stuffReadbuffLen(CS s, long len) {
    add_buff(&readbuf1, s, len);
 }
 
-// Stuff "s" into the stuff buffer, leaving special key codes unmodified and
-// escaping other K_SPECIAL and CSI bytes. Change CR, LF and ESC into a space.
+//Stuff "s" into the stuff buffer, leaving special key codes unmodified and
+//escaping other K_SPECIAL and CSI bytes. Change CR, LF and ESC into a space.
 pub void
 stuffReadbuffSpec(CS s) {
    while (*s != ZERO) {
       if (*s == K_SPECIAL && s[1] != ZERO && s[2] != ZERO) {
-      // Insert special key literally.
+      //Insert special key literally.
       stuffReadbuffLen(s, 3L);
       s += 3;
       } else {
@@ -820,29 +820,29 @@ stuffReadbuffSpec(CS s) {
    }
 }
 
-// Append a character to the stuff buffer.
-// Translates special keys, ZERO, CSI, K_SPECIAL and multibyte characters.
+//Append a character to the stuff buffer.
+//Translates special keys, ZERO, CSI, K_SPECIAL and multibyte characters.
 pub void
 stuffcharReadbuff(Unt c) {
    addCharToBuf(&readbuf1, c);
 }
 
-// Append a number to the stuff buffer.
+//Append a number to the stuff buffer.
 pub void
 stuffnumReadbuff(long n) {
    addNumToBuf(&readbuf1, n);
 }
 
-// Stuff a string into the typeahead buffer, such that edit() will insert it
-// literally ("literally" true) or interpret is as typed characters.
+//Stuff a string into the typeahead buffer, such that edit() will insert it
+//literally ("literally" true) or interpret is as typed characters.
 pub void
 stuffescaped(CS arg, int literally) {
     int      c;
     CS start;
 
     while (*arg != ZERO) {
-       // Stuff a sequence of normal ASCII characters, that's fast.  Also
-       // stuff K_SPECIAL to get the effect of a special key when "literally" is true.
+       //Stuff a sequence of normal ASCII characters, that's fast.  Also
+       //stuff K_SPECIAL to get the effect of a special key when "literally" is true.
        start = arg;
        while ((*arg >= ' ' && *arg < DEL) || (*arg == K_SPECIAL && !literally)) {
           ++arg;
@@ -850,7 +850,7 @@ stuffescaped(CS arg, int literally) {
        if (arg > start)
           stuffReadbuffLen(start, (long)(arg - start));
 
-       // stuff a single special character
+       //stuff a single special character
        if (*arg != ZERO) {
           c = mb_cptr2char_adv(&arg);
           if (literally && ((c < ' ' && c != TAB) || c == DEL))
@@ -860,15 +860,14 @@ stuffescaped(CS arg, int literally) {
    }
 }
 
-// Read a character from the redo buffer. Translate K_SPECIAL, CSI and multibyte characters.
-// The redo buffer is left as it is.
-// If init is true, prepare for redo, return FAIL if nothing to redo, OK otherwise.
-// If old is true, use old_redobuff instead of redobuff.
+//Read a character from the redo buffer. Translate K_SPECIAL, CSI and multibyte characters.
+//The redo buffer is left as it is.
+//If init is true, prepare for redo, return FAIL if nothing to redo, OK otherwise.
+//If old is true, use old_redobuff instead of redobuff.
 private int
 read_redo(int init, int old_redo) {
    static TextChunk* bp;
    static CS p;
-   Unt c;
    int n;
    Byte buf[MB_MAXBYTES + 1];
    int i;
@@ -883,15 +882,16 @@ read_redo(int init, int old_redo) {
       p = bp->b_str;
       return OK;
    }
+   Unt c;
    if ((c = *p) != ZERO) {
-      // Reverse the conversion done by addCharToBuf()
-      // For a multi-byte character get all the bytes and return the converted character.
+      //Reverse the conversion done by addCharToBuf()
+      //For a multi-byte character get all the bytes and return the converted character.
       if ((c != K_SPECIAL || p[1] == KS_SPECIAL))
           n = MB_BYTE2LEN_CHECK(c);
       else
           n = 1;
       for (i = 0; ; ++i) {
-         if (c == K_SPECIAL) { // special key or escaped K_SPECIAL
+         if (c == K_SPECIAL) { //special key or escaped K_SPECIAL
             c = TO_SPECIAL(p[1], p[2]);
             p += 2;
          }
@@ -900,13 +900,13 @@ read_redo(int init, int old_redo) {
             p = bp->b_str;
          }
          buf[i] = c;
-         if (i == n - 1) {  // last byte of a character
+         if (i == n - 1) {  //last byte of a character
             if (n != 1)
                 c = mb_ptr2char(buf);
             break;
          }
          c = *p;
-         if (c == ZERO)   // cannot happen?
+         if (c == ZERO)   //cannot happen?
             break;
       }
    }
@@ -914,9 +914,9 @@ read_redo(int init, int old_redo) {
    return c;
 }
 
-// Copy the rest of the redo buffer into the stuff buffer (in a slow way).
-// If old_redo is true, use old_redobuff instead of redobuff.
-// The escaped K_SPECIAL and CSI are copied without translation.
+//Copy the rest of the redo buffer into the stuff buffer (in a slow way).
+//If old_redo is true, use old_redobuff instead of redobuff.
+//The escaped K_SPECIAL and CSI are copied without translation.
 private void
 copy_redo(int old_redo) {
    int       c;
@@ -924,22 +924,22 @@ copy_redo(int old_redo) {
       addCharToBuf(&readbuf2, c);
 }
 
-// Stuff the redo buffer into readbuf2. Insert the redo count into the command.
-// If "old_redo" is true, the last but one command is repeated
-// instead of the last command (inserting text). This is used for
-// CTRL-O <.> in insert mode
+//Stuff the redo buffer into readbuf2. Insert the redo count into the command.
+//If "old_redo" is true, the last but one command is repeated
+//instead of the last command (inserting text). This is used for
+//CTRL-O <.> in insert mode
 //
-// return FAIL for failure, OK otherwise
+//return FAIL for failure, OK otherwise
 pub int
 start_redo(long count, int old_redo) {
-   // init the pointers; return if nothing to redo
+   //init the pointers; return if nothing to redo
    if (read_redo(true, old_redo) == FAIL)
       return FAIL;
 
    Unt c = read_redo(false, old_redo);
 
    if (c == K_SID) {
-      // Copy the <SID>{sid}; sequence
+      //Copy the <SID>{sid}; sequence
       addCharToBuf(&readbuf2, c);
       for (;;) {
          c = read_redo(false, old_redo);
@@ -950,17 +950,17 @@ start_redo(long count, int old_redo) {
       c = read_redo(false, old_redo);
    }
 
-   // copy the buffer name, if present
+   //copy the buffer name, if present
    if (c == '"') {
       add_buff(&readbuf2, (CS)"\"", 1L);
       c = read_redo(false, old_redo);
 
-      // if a numbered buffer is used, increment the number
+      //if a numbered buffer is used, increment the number
       if (c >= '1' && c < '9')
           ++c;
       addCharToBuf(&readbuf2, c);
 
-      // the expression register should be re-evaluated
+      //the expression register should be re-evaluated
       if (c == '=') {
           addCharToBuf(&readbuf2, ENTER);
           cmd_silent = true;
@@ -969,7 +969,7 @@ start_redo(long count, int old_redo) {
       c = read_redo(false, old_redo);
    }
 
-   if (c == 'v') {  // redo Visual
+   if (c == 'v') {  //redo Visual
       VIsual = curPor->cursor;
       VIsual_active = true;
       VIsual_reselect = true;
@@ -977,22 +977,22 @@ start_redo(long count, int old_redo) {
       c = read_redo(false, old_redo);
    }
 
-   // try to enter the count (in place of a previous count)
+   //try to enter the count (in place of a previous count)
    if (count) {
-      while (EE_ISDIGIT(c))   // skip "old" count
+      while (EE_ISDIGIT(c))   //skip "old" count
          c = read_redo(false, old_redo);
       addNumToBuf(&readbuf2, count);
    }
 
-   // copy the rest from the redo buffer into the stuff buffer
+   //copy the rest from the redo buffer into the stuff buffer
    addCharToBuf(&readbuf2, c);
    copy_redo(old_redo);
    return OK;
 }
 
-// Repeat the last insert (R, o, O, a, A, i or I command) by stuffing
-// the redo buffer into readbuf2.
-// return FAIL for failure, OK otherwise
+//Repeat the last insert (R, o, O, a, A, i or I command) by stuffing
+//the redo buffer into readbuf2.
+//return FAIL for failure, OK otherwise
 pub int
 start_redo_ins(void) {
    if (read_redo(true, false) == FAIL)
@@ -1000,7 +1000,7 @@ start_redo_ins(void) {
    start_stuff();
 
    int       c;
-   // skip the count and the command character
+   //skip the count and the command character
    while ((c = read_redo(false, false)) != ZERO) {
       if (firstOccurrence((CS)"AaIiRrOo", c) != NULL) {
          if (c == 'O' || c == 'o')
@@ -1009,7 +1009,7 @@ start_redo_ins(void) {
       }
    }
 
-   // copy the typed text from the redo buffer into the stuff buffer
+   //copy the typed text from the redo buffer into the stuff buffer
    copy_redo(false);
    block_redo = true;
    return OK;
@@ -1035,29 +1035,29 @@ initTypebuf(void) {
     typeBufG.changeCnt = 1;
 }
 
-// true when keys cannot be remapped.
+//true when keys cannot be remapped.
 pub int
 noremap_keys(void) {
    return keyNoremapG & (RM_NONE|RM_SCRIPT);
 }
 
-// Insert a string in position 'offset' in the typeahead buffer (for "@r"
-// and ":normal" command, vGetOrPeek() and termTryParseTermcode()).
+//Insert a string in position 'offset' in the typeahead buffer (for "@r"
+//and ":normal" command, vGetOrPeek() and termTryParseTermcode()).
 //
-// If "noremap" is REMAP_YES, new string can be mapped again.
-// If "noremap" is REMAP_NONE, new string cannot be mapped again.
-// If "noremap" is REMAP_SKIP, first char of new string cannot be mapped again,
-// but abbreviations are allowed.
-// If "noremap" is REMAP_SCRIPT, new string cannot be mapped again, except for
-//         script-local mappings.
-// If "noremap" is > 0, that many characters of the new string cannot be mapped.
+//If "noremap" is REMAP_YES, new string can be mapped again.
+//If "noremap" is REMAP_NONE, new string cannot be mapped again.
+//If "noremap" is REMAP_SKIP, first char of new string cannot be mapped again,
+//but abbreviations are allowed.
+//If "noremap" is REMAP_SCRIPT, new string cannot be mapped again, except for
+//        script-local mappings.
+//If "noremap" is > 0, that many characters of the new string cannot be mapped.
 //
-// If "nottyped" is true, the string does not return keyWasTypedG (don't use when
-// "offset" is non-zero!).
+//If "nottyped" is true, the string does not return keyWasTypedG (don't use when
+//"offset" is non-zero!).
 //
-// If "silent" is true, cmd_silent is set when the characters are obtained.
+//If "silent" is true, cmd_silent is set when the characters are obtained.
 //
-// return FAIL for failure, OK otherwise
+//return FAIL for failure, OK otherwise
 pub int
 insertIntoTypebuf(
    CS str,
@@ -1099,8 +1099,8 @@ insertIntoTypebuf(
       newoff = MAXMAPLEN + 4;
       extra = addlen + newoff + 4 * (MAXMAPLEN + 4);
       if (typeBufG.validLen > 2147483647 - extra) {
-         // string is getting too long for a 32 bit int
-         emsg(_(e_command_too_complex));    // also calls inpFlushBuffers
+         //string is getting too long for a 32 bit int
+         emsg(_(e_command_too_complex));    //also calls inpFlushBuffers
          setcursor();
          return FAIL;
       }
@@ -1109,11 +1109,11 @@ insertIntoTypebuf(
       s2 = alloc(newlen);
       typeBufG.len = newlen;
 
-      // copy the old chars, before the insertion point
+      //copy the old chars, before the insertion point
       MEMMOVE(s1 + newoff, typeBufG.c + typeBufG.currPos, (Unt)offset);
-      // copy the new chars
+      //copy the new chars
       MEMMOVE(s1 + newoff + offset, str, (Unt)addlen);
-      // copy the old chars, after the insertion point, including the ZERO at the end
+      //copy the old chars, after the insertion point, including the ZERO at the end
       MEMMOVE(s1 + newoff + offset + addlen,
                     typeBufG.c + typeBufG.currPos + offset,
                       (Unt)(typeBufG.validLen - offset + 1));
@@ -1134,7 +1134,7 @@ insertIntoTypebuf(
    }
    typeBufG.validLen += addlen;
 
-   // If noremap == REMAP_SCRIPT: do remap script-local mappings.
+   //If noremap == REMAP_SCRIPT: do remap script-local mappings.
    if (noremap == REMAP_SCRIPT)
       val = RM_SCRIPT;
    ei (noremap == REMAP_SKIP)
@@ -1156,24 +1156,24 @@ insertIntoTypebuf(
       typeBufG.noremap[typeBufG.currPos + i + offset] = (--nrm >= 0) ? val : RM_YES;
    }
 
-   // mappedLen and silentCnt only remember the length of mapped and/or
-   // silent mappings at the start of the buffer, assuming that a mapped
-   // sequence doesn't result in typed characters.
+   //mappedLen and silentCnt only remember the length of mapped and/or
+   //silent mappings at the start of the buffer, assuming that a mapped
+   //sequence doesn't result in typed characters.
    if (nottyped || typeBufG.mappedLen > offset)
       typeBufG.mappedLen += addlen;
    if (silent || typeBufG.silentCnt > offset) {
       typeBufG.silentCnt += addlen;
       cmd_silent = true;
    }
-   if (typeBufG.noAbbrCnt && offset == 0)   // and not used for abbrev.s
+   if (typeBufG.noAbbrCnt && offset == 0)   //and not used for abbrev.s
       typeBufG.noAbbrCnt += addlen;
 
    return OK;
 }
 
-// Put character "c" back into the typeahead buffer. Can be used for a character obtained by 
-// vgetc() that needs to be put back. Use cmd_silent, keyWasTypedG and keyNoremapG to restore the 
-// flags belonging to the char. Return the length of what was inserted.
+//Put character "c" back into the typeahead buffer. Can be used for a character obtained by 
+//vgetc() that needs to be put back. Use cmd_silent, keyWasTypedG and keyNoremapG to restore the 
+//flags belonging to the char. Return the length of what was inserted.
 pub int
 ins_char_typebuf(int c, int modifiers){
    Byte   buf[MB_MAXBYTES * 3 + 4];
@@ -1191,40 +1191,40 @@ ins_char_typebuf(int c, int modifiers){
 //Or "typeBufG.currPos" may have been changed and we would overwrite characters
 //that was just added.
 pub int
-typebuf_changed(int changeCnt){   // old value of typeBufG.changeCnt
+typebuf_changed(int changeCnt){   //old value of typeBufG.changeCnt
    return (changeCnt != 0 && (typeBufG.changeCnt != changeCnt || typebuf_was_filled));
 }
 
-// Return true if there are no untyped characters in the typeahead buffer
-// (untyped = result from a mapping or come from ":normal").
+//Return true if there are no untyped characters in the typeahead buffer
+//(untyped = result from a mapping or come from ":normal").
 pub int
 typebuf_typed(void) {
    return typeBufG.mappedLen == 0;
 }
 
-// Return the number of characters that are mapped (or not typed).
+//Return the number of characters that are mapped (or not typed).
 pub int
 typebuf_maplen(void) {
    return typeBufG.mappedLen;
 }
 
-// remove "len" characters from typeBufG.c[typeBufG.currPos + offset]
+//remove "len" characters from typeBufG.c[typeBufG.currPos + offset]
 pub void
 del_typebuf(int len, int offset) {
    int i;
 
    if (len == 0)
-      return;      // nothing to do
+      return;      //nothing to do
 
    typeBufG.validLen -= len;
 
-   // Easy case: Just increase typeBufG.currPos.
+   //Easy case: Just increase typeBufG.currPos.
    if (offset == 0 && typeBufG.len - (typeBufG.currPos + len) >= 3 * MAXMAPLEN + 3)
       typeBufG.currPos += len;
-   // Have to move the characters in typeBufG.c[] and typeBufG.noremap[]
+   //Have to move the characters in typeBufG.c[] and typeBufG.noremap[]
    else {
       i = typeBufG.currPos + offset;
-      // Leave some extra room at the end to avoid reallocation.
+      //Leave some extra room at the end to avoid reallocation.
       if (typeBufG.currPos > MAXMAPLEN) {
          MEMMOVE(typeBufG.c + MAXMAPLEN, typeBufG.c + typeBufG.currPos, (Unt)offset);
          MEMMOVE(
@@ -1232,46 +1232,46 @@ del_typebuf(int len, int offset) {
          );
          typeBufG.currPos = MAXMAPLEN;
       }
-      // adjust typeBufG.c (include the ZERO at the end)
+      //adjust typeBufG.c (include the ZERO at the end)
       MEMMOVE(
          typeBufG.c + typeBufG.currPos + offset, typeBufG.c + i + len, 
          (Unt)(typeBufG.validLen - offset + 1)
       );
-      // adjust typeBufG.noremap[]
+      //adjust typeBufG.noremap[]
       MEMMOVE(
          typeBufG.noremap + typeBufG.currPos + offset, typeBufG.noremap + i + len, 
          (Unt)(typeBufG.validLen - offset)
       );
    }
 
-   if (typeBufG.mappedLen > offset) {    // adjust mappedLen
+   if (typeBufG.mappedLen > offset) {    //adjust mappedLen
       if (typeBufG.mappedLen < offset + len)
          typeBufG.mappedLen = offset;
       else
          typeBufG.mappedLen -= len;
    }
-   if (typeBufG.silentCnt > offset) {     // adjust silentCnt
+   if (typeBufG.silentCnt > offset) {     //adjust silentCnt
       if (typeBufG.silentCnt < offset + len)
          typeBufG.silentCnt = offset;
       else
          typeBufG.silentCnt -= len;
    }
-   if (typeBufG.noAbbrCnt > offset) {  // adjust noAbbrCnt
+   if (typeBufG.noAbbrCnt > offset) {  //adjust noAbbrCnt
       if (typeBufG.noAbbrCnt < offset + len)
          typeBufG.noAbbrCnt = offset;
       else
          typeBufG.noAbbrCnt -= len;
    }
 
-   // Reset the flag that text received from a client or from feedkeys()
-   // was inserted in the typeahead buffer.
+   //Reset the flag that text received from a client or from feedkeys()
+   //was inserted in the typeahead buffer.
    typebuf_was_filled = false;
    if (++typeBufG.changeCnt == 0)
       typeBufG.changeCnt = 1;
 }
 
-// Add a single byte to a recording or 'showcmd'.
-// Return true if a full key has been received, false otherwise.
+//Add a single byte to a recording or 'showcmd'.
+//Return true if a full key has been received, false otherwise.
 private int
 gotchars_add_byte(GotCharsState *state, Byte byte) {
    Unt c = state->buf[state->buflen++] = byte;
@@ -1282,8 +1282,8 @@ gotchars_add_byte(GotCharsState *state, Byte byte) {
    if (in_special)
       state->pending_special--;
    ei (c == K_SPECIAL)
-      // When receiving a special key sequence, store it until we have all
-      // the bytes and we can decide what to do with it.
+      //When receiving a special key sequence, store it until we have all
+      //the bytes and we can decide what to do with it.
       state->pending_special = 2;
 
    if (state->pending_special > 0)
@@ -1294,16 +1294,16 @@ gotchars_add_byte(GotCharsState *state, Byte byte) {
    else {
       if (in_special) {
          if (state->prev_c == KS_MODIFIER)
-            // When receiving a modifier, wait for the modified key.
+            //When receiving a modifier, wait for the modified key.
             goto ret_false;
          c = TO_SPECIAL(state->prev_c, c);
          if (c == K_FOCUSGAINED || c == K_FOCUSLOST)
-            // Drop K_FOCUSGAINED and K_FOCUSLOST, they are not useful in a recording.
+            //Drop K_FOCUSGAINED and K_FOCUSLOST, they are not useful in a recording.
             state->buflen = 0;
       }
-      // When receiving a multibyte character, store it until we have all
-      // the bytes, so that it won't be split between two buffer blocks,
-      // and deleteBufferTail() will work properly.
+      //When receiving a multibyte character, store it until we have all
+      //the bytes, so that it won't be split between two buffer blocks,
+      //and deleteBufferTail() will work properly.
       state->pending_mbyte = MB_BYTE2LEN_CHECK(c) - 1;
    }
 
@@ -1316,7 +1316,7 @@ ret_false:
    return retval;
 }
 
-// Write typed characters to script file. If recording is on put the character in the record buffer
+//Write typed characters to script file. If recording is on put the character in the record buffer
 private void
 gotchars(CS chars, int len) {
     CS s = chars;
@@ -1328,14 +1328,14 @@ gotchars(CS chars, int len) {
       if (!gotchars_add_byte(&state, *s++))
           continue;
 
-      // Handle one byte at a time; no translation to be done.
+      //Handle one byte at a time; no translation to be done.
       for (i = 0; i < state.buflen; ++i)
           updateScript(state.buf[i]);
 
       if (reg_recording != 0) {
           state.buf[state.buflen] = ZERO;
           add_buff(&recordbuff, state.buf, (long)state.buflen);
-          // remember how many chars were last recorded
+          //remember how many chars were last recorded
           lastRecordedLen += state.buflen;
       }
       state.buflen = 0;
@@ -1343,24 +1343,24 @@ gotchars(CS chars, int len) {
 
    maySyncUndo();
 
-   // output "debug mode" message next time in debug mode
+   //output "debug mode" message next time in debug mode
    debug_did_msg = false;
 
-   // Since characters have been typed, consider the following to be in
-   // another mapping.  Search string will be kept in history.
+   //Since characters have been typed, consider the following to be in
+   //another mapping.  Search string will be kept in history.
    ++maptick;
 }
 
-// Record an <Ignore> key.
+//Record an <Ignore> key.
 pub void
 gotchars_ignore(void) {
    Byte nop_buf[3] = { K_SPECIAL, KS_EXTRA, KE_IGNORE };
    gotchars(nop_buf, 3);
 }
 
-// Undo the last gotchars() for "len" bytes.  To be used when putting a typed
-// character back into the typeahead buffer, thus gotchars() will be called again.
-// Only affects recorded characters.
+//Undo the last gotchars() for "len" bytes.  To be used when putting a typed
+//character back into the typeahead buffer, thus gotchars() will be called again.
+//Only affects recorded characters.
 pub void
 ungetchars(int len) {
    if (reg_recording == 0)
@@ -1370,24 +1370,24 @@ ungetchars(int len) {
    lastRecordedLen -= len;
 }
 
-// Sync undo. Called when typed characters are obtained from the typeahead buffer, or when a menu 
-// is used. Do not sync:
-// - In Insert mode, unless cursor key has been used.
-// - While reading a script file.
-// - When no_u_sync is non-zero.
+//Sync undo. Called when typed characters are obtained from the typeahead buffer, or when a menu 
+//is used. Do not sync:
+//- In Insert mode, unless cursor key has been used.
+//- While reading a script file.
+//- When no_u_sync is non-zero.
 private void
 maySyncUndo(void) {
    if ((!(stateG & (MODE_INSERT | MODE_COMMLINE)) || arrow_used) && scriptin[curscript] == NULL)
       u_sync(false);
 }
 
-// Make "typeBufG" empty and allocate new buffers.
+//Make "typeBufG" empty and allocate new buffers.
 private void
 reallocateTypebuf(void) {
    typeBufG.c = alloc(TYPELEN_INIT);
    typeBufG.noremap = alloc(TYPELEN_INIT);
    typeBufG.len = TYPELEN_INIT;
-   typeBufG.currPos = MAXMAPLEN + 4;  // can insert without realloc
+   typeBufG.currPos = MAXMAPLEN + 4;  //can insert without realloc
    typeBufG.validLen = 0;
    typeBufG.mappedLen = 0;
    typeBufG.silentCnt = 0;
@@ -1397,7 +1397,7 @@ reallocateTypebuf(void) {
    typebuf_was_filled = false;
 }
 
-// Free the buffers of "typeBufG".
+//Free the buffers of "typeBufG".
 private void
 free_typeBufG(void) {
    if (typeBufG.c == typeBufG_init)
@@ -1410,8 +1410,8 @@ free_typeBufG(void) {
       EE_CLEAR(typeBufG.noremap);
 }
 
-// When doing ":so! file", the current typeahead needs to be saved, and
-// restored when "file" has been read completely.
+//When doing ":so! file", the current typeahead needs to be saved, and
+//restored when "file" has been read completely.
 private Typeahead saved_typeBufG[NSCRIPT];
 
 pub int
@@ -1422,20 +1422,20 @@ save_typebuf(void) {
    return OK;
 }
 
-private Unt old_char = UNT;   // character put back by vungetc()
-private int oldModMask;   // modMaskG for ungotten character
-private int old_mouse_row;   // mouse_row related to old_char
-private int old_mouse_col;   // mouse_col related to old_char
-private int old_keyWasStuffedG;   // whether old_char was stuffed
+private Unt old_char = UNT;   //character put back by vungetc()
+private int oldModMask;   //modMaskG for ungotten character
+private int old_mouse_row;   //mouse_row related to old_char
+private int old_mouse_col;   //mouse_col related to old_char
+private int old_keyWasStuffedG;   //whether old_char was stuffed
 
 private int 
 can_get_old_char(void) {
-   // If the old character was not stuffed and characters have been added to
-   // the stuff buffer, need to first get the stuffed characters instead.
+   //If the old character was not stuffed and characters have been added to
+   //the stuff buffer, need to first get the stuffed characters instead.
    return old_char != UNT && (old_keyWasStuffedG || stuff_empty());
 }
 
-// Save all 3 kinds of typeahead, so that the user must type at a prompt.
+//Save all 3 kinds of typeahead, so that the user must type at a prompt.
 pub void
 save_typeahead(TypeaheadSave *tp) {
    tp->save_typebuf = typeBufG;
@@ -1455,9 +1455,9 @@ save_typeahead(TypeaheadSave *tp) {
    tp->save_inputbuf = get_input_buf();
 }
 
-// Restore the typeahead to what it was before calling save_typeahead().
-// The allocated memory is freed, can only be called once!
-// When "overwrite" is false input typed later is kept.
+//Restore the typeahead to what it was before calling save_typeahead().
+//The allocated memory is freed, can only be called once!
+//When "overwrite" is false input typed later is kept.
 pub void
 restore_typeahead(TypeaheadSave* tp, Boole overwrite) {
     if (tp->typebuf_valid) {
@@ -1475,7 +1475,7 @@ restore_typeahead(TypeaheadSave* tp, Boole overwrite) {
     set_input_buf(tp->save_inputbuf, overwrite);
 }
 
-// Open a new script file for the ":source!" command.
+//Open a new script file for the ":source!" command.
 pub void
 openscript(CS name, Boole directly) {
    if (curscript + 1 == NSCRIPT) {
@@ -1484,12 +1484,12 @@ openscript(CS name, Boole directly) {
    }
 
    if (ignore_script)
-      // Not reading from script, also don't open one.  TODO Warning message
+      //Not reading from script, also don't open one.  TODO Warning message
       return;
 
-   if (scriptin[curscript] != NULL)   // already reading script
+   if (scriptin[curscript] != NULL)   //already reading script
       ++curscript;
-   // use nameBuffG for expanded name
+   //use nameBuffG for expanded name
    doExpandEnv(OUT nameBuffTextG, name);
    if ((scriptin[curscript] = fopen((char *)nameBuffG, READBIN)) == NULL) {
       showErrFmtMsg(_(e_cant_open_file_str), name);
@@ -1511,16 +1511,16 @@ openscript(CS name, Boole directly) {
       int save_msg_scroll = msg_scroll;
 
       stateG = MODE_NORMAL;
-      msg_scroll = false;  // no msg scrolling in Normal mode
-      restart_edit = 0;    // don't go to Insert mode
+      msg_scroll = false;  //no msg scrolling in Normal mode
+      restart_edit = 0;    //don't go to Insert mode
       doClearOpArg(&oper);
       finish_op = false;
 
       int oldcurscript = curscript;
       do {
-         update_topline_cursor(); // update cursor position and topline
-         normalAction(&oper);     // execute one action
-         (void)vpeekc();          // check for end of file
+         update_topline_cursor(); //update cursor position and topline
+         normalAction(&oper);     //execute one action
+         (void)vpeekc();          //check for end of file
       } while (scriptin[oldcurscript] != NULL);
 
       stateG = save_State;
@@ -1530,7 +1530,7 @@ openscript(CS name, Boole directly) {
    }
 }
 
-// Close the currently active input script.
+//Close the currently active input script.
 private void
 closeScript(void) {
    free_typeBufG();
@@ -1550,14 +1550,14 @@ close_all_scripts(void) {
 }
 #endif
 
-// Return true when reading keys from a script file.
+//Return true when reading keys from a script file.
 pub int
 using_script(void) {
    return scriptin[curscript] != NULL;
 }
 
-// This function is called just before doing a blocking wait.  Thus after
-// waiting 'updatetime' for a character to arrive.
+//This function is called just before doing a blocking wait.  Thus after
+//waiting 'updatetime' for a character to arrive.
 pub void
 before_blocking(void) {
    updateScript(0);
@@ -1565,11 +1565,11 @@ before_blocking(void) {
       garbage_collect(false);
 }
 
-// updateScript() is called when a character can be written into the script
-// file or when we have waited some time for a character (c == 0)
+//updateScript() is called when a character can be written into the script
+//file or when we have waited some time for a character (c == 0)
 //
-// All the changed memfiles are synced if c == 0 or when the number of typed
-// characters reaches 'updatecount' and 'updatecount' is non-zero.
+//All the changed memfiles are synced if c == 0 or when the number of typed
+//characters reaches 'updatecount' and 'updatecount' is non-zero.
 private void
 updateScript(int c) {
     static int count = 0;
@@ -1586,13 +1586,13 @@ updateScript(int c) {
     }
 }
 
-// Convert "c_arg" plus "modifiers" to merge the effect of modifyOtherKeys into
-// the character.  Also for when the Kitty key protocol is used.
+//Convert "c_arg" plus "modifiers" to merge the effect of modifyOtherKeys into
+//the character.  Also for when the Kitty key protocol is used.
 pub Unt
 mergeModifierKey(Unt cArg, Unt* modifiers) {
     Unt c = cArg;
 
-    // CTRL only uses the lower 5 bits of the character.
+    //CTRL only uses the lower 5 bits of the character.
     if (*modifiers & MOD_MASK_CTRL) {
       if ((c >= '`' && c <= 0x7f) || (c >= '@' && c <= '_')) {
          c &= 0x1f;
@@ -1600,18 +1600,18 @@ mergeModifierKey(Unt cArg, Unt* modifiers) {
             c = K_ZERO;
          }
       } ei (c == '6')
-         // CTRL-6 is equivalent to CTRL-^
+         //CTRL-6 is equivalent to CTRL-^
          c = 0x1e;
       if (c != cArg) {
          *modifiers &= ~MOD_MASK_CTRL;
       }
    }
 
-   // Alt/Meta sets the 8th bit of the character.
+   //Alt/Meta sets the 8th bit of the character.
    if ((*modifiers & (MOD_MASK_META | MOD_MASK_ALT)) && c <= 127) {
-      // Some terminals (esp. Kitty) do not include Shift in the character.
-      // Apply it here to get consistency across terminals.  Only do ASCII
-      // letters, for other characters it depends on the keyboard layout.
+      //Some terminals (esp. Kitty) do not include Shift in the character.
+      //Apply it here to get consistency across terminals.  Only do ASCII
+      //letters, for other characters it depends on the keyboard layout.
       if ((*modifiers & MOD_MASK_SHIFT) && c >= 'a' && c <= 'z') {
          c += 'a' - 'A';
          *modifiers &= ~MOD_MASK_SHIFT;
@@ -1623,13 +1623,13 @@ mergeModifierKey(Unt cArg, Unt* modifiers) {
    return c;
 }
 
-// Add a single byte to 'showcmd' for a partially matched mapping.
-// Call add_to_showcmd() if a full key has been received.
+//Add a single byte to 'showcmd' for a partially matched mapping.
+//Call add_to_showcmd() if a full key has been received.
 private void
 addByteToShowcmd(Byte byte) {
    static GotCharsState state;
    Unt modifiers = 0;
-   int c = ZERO;
+   Unt c = ZERO;
 
    if (msg_silent != 0)
       return;
@@ -1650,7 +1650,7 @@ addByteToShowcmd(Byte byte) {
       CS mb_ptr = mb_unescape(&ptr);
       c = mb_ptr ? mb_ptr2char(mb_ptr) : *ptr++;
       if (c <= 0x7f) {
-         // Merge modifiers into the key to make the result more readable.
+         //Merge modifiers into the key to make the result more readable.
          Unt modifiersAfter = modifiers;
          Unt modifiedC = mergeModifierKey(c, &modifiersAfter);
 
@@ -1688,12 +1688,12 @@ vgetc(void) {
    Unt n;
    Byte buf[MB_MAXBYTES + 1];
 
-   // Do garbage collection when garbagecollect() was called previously and
-   // we are now at the toplevel.
+   //Do garbage collection when garbagecollect() was called previously and
+   //we are now at the toplevel.
    if (may_garbage_collect && want_garbage_collect)
       { garbage_collect(false); }
 
-   // If a character was put back with vungetc, it was already processed. Return it directly.
+   //If a character was put back with vungetc, it was already processed. Return it directly.
    if (can_get_old_char()) {
       c = old_char;
       old_char = UNT;
@@ -1703,24 +1703,24 @@ vgetc(void) {
       goto afterGotChar; 
    } 
     
-   // number of characters recorded from the last vgetc() call
-   static Unt   lastVgetcRecordedLen = 0;
+   //number of characters recorded from the last vgetc() call
+   static Unt lastVgetcRecordedLen = 0;
  
    modMaskG = 0;
    vgetcModMaskG = 0;
    vgetcOrigCharG = 0;
  
-   // lastRecordedLen can be larger than lastVgetcRecordedLen if peeking records more
+   //lastRecordedLen can be larger than lastVgetcRecordedLen if peeking records more
    lastRecordedLen -= lastVgetcRecordedLen;
  
-   for (;;) {  // this is done twice if there are modifiers
+   for (;;) {  //this is done twice if there are modifiers
       Boole didIncrement = false;
      
-      // No mapping in popup portals if they disabled mappings and a modifier has been read
+      //No mapping in popup portals if they disabled mappings and a modifier has been read
       if (modMaskG || popup_no_mapping()) {
          ++no_mapping;
          ++allow_keys;
-         // modMaskG value may change, remember we did the increment
+         //modMaskG value may change, remember we did the increment
          didIncrement = false;
       }
       c = vGetOrPeek(true);
@@ -1730,13 +1730,13 @@ vgetc(void) {
          --allow_keys;
       }
      
-      // Get two extra bytes for special keys, handle modifiers.
+      //Get two extra bytes for special keys, handle modifiers.
       if (c == K_SPECIAL) {
          int save_allow_keys = allow_keys;
           
          ++no_mapping;
-         allow_keys = 0;        // make sure backspace is not found
-         c2 = vGetOrPeek(true); // no mapping for these chars
+         allow_keys = 0;        //make sure backspace is not found
+         c2 = vGetOrPeek(true); //no mapping for these chars
          c = vGetOrPeek(true);
          --no_mapping;
          allow_keys = save_allow_keys;
@@ -1746,13 +1746,13 @@ vgetc(void) {
          }
          c = TO_SPECIAL(c2, c);
            
-         // K_ESC is used to avoid ambiguity with the single Esc character that might be the 
-         // start of an escape sequence. Convert it back to a single Esc here.
+         //K_ESC is used to avoid ambiguity with the single Esc character that might be the 
+         //start of an escape sequence. Convert it back to a single Esc here.
          if (c == K_ESC)
             { c = ESC; }
            
          if (c == K_SID) {
-            // Handle <SID>{sid};  Do up to 20 digits for safety.
+            //Handle <SID>{sid};  Do up to 20 digits for safety.
             last_used_sid = 0;
             for (int j = 0; j < 20 && SAFE_isdigit(c = vGetOrPeek(true)); ++j)
                last_used_sid = last_used_sid * 10 + (c - '0');
@@ -1761,17 +1761,17 @@ vgetc(void) {
          }
       }
      
-      // For a multi-byte character get all the bytes and return the converted character.
-      // Note: This will loop until enough bytes are received!
+      //For a multi-byte character get all the bytes and return the converted character.
+      //Note: This will loop until enough bytes are received!
       if ((n = MB_BYTE2LEN_CHECK(c)) > 1) {
          ++no_mapping;
          buf[0] = c;
          for (Unt i = 1; i < n; ++i) {
             buf[i] = vGetOrPeek(true);
             if (buf[i] == K_SPECIAL) {
-               // Must be a K_SPECIAL - KS_SPECIAL - KE_FILLER sequence, which represents a 
-               // K_SPECIAL (0x80), or a CSI - KS_EXTRA - KE_CSI sequence, which represents a CSI 
-               // (0x9B), or a K_SPECIAL - KS_EXTRA - KE_CSI, which is CSI too.
+               //Must be a K_SPECIAL - KS_SPECIAL - KE_FILLER sequence, which represents a 
+               //K_SPECIAL (0x80), or a CSI - KS_EXTRA - KE_CSI sequence, which represents a CSI 
+               //(0x9B), or a K_SPECIAL - KS_EXTRA - KE_CSI, which is CSI too.
                c = vGetOrPeek(true);
                if (vGetOrPeek(true) == KE_CSI && c == KS_EXTRA)
                   { buf[i] = CSI; }
@@ -1786,7 +1786,7 @@ vgetc(void) {
          vgetcOrigCharG = c;
       }
      
-      // A keypad or special function key was not mapped, use it like its ASCII equivalent.
+      //A keypad or special function key was not mapped, use it like its ASCII equivalent.
       switch (c) {
       case K_KPLUS:   c = '+'; break;
       case K_KMINUS:   c = '-'; break;
@@ -1852,22 +1852,22 @@ afterGotChar:
    //Only filter keys that do not come from ":normal". Keys from feedkeys() are filtered.
    if ((!ex_normal_busy || in_feedkeys) && popup_do_filter(c)) {
        if (c == Ctrl_C)
-          { gotInterruptG = false; } // avoid looping
+          { gotInterruptG = false; } //avoid looping
        c = K_IGNORE;
    }
 
-   // Clear the next typedchars_pos
+   //Clear the next typedchars_pos
    typedchars_pos = 0;
 
-   // Need to process the character before we know it's safe to do something else.
+   //Need to process the character before we know it's safe to do something else.
    if (c != K_IGNORE)
       { state_no_longer_safe(S"key typed"); }
        
    return c;
 }
 
-// Like vgetc(), but never return a ZERO when called recursively, get a key
-// directly from the user (ignoring typeahead).
+//Like vgetc(), but never return a ZERO when called recursively, get a key
+//directly from the user (ignoring typeahead).
 pub Unt
 safe_vgetc(void) {
    Unt c = vgetc();
@@ -1876,8 +1876,8 @@ safe_vgetc(void) {
    return c;
 }
 
-// Like safe_vgetc(), but loop to handle K_IGNORE. Also ignore scrollbar events.
-// Does not handle bracketed paste - do not use the result for commands.
+//Like safe_vgetc(), but loop to handle K_IGNORE. Also ignore scrollbar events.
+//Does not handle bracketed paste - do not use the result for commands.
 private int
 plainVgetcNopaste(void) {
    Unt c;
@@ -1910,7 +1910,7 @@ vpeekc(void) {
    return vGetOrPeek(false);
 }
 
-// Like vpeekc(), but don't allow mapping.  Do allow checking for terminal codes.
+//Like vpeekc(), but don't allow mapping.  Do allow checking for terminal codes.
 pub int
 vpeekc_nomap(void) {
     ++no_mapping;
@@ -1921,9 +1921,9 @@ vpeekc_nomap(void) {
     return c;
 }
 
-// Check if any character is available, also half an escape sequence.
-// Trick: when no typeahead found, but there is something in the typeahead
-// buffer, it must be an ESC that is recognized as the start of a key code.
+//Check if any character is available, also half an escape sequence.
+//Trick: when no typeahead found, but there is something in the typeahead
+//buffer, it must be an ESC that is recognized as the start of a key code.
 pub Unt
 vpeekc_any(void) {
    Unt c = vpeekc();
@@ -1932,12 +1932,12 @@ vpeekc_any(void) {
    return c;
 }
 
-// Call vpeekc() without causing anything to be mapped.
-// Return true if a character is available, false otherwise.
+//Call vpeekc() without causing anything to be mapped.
+//Return true if a character is available, false otherwise.
 pub int
 char_avail(void) {
-    // When test_override("char_avail", 1) was called pretend there is no
-    // typeahead.
+    //When test_override("char_avail", 1) was called pretend there is no
+    //typeahead.
     if (disable_char_avail_for_testing)
        { return false; }
     ++no_mapping;
@@ -1946,7 +1946,7 @@ char_avail(void) {
     return (retval != ZERO);
 }
 
-// "getchar()" and "getcharstr()" functions
+//"getchar()" and "getcharstr()" functions
 private void
 getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number) {
    Long n = 0;
@@ -1979,9 +1979,9 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number) {
     if (called_emsg != called_emsg_start)
        { return; }
 
-    // vpeekc() used to check for messages, but that caused problems, invoking
-    // a callback where it was not expected.  Some plugins use getchar(1) in a
-    // loop to await a message, therefore make sure we check for messages here.
+    //vpeekc() used to check for messages, but that caused problems, invoking
+    //a callback where it was not expected.  Some plugins use getchar(1) in a
+    //loop to await a message, therefore make sure we check for messages here.
     parse_queued_messages();
 
     if (cursor_flag == 'h')
@@ -1996,17 +1996,17 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number) {
     for (;;) {
       if (argvars[0].tag == VAR_UNKNOWN
            || (argvars[0].tag == VAR_NUMBER && argvars[0].number == -1))
-         // getchar(): blocking wait.
+         //getchar(): blocking wait.
          n = plainVgetcNopaste();
       ei (varGetNumberChk(argvars, OUT &error))
-         // getchar(1): only check if char avail
+         //getchar(1): only check if char avail
          n = vpeekc_any();
       ei (error || vpeekc_any() == ZERO)
-         // illegal argument or getchar(0) and no char avail: return zero
+         //illegal argument or getchar(0) and no char avail: return zero
          n = 0;
       else
-         // getchar(0) and char avail() != ZERO: get a character.
-         // Note that vpeekc_any() returns K_SPECIAL for K_IGNORE.
+         //getchar(0) and char avail() != ZERO: get a character.
+         //Note that vpeekc_any() returns K_SPECIAL for K_IGNORE.
          n = safe_vgetc();
 
       if (n == K_IGNORE || n == K_MOUSEMOVE || n == K_VER_SCROLLBAR || n == K_HOR_SCROLLBAR)
@@ -2022,10 +2022,10 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number) {
       cursor_unsleep();
 
    if (n != 0 && (!allow_number || IS_SPECIAL(n) || modMaskG != 0)) {
-      Byte temp[10];   // modifier: 3, mbyte-char: 6, ZERO: 1
+      Byte temp[10];   //modifier: 3, mbyte-char: 6, ZERO: 1
       int i = 0;
 
-      // Turn a special key into three bytes, plus modifier.
+      //Turn a special key into three bytes, plus modifier.
       if (modMaskG != 0) {
            temp[i++] = K_SPECIAL;
            temp[i++] = KS_MODIFIER;
@@ -2049,7 +2049,7 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number) {
          LineNr   lnum;
 
          if (row >= 0 && col >= 0) {
-            // Find the portal at the mouse coordinates and compute the text position.
+            //Find the portal at the mouse coordinates and compute the text position.
             port = mouseFindPortal(OUT &row, OUT &col, FIND_POPUP);
             if (!port)
                return;
@@ -2095,7 +2095,7 @@ parse_queued_messages(void) {
    if (updating_screen || dont_parse_messages)
       return;
 
-   // If memory allocation fails during startup we'll exit but curBook or curPor could be NULL.
+   //If memory allocation fails during startup we'll exit but curBook or curPor could be NULL.
    if (!curBook || !curPor)
       return;
 
@@ -2104,13 +2104,13 @@ parse_queued_messages(void) {
 
    ++entered;
 
-   // may_garbage_collect is set in main_loop() to do garbage collection when
-   // blocking to wait on a character.  We don't want that while parsing
-   // messages, a callback may invoke vgetc() while lists and bags are in use
-   // in the call stack.
+   //may_garbage_collect is set in main_loop() to do garbage collection when
+   //blocking to wait on a character.  We don't want that while parsing
+   //messages, a callback may invoke vgetc() while lists and bags are in use
+   //in the call stack.
    may_garbage_collect = false;
 
-   // Loop when a job ended, but don't keep looping forever.
+   //Loop when a job ended, but don't keep looping forever.
    for (Unt i = 0; i < MAX_REPEAT_PARSE; ++i) {
       //Write any buffer lines still to be written.
       channel_write_any_lines();
@@ -2132,30 +2132,30 @@ parse_queued_messages(void) {
       break;
    }
 
-   // When not nested we'll go back to waiting for a typed character.  If it
-   // was safe before then this triggers a SafeStateAgain autocommand event.
+   //When not nested we'll go back to waiting for a typed character.  If it
+   //was safe before then this triggers a SafeStateAgain autocommand event.
    if (entered == 1 && was_safe)
       may_trigger_safestateagain();
 
    may_garbage_collect = save_may_garbage_collect;
 
-   // If the current portal or buffer changed we need to bail out of the
-   // waiting loop.  E.g. when a job exit callback closes the terminal portal.
+   //If the current portal or buffer changed we need to bail out of the
+   //waiting loop.  E.g. when a job exit callback closes the terminal portal.
    if (curPor->id != old_curPor_id || curBook->fiNum != old_curbuf_fnum)
       ins_char_typebuf(K_IGNORE, 0);
 
    --entered;
 }
 
-// Check if the bytes at the start of the typeahead buffer are a character used
-// in Insert mode completion.  This includes the form with a CTRL modifier.
+//Check if the bytes at the start of the typeahead buffer are a character used
+//in Insert mode completion.  This includes the form with a CTRL modifier.
 private int
 atAnInsertCompletionKey(void) {
    CS p = typeBufG.c + typeBufG.currPos;
    int c = *p;
 
    if (typeBufG.validLen > 3
-       && (c == K_SPECIAL || c == CSI)  // CSI is used by the GUI
+       && (c == K_SPECIAL || c == CSI)  //CSI is used by the GUI
        && p[1] == KS_MODIFIER
        && (p[2] & MOD_MASK_CTRL))
       c = p[3] & 0x1f;
@@ -2163,9 +2163,9 @@ atAnInsertCompletionKey(void) {
       || (compl_status_local() && (c == Ctrl_N || c == Ctrl_P));
 }
 
-// Check if typeBufG.c[] contains a modifier plus key that can be changed into just a key, apply 
-// that. Check from typeBufG.c[typeBufG.currPos] to typeBufG.c[typeBufG.currPos + "maxOffset"].
-// Return the length of the replaced bytes, 0 if nothing changed, -1 for error.
+//Check if typeBufG.c[] contains a modifier plus key that can be changed into just a key, apply 
+//that. Check from typeBufG.c[typeBufG.currPos] to typeBufG.c[typeBufG.currPos + "maxOffset"].
+//Return the length of the replaced bytes, 0 if nothing changed, -1 for error.
 private int
 checkSimplifyModifier(int const maxOffset) {
    int      offset;
@@ -2179,12 +2179,12 @@ checkSimplifyModifier(int const maxOffset) {
       if ((input[0] != K_SPECIAL && input[0] != CSI) || input[1] != KS_MODIFIER) {
          continue;
       }
-      // A modifier was not used for a mapping, apply it to ASCII keys.
-      // Shift would already have been applied.
+      //A modifier was not used for a mapping, apply it to ASCII keys.
+      //Shift would already have been applied.
       Unt modifier = input[2];
       Unt   c = input[3];
       Unt cModified = mergeModifierKey(c, &modifier);
-      if (cModified == c) { // no Ctrl, Alt etc pressed
+      if (cModified == c) { //no Ctrl, Alt etc pressed
          continue;
       }
 
@@ -2192,8 +2192,8 @@ checkSimplifyModifier(int const maxOffset) {
       int len;
 
       if (offset == 0) {
-         // At the start: remember the character and modMaskG before merging: in some cases, 
-         // e.g. at the hit-return prompt, they are put back in the typeahead buffer.
+         //At the start: remember the character and modMaskG before merging: in some cases, 
+         //e.g. at the hit-return prompt, they are put back in the typeahead buffer.
          vgetcOrigCharG = c;
          vgetcModMaskG = input[2];
       }
@@ -2206,7 +2206,7 @@ checkSimplifyModifier(int const maxOffset) {
          len = mb_char2bytes(cModified, new_string);
       }
       Text newText = (Text){new_string, len};
-      if (modifier == 0) { // all the modifier keys have been handled
+      if (modifier == 0) { //all the modifier keys have been handled
          if (termPutStrIntoTypeBuf(offset, 4, newText) == FAIL) {
             return -1;
          }
@@ -2221,9 +2221,9 @@ checkSimplifyModifier(int const maxOffset) {
    return 0;
 }
 
-// Loop until a partially matching mapping is found or all (local) mappings have been checked.
-// The longest full match is remembered in this var. A full match is only accepted if there
-// is no partial match, so "aa" and "aaa" can both be mapped to different commands.
+//Loop until a partially matching mapping is found or all (local) mappings have been checked.
+//The longest full match is remembered in this var. A full match is only accepted if there
+//is no partial match, so "aa" and "aaa" can both be mapped to different commands.
 private MatchFinding
 searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapping) {
    MatchFinding fin = {};
@@ -2232,16 +2232,16 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
    fin.keylen = foundKeylen;
    int nolmaplen;
    
-   // Check for a mappable key sequence.
-   // Walk through one maphash[] list until we find an entry that matches.
+   //Check for a mappable key sequence.
+   //Walk through one maphash[] list until we find an entry that matches.
    Unt typebufChar = typeBufG.c[typeBufG.currPos];
-   // Don't look for mappings if:
-   // - no_mapping set: mapping disabled (e.g. for CTRL-V)
-   // - maphash_valid not set: no mappings present.
-   // - typeBufG.c[typeBufG.currPos] should not be remapped
-   // - waiting for "hit return to continue" and CR or SPACE typed
-   // - waiting for a char with --more--
-   // - in Ctrl-X mode, and we get a valid char for that mode
+   //Don't look for mappings if:
+   //- no_mapping set: mapping disabled (e.g. for CTRL-V)
+   //- maphash_valid not set: no mappings present.
+   //- typeBufG.c[typeBufG.currPos] should not be remapped
+   //- waiting for "hit return to continue" and CR or SPACE typed
+   //- waiting for a char with --more--
+   //- in Ctrl-X mode, and we get a valid char for that mode
    if (no_mapping == 0 
       && isMappingTableValid()
       && (typebufChar != '0' || isZeroJustANumberG == 0)
@@ -2264,17 +2264,17 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
       fin.foundMapping = getBufMappingTableList(localState, typebufChar);
       MapBlock* foundMapping1 = getMappingTableList(localState, typebufChar);
        
-      if (fin.foundMapping == NULL) { // There are no buffer-local mappings
+      if (fin.foundMapping == NULL) { //There are no buffer-local mappings
          fin.foundMapping = foundMapping1;
          foundMapping1 = NULL;
       }
 
-      // {{{ main mapping loop
+      //{{{ main mapping loop
       
       fin.currLen = 0;
       for ( ; fin.foundMapping != NULL; ) {
-         // Only consider an entry if the first character matches and it is for the current state.
-         // Skip ":lmap" mappings if keys were mapped.
+         //Only consider an entry if the first character matches and it is for the current state.
+         //Skip ":lmap" mappings if keys were mapped.
          if (
                fin.foundMapping->lhs[0] == typebufChar
             && (fin.foundMapping->mode & localState)
@@ -2284,7 +2284,7 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
                
             int nomap = nolmaplen;
             Unt modifiers = 0;
-            // find the match length of this mapping
+            //find the match length of this mapping
             for (
                fin.matchLen = 1; 
                fin.matchLen < typeBufG.validLen; 
@@ -2301,9 +2301,9 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
                   if (currChar == K_SPECIAL)
                      nomap = 2;
                   ei (mergeModifierKey(currChar, &modifiers) == currChar) {
-                     // Only apply 'langmap' if merging modifiers into the key will not result
-                     // in another character, so that 'langmap' behaves consistently in
-                     // different terminals and GUIs.
+                     //Only apply 'langmap' if merging modifiers into the key will not result
+                     //in another character, so that 'langmap' behaves consistently in
+                     //different terminals and GUIs.
                      LANGMAP_ADJUST(currChar, true);
                   }
                   modifiers = 0;
@@ -2331,7 +2331,7 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
                   || (fin.matchLen == typeBufG.validLen && typeBufG.validLen < fin.keylen)
             ) {
 
-               // If only script-local mappings are allowed, check if the mapping starts with K_SNR
+               //If only script-local mappings are allowed, check if the mapping starts with K_SNR
                Byte* s = typeBufG.noremap + typeBufG.currPos;
                if (*s == RM_SCRIPT
                      && (fin.foundMapping->lhs[0] != K_SPECIAL 
@@ -2339,7 +2339,7 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
                            || fin.foundMapping->lhs[2] != KE_SNR))
                   goto nextIter;
 
-               // If one of the typed keys cannot be remapped, skip the entry.
+               //If one of the typed keys cannot be remapped, skip the entry.
                int n;
                for (n = fin.matchLen; --n >= 0; ) {
                   if (*s++ & (RM_NONE|RM_ABBR))
@@ -2350,19 +2350,19 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
                if (fin.keylen > typeBufG.validLen) {
                   if (!timedout 
                         && !(fin.longestFull != NULL && fin.longestFull->nowait)) { 
-                     // break at a partial match
+                     //break at a partial match
                      fin.keylen = KEYLEN_INCOMPLETE_MAPPING;
                      break;
                   }
                } ei (fin.keylen > fin.currLen) {
-                  // found a longer match
+                  //found a longer match
                   fin.longestFull = fin.foundMapping;
                   fin.currLen = fin.keylen;
                }
             } else {
-               // No match; may have to check for termcode at next character.
-               // If the first character that didn't match is K_SPECIAL then check for a termcode.
-               // This isn't perfect but should work in most cases.
+               //No match; may have to check for termcode at next character.
+               //If the first character that didn't match is K_SPECIAL then check for a termcode.
+               //This isn't perfect but should work in most cases.
                if (fin.maxMLen < fin.matchLen) {
                   fin.maxMLen = fin.matchLen;
                   fin.wantTermcode = fin.foundMapping->lhs[fin.matchLen] == K_SPECIAL;
@@ -2370,8 +2370,8 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
                   fin.wantTermcode = 1;
                } 
 
-               // Check termcode for uppercase character to properly process the 
-               // "ESC[27;2;<ascii code>~" control sequences.
+               //Check termcode for uppercase character to properly process the 
+               //"ESC[27;2;<ascii code>~" control sequences.
                if (ASCII_ISUPPER(fin.foundMapping->rhs[fin.matchLen]))
                   fin.wantTermcode = 1;
             }
@@ -2387,7 +2387,7 @@ nextIter:
            
       } //}}}
 
-      // If no partial match found, use the longest full match.
+      //If no partial match found, use the longest full match.
       if (fin.keylen != KEYLEN_INCOMPLETE_MAPPING && fin.longestFull != NULL) {
          fin.foundMapping = fin.longestFull;
          fin.keylen = fin.currLen;
@@ -2396,24 +2396,24 @@ nextIter:
    return fin;
 }
 
-// Handle mappings in the typeahead buffer.
-// - When something was mapped, return mrRetry for recursive mappings.
-// - When nothing mapped and typeahead has a character: return mrGet.
-// - When there is no match yet, return mrNoMatch, need to get more typeahead.
-// - On failure (out of memory) return mrFail.
+//Handle mappings in the typeahead buffer.
+//- When something was mapped, return mrRetry for recursive mappings.
+//- When nothing mapped and typeahead has a character: return mrGet.
+//- When there is no match yet, return mrNoMatch, need to get more typeahead.
+//- On failure (out of memory) return mrFail.
 private MapResult
 handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
    int i;
-   int isAbstractPlugMapping = false; // is this an abstract <plug> mapping?
+   int isAbstractPlugMapping = false; //is this an abstract <plug> mapping?
    
    //{{{<Plug>. If typeahead starts with <Plug> then remap, even for a "noremap" mapping.
-   // <Plug> mappings are abstract function names exposed by plugins that users can map concrete
-   // keys to.
-   // In a plugin:
-   // nnoremap <silent> <plug>(SubversiveSubstitute) :<c-u>call subversive#...
-   // In a user config: 
-   // nmap gc <plug>(SubversiveSubstitute)
-   // The plugin author can then change their RHS while the user won't need to change anything
+   //<Plug> mappings are abstract function names exposed by plugins that users can map concrete
+   //keys to.
+   //In a plugin:
+   //nnoremap <silent> <plug>(SubversiveSubstitute) :<c-u>call subversive#...
+   //In a user config: 
+   //nmap gc <plug>(SubversiveSubstitute)
+   //The plugin author can then change their RHS while the user won't need to change anything
    
    isAbstractPlugMapping = 
              typeBufG.validLen >= 3
@@ -2426,8 +2426,8 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
    MatchFinding fin = searchForPartialMappings(*foundKeylen, timedout, isAbstractPlugMapping);
    
    //{{{ May check for a terminal code when there is no mapping or only a partial
-   // mapping.  Also check if there is a full mapping with <Esc>, unless timed
-   // out, since that is nearly always a partial match with a terminal code.
+   //mapping.  Also check if there is a full mapping with <Esc>, unless timed
+   //out, since that is nearly always a partial match with a terminal code.
    if ((fin.foundMapping == NULL 
           || (fin.maxMLen + fin.wantTermcode > fin.currLen)
           || (fin.currLen == 1 && *fin.foundMapping->rhs == ESC && !timedout)
@@ -2436,12 +2436,12 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
    ) {
       int savedKeylen = fin.keylen;
 
-      // When no matching mapping found or found a non-matching mapping that matches at least what
-      // the matching mapping matched. Check if we have a terminal code, provided:
-      // - mapping is allowed,
-      // - keys have not been mapped,
-      // - and not an ESC sequence, not in insert mode,
-      // - and when not timed out.
+      //When no matching mapping found or found a non-matching mapping that matches at least what
+      //the matching mapping matched. Check if we have a terminal code, provided:
+      //- mapping is allowed,
+      //- keys have not been mapped,
+      //- and not an ESC sequence, not in insert mode,
+      //- and when not timed out.
       if (no_mapping == 0 || allow_keys != 0) {
            if ((typeBufG.mappedLen == 0 
                      || (typeBufG.noremap[typeBufG.currPos] == RM_YES))
@@ -2456,20 +2456,20 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
            if (fin.keylen == 0 && savedKeylen == KEYLEN_INCOMPLETE_KEYCODE && !timedout)
               fin.keylen = KEYLEN_INCOMPLETE_KEYCODE;
 
-           // If no termcode matched, try to include the modifier into the
-           // key.  This is for when modifyOtherKeys is working.
-           check_no_reduce_keys();  // may update the no_reduce_keys flag
+           //If no termcode matched, try to include the modifier into the
+           //key.  This is for when modifyOtherKeys is working.
+           check_no_reduce_keys();  //may update the no_reduce_keys flag
            if (fin.keylen == 0 && !no_reduce_keys) {
               fin.keylen = checkSimplifyModifier(fin.maxMLen + 1);
 
-              if (fin.keylen < 0) {    // insertIntoTypebuf() failed
+              if (fin.keylen < 0) {    //insertIntoTypebuf() failed
                  return mrFail;
               }
            }
 
-           // When getting a partial match, but the last characters were not
-           // typed, don't wait for a typed character to complete the
-           // termcode.  This helps a lot when a ":normal" command ends in an ESC.
+           //When getting a partial match, but the last characters were not
+           //typed, don't wait for a typed character to complete the
+           //termcode.  This helps a lot when a ":normal" command ends in an ESC.
            if (fin.keylen < 0 && typeBufG.validLen == typeBufG.mappedLen) {
               fin.keylen = 0;
            }
@@ -2477,21 +2477,21 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
          fin.keylen = 0;
       }
 
-      if (fin.keylen == 0 && fin.foundMapping == NULL) {  // no matching terminal code
-         // When there was a matching mapping and no termcode could be
-         // replaced after another one, use that mapping (loop around).
-         // If there was no mapping at all use the character from the
-         // typeahead buffer right here.
+      if (fin.keylen == 0 && fin.foundMapping == NULL) {  //no matching terminal code
+         //When there was a matching mapping and no termcode could be
+         //replaced after another one, use that mapping (loop around).
+         //If there was no mapping at all use the character from the
+         //typeahead buffer right here.
          *foundKeylen = fin.keylen;
-         return mrGet;    // get character from typeahead
-      } ei (fin.keylen > 0) {       // full matching terminal code
+         return mrGet;    //get character from typeahead
+      } ei (fin.keylen > 0) {       //full matching terminal code
 
          *foundKeylen = fin.keylen;
-         return mrRetry;   // try mapping again
+         return mrRetry;   //try mapping again
       }
 
-      // Partial match: get some more characters.  When a matching mapping
-      // was found use that one.
+      //Partial match: get some more characters.  When a matching mapping
+      //was found use that one.
       fin.keylen = (fin.foundMapping == NULL || fin.keylen < 0) 
          ? KEYLEN_INCOMPLETE_KEYCODE : fin.currLen;
       
@@ -2500,13 +2500,13 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
    
    
    if (fin.keylen >= 0 && fin.keylen <= typeBufG.validLen) {
-      // write chars to script file(s)
+      //write chars to script file(s)
       if (fin.keylen > typeBufG.mappedLen) {
          gotchars(typeBufG.c + typeBufG.currPos + typeBufG.mappedLen, fin.keylen - typeBufG.mappedLen);
       }
 
       cmd_silent = (typeBufG.silentCnt > 0);
-      del_typebuf(fin.keylen, 0);   // remove the mapped keys
+      del_typebuf(fin.keylen, 0);   //remove the mapped keys
 
       //Put the replacement string in front of mapstr. 
       //The recursion depth check catches ":map x y" and ":map y x".
@@ -2517,25 +2517,25 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
          else
             setcursor();
          inpFlushBuffers(FLUSH_MINIMAL);
-         *mapdepth = 0;   // for next one
+         *mapdepth = 0;   //for next one
          *foundKeylen = fin.keylen;
          return mrFail;
       }
 
-      // Copy the values from *mp that are used, because evaluating the
-      // expression may invoke a function that redefines the mapping, thereby
-      // making *mp invalid.
+      //Copy the values from *mp that are used, because evaluating the
+      //expression may invoke a function that redefines the mapping, thereby
+      //making *mp invalid.
       int isExpr = fin.foundMapping->expr;
       int isNoremap = fin.foundMapping->noremap;
       int isSilent = fin.foundMapping->silent;
-      Arr(Byte) keys = NULL;  // only saved when needed
+      Arr(Byte) keys = NULL;  //only saved when needed
 
-      Arr(Byte) altKeys = NULL;  // only saved when needed
+      Arr(Byte) altKeys = NULL;  //only saved when needed
       Arr(Byte) mapRhs;
       int altKeylen = fin.foundMapping->alt != NULL ? fin.foundMapping->alt->keylen : 0;
 
       //{{{ Handle ":map <expr>": evaluate the {rhs} as an expression.  Also
-      // save and restore the command line for "normal :".
+      //save and restore the command line for "normal :".
       if (isExpr) {
          int save_vgetcBusyG = vgetcBusyG;
          int save_may_garbage_collect = may_garbage_collect;
@@ -2552,13 +2552,13 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
 
          mapRhs = eval_map_expr(fin.foundMapping, ZERO);
 
-         // The mapping may do anything, but we expect it to take care of
-         // redrawing.  Do put the cursor back where it was.
+         //The mapping may do anything, but we expect it to take care of
+         //redrawing.  Do put the cursor back where it was.
          windgoto(was_screen_row, was_screen_col);
          out_flush();
 
-         // If an error was displayed and the expression returns an empty
-         // string, generate a <Nop> to allow for a redraw.
+         //If an error was displayed and the expression returns an empty
+         //string, generate a <Nop> to allow for a redraw.
          if (prev_anyEmsgG != anyEmsgG && (mapRhs == NULL || *mapRhs == ZERO)) {
             Byte   buf[4];
 
@@ -2570,7 +2570,7 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
             mapRhs = copySubstr(buf, 3);
 
             if (stateG & MODE_COMMLINE) {
-               // redraw the command below the error
+               //redraw the command below the error
                msg_didout = true;
                if (msgRowG < commlineRowG)
                   msgRowG = commlineRowG;
@@ -2584,9 +2584,9 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
       } else
          { mapRhs = fin.foundMapping->rhs; }
           
-      // Insert the 'to' part in the typeBufG. If 'from' field is the same as the start of the 
-      // 'to' field, don't remap the first character (but do allow abbreviations).
-      // If m_noremap is set, don't remap the whole 'to' part.
+      //Insert the 'to' part in the typeBufG. If 'from' field is the same as the start of the 
+      //'to' field, don't remap the first character (but do allow abbreviations).
+      //If m_noremap is set, don't remap the whole 'to' part.
       if (mapRhs == NULL) {
          i = FAIL;
       } else {
@@ -2644,8 +2644,8 @@ vungetc(Unt c) {
    old_keyWasStuffedG = keyWasStuffedG;
 }
 
-// When peeking and not getting a character, reg_executing cannot be cleared
-// yet, so set a flag to clear it later.
+//When peeking and not getting a character, reg_executing cannot be cleared
+//yet, so set a flag to clear it later.
 private void
 check_end_reg_executing(int advance) {
    if (reg_executing != 0 && (typeBufG.mappedLen == 0 || pending_end_reg_executing)) {
@@ -2658,21 +2658,21 @@ check_end_reg_executing(int advance) {
    }
 }
 
-// Get a byte:
-// 1. from the stuffbuffer
-//   This is used for abbreviated commands like "D" -> "d$". Also used to redo a command for ".".
-// 2. from the typeahead buffer
-//   Stores text obtained previously but not used yet. Also stores the result of mappings.
-//   Also used for the ":normal" command.
-// 3. from the user
-//   This may do a blocking wait if "advance" is true.
+//Get a byte:
+//1. from the stuffbuffer
+//  This is used for abbreviated commands like "D" -> "d$". Also used to redo a command for ".".
+//2. from the typeahead buffer
+//  Stores text obtained previously but not used yet. Also stores the result of mappings.
+//  Also used for the ":normal" command.
+//3. from the user
+//  This may do a blocking wait if "advance" is true.
 //
-// if "advance" is true (vgetc()):
-//   Really get the character.
-//   keyWasTypedG is set to true in the case the user typed the key.
-//   keyWasStuffedG is true if the character comes from the stuff buffer.
-// if "advance" is false (vpeekc()):
-//   Just look whether there is a character available. Return ZERO if not.
+//if "advance" is true (vgetc()):
+//  Really get the character.
+//  keyWasTypedG is set to true in the case the user typed the key.
+//  keyWasStuffedG is true if the character comes from the stuff buffer.
+//if "advance" is false (vpeekc()):
+//  Just look whether there is a character available. Return ZERO if not.
 //
 //When "no_mapping" is zero, checks for mappings in the current mode. Only returns one byte (of 
 //a multi-byte character). K_SPECIAL and CSI may be escaped, need to get two more bytes then.
@@ -2680,10 +2680,10 @@ private Unt
 vGetOrPeek(Boole advance) {
    int countRead;
    Unt specialChar;
-   int timedout = false; // waited for more than 'timeoutlen'
-                         // for mapping to complete or 'ttimeoutlen' for complete key code
-   int mapdepth = 0;     // check for recursive mapping
-   int mode_deleted = false;   // set when mode has been deleted
+   int timedout = false; //waited for more than 'timeoutlen'
+                         //for mapping to complete or 'ttimeoutlen' for complete key code
+   int mapdepth = 0;     //check for recursive mapping
+   int mode_deleted = false;   //set when mode has been deleted
    int necursorCol, necursorRow;
    int n;
    int old_wcol, old_wrow;
@@ -2712,7 +2712,7 @@ vGetOrPeek(Boole advance) {
    check_end_reg_executing(advance);
    //{{{ main loop
    do {
-      // get a character: 1. from the stuffbuffer
+      //get a character: 1. from the stuffbuffer
       if (TYPEAHEAD_CHAR != 0) {
           countRead = TYPEAHEAD_CHAR;
           if (advance) {
@@ -2724,13 +2724,13 @@ vGetOrPeek(Boole advance) {
 
       if (countRead != ZERO && !gotInterruptG) {
            if (advance) {
-              // keyWasTypedG = false;  When the command that stuffed something
-              // was typed, behave like the stuffed command was typed.
-              // needed for CTRL-W CTRL-] to open a fold, for example.
+              //keyWasTypedG = false;  When the command that stuffed something
+              //was typed, behave like the stuffed command was typed.
+              //needed for CTRL-W CTRL-] to open a fold, for example.
               keyWasStuffedG = true;
            }
            if (typeBufG.noAbbrCnt == 0) {
-              typeBufG.noAbbrCnt = 1;   // no abbreviations now
+              typeBufG.noAbbrCnt = 1;   //no abbreviations now
            }
       } else {
             for (;;) { //{{{inner loop
@@ -2742,17 +2742,17 @@ vGetOrPeek(Boole advance) {
                int   showcmd_idx;
                check_end_reg_executing(advance);
 
-               // ui_breakcheck() is slow, don't use it too often when inside a mapping.  But call
-               //  it each time for typed characters.
+               //ui_breakcheck() is slow, don't use it too often when inside a mapping.  But call
+               // it each time for typed characters.
                if (typeBufG.mappedLen) {
                   line_breakcheck();
                } else {
-                  ui_breakcheck();      // check for CTRL-C
+                  ui_breakcheck();      //check for CTRL-C
                }
 
                //{{{ interrupt
                if (gotInterruptG) {
-                  // flush all input
+                  //flush all input
                   countRead = ingestChar(typeBufG.c, typeBufG.len - 1, 0L);
 
                   //If ingestChar() returns true (script file was active) or we are inside a mapping,
@@ -2763,10 +2763,10 @@ vGetOrPeek(Boole advance) {
                   } else {
                      specialChar = Ctrl_C;
                   }
-                  inpFlushBuffers(FLUSH_INPUT);   // flush all typeahead
+                  inpFlushBuffers(FLUSH_INPUT);   //flush all typeahead
 
                   if (advance) {
-                     // Also record this character, it might be needed to get out of Insert mode.
+                     //Also record this character, it might be needed to get out of Insert mode.
                      *typeBufG.c = specialChar;
                      gotchars(typeBufG.c, 1);
                   }
@@ -2775,65 +2775,65 @@ vGetOrPeek(Boole advance) {
                   break;
                //}}}
                } ei (typeBufG.validLen > 0) {
-                  // Check for a mapping in "typeBufG".
+                  //Check for a mapping in "typeBufG".
                   MapResult result = handleMapping(OUT &keylen, timedout, OUT &mapdepth);
                   if (result == mrRetry) {
-                     // try mapping again
+                     //try mapping again
                      continue;
                   } ei (result == mrFail) {
-                     // failed, use the outer loop
+                     //failed, use the outer loop
                      countRead = -1;
                      break;
                   } ei (result == mrGet) {
-                     // get a character: 2. from the typeahead buffer
+                     //get a character: 2. from the typeahead buffer
                      countRead = typeBufG.c[typeBufG.currPos];
-                     if (advance)  {  // remove chars from typeBufG
+                     if (advance)  {  //remove chars from typeBufG
                         cmd_silent = (typeBufG.silentCnt > 0);
                         if (typeBufG.mappedLen > 0) {
                            keyWasTypedG = false;
                         } else {
                            keyWasTypedG = true;
-                           // write char to script file(s)
+                           //write char to script file(s)
                            gotchars(typeBufG.c + typeBufG.currPos, 1);
                         }
                         keyNoremapG = typeBufG.noremap[typeBufG.currPos];
                         del_typebuf(1, 0);
                      }
-                     break;  // got character, break the inner loop
+                     break;  //got character, break the inner loop
                   }
-                  // mrNoMatch not enough characters, get more
+                  //mrNoMatch not enough characters, get more
                }
 
-               // <Esc> in INSERT mode
+               //<Esc> in INSERT mode
                //get a character: 3. from the user - handle <Esc> in Insert mode
-               // Special case: if we get an <ESC> in Insert mode and there are no more characters 
-               // at once, we pretend to go out of Insert mode.  This prevents the one second 
-               // delay after typing an <ESC>.  If we get something after all, we may have to 
-               // redisplay the mode. That the cursor is in the wrong place does not matter.
-               // Do not do this if the kitty keyboard protocol is used, every <ESC> is the start
-               // of an escape sequence then.
+               //Special case: if we get an <ESC> in Insert mode and there are no more characters 
+               //at once, we pretend to go out of Insert mode.  This prevents the one second 
+               //delay after typing an <ESC>.  If we get something after all, we may have to 
+               //redisplay the mode. That the cursor is in the wrong place does not matter.
+               //Do not do this if the kitty keyboard protocol is used, every <ESC> is the start
+               //of an escape sequence then.
                countRead = 0;
                necursorCol = curPor->cursorCol;
                necursorRow = curPor->cursorRow;
                
                if (countRead < 0) {
-                  continue;   // end of input script reached
+                  continue;   //end of input script reached
                } 
-               // Allow mapping for just typed characters. When we get here, countRead is 
-               // the number of extra bytes and typeBufG.validLen is 1.
+               //Allow mapping for just typed characters. When we get here, countRead is 
+               //the number of extra bytes and typeBufG.validLen is 1.
                for (n = 1; n <= countRead; ++n)
                   typeBufG.noremap[typeBufG.currPos + n] = RM_YES;
                typeBufG.validLen += countRead;
 
-               // buffer full, don't map
+               //buffer full, don't map
                if (typeBufG.validLen >= typeBufG.mappedLen + MAXMAPLEN) {
                   timedout = true;
                   continue;
                }
 
-               // No typeahead left and inside ":normal".  Must return something to avoid 
-               // getting stuck. When an incomplete mapping is present, behave like it timed 
-               // out.
+               //No typeahead left and inside ":normal".  Must return something to avoid 
+               //getting stuck. When an incomplete mapping is present, behave like it timed 
+               //out.
                if (ex_normal_busy > 0) {
                    static int tc = 0;
                    if (typeBufG.validLen > 0) {
@@ -2841,10 +2841,10 @@ vGetOrPeek(Boole advance) {
                       continue;
                    }
 
-                   // Use CTRL-L to make edit() return. For the command line only CTRL-C always 
-                   // breaks it.
-                   // For the commline portal: Alternate between ESC and CTRL-C: ESC for most 
-                   // situations and CTRL-C to close the commline portal.
+                   //Use CTRL-L to make edit() return. For the command line only CTRL-C always 
+                   //breaks it.
+                   //For the commline portal: Alternate between ESC and CTRL-C: ESC for most 
+                   //situations and CTRL-C to close the commline portal.
                    if (terminal_is_active())
                       specialChar = K_CANCEL;
                    ei ((stateG & MODE_COMMLINE) || (commPortTypeG > 0 && tc == ESC))
@@ -2852,11 +2852,11 @@ vGetOrPeek(Boole advance) {
                    else
                       specialChar = ESC;
                    tc = specialChar;
-                   // set a flag to indicate this wasn't a normal char
+                   //set a flag to indicate this wasn't a normal char
                    if (advance)
                       typebuf_was_empty = true;
 
-                   // no chars to block abbreviation for
+                   //no chars to block abbreviation for
                    typeBufG.noAbbrCnt = 0;
                    break;
                }
@@ -2872,26 +2872,26 @@ vGetOrPeek(Boole advance) {
                      && !need_wait_return
                      ) {
                   drawUpdateScreen(0);
-                  setcursor(); // put cursor back where it belongs
+                  setcursor(); //put cursor back where it belongs
                }
 
-               // If we have a partial match (and are going to wait for more input from the user),
-               // show the partially matched characters to the user with showcmd.
+               //If we have a partial match (and are going to wait for more input from the user),
+               //show the partially matched characters to the user with showcmd.
                showcmd_idx = 0;
                int showing_partial = false;
                if (typeBufG.validLen > 0 && advance) {
                    if (((stateG & (MODE_NORMAL | MODE_INSERT)) || stateG == MODE_LANGMAP)
                       && stateG != MODE_HITRETURN
                    ) {
-                      // this looks nice when typing a dead character map
+                      //this looks nice when typing a dead character map
                       if (stateG & MODE_INSERT
                            && bookPtr2Cells(typeBufG.c + typeBufG.currPos + typeBufG.validLen - 1) == 1
                       ) {
                          edit_putchar(typeBufG.c[typeBufG.currPos + typeBufG.validLen - 1], false);
-                         setcursor(); // put cursor back where it belongs
+                         setcursor(); //put cursor back where it belongs
                          showing_partial = true;
                       }
-                      // need to use the col and row from above here
+                      //need to use the col and row from above here
                       old_wcol = curPor->cursorCol;
                       old_wrow = curPor->cursorRow;
                       curPor->cursorCol = necursorCol;
@@ -2917,16 +2917,16 @@ vGetOrPeek(Boole advance) {
                    }
                }
 
-               // get a character: 3. from the user - get it
+               //get a character: 3. from the user - get it
                if (typeBufG.validLen == 0)
-                  // timedout may have been set if a mapping with empty RHS
-                  // fully matched while longer mappings timed out.
+                  //timedout may have been set if a mapping with empty RHS
+                  //fully matched while longer mappings timed out.
                   { timedout = false; }
 
                if (advance) {
                   if (typeBufG.validLen == 0
                         || !(p_timeout || (p_ttimeout && keylen == KEYLEN_INCOMPLETE_KEYCODE)))
-                     // blocking wait
+                     //blocking wait
                      wait_time = -1L;
                   ei (keylen == KEYLEN_INCOMPLETE_KEYCODE && p_ttm >= 0)
                      wait_time = p_ttm;
@@ -2936,7 +2936,7 @@ vGetOrPeek(Boole advance) {
                   { wait_time = 0; }
                wait_tb_len = typeBufG.validLen;
 
-               // getting raw input from keyboard
+               //getting raw input from keyboard
                countRead = ingestChar(
                   typeBufG.c + typeBufG.currPos + typeBufG.validLen,
                   typeBufG.len - typeBufG.currPos - typeBufG.validLen - 1,
@@ -2952,50 +2952,50 @@ vGetOrPeek(Boole advance) {
                    if ((stateG & MODE_COMMLINE) && getCommlineInfo()->commBuf != NULL)
                       unputcmdline();
                    else
-                      setcursor(); // put cursor back where it belongs
+                      setcursor(); //put cursor back where it belongs
                }
 
                if (countRead < 0) {
-                  continue;        // end of input script reached
-               } ei (countRead == ZERO)  {  // no character available
+                  continue;        //end of input script reached
+               } ei (countRead == ZERO)  {  //no character available
                   if (!advance) {
                      break;
-                  } ei (wait_tb_len > 0) { // timed out
+                  } ei (wait_tb_len > 0) { //timed out
                      timedout = true;
                      continue;
                   }
-               } else {       // allow mapping for just typed characters
+               } else {       //allow mapping for just typed characters
                   while (typeBufG.c[typeBufG.currPos + typeBufG.validLen] != ZERO) {
                      typeBufG.noremap[typeBufG.currPos + typeBufG.validLen] = RM_YES;
                      typeBufG.validLen++;
                   }
                }
             } //}}} inner loop
-      } // if (!character from stuffbuf)
+      } //if (!character from stuffbuf)
 
-      // if advance is false don't loop on NULs
+      //if advance is false don't loop on NULs
    } while ((countRead < 0 && specialChar != K_CANCEL) || (advance && countRead == ZERO));
    //}}} main loop
 
    //The "INSERT" message is taken care of here:
-   //   if we return an ESC to exit insert mode, the message is deleted
-   //   if we don't return an ESC but deleted the message before, redisplay it
+   //  if we return an ESC to exit insert mode, the message is deleted
+   //  if we don't return an ESC but deleted the message before, redisplay it
    if (advance && p_smd && msg_silent == 0 && (stateG & MODE_INSERT)) {
       if (specialChar == ESC && !mode_deleted && !no_mapping && isModeDisplayedG) {
          if (typeBufG.validLen && !keyWasTypedG)
-            redrawCommlineG = true; // delete mode later
+            redrawCommlineG = true; //delete mode later
          else
             unshowmode(false);
       } ei (specialChar != ESC && mode_deleted) {
          if (typeBufG.validLen && !keyWasTypedG)
-            redrawCommlineG = true; // show mode later
+            redrawCommlineG = true; //show mode later
          else
             showmode();
       }
    }
    if (timedout && specialChar == ESC)  {
-      // When recording there will be no timeout.  Add an <Ignore> after the
-      // ESC to avoid that it forms a key code with following characters.
+      //When recording there will be no timeout.  Add an <Ignore> after the
+      //ESC to avoid that it forms a key code with following characters.
       gotchars_ignore();
    }
 
@@ -3005,8 +3005,8 @@ vGetOrPeek(Boole advance) {
 }
 
 //ingestChar() - get one character from
-//   1. a scriptfile
-//   2. the keyboard
+//  1. a scriptfile
+//  2. the keyboard
 //
 //As many characters as we can get (up to 'maxlen') are put in "buf" and ZERO terminated
 //(buffer length must be 'maxlen' + 1). Minimum for "maxlen" is 3!!!!
@@ -3023,11 +3023,11 @@ vGetOrPeek(Boole advance) {
 //
 //Return the number of obtained characters, or -1 when end of input script reached.
 private int
-ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
+ingestChar(CS buf, int maxlen, long wait_time) {  //"wait_time" milliseconds
    int len = 0;
-   int retesc = false; // return ESC when we got an interrupt
+   int retesc = false; //return ESC when we got an interrupt
    int changeCnt = typeBufG.changeCnt;
-   if (wait_time == -1L || wait_time > 100L) { // flush output before waiting
+   if (wait_time == -1L || wait_time > 100L) { //flush output before waiting
        cursor_on();
        out_flush();
    }
@@ -3036,23 +3036,23 @@ ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
    //recursive loop may result (write error in swapfile, hit-return, timeout
    //on char wait, flush swapfile, write error....).
    if (stateG != MODE_HITRETURN) {
-      did_outofmem_msg = false;   // display out of memory message (again)
-      did_swapwrite_msg = false;  // display swap file write error again
+      did_outofmem_msg = false;   //display out of memory message (again)
+      did_swapwrite_msg = false;  //display swap file write error again
    }
-   undo_off = false;          // restart undo now
+   undo_off = false;          //restart undo now
 
-   // Get a character from a script file if there is one.
-   // If interrupted: Stop reading script files, close them all.
+   //Get a character from a script file if there is one.
+   //If interrupted: Stop reading script files, close them all.
    int scriptChar = -1;
    while (scriptin[curscript] != NULL && scriptChar < 0 && !ignore_script ) {
       parse_queued_messages();
 
       if (gotInterruptG || (scriptChar = getc(scriptin[curscript])) < 0) {
-         // Reached EOF. Careful: closeScript() frees typeBufG.c[] and buf[] may
-         // point inside typeBufG.c[].  Don't use buf[] after this!
+         //Reached EOF. Careful: closeScript() frees typeBufG.c[] and buf[] may
+         //point inside typeBufG.c[].  Don't use buf[] after this!
          closeScript();
-         // When reading script file is interrupted, return an ESC to get back to normal mode.
-         // Otherwise return -1, because typeBufG.c[] has changed.
+         //When reading script file is interrupted, return an ESC to get back to normal mode.
+         //Otherwise return -1, because typeBufG.c[] has changed.
          if (gotInterruptG)
            retesc = true;
          else
@@ -3063,7 +3063,7 @@ ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
       }
    }
 
-   if (scriptChar < 0) {  // did not get a character from script
+   if (scriptChar < 0) {  //did not get a character from script
       //If we got an interrupt, skip all previously typed characters and return true if quit 
       //reading script file. Stop reading typeahead when a single CTRL-C was read, 
       //fill_input_buf() returns this when not able to read from stdin. Don't use buf[] here, 
@@ -3080,16 +3080,16 @@ ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
           return retesc;
       }
 
-      // Always flush the output characters when getting input characters
-      // from the user and not just peeking.
+      //Always flush the output characters when getting input characters
+      //from the user and not just peeking.
       if (wait_time == -1L || wait_time > 10L)
          out_flush();
 
-      // Fill up to a third of the buffer, because each character may be tripled below.
+      //Fill up to a third of the buffer, because each character may be tripled below.
       len = ui_inchar(OUT buf, maxlen / 3, wait_time, changeCnt);
    }
 
-   // If the typeBufG was changed further down, it is like nothing was added by this call.
+   //If the typeBufG was changed further down, it is like nothing was added by this call.
    if (typebuf_changed(changeCnt)) {
       return 0;
    }
@@ -3104,8 +3104,8 @@ ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
    return count;
 }
 
-// Fix typed characters for use by vgetc() and termTryParseTermcode(). "buf[]" must have room to triple 
-// the number of bytes! Return the new length.
+//Fix typed characters for use by vgetc() and termTryParseTermcode(). "buf[]" must have room to triple 
+//the number of bytes! Return the new length.
 private int
 fixInputBuffer(OUT CS buf, int len) {
    CS p = buf;
@@ -3117,7 +3117,7 @@ fixInputBuffer(OUT CS buf, int len) {
    for (int i = len; --i >= 0; ++p) {
       if (p[0] == ZERO 
             || (p[0] == K_SPECIAL && (i < 2 || p[1] != KS_EXTRA || p[2] != (int)KE_CURSORHOLD))
-            // timeout may generate K_CURSORHOLD
+            //timeout may generate K_CURSORHOLD
       ) {
          MEMMOVE(p + 3, p + 1, (Unt)i);
          p[2] = K_THIRD(p[0]);
@@ -3128,7 +3128,7 @@ fixInputBuffer(OUT CS buf, int len) {
       }
    }
 
-   *p = ZERO;      // add trailing ZERO
+   *p = ZERO;      //add trailing ZERO
    return len;
 }
 //Return true when bytes are in the input buffer or in the typeahead buffer.
@@ -3140,7 +3140,7 @@ input_available(void) {
    return (!eeIsInputBufEmpty()|| typebuf_was_filled);
 }
 
-// Function passed to doCommand() to get the command after a <Cmd> key from typeahead.
+//Function passed to doCommand() to get the command after a <Cmd> key from typeahead.
 private CS
 getCommandNameCb(Unt, void*, int, GetlineAlgo) {
    ArrayList line_ga;
@@ -3149,7 +3149,7 @@ getCommandNameCb(Unt, void*, int, GetlineAlgo) {
    int cmod = 0;
    int aborted = false;
    ga_init2(&line_ga, 1, 32);
-   // no mapping for these characters
+   //no mapping for these characters
    no_mapping++;
 
    gotInterruptG = false;
@@ -3187,11 +3187,11 @@ getCommandNameCb(Unt, void*, int, GetlineAlgo) {
       if (gotInterruptG) {
          aborted = true;
       } ei (c1 == '\r' || c1 == '\n') {
-         c1 = ZERO;   // end the line
+         c1 = ZERO;   //end the line
       } ei (c1 == ESC) {
          aborted = true;
       } ei (c1 == K_COMMAND || c1 == K_SCRIPT_COMMAND) {
-         // give a nicer error message for this special case
+         //give a nicer error message for this special case
          emsg(_(e_cmd_mapping_must_end_with_cr_before_second_cmd));
          aborted = true;
       } ei (c1 == K_SNR)   {
@@ -3221,8 +3221,8 @@ getCommandNameCb(Unt, void*, int, GetlineAlgo) {
    return (CS)line_ga.c;
 }
 
-// If there was a mapping we get its SID.  Otherwise, use "last_used_sid", it is set when redo'ing.
-// Put this SID in the redo buffer, so that "." will use the same script context.
+//If there was a mapping we get its SID.  Otherwise, use "last_used_sid", it is set when redo'ing.
+//Put this SID in the redo buffer, so that "." will use the same script context.
 pub void
 may_add_last_used_map_to_redobuff(void) {
    Byte  buf[3 + 20];
@@ -3237,7 +3237,7 @@ may_add_last_used_map_to_redobuff(void) {
    if (sid < 0)
       { return; } 
 
-   // <K_SID>{nr};
+   //<K_SID>{nr};
    buf[0] = K_SPECIAL;
    buf[1] = KS_EXTRA;
    buf[2] = KE_SID;
@@ -3247,7 +3247,7 @@ may_add_last_used_map_to_redobuff(void) {
    add_buff(&redobuff, buf, (long)buflen);
 }
 
-// return FAIL or OK
+//return FAIL or OK
 pub int
 do_cmdkey_command(Unt key, Unt flags) {
    ScriptPos  save_scriptPosG = {-1, 0, 0};
@@ -3331,11 +3331,11 @@ same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS 
    if (leader1_len == 0)
       return (leader2_len == 0);
 
-   // If first leader has 'f' flag, the lines can be joined only if the
-   // second line does not have a leader.
-   // If first leader has 'e' flag, the lines can never be joined.
-   // If first leader has 's' flag, the lines can only be joined if there is
-   // some text after it and the second line has the 'm' flag.
+   //If first leader has 'f' flag, the lines can be joined only if the
+   //second line does not have a leader.
+   //If first leader has 'e' flag, the lines can never be joined.
+   //If first leader has 's' flag, the lines can only be joined if there is
+   //some text after it and the second line has the 'm' flag.
    if (leader1_flags) {
       for (CS p = leader1_flags; *p && *p != ':'; ++p) {
          if (*p == COM_FIRST)
@@ -3355,8 +3355,8 @@ same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS 
       }
    }
 
-   // Get current line and next line, compare the leaders.
-   // The first line has to be saved, only one line can be locked at a time.
+   //Get current line and next line, compare the leaders.
+   //The first line has to be saved, only one line can be locked at a time.
    CS line1 = copySubstr(ml_get(lnum), ml_get_len(lnum));
    for (idx1 = 0; SPACE_OR_TAB(line1[idx1]); ++idx1)
       {} 
@@ -3375,7 +3375,7 @@ same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS 
    return (idx2 == leader2_len && idx1 == leader1_len);
 }
 
-// getwhitecols: return the number of whitespace columns (bytes) at the start of a given line
+//getwhitecols: return the number of whitespace columns (bytes) at the start of a given line
 pub int
 getwhitecols_curline(void) {
    return getwhitecols(ml_get_curline());
@@ -3385,37 +3385,37 @@ getwhitecols_curline(void) {
 //When "line_count" is negative, format until the end of the paragraph.
 //Lines after the cursor line are saved for undo, caller must have saved the first line.
 pub void
-format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
-   int is_not_par;      // current line not part of parag.
-   int next_is_not_par;   // next line not part of paragraph
-   int is_end_par;      // at end of paragraph
-   int prev_is_end_par = false;// prev. line not part of parag.
+format_lines(LineNr   line_count, int avoid_fex) { //don't use 'formatexpr'
+   int is_not_par;      //current line not part of parag.
+   int next_is_not_par;   //next line not part of paragraph
+   int is_end_par;      //at end of paragraph
+   int prev_is_end_par = false;//prev. line not part of parag.
    int next_is_start_par = false;
-   int leader_len = 0;      // leader len of current line
-   int next_leader_len;   // leader len of next line
-   CS leader_flags = NULL;   // flags for leader of current line
-   CS next_leader_flags = NULL; // flags for leader of next line
-   int doCommentsList = 0;   // format comments with 'n' or '2'
+   int leader_len = 0;      //leader len of current line
+   int next_leader_len;   //leader len of next line
+   CS leader_flags = NULL;   //flags for leader of current line
+   CS next_leader_flags = NULL; //flags for leader of next line
+   int doCommentsList = 0;   //format comments with 'n' or '2'
    int advance = true;
-   int second_indent = -1;   // indent for second line (comment aware)
+   int second_indent = -1;   //indent for second line (comment aware)
    int first_par_line = true;
    int smd_save;
    long count;
-   int need_set_indent = true;   // set indent of next paragraph
+   Boole needToSetIndent = true;   //set indent of next paragraph
    LineNr first_line = curPor->cursor.lnum;
    int force_format = false;
    int old_State = stateG;
 
-   // length of a line to force formatting: 3 * 'tw'
+   //length of a line to force formatting: 3 * 'tw'
    int max_len = comp_textwidth(true) * 3;
 
-   // check for 'q', '2', 'n' and 'w' in 'formatoptions'
-   Boole doComments = has_format_option(FO_Q_COMS); // format comments?
+   //check for 'q', '2', 'n' and 'w' in 'formatoptions'
+   Boole doComments = has_format_option(FO_Q_COMS); //format comments?
    Boole do_second_indent = has_format_option(FO_Q_SECOND);
    Boole do_number_indent = has_format_option(FO_Q_NUMBER);
    Boole do_trail_white = has_format_option(FO_WHITE_PAR);
 
-   // Get info about the previous and current line.
+   //Get info about the previous and current line.
    if (curPor->cursor.lnum > 1)
       is_not_par = fmt_check_par(
             curPor->cursor.lnum - 1 , OUT &leader_len, OUT &leader_flags, doComments
@@ -3431,7 +3431,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
 
    curPor->cursor.lnum--;
    for (count = line_count; count != 0 && !gotInterruptG; --count) {
-      // Advance to next paragraph.
+      //Advance to next paragraph.
       if (advance) {
          curPor->cursor.lnum++;
          prev_is_end_par = is_end_par;
@@ -3440,7 +3440,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
          leader_flags = next_leader_flags;
       }
 
-      // The last line to be formatted.
+      //The last line to be formatted.
       if (count == 1 || curPor->cursor.lnum == curBook->mem.lineCount) {
          next_is_not_par = true;
          next_leader_len = 0;
@@ -3457,13 +3457,13 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
       if (!is_end_par && do_trail_white)
          is_end_par = !ends_in_white(curPor->cursor.lnum);
 
-      // Skip lines that are not in a paragraph.
+      //Skip lines that are not in a paragraph.
       if (is_not_par) {
          if (line_count < 0)
-         break;
+            break;
       } else {
-          // For the first line of a paragraph, check indent of second line.
-          // Don't do this for comments and empty lines.
+         //For the first line of a paragraph, check indent of second line.
+         //Don't do this for comments and empty lines.
          if (first_par_line
              && (do_second_indent || do_number_indent)
              && prev_is_end_par
@@ -3471,7 +3471,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
          )  {
            if (do_second_indent && !LINEEMPTY(curPor->cursor.lnum + 1)) {
                if (leader_len == 0 && next_leader_len == 0) {
-                  // no comment found
+                  //no comment found
                   second_indent = get_indent_lnum(curPor->cursor.lnum + 1);
                }
                else {
@@ -3479,16 +3479,16 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
                   doCommentsList = 1;
                }
             } ei (do_number_indent) {
-               if (leader_len == 0 && next_leader_len == 0) { // no comment found
+               if (leader_len == 0 && next_leader_len == 0) { //no comment found
                   second_indent = get_number_indent(curPor->cursor.lnum);
-               } else { // get_number_indent() is now "comment aware"...
+               } else { //get_number_indent() is now "comment aware"...
                   second_indent = get_number_indent(curPor->cursor.lnum);
                   doCommentsList = 1;
                }
             }
          }
 
-         // When the comment leader changes, it's the end of the paragraph.
+         //When the comment leader changes, it's the end of the paragraph.
          if (curPor->cursor.lnum >= curBook->mem.lineCount
              || !same_leader(curPor->cursor.lnum,
                   leader_len, leader_flags,
@@ -3505,12 +3505,12 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
          //If we have got to the end of a paragraph, or the line is
          //getting long, format it.
          if (is_end_par || force_format) {
-            if (need_set_indent) {
-               int      indent = 0; // amount of indent needed
+            if (needToSetIndent) {
+               int indent = 0; //amount of indent needed
 
-               // Replace indent in first line of a paragraph with minimal
-               // number of tabs and spaces, according to current options.
-               // For the very first formatted line keep the current indent.
+               //Replace indent in first line of a paragraph with minimal
+               //number of tabs and spaces, according to current options.
+               //For the very first formatted line keep the current indent.
                if (curPor->cursor.lnum == first_line)
                   indent = get_indent();
                else {
@@ -3519,17 +3519,17 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
                  } else
                      indent = get_indent();
                }
-               (void)set_indent(indent, SIN_CHANGED);
+               (void)doSetIndent(indent, SIN_CHANGED);
             }
 
-            // put cursor on last non-space
-            stateG = MODE_NORMAL;   // don't go past end-of-line
+            //put cursor on last non-space
+            stateG = MODE_NORMAL;   //don't go past end-of-line
             coladvance((ColNr)MAXCOL);
             while (curPor->cursor.col && isSpace(gchar_cursor()))
                dec_cursor();
 
-            // do the formatting, without 'showmode'
-            stateG = MODE_INSERT;   // for openLine()
+            //do the formatting, without 'showmode'
+            stateG = MODE_INSERT;   //for openLine()
             smd_save = p_smd;
             p_smd = false;
 
@@ -3542,14 +3542,14 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
 
             stateG = old_State;
             p_smd = smd_save;
-            // Cursor and mouse shape shapes may have been updated (e.g. by
-            // :normal) in insertchar0(), so they need to be updated here.
+            //Cursor and mouse shape shapes may have been updated (e.g. by
+            //:normal) in insertchar0(), so they need to be updated here.
             ui_cursor_shape();
             second_indent = -1;
-            // at end of par.: need to set indent of next par.
-            need_set_indent = is_end_par;
+            //at end of par.: need to set indent of next par.
+            needToSetIndent = is_end_par;
             if (is_end_par) {
-               // When called with a negative line count, break at the end of the paragraph.
+               //When called with a negative line count, break at the end of the paragraph.
                if (line_count < 0)
                   break;
                first_par_line = true;
@@ -3557,8 +3557,8 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
             force_format = false;
          }
 
-         // When still in same paragraph, join the lines together.  But
-         // first delete the leader from the second line.
+         //When still in same paragraph, join the lines together.  But
+         //first delete the leader from the second line.
          if (!is_end_par) {
             advance = false;
             curPor->cursor.lnum++;
@@ -3568,7 +3568,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
             if (next_leader_len > 0) {
                (void)del_bytes((long)next_leader_len, false, false);
                mark_col_adjust(curPor->cursor.lnum, (ColNr)0, 0L, (long)-next_leader_len, 0);
-            } ei (second_indent > 0) { // the "leader" for FO_Q_SECOND
+            } ei (second_indent > 0) { //the "leader" for FO_Q_SECOND
                int indent = getwhitecols_curline();
 
                if (indent > 0) {
@@ -3582,7 +3582,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
                break;
             }
             first_par_line = false;
-            // If the line is getting long, format it next time
+            //If the line is getting long, format it next time
             if (ml_get_curline_len() > max_len)
                force_format = true;
             else
@@ -3601,17 +3601,17 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
 //Currently these types of character encodings are supported:
 //
 //use Unicode characters in UTF-8 encoding.
-//        The cell width on the display needs to be determined from
-//        the character value.
-//        Recognizing bytes is easy: 0xxx.xxxx is a single-byte
-//        char, 10xx.xxxx is a trailing byte, 11xx.xxxx is a leading
-//        byte of a multi-byte character.
-//        To make things complicated, up to six composing characters
-//        are allowed.  These are drawn on top of the first char.
-//        For most editing the sequence of bytes with composing
-//        characters included is considered to be one character.
-//        Internally characters are stored in UTF-8 encoding to
-//        avoid ZERO bytes.  Conversion happens when doing I/O.
+//       The cell width on the display needs to be determined from
+//       the character value.
+//       Recognizing bytes is easy: 0xxx.xxxx is a single-byte
+//       char, 10xx.xxxx is a trailing byte, 11xx.xxxx is a leading
+//       byte of a multi-byte character.
+//       To make things complicated, up to six composing characters
+//       are allowed.  These are drawn on top of the first char.
+//       For most editing the sequence of bytes with composing
+//       characters included is considered to be one character.
+//       Internally characters are stored in UTF-8 encoding to
+//       avoid ZERO bytes.  Conversion happens when doing I/O.
 //
 //
 //If none of these is true, 8-bit bytes are used for a character.  The
@@ -3621,19 +3621,19 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
 //text manipulation, buffers, etc.  Conversion has to be done when characters
 //in another encoding are received or send:
 //
-//                 clipboard
-//                       ^
-//                       | (2)
-//                       V
-//                +---------------+
-//           (1)  |               | (3)
-// keyboard ----->|     core      |-----> display
-//                |               |
-//                +---------------+
-//                       ^
-//                       | (4)
-//                       V
-//                     file
+//                clipboard
+//                      ^
+//                      | (2)
+//                      V
+//               +---------------+
+//          (1)  |               | (3)
+//keyboard ----->|     core      |-----> display
+//               |               |
+//               +---------------+
+//                      ^
+//                      | (4)
+//                      V
+//                    file
 //
 //(1) Typed characters arrive in the current locale.
 //
@@ -3648,12 +3648,12 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
 //Return an error message and don't change anything.
 pub CS
 inputInitCharLens(void) {
-   // The cell width depends on the type of multi-byte characters.
+   //The cell width depends on the type of multi-byte characters.
    (void)bookInitCharsForKeywordsForCurbook();
 
    screenalloc(false);
-   // GNU gettext 0.10.37 supports this feature: set the codeset used for
-   // translated messages independently from the current locale.
+   //GNU gettext 0.10.37 supports this feature: set the codeset used for
+   //translated messages independently from the current locale.
    (void)bind_textdomain_codeset(EEGLPACKAGE, "utf-8");
 
    return NULL;
@@ -3669,7 +3669,7 @@ mb_get_class(CS p) {
    return inpGetClassForBook(p, curBook);
 }
 
-pub int
+pub Unt
 inpGetClassForBook(CS p, Book* book) {
    if (utf8CharLens[p[0]] == 1) {
       if (p[0] == ZERO || SPACE_OR_TAB(p[0]))
@@ -3683,14 +3683,14 @@ inpGetClassForBook(CS p, Book* book) {
 
 //Convert a UTF-8 byte string to a wide character. Also get up to MAX_COMBINED_SYMBOLS
 //composing characters.
-pub int
-utfc_ptr2char(CS p, OUT int* pcc) {   // return: composing chars, last one is 0
-   int i = 0;
+pub Unt
+utfc_ptr2char(CS p, OUT Unt* pcc) {   //return: composing chars, last one is 0
+   Unt i = 0;
 
    Unt c = mb_ptr2char(p);
-   int len = utf_ptr2len(p);
+   Unt len = utf_ptr2len(p);
 
-   // Only accept a composing char when the first char isn't illegal.
+   //Only accept a composing char when the first char isn't illegal.
    if ((len > 1 || *p < 0x80) && p[len] >= 0x80 && UTF_COMPOSINGLIKE(p, p + len)) {
       int cc = mb_ptr2char(p + len);
       for (;;) {
@@ -3703,7 +3703,7 @@ utfc_ptr2char(CS p, OUT int* pcc) {   // return: composing chars, last one is 0
       }
    }
 
-   if (i < MAX_COMBINED_SYMBOLS)   // last composing char must be 0
+   if (i < MAX_COMBINED_SYMBOLS)   //last composing char must be 0
       pcc[i] = 0;
 
    return c;
@@ -3714,15 +3714,15 @@ utfc_ptr2char(CS p, OUT int* pcc) {   // return: composing chars, last one is 0
 pub int
 utfc_ptr2char_len(
     CS p,
-    OUT int* pcc,   // return: composing chars, last one is 0
+    OUT Unt* pcc,   //composing chars, last one will be 0
     int maxlen
 ) {
    Unt c = mb_ptr2char(p);
    int len = utf_ptr2len_len(p, maxlen);
    int i = 0;
-   // Only accept a composing char when the first char isn't illegal.
+   //Only accept a composing char when the first char isn't illegal.
    if ((len > 1 || *p < 0x80) && len < maxlen && p[len] >= 0x80 && UTF_COMPOSINGLIKE(p, p + len)) {
-      int cc = mb_ptr2char(p + len);
+      Unt cc = mb_ptr2char(p + len);
       for (;;) {
          pcc[i++] = cc;
          if (i == MAX_COMBINED_SYMBOLS)
@@ -3733,16 +3733,16 @@ utfc_ptr2char_len(
       }
    }
 
-   if (i < MAX_COMBINED_SYMBOLS)   // last composing char must be 0
+   if (i < MAX_COMBINED_SYMBOLS)   //last composing char must be 0
       pcc[i] = 0;
 
    return c;
 }
-// Get class of a Unicode character.
-// 0: white space
-// 1: punctuation
-// 2 or bigger: some class of word character.
-pub int
+//Get class of a Unicode character.
+//0: white space
+//1: punctuation
+//2 or bigger: some class of word character.
+pub Unt
 utf_class(int c) {
    return utf_class_buf(c, curBook);
 }
@@ -3776,18 +3776,18 @@ f_charclass(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = mb_get_class(argvars[0].string);
 }
 
-pub int
+pub Unt
 utf_class_buf(Unt c, Book* book) {
-   // sorted list of non-overlapping intervals
+   //sorted list of non-overlapping intervals
    static struct clinterval {
-      unsigned int first;
-      unsigned int last;
-      unsigned int class;
+      Unt first;
+      Unt last;
+      Unt class;
    } classes[] = {
-      {0x037e, 0x037e, 1},      // Greek question mark
-      {0x0387, 0x0387, 1},      // Greek ano teleia
-      {0x055a, 0x055f, 1},      // Armenian punctuation
-      {0x0589, 0x0589, 1},      // Armenian full stop
+      {0x037e, 0x037e, 1},      //Greek question mark
+      {0x0387, 0x0387, 1},      //Greek ano teleia
+      {0x055a, 0x055f, 1},      //Armenian punctuation
+      {0x0589, 0x0589, 1},      //Armenian full stop
       {0x05be, 0x05be, 1},
       {0x05c0, 0x05c0, 1},
       {0x05c3, 0x05c3, 1},
@@ -3797,7 +3797,7 @@ utf_class_buf(Unt c, Book* book) {
       {0x061f, 0x061f, 1},
       {0x066a, 0x066d, 1},
       {0x06d4, 0x06d4, 1},
-      {0x0700, 0x070d, 1},      // Syriac punctuation
+      {0x0700, 0x070d, 1},      //Syriac punctuation
       {0x0964, 0x0965, 1},
       {0x0970, 0x0970, 1},
       {0x0df4, 0x0df4, 1},
@@ -3806,75 +3806,75 @@ utf_class_buf(Unt c, Book* book) {
       {0x0f04, 0x0f12, 1},
       {0x0f3a, 0x0f3d, 1},
       {0x0f85, 0x0f85, 1},
-      {0x104a, 0x104f, 1},      // Myanmar punctuation
-      {0x10fb, 0x10fb, 1},      // Georgian punctuation
-      {0x1361, 0x1368, 1},      // Ethiopic punctuation
-      {0x166d, 0x166e, 1},      // Canadian Syl. punctuation
+      {0x104a, 0x104f, 1},      //Myanmar punctuation
+      {0x10fb, 0x10fb, 1},      //Georgian punctuation
+      {0x1361, 0x1368, 1},      //Ethiopic punctuation
+      {0x166d, 0x166e, 1},      //Canadian Syl. punctuation
       {0x1680, 0x1680, 0},
       {0x169b, 0x169c, 1},
       {0x16eb, 0x16ed, 1},
       {0x1735, 0x1736, 1},
-      {0x17d4, 0x17dc, 1},      // Khmer punctuation
-      {0x1800, 0x180a, 1},      // Mongolian punctuation
-      {0x2000, 0x200b, 0},      // spaces
-      {0x200c, 0x2027, 1},      // punctuation and symbols
+      {0x17d4, 0x17dc, 1},      //Khmer punctuation
+      {0x1800, 0x180a, 1},      //Mongolian punctuation
+      {0x2000, 0x200b, 0},      //spaces
+      {0x200c, 0x2027, 1},      //punctuation and symbols
       {0x2028, 0x2029, 0},
-      {0x202a, 0x202e, 1},      // punctuation and symbols
+      {0x202a, 0x202e, 1},      //punctuation and symbols
       {0x202f, 0x202f, 0},
-      {0x2030, 0x205e, 1},      // punctuation and symbols
+      {0x2030, 0x205e, 1},      //punctuation and symbols
       {0x205f, 0x205f, 0},
-      {0x2060, 0x27ff, 1},      // punctuation and symbols
-      {0x2070, 0x207f, 0x2070},   // superscript
-      {0x2080, 0x2094, 0x2080},   // subscript
-      {0x20a0, 0x27ff, 1},      // all kinds of symbols
-      {0x2800, 0x28ff, 0x2800},   // braille
-      {0x2900, 0x2998, 1},      // arrows, brackets, etc.
+      {0x2060, 0x27ff, 1},      //punctuation and symbols
+      {0x2070, 0x207f, 0x2070},   //superscript
+      {0x2080, 0x2094, 0x2080},   //subscript
+      {0x20a0, 0x27ff, 1},      //all kinds of symbols
+      {0x2800, 0x28ff, 0x2800},   //braille
+      {0x2900, 0x2998, 1},      //arrows, brackets, etc.
       {0x29d8, 0x29db, 1},
       {0x29fc, 0x29fd, 1},
-      {0x2e00, 0x2e7f, 1},      // supplemental punctuation
-      {0x3000, 0x3000, 0},      // ideographic space
-      {0x3001, 0x3020, 1},      // ideographic punctuation
+      {0x2e00, 0x2e7f, 1},      //supplemental punctuation
+      {0x3000, 0x3000, 0},      //ideographic space
+      {0x3001, 0x3020, 1},      //ideographic punctuation
       {0x3030, 0x3030, 1},
       {0x303d, 0x303d, 1},
-      {0x3040, 0x309f, 0x3040},   // Hiragana
-      {0x30a0, 0x30ff, 0x30a0},   // Katakana
-      {0x3300, 0x9fff, 0x4e00},   // CJK Ideographs
-      {0xac00, 0xd7a3, 0xac00},   // Hangul Syllables
-      {0xf900, 0xfaff, 0x4e00},   // CJK Ideographs
+      {0x3040, 0x309f, 0x3040},   //Hiragana
+      {0x30a0, 0x30ff, 0x30a0},   //Katakana
+      {0x3300, 0x9fff, 0x4e00},   //CJK Ideographs
+      {0xac00, 0xd7a3, 0xac00},   //Hangul Syllables
+      {0xf900, 0xfaff, 0x4e00},   //CJK Ideographs
       {0xfd3e, 0xfd3f, 1},
-      {0xfe30, 0xfe6b, 1},      // punctuation forms
-      {0xff00, 0xff0f, 1},      // half/fullwidth ASCII
-      {0xff1a, 0xff20, 1},      // half/fullwidth ASCII
-      {0xff3b, 0xff40, 1},      // half/fullwidth ASCII
-      {0xff5b, 0xff65, 1},      // half/fullwidth ASCII
-      {0x1d000, 0x1d24f, 1},      // Musical notation
-      {0x1d400, 0x1d7ff, 1},      // Mathematical Alphanumeric Symbols
-      {0x1f000, 0x1f2ff, 1},      // Game pieces; enclosed characters
-      {0x1f300, 0x1f9ff, 1},      // Many symbol blocks
-      {0x20000, 0x2a6df, 0x4e00},   // CJK Ideographs
-      {0x2a700, 0x2b73f, 0x4e00},   // CJK Ideographs
-      {0x2b740, 0x2b81f, 0x4e00},   // CJK Ideographs
-      {0x2f800, 0x2fa1f, 0x4e00},   // CJK Ideographs
+      {0xfe30, 0xfe6b, 1},      //punctuation forms
+      {0xff00, 0xff0f, 1},      //half/fullwidth ASCII
+      {0xff1a, 0xff20, 1},      //half/fullwidth ASCII
+      {0xff3b, 0xff40, 1},      //half/fullwidth ASCII
+      {0xff5b, 0xff65, 1},      //half/fullwidth ASCII
+      {0x1d000, 0x1d24f, 1},      //Musical notation
+      {0x1d400, 0x1d7ff, 1},      //Mathematical Alphanumeric Symbols
+      {0x1f000, 0x1f2ff, 1},      //Game pieces; enclosed characters
+      {0x1f300, 0x1f9ff, 1},      //Many symbol blocks
+      {0x20000, 0x2a6df, 0x4e00},   //CJK Ideographs
+      {0x2a700, 0x2b73f, 0x4e00},   //CJK Ideographs
+      {0x2b740, 0x2b81f, 0x4e00},   //CJK Ideographs
+      {0x2f800, 0x2fa1f, 0x4e00},   //CJK Ideographs
    };
 
    int bot = 0;
    int top = ARRAY_LENGTH(classes) - 1;
    int mid;
 
-   // First quick check for Latin1 characters, use 'iskeyword'.
+   //First quick check for Latin1 characters, use 'iskeyword'.
    if (c < 0x100) {
       if (c == ' ' || c == '\t' || c == ZERO || c == 0xa0)
-          return 0;       // blank
+          return 0;       //blank
       if (eeIsWordc_buf(c, book))
-          return 2;       // word character
-      return 1;       // punctuation
+          return 2;       //word character
+      return 1;       //punctuation
    }
 
-   // emoji
+   //emoji
    if (strInEmojiTable(c))
       return 3;
 
-   // binary search in table
+   //binary search in table
    while (top >= bot) {
       mid = (bot + top) / 2;
       if (classes[mid].last < (unsigned int)c)
@@ -3885,11 +3885,11 @@ utf_class_buf(Unt c, Book* book) {
          return (int)classes[mid].class;
    }
 
-   // most other characters are "word" characters
+   //most other characters are "word" characters
    return 2;
 }
 
-typedef struct { // copy from strings.c
+typedef struct { //copy from strings.c
    long first;
    long last;
 } Interval;
@@ -3901,18 +3901,18 @@ pub int
 mb_char2cells(int c) {
    if (c >= 0x100) {
       if (!utf_printable(c))
-         return 6;      // unprintable, displays <xxxx>
+         return 6;      //unprintable, displays <xxxx>
       if (strInDoubleWidthTable(c))
          return 2;
    }
-   // Characters below 0x100 are influenced by 'isprint' option
+   //Characters below 0x100 are influenced by 'isprint' option
    ei (c >= 0x80 && !bookIsCharPrintable(c))
-      return 4;      // unprintable, displays <xx>
+      return 4;      //unprintable, displays <xx>
 
    return 1;
 }
 
-// mb_char2cells() with different argument type for libvterm.
+//mb_char2cells() with different argument type for libvterm.
 pub int
 utf_uint2cells(Unt c) {
    if (c >= 0x100 && utf_iscomposing((int)c))
@@ -3921,18 +3921,18 @@ utf_uint2cells(Unt c) {
 }
 
 
-// Translate a string into allocated memory, replacing special chars with printable chars.
+//Translate a string into allocated memory, replacing special chars with printable chars.
 pub CS
 sanitizeStr(CS s) {
-   int      l, c;
-   Byte   hexbuf[11];
+   int l;
+   Byte hexbuf[11];
 
-   // Compute the length of the result, taking account of unprintable multi-byte characters
+   //Compute the length of the result, taking account of unprintable multi-byte characters
    int len = 0;
    CS p = s;
    while (*p != ZERO) {
       if ((l = utfCharLen(p)) > 1) {
-         c = mb_ptr2char(p);
+         Unt c = mb_ptr2char(p);
          p += l;
          if (bookIsCharPrintable(c))
             len += l;
@@ -3945,7 +3945,7 @@ sanitizeStr(CS s) {
          if (l > 0)
             len += l;
          else
-            len += 4;   // illegal byte sequence
+            len += 4;   //illegal byte sequence
       }
    }
    CS res = alloc(len + 1);
@@ -3953,9 +3953,9 @@ sanitizeStr(CS s) {
    p = s;
    while (*p != ZERO) {
       if ((l = utfCharLen(p)) > 1) {
-         c = mb_ptr2char(p);
+         Unt c = mb_ptr2char(p);
          if (bookIsCharPrintable(c))
-            STRNCAT(res, p, l);   // append printable multi-byte char
+            STRNCAT(res, p, l);   //append printable multi-byte char
          else
             transchar_hex(res + STRLEN(res), c);
          p += l;
@@ -3970,8 +3970,8 @@ pub void
 show_utf8(void) {
    int rlen = 0;
 
-   // Get the byte length of the char under the cursor, including composing
-   // characters.
+   //Get the byte length of the char under the cursor, including composing
+   //characters.
    CS line = ml_get_cursor();
    int len = utfCharLen(line);
    if (len == 0) {
@@ -3982,14 +3982,14 @@ show_utf8(void) {
    int clen = 0;
    for (int i = 0; i < len; ++i) {
       if (clen == 0) {
-         // start of (composing) character, get its length
+         //start of (composing) character, get its length
          if (i > 0) {
             STRCPY(IObuff + rlen, "+ ");
             rlen += 2;
          }
          clen = utf_ptr2len(line + i);
       }
-      SPRINTF(IObuff + rlen, "%02x ", (line[i] == NL) ? ZERO : line[i]);  // ZERO is stored as NL
+      SPRINTF(IObuff + rlen, "%02x ", (line[i] == NL) ? ZERO : line[i]);  //ZERO is stored as NL
       --clen;
       rlen += (int)STRLEN(IObuff + rlen);
       if (rlen > IOSIZE - 20)
@@ -4004,15 +4004,13 @@ show_utf8(void) {
 //enough room, not all characters will be translated.
 pub void
 trans_characters(CS buf, int bufsize) {
-   int len;      // length of string needing translation
-   int room;      // room in buffer after string
-   CS trs;      // translated character
-   int trs_len;   // length of trs[]
+   CS trs;      //translated character
+   int trs_len;   //length of trs[]
 
-   len = (int)STRLEN(buf);
-   room = bufsize - len;
-   while (*buf != 0) {
-      // Assume a multi-byte character doesn't need translation.
+   int len = (int)STRLEN(buf); //length of string needing translation
+   int room = bufsize - len; //room in buffer after string
+   while (*buf != ZERO) {
+      //Assume a multi-byte character doesn't need translation.
       if ((trs_len = utfCharLen(buf)) > 1)
          len -= trs_len;
       else {
@@ -4033,13 +4031,13 @@ trans_characters(CS buf, int bufsize) {
 
 pub int
 mb_ptr2cells(CS p) {
-   // Need to convert to a character number.
+   //Need to convert to a character number.
    if (*p >= 0x80) {
-      int c = mb_ptr2char(p);
-      // An illegal byte is displayed as <xx>.
+      Unt c = mb_ptr2char(p);
+      //An illegal byte is displayed as <xx>.
       if (utf_ptr2len(p) == 1 || c == ZERO)
          return 4;
-      // If the char is ASCII it must be an overlong sequence.
+      //If the char is ASCII it must be an overlong sequence.
       if (c < 0x80)
          return bookChar2Cells(c);
       return mb_char2cells(c);
@@ -4049,15 +4047,15 @@ mb_ptr2cells(CS p) {
 
 pub int
 mb_ptr2cells_len(CS p, int size) {
-   // Need to convert to a wide character.
+   //Need to convert to a wide character.
    if (size > 0 && *p >= 0x80) {
       if (utfNeedTruncate(p, size))
-          return 1;  // truncated
-      int c = mb_ptr2char(p);
-      // An illegal byte is displayed as <xx>.
+          return 1;  //truncated
+      Unt c = mb_ptr2char(p);
+      //An illegal byte is displayed as <xx>.
       if (utf_ptr2len(p) == 1 || c == ZERO)
           return 4;
-      // If the char is ASCII it must be an overlong sequence.
+      //If the char is ASCII it must be an overlong sequence.
       if (c < 0x80)
           return bookChar2Cells(c);
       return mb_char2cells(c);
@@ -4067,17 +4065,17 @@ mb_ptr2cells_len(CS p, int size) {
 
 //Return the number of cells occupied by string "p".
 //Stop at a ZERO character.  When "len" >= 0 stop at character "p[len]".
-pub int
+pub Unt
 mb_string2cells(CS p, int len) {
-   int clen = 0;
+   Unt clen = 0;
 
    for (int i = 0; (len < 0 || i < len) && p[i] != ZERO; i += utfCharLen(p + i))
       clen += mb_ptr2cells(p + i);
    return clen;
 }
 
-// Find the start of the next word.
-// Return a pointer to the first char of the word. Also stop at a ZERO.
+//Find the start of the next word.
+//Return a pointer to the first char of the word. Also stop at a ZERO.
 pub CS
 findWordStart(CS ptr) {
    while (*ptr != ZERO && *ptr != '\n' && mb_get_class(ptr) <= 1)
@@ -4088,30 +4086,30 @@ findWordStart(CS ptr) {
 //}}}
 //{{{mouse-handling functions
 
-// bit masks for modifiers:
+//bit masks for modifiers:
 #define MOUSE_SHIFT 0x04
 #define MOUSE_ALT   0x08
 #define MOUSE_CTRL  0x10
 
-// Indexes for the tab panel:
-//   N > 0 for label of tab N
-//   N == 0 for no label
-//   N < 0 for closing tab -N
-//   N == -999 for closing current tab
+//Indexes for the tab panel:
+//  N > 0 for label of tab N
+//  N == 0 for no label
+//  N < 0 for closing tab -N
+//  N == -999 for closing current tab
 #define CLOSING_CURRENT_TAB 4000000000
 #define NO_LABEL_TAB        4000000001
-#define CLOSING_TAB         2000000000 // tab indices (N + this number) mean "closing tab N"
+#define CLOSING_TAB         2000000000 //tab indices (N + this number) mean "closing tab N"
 
-// jump_to_mouse() returns one of first five these values, possibly with some of the other 4 added
+//jump_to_mouse() returns one of first five these values, possibly with some of the other 4 added
 #define IN_UNKNOWN            0
 #define IN_BOOK               1
-#define IN_STATUS_LINE        2   // on status or command line
-#define IN_SEP_LINE           4   // on vertical separator line
-#define IN_OTHER_WIN          8   // in other portal but can't go there
+#define IN_STATUS_LINE        2   //on status or command line
+#define IN_SEP_LINE           4   //on vertical separator line
+#define IN_OTHER_WIN          8   //in other portal but can't go there
 #define CURSOR_MOVED      0x100
-#define MOUSE_FOLD_CLOSE  0x200   // clicked on '-' in fold column
-#define MOUSE_FOLD_OPEN   0x400   // clicked on '+' in fold column
-#define MOUSE_WINBAR      0x800   // in portal toolbar
+#define MOUSE_FOLD_CLOSE  0x200   //clicked on '-' in fold column
+#define MOUSE_FOLD_OPEN   0x400   //clicked on '+' in fold column
+#define MOUSE_WINBAR      0x800   //in portal toolbar
 private Boole mouse_ison = false;
 
 //<linux/keyboard.h> contains defines conflicting with "keymap.h", I just copied relevant defines 
@@ -4137,10 +4135,10 @@ private int do_mousescroll_horiz(Ulong leftcol);
 //Return the duration from t1 to t2 in milliseconds.
 private long
 time_diff_ms(TimeVal *t1, TimeVal *t2) {
-   // This handles wrapping of tv_usec correctly without any special case.
-   // Example of 2 pairs (tv_sec, tv_usec) with a duration of 5 ms:
-   //      t1 = (1, 998000) t2 = (2, 3000) gives:
-   //      (2 - 1) * 1000 + (3000 - 998000) / 1000 -> 5 ms.
+   //This handles wrapping of tv_usec correctly without any special case.
+   //Example of 2 pairs (tv_sec, tv_usec) with a duration of 5 ms:
+   //     t1 = (1, 998000) t2 = (2, 3000) gives:
+   //     (2 - 1) * 1000 + (3000 - 998000) / 1000 -> 5 ms.
    return (t2->tv_sec - t1->tv_sec) * 1000 + (t2->tv_usec - t1->tv_usec) / 1000;
 }
 
@@ -4161,10 +4159,10 @@ get_mouse_class(CS p) {
    if (eeIsWordc(c))
       return 2;
 
-   // There are a few special cases where we want certain combinations of
-   // characters to be considered as a single word.  These are things like
-   // "->", "/ *", "*=", "+=", "&=", "<=", ">=", "!=" etc.  Otherwise, each
-   // character is in its own class.
+   //There are a few special cases where we want certain combinations of
+   //characters to be considered as a single word.  These are things like
+   //"->", "/ *", "*=", "+=", "&=", "<=", ">=", "!=" etc.  Otherwise, each
+   //character is in its own class.
    if (c != ZERO && firstOccurrence((CS)"-+*/%<>&|^!=", c) != NULL)
       return 1;
    return c;
@@ -4211,7 +4209,7 @@ find_end_of_word(Pos* pos) {
 //
 //[Normal and Visual Mode]:
 //event       modifier position           visual      change       action
-//                       cursor                       portal
+//                      cursor                       portal
 //_______________________________________________________________________________.
 //left press     -         yes                  end      yes                     |
 //left press     C         yes                  end      yes     "^]" (2)        |
@@ -4228,7 +4226,7 @@ find_end_of_word(Pos* pos) {
 //
 //[Insert Mode]:
 //event    modifier    position           visual      change       action
-//                       cursor                        portal
+//                      cursor                        portal
 //_______________________________________________________________________________.
 //left press     -         yes   (cannot be active)      yes                     |
 //left press     C         yes   (cannot be active)      yes     "CTRL-O^]" (2)  |
@@ -4245,24 +4243,24 @@ find_end_of_word(Pos* pos) {
 //Return true if start_arrow() should be called for edit mode.
 pub int
 do_mouse(
-   Operator* oper,  // operator argument, can be NULL
-   Unt c,           // K_LEFTMOUSE, etc
-   Unt dir,         // Direction to 'put' if necessary
+   Operator* oper,  //operator argument, can be NULL
+   Unt c,           //K_LEFTMOUSE, etc
+   Unt dir,         //Direction to 'put' if necessary
    long count,
-   int fixindent    // PUT_FIXINDENT if fixing indent necessary
+   int fixindent    //PUT_FIXINDENT if fixing indent necessary
 ){
-   static Boole do_always = false;   // ignore 'mouse' setting next time
-   static Boole got_click = false;   // got a click some time back
+   static Boole do_always = false;   //ignore 'mouse' setting next time
+   static Boole got_click = false;   //got a click some time back
 
-   Unt      which_button;   // MOUSE_LEFT, _MIDDLE or _RIGHT
-   Boole is_click = false; // If false it's a drag or release event
-   Boole is_drag = false;  // If true it's a drag event
-   Unt jump_flags = 0;   // flags for jump_to_mouse()
+   Unt      which_button;   //MOUSE_LEFT, _MIDDLE or _RIGHT
+   Boole is_click = false; //If false it's a drag or release event
+   Boole is_drag = false;  //If true it's a drag event
+   Unt jump_flags = 0;   //flags for jump_to_mouse()
    Pos   start_visual;
-   int      moved;      // Has cursor moved?
-   int      in_status_line;   // mouse in status line
-   static Boole in_tabpanel = false; // mouse clicked in tabpanel
-   int in_sep_line;   // mouse in vertical separator line
+   int      moved;      //Has cursor moved?
+   int      in_status_line;   //mouse in status line
+   static Boole in_tabpanel = false; //mouse clicked in tabpanel
+   int in_sep_line;   //mouse in vertical separator line
    Unt c1;
    Unt c2; 
    Pos   save_cursor;
@@ -4277,10 +4275,10 @@ do_mouse(
 
    save_cursor = curPor->cursor;
 
-   // When GUI is active, always recognize mouse events, otherwise:
-   // - Ignore mouse event in normal mode if 'mouse' doesn't include 'n'.
-   // - Ignore mouse event in visual mode if 'mouse' doesn't include 'v'.
-   // - For command line and insert mode 'mouse' is checked before calling do_mouse().
+   //When GUI is active, always recognize mouse events, otherwise:
+   //- Ignore mouse event in normal mode if 'mouse' doesn't include 'n'.
+   //- Ignore mouse event in visual mode if 'mouse' doesn't include 'v'.
+   //- For command line and insert mode 'mouse' is checked before calling do_mouse().
    if (do_always)
       do_always = false;
 
@@ -4308,7 +4306,7 @@ do_mouse(
    }
 
    if (c == K_MOUSEMOVE) {
-      // Mouse moved without a button pressed.
+      //Mouse moved without a button pressed.
       ui_may_remove_balloon();
       if (p_bevalterm) {
          profile_setlimit(p_bdlay, &bevalexpr_due);
@@ -4318,14 +4316,14 @@ do_mouse(
       return false;
    }
 
-   // Ignore drag and release events if we didn't get a click.
+   //Ignore drag and release events if we didn't get a click.
    if (is_click) {
       got_click = true;
       in_tabpanel = false;
    } else {
-      if (!got_click)         // didn't get click, ignore
+      if (!got_click)         //didn't get click, ignore
           return false;
-      if (!is_drag) {        // release, reset got_click
+      if (!is_drag) {        //release, reset got_click
          got_click = false;
          if (in_tabpanel) {
             in_tabpanel = false;
@@ -4334,24 +4332,24 @@ do_mouse(
       }
    }
 
-   // CTRL right mouse button does CTRL-T
+   //CTRL right mouse button does CTRL-T
    if (is_click && (modMaskG & MOD_MASK_CTRL) && which_button == MOUSE_RIGHT) {
       if (stateG & MODE_INSERT)
          stuffcharReadbuff(Ctrl_O);
       if (count > 1)
          stuffnumReadbuff(count);
       stuffcharReadbuff(Ctrl_T);
-      got_click = false;      // ignore drag&release now
+      got_click = false;      //ignore drag&release now
       return false;
    }
 
-   // CTRL only works with left mouse button
+   //CTRL only works with left mouse button
    if ((modMaskG & MOD_MASK_CTRL) && which_button != MOUSE_LEFT)
       return false;
 
-   // When a modifier is down, ignore drag and release events, as well as
-   // multiple clicks and the middle mouse button.
-   // Accept shift-leftmouse drags when 'mousemodel' is "popup.*".
+   //When a modifier is down, ignore drag and release events, as well as
+   //multiple clicks and the middle mouse button.
+   //Accept shift-leftmouse drags when 'mousemodel' is "popup.*".
    if ((modMaskG & (MOD_MASK_SHIFT | MOD_MASK_CTRL | MOD_MASK_ALT | MOD_MASK_META))
        && (!is_click
          || (modMaskG & MOD_MASK_MULTI_CLICK)
@@ -4361,8 +4359,8 @@ do_mouse(
       return false;
     } 
 
-   // If the button press was used as the movement command for an operator
-   // (eg "d<MOUSE>"), or it is the middle button that is held down, ignore drag/release events.
+   //If the button press was used as the movement command for an operator
+   //(eg "d<MOUSE>"), or it is the middle button that is held down, ignore drag/release events.
    if (!is_click && which_button == MOUSE_MIDDLE)
       return false;
 
@@ -4371,26 +4369,26 @@ do_mouse(
    else
       regname = 0;
 
-   // Middle mouse button does a 'put' of the selected text
+   //Middle mouse button does a 'put' of the selected text
    if (which_button == MOUSE_MIDDLE) {
       if (stateG == MODE_NORMAL) {
-         // If an operator was pending, we don't know what the user wanted
-         // to do. Go back to normal mode: Clear the operator and beep().
+         //If an operator was pending, we don't know what the user wanted
+         //to do. Go back to normal mode: Clear the operator and beep().
          if (oper != NULL && oper->opTy != OP_NOP) {
             clearopbeep(oper);
             return false;
           }
 
-          // If visual was active, yank the highlighted text and put it
-          // before the mouse pointer position.
-          // In Select mode replace the highlighted text with the clipboard.
+          //If visual was active, yank the highlighted text and put it
+          //before the mouse pointer position.
+          //In Select mode replace the highlighted text with the clipboard.
          if (VIsual_active) {
             stuffcharReadbuff('y');
             stuffcharReadbuff(K_MIDDLEMOUSE);
-            do_always = true;   // ignore 'mouse' setting next time
+            do_always = true;   //ignore 'mouse' setting next time
             return false;
          }
-         // The rest is below jump_to_mouse()
+         //The rest is below jump_to_mouse()
       } ei ((stateG & MODE_INSERT) == 0)
          return false;
 
@@ -4405,7 +4403,7 @@ do_mouse(
                regname = '*';
             do_put(regname, NULL, BACKWARD, 1L, fixindent | PUT_CURSEND);
 
-            // Repeat it with CTRL-R CTRL-O r or CTRL-R CTRL-P r
+            //Repeat it with CTRL-R CTRL-O r or CTRL-R CTRL-P r
             AppendCharToRedobuff(Ctrl_R);
             AppendCharToRedobuff(fixindent ? Ctrl_P : Ctrl_O);
             AppendCharToRedobuff(regname == 0 ? '"' : regname);
@@ -4414,13 +4412,13 @@ do_mouse(
       }
    }
 
-   // When dragging or button-up stay in the same portal.
+   //When dragging or button-up stay in the same portal.
    if (!is_click)
       jump_flags |= MOUSE_FOCUS | MOUSE_DID_MOVE;
 
    start_visual.lnum = 0;
 
-   // Check for clicking in the tab panel.
+   //Check for clicking in the tab panel.
    if (mouseRowG < (int)firstPor->windowRow + (int)topframeG->width
       && (mouseColG < firstPor->windowCol 
          || mouseColG >= (int)firstPor->windowCol + (int)topframeG->width)
@@ -4434,26 +4432,26 @@ do_mouse(
          return false;
       }
 
-      // click in a tab selects that tab
+      //click in a tab selects that tab
       if (is_click && commPortTypeG == 0) {
          in_tabpanel = true;
          c1 = get_tabNr_on_tabpanel();
          if (c1 < CLOSING_TAB) {
             if ((modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK) {
-               // double click opens new page
+               //double click opens new page
                end_visual_mode_keep_button();
                tabNew();
                moveTab(c1 == 0 ? 9999 : c1 - 1);
             } else {
-               // Go to specified tab, or next one if not clicking on a label.
+               //Go to specified tab, or next one if not clicking on a label.
                gotoTabById(c1);
 
-               // It's like clicking on the status line of a portal.
+               //It's like clicking on the status line of a portal.
                if (curPor != old_curPor)
                   end_visual_mode_keep_button();
             }
          } else {
-            // Close the current or specified tab
+            //Close the current or specified tab
             Tab* t = (c1 == CLOSING_TAB) ? curtab : getTab(c1 - CLOSING_TAB);
             if (t == curtab) {
                if (firstTabG->next != NULL)
@@ -4469,8 +4467,8 @@ do_mouse(
       return false;
    }
 
-   if (tabIndsG) { // only when initialized
-      // Check for clicking in the tab line.
+   if (tabIndsG) { //only when initialized
+      //Check for clicking in the tab line.
       if (mouseRowG == 0 && firstPor->windowRow > 0) {
          if (is_drag) {
             return false;
@@ -4481,20 +4479,20 @@ do_mouse(
             c1 = tabIndsG[mouseColG];
             if (c1 < CLOSING_TAB) {
                if ((modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK) {
-                  // double click opens new page
+                  //double click opens new page
                   end_visual_mode_keep_button();
                   tabNew();
                   moveTab(c1 == 0 ? 9999 : c1 - 1);
                } else {
-                  // Go to specified tab, or next one if not clicking on a label.
+                  //Go to specified tab, or next one if not clicking on a label.
                   gotoTabById(c1);
 
-                  // It's like clicking on the status line of a portal.
+                  //It's like clicking on the status line of a portal.
                   if (curPor != old_curPor)
                       end_visual_mode_keep_button();
                 }
             } else {
-               // Close the current or specified tab
+               //Close the current or specified tab
                Tab   *t;
                if (c1 == CLOSING_CURRENT_TAB)
                   t = curtab;
@@ -4513,14 +4511,14 @@ do_mouse(
    if ((stateG & (MODE_NORMAL | MODE_INSERT)) && !(modMaskG & (MOD_MASK_SHIFT | MOD_MASK_CTRL))) {
       if (which_button == MOUSE_LEFT) {
          if (is_click) {
-            // stop Visual mode for a left click in a portal, but not when on a status line
+            //stop Visual mode for a left click in a portal, but not when on a status line
             if (VIsual_active)
                 jump_flags |= MOUSE_MAY_STOP_VIS;
          } else
             jump_flags |= MOUSE_MAY_VIS;
       } ei (which_button == MOUSE_RIGHT) {
          if (is_click && VIsual_active) {
-            // Remember the start and end of visual before moving the cursor.
+            //Remember the start and end of visual before moving the cursor.
             if (LT_POS(curPor->cursor, VIsual)) {
                 start_visual = curPor->cursor;
                 end_visual = VIsual;
@@ -4534,25 +4532,25 @@ do_mouse(
       }
    }
 
-   // If an operator is pending, ignore all drags and releases until the next mouse click.
+   //If an operator is pending, ignore all drags and releases until the next mouse click.
    if (!is_drag && oper != NULL && oper->opTy != OP_NOP) {
       got_click = false;
       oper->motion_type = MCHAR;
    }
 
-   // When releasing the button let jump_to_mouse() know.
+   //When releasing the button let jump_to_mouse() know.
    if (!is_click && !is_drag)
       jump_flags |= MOUSE_RELEASED;
 
-   // JUMP!
+   //JUMP!
    jump_flags = jump_to_mouse(jump_flags, oper ? OUT &(oper->inclusive) : null, which_button);
 
    moved = (jump_flags & CURSOR_MOVED);
    in_status_line = (jump_flags & IN_STATUS_LINE);
    in_sep_line = (jump_flags & IN_SEP_LINE);
 
-   // When jumping to another portal, clear a pending operator.  That's a bit
-   // friendlier than beeping and not jumping to that portal.
+   //When jumping to another portal, clear a pending operator.  That's a bit
+   //friendlier than beeping and not jumping to that portal.
    if (curPor != old_curPor && oper != NULL && oper->opTy != OP_NOP)
       clearop(oper);
 
@@ -4561,12 +4559,12 @@ do_mouse(
        && (jump_flags & (MOUSE_FOLD_CLOSE | MOUSE_FOLD_OPEN))
        && which_button == MOUSE_LEFT
    ) {
-      // open or close a fold at this line
+      //open or close a fold at this line
       if (jump_flags & MOUSE_FOLD_OPEN)
          openFold(curPor->cursor.lnum, 1L);
       else
          closeFold(curPor->cursor.lnum, 1L);
-      // don't move the cursor if still in the same portal
+      //don't move the cursor if still in the same portal
       if (curPor == old_curPor)
          curPor->cursor = save_cursor;
    }
@@ -4590,7 +4588,7 @@ do_mouse(
       mouseRowG = 0;
    }
 
-   if (start_visual.lnum) {     // right click in visual mode
+   if (start_visual.lnum) {     //right click in visual mode
       //When ALT is pressed make Visual mode blockwise.
       if (modMaskG & MOD_MASK_ALT)
          VIsual_mode = Ctrl_V;
@@ -4606,22 +4604,22 @@ do_mouse(
          if (curPor->cursor.lnum >= (start_visual.lnum + end_visual.lnum) / 2)
             end_visual.lnum = start_visual.lnum;
 
-         // move VIsual to the right column
-         start_visual = curPor->cursor;       // save the cursor pos
+         //move VIsual to the right column
+         start_visual = curPor->cursor;       //save the cursor pos
          curPor->cursor = end_visual;
          coladvance(end_visual.col);
          VIsual = curPor->cursor;
-         curPor->cursor = start_visual;       // restore the cursor
+         curPor->cursor = start_visual;       //restore the cursor
       } else {
-         // If the click is before the start of visual, change the start.
-         // If the click is after the end of visual, change the end.  If
-         // the click is inside the visual, change the closest side.
+         //If the click is before the start of visual, change the start.
+         //If the click is after the end of visual, change the end.  If
+         //the click is inside the visual, change the closest side.
          if (LT_POS(curPor->cursor, start_visual))
             VIsual = end_visual;
          ei (LT_POS(end_visual, curPor->cursor))
             VIsual = start_visual;
          else {
-            // In the same line, compare column number
+            //In the same line, compare column number
             if (end_visual.lnum == start_visual.lnum) {
                if (curPor->cursor.col - start_visual.col > end_visual.col - curPor->cursor.col)
                   VIsual = start_visual;
@@ -4629,16 +4627,16 @@ do_mouse(
                   VIsual = end_visual;
             }
 
-            // In different lines, compare line number
+            //In different lines, compare line number
             else {
                diff = (curPor->cursor.lnum - start_visual.lnum) -
                   (end_visual.lnum - curPor->cursor.lnum);
 
-               if (diff > 0)      // closest to end
+               if (diff > 0)      //closest to end
                   VIsual = start_visual;
-               ei (diff < 0)   // closest to start
+               ei (diff < 0)   //closest to start
                   VIsual = end_visual;
-               else {        // in the middle line
+               else {        //in the middle line
                   if (curPor->cursor.col < (start_visual.col + end_visual.col) / 2)
                       VIsual = end_visual;
                   else
@@ -4648,11 +4646,11 @@ do_mouse(
          }
       }
    }
-   // If Visual mode started in insert mode, execute "CTRL-O"
+   //If Visual mode started in insert mode, execute "CTRL-O"
    ei ((stateG & MODE_INSERT) && VIsual_active)
       stuffcharReadbuff(Ctrl_O);
 
-   // Middle mouse click: Put text before cursor.
+   //Middle mouse click: Put text before cursor.
    if (which_button == MOUSE_MIDDLE) {
       if (regname == 0)
          regname = '*';
@@ -4676,39 +4674,39 @@ do_mouse(
          where_paste_started = curPor->cursor;
       do_put(regname, NULL, dir, count, fixindent | PUT_CURSEND);
    }
-   // Ctrl-Mouse click or double click in a location portal jumps to the
-   // error under the mouse pointer.
+   //Ctrl-Mouse click or double click in a location portal jumps to the
+   //error under the mouse pointer.
    ei (((modMaskG & MOD_MASK_CTRL)
       || (modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK) && isLocationListBook(curBook)
    ){
-      if (curPor->locationStackRef == NULL)   // location portal
+      if (curPor->locationStackRef == NULL)   //location portal
          executeCommLine((CS)".mc");
-      else               // location list portal
+      else               //location list portal
          executeCommLine((CS)".ll");
-      got_click = false;      // ignore drag&release now
+      got_click = false;      //ignore drag&release now
    }
 
-   // Ctrl-Mouse click (or double click in a help portal) jumps to the tag
-   // under the mouse pointer.
+   //Ctrl-Mouse click (or double click in a help portal) jumps to the tag
+   //under the mouse pointer.
    ei ((modMaskG & MOD_MASK_CTRL) || (curBook->kind == BOOK_HELP
            && (modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK)
    ) {
       if (stateG & MODE_INSERT)
          stuffcharReadbuff(Ctrl_O);
       stuffcharReadbuff(Ctrl_RSB);
-      got_click = false;      // ignore drag&release now
+      got_click = false;      //ignore drag&release now
    }
 
-   // Shift-Mouse click searches for the next occurrence of the word under the mouse pointer
+   //Shift-Mouse click searches for the next occurrence of the word under the mouse pointer
    ei ((modMaskG & MOD_MASK_SHIFT)) {
       if (stateG & MODE_INSERT)
          stuffcharReadbuff(Ctrl_O);
       if (which_button == MOUSE_LEFT)
          stuffcharReadbuff('*');
-      else   // MOUSE_RIGHT
+      else   //MOUSE_RIGHT
          stuffcharReadbuff('#');
    } ei (in_status_line) {
-      // Handle double clicks, unless on status line
+      //Handle double clicks, unless on status line
    } ei (in_sep_line) {
    } ei ((modMaskG & MOD_MASK_MULTI_CLICK) && (stateG & (MODE_NORMAL | MODE_INSERT)) != 0) {
       if (is_click || !VIsual_active) {
@@ -4723,7 +4721,7 @@ do_mouse(
             setmouse();
          }
          if ((modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK) {
-            // Double click with ALT pressed makes it blockwise.
+            //Double click with ALT pressed makes it blockwise.
             if (modMaskG & MOD_MASK_ALT)
                VIsual_mode = Ctrl_V;
             else
@@ -4733,7 +4731,7 @@ do_mouse(
          ei ((modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_4CLICK)
             VIsual_mode = Ctrl_V;
       }
-      // A double click selects a word or a block.
+      //A double click selects a word or a block.
       if ((modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK) {
          Pos* pos = NULL;
          int gc;
@@ -4760,7 +4758,7 @@ do_mouse(
          }
 
          if (!pos && (is_click || is_drag)) {
-            // When not found a match or when dragging: extend to include a word.
+            //When not found a match or when dragging: extend to include a word.
             if (LT_POS(curPor->cursor, orig_cursor)) {
                find_start_of_word(&curPor->cursor);
                find_end_of_word(&VIsual);
@@ -4772,7 +4770,7 @@ do_mouse(
          curPor->setCursWant = true;
       }
       if (is_click)
-         drawCurBookLater(UPD_INVERTED);   // update the inversion
+         drawCurBookLater(UPD_INVERTED);   //update the inversion
    } ei (VIsual_active && !old_active) {
       if (modMaskG & MOD_MASK_ALT)
          VIsual_mode = Ctrl_V;
@@ -4780,7 +4778,7 @@ do_mouse(
          VIsual_mode = 'v';
    }
 
-   // If Visual mode changed show it later.
+   //If Visual mode changed show it later.
    if ((!VIsual_active && old_active && isModeDisplayedG)
           || (VIsual_active && p_smd && msg_silent == 0
                 && (!old_active || VIsual_mode != old_mode))
@@ -4814,7 +4812,7 @@ ins_mouse(int c) {
       set_can_cindent(true);
     }
 
-    // redraw status lines (in case another portal became active)
+    //redraw status lines (in case another portal became active)
     redraw_statuslines();
 }
 
@@ -4822,10 +4820,10 @@ ins_mouse(int c) {
 //Default action is to scroll mouse_vert_step lines (or mouse_hor_step columns
 //depending on the scroll direction) or one page when Shift or Ctrl is used.
 //Direction is indicated by "cap->arg":
-//   K_MOUSEUP    - MSCR_UP
-//   K_MOUSEDOWN  - MSCR_DOWN
-//   K_MOUSELEFT  - MSCR_LEFT
-//   K_MOUSERIGHT - MSCR_RIGHT
+//  K_MOUSEUP    - MSCR_UP
+//  K_MOUSEDOWN  - MSCR_DOWN
+//  K_MOUSELEFT  - MSCR_LEFT
+//  K_MOUSERIGHT - MSCR_RIGHT
 //"curPor" may have been changed to the portal that should be scrolled and
 //differ from the portal that actually has focus.
 private void
@@ -4833,20 +4831,20 @@ do_mousescroll(ActionArg* cap) {
    int shift_or_ctrl = modMaskG & (MOD_MASK_SHIFT | MOD_MASK_CTRL);
 
    if (term_use_loop())
-      // This portal is a terminal portal, send the mouse event there.
-      // Set "typed" to false to avoid an endless loop.
+      //This portal is a terminal portal, send the mouse event there.
+      //Set "typed" to false to avoid an endless loop.
       send_keys_to_term(curBook->term, cap->cmdchar, modMaskG, false);
    ei (cap->arg == MSCR_UP || cap->arg == MSCR_DOWN) {
-      // Vertical scrolling
+      //Vertical scrolling
       if (!(stateG & MODE_INSERT) && (mouse_vert_step < 0 || shift_or_ctrl)) {
-          // whole page up or down
+          //whole page up or down
           pagescroll(cap->arg == MSCR_UP ? FORWARD : BACKWARD, 1L, false);
       } else {
          if (mouse_vert_step < 0 || shift_or_ctrl) {
-            // whole page up or down
+            //whole page up or down
             cap->count1 = (long)(curPor->bottomLine - curPor->topLine);
          }
-         // Don't scroll more than half the portal height.
+         //Don't scroll more than half the portal height.
          ei (curPor->height < mouse_vert_step * 2) {
             cap->count1 = curPor->height / 2;
             if (cap->count1 == 0)
@@ -4861,7 +4859,7 @@ do_mousescroll(ActionArg* cap) {
       if (PORTAL_IS_POPUP(curPor))
          popup_set_firstline(curPor);
    } else {
-      // Horizontal scrolling
+      //Horizontal scrolling
       long step = (mouse_hor_step < 0 || shift_or_ctrl) ? curPor->width : mouse_hor_step;
       long leftcol = curPor->leftCol + (cap->arg == MSCR_RIGHT ? -step : step);
       if (leftcol < 0)
@@ -4900,8 +4898,8 @@ ins_mousescroll(int dir) {
 
    Portal *old_curPor = curPor;
    if (mouseRowG >= 0 && mouseColG >= 0) {
-      // Find the portal at the mouse pointer coordinates.
-      // NOTE: Must restore "curPor" to "old_curPor" before returning!
+      //Find the portal at the mouse pointer coordinates.
+      //NOTE: Must restore "curPor" to "old_curPor" before returning!
       int row = mouseRowG;
       int col = mouseColG;
       curPor = mouseFindPortal(OUT &row, OUT &col, FIND_POPUP);
@@ -4913,7 +4911,7 @@ ins_mousescroll(int dir) {
    }
 
    if (curPor == old_curPor) {
-      // Don't scroll the current portal if the popup menu is visible.
+      //Don't scroll the current portal if the popup menu is visible.
       if (pum_visible())
          return;
    }
@@ -4922,7 +4920,7 @@ ins_mousescroll(int dir) {
    ColNr   orig_leftcol = curPor->leftCol;
    Pos   orig_cursor = curPor->cursor;
 
-   // Call the common mouse scroll function shared with other modes.
+   //Call the common mouse scroll function shared with other modes.
    do_mousescroll(&cap);
 
    int did_scroll = (orig_topline != curPor->topLine || orig_leftcol != curPor->leftCol);
@@ -4931,11 +4929,11 @@ ins_mousescroll(int dir) {
    curPor = old_curPor;
    curBook = curPor->book;
 
-   // If the portal actually scrolled and the popup menu may overlay the
-   // portal, need to redraw it.
+   //If the portal actually scrolled and the popup menu may overlay the
+   //portal, need to redraw it.
    if (did_scroll && pum_visible()) {
-      // TODO: Would be more efficient to only redraw the portals that are
-      // overlapped by the popup menu.
+      //TODO: Would be more efficient to only redraw the portals that are
+      //overlapped by the popup menu.
       redraw_all_later(UPD_NOT_VALID);
       ins_compl_show_pum();
    }
@@ -4974,10 +4972,10 @@ is_mouse_key(Unt c) {
 }
 
 struct mousetable {
-   Unt pseudo_code;   // Code for pseudo mouse event
-   Unt button;      // Which mouse button is it?
-   Boole is_click;      // Is it a mouse button click event?
-   Boole is_drag;      // Is it a mouse drag event?
+   Unt pseudo_code;   //Code for pseudo mouse event
+   Unt button;      //Which mouse button is it?
+   Boole is_click;      //Is it a mouse button click event?
+   Boole is_drag;      //Is it a mouse drag event?
 } mouse_table[] = {
    {(int)KE_LEFTMOUSE,     MOUSE_LEFT,   true,   false},
    {(int)KE_LEFTDRAG,      MOUSE_LEFT,   false,   true},
@@ -4994,9 +4992,9 @@ struct mousetable {
    {(int)KE_X2MOUSE,       MOUSE_X2,     true,   false},
    {(int)KE_X2DRAG,        MOUSE_X2,     false,   true},
    {(int)KE_X2RELEASE,     MOUSE_X2,     false,  false},
-   // DRAG without CLICK
+   //DRAG without CLICK
    {(int)KE_MOUSEMOVE,     MOUSE_RELEASE,   false,   true},
-   // RELEASE without CLICK
+   //RELEASE without CLICK
    {(int)KE_IGNORE,        MOUSE_RELEASE,   false,   false},
    {0,            0,      0,   0},
 };
@@ -5012,14 +5010,14 @@ get_mouse_button(Unt code, OUT Boole* is_click, OUT Boole* is_drag) {
          return mouse_table[i].button;
       }
    }
-   return 0;       // Shouldn't get here
+   return 0;       //Shouldn't get here
 }
 
 //Return the appropriate pseudo mouse event token (KE_LEFTMOUSE etc) based on the given information 
 //about which mouse button is down, and whether the mouse was clicked, dragged or released.
 private int
 get_pseudo_mouse_code(Unt button, Boole is_click, Boole is_drag) {
-                     // eg MOUSE_LEFT
+                     //eg MOUSE_LEFT
    for (int i = 0; mouse_table[i].pseudo_code; i++) {
       if (button == mouse_table[i].button
           && is_click == mouse_table[i].is_click
@@ -5028,7 +5026,7 @@ get_pseudo_mouse_code(Unt button, Boole is_click, Boole is_drag) {
          return mouse_table[i].pseudo_code;
       }
    }
-   return (int)KE_IGNORE;       // not recognized, ignore it
+   return (int)KE_IGNORE;       //not recognized, ignore it
 }
 
 #define HMT_NORMAL    1
@@ -5055,7 +5053,7 @@ set_mouse_termcode(Unt n, CS s) {
 }
 
 pub void
-del_mouse_termcode(Unt n) {  // KS_MOUSE, KS_NETTERM_MOUSE or KS_DEC_MOUSE
+del_mouse_termcode(Unt n) {  //KS_MOUSE, KS_NETTERM_MOUSE or KS_DEC_MOUSE
    Byte name[2] = {n, KE_FILLER};
    del_termcode(name);
    if (n == KS_SGR_MOUSE)
@@ -5069,11 +5067,11 @@ del_mouse_termcode(Unt n) {  // KS_MOUSE, KS_NETTERM_MOUSE or KS_DEC_MOUSE
 //switch mouse on/off depending on current mode and 'mouse'
 pub void
 setmouse(void) {
-   // Should be outside proc, but may break MOUSESHAPE be quick when mouse is off
+   //Should be outside proc, but may break MOUSESHAPE be quick when mouse is off
    if (haveMouseTermcodeP == 0)
       return;
 
-   // don't switch mouse on when not in raw mode (Ex mode)
+   //don't switch mouse on when not in raw mode (Ex mode)
    if (cur_tmode != TMODE_RAW) {
       mch_setmouse(false);
       return;
@@ -5081,7 +5079,7 @@ setmouse(void) {
    mch_setmouse(true);
 }
 
-private Portal* dragPortalS = NULL;   // portal being dragged
+private Portal* dragPortalS = NULL;   //portal being dragged
 
 //Reset the portal being dragged.  To be called when switching tab.
 pub void
@@ -5114,16 +5112,16 @@ mouseResetDragPortal(void) {
 pub Unt
 jump_to_mouse(
    Unt flags,
-   OUT Boole* inclusive,   // used for inclusive operator, can be NULL
-   Unt which_button   // MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE
+   OUT Boole* inclusive,   //used for inclusive operator, can be NULL
+   Unt which_button   //MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE
 ){
-   static int   on_status_line = 0;   // #lines below bottom of portal
-   static int   on_sep_line = 0;   // on separator right of portal
+   static int   on_status_line = 0;   //#lines below bottom of portal
+   static int   on_sep_line = 0;   //on separator right of portal
    static Boole   isInsidePopup = false;
    static Portal* clickInsidePopup = NULL;
    static int   prevRow = -1;
    static int   prevCol = -1;
-   static int   did_drag = false;   // drag was noticed
+   static int   did_drag = false;   //drag was noticed
 
    Portal* po;
    Unt count;
@@ -5137,8 +5135,8 @@ jump_to_mouse(
    isMouseRightOfEolS = false;
 
    if (flags & MOUSE_RELEASED) {
-      // On button release we may change portal focus if positioned on a
-      // status line and no dragging happened.
+      //On button release we may change portal focus if positioned on a
+      //status line and no dragging happened.
       if (dragPortalS != NULL && !did_drag)
          flags &= ~(MOUSE_FOCUS | MOUSE_DID_MOVE);
       dragPortalS = NULL;
@@ -5152,24 +5150,24 @@ jump_to_mouse(
 
    if ((flags & MOUSE_DID_MOVE) && prevRow == mouseRowG && prevCol == mouseColG) {
 retnomove:
-      // before moving the cursor for a left click which is NOT in a status
-      // line, stop Visual mode
+      //before moving the cursor for a left click which is NOT in a status
+      //line, stop Visual mode
       if (on_status_line)
           return IN_STATUS_LINE;
       if (on_sep_line)
           return IN_SEP_LINE;
       if (flags & MOUSE_MAY_STOP_VIS) {
          end_visual_mode_keep_button();
-         drawCurBookLater(UPD_INVERTED);   // delete the inversion
+         drawCurBookLater(UPD_INVERTED);   //delete the inversion
       }
-      // Continue a modeless selection in another portal.
+      //Continue a modeless selection in another portal.
       if (commPortTypeG != 0 && (row < 0 || row < commPortPortG->windowRow))
          return IN_OTHER_WIN;
-      // Continue a modeless selection in a popup portal or dragging it.
+      //Continue a modeless selection in a popup portal or dragging it.
       if (isInsidePopup) {
-         clickInsidePopup = NULL;  // don't close it on release
+         clickInsidePopup = NULL;  //don't close it on release
          if (popupDragPortG) {
-            // dragging a popup portal
+            //dragging a popup portal
             popup_drag(popupDragPortG);
             return IN_UNKNOWN;
          }
@@ -5182,23 +5180,23 @@ retnomove:
    prevCol = mouseColG;
 
    if (flags & MOUSE_SETPOS)
-      goto retnomove;            // ugly goto...
+      goto retnomove;            //ugly goto...
 
    Portal* old_curPor = curPor;
    Pos old_cursor = curPor->cursor;
 
    if (!(flags & MOUSE_FOCUS)) {
-      if (row >= 0 || col >= 0) // check if it makes sense
+      if (row >= 0 || col >= 0) //check if it makes sense
           return IN_UNKNOWN;
 
-      // find the portal where the row is in and adjust "row" and "col" to be
-      // relative to top-left of the portal
+      //find the portal where the row is in and adjust "row" and "col" to be
+      //relative to top-left of the portal
       po = mouseFindPortal(OUT &row, OUT &col, FIND_POPUP);
       if (!po)
          return IN_UNKNOWN;
       dragPortalS = NULL;
 
-      // Click in a popup portal may start dragging or modeless selection, but not much else.
+      //Click in a popup portal may start dragging or modeless selection, but not much else.
       if (PORTAL_IS_POPUP(po)) {
          on_sep_line = 0;
          on_status_line = 0;
@@ -5210,11 +5208,11 @@ retnomove:
             popup_start_drag(po, row, col);
             return IN_UNKNOWN;
          }
-         // Only close on release, otherwise it's not possible to drag or do modeless selection.
+         //Only close on release, otherwise it's not possible to drag or do modeless selection.
          ei (po->pup.close == POPCLOSE_CLICK && which_button == MOUSE_LEFT) {
             clickInsidePopup = po;
          } ei (which_button == MOUSE_LEFT)
-            // If the click is in the scrollbar, may scroll up/down.
+            //If the click is in the scrollbar, may scroll up/down.
             popup_handle_scrollbar_click(po, row, col);
          return IN_OTHER_WIN;
       }
@@ -5224,20 +5222,20 @@ retnomove:
          return IN_OTHER_WIN;
       }
 
-      // winpos and height may change in enterPortal()!
-      if (row > 0 && (Unt)row >= po->height) {     // In (or below) status line
+      //winpos and height may change in enterPortal()!
+      if (row > 0 && (Unt)row >= po->height) {     //In (or below) status line
          on_status_line = row - po->height + 1;
          dragPortalS = po;
       } else
          on_status_line = 0;
-      if (col > 0 && (Unt)col >= po->width)  {    // In separator line
+      if (col > 0 && (Unt)col >= po->width)  {    //In separator line
          on_sep_line = col - po->width + 1;
          dragPortalS = po;
       } else
          on_sep_line = 0;
 
-      // The rightmost character of the status line might be a vertical
-      // separator character if there is no connecting portal to the right.
+      //The rightmost character of the status line might be a vertical
+      //separator character if there is no connecting portal to the right.
       if (on_status_line && on_sep_line) {
          if (stl_connected(po))
             on_sep_line = 0;
@@ -5245,8 +5243,8 @@ retnomove:
             on_status_line = 0;
       }
 
-      // Before jumping to another book, or moving the cursor for a left
-      // click, stop Visual mode.
+      //Before jumping to another book, or moving the cursor for a left
+      //click, stop Visual mode.
       if (VIsual_active
          && (po->book != curPor->book
              || (!on_status_line && !on_sep_line
@@ -5254,7 +5252,7 @@ retnomove:
             && (flags & MOUSE_MAY_STOP_VIS))))
       {
           end_visual_mode_keep_button();
-          drawCurBookLater(UPD_INVERTED);   // delete the inversion
+          drawCurBookLater(UPD_INVERTED);   //delete the inversion
       }
       if (commPortTypeG != 0 && po != commPortPortG) {
          //A click outside the command-line portal: Use modeless
@@ -5271,23 +5269,23 @@ retnomove:
       //status line.  Do change focus when releasing the mouse button
       //(MOUSE_FOCUS was set above if we dragged first).
       if (dragPortalS == NULL || (flags & MOUSE_RELEASED))
-         enterPortal(po, true);      // can make po invalid!
+         enterPortal(po, true);      //can make po invalid!
 
       if (curPor != old_curPor) {
-         // set topline, to be able to check for double click ourselves
+         //set topline, to be able to check for double click ourselves
          set_mouse_topline(curPor);
-         // when entering a terminal portal may change state
+         //when entering a terminal portal may change state
          term_enterPortaled();
       }
-      if (on_status_line) {        // In (or below) status line
-         // Don't use start_arrow() if we're in the same portal
+      if (on_status_line) {        //In (or below) status line
+         //Don't use start_arrow() if we're in the same portal
          if (curPor == old_curPor)
             return IN_STATUS_LINE;
          else
             return IN_STATUS_LINE | CURSOR_MOVED;
       }
-      if (on_sep_line) {        // In (or below) status line
-         // Don't use start_arrow() if we're in the same portal
+      if (on_sep_line) {        //In (or below) status line
+         //Don't use start_arrow() if we're in the same portal
          if (curPor == old_curPor)
             return IN_SEP_LINE;
          else
@@ -5302,32 +5300,32 @@ retnomove:
          portDragStatusLine(dragPortalS, count);
          did_drag |= count;
       }
-      return IN_STATUS_LINE;         // Cursor didn't move
+      return IN_STATUS_LINE;         //Cursor didn't move
    } ei (on_sep_line && which_button == MOUSE_LEFT) {
       if (dragPortalS) {
-         // Drag the separator column
+         //Drag the separator column
          count = col - dragPortalS->windowCol - dragPortalS->width + 1 - on_sep_line;
          portDragVsepLine(dragPortalS, count);
          did_drag |= count;
       }
-      return IN_SEP_LINE;         // Cursor didn't move
-   } else { // keep_window_focus must be true
-      // before moving the cursor for a left click, stop Visual mode
+      return IN_SEP_LINE;         //Cursor didn't move
+   } else { //keep_window_focus must be true
+      //before moving the cursor for a left click, stop Visual mode
       if (flags & MOUSE_MAY_STOP_VIS) {
          end_visual_mode_keep_button();
-         drawCurBookLater(UPD_INVERTED);   // delete the inversion
+         drawCurBookLater(UPD_INVERTED);   //delete the inversion
       }
 
-      // Continue a modeless selection in another portal.
+      //Continue a modeless selection in another portal.
       if (commPortTypeG != 0 && (row < 0 || row < commPortPortG->windowRow))
          return IN_OTHER_WIN;
       if (isInsidePopup) {
          if (popupDragPortG != NULL) {
-            // dragging a popup portal
+            //dragging a popup portal
             popup_drag(popupDragPortG);
             return IN_UNKNOWN;
          }
-         // continue a modeless selection in a popup portal
+         //continue a modeless selection in a popup portal
          clickInsidePopup = NULL;
          return IN_OTHER_WIN;
       }
@@ -5385,9 +5383,9 @@ retnomove:
          curPor->cacheState &= ~(VALID_WROW|VALID_CROW|VALID_BOTLINE|VALID_BOTLINE_AP);
          row = curPor->height - 1;
       } ei (row == 0) {
-         // When dragging the mouse, while the text has been scrolled up as
-         // far as it goes, moving the mouse in the top line should scroll
-         // the text down (done later when recomputing topLine).
+         //When dragging the mouse, while the text has been scrolled up as
+         //far as it goes, moving the mouse in the top line should scroll
+         //the text down (done later when recomputing topLine).
          if (mouseDraggingG > 0
                 && curPor->cursor.lnum == curPor->book->mem.lineCount
                 && curPor->cursor.lnum == curPor->topLine)
@@ -5409,18 +5407,18 @@ retnomove:
       //would not click before redrawing.
       if (curPor->redrawType <= UPD_VALID_NO_UPDATE)
           col_from_screen = drawGetScreenCol(off);
-      // Remember the character under the mouse, it might be a '-' or '+' in the fold column.
+      //Remember the character under the mouse, it might be a '-' or '+' in the fold column.
       mouse_char = drawGetLine(off);
    }
 
    if ( col >= (commPortPortG != curPor ? 0 : 1))
       mouse_char = ' ';
 
-   // compute the position in the book line from the posn on the screen
+   //compute the position in the book line from the posn on the screen
    if (mouse_comp_pos(curPor, OUT &row, OUT &col, &curPor->cursor.lnum, NULL))
       isMouseBelowBottomLineS = true;
 
-   // Start Visual mode before coladvance(), for when 'sel' != "old"
+   //Start Visual mode before coladvance(), for when 'sel' != "old"
    if ((flags & MOUSE_MAY_VIS) && !VIsual_active) {
       check_visual_highlight();
       VIsual = old_cursor;
@@ -5428,7 +5426,7 @@ retnomove:
       VIsual_reselect = true;
       setmouse();
       if (p_smd && msg_silent == 0)
-         redrawCommlineG = true;   // show visual mode later
+         redrawCommlineG = true;   //show visual mode later
    }
 
    if (col_from_screen >= 0) {
@@ -5437,8 +5435,8 @@ retnomove:
    }
 
    curPor->cursWant = col;
-   curPor->setCursWant = false;   // May still have been true
-   if (coladvance(col) == FAIL) {  // Mouse click beyond end of line
+   curPor->setCursWant = false;   //May still have been true
+   if (coladvance(col) == FAIL) {  //Mouse click beyond end of line
       if (inclusive)
          *inclusive = true;
       isMouseRightOfEolS = true;
@@ -5448,7 +5446,7 @@ retnomove:
    count = IN_BOOK;
    if (curPor != old_curPor || curPor->cursor.lnum != old_cursor.lnum
           || curPor->cursor.col != old_cursor.col)
-      count |= CURSOR_MOVED;      // Cursor has moved
+      count |= CURSOR_MOVED;      //Cursor has moved
 
    if (mouse_char == fillCharsG.foldclosed)
       count |= MOUSE_FOLD_OPEN;
@@ -5458,17 +5456,17 @@ retnomove:
    return count;
 }
 
-// Make a horizontal scroll to "leftcol". Return true if the cursor moved, false otherwise.
+//Make a horizontal scroll to "leftcol". Return true if the cursor moved, false otherwise.
 private int
 do_mousescroll_horiz(Ulong leftcol) {
    if (curPor->o.wrap)
-      return false;  // no horizontal scrolling when wrapping
+      return false;  //no horizontal scrolling when wrapping
 
    if (curPor->leftCol == (ColNr)leftcol)
-      return false;  // already there
+      return false;  //already there
 
-   // When the line of the cursor is too short, move the cursor to the
-   // longest visible line.
+   //When the line of the cursor is too short, move the cursor to the
+   //longest visible line.
    if (!virtual_active() && (long)leftcol > scroll_line_len(curPor->cursor.lnum)) {
       curPor->cursor.lnum = ui_find_longest_lnum();
       curPor->cursor.col = 0;
@@ -5484,8 +5482,8 @@ nv_mousescroll(ActionArg* cap) {
    Portal* old_curPor = curPor;
 
    if (mouseRowG >=0 && mouseColG >= 0) {
-      // Find the portal at the mouse pointer coordinates.
-      // NOTE: Must restore "curPor" to "old_curPor" before returning!
+      //Find the portal at the mouse pointer coordinates.
+      //NOTE: Must restore "curPor" to "old_curPor" before returning!
       int row = mouseRowG;
       int col = mouseColG;
       curPor = mouseFindPortal(OUT &row, OUT &col, FIND_POPUP);
@@ -5495,14 +5493,14 @@ nv_mousescroll(ActionArg* cap) {
       }
 
       if (PORTAL_IS_POPUP(curPor) && !curPor->pup.hasScrollbar) {
-         // cannot scroll this popup portal
+         //cannot scroll this popup portal
          curPor = old_curPor;
          return;
       }
       curBook = curPor->book;
    }
 
-   // Call the common mouse scroll function shared with other modes.
+   //Call the common mouse scroll function shared with other modes.
    do_mousescroll(cap);
 
    curPor->statusLineNeedsRedraw = true;
@@ -5510,7 +5508,7 @@ nv_mousescroll(ActionArg* cap) {
    curBook = curPor->book;
 }
 
-// Mouse clicks and drags.
+//Mouse clicks and drags.
 pub void
 nv_mouse(ActionArg* cap) {
    (void)do_mouse(cap->oper, cap->cmdchar, BACKWARD, cap->count1, 0);
@@ -5538,13 +5536,13 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
    static int orig_mouse_col = 0;
    static int orig_mouse_row = 0;
    static TimeVal  orig_mouse_time = {0, 0};
-   // time of previous mouse click
-   TimeVal  mouse_time;      // time of current mouse click
-   long   timediff;      // elapsed time in msec
+   //time of previous mouse click
+   TimeVal  mouse_time;      //time of current mouse click
+   long   timediff;      //elapsed time in msec
 
    is_click = is_drag = is_release = release_is_ambiguous = false;
 
-   // Interpret the mouse code
+   //Interpret the mouse code
    Unt current_button = (mouse_code & MOUSE_CLICK_MASK);
    if (is_release)
       current_button |= MOUSE_RELEASE;
@@ -5575,7 +5573,7 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
              && orig_mouse_col == mouseColG
              && orig_mouse_row == mouseRowG
              && (is_mouse_topline(curPor)
-            // Double click in tabs line also works when portal contents changes.
+            //Double click in tabs line also works when portal contents changes.
             || (mouseRowG == 0 && firstPor->windowRow > 0))
          )
             ++orig_num_clicks;
@@ -5630,7 +5628,7 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
       key_name[1] = get_pseudo_mouse_code(current_button, is_click, is_drag);
 
 
-   // Make sure the mouse position is valid.  Some terminals may return weird values.
+   //Make sure the mouse position is valid.  Some terminals may return weird values.
    if (mouseColG >= visibleColsG)
       mouseColG = visibleColsG - 1;
    if (mouseRowG >= visibleRowsG)
@@ -5665,12 +5663,12 @@ mouse_comp_pos(
    while (row > 0) {
       int cache_idx = lnum - port->topLine;
 
-      // Only "visibleRowsG" lines are cached, with folding we'll run out of entries
-      // and use the slow way.
+      //Only "visibleRowsG" lines are cached, with folding we'll run out of entries
+      //and use the slow way.
       if (plines_cache != NULL && cache_idx < visibleRowsG && plines_cache[cache_idx] > 0)
           count = plines_cache[cache_idx];
       else {
-         // Don't include filler lines in "count"
+         //Don't include filler lines in "count"
          if (port->o.diff
              && !getFoldsPortal(port, lnum, NULL, NULL, true, NULL)
          ) {
@@ -5691,8 +5689,8 @@ mouse_comp_pos(
          if (width1 > 0) {
             int skip_lines = 0;
 
-            // Adjust for 'smoothscroll' clipping the top screen lines.
-            // A similar formula is used in curs_columns().
+            //Adjust for 'smoothscroll' clipping the top screen lines.
+            //A similar formula is used in curs_columns().
             if (port->skipCol > width1)
                 skip_lines = (port->skipCol - width1)
                          / width1 + 1;
@@ -5704,24 +5702,24 @@ mouse_comp_pos(
       }
 
       if (count > row)
-         break;   // Position is in this book line.
+         break;   //Position is in this book line.
       (void)getFoldsPortal(port, lnum, NULL, OUT &lnum, true, NULL);
       if (lnum == port->book->mem.lineCount) {
          retval = true;
-         break;      // past end of file
+         break;      //past end of file
       }
       row -= count;
       ++lnum;
    }
 
    if (!retval) {
-      // Compute the column without wrapping.
+      //Compute the column without wrapping.
       off = normalPortalColumnOffset(port);
       if (col < off)
          col = off;
       col += row * (port->width - off);
 
-      // Add skip column for the topline.
+      //Add skip column for the topline.
       if (lnum == port->topLine)
          col += port->skipCol;
    }
@@ -5729,7 +5727,7 @@ mouse_comp_pos(
    if (!port->o.wrap)
       col += port->leftCol;
 
-   // skip line number and fold column in front of the line
+   //skip line number and fold column in front of the line
    col -= normalPortalColumnOffset(port);
 
    *colp = col < 0 ? UNT : (Unt)col;
@@ -5782,7 +5780,7 @@ mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup) {
                break;
             *colp -= fp->width;
          }
-      } else {   // layout == FR_COL
+      } else {   //layout == FR_COL
          for (fp = fp->child; fp->next; fp = fp->next) {
             if (*rowp < 0 || *rowp < (int)fp->width)
                break;
@@ -5790,7 +5788,7 @@ mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup) {
          }
       }
    }
-   // When using a timer that closes a portal the portal might not actually exist.
+   //When using a timer that closes a portal the portal might not actually exist.
    FOR_ALL_PORTALS(po) {
       if (po == fp->port) {
          return po;
@@ -5799,12 +5797,12 @@ mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup) {
    return NULL;
 }
 
-// Convert a virtual (screen) column to a character column. The first column is zero.
+//Convert a virtual (screen) column to a character column. The first column is zero.
 pub int
 vcol2col(Portal* po, LineNr lnum, int vcol, ColNr *coladdp) {
    CharTableSize   cts;
 
-   // try to advance to the specified column
+   //try to advance to the specified column
    CS line = memGetLine(po->book, lnum, false);
    bookInitCharsForKeywordsSizeArg(&cts, po, lnum, 0, line, line);
    while (cts.cts_vcol < vcol && *cts.cts_ptr != ZERO) {
@@ -5871,22 +5869,22 @@ f_getmousepos(Arr(Var), Var* returnVar) {
 }
 
 
-// Set mouse clicks on or off and possible enable mouse movement events.
+//Set mouse clicks on or off and possible enable mouse movement events.
 pub void
 mch_setmouse(Boole on){
    static int bevalterm_ison = false;
    int xterm_mouse_vers;
 
    if (on == mouse_ison && p_bevalterm == bevalterm_ison)
-      // return quickly if nothing to do
+      //return quickly if nothing to do
       return;
 
-   xterm_mouse_vers = 4; // SGR mouse
+   xterm_mouse_vers = 4; //SGR mouse
 
    if (termCodesG[KS_CXM] != NULL && *termCodesG[KS_CXM] != ZERO) {
       term_enable_mouse(on);
    } ei (ttym_flags == TTYM_SGR) {
-      // SGR mode supports columns above 223
+      //SGR mode supports columns above 223
       out_str_nf((CS)(on ? "\033[?1006h" : "\033[?1006l"));
       mouse_ison = on;
    }
@@ -5894,25 +5892,25 @@ mch_setmouse(Boole on){
    if (bevalterm_ison != (p_bevalterm && on)) {
       bevalterm_ison = (p_bevalterm && on);
       if (xterm_mouse_vers > 1 && !bevalterm_ison)
-         // disable mouse movement events, enabling is below
+         //disable mouse movement events, enabling is below
          out_str_nf((CS)("\033[?1003l"));
    }
 
    if (xterm_mouse_vers > 0) {
-      if (on) {   // enable mouse events, use mouse tracking if available
+      if (on) {   //enable mouse events, use mouse tracking if available
          out_str_nf((CS)(xterm_mouse_vers > 1
             ? (
                 bevalterm_ison ? "\033[?1003h" :
                   "\033[?1002h")
             : "\033[?1000h")
          );
-      } else   // disable mouse events, could probably always send the same
+      } else   //disable mouse events, could probably always send the same
          out_str_nf((CS) (xterm_mouse_vers > 1 ? "\033[?1002l" : "\033[?1000l"));
       mouse_ison = on;
    }
 }
 
-// Called when @balloonevalterm changed.
+//Called when @balloonevalterm changed.
 pub void
 mch_bevalterm_changed(void) {
    mch_setmouse(mouse_ison);

@@ -331,7 +331,7 @@ do_ascii(Invocation*){
    Byte buf1[20];
    Byte buf2[20];
    Byte buf3[7];
-   int cc[MAX_COMBINED_SYMBOLS];
+   Unt cc[MAX_COMBINED_SYMBOLS];
    int ci = 0;
    int len;
 
@@ -431,11 +431,12 @@ c_align(Invocation* invo) {
             //Make sure that embedded TABs don't make the text go too far to the right.
             if (has_tab) {
                while (new_indent > 0) {
-                  (void)set_indent(new_indent, 0);
+                  (void)doSetIndent(new_indent, 0);
                   if (linelen(NULL) <= width) {
-                     //Now try to move the line as much as possible to the right. Stop when it moves too far.
+                     //Now try to move the line as much as possible to the right. Stop when it
+                     //moves too far.
                      do
-                        (void)set_indent(++new_indent, 0);
+                        (void)doSetIndent(++new_indent, 0);
                      while (linelen(NULL) <= width);
                      --new_indent;
                      break;
@@ -447,7 +448,7 @@ c_align(Invocation* invo) {
       }
       if (new_indent < 0)
          new_indent = 0;
-      (void)set_indent(new_indent, 0);      //set indent
+      (void)doSetIndent(new_indent, 0);      //set indent
    }
    doChangedLines(invo->line1, 0, invo->line2 + 1, 0L);
    curPor->cursor = save_curpos;
@@ -13868,11 +13869,10 @@ changed_common(
          //a following operator might work on the whole fold: ">>dd".
          foldUpdate(po, lnum, last);
 
-         //The change may cause lines above or below the change to become
-         //included in a fold.  Set lnum/lnume to the first/last line that
-         //might be displayed differently.
-         //Set isCursorLineFolded here as an efficient way to update it when
-         //inserting lines just above a closed fold.
+         //The change may cause lines above or below the change to become included in a fold.
+         //Set lnum/lnume to the first/last line that might be displayed differently.
+         //Set isCursorLineFolded here as an efficient way to update it when inserting lines 
+         //just above a closed fold.
          i = getFoldsPortal(po, lnum, OUT &lnum, NULL, false, NULL);
          if (po->cursor.lnum == lnum) {
             po->isCursorLineFolded = i;
@@ -13910,21 +13910,20 @@ changed_common(
          //after the change.
          for (i = 0; i < po->validLines; ++i) {
             if (po->lines[i].isValid) {
-                if (po->lines[i].bookLnum >= lnum) {
-               //Do not change bookLnum at index zero, it is used to
-               //compare with topLine.  Invalidate it instead.
-               if (po->lines[i].bookLnum < lnume || i == 0) {
-                   //line included in change
-                   po->lines[i].isValid = false;
-               } ei (xtra != 0) {
-                   //line below change
-                   po->lines[i].bookLnum += xtra;
-                   po->lines[i].lastBookLnum += xtra;
-               }
-                } ei (po->lines[i].lastBookLnum >= lnum) {
-               //change somewhere inside this range of folded lines,
-               //may need to be redrawn
-               po->lines[i].isValid = false;
+               if (po->lines[i].bookLnum >= lnum) {
+                  //Do not change bookLnum at index zero, it is used to
+                  //compare with topLine.  Invalidate it instead.
+                  if (po->lines[i].bookLnum < lnume || i == 0) {
+                     //line included in change
+                     po->lines[i].isValid = false;
+                  } ei (xtra != 0) {
+                     //line below change
+                     po->lines[i].bookLnum += xtra;
+                     po->lines[i].lastBookLnum += xtra;
+                  }
+               } ei (po->lines[i].lastBookLnum >= lnum) {
+                  //change somewhere inside this range of folded lines, may need to be redrawn
+                  po->lines[i].isValid = false;
                }
             }
          }
@@ -13934,8 +13933,8 @@ changed_common(
             set_topline(po, po->topLine);
          }
          //If lines have been added or removed, relative numbering always
-         //requires an update even if cursor didn't move.
-         if (po->o.relativeNumber && xtra != 0) {
+         //requires an update. Even if cursor didn't move.
+         if (xtra != 0) {
             po->lastCursorLnumRnu = 0;
          }
 
@@ -14081,7 +14080,7 @@ doChangedLinesBook(
 //- mark the book changed by calling changed()
 //- mark the portals on this book to be redisplayed
 //- invalidate cached values
-//"lnum" is the first line that needs displaying, "lnume" the first line below the changed lines 
+//"lnum" is the first line that needs displaying, "lnume" the first line below the changed lines
 //(BEFORE the change). When only inserting lines, "lnum" and "lnume" are equal.
 //Takes care of calling changed() and updating b_mod_*.
 //Careful: may trigger autocommands that reload the book.
@@ -14157,14 +14156,14 @@ insertOrReplaceChar(Unt c, Boole replace) {
 
 //Insert a single character at the cursor position.
 //Caller must have prepared for undo.
-//For multi-byte characters we get the whole character, the caller must convert bytes to character
+//For multi-byte characters we get the whole character, the caller must convert bytes to char
 pub void
 insertChar(Unt c) {
    insertOrReplaceChar(c, false);
 }
 
 //Replace a single character at the cursor position. Caller must have prepared for undo.
-//For multi-byte characters we get the whole character, the caller must convert bytes to character
+//For multi-byte characters we get the whole character, the caller must convert bytes to char
 pub void
 replaceChar(Unt c) {
    insertOrReplaceChar(c, true);
@@ -14180,10 +14179,11 @@ opInsertCharBytes(CS targetLine, int charlen, Boole replace) {
 
    ColNr col = curPor->cursor.col;
    CS oldp = ml_get(lnum);
-   int oldLineLen = (int)ml_get_len(lnum) + 1;//length of old line including ZERO
+   int oldLineLen = (int)ml_get_len(lnum) + 1; //length of old line including ZERO
 
    //The lengths default to the values for when not replacing.
-   int oldCharLen = replace ? utfCharLen(oldp + col) : 0; //nr of bytes deleted (0 when not replacing)
+   int oldCharLen = replace ? utfCharLen(oldp + col) : 0; //nr of bytes deleted (0 when not 
+                                                          //replacing)
    int newCharLen = charlen; //nr of bytes inserted
 
    CS newp = alloc(oldLineLen + newCharLen - oldCharLen);
@@ -14277,7 +14277,7 @@ del_chars(long count, Boole fixpos) {
 //
 //Return FAIL for failure, OK otherwise.
 pub int
-del_bytes(Long   count, Boole fixpos_arg, int      use_delcombine) { //'delcombine' option applies
+del_bytes(Long count, Boole fixpos_arg, int use_delcombine) { //'delcombine' option applies
    LineNr lnum = curPor->cursor.lnum;
    ColNr col = curPor->cursor.col;
    int fixpos = fixpos_arg;
@@ -14302,8 +14302,8 @@ del_bytes(Long   count, Boole fixpos_arg, int      use_delcombine) { //'delcombi
    //If @delcombine is set and deleting (less than) one character, only
    //delete the last combining character.
    if (p_delcomb && use_delcombine && utfCharLen(oldp + col) >= count) {
-      int   cc[MAX_COMBINED_SYMBOLS];
-      int   n;
+      Unt cc[MAX_COMBINED_SYMBOLS];
+      int n;
 
       (void)utfc_ptr2char(oldp + col, cc);
       if (cc[0] != ZERO) {
@@ -14321,7 +14321,7 @@ del_bytes(Long   count, Boole fixpos_arg, int      use_delcombine) { //'delcombi
    //When count is too big, reduce it.
    Long movelen = (long)oldlen - (long)col - count + 1; //includes trailing ZERO
    if (movelen <= 1) {
-      //If we just took off the last character of a non-blank line, and fixpos is true, we don't 
+      //If we just took off the last character of a non-blank line, and fixpos is true, we don't
       //want to end up positioned at the ZERO, unless "restart_edit" is set
       if (col > 0 && fixpos && restart_edit == 0) {
          --curPor->cursor.col;
@@ -14360,10 +14360,10 @@ del_bytes(Long   count, Boole fixpos_arg, int      use_delcombine) { //'delcombi
    return OK;
 }
 
-//insertLine - simply insert a line below or above the current line. Applies autoindent
+//insertLine - simply insert a line below or above the current line. Apply autoindent
 //Return OK for success, FAIL for failure
 pub int
-insertLine(Unt      dir) { //FORWARD or BACKWARD
+doInsertLine(Byte dir) { //FORWARD or BACKWARD
    Pos oldCursor = curPor->cursor;
    //count white space on current line
    int newIndent = get_indent_lnum(curPor->cursor.lnum);
@@ -14374,7 +14374,7 @@ insertLine(Unt      dir) { //FORWARD or BACKWARD
    }
    ++curPor->cursor.lnum;
     
-   (void)set_indent(newIndent, SIN_INSERT);
+   (void)doSetIndent(newIndent, SIN_INSERT);
     
    //Postpone calling doChangedLines(), because it would mess up folding with markers.
    markAdjust(curPor->cursor.lnum + 1, (LineNr)MAXLNUM, 1L, 0L, true);
@@ -15027,7 +15027,7 @@ openLine(
          int padding = second_line_indent  - (newindent + (int)STRLEN(leader));
 
          //Here whitespace is inserted after the comment char.
-         //Below, set_indent(newindent, SIN_INSERT) will insert the
+         //Below, doSetIndent(newindent, SIN_INSERT) will insert the
          //whitespace needed before the comment char.
          for (i = 0; i < padding; i++) {
             STRCAT(leader, " ");
@@ -15063,7 +15063,7 @@ openLine(
          newindent += sw;
       }
       //Copy the indent
-      (void)set_indent(newindent, SIN_INSERT);
+      (void)doSetIndent(newindent, SIN_INSERT);
       fewerCols -= curPor->cursor.col;
 
       ai_col = curPor->cursor.col;
@@ -15379,36 +15379,34 @@ get_new_sw_indent(
 //shiftwidth in current versions of Eegl, so they are not considered here.
 pub void
 shift_line(
-   int   left,         //true if shift is to the left
-   int   round,         //true if new indent is to be to a tabstop
-   int   amount,         //Number of shifts
-   Boole   call_changed_bytes)   //call changed_bytes()
-{
-   Long   count;
-   long   sw_val = curBook->o.shiftWidth;
+   int left,         //true if shift is to the left
+   int round,         //true if new indent is to be to a tabstop
+   int amount,         //Number of shifts
+   Boole call_changed_bytes   //call changed_bytes()
+){
+   Long sw_val = curBook->o.shiftWidth;
 
-   count = get_new_sw_indent(left, round, amount, sw_val);
+   Long count = get_new_sw_indent(left, round, amount, sw_val);
 
    //Set new indent
-   (void)set_indent(trim_to_int(count), call_changed_bytes ? SIN_CHANGED : 0);
+   (void)doSetIndent(trim_to_int(count), call_changed_bytes ? SIN_CHANGED : 0);
 }
 
 //Shift one line of the current block one shiftwidth right or left.
 //Leave cursor on first character in block.
 private void
 shift_block(Operator *oper, int amount) {
-   int         left = (oper->opTy == OP_LSHIFT);
-   int         oldstate = stateG;
-   int         total;
-   CS      newp;
-   Unt      newlen, oldlen;
-   int         oldcol = curPor->cursor.col;
-   int         sw_val = (int)get_sw_value_indent(curBook, left);
+   int left = (oper->opTy == OP_LSHIFT);
+   int oldstate = stateG;
+   CS  newp;
+   Unt newlen, oldlen;
+   int oldcol = curPor->cursor.col;
+   int sw_val = (int)get_sw_value_indent(curBook, left);
    BlockDef   bd;
-   int         incr;
-   ColNr      ws_vcol;
-   int         added;
-   Unt      new_line_len;   //the length of the line after the block shift
+   int incr;
+   ColNr ws_vcol;
+   int added;
+   Unt new_line_len;   //the length of the line after the block shift
 
    stateG = MODE_INSERT; 
    block_prep(oper, OUT &bd, curPor->cursor.lnum, true);
@@ -15416,12 +15414,12 @@ shift_block(Operator *oper, int amount) {
       return;
 
    //total is number of screen columns to be inserted/removed
-   total = (int)((unsigned)amount * (unsigned)sw_val);
+   int total = (int)((unsigned)amount * (unsigned)sw_val);
    if ((total / sw_val) != amount)
       return; //multiplication overflow
 
-    CS oldp = ml_get_curline();
-    oldlen = ml_get_curline_len();
+   CS oldp = ml_get_curline();
+   oldlen = ml_get_curline_len();
 
    if (!left) {
       int tabs = 0, spaces = 0;
@@ -15473,40 +15471,30 @@ shift_block(Operator *oper, int amount) {
       newlen += tabs;
       memset(newp + newlen, ' ', (Unt)spaces);
       STRCPY(newp + newlen + spaces, bd.textstart);
-   } else {//left
-      ColNr       destination_col;   //column to which text in block will
-                  //be shifted
-      Byte       *verbatim_copy_end;   //end of the part of the line which is
-                  //copied verbatim
-      ColNr       verbatim_copy_width;//the (displayed) width of this part
-                  //of line
-      Unt       fill;      //nr of spaces that replace a TAB
-      Unt       block_space_width;
-      Unt       shift_amount;
-      Byte       *non_white = bd.textstart;
-      ColNr       non_white_col;
-      Unt       fixedlen;      //length of string left of the shift
-                  //position (ie the string not being shifted)
-      CharTableSize cts;
+   } else { //left
+      ColNr destination_col;   //column to which text in block will be shifted
+      Byte* verbatim_copy_end;   //end of the part of the line which is copied verbatim
+      ColNr verbatim_copy_width;//the (displayed) width of this part of line
+      Unt fill;      //nr of spaces that replace a TAB
+      Byte* non_white = bd.textstart;
+      Unt fixedlen;      //length of string left of the shift position (ie the string not 
+                         //being shifted)
 
-      /*
-       * Firstly, let's find the first non-whitespace character that is
-       * displayed after the block's start column and the character's column
-       * number. Also, let's calculate the width of all the whitespace
-       * characters that are displayed in the block and precede the searched
-       * non-whitespace character.
-       */
+      //Firstly, let's find the first non-whitespace character that is displayed after the 
+      //block's start column and the character's column number. Also, let's calculate the 
+      //width of all the whitespace characters that are displayed in the block and precede the
+      //searched non-whitespace character.
 
-      //If "bd.startspaces" is set, "bd.textstart" points to the character,
-      //the part of which is displayed at the block's beginning. Let's start
-      //searching from the next character.
+      //If "bd.startspaces" is set, "bd.textstart" points to the character, the part of which
+      //is displayed at the block's beginning. Let's start searching from the next character.
       if (bd.startspaces)
           MB_PTR_ADV(non_white);
 
       //The character's column is in "bd.start_vcol".
-      non_white_col = bd.start_vcol;
+      ColNr non_white_col = bd.start_vcol;
 
-      bookInitCharsForKeywordsSizeArg(&cts, curPor, curPor->cursor.lnum,
+      CharTableSize cts;
+      bookInitCharsForKeywordsSizeArg(OUT &cts, curPor, curPor->cursor.lnum,
                   non_white_col, bd.textstart, non_white);
       while (SPACE_OR_TAB(*cts.cts_ptr)) {
          incr = lbr_chartabsize_adv(&cts);
@@ -15516,9 +15504,9 @@ shift_block(Operator *oper, int amount) {
       non_white = cts.cts_ptr;
       clear_chartabsize_arg(&cts);
 
-      block_space_width = non_white_col - oper->start_vcol;
+      Unt block_space_width = non_white_col - oper->start_vcol;
       //We will shift by "total" or "block_space_width", whichever is less.
-      shift_amount = (block_space_width < (Unt)total ? block_space_width : (Unt)total);
+      Unt shift_amount = (block_space_width < (Unt)total ? block_space_width : (Unt)total);
 
       //The column to which we will shift the text.
       destination_col = (ColNr)(non_white_col - shift_amount);
@@ -15531,8 +15519,10 @@ shift_block(Operator *oper, int amount) {
       //If "bd.startspaces" is set, "bd.textstart" points to the character
       //preceding the block. We have to subtract its width to obtain its column number.
       if (bd.startspaces)
-          verbatim_copy_width -= bd.start_char_vcols;
-      bookInitCharsForKeywordsSizeArg(&cts, curPor, 0, verbatim_copy_width, bd.textstart, verbatim_copy_end);
+         verbatim_copy_width -= bd.start_char_vcols;
+      bookInitCharsForKeywordsSizeArg(
+            &cts, curPor, 0, verbatim_copy_width, bd.textstart, verbatim_copy_end
+      );
       while (cts.cts_vcol < destination_col) {
          incr = lbr_chartabsize(&cts);
          if (cts.cts_vcol + incr > destination_col)
@@ -15955,7 +15945,7 @@ op_delete(Operator* oper) {
           (void)doJoinLinesUnderCursor(2, false, false, false, false);
       }
       if (oper->opTy == OP_DELETE)
-          auto_format(false, true);
+          whAutoFormat(false, true);
     }
 
     msgmore(curBook->mem.lineCount - old_lcount);
@@ -16620,7 +16610,7 @@ op_change(Operator *oper) {
          eeglFree(ins_text);
       }
    }
-   auto_format(false, true);
+   whAutoFormat(false, true);
 
    return retval;
 }
@@ -18363,7 +18353,7 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
       case OP_LSHIFT:
       case OP_RSHIFT:
          op_shift(oper, true, oper->is_VIsual ? (int)aArg->count1 : 1);
-         auto_format(false, true);
+         whAutoFormat(false, true);
          break;
 
       case OP_JOIN_NS:
@@ -18374,7 +18364,7 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
             inpFlushIfNotSilent();
          else {
             (void)doJoinLinesUnderCursor(oper->line_count, oper->opTy == OP_JOIN, true, true, true);
-            auto_format(false, true);
+            whAutoFormat(false, true);
          }
          break;
 
@@ -18384,7 +18374,7 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
          (void)op_delete(oper);
          //save cursor line for undo if it wasn't saved yet
          if (oper->motion_type == MLINE && has_format_option(FO_AUTO) && u_save_cursor() == OK)
-            auto_format(false, true);
+            whAutoFormat(false, true);
          break;
 
       case OP_YANK:
@@ -18474,7 +18464,7 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
          op_insert(oper, aArg->count1);
 
          //TODO: when inserting in several lines, should format all the lines.
-         auto_format(false, true);
+         whAutoFormat(false, true);
 
          if (restart_edit == 0)
             restart_edit = restart_edit_save;
@@ -19953,21 +19943,17 @@ get_indent_str(CS ptr, int ts) {//if true, count a tab as ^I
 }
 
 //Set the indent of the current line. Leave the cursor on the first non-blank in the line.
-//Caller must take care of undo.
+//Size is measured in spaces. Caller must take care of undo.
 //"flags":
 // SIN_CHANGED:   call changed_bytes() if the line was changed.
 // SIN_INSERT:   insert the indent in front of the line.
 // SIN_UNDO:   save line for undo before changing it.
 //Return true if the line was changed.
-pub int
-set_indent(
-   int      size,          //measured in spaces
-   int      flags
-){
+pub Boole
+doSetIndent(int size, Unt flags){
    Byte   *s;
-   int      line_len;       //size of the line (including the ZERO)
-   int      doit = false;
-   int      retval = false;
+   int doit = false;
+   Boole retval = false;
 
    //First check if there is anything to do and compute the number of
    //characters needed for the indent.
@@ -19975,7 +19961,7 @@ set_indent(
    int ind_len = 0; //measured in characters
    CS oldline = ml_get_curline();
    CS p = oldline;
-   line_len = ml_get_curline_len() + 1;
+   int line_len = ml_get_curline_len() + 1; //size of the line (including the ZERO)
 
    //Calculate the buffer size for the new indent, and check to see if it isn't already set
 
@@ -20017,8 +20003,7 @@ set_indent(
    CS newline = alloc(ind_len + line_len);
    s = newline;
 
-   //Put the characters in the new line.
-   //if 'expandtab' isn't set: use TABs
+   //Put the characters in the new line. If 'expandtab' isn't set: use TABs
    if (!curBook->o.expandTab) {
       while (todo >= (int)curBook->o.shiftWidth) {
          *s++ = TAB;
@@ -20032,14 +20017,14 @@ set_indent(
    MEMMOVE(s, p, (Unt)line_len);
 
    //Replace the line (unless undo fails).
-   if (!(flags & SIN_UNDO) || u_savesub(curPor->cursor.lnum) == OK) {
+   if ((flags & SIN_UNDO) == 0 || u_savesub(curPor->cursor.lnum) == OK) {
       ColNr old_offset = (ColNr)(p - oldline);
       ColNr new_offset = (ColNr)(s - newline);
 
       //this may free "newline"
       ml_replace(curPor->cursor.lnum, newline, false);
-      if (flags & SIN_CHANGED)
-          changed_bytes(curPor->cursor.lnum, 0);
+      if ((flags & SIN_CHANGED) != 0)
+         changed_bytes(curPor->cursor.lnum, 0);
 
       //Correct saved cursor position if it is in this line.
       if (saved_cursor.lnum == curPor->cursor.lnum) {
@@ -20060,15 +20045,15 @@ set_indent(
       );
       retval = true;
    } else
-       eeglFree(newline);
+      eeglFree(newline);
 
    curPor->cursor.col = ind_len;
    return retval;
 }
 
-//Return the indent of the current line after a number.  Return -1 if no
-//number was found.  Used for 'n' in 'formatoptions': numbered list.
-//Since a pattern is used it can actually handle more than numbers.
+//Return the indent of the current line after a number. Return -1 if no number was found. Used 
+//for 'n' in 'formatoptions': numbered list. Since a pattern is used it can actually handle 
+//more than numbers.
 pub int
 get_number_indent(LineNr lnum) {
    ColNr   col;
@@ -20260,7 +20245,7 @@ op_reindent(Operator *oper, int (*how)(void)) {
          else
             amount = how();       //get the indent for this line
 
-         if (amount >= 0 && set_indent(amount, 0)) {
+         if (amount >= 0 && doSetIndent(amount, 0)) {
             //did change the indent, call doChangedLines() later
             if (first_changed == 0)
                first_changed = curPor->cursor.lnum;
@@ -20335,7 +20320,7 @@ doTrySmartIndent(int c) {
             curPor->cursor = *pos;
          i = get_indent();
          curPor->cursor = old_pos;
-         (void)set_indent(i, SIN_CHANGED);
+         (void)doSetIndent(i, SIN_CHANGED);
       } ei (curPor->cursor.col > 0) {
           //when inserting '{' after "O" reduce indent, but not
           //more than indent of previous line
@@ -20363,7 +20348,7 @@ doTrySmartIndent(int c) {
    if (curPor->cursor.col > 0 && can_si && c == '#' && inindent(0)) {
       //remember current indent for next line
       old_indent = get_indent();
-      (void)set_indent(0, SIN_CHANGED);
+      (void)doSetIndent(0, SIN_CHANGED);
    }
 
    //Adjust ai_col, the char at this position can be deleted.
@@ -20408,7 +20393,7 @@ opChangeIndent(
 
    //Set the new indent.  The cursor will be put on the first non-blank.
    if (type == INDENT_SET)
-      (void)set_indent(amount, call_changed_bytes ? SIN_CHANGED : 0);
+      (void)doSetIndent(amount, call_changed_bytes ? SIN_CHANGED : 0);
    else {
       int save_State = stateG;
       shift_line(type == INDENT_DEC, round, 1, call_changed_bytes);

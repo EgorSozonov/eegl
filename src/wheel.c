@@ -145,7 +145,7 @@ private int appendDigitLong(OUT Long* value, int digit);
 private int widthLeft(Portal* po);
 private int nv_z_get_count(ActionArg* aArg, Unt* nchar_arg);
 private void nv_zet(ActionArg* aArg);
-private void nv_colon(OUT ActionArg* aArg);
+private void nv_semicolon(OUT ActionArg* aArg);
 private void nv_ctrlg(ActionArg* aArg);
 private void nv_ctrlh(ActionArg* aArg);
 private void nv_clear(ActionArg* aArg);
@@ -529,6 +529,7 @@ private void cpt_compl_refresh(void);
 private void copyGlobalToBookLocalCb(Callback* globcb, Callback* bookCb);
 private void pchar_cursor(int c);
 private int paragraph_start(LineNr lnum);
+private void checkAutoFormat(int end_insert);
 //}}}
 
 //Declare actions[].
@@ -4355,9 +4356,9 @@ nv_zet(ActionArg* aArg) {
       newFoldLevel();
 }
 
-//Handle a ":" action.
+//Handle a ";" action.
 private void
-nv_colon(OUT ActionArg* aArg) {
+nv_semicolon(OUT ActionArg* aArg) {
    Boole isCmdkey = aArg->cmdchar == K_COMMAND || aArg->cmdchar == K_SCRIPT_COMMAND;
 
    if (VIsual_active && !isCmdkey) {
@@ -4366,7 +4367,7 @@ nv_colon(OUT ActionArg* aArg) {
    }
 
    if (aArg->oper->opTy != OP_NOP) {
-      //Using ":" as a movement is characterwise exclusive.
+      //Using ";" as a movement is characterwise exclusive.
       aArg->oper->motion_type = MCHAR;
       aArg->oper->inclusive = false;
    } ei (aArg->count0 && !isCmdkey) {
@@ -5856,9 +5857,9 @@ private void
 nv_portal(ActionArg* aArg) {
    if (aArg->nchar == ':') {
       //"CTRL-W :" is the same as typing ":"; useful in a terminal portal
-      aArg->cmdchar = ':';
+      aArg->cmdchar = ';';
       aArg->nchar = ZERO;
-      nv_colon(aArg);
+      nv_semicolon(aArg);
    } ei (!checkclearop(aArg->oper))
       doPortal(aArg->nchar, aArg->count0, ZERO); //everything is in window.c
 }
@@ -5869,7 +5870,7 @@ nv_suspend(ActionArg* aArg) {
    clearop(aArg->oper);
    if (VIsual_active)
       end_visual_mode();      //stop Visual mode
-   executeCommLine((CS)"stop");
+   executeCommLine(S"stop");
 }
 
 //"gv": Reselect the previous Visual area.  If Visual already active, exchange previous and 
@@ -5954,8 +5955,7 @@ nv_g_home_m_cmd(ActionArg* aArg) {
       }
    } else
       i = curPor->leftCol;
-   //Go to the middle of the screen line.  When 'number' or
-   //'relativenumber' is on and lines are wrapping the middle can be more
+   //Go to the middle of the screen line. When lines are wrapping, the middle can be more
    //to the left.
    if (aArg->nchar == 'm')
       i += widthLeft(curPor) / 2;
@@ -7111,7 +7111,7 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
          coladvance((ColNr)MAXCOL);
       }
    }
-   auto_format(false, true);
+   whAutoFormat(false, true);
 }
 
 //}}}
@@ -7187,7 +7187,7 @@ nOpenAction(ActionArg* aArg) {
              (LineNr)(curPor->cursor.lnum - (aArg->cmdchar == 'O' ? 1 : 0)),
              (LineNr)(curPor->cursor.lnum + (aArg->cmdchar == 'o' ? 1 : 0))
         ) == OK
-        && insertLine(aArg->cmdchar == 'O' ? BACKWARD : FORWARD) == OK
+        && doInsertLine(aArg->cmdchar == 'O' ? BACKWARD : FORWARD) == OK
    ) {
       if (curPor->o.cursorLine) {
          //force redraw of cursorline
@@ -7369,13 +7369,10 @@ comp_botline(Portal* po) {
    normSetEmptyRowCount(po, done);
 }
 
-//Redraw when cursorLineRow changes and 'relativenumber' or 'cursorline' is set.
+//Redraw when cursorLineRow changes
 private void
 redraw_for_cursorline(Portal* po) {
-   if ((po->o.relativeNumber || po->o.cursorLine )
-       && (po->cacheState & VALID_CROW) == 0
-       && !pum_visible()
-   ) {
+   if ((po->cacheState & VALID_CROW) == 0 && !pum_visible()) {
       //drawLineOnScreen() will redraw the number column and cursorline only.
       redrawPortLater(po, UPD_VALID);
    }
@@ -12128,7 +12125,7 @@ edit(Unt commChar, int startln, long count){
    did_restart_edit = restart_edit;
 
    //sleep before redrawing, needed for "CTRL-O :" that results in an error message
-   check_for_delay(true);
+   drawCheckShouldBeDelay(true);
 
    //set insertStartOrigG to insertStartG
    update_insertStartOrigS = true;
@@ -12585,7 +12582,7 @@ edit(Unt commChar, int startln, long count){
          if (ctrl_x_mode_register() && !ins_compl_active())
             goto docomplete;
          insertRegisterContents();
-         auto_format(false, true);
+         whAutoFormat(false, true);
          inserted_space = false;
          break;
 
@@ -12611,21 +12608,21 @@ edit(Unt commChar, int startln, long count){
          }
 
          ins_shift(c, lastc);
-         auto_format(false, true);
+         whAutoFormat(false, true);
          inserted_space = false;
          break;
 
       case K_DEL:   //delete character under the cursor
       case K_KDEL:
          ins_del();
-         auto_format(false, true);
+         whAutoFormat(false, true);
          break;
 
       case K_BS:   //delete character before the cursor
       case K_S_BS:
       case Ctrl_H:
          did_backspace = ins_bs(c, BACKSPACE_CHAR, &inserted_space);
-         auto_format(false, true);
+         whAutoFormat(false, true);
          if (did_backspace && p_ac && !char_avail() && curPor->cursor.col > 0) {
             c = char_before_cursor();
             if (ins_compl_setup_autocompl(c)) {
@@ -12647,7 +12644,7 @@ edit(Unt commChar, int startln, long count){
             goto doESCkey;
          }
          did_backspace = ins_bs(c, BACKSPACE_WORD, &inserted_space);
-         auto_format(false, true);
+         whAutoFormat(false, true);
          break;
 
       case Ctrl_U:   //delete all inserted text in current line
@@ -12655,7 +12652,7 @@ edit(Unt commChar, int startln, long count){
          if (ctrl_x_mode_function())
             goto docomplete;
          did_backspace = ins_bs(c, BACKSPACE_LINE, &inserted_space);
-         auto_format(false, true);
+         whAutoFormat(false, true);
          inserted_space = false;
          break;
 
@@ -12824,7 +12821,7 @@ edit(Unt commChar, int startln, long count){
          
          
          inserted_space = false;
-         auto_format(false, true);
+         whAutoFormat(false, true);
          break;
 
       case K_KENTER:   //<Enter>
@@ -12854,7 +12851,7 @@ edit(Unt commChar, int startln, long count){
          }
          if (ins_eol(c) == FAIL)
             goto doESCkey;       //out of memory
-         auto_format(false, false);
+         whAutoFormat(false, false);
          inserted_space = false;
          break;
 
@@ -12939,7 +12936,7 @@ edit(Unt commChar, int startln, long count){
             insertRegular(c, false, false);
          }
 
-         auto_format(false, true);
+         whAutoFormat(false, true);
 
          //When inserting a character the cursor line must never be in a closed fold.
          foldOpenCursor();
@@ -13615,7 +13612,7 @@ stop_insert(
                 curPor->cursor = tpos;
          }
 
-         auto_format(true, false);
+         whAutoFormat(true, false);
 
          if (SPACE_OR_TAB(cc)) {
             if (gchar_cursor() != ZERO)
@@ -13629,7 +13626,7 @@ stop_insert(
       }
 
       //If a space was inserted for auto-formatting, remove it now.
-      check_auto_format(true);
+      checkAutoFormat(true);
 
       //If we just did an auto-indent, remove the white space from the end
       //of the line, and put the cursor back. Do this when ESC was used or moving the cursor 
@@ -14387,14 +14384,14 @@ ins_bs_one(void) {
 //Return true when backspace was actually used.
 private int
 ins_bs(int c, int mode, int* inserted_space_p) {
-   LineNr   lnum;
-   int      cc;
-   int      temp = 0;       //init for GCC
-   ColNr   save_col;
-   ColNr   mincol;
-   int      did_backspace = false;
-   int      cpc[MAX_COMBINED_SYMBOLS];       //composing characters
-   int      call_fix_indent = false;
+   LineNr lnum;
+   int cc;
+   int temp = 0;       //init for GCC
+   ColNr save_col;
+   ColNr mincol;
+   int did_backspace = false;
+   Unt cpc[MAX_COMBINED_SYMBOLS];       //composing characters
+   int call_fix_indent = false;
 
    //can't delete anything in an empty file
    //can't backup past first character in buffer
@@ -15083,7 +15080,7 @@ ins_ctrl_ey(Unt tc) {
          insertRegular(c, true, false);
          curBook->o.textWidth = tw_save;
          c = Ctrl_V;   //pretend CTRL-V is last character
-         auto_format(false, true);
+         whAutoFormat(false, true);
       }
    }
    return c;
@@ -17297,7 +17294,7 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
       retval = true;
    }
 
-   auto_format(false, true);
+   whAutoFormat(false, true);
 
    //Trigger the CompleteDonePre event to give scripts a chance to
    //act upon the completion before clearing the info, and restore
@@ -20711,7 +20708,7 @@ setCompletionCallbacks(OptionChange *cha) {
 //}}}
 //{{{text formatting
 
-private int   did_add_space = false;   //auto_format() added an extra space under the cursor
+private Boole did_add_space = false;   //whAutoFormat() added an extra space under the cursor
 
 #define WHITECHAR(cc) (SPACE_OR_TAB(cc) && (!utf_iscomposing(mb_ptr2char(ml_get_cursor() + 1))))
 
@@ -21001,7 +20998,7 @@ internal_format(
           no_leader = false;
 
       if (first_line) {
-          if (!(flags & INSCHAR_COM_LIST)) {
+          if ((flags & INSCHAR_COM_LIST) == 0) {
              //This section is for auto-wrap of numeric lists. When not in insert mode (i.e. 
              //format_lines()), the INSCHAR_COM_LIST flag will be set and openLine() will handle 
              //it (as seen above). The code here (and in get_number_indent()) will recognize 
@@ -21019,7 +21016,7 @@ internal_format(
                    for (int i = 0; i < padding; i++)
                       ins_str(S" ", 1);
                 } else {
-                   (void)set_indent(second_indent, SIN_CHANGED);
+                   (void)doSetIndent(second_indent, SIN_CHANGED);
                 }
              }
           }
@@ -21077,8 +21074,8 @@ fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComm
        || startPS(lnum, ZERO, false));
 }
 
-//Return true when a paragraph starts in line "lnum".  Return false when the
-//previous line is in the same paragraph.  Used for auto-formatting.
+//Return true when a paragraph starts in line "lnum". Return false when the
+//previous line is in the same paragraph. Used for auto-formatting.
 private int
 paragraph_start(LineNr lnum) {
    int leader_len = 0;      //leader len of current line
@@ -21117,10 +21114,7 @@ paragraph_start(LineNr lnum) {
 //Keep the cursor at the same position relative to the text.
 //The caller must have saved the cursor line for undo, following ones will be saved here.
 pub void
-auto_format(
-    int trailblank,   //when true also format with trailing blank
-    int prev_line   //may start in previous line
-){
+whAutoFormat(Boole trailblank, Boole prev_line) {   //may start in previous line
    if (!has_format_option(FO_AUTO))
       return;
 
@@ -21128,7 +21122,7 @@ auto_format(
    CS old = ml_get_curline();
 
    //may remove added space
-   check_auto_format(false);
+   checkAutoFormat(false);
 
    //Don't format in Insert mode when the cursor is on a trailing blank, the user might insert 
    //normal text next. Also skip formatting when "1" is in 'formatoptions' and there is a single 
@@ -21159,7 +21153,7 @@ auto_format(
    if (prev_line && !paragraph_start(curPor->cursor.lnum)) {
       --curPor->cursor.lnum;
    if (u_save_cursor() == FAIL)
-       return;
+      return;
    }
 
    //Do the formatting and restore the cursor position.  "saved_cursor" will
@@ -21181,7 +21175,7 @@ auto_format(
    //need to add a space when 'w' is in 'formatoptions' to keep a paragraph formatted.
    if (!wasatend && has_format_option(FO_WHITE_PAR)) {
       CS new = ml_get_curline();
-      ColNr   len = ml_get_curline_len();
+      ColNr len = ml_get_curline_len();
       if (curPor->cursor.col == len) {
          CS pnew = copySubstr(new, len + 2);
          pnew[len] = ' ';
@@ -21191,7 +21185,7 @@ auto_format(
          did_add_space = true;
       } else
          //may remove added space
-         check_auto_format(false);
+         checkAutoFormat(false);
    }
 
    check_cursor();
@@ -21199,8 +21193,8 @@ auto_format(
 
 //When an extra space was added to continue a paragraph for auto-formatting,
 //delete it now.  The space must be under the cursor, just after the insert position.
-pub void
-check_auto_format(int end_insert){      //true when ending Insert mode
+private void
+checkAutoFormat(int end_insert){      //true when ending Insert mode
    if (!did_add_space)
       return;
 
@@ -21239,8 +21233,8 @@ comp_textwidth(int ff) {  //force formatting (for "gq" command)
           textwidth -= 1;
       if (isSigncolumnOn(curPor))
          textwidth -= 1;
-      if (curPor->o.relativeNumber)
-         textwidth -= 8;
+      //for relativeNumber
+      textwidth -= 8;
    }
    if (textwidth < 0)
       textwidth = 0;
