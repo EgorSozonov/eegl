@@ -123,7 +123,7 @@ int text_prop_position(
    TextProp* t,
    int vcol,       //current text column
    int scr_col,       //current screen column
-   int* countExtraBytes,       //nr of bytes for virtual text
+   Unt* countExtraBytes,       //nr of bytes for virtual text
    Byte** extraBytes,       //virtual text
    OUT int* numDecoCells,       //decoration cells, NULL if not used
    int* toSkipBeforeDeco,   //cells to skip deco, NULL if not used

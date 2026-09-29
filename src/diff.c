@@ -8,6 +8,7 @@
 //- Use the compiled-in xdiff library.
 //- Let 'diffexpr' do the work, using files.
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -19,6 +20,7 @@
 #include "h/do.h"
 #include "h/draw.types.h"
 #include "h/draw.h"
+#include "h/fileio.types.h"
 #include "h/fileio.h"
 #include "h/diff.h"
 #include "h/eval.h"
@@ -32,6 +34,14 @@
 #include "h/script.h"
 #include "h/strings.h"
 #include "h/wheel.h"
+
+
+#include <assert.h> //for assert()
+#include <ctype.h> //for isdigit()
+#include <sys/file.h> //for FileStat
+#include <math.h> //for pow
+#include <string.h> //for memchr()
+#include <libintl.h> //for gettext
 
 int stat(const char* restrict path, struct stat* restrict buf); //from sys/stat.h
 

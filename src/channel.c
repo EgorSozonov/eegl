@@ -3,6 +3,7 @@
 
 //## channel.c: implements communication through a socket or any file handle, plus logging
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -13,6 +14,7 @@
 #include "h/book.h"
 #include "h/fileio.h"
 #include "h/motor.types.h"
+#include "h/motor.time.h"
 #include "h/motor.h"
 #include "h/message.h"
 #include "h/option.h"
@@ -24,13 +26,21 @@
 #include "h/wheel.types.h"
 #include "h/wheel.h"
 
+#include <ctype.h> //for isdigit()
+#include <errno.h> //for errno
+#include <sys/file.h> //for fcntl
+#include <sys/ioctl.h> //for ioctl
+#include <sys/utsname.h> //for vutsname
+#include <time.h> //for nanosleep()
 #include <netdb.h>
+#include <pwd.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/resource.h>
 #include <sys/poll.h>
+#include <sys/wait.h> //for waitpid()
+#include <libintl.h> //for gettext()
 
 typedef sigset_t SignalSet;
 
@@ -126,7 +136,7 @@ typedef struct {
    //The value is the length of the incomplete message when the deadline was set.  If it gets 
    //longer (something was received) the deadline is reset.
    Unt ch_wait_len;
-   TimeVal deadline;
+   TimeSpec deadline;
    int ch_block_write; //for testing: 0 when not used, -1 when write
                        //does not block, 1 simulate blocking
    int ch_nonblocking; //write() is non-blocking
@@ -515,7 +525,7 @@ mch_delay(long msec, int flags) {
 
       //Everybody sleeps in a different way...
       //Prefer nanosleep(), some versions of usleep() can only sleep up to one second.
-      struct timespec ts;
+      TimeSpec ts;
 
       ts.tv_sec = msec / 1000;
       ts.tv_nsec = (msec % 1000) * 1000000;
@@ -590,11 +600,11 @@ channel_connect(
       {
          int so_error = 0;
          socklen_t so_error_len = sizeof(so_error);
-         TimeVal start_tv;
-         TimeVal end_tv;
+         TimeSpec start_tv;
+         TimeSpec end_tv;
          PollFd pollFd = (PollFd){.fd = sd, .events = POLLIN|POLLOUT, .revents = 0};
 
-         gettimeofday(&start_tv, NULL);
+         timespec_get(OUT &start_tv, TIME_UTC);
          ch_log(channel, "Waiting for connection (waiting %d msec)...", waitnowMs);
 
          ret = poll(&pollFd, 1, waitnowMs);
@@ -634,9 +644,9 @@ channel_connect(
             //Did not detect an error, connection is established.
             break;
 
-         gettimeofday(&end_tv, NULL);
+         timespec_get(OUT &end_tv, TIME_UTC);
          elapsed_msec = (end_tv.tv_sec - start_tv.tv_sec) * 1000
-                + (end_tv.tv_usec - start_tv.tv_usec) / 1000;
+                + (end_tv.tv_nsec - start_tv.tv_nsec) / 1000000;
       }
 
       if (*waittime > 1 && elapsed_msec < *waittime) {
@@ -1623,21 +1633,21 @@ channel_parse_json(Channel* channel, ChannelFdKind part) {
             (int)buflen);
          reader.js_used = 0;
          chanpart->ch_wait_len = buflen;
-         gettimeofday(&chanpart->deadline, NULL);
-         chanpart->deadline.tv_usec += 100 * 1000;
-         if (chanpart->deadline.tv_usec > 1000 * 1000) {
-           chanpart->deadline.tv_usec -= 1000 * 1000;
+         timespec_get(OUT &chanpart->deadline, TIME_UTC);
+         chanpart->deadline.tv_nsec += 100 * 1000000;
+         if (chanpart->deadline.tv_nsec > 1000 * 1000000) {
+           chanpart->deadline.tv_nsec -= 1000 * 1000000;
            ++chanpart->deadline.tv_sec;
          }
       } else {
          int timeout;
          {
-         TimeVal now_tv;
+         TimeSpec now_tv;
 
-         gettimeofday(&now_tv, NULL);
+         timespec_get(OUT &now_tv, TIME_UTC);
          timeout = now_tv.tv_sec > chanpart->deadline.tv_sec
                || (now_tv.tv_sec == chanpart->deadline.tv_sec
-               && now_tv.tv_usec > chanpart->deadline.tv_usec);
+               && now_tv.tv_nsec > chanpart->deadline.tv_nsec);
          }
          if (timeout) {
             status = FAIL;
@@ -2835,10 +2845,10 @@ channel_read_json_block(
          //Wait for up to the timeout. If there was an incomplete message use the deadline for that
          timeout = timeout_arg;
          if (chanpart->ch_wait_len > 0) { {
-             TimeVal now_tv;
-             gettimeofday(&now_tv, NULL);
+             TimeSpec now_tv;
+             timespec_get(&now_tv, TIME_UTC);
              timeout = (chanpart->deadline.tv_sec - now_tv.tv_sec) * 1000
-                        + (chanpart->deadline.tv_usec - now_tv.tv_usec) / 1000
+                        + (chanpart->deadline.tv_nsec - now_tv.tv_nsec) / 1000
                         + 1;
          }
          if (timeout < 0) {
@@ -3330,7 +3340,7 @@ channel_parse_messages(void) {
    ++recursive;
    ++safe_to_invoke_callback;
 
-   ELAPSED_INIT(start_tv);
+   timespec_get(OUT &start_tv, TIME_UTC);
 
    //Only do this message when another message was given, otherwise we get lots of them.
    if ((did_repeated_msg & REPEATED_MSG_LOOKING) == 0) {
@@ -3376,7 +3386,7 @@ channel_parse_messages(void) {
          if (channel_unref(channel) || (r == OK
             //Limit the time we loop here to 100 msec, otherwise Eegl becomes unresponsive when 
             //the callback takes more than a bit of time.
-            && ELAPSED_FUNC(start_tv) < 100L
+            && motElapsedMs(start_tv) < 100L
             )
          )
             //channel was freed or something was done, start over
@@ -3656,10 +3666,10 @@ build_argv_from_list(List *l, Byte*** argv, int *argc) {
 //{{{channels, shell jobs and signals
 
 private char* signal_stack;
-private void sigcont_handler SIGPROTOARG;
-private void deathtrap SIGPROTOARG;
-static void catch_sigusr1 SIGPROTOARG;
-private void catch_sigpwr SIGPROTOARG;
+private void sigcont_handler(int);
+private void deathtrap(int) ;
+static void catch_sigusr1(int);
+private void catch_sigpwr(int);
 
 typedef struct {
    int sig;   //Signal number, eg. SIGSEGV etc
@@ -4034,7 +4044,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
 
       int unreadCnt = 0;
       Elapsed start_tv;
-      ELAPSED_INIT(start_tv);
+      timespec_get(OUT &start_tv, TIME_UTC);
       for (;;) {
          //Check if keys have been typed, write them to the child if there are any. Don't do this 
          //if we are expanding wild cards (would eat typeahead). Don't do this when filtering and 
@@ -4053,7 +4063,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
             if (typeAheadLen == 0) {
                //Get extra characters when we don't have any. Reset the counter and timer.
                unreadCnt = 0;
-               ELAPSED_INIT(start_tv);
+               timespec_get(OUT &start_tv, TIME_UTC);
                len = ui_inchar(ta_buf, BUFLEN, 10L, 0);
             }
             if (typeAheadLen > 0 || len > 0) {
@@ -4138,7 +4148,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
                break;
 
             if (wait_pid == 0) {
-               Long msec = ELAPSED_FUNC(start_tv);
+               Long msec = motElapsedMs(start_tv);
 
                //Avoid that we keep looping here without checking for a CTRL-C for a long time.
                //Don't break out too often to avoid losing typeahead.
@@ -4606,7 +4616,7 @@ after_sigcont(void) {
 //
 //volatile because it is used in signal handler sigcont_handler().
 private volatile SigAtomic sigcont_received;
-private void sigcont_handler SIGPROTOARG;
+private void sigcont_handler(int);
 
 //signal handler for SIGCONT
 private void

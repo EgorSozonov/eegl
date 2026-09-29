@@ -3,6 +3,7 @@
 
 //## data.c: core data structures
 
+#include "base.h"
 #include "eegl.h"
 
 //{{{macros
@@ -41,7 +42,12 @@ pub
 #include "h/wheel.types.h"
 #include "h/wheel.h"
 
+#include <ctype.h> //for isalnum()
 #include <sys/resource.h>
+#include <math.h> //for fabs
+#include <string.h> //for strlen()
+#include <libintl.h> //for gettext
+#include <stddef.h> //for offsetof
 
 int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
@@ -5994,7 +6000,6 @@ dictWrongFuncName(Bag* b, Var* tv, Text name) {
 //}}}
 //{{{floating-point numerics
 
-#define USING_FLOAT_STUFF
 
 //Convert the string "text" to a floating point number.
 //This uses strtod().  setlocale(LC_NUMERIC, "C") has been used to make sure
@@ -11348,7 +11353,6 @@ copyStr_shellescape(CS string, int do_special, int do_newline) {
 
 //json.c: Encoding and decoding JSON.
 //Follows this standard: https://tools.ietf.org/html/rfc7159.html
-#define USING_FLOAT_STUFF
 
 private int json_encode_item(ArrayList *gap, Var *val, int copyID, int options);
 

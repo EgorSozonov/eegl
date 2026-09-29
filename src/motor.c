@@ -3,6 +3,7 @@
 
 //## motor.c: the appliation runner of Eegl
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -33,7 +34,17 @@
 #include "h/wheel.h"
 #include "h/window.h"
 
+
+#include <errno.h> //for errno
+#include <ctype.h> //for isalpha()
+#include <sys/file.h> //for open
 #include <sys/stat.h> //for stat, fstat, S_ISDIR
+#include <pwd.h> //for setpwent()
+#include <time.h> //for timespec_get()
+#include <libintl.h> //for gettext()
+#include <inttypes.h> //for PRIu32
+#include <string.h> //for strstr()
+#include <stddef.h> //for offsetof
 
 //{{{the intro screen and version info about the current build
 
@@ -325,8 +336,12 @@ typedef struct {
    ArrayList vir_barlines;   //lines starting with |
 } Vir;
 
+
+#define TIME_MSG(s) do { if (time_fd != NULL) time_msg((CS)s, NULL); } while (0)
+
 //}}}
 #include "h/motor.h"
+#include "h/motor.time.h"
 //{{{@@forward declarations
 private void list_version(void);
 private void intro_message(int colon);
@@ -357,6 +372,23 @@ private void usage(void);
 private void check_swap_exists_action(void);
 private void set_progpath(CS argv0);
 private void exit_scroll(void);
+private Tm * eeLocaltime(
+   Tyme const* timep,      //timestamp for local representation
+   OUT Tm* result //pointer to caller return buffer
+);
+private int list2proftime(Var *arg, ProfTime *tm);
+private void insert_timer(Timer* timer);
+private void remove_timer(Timer* timer);
+private void free_timer(Timer* timer);
+private void timer_callback(Timer *timer);
+private Timer * find_timer(long id);
+private void stop_all_timers(void);
+private void add_timer_info(OUT Var* returnVar, Timer *timer);
+private void add_timer_info_all(OUT Var* returnVar);
+private void time_diff(TimeSpec* then, TimeSpec* now);
+private double profile_float(ProfTime *tm);
+private void set_flag(union sigval);
+private void set_flag(union sigval);
 private void add_user(Byte *user, int need_copy);
 private void init_users(void);
 private int ses_put_fname(FILE *fd, CS name);
@@ -2216,6 +2248,1026 @@ mch_exit(int r) {
 
    exit(r);
 }
+
+//}}}
+//{{{time
+
+//Cache of the current timezone name as retrieved from TZ, or an empty string
+//where unset, up to 64 octets long including trailing null byte.
+private Byte tz_cache[64];
+
+#define FOR_ALL_TIMERS(t) \
+    for ((t) = firstTimerS; (t) != NULL; (t) = (t)->next)
+    
+
+//Call either localtime(3) or localtime_r(3) from POSIX libc time.h, with the
+//latter version preferred for reentrancy.
+//
+//If we use localtime_r(3) and we have tzset(3) available, check to see if the environment variable 
+//TZ has changed since the last run, and call tzset(3) to update the global timezone variables if 
+//it has.  This is because the POSIX standard doesn't require localtime_r(3) implementations to do 
+//that as it does with localtime(3), and we don't want to call tzset(3) every time.
+private Tm *
+eeLocaltime(
+   Tyme const* timep,      //timestamp for local representation
+   OUT Tm* result //pointer to caller return buffer
+){
+   CS tz = mch_getenv(S"TZ");      //pointer for TZ environment var
+   if (tz == NULL)
+      tz = S"";
+   if (STRNCMP(tz_cache, tz, sizeof(tz_cache) - 1) != 0) {
+      tzset();
+      copySubstrToAllocation((CS)tz_cache, (Text){tz, sizeof(tz_cache) - 1});
+   }
+   return localtime_r(timep, result);
+}
+
+//Return the current time in seconds.  Calls time(), unless test_settime() was used.
+pub Tyme
+eeTime(void) {
+   return time_for_testing == 0 ? time(NULL) : time_for_testing;
+}
+
+//Replacement for ctime(), which is not safe to use.
+//Requires strftime(), otherwise returns "(unknown)".
+//If "thetime" is invalid returns "(invalid)".  Never returns NULL.
+//When "add_newline" is true add a newline like ctime() does. Use a static buffer.
+pub CS
+get_ctime(Tyme thetime, int add_newline) {
+   static Byte buf[100];  //hopefully enough for every language
+   Tm tmval;
+   Tm* curtime = eeLocaltime(&thetime, &tmval);
+   if (!curtime)
+      copySubstrToAllocation(buf, (Text){_("(Invalid)"), sizeof(buf) - 2});
+   else {
+      //xgettext:no-c-format
+      if (STRFTIME(buf, sizeof(buf) - 2, _("%a %b %d %H:%M:%S %Y"), curtime) == 0) {
+         //Quoting "man strftime":
+         //> If the length of the result string (including the terminating
+         //> null byte) would exceed max bytes, then strftime() returns 0,
+         //> and the contents of the array are undefined.
+         copySubstrToAllocation((CS)buf, (Text){_("(Invalid)"), sizeof(buf) - 2});
+      }
+   }
+   if (add_newline)
+      STRCAT(buf, "\n");
+   return buf;
+}
+
+
+//"localtime()" function
+pub void
+f_localtime(Arr(Var), OUT Var* returnVar) {
+   returnVar->number = (Long)time(NULL);
+}
+
+//Convert a List to ProfTime. Return FAIL when there is something wrong.
+private int
+list2proftime(Var *arg, ProfTime *tm) {
+   if (arg->tag != VAR_LIST || arg->list == NULL || arg->list->len != 2)
+      return FAIL;
+      
+   Boole error = false;
+   long n1 = list_find_nr(arg->list, 0L, &error);
+   long n2 = list_find_nr(arg->list, 1L, &error);
+   tm->tv_sec = n1;
+   tm->tv_fsec = n2;
+   return error ? FAIL : OK;
+}
+
+
+//"reltime()" function
+pub void
+f_reltime(Arr(Var) argVars, OUT Var* returnVar) {
+   ProfTime   res;
+   ProfTime   start;
+
+   allocReturnList(returnVar);
+
+   if (argVars[0].tag == VAR_UNKNOWN) {
+      //No arguments: get current time.
+      profile_start(&res);
+   } ei (argVars[1].tag == VAR_UNKNOWN) {
+      if (list2proftime(&argVars[0], &res) == FAIL) {
+         return;
+      }
+      profile_end(&res);
+   } else {
+      //Two arguments: compute the difference.
+      if (list2proftime(&argVars[0], &start) == FAIL || list2proftime(&argVars[1], &res) == FAIL) {
+         return;
+      }
+      profile_sub(&res, &start);
+   }
+
+   long n1 = res.tv_sec;
+   long n2 = res.tv_fsec;
+   list_append_number(returnVar->list, (Long)n1);
+   list_append_number(returnVar->list, (Long)n2);
+}
+
+pub void
+f_reltimefloat(Arr(Var) argVars, OUT Var* returnVar) {
+   ProfTime   tm;
+
+   returnVar->tag = VAR_FLOAT;
+   returnVar->floatt = 0;
+
+   if (list2proftime(&argVars[0], &tm) == OK)
+      returnVar->floatt = profile_float(&tm);
+}
+
+pub void
+f_reltimestr(Arr(Var) argVars, OUT Var* returnVar) {
+   returnVar->tag = VAR_STRING;
+   returnVar->string = NULL;
+
+   ProfTime   tm;
+   if (list2proftime(&argVars[0], &tm) == OK) {
+      static Byte buf[50];
+      long usec = tm.tv_fsec / (TV_FSEC_SEC / 1000000);
+      eeSnprintf(buf, sizeof(buf), "%3ld.%06ld", (long)tm.tv_sec, usec);
+      returnVar->string = copyStr(buf);
+   }
+}
+
+
+//"strftime({format}[, {time}])" function
+pub void
+f_strftime(Arr(Var) argVars, OUT Var* returnVar) {
+   Tm tmval;
+   Tyme seconds;
+
+   returnVar->tag = VAR_STRING;
+
+   CS arg = tv_get_string(&argVars[0]);
+   if (argVars[1].tag == VAR_UNKNOWN)
+      seconds = time(NULL);
+   else
+      seconds = (Tyme)tv_get_number(&argVars[1]);
+   Tm* curtime = eeLocaltime(&seconds, &tmval);
+   if (!curtime) {
+      returnVar->string = copyStr((CS)_("(Invalid)"));
+      return;
+   }
+
+   Byte result_buf[256];
+
+   if (!arg || STRFTIME(result_buf, sizeof(result_buf), arg, curtime) == 0)
+      result_buf[0] = ZERO;
+
+   returnVar->string = copyStr(result_buf);
+}
+
+//"strptime({format}, {timestring})" function
+pub void
+f_strptime(Var* argVars, Var* returnVar) {
+   Tm tmval;
+
+   CLEAR_FIELD(tmval);
+   tmval.tm_isdst = -1;
+   Byte* fmt = tv_get_string(&argVars[0]);
+   Byte* str = tv_get_string(&argVars[1]);
+
+   if (!fmt
+          || strptime((char *)str, (char *)fmt, &tmval) == NULL
+          || (returnVar->number = mktime(&tmval)) == -1
+   )
+      returnVar->number = 0;
+}
+
+private Timer* firstTimerS = NULL;
+private long lastTimerIdS = 0;
+
+//Return time left, in "msec", until "due".  Negative if past "due".
+pub long
+proftime_time_left(ProfTime *due, ProfTime *now) {
+   if (now->tv_sec > due->tv_sec)
+      return 0;
+   return (due->tv_sec - now->tv_sec)*1000 + (due->tv_fsec - now->tv_fsec) / (TV_FSEC_SEC / 1000);
+}
+
+//Insert a timer into the list of timers.
+private void
+insert_timer(Timer* timer) {
+   timer->next = firstTimerS;
+   timer->prev = NULL;
+   if (firstTimerS != NULL)
+      firstTimerS->prev = timer;
+   firstTimerS = timer;
+   did_add_timer = true;
+}
+
+//Take a timer out of the list of timers.
+private void
+remove_timer(Timer* timer) {
+   if (!timer->prev)
+      firstTimerS = timer->next;
+   else
+      timer->prev->next = timer->next;
+   if (timer->next)
+      timer->next->prev = timer->prev;
+}
+
+private void
+free_timer(Timer* timer) {
+   evFreeCallback(&timer->callback);
+   eeglFree(timer);
+}
+
+//Create a timer and return it. Caller should set the callback.
+pub Timer*
+create_timer(long msec, int repeat) {
+   Timer* timer = ALLOC_CLEAR_ONE(Timer);
+   long   prev_id = lastTimerIdS;
+
+   if (++lastTimerIdS <= prev_id)
+      //Overflow!  Might cause duplicates...
+      lastTimerIdS = 0;
+   timer->id = lastTimerIdS;
+   insert_timer(timer);
+   if (repeat != 0)
+      timer->tr_repeat = repeat - 1;
+   timer->tr_interval = msec;
+
+   timer_start(timer);
+   return timer;
+}
+
+//(Re)start a timer.
+pub void
+timer_start(Timer *timer) {
+   profile_setlimit(timer->tr_interval, &timer->due);
+   timer->tr_paused = false;
+}
+
+//Invoke the callback of "timer".
+private void
+timer_callback(Timer *timer) {
+   Var   returnVar;
+   Var   argv[2];
+
+   if (ch_log_active()) {
+      Callback *cb = &timer->callback;
+      lo("invoking timer callback %s", cb->cb_partial != NULL ? cb->cb_partial->name : cb->name);
+   }
+
+   argv[0].tag = VAR_NUMBER;
+   argv[0].number = (Long)timer->id;
+   argv[1].tag = VAR_UNKNOWN;
+
+   returnVar.tag = VAR_UNKNOWN;
+   call_callback(&timer->callback, -1, &returnVar, 1, argv);
+   clearVar(&returnVar);
+
+   lo("timer callback finished");
+}
+
+//Call timers that are due. Return the time in msec until the next timer is due.
+//Return -1 if there are no pending timers.
+pub long
+check_due_timer(void) {
+   Timer* timer_next;
+   long this_due;
+   long next_due = -1;
+   ProfTime now;
+   Boole did_one = false;
+   Boole need_drawUpdateScreen = false;
+   long current_id = lastTimerIdS;
+
+   //Don't run any timers while exiting, dealing with an error or at the debug prompt.
+   if (isExitingG || aborting() || debug_mode)
+      return next_due;
+
+   profile_start(&now);
+   for (Timer* timer = firstTimerS; timer != NULL && !gotInterruptG; timer = timer_next) {
+      timer_next = timer->next;
+
+      if (timer->id == -1 || timer->tr_firing || timer->tr_paused)
+         continue;
+      this_due = proftime_time_left(&timer->due, &now);
+      if (this_due <= 1) {
+         //Save and restore a lot of flags, because the timer fires while
+         //waiting for a character, which might be halfway a command.
+         int save_timer_busy = timer_busy;
+         int save_vgetcBusyG = vgetcBusyG;
+         int save_anyEmsgG = anyEmsgG;
+         int prev_uncaught_emsg = uncaught_emsg;
+         int save_called_emsg = called_emsg;
+         Unt mustRedrawSaved = mustRedrawG;
+         int save_ex_pressedreturn = get_pressedreturn();
+         int save_may_garbage_collect = may_garbage_collect;
+         ExceptionState estate;
+
+         exception_state_save(&estate);
+
+         //Create a scope for running the timer callback, ignoring most of
+         //the current scope, such as being inside a try/catch.
+         timer_busy = timer_busy > 0 || vgetcBusyG > 0;
+         vgetcBusyG = 0;
+         called_emsg = 0;
+         anyEmsgG = false;
+         mustRedrawG = 0;
+         may_garbage_collect = false;
+         exception_state_clear();
+
+         //Invoke the callback.
+         timer->tr_firing = true;
+         timer_callback(timer);
+         timer->tr_firing = false;
+
+         //Restore stuff.
+         timer_next = timer->next;
+         did_one = true;
+         timer_busy = save_timer_busy;
+         vgetcBusyG = save_vgetcBusyG;
+         if (uncaught_emsg > prev_uncaught_emsg)
+            ++timer->tr_emsg_count;
+         anyEmsgG = save_anyEmsgG;
+         called_emsg = save_called_emsg;
+         exception_state_restore(&estate);
+         if (mustRedrawG != 0)
+            need_drawUpdateScreen = true;
+         mustRedrawG = mustRedrawG > mustRedrawSaved ? mustRedrawG : mustRedrawSaved;
+         set_pressedreturn(save_ex_pressedreturn);
+         may_garbage_collect = save_may_garbage_collect;
+
+         //Only fire the timer again if it repeats and stop_timer() wasn't
+         //called while inside the callback (id == -1).
+         if (timer->tr_repeat != 0 && timer->id != -1 && timer->tr_emsg_count < 3) {
+            profile_setlimit(timer->tr_interval, &timer->due);
+            this_due = proftime_time_left(&timer->due, &now);
+            if (this_due < 1)
+               this_due = 1;
+            if (timer->tr_repeat > 0)
+               --timer->tr_repeat;
+         } else {
+            this_due = -1;
+            if (timer->tr_keep)
+               timer->tr_paused = true;
+            else {
+               remove_timer(timer);
+               free_timer(timer);
+            }
+         }
+      }
+      if (this_due > 0 && (next_due == -1 || next_due > this_due))
+         next_due = this_due;
+   }
+
+   if (did_one)
+      redraw_after_callback(need_drawUpdateScreen, false);
+
+   if (bevalexpr_due_set) {
+      this_due = proftime_time_left(&bevalexpr_due, &now);
+      if (this_due <= 1) {
+         bevalexpr_due_set = false;
+         if (balloonEval == NULL) {
+            balloonEval = ALLOC_CLEAR_ONE(BalloonEval);
+            balloonEvalForTerm = true;
+         }
+         if (balloonEval != NULL) {
+            general_beval_cb(balloonEval, 0);
+            setcursor();
+            out_flush();
+         }
+      } ei (next_due == -1 || next_due > this_due)
+         next_due = this_due;
+   }
+   //Some terminal portals may need their book updated.
+   next_due = term_check_timers(next_due, &now);
+
+   return current_id != lastTimerIdS ? 1 : next_due;
+}
+
+//Find a timer by ID.  Returns NULL if not found;
+private Timer *
+find_timer(long id) {
+   Timer *timer;
+
+   if (id < 0)
+      return NULL;
+
+   FOR_ALL_TIMERS(timer) {
+      if (timer->id == id)
+          return timer;
+   } 
+   return NULL;
+}
+
+
+//Stop a timer and delete it.
+pub void
+stop_timer(Timer *timer) {
+   if (timer->tr_firing)
+      //Free the timer after the callback returns.
+      timer->id = -1;
+   else {
+      remove_timer(timer);
+      free_timer(timer);
+   }
+}
+
+private void
+stop_all_timers(void) {
+   Timer *timer;
+   Timer *timer_next;
+
+   for (timer = firstTimerS; timer != NULL; timer = timer_next) {
+      timer_next = timer->next;
+      stop_timer(timer);
+   }
+}
+
+private void
+add_timer_info(OUT Var* returnVar, Timer *timer) {
+   List   *list = returnVar->list;
+   Bag   *dict = allocBag();
+   long   remaining;
+   ProfTime   now;
+
+   listAppendBag(list, dict);
+
+   bagAddNumber(dict, S"id", timer->id);
+   bagAddNumber(dict, S"time", (long)timer->tr_interval);
+
+   profile_start(&now);
+   remaining = proftime_time_left(&timer->due, &now);
+   bagAddNumber(dict, S"remaining", (long)remaining);
+
+   bagAddNumber(dict, S"repeat",
+       (long)(timer->tr_repeat < 0 ? -1
+              : timer->tr_repeat + (timer->tr_firing ? 0 : 1)));
+   bagAddNumber(dict, S"paused", (long)(timer->tr_paused));
+
+   DictItem* di = dictitem_alloc(tConst("callback"));
+   if (bagAdd(dict, di) == FAIL)
+      eeglFree(di);
+   else
+      putCallback(OUT &di->c, &timer->callback);
+}
+
+private void
+add_timer_info_all(OUT Var* returnVar) {
+   Timer *timer;
+
+   FOR_ALL_TIMERS(timer) {
+      if (timer->id != -1)
+         add_timer_info(returnVar, timer);
+   } 
+}
+
+//Mark references in partials of timers.
+pub int
+set_ref_in_timer(int copyID) {
+   int abort = false;
+   Var   tv;
+
+   for (Timer* timer = firstTimerS; !abort && timer; timer = timer->next) {
+      if (timer->callback.cb_partial) {
+         tv.tag = VAR_PARTIAL;
+         tv.partial = timer->callback.cb_partial;
+      } else {
+         tv.tag = VAR_FUNC;
+         tv.string = timer->callback.name;
+      }
+      abort = abort || set_ref_in_item(&tv, copyID, NULL, NULL);
+   }
+   return abort;
+}
+
+//Return true if "timer" exists in the list of timers.
+pub int
+timer_valid(Timer *timer) {
+   if (!timer)
+      return false;
+
+   Timer *t;
+   FOR_ALL_TIMERS(t) {
+      if (t == timer)
+         return true;
+   } 
+   return false;
+}
+
+# if defined(EXITFREE)
+pub void
+timer_free_all(void) {
+   while (firstTimerS != NULL) {
+      Timer *timer = firstTimerS;
+      remove_timer(timer);
+      free_timer(timer);
+   }
+}
+# endif
+
+//"timer_info([timer])" function
+pub void
+f_timer_info(Arr(Var) argVars, OUT Var* returnVar) {
+   Timer *timer = NULL;
+
+   allocReturnList(returnVar);
+
+   if (check_for_opt_number_arg(argVars, 0) == FAIL)
+      return;
+
+   if (argVars[0].tag != VAR_UNKNOWN) {
+      timer = find_timer((int)tv_get_number(&argVars[0]));
+      if (timer != NULL)
+         add_timer_info(returnVar, timer);
+   } else
+      add_timer_info_all(returnVar);
+}
+
+//"timer_pause(timer, paused)" function
+pub void
+f_timer_pause(Arr(Var) argVars, OUT Var*) {
+   if (argVars[0].tag != VAR_NUMBER) {
+      emsg(_(e_number_expected));
+      return;
+   }
+
+   int paused = (int)tv_get_bool(&argVars[1]);
+
+   Timer* timer = find_timer((int)tv_get_number(&argVars[0]));
+   if (timer != NULL)
+      timer->tr_paused = paused;
+}
+
+//"timer_start(time, callback [, options])" function
+pub void
+f_timer_start(Arr(Var) argVars, OUT Var* returnVar) {
+   int repeat = 0;
+   Bag* dict;
+
+   returnVar->number = -1;
+
+   long msec = (long)tv_get_number(&argVars[0]);
+   if (argVars[2].tag != VAR_UNKNOWN) {
+      if (check_for_nonnull_dict_arg(argVars, 2) == FAIL)
+         return;
+
+      dict = argVars[2].bag;
+      if (bagHasKey(dict, tConst("repeat")))
+         repeat = bagGetNumber(dict, tConst("repeat"));
+   }
+
+   Callback callback = get_callback(&argVars[1]);
+   if (!callback.name)
+      return;
+
+   Timer* timer = create_timer(msec, repeat);
+   if (!timer) {
+      evFreeCallback(&callback);
+      return;
+   }
+   set_callback(&timer->callback, &callback);
+   if (callback.needsFreeing)
+      eeglFree(callback.name);
+   returnVar->number = (Long)timer->id;
+}
+
+//"timer_stop(timer)" function
+pub void
+f_timer_stop(Arr(Var) argVars, OUT Var*) {
+   if (check_for_number_arg(argVars, 0) == FAIL)
+      return;
+
+   Timer* timer = find_timer((int)tv_get_number(&argVars[0]));
+   if (timer)
+      stop_timer(timer);
+}
+
+//"timer_stopall()" function
+pub void
+f_timer_stopall(Arr(Var), OUT Var*) {
+   stop_all_timers();
+}
+
+private TimeSpec prev_timeval;
+
+//Save the previous time before doing something that could nest.
+//set "*tv_rel" to the time elapsed so far.
+//Not public because there's a special header for this file, motor.time.h!
+void
+time_push(TimeSpec* tv_rel, TimeSpec* tv_start) {
+   *tv_rel = prev_timeval;
+   timespec_get(&prev_timeval, TIME_UTC);
+   tv_rel->tv_nsec = prev_timeval.tv_nsec - tv_rel->tv_nsec;
+   tv_rel->tv_sec = prev_timeval.tv_sec - tv_rel->tv_sec;
+   if (tv_rel->tv_nsec < 0) {
+      tv_rel->tv_nsec += 1000000;
+      --tv_rel->tv_sec;
+   }
+   *tv_start = prev_timeval;
+}
+
+//Compute the previous time after doing something that could nest.
+//Subtract "*tp" from prev_timeval;
+//Not public because there's a special header for this file, motor.time.h!
+void
+time_pop(TimeSpec* tp) {
+   prev_timeval.tv_nsec -= tp->tv_nsec;
+   prev_timeval.tv_sec -= tp->tv_sec;
+   if (prev_timeval.tv_nsec < 0) {
+      prev_timeval.tv_nsec += 1000000;
+      --prev_timeval.tv_sec;
+   }
+}
+
+private void
+time_diff(TimeSpec* then, TimeSpec* now) {
+   long usec = now->tv_nsec - then->tv_nsec;
+   long msec = (now->tv_sec - then->tv_sec) * 1000L + usec / 1000L;
+   usec = usec % 1000L;
+   fprintf(time_fd, "%03ld.%03ld", msec, usec >= 0 ? usec : usec + 1000L);
+}
+
+//Not public because there's a special header for this file, motor.time.h!
+void
+time_msg(CS mesg, TimeSpec* tv_start){
+//only for scriptRunFile: start time;
+   static TimeSpec start;
+
+   if (!time_fd)
+      return;
+
+   if (STRSTR(mesg, S"STARTING") != NULL) {
+      timespec_get(OUT &start, TIME_UTC);
+      prev_timeval = start;
+      fprintf(time_fd, "\n\ntimes in msec\n");
+      fprintf(time_fd, " clock   self+sourced   self:  sourced script\n");
+      fprintf(time_fd, " clock   elapsed:              other lines\n\n");
+   }
+   
+   TimeSpec now;
+   timespec_get(OUT &now, TIME_UTC);
+   time_diff(&start, &now);
+   if (tv_start) {
+      fprintf(time_fd, "  ");
+      time_diff(tv_start, &now);
+   }
+   fprintf(time_fd, "  ");
+   time_diff(&prev_timeval, &now);
+   prev_timeval = now;
+   fprintf(time_fd, ": %s\n", mesg);
+}
+
+//Not public because there's a special header for this file, motor.time.h!
+Long
+motElapsedMs(TimeSpec since) {
+   TimeSpec now;
+   timespec_get(OUT &now, TIME_UTC);
+   return (now.tv_nsec - since.tv_nsec)/1000000;
+}
+
+//Read 8 bytes from "fd" and turn them into a Tyme, MSB first. Returns -1 when encountering EOF.
+pub Tyme
+get8ctime(FILE *fd) {
+   Tyme   n = 0;
+
+   for (int i = 0; i < 8; ++i) {
+      int c = getc(fd);
+      if (c == EOF) return -1;
+      n = (n << 8) + c;
+   }
+   return n;
+}
+
+//Write Tyme to file "fd" in 8 bytes. Returns FAIL when the write failed.
+pub int
+put_time(FILE *fd, Tyme the_time) {
+   Byte buf[8];
+
+   time_to_bytes(the_time, buf);
+   return fwrite(buf, 8, 1, fd) == 1 ? OK : FAIL;
+}
+
+//Write Tyme to "buf[8]".
+pub void
+time_to_bytes(Tyme the_time, CS buf) {
+   int      c;
+   int      i;
+   int      bi = 0;
+   Tyme   wtime = the_time;
+
+   //Tyme can be up to 8 bytes in size, more than Ulong, thus we can't use put_bytes() here.
+   //Another problem is that ">>" may do an arithmetic shift that keeps the sign. This happens 
+   //for large values of wtime. A cast to Ulong may truncate if Tyme is 8 bytes. So only use a 
+   //cast when it is 4 bytes, it's safe to assume that Ulong is 4 bytes or more and when using 8
+   //bytes the top bit won't be set.
+   for (i = 7; i >= 0; --i) {
+      if (i + 1 > (int)sizeof(Tyme))
+         //">>" doesn't work well when shifting more bits than avail
+         buf[bi++] = 0;
+      else {
+         c = (int)(wtime >> (i * 8));
+         buf[bi++] = c;
+      }
+   }
+}
+
+//Put timestamp "tt" in "buf[buflen]" in a nice format.
+pub void
+add_time(CS buf, Unt buflen, Tyme tt) {
+   Tm tmval;
+   Tm* curtime;
+   Unt   n;
+
+   if (eeTime() - tt >= 100) {
+      curtime = eeLocaltime(&tt, &tmval);
+      if (eeTime() - tt < (60L * 60L * 12L))
+         //within 12 hours
+         n = STRFTIME(buf, buflen, "%H:%M:%S", curtime);
+      else
+         //longer ago
+         n = STRFTIME(buf, buflen, "%Y/%m/%d %H:%M:%S", curtime);
+      if (n == 0)
+         buf[0] = ZERO;
+   } else {
+      long seconds = (long)(eeTime() - tt);
+
+      eeSnprintf(buf, buflen, NGETTEXT("%ld second ago", "%ld seconds ago", seconds), seconds);
+   }
+}
+
+//Store the current time in "tm".
+pub void
+profile_start(ProfTime *tm){
+   PROF_GET_TIME(tm);
+}
+
+//Put the time "msec" past now in "tm".
+pub void
+profile_setlimit(long msec, ProfTime *tm) {
+   if (msec <= 0)   //no limit
+      profile_zero(tm);
+   else {
+      PROF_GET_TIME(tm);
+      Long fsec = (Long)tm->tv_fsec + (Long)msec * (Long)(TV_FSEC_SEC / 1000);
+      tm->tv_fsec = fsec % (long)TV_FSEC_SEC;
+      tm->tv_sec += fsec / (long)TV_FSEC_SEC;
+   }
+}
+
+//Return true if the current time is past "tm".
+pub int
+profile_passed_limit(ProfTime *tm) {
+   if (tm->tv_sec == 0)    //timer was not set
+      return false;
+      
+   ProfTime   now;
+   PROF_GET_TIME(&now);
+   return (now.tv_sec > tm->tv_sec || (now.tv_sec == tm->tv_sec && now.tv_fsec > tm->tv_fsec));
+}
+
+
+//Compute the elapsed time from "tm" till now and store in "tm".
+pub void
+profile_end(ProfTime *tm) {
+   ProfTime now;
+
+   PROF_GET_TIME(OUT &now);
+   tm->tv_fsec = now.tv_fsec - tm->tv_fsec;
+   tm->tv_sec = now.tv_sec - tm->tv_sec;
+   if (tm->tv_fsec < 0) {
+      tm->tv_fsec += TV_FSEC_SEC;
+      --tm->tv_sec;
+   }
+}
+
+//Subtract the time "tm2" from "tm".
+pub void
+profile_sub(ProfTime *tm, ProfTime *tm2){
+   tm->tv_fsec -= tm2->tv_fsec;
+   tm->tv_sec -= tm2->tv_sec;
+   if (tm->tv_fsec < 0) {
+      tm->tv_fsec += TV_FSEC_SEC;
+      --tm->tv_sec;
+   }
+}
+
+//Return a float that represents the time in "tm".
+private double
+profile_float(ProfTime *tm){
+   return (double)tm->tv_sec + (double)tm->tv_fsec / (double)TV_FSEC_SEC;
+}
+
+//Set the time in "tm" to zero.
+pub void
+profile_zero(ProfTime *tm) {
+   tm->tv_fsec = 0;
+   tm->tv_sec = 0;
+}
+
+//Return a string that represents the time in "tm". Use a static buffer!
+pub CS
+profile_msg(ProfTime *tm){
+   static Byte buf[50];
+
+   SPRINTF(buf, PROF_TIME_FORMAT, (long)tm->tv_sec, (long)tm->tv_fsec);
+   return buf;
+}
+
+# ifdef ELAPSED_TIMEVAL
+//Return time in msec since "start".
+pub Long
+elapsed(TimeSpec* start) {
+   TimeSpec now;
+   timespec_get(OUT &now, TIME_UTC);
+   return (now.tv_sec - start->tv_sec) * 1000L + (now.tv_usec - start->tv_usec) / 1000L;
+}
+# endif
+
+# if defined(PROF_NSEC)
+//Implement timeout with timer_create() and timer_settime().
+private volatile sig_atomic_t timeout_flag = false;
+private timer_t timer_id;
+private int timer_created = false;
+
+//Callback for when the timer expires.
+private void
+set_flag(union sigval) {
+   timeout_flag = true;
+}
+
+//Stop any active timeout.
+pub void
+stop_timeout(void) {
+   static struct itimerspec disarm = {{0, 0}, {0, 0}};
+
+   if (timer_created) {
+      int ret = timer_settime(timer_id, 0, &disarm, NULL);
+
+      if (ret < 0)
+         showErrFmtMsg(_(e_could_not_clear_timeout_str), strerror(errno));
+   }
+
+   //Clear the current timeout flag; any previous timeout should be
+   //considered _not_ triggered.
+   timeout_flag = false;
+}
+
+//Start the timeout timer.
+//
+//The return value is a pointer to a flag that is initialised to false. If the
+//timeout expires, the flag is set to true. This will only return pointers to
+//static memory; i.e. any pointer returned by this function may always be
+//safely dereferenced.
+//
+//This function is not expected to fail, but if it does it will still return a
+//valid flag pointer; the flag will remain stuck as false .
+pub volatile sig_atomic_t *
+start_timeout(long msec) {
+   struct itimerspec interval = {
+       {0, 0},               //Do not repeat.
+       {msec / 1000, (msec % 1000) * 1000000}};   //Timeout interval
+
+   //This is really the caller's responsibility, but let's make sure the
+   //previous timer has been stopped.
+   stop_timeout();
+
+   if (!timer_created) {
+      struct sigevent action = {0};
+
+      action.sigev_notify = SIGEV_THREAD;
+      action.sigev_notify_function = set_flag;
+      int ret = timer_create(CLOCK_MONOTONIC, &action, &timer_id);
+      if (ret < 0) {
+         showErrFmtMsg(_(e_could_not_set_timeout_str), strerror(errno));
+         return &timeout_flag;
+      }
+      timer_created = true;
+   }
+
+   lo("setting timeout timer to %d sec %ld nsec",
+          (int)interval.it_value.tv_sec, (long)interval.it_value.tv_nsec);
+   int ret = timer_settime(timer_id, 0, &interval, NULL);
+   if (ret < 0)
+      showErrFmtMsg(_(e_could_not_set_timeout_str), strerror(errno));
+
+   return &timeout_flag;
+}
+
+//To be used before fork/exec: delete any created timer.
+pub void
+delete_timer(void) {
+   if (!timer_created)
+      return;
+
+   timer_delete(timer_id);
+   timer_created = false;
+}
+
+# else //PROF_NSEC
+
+//Implement timeout with setitimer()
+private SignalAction      prev_sigaction;
+private volatile sig_atomic_t   timeout_flag        = false;
+private int         timer_active        = false;
+private int         timer_handler_active = false;
+private volatile sig_atomic_t   alarm_pending        = false;
+
+//Handle SIGALRM for a timeout.
+private void
+set_flag(union sigval) {
+   if (alarm_pending)
+      alarm_pending = false;
+   else
+      timeout_flag = true;
+}
+
+//Stop any active timeout.
+pub void
+stop_timeout(void) {
+   static struct itimerval disarm = {{0, 0}, {0, 0}};
+   int             ret;
+
+   if (timer_active) {
+      timer_active = false;
+      ret = setitimer(ITIMER_REAL, &disarm, NULL);
+      if (ret < 0)
+         //Should only get here as a result of coding errors.
+         showErrFmtMsg(_(e_could_not_clear_timeout_str), strerror(errno));
+   }
+
+   if (timer_handler_active) {
+      timer_handler_active = false;
+      ret = sigaction(SIGALRM, &prev_sigaction, NULL);
+      if (ret < 0)
+         //Should only get here as a result of coding errors.
+         showErrFmtMsg(_(e_could_not_reset_handler_for_timeout_str), strerror(errno));
+   }
+   timeout_flag = false;
+}
+
+//Start the timeout timer.
+//
+//The return value is a pointer to a flag that is initialised to false. If the timeout expires, the
+//flag is set to true. This will only return pointers to static memory; i.e. any pointer returned 
+//by this function may always be safely dereferenced.
+//
+//This function is not expected to fail, but if it does it will still return a valid flag pointer;
+//the flag will remain stuck as false.
+pub volatile sig_atomic_t*
+start_timeout(long msec) {
+   struct itimerval   interval = {
+       {0, 0},                //Do not repeat.
+       {msec / 1000, (msec % 1000) * 1000}};   //Timeout interval
+   SignalAction handle_alarm;
+   int ret;
+   SignalSet sigs;
+   SignalSet saved_sigs;
+
+   //This is really the caller's responsibility, but let's make sure the
+   //previous timer has been stopped.
+   stop_timeout();
+
+   //There is a small chance that SIGALRM is pending and so the handler must
+   //ignore it on the first call.
+   alarm_pending = false;
+   ret = sigemptyset(&sigs);
+   ret = ret == 0 ? sigaddset(&sigs, SIGALRM) : ret;
+   ret = ret == 0 ? sigprocmask(SIG_BLOCK, &sigs, &saved_sigs) : ret;
+   timeout_flag = false;
+   ret = ret == 0 ? sigpending(&sigs) : ret;
+   if (ret == 0) {
+      alarm_pending = sigismember(&sigs, SIGALRM);
+      ret = sigprocmask(SIG_SETMASK, &saved_sigs, NULL);
+   }
+   if (unlikely(ret != 0 || alarm_pending < 0)) {
+      //Just catching coding errors. Write an error message, but carry on.
+      showErrFmtMsg(_(e_could_not_check_for_pending_sigalrm_str), strerror(errno));
+      alarm_pending = false;
+   }
+
+   //Set up the alarm handler first.
+   ret = sigemptyset(&handle_alarm.sa_mask);
+   handle_alarm.sa_handler = set_flag;
+   
+   handle_alarm.sa_flags = 0;
+   ret = ret == 0 ?  sigaction(SIGALRM, &handle_alarm, &prev_sigaction) : ret;
+   if (ret < 0) {
+      //Should only get here as a result of coding errors.
+      showErrFmtMsg(_(e_could_not_set_handler_for_timeout_str), strerror(errno));
+      return &timeout_flag;
+   }
+   timer_handler_active = true;
+
+   //Set up the interval timer once the alarm handler is in place.
+   ret = setitimer(ITIMER_REAL, &interval, NULL);
+   if (ret < 0) {
+      //Should only get here as a result of coding errors.
+      showErrFmtMsg(_(e_could_not_set_timeout_str), strerror(errno));
+      stop_timeout();
+      return &timeout_flag;
+   }
+
+   timer_active = true;
+   return &timeout_flag;
+}
+# endif //PROF_NSEC
+
 
 //}}}
 //{{{persisting sessions

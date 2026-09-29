@@ -4,8 +4,8 @@
 //## strings.c: utility functions for string manipulation 
  
 
-#ifdef FREESTANDING_STRINGS
 #include "base.h"
+#ifdef FREESTANDING_STRINGS
 #define alloc malloc
 #define eeRealloc realloc
 #define eeglFree(a) if (a) { free(a); }
@@ -2793,8 +2793,6 @@ skipLine(CS s) {
       p++;
    return p;
 }
-
-#define USING_FLOAT_STUFF
 
 //Copy "string" into newly allocated memory.
 pub CS

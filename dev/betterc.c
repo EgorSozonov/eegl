@@ -1032,7 +1032,12 @@ parseFile(Text source, FilePath fn, Arena* a) [[unsequenced]] {
 
 private Unt
 toplevelLen(ToplevelThing* t) {
-   return t->kind == MACRO ? t->c.len + 1 : t->c.len + 2; //+2 for the semicolon & newline char
+   if (t->kind == MACRO) 
+      return t->c.len + 1;
+   ei (t->kind == CONSTANT) 
+      return t->c.len + 9; //+7 for `extern `, +2 for the `;\n`
+   else 
+      return t->c.len + 2; //+2 for the semicolon & newline char
 }
 
 private void
@@ -1057,6 +1062,9 @@ toplevelWrite(OUT S* w, ToplevelThing* t) {
          *w += 2;
          return;
       }
+   } ei (t->kind == CONSTANT) {
+      memcpy(*w, "extern ", 7);
+      *w += 7;
    }
    memcpy(*w, t->c.c, t->c.len);
    *w += t->c.len;

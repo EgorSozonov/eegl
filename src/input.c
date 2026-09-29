@@ -3,8 +3,8 @@
 
 //## getchar.c: Code related to getting a character from the user or scripts, redo & stuff buffers
 
+#include "base.h"
 #include "eegl.h"
-#include <wchar.h>
 #include "h/data.types.h"
 #include "h/data.h"
 #include "h/channel.types.h"
@@ -29,6 +29,13 @@
 #include "h/wheel.types.h"
 #include "h/wheel.h"
 #include "h/window.h"
+
+#include <ctype.h> //for isdigit()
+#include <wchar.h>
+#include <time.h> //for timespec_get
+#include <libintl.h> //for gettext()
+#include <string.h> //for memmove()
+#include <stddef.h> //for offsetof
 
 //These buffers are used for storing:
 //- stuffed characters: A command that is translated into another command.
@@ -177,7 +184,7 @@ private Unt vGetOrPeek(Boole advance);
 private int ingestChar(CS buf, int maxlen, long wait_time);
 private int fixInputBuffer(OUT CS buf, int len);
 private CS getCommandNameCb(Unt, void*, int, GetlineAlgo);
-private long time_diff_ms(TimeVal *t1, TimeVal *t2);
+private Long time_diff_ms(TimeSpec* t0, TimeSpec* t1);
 private int get_mouse_class(CS p);
 private void find_start_of_word(Pos*pos);
 private void find_end_of_word(Pos* pos);
@@ -3711,7 +3718,7 @@ utfc_ptr2char(CS p, OUT Unt* pcc) {   //return: composing chars, last one is 0
 
 //Convert a UTF-8 byte string to a wide character. Also get up to MAX_COMBINED_SYMBOLS
 //composing characters. Use no more than p[maxlen].
-pub int
+pub Unt
 utfc_ptr2char_len(
     CS p,
     OUT Unt* pcc,   //composing chars, last one will be 0
@@ -4133,13 +4140,13 @@ private long mouse_vert_step = 3;
 private int do_mousescroll_horiz(Ulong leftcol);
 
 //Return the duration from t1 to t2 in milliseconds.
-private long
-time_diff_ms(TimeVal *t1, TimeVal *t2) {
+private Long
+time_diff_ms(TimeSpec* t0, TimeSpec* t1) {
    //This handles wrapping of tv_usec correctly without any special case.
    //Example of 2 pairs (tv_sec, tv_usec) with a duration of 5 ms:
    //     t1 = (1, 998000) t2 = (2, 3000) gives:
    //     (2 - 1) * 1000 + (3000 - 998000) / 1000 -> 5 ms.
-   return (t2->tv_sec - t1->tv_sec) * 1000 + (t2->tv_usec - t1->tv_usec) / 1000;
+   return (t1->tv_sec - t0->tv_sec) * 1000 + (t1->tv_nsec - t0->tv_nsec) / 1000000;
 }
 
 //Get class of a character for selection: same class means same word.
@@ -5535,10 +5542,10 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
    static Unt orig_mouse_code = 0x0;
    static int orig_mouse_col = 0;
    static int orig_mouse_row = 0;
-   static TimeVal  orig_mouse_time = {0, 0};
+   static TimeSpec orig_mouse_time = {0, 0};
    //time of previous mouse click
-   TimeVal  mouse_time;      //time of current mouse click
-   long   timediff;      //elapsed time in msec
+   TimeSpec mouse_time; //time of current mouse click
+   Long timediff;       //elapsed time in msec
 
    is_click = is_drag = is_release = release_is_ambiguous = false;
 
@@ -5559,7 +5566,7 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
       if (wheel_code == 0) { 
          {
          //Compute the time elapsed since the previous mouse click.
-         gettimeofday(&mouse_time, NULL);
+         timespec_get(OUT &mouse_time, TIME_UTC);
          if (orig_mouse_time.tv_sec == 0) {
             //Avoid computing the difference between mouse_time and orig_mouse_time for the first 
             //click, as the difference would be huge and would cause multiplication overflow.

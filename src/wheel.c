@@ -3,6 +3,7 @@
 
 //## wheel.c: code for actions in Normal, Insert and Visual modes. User's steering wheel
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -23,6 +24,7 @@
 #include "h/location.h"
 #include "h/message.h"
 #include "h/motor.types.h"
+#include "h/motor.time.h"
 #include "h/motor.h"
 #include "h/option.h"
 #include "h/portal.h"
@@ -34,6 +36,11 @@
 #include "h/ui.h"
 #include "h/wheel.h"
 #include "h/window.h"
+
+#include <ctype.h> //for isupper()
+#include <time.h>  //for timespec_get()
+#include <libintl.h> //for gettext()
+#include <string.h> //for strcmp()
 
 private int VIsual_mode_orig = ZERO;      //saved Visual mode
 
@@ -2355,7 +2362,7 @@ getMoreChars(
          //There is a busy wait here when typing "f<C-\>" and then
          //something different from CTRL-N.  Can't be avoided.
          while ((c = vpeekc()) <= 0 && towait > 0L) {
-            do_sleep(towait > 50L ? 50L : towait, false);
+            doSleep(towait > 50L ? 50L : towait, false);
             towait -= 50L;
           }
          if (c > 0) {
@@ -6261,7 +6268,7 @@ nv_g_cmd(ActionArg* aArg) {
 
    //"gs": Goto sleep.
    case 's':
-      do_sleep(aArg->count1 * 1000L, false);
+      doSleep(aArg->count1 * 1000L, false);
       break;
 
    //"ga": Display the ascii value of the character under the
@@ -12178,7 +12185,7 @@ edit(Unt commChar, int startln, long count){
    insertStartG_textlen = (ColNr)linetabsize_str(ml_get_curline());
    insertStartG_blank_vcol = MAXCOL;
    if (!didAindentG)
-      ai_col = 0;
+      autoindentColG = 0;
 
    if (commChar != ZERO && restart_edit == 0) {
       ResetRedobuff();
@@ -13555,7 +13562,7 @@ stop_arrow(void) {
           needUndoS = false;
       }
 
-      ai_col = 0;
+      autoindentColG = 0;
       ResetRedobuff();
       inpAppendToRedoBuff((CS)"1i");   //pretend we start an insertion
       new_insert_skip = 2;
@@ -15299,16 +15306,16 @@ private Book* compl_curr_buf = NULL;  //buf where completion is active
 //source exceeds its timeout, it is interrupted and the next begins with half the time. A small 
 //minimum timeout ensures every source gets at least a brief chance.
 private int compl_autocomplete = false;       //whether autocompletion is active
-private int InsertCompletionimeout_ms = COMPL_INITIAL_TIMEOUT_MS;
-private int InsertCompletionime_slice_expired = false; //time budget exceeded for current source
+private int insertCompletionTimeOutMs = COMPL_INITIAL_TIMEOUT_MS;
+private Boole insertCompletionTimeExpiredP = false; //time budget exceeded for current source
 private int compl_from_nonkeyword = false;    //completion started from non-keyword
 
 //Halve the current completion timeout, simulating exponential decay.
 #define COMPL_MIN_TIMEOUT_MS   5
 #define DECAY_InsertCompletionIMEOUT() \
     do { \
-   if (InsertCompletionimeout_ms > COMPL_MIN_TIMEOUT_MS) \
-       InsertCompletionimeout_ms /= 2; \
+   if (insertCompletionTimeOutMs > COMPL_MIN_TIMEOUT_MS) \
+       insertCompletionTimeOutMs /= 2; \
     } while (0)
 
 //List of flags for method of completion.
@@ -16842,7 +16849,7 @@ ins_compl_init_get_longest(void) {
 //Return true when insert completion is interrupted.
 pub int
 ins_compl_interrupted(void) {
-   return compl_interrupted || InsertCompletionime_slice_expired;
+   return compl_interrupted || insertCompletionTimeExpiredP;
 }
 
 //Return true if the <Enter> key selects a match in the completion popup menu.
@@ -18207,7 +18214,7 @@ process_next_cpt_value(
    while (*st->e_cpt == ',' || *st->e_cpt == ' ')
       st->e_cpt++;
 
-   if (*st->e_cpt == '.' && !curBook->scanned && !skip_source && !InsertCompletionime_slice_expired) {
+   if (*st->e_cpt == '.' && !curBook->scanned && !skip_source && !insertCompletionTimeExpiredP) {
       st->scannedBook = curBook;
       st->first_match_pos = *start_match_pos;
       //Move the cursor back one character so that ^N can match the word immediately after 
@@ -18224,7 +18231,7 @@ process_next_cpt_value(
       //Remember the first match so that the loop stops when we
       //wrap and come back there a second time.
       st->set_match_pos = true;
-   } ei (!skip_source && !InsertCompletionime_slice_expired
+   } ei (!skip_source && !insertCompletionTimeExpiredP
        && firstOccurrence((CS)"buwU", *st->e_cpt) != NULL
        && (st->scannedBook = ins_compl_next_buf(st->scannedBook, *st->e_cpt)) != curBook
    ) {
@@ -18993,8 +19000,8 @@ prepare_cpt_compl_funcs(void) {
 private void
 compl_source_start_timer(int source_idx) {
    if (compl_autocomplete && cpt_sources_array) {
-      ELAPSED_INIT(cpt_sources_array[source_idx].matchCollectionStart);
-      InsertCompletionime_slice_expired = false;
+      timespec_get(&cpt_sources_array[source_idx].matchCollectionStart, TIME_UTC);
+      insertCompletionTimeExpiredP = false;
    }
 }
 
@@ -19063,7 +19070,7 @@ ins_compl_get_exp(Pos* ini) {
       cpt_sources_index = 0;
       if (compl_autocomplete) {
          compl_source_start_timer(0);
-         InsertCompletionimeout_ms = COMPL_INITIAL_TIMEOUT_MS;
+         insertCompletionTimeOutMs = COMPL_INITIAL_TIMEOUT_MS;
       }
    }
 
@@ -19098,7 +19105,7 @@ ins_compl_get_exp(Pos* ini) {
          //other sources might already have matches. To show results quickly use a short timeout
          //for keyword completion. Allow longer timeout for non-keyword completion
          //where only function based sources (e.g. LSP) are active.
-         InsertCompletionimeout_ms = compl_from_nonkeyword
+         insertCompletionTimeOutMs = compl_from_nonkeyword
          ? COMPL_FUNC_TIMEOUT_NON_KW_MS : COMPL_FUNC_TIMEOUT_MS;
 
       //get the next set of completion matches
@@ -19126,7 +19133,7 @@ ins_compl_get_exp(Pos* ini) {
 
          if ((ctrl_x_mode_not_default() && !ctrl_x_mode_line_or_eval()) || compl_interrupted)
             break;
-         compl_started = InsertCompletionime_slice_expired ? false : true;
+         compl_started = insertCompletionTimeExpiredP ? false : true;
       } else {
          //Mark a buffer scanned when it has been scanned completely
          if (bookIsValid(st.scannedBook) && (type == 0 || type == CTRL_X_PATH_PATTERNS))
@@ -19137,7 +19144,7 @@ ins_compl_get_exp(Pos* ini) {
 
       //Reset the timeout after collecting matches from function source
       if (compl_autocomplete && type == CTRL_X_FUNCTION)
-          InsertCompletionimeout_ms = COMPL_INITIAL_TIMEOUT_MS;
+          insertCompletionTimeOutMs = COMPL_INITIAL_TIMEOUT_MS;
 
       //For `^P` completion, reset `compl_curr_match` to the head to avoid
       //mixing matches from different sources.
@@ -19591,10 +19598,12 @@ check_elapsed_time(void) {
       return;
 
    Elapsed* start_tv = &cpt_sources_array[cpt_sources_index].matchCollectionStart;
-   long elapsed_ms = ELAPSED_FUNC(*start_tv);
+   TimeSpec now;
+   timespec_get(OUT &now, TIME_UTC);
+   long elapsed_ms = (now.tv_nsec - start_tv->tv_nsec)/1000000;
 
-   if (elapsed_ms > InsertCompletionimeout_ms) {
-      InsertCompletionime_slice_expired = true;
+   if (elapsed_ms > insertCompletionTimeOutMs) {
+      insertCompletionTimeExpiredP = true;
       DECAY_InsertCompletionIMEOUT();
    }
 }
@@ -20236,7 +20245,7 @@ ins_compl_show_statusmsg(void) {
 //completion. Return OK if completion was done, FAIL if something failed (out of mem).
 private Unt
 ins_complete(Unt c, Boole enable_pum) {
-   Elapsed   matchCollectionStart; //Timestamp when match collection starts
+   Elapsed matchCollectionStart; //Timestamp when match collection starts
 
    compl_direction = ins_compl_key2dir(c);
    Boole doInsertMatch = shouldNewCharInsertTheMatch(c);
@@ -20248,7 +20257,7 @@ ins_complete(Unt c, Boole enable_pum) {
       return FAIL;
 
    if (compl_autocomplete && p_acl > 0)
-      ELAPSED_INIT(matchCollectionStart);
+      timespec_get(OUT &matchCollectionStart, TIME_UTC);
    compl_curr_win = curPor;
    compl_curr_buf = curPor->book;
    compl_shown_match = compl_curr_match;
@@ -20298,7 +20307,7 @@ ins_complete(Unt c, Boole enable_pum) {
 
    //Wait for the autocompletion delay to expire
    if (compl_autocomplete && p_acl > 0 && !no_matches_found
-       && ELAPSED_FUNC(matchCollectionStart) < p_acl
+       && motElapsedMs(matchCollectionStart) < p_acl
    ) {
       cursor_on();
       setcursor();
@@ -20310,7 +20319,7 @@ ins_complete(Unt c, Boole enable_pum) {
             break;
          } else
             ui_delay(2L, true);
-      } while (ELAPSED_FUNC(matchCollectionStart) < p_acl);
+      } while (motElapsedMs(matchCollectionStart) < p_acl);
    }
 
    //Show the popup menu, unless we got interrupted.

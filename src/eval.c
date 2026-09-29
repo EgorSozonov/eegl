@@ -3,6 +3,7 @@
 
 //## eval.c: evaluation of functions
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -36,7 +37,12 @@
 #include "h/wheel.types.h"
 #include "h/wheel.h"
 
-#define USING_FLOAT_STUFF
+#include <ctype.h> //for toupper()
+#include <sys/file.h> //for open
+#include <libintl.h> //for gettext
+#include <string.h> //for strcmp()
+#include <stddef.h> //for offsetof
+
 //{{{types
 
 typedef struct {
@@ -563,8 +569,6 @@ checkIfNameReserved(CS name, int is_objm_access) {
 #define EVAL_VAR_NO_FUNC    4   //do not look for a function
 
 private LvalRoot* lvalRootS = null;
-
-#define USING_FLOAT_STUFF
 
 //Get pointer to item in the stack.
 #define STACK_TV(idx) (((Var *)ectx->ec_stack.c) + idx)
@@ -13143,27 +13147,24 @@ f_setcharpos(Arr(Var) argvars, Var* returnVar) {
 
 private void
 f_setcharsearch(Arr(Var) argvars, Var*) {
-   Bag   *d;
-   DictItem   *di;
-
    if (check_for_dict_arg(argvars, 0) == FAIL)
       return;
 
+   Bag* d;
    if ((d = argvars[0].bag) == NULL)
       return;
 
    Byte* csearch = bagGetString(d, tConst("char"), false);
    if (csearch) {
-       int pcc[MAX_COMBINED_SYMBOLS];
+       Unt pcc[MAX_COMBINED_SYMBOLS];
        int c = utfc_ptr2char(csearch, pcc);
 
        set_last_csearch(c, csearch, utfCharLen(csearch));
    }
 
-   di = bagFind(d, tConst("forward"));
+   DictItem* di = bagFind(d, tConst("forward"));
    if (di) {
-      set_csearch_direction((int)tv_get_number(&di->c)
-         ? FORWARD : BACKWARD);
+      set_csearch_direction((int)tv_get_number(&di->c) ? FORWARD : BACKWARD);
    } 
 
    di = bagFind(d, tConst("until"));
@@ -13190,16 +13191,14 @@ f_setenv(Arr(Var) argvars, Var*) {
 //"setfperm({fname}, {mode})" function
 private void
 f_setfperm(Arr(Var) argvars, Var* returnVar) {
-   Byte   *fname;
-   Byte   modeBuf[NUMBUFLEN];
-   Byte   *mode_str;
-   int      i;
-   int      mask;
-   int      mode = 0;
+   Byte modeBuf[NUMBUFLEN];
+   Byte* mode_str;
+   int i;
+   Unt mode = 0;
 
    returnVar->number = 0;
 
-   fname = convertVarToStringSingleUse(&argvars[0]);
+   CS fname = convertVarToStringSingleUse(&argvars[0]);
    if (fname == NULL)
       return;
    mode_str = convertVarToString(&argvars[1], modeBuf);
@@ -13210,7 +13209,7 @@ f_setfperm(Arr(Var) argvars, Var* returnVar) {
       return;
    }
 
-   mask = 1;
+   Unt mask = 1;
    for (i = 8; i >= 0; --i) {
       if (mode_str[i] != '-')
          mode |= mask;
@@ -13231,11 +13230,11 @@ get_yank_type(Byte **pp, CS yank_type, long *block_len) {
    CS stropt = *pp;
    switch (*stropt) {
    case 'v': case 'c':   //character-wise selection
-       *yank_type = MCHAR;
-       break;
+      *yank_type = MCHAR;
+      break;
    case 'V': case 'l':   //line-wise selection
-       *yank_type = MLINE;
-       break;
+      *yank_type = MLINE;
+      break;
    case 'b': case Ctrl_V:   //block-wise selection
       *yank_type = MBLOCK;
       if (EE_ISDIGIT(stropt[1])) {
@@ -13253,29 +13252,21 @@ get_yank_type(Byte **pp, CS yank_type, long *block_len) {
 
 private void
 f_setreg(Arr(Var) argvars, Var* returnVar) {
-   int      regname;
-   Byte   *strregname;
-   Byte   *stropt;
-   Byte   *strval;
-   int      append;
-   Byte   yank_type;
-   long   block_len;
-   Var   *regcontents;
-   int      pointreg;
+   Byte* stropt;
+   Byte* strval;
 
+   int pointreg = 0;
+   Var* regcontents = NULL;
+   Long block_len = -1;
+   Byte yank_type = MAUTO;
+   Boole append = false;
 
-   pointreg = 0;
-   regcontents = NULL;
-   block_len = -1;
-   yank_type = MAUTO;
-   append = false;
-
-   strregname = convertVarToStringSingleUse(argvars);
+   CS strregname = convertVarToStringSingleUse(argvars);
    returnVar->number = 1;      //FAIL is default
 
-   if (strregname == NULL)
+   if (!strregname)
       return;      //type error; errmsg already given
-   regname = *strregname;
+   int regname = *strregname;
    if (regname == 0 || regname == '@')
       regname = '"';
 
@@ -13294,12 +13285,12 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
 
       stropt = bagGetString(d, tConst("regtype"), false);
       if (stropt) {
-          int ret = get_yank_type(&stropt, &yank_type, &block_len);
+         int ret = get_yank_type(&stropt, &yank_type, &block_len);
 
-          if (ret == FAIL || *++stropt != ZERO) {
-         showErrFmtMsg(_(e_invalid_value_for_argument_str), "value");
-         return;
-          }
+         if (ret == FAIL || *++stropt != ZERO) {
+            showErrFmtMsg(_(e_invalid_value_for_argument_str), "value");
+            return;
+         }
       }
 
       if (regname == '"') {
@@ -13333,9 +13324,9 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
     }
 
    if (regcontents && regcontents->tag == VAR_LIST) {
-      Byte      buf[NUMBUFLEN];
-      List      *ll = regcontents->list;
-      ListItem   *li;
+      Byte buf[NUMBUFLEN];
+      List* ll = regcontents->list;
+      ListItem* li;
 
       //If the list is NULL handle like an empty list.
       int len = ll == NULL ? 0 : ll->len;
@@ -13366,28 +13357,27 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
       while (curallocval > allocval)
           eeglFree(*--curallocval);
       eeglFree(lstval);
-    } ei (regcontents) {
+   } ei (regcontents) {
       strval = convertVarToStringSingleUse(regcontents);
-      if (strval == NULL)
+      if (!strval)
          return;
       write_reg_contents_ex(regname, strval, -1, append, yank_type, block_len);
-    }
+   }
    if (pointreg != 0)
-   get_yank_register(pointreg, true);
+      get_yank_register(pointreg, true);
 
-    returnVar->number = 0;
+   returnVar->number = 0;
 }
 
 private void
 f_settagstack(Arr(Var) argvars, Var* returnVar) {
-   Portal   *wp;
    Unt action = 'r';
 
    returnVar->number = -1;
 
    //first argument: window number or id
-   wp = portFindByNrOrId(&argvars[0]);
-   if (wp == NULL)
+   Portal* wp = portFindByNrOrId(&argvars[0]);
+   if (!wp)
       return;
 
    //second argument: dict with items to set in the tag stack

@@ -3,6 +3,7 @@
 
 //## window.c: functions for displaying the window in Wayland
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -35,6 +36,8 @@
 // for shm_open:
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <libintl.h> //for gettext()
+#include <string.h> //for strlen()
 
 //{{{@@forward declarations
 private YankReg * getYRegister(int reg);

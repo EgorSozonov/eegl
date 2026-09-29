@@ -3,6 +3,7 @@
 
 //## term.c: terminal and pseudo-teletype functions
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -28,7 +29,15 @@
 #include "h/wheel.types.h"
 #include "h/wheel.h"
 
+#include <ctype.h> //for isdigit()
+#include <errno.h> //for errno
+#include <sys/file.h> //for O_RDWR
+#include <sys/ioctl.h> //for ioctl
 #include <termcap.h>
+#include <termios.h> //for tcgetattr
+#include <time.h> //for time()
+#include <libintl.h> //for gettext()
+#include <string.h> //for strcmp()
 
 typedef struct termios TermIos;
 

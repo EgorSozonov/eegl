@@ -8,6 +8,7 @@
 #undef DEBUG
 //#define DEBUG
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -19,9 +20,16 @@
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
+#include "h/motor.types.h"
+#include "h/motor.h"
 #include "h/regexp.h"
 #include "h/script.h"
 #include "h/strings.h"
+
+#include <ctype.h> //for isalnum()
+#include <libintl.h> //for gettext()
+#include <string.h> //for strlen()
+#include <stddef.h> //for offsetof
 
 //{{{header
 
@@ -692,7 +700,7 @@ get_char_class(Byte **pp) {
 }
 
 //Start a timer that will cause the regexp to abort after "msec".
-//This doesn't work well recursively.  In case it happens anyway, the first
+//This doesn't work well recursively. In case it happens anyway, the first
 //set timeout will prevail, nested ones are ignored.
 //The caller must make sure there is a matching disable_regexp_timeout() call!
 pub void

@@ -3,6 +3,7 @@
 
 //## portal.c: portals (views) into text for user interface
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -31,6 +32,12 @@
 #include "h/ui.h"
 #include "h/wheel.types.h"
 #include "h/wheel.h"
+
+
+#include <assert.h> //for assert()
+#include <libintl.h> //for gettext()
+#include <inttypes.h> //for PRIu32
+#include <string.h> //for strcat()
 
 //{{{types
 

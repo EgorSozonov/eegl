@@ -76,7 +76,7 @@ CS inputInitCharLens(void);
 int mb_get_class(CS p);
 Unt inpGetClassForBook(CS p, Book* book);
 Unt utfc_ptr2char(CS p, OUT Unt* pcc);
-int utfc_ptr2char_len(
+Unt utfc_ptr2char_len(
     CS p,
     OUT Unt* pcc,   //composing chars, last one will be 0
     int maxlen

@@ -54,6 +54,7 @@
 [+] HAS_MESSAGE_WINDOW
 [+] VIM_BACKTICK
 [+] USE_INPUT_BUF
+[+] USING_FLOAT_STUFF
 
 
 [[[Deleted cruft]]]

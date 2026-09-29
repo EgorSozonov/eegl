@@ -3,7 +3,9 @@
 
 //## option.c: code controlling user options 
 
-#define IN_OPTION_C
+//#define IN_OPTION_C
+
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -35,6 +37,9 @@
 #include "h/window.h"
 
 #include <locale.h> //for LC_MESSAGES et al
+#include <libintl.h> //for gettext()
+#include <string.h> //for strcmp()
+#include <stddef.h> //for offsetof
 
 //{{{info & types
 

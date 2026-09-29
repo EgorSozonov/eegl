@@ -28,6 +28,7 @@
 //When the buffer is changed it is turned into a normal buffer, the decorations in scrollback 
 //are no longer used.
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -58,7 +59,14 @@
 #include "h/wheel.h"
 #include "h/window.h"
 
+#include <ctype.h> //for isdigit()
+#include <sys/file.h> //for FileStat
+#include <sys/ioctl.h> //for winsize
+#include <string.h> //for memset()
 #include <stdarg.h>
+#include <time.h> //for timespec_get()
+#include <libintl.h> //for gettext()
+
 int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 #include <poll.h> //for poll
@@ -10793,9 +10801,9 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
    //Remember at what time we started, so that we know how much longer we
    //should wait after being interrupted.
    Long start_msec = msec;
-   Elapsed start_tv;
+   Elapsed start;
    if (msec > 0)
-      ELAPSED_INIT(start_tv);
+      timespec_get(OUT &start, TIME_UTC);
 
    //Handle being called recursively. This may happen for the session
    //manager stuff, it may save the file, which does a breakcheck.
@@ -10837,7 +10845,8 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
       //We're going to loop around again, find out for how long
       if (msec > 0) {
          //Compute remaining wait time.
-         msec = start_msec - ELAPSED_FUNC(start_tv);
+         timespec_get(OUT &start, TIME_UTC);
+         msec = start_msec - (start.tv_nsec/1000000);
          if (msec <= 0)
             break;   //waited long enough
       }
@@ -11059,11 +11068,10 @@ inchar_loop(
    int interrupted = false;
    int did_call_wait_func = false;
    int did_start_blocking = false;
-   long wait_time;
-   long elapsed_time = 0;
-   Elapsed start_tv;
-
-   ELAPSED_INIT(start_tv);
+   Long wait_time;
+   Long elapsed_time = 0;
+   Elapsed start;
+   timespec_get(OUT &start, TIME_UTC);
 
    //repeat until we got a character or waited long enough
    for (;;) {
@@ -11088,7 +11096,8 @@ inchar_loop(
          else
             //going to block after p_ut
             wait_time = p_ut;
-         elapsed_time = ELAPSED_FUNC(start_tv);
+         timespec_get(OUT &start, TIME_UTC);
+         elapsed_time = start.tv_nsec/1000000;
          wait_time -= elapsed_time;
 
          //If the waiting time is now zero or less, we timed out. However, loop at least once to

@@ -14,7 +14,7 @@ typedef struct {
    //The value is the length of the incomplete message when the deadline was set.  If it gets 
    //longer (something was received) the deadline is reset.
    Unt ch_wait_len;
-   TimeVal deadline;
+   TimeSpec deadline;
    int ch_block_write; //for testing: 0 when not used, -1 when write
                        //does not block, 1 simulate blocking
    int ch_nonblocking; //write() is non-blocking

@@ -5,6 +5,7 @@
 
 #define MESSAGE_FILE      //don't include prototype for smsg()
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -29,6 +30,10 @@
 #include "h/term.h"
 #include "h/ui.h"
 #include "h/window.h"
+
+#include <libintl.h> //for gettext()
+#include <string.h> //for strlen()
+#include <stddef.h> //for offsetof
 
 typedef struct MsgHist MsgHist;
 struct MsgHist {
@@ -1743,7 +1748,7 @@ wait_return(Boole redraw) {
       } else {
           c = ENTER;
           //Wait to allow the user to verify the output.
-          do_sleep(msg_wait, true);
+          doSleep(msg_wait, true);
       }
    }
    redir_off = false;

@@ -1,9 +1,8 @@
 //EEGL - the Extensible development Environment for GNU/Linux
 //Licensed under GPLv3, see the LICENSE file (c) Egor Sozonov
 
-#ifndef EEGL__H
-#define EEGL__H
 
+//This file should be included after "base.h"
 //Full GNU mode for glibc
 #define _DEFAULT_SOURCE 1
 #define _GNU_SOURCE 1
@@ -12,8 +11,6 @@
 #define PREFIX S"/usr"
 #endif
 
-#include "base.h"
-
 //============ the header file puzzle: order matters =========
 
 //Defined to the size of an int
@@ -21,9 +18,6 @@
 
 //Defined to the size of a long
 #define SIZEOF_LONG 8
-
-//Define to nanoseconds field of struct stat
-#define ST_MTIM_NSEC st_mtim.tv_nsec
 
 //Define if tgetent() returns zero for an error
 #define TGETENT_ZERO_ERR 0
@@ -40,30 +34,14 @@
 
 //{{{unix header: lots of system header files
 
-#include <ctype.h>
-#include <unistd.h>
-#include <inttypes.h> //for PRIu64
-
-//# include <sys/param.h>
-
 //always use unlink() to remove files
 #define eeMkdir(x, y) mkdir((char *)(x), y)
 #define mch_rmdir(x) rmdir((char *)(x))
 #define mch_remove(x) unlink((char *)(x))
 
-#define SIGPROTOARG   (int)
-#define SIGDUMMYARG   0
-
-typedef void (*sighandler_T) SIGPROTOARG;
+typedef void (*sighandler_T)(int);
 typedef struct sigaction SignalAction;
 typedef struct pollfd PollFd;
-
-#include <dirent.h>
-
-#include <time.h>
-#include <sys/time.h>
-
-#include <signal.h>
 
 #if defined(DIRSIZ) && !defined(MAXNAMLEN)
 # define MAXNAMLEN DIRSIZ
@@ -76,10 +54,6 @@ typedef struct pollfd PollFd;
 #endif
 
 #define BASENAMELEN   (MAXNAMLEN - 5)
-
-#include <pwd.h>
-
-#include <sys/file.h>
 
 #define MAIN_HELPFILE PREFIX "/share/doc/eegl/help.txt"
 
@@ -124,13 +98,7 @@ typedef struct pollfd PollFd;
 #define mch_getenv(x) (CS)getenv((char *)(x))
 #define mch_setenv(name, val, x) setenv((char *)name, (char *)val, x)
 
-#include <string.h>
-
-#include <sys/ioctl.h>
-
 //use fork/exec to start the shell
-
-#include <sys/wait.h>
 
 # ifndef WEXITSTATUS
 #   define WEXITSTATUS(stat_val) (((stat_val) >> 8) & 0377)
@@ -139,11 +107,6 @@ typedef struct pollfd PollFd;
 # ifndef WIFEXITED
 #   define WIFEXITED(stat_val) (((stat_val) & 255) == 0)
 # endif
-
-
-#include <string.h>
-#include <sys/utsname.h>
-#include <termios.h>
 
 //}}}
 
@@ -182,6 +145,9 @@ typedef off_t FileOffset;
 //The characters and attributes cached for the screen.
 typedef Byte Byte;
 #define MAX_TYPENR 65535
+
+
+typedef struct tm Tm; 
 
 
 //{{{version
@@ -476,7 +442,6 @@ typedef Byte Byte;
 
 #define mch_access(n, p)   access((char*)(n), (p))
 
-#define TIME_MSG(s) do { if (time_fd != NULL) time_msg((CS)s, NULL); } while (0)
 
 #define MB_CHARLEN(p)       (mb_charlen(p))
 #define MB_CHAR2LEN(c)       (mb_char2len(c))
@@ -487,25 +452,19 @@ typedef Byte Byte;
 # define PLINES_NOFILL(x) plines_nofill(x)
 # define PLINES_WIN_NOFILL(w, l, h) plines_win_nofill((w), (l), (h))
 
-#include <float.h>
-  //for isnan() and isinf()
-#include <math.h>
-
-# ifdef USING_FLOAT_STUFF
-#  if !defined(INFINITY)
-#   if defined(DBL_MAX)
-#     define INFINITY (DBL_MAX+DBL_MAX)
-#   else
-#    define INFINITY (1.0 / 0.0)
-#   endif
-#  endif
-#  if !defined(NAN)
-#   define NAN (INFINITY-INFINITY)
-#  endif
-#  if !defined(DBL_EPSILON)
-#   define DBL_EPSILON 2.2204460492503131e-16
-#  endif
+#if !defined(INFINITY)
+# if defined(DBL_MAX)
+#   define INFINITY (DBL_MAX+DBL_MAX)
+# else
+#  define INFINITY (1.0 / 0.0)
 # endif
+#endif
+#if !defined(NAN)
+# define NAN (INFINITY-INFINITY)
+#endif
+#if !defined(DBL_EPSILON)
+# define DBL_EPSILON 2.2204460492503131e-16
+#endif
 
 #define FUNCARG(fp, j)   ((Byte **)(fp->args.c))[j]
 
@@ -622,15 +581,6 @@ typedef Byte Byte;
 
 //}}}
 
-#include <errno.h>
-#include <assert.h>
-
-#include <inttypes.h>
-#include <wctype.h>
-
-//for offsetof()
-#include <stddef.h>
-
 
 //================ end of the header file puzzle ===============
 
@@ -640,7 +590,6 @@ typedef Byte Byte;
 //- single - message for singular form
 //- multi  - message for plural form
 //- number - the count
-#include <libintl.h>
 #define _(x) (CS)gettext((char *)(x))
 #define NGETTEXT(x, xs, n) (CS)ngettext((char*)(x), (char*)(xs), (n))
 #define N_(x) (CS)x
@@ -1821,10 +1770,6 @@ EXTERN long p_wd;    //@writedelay
 //{{{:::structs
 //{{{ basics
 
-//off_t is a signed integer data type used to represent file sizes, positions, and offsets. It is 
-//defined by the POSIX standard. Because it is signed, it can also hold negative values, which are 
-//useful for relative file positioning operations.
-//typedef off_T FileOffset;
 
 //{{{ Slice
 
@@ -3379,7 +3324,8 @@ typedef enum {
 
 #define INVALID_FD   (-1)
 
-typedef struct timeval Elapsed;
+typedef struct timespec Elapsed;
+typedef struct timespec TimeSpec;
 
 
 #define JO_MODE           0x0001   //channel mode
@@ -5291,9 +5237,6 @@ EXTERN int arg_had_last INIT(= FALSE); //accessed last file in argListG
 EXTERN int rulerWidthG;      //@rulerformat: width of ruler when non-zero
 EXTERN int shownCommandColG; //column for shown command
 
-EXTERN DIR* eeTempDir_dpG INIT(= NULL); //File descriptor of temp dir
-EXTERN CS eeTempDirG INIT(= NULL); //Name of Eegl's own temp dir. Ends with a slash.
-
 //When starting or exiting some things are done differently (e.g. screen updating).
 EXTERN int   starting INIT(= NO_SCREEN);
             //first NO_SCREEN, then NO_BUFFERS and then set to 0 when starting up finished
@@ -5345,20 +5288,19 @@ EXTERN ColNr   resel_VIsual_vcol;      //nr of cols or end col
 //restart_edit set, remember where it started so we can set Insstart.
 EXTERN Pos   where_paste_started;
 
-//This flag is used to make auto-indent work right on lines where only a
-//<RETURN> or <ESC> is typed. It is set when an auto-indent is done, and
-//reset when any other editing is done on the line. If an <ESC> or <RETURN>
-//is received, and didAindentG is TRUE, the line is truncated.
+//This flag is used to make auto-indent work right on lines where only a <RETURN> or <ESC> is 
+//typed. It is set when an auto-indent is done, and reset when any other editing is done on the
+//line. If an <ESC> or <RETURN> is received, and didAindentG is TRUE, the line is truncated.
 EXTERN Boole didAindentG INIT(= false);
 
-//Column of first char after autoindent.  0 when no autoindent done.  Used
+//Column of first char after autoindent. 0 when no autoindent done. Used
 //when 'backspace' is 0, to avoid backspacing over autoindent.
-EXTERN ColNr ai_col INIT(= 0);
+EXTERN ColNr autoindentColG INIT(= 0);
 
-//This is a character which will end a start-middle-end comment when typed as
-//the first character on a new line. It is taken from the last character of
-//the "end" comment leader when the COM_AUTO_END flag is given for that
-//comment end in 'comments'. It is only valid when didAindentG is TRUE.
+//This is a character which will end a start-middle-end comment when typed as the first 
+//character on a new line. It is taken from the last character of the "end" comment leader when
+//the COM_AUTO_END flag is given for that comment end in 'comments'. It is only valid when
+//didAindentG is TRUE.
 EXTERN Unt end_comment_pending INIT(= ZERO);
 
 //This flag is set after a ":syncbind" to let the check_scrollbind() function
@@ -5679,14 +5621,14 @@ EXTERN char top_bot_msg[]   INIT(= "search hit TOP, continuing at BOTTOM");
 EXTERN char bot_top_msg[]   INIT(= "search hit BOTTOM, continuing at TOP");
 EXTERN char line_msg[]       INIT(= " line ");
 
-EXTERN FILE *time_fd INIT(= NULL);  //where to write startup timing
+EXTERN FILE* time_fd INIT(= NULL);  //where to write startup timing
 
 //set by alloc_fail(): ID
 EXTERN AllocId  alloc_fail_id INIT(= aid_none);
 //set by alloc_fail(), when zero alloc() returns NULL
-EXTERN int  alloc_fail_countdown INIT(= -1);
+EXTERN int alloc_fail_countdown INIT(= -1);
 //set by alloc_fail(), number of times alloc() returns NULL
-EXTERN int  alloc_fail_repeat INIT(= 0);
+EXTERN int alloc_fail_repeat INIT(= 0);
 
 //flags set by test_override()
 EXTERN int  disable_char_avail_for_testing INIT(= FALSE);
@@ -8550,11 +8492,6 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 # endif
 #endif
 
-#define ELAPSED_TIMEVAL
-#define ELAPSED_INIT(v) gettimeofday(&(v), NULL)
-#define ELAPSED_FUNC(v) elapsed(&(v))
-long elapsed(TimeVal* start_tv);
-
 //Replacement for nchar used by nv_replace().
 #define REPLACE_CR_NCHAR    4294967295
 #define REPLACE_NL_NCHAR    4294967294
@@ -8652,4 +8589,3 @@ void __attribute__((noinline)) __bp(); //breakpoints for debugger
 # define SIG_HOLD   ((SigHandler)-2)
 #endif
 
-#endif //EEGL__H

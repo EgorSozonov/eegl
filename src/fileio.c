@@ -3,6 +3,7 @@
 
 //## fileio.c: read from and write to a file
 
+#include "base.h"
 #include "eegl.h"
 #include "h/book.h"
 #include "h/data.types.h"
@@ -33,7 +34,14 @@
 #include "h/wheel.types.h"
 #include "h/wheel.h"
 
+#include <ctype.h> //for isdigit()
+#include <errno.h> //for errno
+#include <sys/file.h> //for open
+#include <dirent.h> //for DIR
 #include <sys/stat.h> //for stat, fstat etc
+#include <libintl.h> //for gettext
+#include <string.h> //for strcmp()
+#include <stddef.h> //for offsetof
 
 pub ssize_t listxattr(const char*, char*, size_t); //from sys/xattr.h
 ssize_t getxattr(const char*, const char*, void*, size_t);
@@ -210,12 +218,14 @@ private int resolveSymlink(OUT Text* result, Unt cap);
 //}}}
 //{{{file paths: dealing with file names and paths.
 
+private DIR* eeTempDirFd = null; //File descriptor of temp dir
+pub CS eeTempDirG = null; //Name of Eegl's own temp dir. Ends with a slash.
+
 //Flags for the readdirex function, how to sort the result
 #define READDIR_SORT_NONE    0  //do not sort
 #define READDIR_SORT_BYTE    1  //sort by byte order (strcmp), default
 #define READDIR_SORT_IC      2  //sort ignoring case (strcasecmp)
 #define READDIR_SORT_COLLATE 3  //sort according to collation (strcoll)
-
 
 //To get the "real" home directory:
 //- get value of $HOME
@@ -6135,15 +6145,12 @@ msg_add_eol(void){
 
 pub int
 time_differs(FileStat* st, long mtime, long mtime_ns){
-   return
-#ifdef ST_MTIM_NSEC
-   (long)st->ST_MTIM_NSEC != mtime_ns ||
-#endif
    //On a FAT filesystem, esp. under Linux, there are only 5 bits to store
    //the seconds. Since the roundoff is done when flushing the inode, the
    //time may change unexpectedly by one second!!!
-   (long)st->st_mtime - mtime > 1 || mtime - (long)st->st_mtime > 1
-   ;
+   return (Long)st->st_mtim.tv_nsec != mtime_ns 
+      || (Long)st->st_mtime - mtime > 1 
+      || mtime - (Long)st->st_mtime > 1;
 }
 
 //Try to find a shortname by comparing the fullname with the current directory.
@@ -6806,25 +6813,25 @@ private long   temp_count = 0;      //Temp filename counter.
 //Open temporary directory and take file lock to prevent to be auto-cleaned.
 private void
 eeOpentempdir(void) {
-   if (eeTempDir_dpG)
+   if (eeTempDirFd)
       return;
 
    DIR* dp = opendir((const char*)eeTempDirG);
    if (!dp)
       return;
 
-   eeTempDir_dpG = dp;
-   flock(dirfd(eeTempDir_dpG), LOCK_SH);
+   eeTempDirFd = dp;
+   flock(dirfd(eeTempDirFd), LOCK_SH);
 }
 
 //Close temporary directory - it automatically release file lock.
 private void
 eeClosetempdir(void) {
-   if (!eeTempDir_dpG)
+   if (!eeTempDirFd)
       return;
 
-   closedir(eeTempDir_dpG);
-   eeTempDir_dpG = NULL;
+   closedir(eeTempDirFd);
+   eeTempDirFd = NULL;
 }
 
 //Delete the temp directory and all files it contains.

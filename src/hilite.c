@@ -3,6 +3,7 @@
 
 //## hilite.c: hiliting text
 
+#include "base.h"
 #include "eegl.h"
 #include "h/book.h"
 #include "h/data.types.h"
@@ -16,6 +17,12 @@
 #include "h/message.h"
 #include "h/regexp.h"
 #include "h/script.h"
+
+
+#include <assert.h> //for assert()
+#include <libintl.h> //for gettext
+#include <string.h> //for memcmp()
+#include <stddef.h> //for offsetof
 
 //{{{types
 

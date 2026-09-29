@@ -3,6 +3,7 @@
 
 //## location.c: location lists (searches, errors from compilation, help greps) & marks (`ma`)
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -21,6 +22,8 @@
 #include "h/hilite.types.h"
 #include "h/hilite.h"
 #include "h/message.h"
+#include "h/motor.types.h"
+#include "h/motor.h"
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/regexp.h"
@@ -31,6 +34,13 @@
 #include "h/ui.h"
 #include "h/wheel.types.h"
 #include "h/wheel.h"
+
+#include <sys/file.h> //for open
+#include <time.h> //for time()
+#include <libintl.h> //for gettext()
+#include <inttypes.h> //for PRIu32
+#include <string.h> //for strcpy()
+#include <stddef.h> //for offsetof
 
 int fstat(int fd, struct stat* statbuf);
 int stat(const char* restrict path, struct stat* restrict buf);
@@ -11590,10 +11600,10 @@ searchit(
    RegMultilineMatch   regmatch;
    CS ptr;
    ColNr   matchcol;
-   PosNoVirt   endpos;
-   PosNoVirt   matchpos;
+   PosNoVirt endpos;
+   PosNoVirt matchpos;
    int loop;
-   Pos   start_pos;
+   Pos start_pos;
    int at_first_line;
    int extra_col;
    int start_char_len;
@@ -11604,8 +11614,8 @@ searchit(
    int called_emsg_before = called_emsg;
    int break_loop = false;
    LineNr   stop_lnum = 0;   //stop after this line number when != 0
-   int      unused_timeout_flag = false;
-   int      *timed_out = &unused_timeout_flag;  //set when timed out.
+   int unused_timeout_flag = false;
+   int* timed_out = &unused_timeout_flag;  //set when timed out.
 
    if (search_regcomp(pat, NULL, RE_SEARCH, pat_use,
          (options & (SEARCH_HIS + SEARCH_KEEP)), OUT &regmatch) == FAIL

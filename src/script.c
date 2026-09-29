@@ -3,6 +3,7 @@
 
 //## script.c: script files, user command line, its completion and user-defined functions
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -20,6 +21,7 @@
 #include "h/location.h"
 #include "h/message.h"
 #include "h/motor.types.h"
+#include "h/motor.time.h"
 #include "h/motor.h"
 #include "h/option.h"
 #include "h/portal.h"
@@ -32,6 +34,13 @@
 #include "h/wheel.types.h"
 #include "h/wheel.h"
 #include "h/window.h"
+
+#include <ctype.h> //for isalpha()
+#include <sys/file.h> //for open
+#include <time.h> //for timespec_get
+#include <libintl.h> //for gettext()
+#include <string.h> //for strcmp()
+#include <stddef.h> //for offsetof
 
 #define DECLARE_COMMANDS_FLAGS
 #include "commands.h"
@@ -1556,8 +1565,8 @@ scriptRunFileInternal(CS fname, OUT int* ret_sid, Invocation* invo, Boole clearv
    CS firstline = NULL;
    int retval = FAIL;
    ScriptPos save_scriptPosG;
-   TimeVal tv_rel;
-   TimeVal tv_start;
+   TimeSpec tv_rel;
+   TimeSpec tv_start;
    int save_stickyCommandModifiersG = stickyCommandModifiersG;
    int trigger_source_post = false;
    FnCallEntry funccalp_entry;

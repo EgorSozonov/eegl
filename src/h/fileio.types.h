@@ -8,3 +8,4 @@ declStruct (DirSearchStack);
 #define FINDFILE_FILE  0  //only files
 #define FINDFILE_DIR   1  //only directories
 #define FINDFILE_BOTH  2  //files and directories
+extern CS eeTempDirG;

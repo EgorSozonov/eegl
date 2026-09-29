@@ -3,6 +3,7 @@
 
 //## tag.c: Code to handle tags and the tag stack
 
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -32,6 +33,14 @@
 #include "h/ui.h"
 #include "h/wheel.types.h"
 #include "h/wheel.h"
+
+#include <errno.h> //for errno
+#include <ctype.h> //for isdigit()
+#include <assert.h> //for assert()
+#include <sys/wait.h> //for waitpid()
+#include <libintl.h> //for gettext()
+#include <inttypes.h> //for PRIu32
+#include <string.h> //for strcmp()
 
 //{{{types
 

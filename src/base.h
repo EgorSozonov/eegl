@@ -2,6 +2,9 @@
 typedef unsigned char* CS; // ZERO-terminated byte arrays only
 #define S (unsigned char*)
 
+#define _DEFAULT_SOURCE 1
+#define _GNU_SOURCE 1
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -26,7 +29,6 @@ typedef int64_t Long;
 typedef uint64_t Ulong;
 typedef unsigned char Byte;
 typedef uint8_t Boole;
-typedef struct timeval TimeVal;
 
 typedef Int LineNr;    // line number type
 typedef Int ColNr;      // column number type
@@ -774,3 +776,4 @@ typedef struct stat FileStat;
 #define AUTOLOAD_CHAR '#'
 
 
+#include <signal.h>      //for sigatomic_t

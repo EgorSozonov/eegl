@@ -3,6 +3,7 @@
 
 //## draw.c: drawing text lines to the screen 
  
+#include "base.h"
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
@@ -31,6 +32,9 @@
 #include "h/wheel.types.h"
 #include "h/wheel.h"
 #include "h/window.h"
+
+#include <libintl.h> //for gettext
+#include <string.h> //for strlen()
 
 //used for @hlsearch hilite matching
 private Match screenSearchP;
@@ -212,7 +216,7 @@ private int statusline_row(Portal* po);
 private void startDrawingHilite(Short hiId);
 private void statusLineOrRuler(Portal* po, Boole draw_ruler);
 private int utfc_char2bytes(int off, CS buf);
-private int screen_comp_differs(int off, int* characterCombiner);
+private Boole screen_comp_differs(int off, Unt* characterCombiner);
 private void start_search_hl(void);
 private void singleChar(Unt off, int row, int col);
 private void redraw_block(int row, int end, Portal* po);
@@ -914,8 +918,8 @@ screen_getbytes(int row, int col, Byte* bytes, OUT Byte* decoFlags) {
 
 //Return true if composing characters for screen posn "off" differs from
 //composing characters in "characterCombiner". Only to be used when screenLinesUCG[off] != 0.
-private int
-screen_comp_differs(int off, int* characterCombiner) {
+private Boole
+screen_comp_differs(int off, Unt* characterCombiner) {
    for (Unt i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
       if (screenLinesCG[MAX_COMBINED_SYMBOLS*off + i] != (Unt)characterCombiner[i])
          return true;
@@ -5399,7 +5403,7 @@ text_prop_position(
    TextProp* t,
    int vcol,       //current text column
    int scr_col,       //current screen column
-   int* countExtraBytes,       //nr of bytes for virtual text
+   Unt* countExtraBytes,       //nr of bytes for virtual text
    Byte** extraBytes,       //virtual text
    OUT int* numDecoCells,       //decoration cells, NULL if not used
    int* toSkipBeforeDeco,   //cells to skip deco, NULL if not used
@@ -6274,7 +6278,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
 
                         if (sc.listCharEndOfLine == UNT
                               && port->o.wrap
-                              && m->col + m->countExtraBytes - 2 > (int)port->width)
+                              && m->col + (int)m->countExtraBytes - 2 > (int)port->width)
                            //don't bail out at end of line
                            sc.textPropFollows = true;
 
@@ -7413,8 +7417,8 @@ f_screenchars(Arr(Var) argvars, Var* returnVar) {
 
    Byte buf[MB_MAXBYTES + 1];
    screen_getbytes(row, col, buf, NULL);
-   int pcc[MAX_COMBINED_SYMBOLS];
-   int c = utfc_ptr2char(buf, pcc);
+   Unt pcc[MAX_COMBINED_SYMBOLS];
+   Unt c = utfc_ptr2char(buf, pcc);
    list_append_number(returnVar->list, (Long)c);
 
    for (int i = 0; i < MAX_COMBINED_SYMBOLS && pcc[i] != 0; ++i)
