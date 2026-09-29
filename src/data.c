@@ -21,8 +21,6 @@ pub
 //}}}
 
 #include "h/book.h"
-#include "h/channel.types.h"
-#include "h/channel.h"
 #include "h/input.types.h"
 #include "h/input.h"
 #include "h/do.h"
@@ -45,6 +43,7 @@ pub
 #include <ctype.h> //for isalnum()
 #include <sys/resource.h>
 #include <math.h> //for fabs
+#include <float.h> //for DBL_EPSILON
 #include <string.h> //for strlen()
 #include <libintl.h> //for gettext
 #include <stddef.h> //for offsetof

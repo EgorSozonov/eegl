@@ -7,8 +7,6 @@
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
-#include "h/channel.types.h"
-#include "h/channel.h"
 #include "h/book.h"
 #include "h/diff.h"
 #include "h/do.h"

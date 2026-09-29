@@ -10,8 +10,6 @@
 #include "h/book.h"
 #include "h/input.types.h"
 #include "h/input.h"
-#include "h/channel.types.h"
-#include "h/channel.h"
 #include "h/do.h"
 #include "h/draw.types.h"
 #include "h/draw.h"
@@ -968,15 +966,6 @@ set_termname(CS termName) {
 
    //First time after setting 'term' a focus event is always reported.
    focus_state = MAYBE;
-
-#ifdef USE_TERM_CONSOLE
-   //DEFAULT_TERM indicates that it is the machine console.
-   if (STRCMP(termName, DEFAULT_TERM) != 0)
-      term_console = false;
-   else {
-      term_console = true;
-   }
-#endif
 
    ttest(true);   //make sure we have a valid set of terminal codes
 
@@ -4717,13 +4706,13 @@ openpty(char **ttyn) {
 
    //SIGCHLD set to SIG_DFL for grantpt() because it fork()s and exec()s pt_chmod
    CS m;
-   sighandler_T sigcld = mch_signal(SIGCHLD, SIG_DFL);
+   sighandler_T sigcld = motSignalHandler(SIGCHLD, SIG_DFL);
    if ((m = (CS)ptsname(f)) == NULL || grantpt(f) || unlockpt(f)) {
-      mch_signal(SIGCHLD, sigcld);
+      motSignalHandler(SIGCHLD, sigcld);
       close(f);
       return -1;
    }
-   mch_signal(SIGCHLD, sigcld);
+   motSignalHandler(SIGCHLD, sigcld);
    copySubstrToAllocation(TtyName, (Text){m, sizeof(TtyName) - 1});
    initmaster(f);
    *ttyn = (char*)TtyName;

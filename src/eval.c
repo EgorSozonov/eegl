@@ -8,8 +8,6 @@
 #include "h/data.types.h"
 #include "h/data.h"
 #include "h/book.h"
-#include "h/channel.types.h"
-#include "h/channel.h"
 #include "h/do.h"
 #include "h/draw.types.h"
 #include "h/draw.h"

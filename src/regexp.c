@@ -121,8 +121,8 @@ struct RegMatch {
 private int numComplexBracesS; //Complex \{...} count
 private Byte hadEndbraceS[NSUBEXP];   //flags, true if end of () found
 
-private sig_atomic_t dummy_timeout_flag = 0;
-private volatile sig_atomic_t *timeout_flag = &dummy_timeout_flag;
+private SigAtomic dummy_timeout_flag = 0;
+private volatile SigAtomic *timeout_flag = &dummy_timeout_flag;
 
 //Magic characters have a special meaning, they don't match literally.
 //Magic characters are negative.  This separates them from literal characters
@@ -147,7 +147,7 @@ toggle_Magic(int x) {
 
 private int timeout_nesting = 0;
 
-private sig_atomic_t *saved_timeout_flag;
+private SigAtomic *saved_timeout_flag;
 
 //The first byte of the BT regexp internal "program" is actually this magic number; the start node
 //begins in the second byte.  It's used to catch the most severe mutilation of the program by the 
@@ -363,19 +363,6 @@ typedef struct {
    int prev_at_start;
    int regnpar;
 } ParseState;
-
-private void   initchr(CS);
-private Unt   getchr(void);
-private void   skipchr_keepstart(void);
-private Unt   peekchr(void);
-private void   skipchr(void);
-private Long   gethexchrs(int maxinputlen);
-private Long   getdecchrs(void);
-private Long   coll_get_char(void);
-private int   cstrncmp(Byte *s1, Byte *s2, int *n);
-private Byte   *cstrchr(Byte *, int);
-private int   re_mult_next(CS what);
-private int   reg_iswordc(int);
 
 //}}}
 //{{{types
@@ -4874,7 +4861,7 @@ parse(Unt paren, OUT Boole* hadEol) {  //REG_NOPAREN, REG_PAREN, REG_NPAREN or R
 //Must be followed by calling restore_timeout_for_debugging().
 pub void
 save_timeout_for_debugging(void) {
-   saved_timeout_flag = (sig_atomic_t *)timeout_flag;
+   saved_timeout_flag = (SigAtomic *)timeout_flag;
    timeout_flag = &dummy_timeout_flag;
 }
 

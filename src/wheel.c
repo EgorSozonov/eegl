@@ -10,8 +10,6 @@
 #include "h/book.h"
 #include "h/input.types.h"
 #include "h/input.h"
-#include "h/channel.types.h"
-#include "h/channel.h"
 #include "h/diff.h"
 #include "h/do.h"
 #include "h/draw.types.h"

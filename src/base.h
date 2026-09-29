@@ -32,6 +32,7 @@ typedef uint8_t Boole;
 
 typedef Int LineNr;    // line number type
 typedef Int ColNr;      // column number type
+typedef _Atomic int32_t AtomicInt;
 
 #define LONG_MAX       0xFFFFFFFFFFFFFFFF // 2^63 - 1
 #define LONG_MIN (Long)0x8000000000000000 // -2^63
@@ -110,6 +111,13 @@ typedef struct {
    Unt state[8];
    Byte buffer[64];
 } ContextSha256;
+
+typedef struct pollfd {
+   int fd;
+   short events;
+   short revents;
+} PollFd;
+
 
 // return values for functions
 #if !(defined(OK) && (OK == 1))

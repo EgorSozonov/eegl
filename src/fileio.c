@@ -8,8 +8,6 @@
 #include "h/book.h"
 #include "h/data.types.h"
 #include "h/data.h"
-#include "h/channel.types.h"
-#include "h/channel.h"
 #include "h/input.types.h"
 #include "h/input.h"
 #include "h/do.h"
@@ -6233,7 +6231,7 @@ fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot) {  //may prepend a '.
 
    //the file name has at most BASENAMELEN characters.
    Unt ptrlen = (Unt)(fnamelen - (ptr - retval));
-   if (ptrlen > (unsigned)BASENAMELEN) {
+   if (ptrlen > BASENAMELEN) {
       ptrlen = BASENAMELEN;
       ptr[ptrlen] = ZERO;
    }
@@ -7149,14 +7147,6 @@ write_eintr(int fd, void *buf, Unt bufsize) {
    }
    return ret;
 }
-
-
-#ifndef SEEK_SET
-# define SEEK_SET 0
-#endif
-#ifndef SEEK_END
-# define SEEK_END 2
-#endif
 
 //Get the stdout of an external command from a temp file.
 //If "ret_len" is NULL replace ZERO characters with NL.  When "ret_len" is not

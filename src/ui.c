@@ -35,8 +35,6 @@
 #include "h/book.h"
 #include "h/input.types.h"
 #include "h/input.h"
-#include "h/channel.types.h"
-#include "h/channel.h"
 #include "h/draw.types.h"
 #include "h/draw.h"
 #include "h/eval.h"
@@ -7043,7 +7041,7 @@ get_terminaloname(Expand*, int idx) {
 private CS
 get_termkill_name(Expand*, int idx) {
    //These are platform-specific values used for job_stop(). They are defined
-   //in each platform's mch_signal_job(). Just use a unified auto-complete list for simplicity.
+   //in each platform's chSendSignalToJob(). Just use a unified auto-complete list for simplicity.
    static CS p_termkill_values[] = { SMAP((CS),
       "term",
       "hup",
@@ -8384,7 +8382,7 @@ terminal_loop(int blocking) {
             send_keys_to_term(curBook->term, prev_raw_c, prev_modMaskG, true);
          } ei (c == Ctrl_C) {
             //"CTRL-W CTRL-C" or 'termwinkey' CTRL-C: end the job
-            mch_signal_job(curBook->term->job, (CS)"kill");
+            chSendSignalToJob(curBook->term->job, (CS)"kill");
          } ei (c == '.') {
             //"CTRL-W .": send CTRL-W to the job
             //"'termwinkey' .": send 'termwinkey' to the job
@@ -10730,7 +10728,7 @@ term_report_winsize(Terminal* term, int rows, int cols) {
          break;
    }
    if (part < PART_COUNT && mch_report_winsize(fd, rows, cols) == OK)
-      mch_signal_job(term->job, S"winch");
+      chSendSignalToJob(term->job, S"winch");
 }
 
 pub Job*
@@ -10742,7 +10740,7 @@ private void
 prepare_to_exit(void) {
    //Ignore SIGHUP, because a dropped connection causes a read error, which
    //makes Eegl exit and then handling SIGHUP causes various reentrance problems.
-   mch_signal(SIGHUP, SIG_IGN);
+   motSignalHandler(SIGHUP, SIG_IGN);
 
    windgoto((int)visibleRowsG - 1, 0);
 
@@ -10822,7 +10820,7 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
       fds[0].fd = fd;
       fds[0].events = POLLIN;
       nfd = 1;
-      nfd = channel_poll_setup(nfd, fds, &towait);
+      nfd = motChannelPollSetup(nfd, fds, &towait);
       
       if (interrupted)
          *interrupted = false;
@@ -10835,7 +10833,7 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
 
       //also call when ret == 0, we may be polling a keep-open channel
       if (ret >= 0)
-          chPollCheck(ret, fds);
+          motPollCheck(ret, fds);
       
       
 
@@ -10893,7 +10891,7 @@ mch_input_isatty(void) {
 
 pub void
 uiInit(void) {
-   visibleColsG = 80;
+   visibleColsG = 96;
    visibleRowsG = 24;
 
    out_flush();
@@ -10901,8 +10899,8 @@ uiInit(void) {
    //Check whether we were invoked with SIGTSTP set to be ignored. If it is
    //that indicates the shell (or program) that launched us does not support
    //tty job control and thus we should ignore that signal.
-   setIgnoreSigTstp(SIG_IGN == mch_signal(SIGTSTP, SIG_ERR));
-   set_signals();
+   setIgnoreSigTstp(SIG_IGN == motSignalHandler(SIGTSTP, SIG_ERR));
+   motSetupSignals();
 }
 
 pub void
