@@ -838,7 +838,7 @@ do_tag(
             } else
                give_warning(IObuff, ic);
             if (ic && !msg_scrolled && msg_silent == 0) {
-               out_flush();
+               termOutFlush();
                ui_delay(1007L, true);
             }
          }
@@ -1194,7 +1194,7 @@ do_tags(Invocation*) {
          msgOuttransDeco(name, tagstack[i].fmark.fnum == curBook->fiNum ? getDecoFlags(HLF_D) : 0);
          eeglFree(name);
       }
-      out_flush();          //show one line at a time
+      termOutFlush();          //show one line at a time
    }
    if (tagstackidx == tagstacklen)   //idx at top of stack
       msg_puts(S"\n>");
@@ -2919,7 +2919,7 @@ jumpto_tag(
                if (found == 2 || !save_p_ic) {
                   msg(_(e_couldnt_find_tag_just_guessing));
                   if (!msg_scrolled && msg_silent == 0) {
-                     out_flush();
+                     termOutFlush();
                      ui_delay(1010L, true);
                   }
                }

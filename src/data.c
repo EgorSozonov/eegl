@@ -516,6 +516,10 @@ list_free_contents(List* l) {
    } 
 }
 
+//Used by the garbage collector.
+#define COPYID_INC 2
+#define COPYID_MASK (~0x1)
+
 //Go through the list of lists and free items without the copyID. But don't free a list that has 
 //a watcher (used in a for loop), these are not referenced anywhere.
 pub int

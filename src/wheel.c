@@ -2470,7 +2470,7 @@ waitForMsg(void) {
    setcursor();
    ui_cursor_shape();      //may show different cursor shape
    cursor_on();
-   out_flush();
+   termOutFlush();
    if (msg_scroll || emsg_on_display)
       ui_delay(1003L, true);   //wait at least one second
    ui_delay(3003L, false);      //wait up to three seconds
@@ -2487,7 +2487,7 @@ normalAction(Operator* oper) { //true when called from main()
    Unt c;
    int ctrl_w = false;      //got CTRL-W command
    int old_col = curPor->cursWant;
-   int need_flushbuf = false;   //need to call out_flush()
+   int need_flushbuf = false;   //need to call termOutFlush()
    Pos old_pos;      //cursor position before command
    int mapped_len;
    static int   old_mapped_len = 0;
@@ -2603,7 +2603,7 @@ normalAction(Operator* oper) { //true when called from main()
    //the command is being executed.  Only do this when the shown command was
    //actually displayed, otherwise this will slow down a lot when executing mappings.
    if (need_flushbuf)
-       out_flush();
+       termOutFlush();
    if (action.cmdchar != K_IGNORE) {
        if (ex_normal_busy)
          did_cursorhold = save_did_cursorhold;
@@ -7988,7 +7988,7 @@ validate_cursor_col(void) {
 //fold column and sign column (these don't move when scrolling horizontally).
 pub int
 normalPortalColumnOffset(Portal *po) {
-    return number_width(po) + 1 + (po != commPortPortG ? 0 : 1) + (isSigncolumnOn(po) ? 2 : 0);
+    return number_width(po) + 1 + (po != commPortPortG ? 0 : 1) + (po->o.signColumn ? 1 : 0);
                          //^ for the line number column
 }
 
@@ -9860,7 +9860,7 @@ showMap(MapBlock* mp, int local) {      //true for book-local map
    if (p_verbose > 0)
       lastSetMsg(mp->scriptCtx);
    msg_clr_eos();
-   out_flush();         //show one line at a time
+   termOutFlush();         //show one line at a time
 
 theend:
    --map_locked;
@@ -12632,7 +12632,7 @@ edit(Unt commChar, int startln, long count){
             c = char_before_cursor();
             if (ins_compl_setup_autocompl(c)) {
                 drawUpdateScreen(UPD_VALID); //Show char deletion immediately
-                out_flush();
+                termOutFlush();
                 goto docomplete; //Trigger autocompletion
             }
          }
@@ -12948,7 +12948,7 @@ edit(Unt commChar, int startln, long count){
          //Trigger autocompletion
          if (p_ac && !char_avail() && ins_compl_setup_autocompl(c)) {
             drawUpdateScreen(UPD_VALID); //Show character immediately
-            out_flush();
+            termOutFlush();
             goto docomplete;
          }
 
@@ -15506,7 +15506,7 @@ has_compl_option(int dict_opt) {
               : _("'thesaurus' option is empty"), getDecoFlags(HLF_E));
       if (emsg_silent == 0 && !in_assert_fails)    {
          setcursor();
-         out_flush();
+         termOutFlush();
          ui_delay(2004L, false);
       }
       return false;
@@ -16950,7 +16950,7 @@ ins_compl_new_leader(void) {
 
    if (p_acl > 0) {
       drawUpdateScreen(UPD_VALID); //Show char (deletion) immediately
-      out_flush();
+      termOutFlush();
    }
 
    if (compl_started) {
@@ -17827,7 +17827,7 @@ set_completion(ColNr startcol, List *list) {
    if (!compl_interrupted)
       show_pum(save_cursorRow, save_leftCol);
    may_trigger_modechanged();
-   out_flush();
+   termOutFlush();
 }
 
 pub void
@@ -20172,7 +20172,7 @@ ins_compl_start(void) {
       editSubmodeHiG = 0;
       showmode();
       editSubmodeExtraMsgG = NULL;
-      out_flush();
+      termOutFlush();
    }
 
    return OK;
@@ -20309,7 +20309,7 @@ ins_complete(Unt c, Boole enable_pum) {
    ) {
       cursor_on();
       setcursor();
-      out_flush();
+      termOutFlush();
       do {
          if (char_avail()) {
             ins_compl_restart();
@@ -21237,9 +21237,9 @@ comp_textwidth(int ff) {  //force formatting (for "gq" command)
       //things that add to the margin.
       textwidth = curPor->width - curBook->o.wrapMargin;
       if (curBook == commPortBookG)
-          textwidth -= 1;
-      if (isSigncolumnOn(curPor))
-         textwidth -= 1;
+         textwidth--;
+      if (curPor->o.signColumn)
+         textwidth--;
       //for relativeNumber
       textwidth -= 8;
    }

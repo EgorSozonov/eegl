@@ -1342,7 +1342,7 @@ internalErrMsg(CS s) {
    emsgImpl(s);
 #if defined(ABORT_ON_INTERNAL_ERROR)
    msg_putchar('\n');  //avoid overwriting the error message
-   out_flush();
+   termOutFlush();
    abort();
 #endif
 }
@@ -1374,7 +1374,7 @@ internalErrFmtMsg0(const char *s, ...) {
    }
 # ifdef ABORT_ON_INTERNAL_ERROR
     msg_putchar('\n');  //avoid overwriting the error message
-    out_flush();
+    termOutFlush();
     abort();
 # endif
 }
@@ -2703,7 +2703,7 @@ msg_end(void) {
       wait_return(false);
       return false;
    }
-   out_flush();
+   termOutFlush();
    return true;
 }
 

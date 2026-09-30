@@ -5119,7 +5119,7 @@ filemess(Book* book, CS name, CS s, int attr){
    //may truncate the message to avoid a hit-return prompt
    msgOuttransDeco(msg_may_trunc(IObuff), attr);
    msg_clr_eos();
-   out_flush();
+   termOutFlush();
    msg_scrolled_ign = false;
 }
 
@@ -6475,7 +6475,7 @@ check_timestamps(int focus) {     //called for GUI focus event
       if (need_wait_return && didit == 2) {
          //make sure msg isn't overwritten
          msg_puts(S"\n");
-         out_flush();
+         termOutFlush();
       }
    }
    return didit;

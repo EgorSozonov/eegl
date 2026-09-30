@@ -2,7 +2,7 @@ void drawInit();
 Decoration getPortcolorDeco(Portal* po);
 int screen_get_current_line_off(void);
 void resetActiveDeco(void);
-void screen_line(
+void drawFlushLine(
    int row,
    int coloff,
    int endcol,
@@ -86,7 +86,7 @@ Unt statusLineNextChar(OUT Decoration* deco, Portal* po);
 int redrawing(void);
 int messaging(void);
 void computeColumnsForRulerAndCommand(void);
-int number_width(Portal* po);
+Unt number_width(Portal* po);
 int screen_screencol(void);
 int screen_screenrow(void);
 CS set_chars_option(CS newVal, Boole is_listchars, OUT ErrBuilder* errb);
@@ -123,7 +123,7 @@ int text_prop_position(
    TextProp* t,
    int vcol,       //current text column
    int scr_col,       //current screen column
-   Unt* countExtraBytes,       //nr of bytes for virtual text
+   int* countExtraBytes,       //nr of bytes for virtual text
    Byte** extraBytes,       //virtual text
    OUT int* numDecoCells,       //decoration cells, NULL if not used
    int* toSkipBeforeDeco,   //cells to skip deco, NULL if not used

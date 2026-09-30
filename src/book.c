@@ -1178,7 +1178,7 @@ ml_recover(Boole checkext) {
              && org_stat.st_mtime > swp_stat.st_mtime)
          || org_stat.st_mtime != mtime))
       emsg(_(e_warning_original_file_may_have_been_changed));
-   out_flush();
+   termOutFlush();
 
 
    mf_put(mfp, hdr, false, false);   //release block 0
@@ -6245,11 +6245,11 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
                int cells;
 
                if (tp->col == MAXCOL) {
-                  Unt n_extra = (int)STRLEN(p);
+                  int n_extra = (int)STRLEN(p);
 
                   cells = text_prop_position(
-                     po, tp, vcol, (vcol + size) % (po->width - col_off) + col_off, &n_extra, &p, 
-                     NULL, NULL, false
+                     po, tp, vcol, (vcol + size) % (po->width - col_off) + col_off, &n_extra, 
+                     &p, NULL, NULL, false
                   );
                   no_sbr = true;  //don't use @showbreak now
                } else
@@ -8312,7 +8312,7 @@ bookNew(
       if (top_file_num < 0) {     //wrap around (may cause duplicates)
          emsg(_("W14: Warning: List of file names overflow"));
          if (emsg_silent == 0 && !in_assert_fails) {
-            out_flush();
+            termOutFlush();
             ui_delay(3001L, true);   //make sure it is noticed
          }
          top_file_num = 1;
@@ -9056,7 +9056,7 @@ bookListFiles(Invocation* invo) {
          eeSnprintf(IObuff + len, (Unt)(IOSIZE - len),
              _("line %ld"), book == curBook ? curPor->cursor.lnum : (long)findLnum(book));
       msg_outtrans(IObuff);
-      out_flush();       //output one line at a time
+      termOutFlush();       //output one line at a time
       ui_breakcheck();
    }
 
@@ -11513,7 +11513,7 @@ bookCheckTimestamp(Book* book){
                msg_clr_eos();
                (void)msg_end();
                if (emsg_silent == 0 && !in_assert_fails) {
-                  out_flush();
+                  termOutFlush();
                   //give the user some time to think about it
                   ui_delay(1004L, true);
 
@@ -12617,7 +12617,7 @@ endOfName:
             //This may take a while, if we were interrupted let the user know we got the message
             if (gotInterruptG) {
                msg(_(e_interrupted));
-               out_flush();
+               termOutFlush();
             }
             if ((fd = open((char *)backup, O_RDONLY | O_EXTRA, 0)) >= 0) {
                if ((writeInfo.fd 

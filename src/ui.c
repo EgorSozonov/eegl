@@ -7302,7 +7302,7 @@ update_cursor(Terminal *term, int redraw) {
    if (redraw) {
       if (term->book == curBook && term->tl_cursor_visible)
          cursor_on();
-      out_flush();
+      termOutFlush();
    }
 }
 
@@ -8135,7 +8135,7 @@ term_paste_register(Unt prev_c) {
    Long reglen = 0;
 
    if (add_to_showcmd(prev_c) && add_to_showcmd('"'))
-      out_flush();
+      termOutFlush();
 
    Unt c = term_vgetc();
    clear_showcmd();
@@ -8360,7 +8360,7 @@ terminal_loop(int blocking) {
          int prev_modMaskG = modMaskG;
 
          if (add_to_showcmd(c))
-            out_flush();
+            termOutFlush();
 
          raw_c = term_vgetc();
          c = raw_c_to_ctrl(raw_c);
@@ -8580,7 +8580,7 @@ handle_settermprop(VTermProp prop, VTermValue* value, void* user) {
    case VTERM_PROP_CURSORVISIBLE:
        term->tl_cursor_visible = value->boolean;
        may_toggle_cursor(term);
-       out_flush();
+       termOutFlush();
        break;
 
    case VTERM_PROP_CURSORBLINK:
@@ -9066,7 +9066,7 @@ termUpdatePortal(Portal* po) {
       } else
          pos.col = 0;
 
-      screen_line(
+      drawFlushLine(
          po->windowRow + pos.row, po->windowCol, pos.col, po->width, -1, 
          portalIsPopup(po) ? SLF_POPUP : 0
       );
@@ -10748,7 +10748,7 @@ prepare_to_exit(void) {
    //there are two screens)
    termSetMode(TMODE_COOK);
    termStopTerminfo();
-   out_flush();
+   termOutFlush();
 }
 
 //Preserve files and exit. When called IObuff must contain a message.
@@ -10764,7 +10764,7 @@ preserve_exit(void) {
 
    out_str(IObuff);
    screen_start();          //don't know where cursor is now
-   out_flush();
+   termOutFlush();
 
    ml_close_notmod();          //close all not-modified buffers
 
@@ -10773,7 +10773,7 @@ preserve_exit(void) {
       if (!bookNoFname(book)) {
          OUT_STR("Eegl: preserving files...\r\n");
          screen_start();       //don't know where cursor is now
-         out_flush();
+         termOutFlush();
          ml_sync_all(false, false);   //preserve all swap files
          break;
       }
@@ -10888,20 +10888,6 @@ mch_input_isatty(void) {
 //   before the machine specific stuff (mch_*) so that we can call the GUI
 //   stuff instead if the GUI is running.
 //2. Input buffer stuff.
-
-pub void
-uiInit(void) {
-   visibleColsG = 96;
-   visibleRowsG = 24;
-
-   out_flush();
-
-   //Check whether we were invoked with SIGTSTP set to be ignored. If it is
-   //that indicates the shell (or program) that launched us does not support
-   //tty job control and thus we should ignore that signal.
-   setIgnoreSigTstp(SIG_IGN == motSignalHandler(SIGTSTP, SIG_ERR));
-   motSetupSignals();
-}
 
 pub void
 ui_write(CS s, int len, int console) {
@@ -11697,7 +11683,7 @@ mch_set_shellsize(void) {
       //NOTE: if you get an error here that term_set_winsize() is undefined, check the output of 
       //configure.  It could probably not find a ncurses, termcap or termlib library.
       term_set_winsize((int)visibleRowsG, (int)visibleColsG);
-      out_flush();
+      termOutFlush();
       screen_start();         //don't know where cursor is now
    }
 }

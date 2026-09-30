@@ -1650,7 +1650,7 @@ print_line(LineNr lnum, int list) {
    if (save_silent) {
       msg_putchar('\n');
       cursor_on();      //msg_start() switches it off
-      out_flush();
+      termOutFlush();
       silentModeG = save_silent;
    }
    info_message = false;
@@ -8186,7 +8186,7 @@ c_print(Invocation* invo) {
          print_line(invo->line1, invo->id == C_list || (invo->flags & EXFLAG_LIST));
          if (++invo->line1 > invo->line2)
             break;
-         out_flush();       //show one line at a time
+         termOutFlush();       //show one line at a time
       }
       setpcmark();
       //put cursor at last line
@@ -8536,7 +8536,7 @@ c_tabs(Invocation*) {
       msg_putchar('\n');
       eeSnprintf(IObuff, IOSIZE, _("Tab %d"), tabcount++);
       msgOuttransDeco(IObuff, getDecoFlags(HLF_T));
-      out_flush();       //output one line at a time
+      termOutFlush();       //output one line at a time
       ui_breakcheck();
 
       if (t  == curtab)
@@ -8556,7 +8556,7 @@ c_tabs(Invocation*) {
          } else
             home_replace(po->book->currFileName, IObuff, IOSIZE, true);
          msg_outtrans(IObuff);
-         out_flush();       //output one line at a time
+         termOutFlush();       //output one line at a time
          ui_breakcheck();
       }
    }
@@ -9080,7 +9080,7 @@ doSleep(Long msec, Boole hide_cursor) {
    else
       cursor_on();
 
-   out_flush();
+   termOutFlush();
    while (!gotInterruptG && done < msec) {
       wait_now = msec - done > 1000L ? 1000L : msec - done; 
       {
@@ -9506,7 +9506,7 @@ redraw_cmd(int clear) {
    if (stateG & MODE_COMMLINE)
       redrawCommline();
 
-   out_flush();
+   termOutFlush();
 }
 
 //":redrawstatus": force redraw of status line(s)
@@ -9531,7 +9531,7 @@ c_redrawstatus(Invocation* invo) {
       drawUpdateScreen(VIsual_active ? UPD_INVERTED : 0);
    isRedrawingDisabledG = save_isRedrawingDisabledG;
    p_lz = save_p_lz;
-   out_flush();
+   termOutFlush();
 }
 
 //":redrawtabpanel": force redraw of the tabpanel
@@ -9547,7 +9547,7 @@ c_redrawtabpanel(Invocation*) {
 
    isRedrawingDisabledG = save_isRedrawingDisabledG;
    p_lz = save_p_lz;
-   out_flush();
+   termOutFlush();
 }
 
 private void
@@ -10556,7 +10556,7 @@ ask_yesno(CS str, int direct) {
       if (r == Ctrl_C || r == ESC)
          r = 'n';
       msg_putchar(r);       //show what you typed
-      out_flush();
+      termOutFlush();
    }
    --no_wait_return;
    stateG = save_State;
@@ -13425,7 +13425,7 @@ change_warning(int col) {
    if (msg_silent == 0 && !silentModeG
     && time_for_testing != 1
    ) {
-       out_flush();
+       termOutFlush();
        ui_delay(1002L, true); //give the user time to think about it
    }
    curBook->didWarnReadonly = true;
@@ -13462,7 +13462,7 @@ changed(void) {
          //message.  Since we could be anywhere, call wait_return() now,
          //and don't let the emsg() set msg_scroll.
          if (need_wait_return && emsg_silent == 0 && !in_assert_fails) {
-            out_flush();
+            termOutFlush();
             ui_delay(2002L, true);
             wait_return(true);
             msg_scroll = save_msg_scroll;

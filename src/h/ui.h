@@ -64,7 +64,6 @@ Job* term_getjob(Terminal* term);
 void preserve_exit(void);
 int uiRealWaitForChar(int fd, Long msec, OUT int* interrupted);
 int mch_input_isatty(void);
-void uiInit(void);
 void ui_write(CS s, int len, int console);
 void ui_inBytendo(CS s, int len);
 int ui_inchar(

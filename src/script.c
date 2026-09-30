@@ -1818,7 +1818,7 @@ c_scriptnames(Invocation* invo) {
          if (!message_filtered(IObuff)) {
             msg_putchar('\n');
             msg_outtrans(IObuff);
-            out_flush();       //output one line at a time
+            termOutFlush();       //output one line at a time
             ui_breakcheck();
          }
       }
@@ -3410,7 +3410,7 @@ nextwild(
    //If cmd_silent is set then don't show the dots, because redrawcmd() below won't remove them.
    if (!cmd_silent && !from_wildtrigger_func) {
       msg_puts(S"...");       //show that we are busy
-      out_flush();
+      termOutFlush();
    }
 
    if (type == WILD_NEXT || type == WILD_PREV || type == WILD_PAGEUP || type == WILD_PAGEDOWN) {
@@ -4155,7 +4155,7 @@ showmatches_oneline(
       msg_clr_eos();
       msg_putchar('\n');
    }
-   out_flush();          //show one line at a time
+   termOutFlush();          //show one line at a time
 }
 
 //Show all matches for completion on the command line. Return EXPAND_NOTHING when the character
@@ -4198,7 +4198,7 @@ showmatches(Expand *xp, int wildmenu, int noselect){
       msg_didany = false;      //lines_left will be set
       msg_start();         //prepare for paging
       msg_putchar('\n');
-      out_flush();
+      termOutFlush();
       commlineRowG = msgRowG;
       msg_didany = false;      //lines_left will be set again
       msg_start();         //prepare for paging
@@ -7544,7 +7544,7 @@ c_history(Invocation* invo) {
                else
                   STRCPY(IObuff + len, hist[i].hisstr);
                msg_outtrans(IObuff);
-               out_flush();
+               termOutFlush();
             }
             if (i == idx)
                break;
@@ -7938,7 +7938,7 @@ may_do_incsearch_highlighting(int firstc, long count, OUT IncSearch* is_state) {
       Unt searchFlags = SEARCH_OPT | SEARCH_NOOF | SEARCH_PEEK;
 
       cursor_off();   //so the user knows we're busy
-      out_flush();
+      termOutFlush();
       ++emsg_off;   //so it doesn't beep if bad expr
       if (!p_hls)
          searchFlags |= SEARCH_KEEP;
@@ -8075,7 +8075,7 @@ may_adjust_incsearch_highlighting(
    }
 
    cursor_off();
-   out_flush();
+   termOutFlush();
    if (c == Ctrl_G) {
       t = is_state->match_end;
       if (LT_POS(is_state->match_start, is_state->match_end))
@@ -9037,7 +9037,7 @@ getCommandWorker(
             goto commlineChanged;
          if (!cmd_silent) {
             windgoto(msgRowG, 0);
-            out_flush();
+            termOutFlush();
          }
          break;
       }
@@ -11464,7 +11464,7 @@ uc_list(CS name, Unt name_len) {
          msg_outtrans_special(comm->uc_rep, false, name_len == 0 ? visibleColsG - 47 : 0);
          if (p_verbose > 0)
             lastSetMsg(comm->uc_scriptCtx);
-         out_flush();
+         termOutFlush();
          ui_breakcheck();
          if (gotInterruptG)
             break;
@@ -15400,7 +15400,7 @@ listOneFunction(Invocation* invo, CS name, CS p, Boole is_global) {
       if (function_list_modified(prev_changes))
          break;
       msg_prt_line(FUNCLINE(fp, j), false);
-      out_flush();   //show a line at a time
+      termOutFlush();   //show a line at a time
       ui_breakcheck();
    }
 

@@ -255,6 +255,7 @@ private void list_version(void);
 private void intro_message(int colon);
 private void do_intro_line(int row, CS mesg, int add_version);
 private void init1(OUT MainParams* par);
+private void initUi(void);
 private int isSafeNow(void);
 private void earlyArgScan(MainParams* par);
 private int getNumericArg(
@@ -287,6 +288,7 @@ private void after_sigcont(void);
 private void sigcont_handler(int);
 private void catch_int_signal(void);
 private void catch_signals(void (*func_deadly)(int), void (*func_other)(int));
+private void setupSignalHandlers(void);
 private void init_signal_stack(void);
 private CS get_signal_name(int sig);
 private void block_signals(SignalSet* set);
@@ -1029,6 +1031,21 @@ init1(OUT MainParams* par) {
    llInitStacksOnce();
 }
 
+private void
+initUi(void) {
+   lo("initUi");
+   visibleColsG = 80;
+   visibleRowsG = 24;
+
+   termOutFlush();
+
+   //Check whether we were invoked with SIGTSTP set to be ignored. If it is
+   //that indicates the shell (or program) that launched us does not support
+   //tty job control and thus we should ignore that signal.
+   ignore_sigtstp = SIG_IGN == motSignalHandler(SIGTSTP, SIG_ERR);
+   setupSignalHandlers();
+}
+
 pub int
 appMain(int argc, char** argv) {
    //Do any system-specific initialisations.  These can NOT use IObuff or nameBuffG.  
@@ -1093,9 +1110,9 @@ appMain(int argc, char** argv) {
    if (recoveryModeG && paramsP.fname == NULL)
       paramsP.want_full_screen = false;
 
-   //uiInit() sets up the terminal (window) for use. This must be done after resetting 
-   //fullScreenG, otherwise it may move the cursor. Note that we may use mch_exit() before uiInit()!
-   uiInit();
+   //initUi() sets up the terminal (window) for use. This must be done after resetting 
+   //fullScreenG, otherwise it may move the cursor. Note that we may use mch_exit() before initUi()!
+   initUi();
    TIME_MSG("shell init");
 
    //Print a warning if stdout is not a terminal.
@@ -1975,7 +1992,7 @@ check_tty(MainParams* par) {
          mch_errmsg(_("Eegl: Warning: Output is not to a terminal\n"));
       if (!input_isatty)
          mch_errmsg(_("Eegl: Warning: Input is not from a terminal\n"));
-      out_flush();
+      termOutFlush();
       if (par->tty_fail && (!stdout_isatty || !input_isatty))
          exit(1);
       if (scriptin[0] == NULL)
@@ -2591,7 +2608,7 @@ deathtrap(int sigarg) {
    if (entered == 2) {
       //No translation, it may call malloc().
       OUT_STR("Eegl: Double signal, exiting\n");
-      out_flush();
+      termOutFlush();
       exitEegl(1);
    }
 
@@ -2633,7 +2650,7 @@ sigcont_handler(int) {
    after_sigcont();
    redraw_later(UPD_CLEAR);
    cursor_on_force();
-   out_flush();
+   termOutFlush();
 }
 
 //Catch CTRL-C (only works while in Cooked mode).
@@ -2670,8 +2687,8 @@ catch_signals(void (*func_deadly)(int), void (*func_other)(int)) {
    }
 }
 
-pub void
-motSetupSignals(void) {
+private void
+setupSignalHandlers(void) {
    //WINDOW CHANGE signal is handled with sig_winch().
    motSignalHandler(SIGWINCH, sig_winch);
 
@@ -2839,7 +2856,7 @@ mch_exit(int r) {
    if (fullScreenG)
       cursor_on();
    
-   out_flush();
+   termOutFlush();
    ml_close_all(true);      //remove all memfiles
 
 #ifdef USE_GCOV_FLUSH
@@ -3237,7 +3254,7 @@ check_due_timer(void) {
          if (balloonEval != NULL) {
             general_beval_cb(balloonEval, 0);
             setcursor();
-            out_flush();
+            termOutFlush();
          }
       } ei (next_due == -1 || next_due > this_due)
          next_due = this_due;
@@ -5424,7 +5441,7 @@ channel_exe_cmd(Channel* channel, ChannelFdKind part, Var* argv) {
       redraw_cmd(*arg != ZERO);
       showruler(false);
       setcursor();
-      out_flush();
+      termOutFlush();
    } ei (STRCMP(cmd, "expr") == 0 || STRCMP(cmd, "call") == 0) {
       int is_call = cmd[0] == 'c';
       int id_idx = is_call ? 3 : 2;
@@ -7225,11 +7242,6 @@ private Long get_signal_stack_size(void) {
 
 //}}}
 
-pub void
-setIgnoreSigTstp(int newVal) {
-   ignore_sigtstp = newVal;
-}
-
 //Send SIGINT to a child process if "c" is an interrupt character.
 private void
 may_send_sigint(Unt c, ProId pid, ProId wpid) {
@@ -7322,7 +7334,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
    Boole did_termSetMode = false;   //termSetMode(TMODE_RAW) called
    PolyWithStatus retVal = {};
 
-   out_flush();
+   termOutFlush();
    if ((opt & SHELL_COOKED) != 0)
       termSetMode(TMODE_COOK);      //set to normal mode
    if (tmode == TMODE_RAW)
@@ -7341,7 +7353,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
       }
       if (pipeError) {
          msg_puts(_("\nCannot create pipes\n"));
-         out_flush();
+         termOutFlush();
          goto skipIfError;
       }
    }
@@ -7516,7 +7528,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
                         msgTranslatedSlice((Text){ta_buf + i, 1});
                   }
                   windgoto(msgRowG, msgColG);
-                  out_flush();
+                  termOutFlush();
                }
 
                typeAheadLen += len;
@@ -7567,7 +7579,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
 
             windgoto(msgRowG, msgColG);
             cursor_on();
-            out_flush();
+            termOutFlush();
             if (gotInterruptG)
                break;
 
@@ -7634,7 +7646,7 @@ finished:
       if (tmode == TMODE_RAW)
          termSetMode(TMODE_RAW);
       did_termSetMode = true;
-      motSetupSignals();
+      setupSignalHandlers();
 
       if (WIFEXITED(status)) {
          //LINTED avoid "bitwise operation on signed value"

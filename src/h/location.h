@@ -126,7 +126,6 @@ void f_sign_jump(Arr(Var) argvars, Var* returnVar);
 void f_sign_place(Arr(Var) argvars, Var* returnVar);
 void f_sign_placelist(Arr(Var) argvars, Var* returnVar);
 void f_sign_undefine(Arr(Var) argvars, Var* returnVar);
-Boole isSigncolumnOn(Portal* po);
 void f_sign_unplace(Arr(Var) argvars, Var* returnVar);
 void f_sign_unplacelist(Arr(Var) argvars, Var* returnVar);
 int search_regcomp(

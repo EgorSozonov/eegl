@@ -5,7 +5,7 @@ void free_cur_term(void);
 void getlinecol(Arr(long) cols, Arr(long) rows);
 int add_termcap_entry(CS name, int force);
 void termInitTerminfo(CS name);
-void out_flush(void);
+void termOutFlush(void);
 void out_char(unsigned c);
 void out_str_nf(CS s);
 void out_str(CS s);

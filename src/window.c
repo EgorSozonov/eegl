@@ -1924,7 +1924,7 @@ c_display(Invocation* invo) {
             }
             if (n > 1 && yb->y_type == MLINE)
                msgPutsDeco(S"^J", flags);
-            out_flush();          // show one line at a time
+            termOutFlush();          // show one line at a time
           }
           ui_breakcheck();
       }

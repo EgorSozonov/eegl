@@ -294,7 +294,7 @@ get_keystroke(void) {
    mapped_ctrl_c = false;   //mappings are not used here
    for (;;) {
       cursor_on();
-      out_flush();
+      termOutFlush();
 
       //Leave some room for termTryParseTermcode() to insert a key code into (max
       //5 chars plus ZERO).  And fixInputBuffer() can triple the number of bytes.
@@ -2560,7 +2560,7 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
          //The mapping may do anything, but we expect it to take care of
          //redrawing.  Do put the cursor back where it was.
          windgoto(was_screen_row, was_screen_col);
-         out_flush();
+         termOutFlush();
 
          //If an error was displayed and the expression returns an empty
          //string, generate a <Nop> to allow for a redraw.
@@ -3034,7 +3034,7 @@ ingestChar(CS buf, int maxlen, long wait_time) {  //"wait_time" milliseconds
    int changeCnt = typeBufG.changeCnt;
    if (wait_time == -1L || wait_time > 100L) { //flush output before waiting
        cursor_on();
-       out_flush();
+       termOutFlush();
    }
 
    //Don't reset these when at the hit-return prompt, otherwise a endless
@@ -3088,7 +3088,7 @@ ingestChar(CS buf, int maxlen, long wait_time) {  //"wait_time" milliseconds
       //Always flush the output characters when getting input characters
       //from the user and not just peeking.
       if (wait_time == -1L || wait_time > 10L)
-         out_flush();
+         termOutFlush();
 
       //Fill up to a third of the buffer, because each character may be tripled below.
       len = ui_inchar(OUT buf, maxlen / 3, wait_time, changeCnt);

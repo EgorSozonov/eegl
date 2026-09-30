@@ -881,11 +881,6 @@ typedef struct tm Tm;
 #define RE_STRICT  4   //don't allow [abc] without ]
 #define RE_AUTO    8   //automatic engine selection
 
-//values for reg_do_extmatch
-# define REX_SET   1   //to allow \z\(...\),
-# define REX_USE   2   //to allow \z\1 et al.
-# define REX_ALL   (REX_SET | REX_USE)
-
 //Return values for fullpathcmp()
 //Note: can use (fullpathcmp() & FPC_SAME) to check for equal files
 #define FPC_SAME   1   //both exist and are the same file.
@@ -4037,7 +4032,6 @@ struct Portal { //:Portal
    ArrayList folds;  //array of nested folds
    Boole foldManual; //when true: some folds are opened/closed manually
    Boole foldNeedsRecomputation; //when true: folding needs to be recomputed
-   int numberColWidth;      //width of 'number' and 'relativenumber' column being used
    TermCellColor termHiliteGroupName;    //cache for term color of a portal's "hiliteGroupName"
 ///////////////////////////////////////////////////////////////////
 //=== end of cached values ===
@@ -8276,10 +8270,6 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 #define SIGNAL_BLOCK   (-1)
 #define SIGNAL_UNBLOCK (-2)
 
-//last argument for do_source()
-#define DOSO_NONE  0
-#define DOSO_INIT  1   //loading init.vim file
-
 //flags for buf_freeall()
 #define BFA_DEL          1   //bbook is going to be deleted
 #define BFA_WIPE         2   //book is going to be wiped out
@@ -8314,10 +8304,6 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 #define DIP_NORTP   0x20   //do not use 'runtimepath'
 #define DIP_NOAFTER 0x40   //skip "after" directories
 #define DIP_AFTER   0x80   //only use "after" directories
-
-//Used by the garbage collector.
-#define COPYID_INC 2
-#define COPYID_MASK (~0x1)
 
 #define FOLD_TEXT_LEN 51  //buffer size for get_foldtext()
 
@@ -8362,13 +8348,6 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 #define REPTERM_SPECIAL     4
 #define REPTERM_NO_SIMPLIFY 8
 
-//Flags for termFindSpecialKey()
-#define FSK_KEYCODE     0x01   //prefer key code, e.g. K_DEL instead of DEL
-#define FSK_KEEP_X_KEY  0x02   //don't translate xHome to Home key
-#define FSK_IN_STRING   0x04   //true in string, double quote is escaped
-#define FSK_SIMPLIFY    0x08   //simplify <C-H> and <A-x>
-#define FSK_FROM_PART   0x10   //left-hand-side of mapping
-
 //Flags for mch_delay.
 #define MCH_DELAY_IGNOREINPUT 1
 #define MCH_DELAY_SETTMODE    2
@@ -8386,15 +8365,6 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 #define VSE_BOOK   2   //escape for a ";book" command
 
 #define SYNTAX_MAX_COL 256 //maximum column for syntax coloring
-
-
-#define LOC_LIST_MAKE      0 //selectable with ":list m"
-#define LOC_LIST_GREP      1 //selectable with ":list g"
-#define LOC_LIST_HELP      2 //selectable with ":list h"
-#define LOC_LIST_TAGS      3 //selectable with ":list t"
-#define LOC_LIST_BOOKMARKS 4 //selectable with ":list b"
-#define LOC_LIST_CSCOPE    5 //selectable with ":list c"
-#define COUNT_LOC_LISTS    6 //= 1 + highest LIST_...value
 
 typedef struct dirent DirEntry;
 

@@ -29,6 +29,7 @@
 #include "h/script.h"
 #include "h/strings.h"
 #include "h/tag.h"
+#include "h/term.types.h"
 #include "h/term.h"
 #include "h/ui.h"
 #include "h/window.h"
@@ -5369,7 +5370,7 @@ c_execute(Invocation* invo) {
 
       if (invo->id == C_echomsg) {
          msgDeco(ga.c, echoDecoFlagsG);
-         out_flush();
+         termOutFlush();
       } ei (invo->id == C_echowindow) {
          start_echowindow(invo->addr_count > 0 ? invo->line2 : 0);
          msgDeco(ga.c, echoDecoFlagsG);
@@ -9686,7 +9687,7 @@ f_echoraw(Var* argvars, Var*) {
    CS str = convertVarToStringSingleUse(&argvars[0]);
    if (str && *str != ZERO) {
       out_str(str);
-      out_flush();
+      termOutFlush();
    }
 }
 

@@ -309,7 +309,6 @@ OPTION("foldtext", foldText, CS, "foldtext()", P_REDRAW_PORT,
 OPTION("foldmarker", foldMarker, CS, "{{{,}}}",  P_REDRAW_PORT|P_ONECOMMA|P_NODUP,
     &did_set_foldmarker, NULL)
 OPTION("list", list, Boole, false, P_REDRAW_PORT, null, null)
-OPTION("numberwidth", numberWidth, long, 2, P_REDRAW_PORT, &did_set_numberwidth, NULL)
 OPTION("portfixbuf", portFixBuf, Boole, false, 0, null, null)
 OPTION("portfixheight", portFixHeight, Boole, false, P_RSTAT, null, null)
 OPTION("portfixwidth", portFixWidth, Boole, false, P_RSTAT, null, null)

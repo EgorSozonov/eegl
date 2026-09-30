@@ -15,6 +15,7 @@
 #include "h/draw.h"
 #include "h/hilite.h"
 #include "h/message.h"
+#include "h/regexp.types.h"
 #include "h/regexp.h"
 #include "h/script.h"
 

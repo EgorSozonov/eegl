@@ -11148,8 +11148,8 @@ adjustPosition(Portal* po) {
    }
 
    margin_width = number_width(po) + 1; //for the line number column
-   if (isSigncolumnOn(po))
-      margin_width += 2;
+   if (po->o.signColumn)
+      margin_width++;
    if (margin_width >= maxwidth)
       margin_width = maxwidth - 1;
 

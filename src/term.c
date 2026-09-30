@@ -73,6 +73,15 @@ typedef struct {
    Tyme start;   //when request was sent, -1 for never
 } TermRequest;
 
+//Flags for termFindSpecialKey()
+pub
+#define FSK_KEYCODE     0x01   //prefer key code, e.g. K_DEL instead of DEL
+#define FSK_KEEP_X_KEY  0x02   //don't translate xHome to Home key
+#define FSK_IN_STRING   0x04   //true in string, double quote is escaped
+#define FSK_SIMPLIFY    0x08   //simplify <C-H> and <A-x>
+#define FSK_FROM_PART   0x10   //left-hand-side of mapping
+
+
 //}}}
 //{{{@@forward declarations
 private int isEeglXterm(CS name);
@@ -1160,7 +1169,7 @@ private int out_pos = 0;   //number of chars in out_buf
 
 //flush the output buffer and redraw the cursor.
 pub void
-out_flush(void) {
+termOutFlush(void) {
    if (out_pos == 0)
       return;
 
@@ -1189,7 +1198,7 @@ out_char(unsigned c) {
 
    //For testing we flush each time.
    if (out_pos >= OUT_SIZE || p_wd)
-      out_flush();
+      termOutFlush();
 }
 
 //Output "c" like out_char(), but don't flush when p_wd is set.
@@ -1198,7 +1207,7 @@ out_char_nf(int c) {
    out_buf[out_pos++] = (unsigned)c;
 
    if (out_pos >= OUT_SIZE)
-      out_flush();
+      termOutFlush();
    return (unsigned)c;
 }
 
@@ -1212,14 +1221,14 @@ pub void
 out_str_nf(CS s) {
    //avoid terminal strings being split up
    if (out_pos > OUT_SIZE - MAX_ESC_SEQ_LEN)
-      out_flush();
+      termOutFlush();
 
    for (CS p = s; *p != ZERO; ++p)
       out_char_nf(*p);
 
    //For testing we write one string at a time.
    if (p_wd)
-      out_flush();
+      termOutFlush();
 }
 
 //out_str(s): Put a character string a byte at a time into the output buffer.
@@ -1233,12 +1242,12 @@ out_str(CS s) {
 
    //avoid terminal strings being split up
    if (out_pos > OUT_SIZE - MAX_ESC_SEQ_LEN)
-      out_flush();
+      termOutFlush();
    tputs((char *)s, 1, TPUTSFUNCAST out_char_nf);
 
    //For testing we write one string at a time.
    if (p_wd)
-      out_flush();
+      termOutFlush();
 }
 
 //cursor positioning using termcap parser. (jw)
@@ -1330,7 +1339,7 @@ term_get_winpos(int* x, int* y, Long timeout) {
    ++did_request_winpos;
    requestSent(&winPositionRequestS);
    OUT_STR(termCodesG[KS_CGP]);
-   out_flush();
+   termOutFlush();
 
    //Try reading the result for "timeout" msec.
    while (count++ <= timeout / 10 && !gotInterruptG) {
@@ -1651,7 +1660,7 @@ set_shellsize_inner(int width, int height, int mustset) {
       }
       cursor_on();       //redrawing may have switched it off
    }
-   out_flush();
+   termOutFlush();
 }
 
 pub void
@@ -1735,7 +1744,7 @@ may_send_t_RK(void) {
    if (send_t_RK && !work_pending() && !ex_normal_busy && !in_feedkeys && !isExitingG) {
       send_t_RK = false;
       out_str(termCodesG[KS_CRK]);
-      out_flush();
+      termOutFlush();
    }
 }
 
@@ -1771,12 +1780,12 @@ termSetMode(TermInputMode tmode) {
             out_str_t_TI();   //possibly enables modifyOtherKeys
          }
       }
-      out_flush();
+      termOutFlush();
       mch_termSetMode(tmode);   //machine specific function
       cur_tmode = tmode;
       if (tmode == TMODE_RAW)
           setmouse();      //may switch mouse on
-      out_flush();
+      termOutFlush();
    }
 }
 
@@ -1796,7 +1805,7 @@ starttermcap(void) {
    if (termCodesG[KS_FE] != S"")
       out_str(termCodesG[KS_FE]);
 
-   out_flush();
+   termOutFlush();
    termcap_active = true;
    screen_start();         //don't know where cursor is now
 }
@@ -1829,7 +1838,7 @@ termStopTerminfo(void) {
 
    out_str(termCodesG[KS_CBD]);
    out_str(termCodesG[KS_KE]);         //stop "keypad transmit" mode
-   out_flush();
+   termOutFlush();
    termcap_active = false;
 
    //Output t_te before t_TE, t_te may switch between main and alternate
@@ -1845,7 +1854,7 @@ termStopTerminfo(void) {
    cursor_on();    //just in case it is still off
    out_str_t_TE(); //stop "raw" mode, modifyOtherKeys and Kitty keyboard protocol
    screen_start(); //don't know where cursor is now
-   out_flush();
+   termOutFlush();
 }
 
 //Send sequences to the terminal and check with t_u7 how the cursor moves, to find out properties
@@ -1876,7 +1885,7 @@ check_terminal_behavior(void) {
       out_str(buffer);
       out_str(termCodesG[KS_U7]);
       requestSent(&u7_status);
-      out_flush();
+      termOutFlush();
       did_send = true;
 
       //This overwrites a few characters on the screen, a redraw is needed
@@ -1903,7 +1912,7 @@ check_terminal_behavior(void) {
       out_str((CS)"\033[0%m");
       out_str(termCodesG[KS_U7]);
       requestSent(&xcc_status);
-      out_flush();
+      termOutFlush();
       did_send = true;
 
       //If the terminal handles test sequence incorrectly, garbage text is
@@ -1921,7 +1930,7 @@ check_terminal_behavior(void) {
       screen_start();
 
       //check for the characters now, otherwise they might be eaten by get_keystroke()
-      out_flush();
+      termOutFlush();
       (void)vpeekc_nomap();
    }
 }
@@ -2022,7 +2031,7 @@ term_cursor_color(CS color) {
    out_str(termCodesG[KS_CSC]);      //set cursor color start
    out_str_nf(color);
    out_str(termCodesG[KS_CEC]);      //set cursor color end
-   out_flush();
+   termOutFlush();
 }
 
 pub int
@@ -2037,7 +2046,7 @@ pub void
 termSetCursorShape(int shape, int blink) {
    if (termCodesG[KS_CSH] != S"") {
       OUT_STR(TGOTO(termCodesG[KS_CSH], 0, shape * 2 - blink));
-      out_flush();
+      termOutFlush();
    } else {
       int do_blink = blink;
 
@@ -2049,10 +2058,10 @@ termSetCursorShape(int shape, int blink) {
 
       if (do_blink && termCodesG[KS_VS] != S"") {
          out_str(termCodesG[KS_VS]);
-         out_flush();
+         termOutFlush();
       } ei (!do_blink && termCodesG[KS_CVS] != S"") {
          out_str(termCodesG[KS_CVS]);
-         out_flush();
+         termOutFlush();
       }
    }
 }
@@ -3856,7 +3865,7 @@ show_termcodes(Unt flags) {
             else
                col += INC3;
          }
-         out_flush();
+         termOutFlush();
          ui_breakcheck();
       }
    }
@@ -4092,7 +4101,7 @@ req_more_codes_from_term(void) {
 
    //Send the codes out right away.
    if (xt_index_out != old_idx)
-      out_flush();
+      termOutFlush();
 }
 
 //Decode key code response from xterm:

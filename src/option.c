@@ -30,6 +30,7 @@
 #include "h/script.h"
 #include "h/strings.h"
 #include "h/tag.h"
+#include "h/term.types.h"
 #include "h/term.h"
 #include "h/ui.h"
 #include "h/wheel.types.h"
@@ -284,7 +285,6 @@ private CS did_set_equalalways(OptionChange* cha);
 private CS did_set_foldlevel(OptionChange* cha);
 private CS did_set_hlsearch(OptionChange* cha);
 private CS did_set_ignorecase(OptionChange* cha);
-private CS did_set_numberwidth(OptionChange* cha);
 private CS did_set_maxsearchcount(OptionChange* cha);
 private CS setShiftWidth(OptionChange* cha);
 private CS did_set_smoothscroll(OptionChange* cha);
@@ -1651,7 +1651,7 @@ printOptionGroup(
          showoneopt(items[i], SET_GLOBAL);
          col += INC;
       }
-      out_flush();
+      termOutFlush();
       ui_breakcheck();
    }
 }
@@ -1966,22 +1966,6 @@ pub CS
 setModifiable(OptionChange* cha) {
    updateBoolRef(cha);
    return NULL;
-}
-
-private CS
-did_set_numberwidth(OptionChange* cha) {
-   CS errmsg = NULL;
-   long new = cha->newVal.num;
-   //@numberwidth must be positive
-   if (new < 1) {
-      return e_argument_must_be_positive;
-   } ei (new > 20) {
-      return e_invalid_argument;
-   }
-   updateNumRef(cha);
-   curPor->lineCountSaved = 0; //trigger a redraw
-
-   return errmsg;
 }
 
 //Process the new @maxsearchcount option value.
@@ -4284,7 +4268,7 @@ theend:
       info_message = true;   //use mch_msg(), not mch_errmsg()
       msg_putchar('\n');
       cursor_on();      //msg_start() switches it off
-      out_flush();
+      termOutFlush();
       silentModeG = true;
       info_message = false;   //use mch_msg(), not mch_errmsg()
    }
@@ -4336,7 +4320,7 @@ c_set(Invocation* invo) {
       info_message = true;   //use mch_msg(), not mch_errmsg()
       msg_putchar('\n');
       cursor_on();      //msg_start() switches it off
-      out_flush();
+      termOutFlush();
       silentModeG = true;
       info_message = false;   //use mch_msg(), not mch_errmsg()
    }

@@ -53,12 +53,12 @@
 declStruct(RState);
 //NFA state. Such a state may have no outgoing edge, when it is a MATCH state.
 struct RState {
-   Unt         c; //a char
-   RState      *out;
-   RState      *out1;
-   int         id;
-   int         lastlist[2]; //0: normal, 1: recursive
-   int         val;
+   Unt c; //a char
+   RState* out;
+   RState* out1;
+   int id;
+   int lastlist[2]; //0: normal, 1: recursive
+   int val;
 };
 
 //Structure used by the NFA matcher.
@@ -85,7 +85,6 @@ struct RegProg {
    RState state[1];   //actually longer..
 };
 
-
 //Since the out pointers in the list are always uninitialized, we use the pointers themselves
 //as storage for the StateLists.
 typedef union StateList StateList;
@@ -94,11 +93,10 @@ union StateList {
    RState* s;
 };
 
-
 //A partially built NFA without the matching state filled in.
 typedef struct {
-   RState *start; //points at the start state.
-   StateList   *out; //a list of places that need to be set to the next state for this fragment.
+   RState* start; //points at the start state.
+   StateList* out; //a list of places that need to be set to the next state for this fragment.
 } Frag;
 
 //Structure to be used for single-line matching.
@@ -424,6 +422,13 @@ typedef struct {
    int id;      //ID of the list
    int has_pim;   //true when any state has a PIM
 } NfaList;
+
+//values for reg_do_extmatch
+pub
+#define REX_SET   1   //to allow \z\(...\),
+#define REX_USE   2   //to allow \z\1 et al.
+#define REX_ALL   (REX_SET | REX_USE)
+
 
 //}}}
 //{{{@@forward declarations

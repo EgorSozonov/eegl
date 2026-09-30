@@ -150,6 +150,15 @@ typedef struct {
    long changedTick;
 } LocationList;
 
+pub
+#define LOC_LIST_MAKE      0 //selectable with ":list m"
+#define LOC_LIST_GREP      1 //selectable with ":list g"
+#define LOC_LIST_HELP      2 //selectable with ":list h"
+#define LOC_LIST_TAGS      3 //selectable with ":list t"
+#define LOC_LIST_BOOKMARKS 4 //selectable with ":list b"
+#define LOC_LIST_CSCOPE    5 //selectable with ":list c"
+#define COUNT_LOC_LISTS    6 //= 1 + highest LIST_...value
+
 //:vimgrep command arguments
 typedef struct {
    long tomatch;   //maximum number of matches to find
@@ -3740,7 +3749,7 @@ displayListEntry(LocLine* lline, int ind, int cursel) {
    formatText(gap, (fname != NULL || lline->lNum != 0) ? skipwhite(lline->text) : lline->text);
    ga_append(gap, ZERO);
    msg_prt_line((CS)gap->c, false);
-   out_flush();      //show one line at a time
+   termOutFlush();      //show one line at a time
 }
 
 //":llist": list all locations
@@ -5724,7 +5733,7 @@ vgr_display_fname(Byte *fname) {
    msg_didout = false;       //overwrite this message
    msg_nowait = true;       //don't wait for this message
    msgColG = 0;
-   out_flush();
+   termOutFlush();
 }
 
 //Load a dummy book to search for a pattern using vimgrep.
@@ -8311,7 +8320,7 @@ show_one_mark(
                msgOuttransDeco(name, current ? getDecoFlags(HLF_D) : 0);
             }
          }
-         out_flush();          //show one line at a time
+         termOutFlush();          //show one line at a time
       }
       if (mustfree)
          eeglFree(name);
@@ -8431,7 +8440,7 @@ c_jumps(Invocation*) {
          eeglFree(name);
          ui_breakcheck();
       }
-      out_flush();
+      termOutFlush();
    }
    if (curPor->jumpListInd == curPor->jumpListLen)
       msg_puts(S"\n>");
@@ -8471,7 +8480,7 @@ c_changes(Invocation*) {
          eeglFree(name);
          ui_breakcheck();
       }
-      out_flush();
+      termOutFlush();
    }
    if (curPor->changeListInd == (int)curBook->changeListLen)
       msg_puts(S"\n>");
@@ -11102,11 +11111,6 @@ get_first_valid_sign(Portal *wp) {
    return sign;
 }
 
-pub Boole
-isSigncolumnOn(Portal* po) {
-   return get_first_valid_sign(po) != NULL ? po->o.signColumn : false;
-}
-
 pub void
 f_sign_unplace(Arr(Var) argvars, Var* returnVar) {
    Bag *dict = NULL;
@@ -12182,7 +12186,7 @@ do_search(
              msg_check();
 
              gotoCommline(false);
-             out_flush();
+             termOutFlush();
              msg_nowait = true;       //don't wait for this message
          }
 
@@ -13591,7 +13595,7 @@ find_pattern_in_path(
                      msg_puts(_("  NOT FOUND"));
                }
             }
-            out_flush();       //output each line directly
+            termOutFlush();       //output each line directly
          }
 
          if (new_fname) {
@@ -13973,7 +13977,7 @@ show_pat_in_path(
           msg_puts(S" ");
       }
       msg_prt_line(line, false);
-      out_flush();         //show one line at a time
+      termOutFlush();         //show one line at a time
 
       //Definition continues until line that doesn't end with '\'
       if (gotInterruptG || type != FIND_DEFINE || p < line || *p != '\\')

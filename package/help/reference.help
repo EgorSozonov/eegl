@@ -914,9 +914,9 @@ space as the beginning of that line), thus preserving horizontal blocks of text.
 
 Settings for @breakindent. It can consist of the following optional
 items and must be separated by a comma:
-   min:{n}      Minimum text width that will be kept after
-                applying @breakindent, even if the resulting text should normally be narrower.
-                This prevents text indented almost to the right window border occupying lots of 
+   min:{n}      Minimum text width that will be kept after applying @breakindent, even if the 
+                resulting text should normally be narrower.
+                This prevents text indented almost to the right window border occupying lots of
                 vertical space when broken. (default: 20)
           
    shift:{n}    After applying @breakindent, the wrapped line's beginning will be shifted by the 
@@ -930,13 +930,12 @@ items and must be separated by a comma:
                 indent may be added for the @showbreak setting. (default: off)
 
 
-@@booklisted              Book. Boolean. Default = on
+@@booklisted             Book. Boolean. Default = on
    
-When this option is set, the book shows up in the book list.  If
-it is reset it is not used for ":bnext", "ls", etc.
-This option is reset by Eegl for books that are only used to remember
-a file name or marks.  Eegl sets it when starting to edit a book.
-But not when moving to a book with ":book".
+When this option is set, the book shows up in the book list. If it is reset, it is not used for
+":bnext", "ls", etc. This option is reset by Eegl for books that are only used to remember
+a file name or marks. Eegl sets it when starting to edit a book. But not when moving to a book
+with ":book".
 
 
 @@buftype                Book. Enumerated. Default = normal
@@ -2852,19 +2851,6 @@ listing continues until finished.
    
 Defines the maximum time in msec between two mouse clicks for the second click to be
 recognized as a multi click.
-
-
-@@numberwidth            Portal. Numeric. Default = 4
-   
-Minimal number of columns to use for the line number.  Only relevant when the @number or 
-@relativenumber option is set or printing lines with a line number. Since one space is always 
-between the number and the text, there is one less character for the number itself.
-The value is the minimum width.  A bigger width is used when needed to
-fit the highest line number in the book respectively the number of
-rows in the window, depending on whether @number or @relativenumber
-is set. Thus with the Eegl default of 4 there is room for a line number
-up to 999. When the book has 1000 lines five columns will be used.
-The minimum value is 1, the maximum value is 20.
 
 
 @@omnifunc               Book. String. Default = off
