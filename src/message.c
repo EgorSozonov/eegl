@@ -97,7 +97,7 @@ private void display_confirm_msg(void);
 private int do_more_prompt(int typedChar);
 private void printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags);
 private void put_messagePort(Portal *wp, int where, Byte *t_s, Byte *end, LineNr lnum);
-private void toDisplay(CS str, int      maxlen, Byte flags, int      recurse);
+private void toDisplay(CS str, int maxlen, Byte flags, Boole recurse);
 private void t_puts(int* t_col, CS theText, CS sentinel, Byte flags);
 private void msg_screen_putchar(int c, char flags);
 private void msg_moremsg(int full);
@@ -649,7 +649,6 @@ str2specialbuf(Byte *sp, OUT Byte *builder, int len) {
 pub void
 msg_prt_line(CS s, int list) {
    Unt      c;
-   int      col = 0;
    int      n_extra = 0;
    Unt      c_extra = 0;
    int      c_final = 0;
@@ -657,9 +656,6 @@ msg_prt_line(CS s, int list) {
    int      n;
    char      flags = 0;
    CS trail = NULL;
-   CS lead = NULL;
-   int      in_multispace = false;
-   int      multispace_pos = 0;
    int      l;
    Byte builder[MB_MAXBYTES + 1];
 
@@ -672,15 +668,6 @@ msg_prt_line(CS s, int list) {
           trail = s + STRLEN(s);
           while (trail > s && SPACE_OR_TAB(trail[-1]))
          --trail;
-      }
-      //find end of leading whitespace
-      if (listCharsG.lead || listCharsG.leadmultispace) {
-         lead = s;
-         while (SPACE_OR_TAB(lead[0]))
-            lead++;
-         //in a line full of spaces all of them are treated as trailing
-         if (*lead == ZERO)
-            lead = NULL;
       }
    }
 
@@ -699,7 +686,6 @@ msg_prt_line(CS s, int list) {
          else
             c = *p_extra++;
       } ei ((l = utfCharLen(s)) > 1) {
-         col += mb_ptr2cells(s);
          if (l >= MB_MAXBYTES) {
             STRCPY(builder, "?");
          } ei (listCharsG.nbsp != ZERO && list
@@ -717,11 +703,6 @@ msg_prt_line(CS s, int list) {
       } else {
          flags = 0;
          c = *s++;
-         if (list) {
-            in_multispace = c == ' ' && (*s == ' ' || (col > 0 && s[-2] == ' '));
-            if (!in_multispace)
-               multispace_pos = 0;
-         }
          if (c == TAB && (!list || listCharsG.tab1)) {
             //tab amount depends on current column
             n_extra = 0;
@@ -756,25 +737,9 @@ msg_prt_line(CS s, int list) {
             //the same in plain text.
             flags = getDecoFlags(HLF_8);
          } ei (c == ' ') {
-            if (lead && s <= lead && in_multispace && listCharsG.leadmultispace) {
-               c = listCharsG.leadmultispace[multispace_pos++];
-               if (listCharsG.leadmultispace[multispace_pos] == ZERO)
-                  multispace_pos = 0;
+            if (trail && s > trail) {
+               c = listCharsG.trail;
                flags = getDecoFlags(HLF_8);
-            } ei (lead && s <= lead && listCharsG.lead != ZERO) {
-                c = listCharsG.lead;
-                flags = getDecoFlags(HLF_8);
-            } ei (trail && s > trail) {
-                c = listCharsG.trail;
-                flags = getDecoFlags(HLF_8);
-            } ei (in_multispace && listCharsG.multispace) {
-                c = listCharsG.multispace[multispace_pos++];
-                if (listCharsG.multispace[multispace_pos] == ZERO)
-               multispace_pos = 0;
-                flags = getDecoFlags(HLF_8);
-            } ei (list && listCharsG.space != ZERO) {
-                c = listCharsG.space;
-                flags = getDecoFlags(HLF_8);
             }
          }
       }
@@ -783,7 +748,6 @@ msg_prt_line(CS s, int list) {
           break;
 
       msgPutcharDeco(c, flags);
-      col++;
    }
    msg_clr_eos();
 }
@@ -1778,7 +1742,9 @@ wait_return(Boole redraw) {
    lines_left = -1;      //reset lines_left at next msg_start()
    reset_last_sourcing();
    if (msgAfterRedrawG
-         && eeglStrSize(msgAfterRedrawG) >= (visibleRowsG - commlineRowG - 1) * visibleColsG + shownCommandColG)
+         && eeglStrSize(msgAfterRedrawG) 
+            >= (visibleRowsG - commlineRowG - 1) * visibleColsG + shownCommandColG
+   )
       EE_CLEAR(msgAfterRedrawG);       //don't redisplay message, it's too long
 
    if (tmpState == MODE_SETWSIZE) { //got resize event while in vgetc()
@@ -2347,19 +2313,19 @@ put_messagePort(Portal *wp, int where, Byte *t_s, Byte *end, LineNr lnum) {
 //The display part of printWithDecoAndMaxLen().
 //May be called recursively to display scroll-back text.
 private void
-toDisplay(CS str, int      maxlen, Byte flags, int      recurse){
-   Byte   *s = str;
-   Byte   *t_s = str;   //string from "t_s" to "s" is still todo
-   int      t_col = 0;   //screen cells todo, 0 when "t_s" not used
-   int      l;
-   int      cw;
+toDisplay(CS str, int maxlen, Byte flags, Boole recurse){
+   Byte *s = str;
+   Byte *t_s = str;   //string from "t_s" to "s" is still todo
+   int t_col = 0;   //screen cells todo, 0 when "t_s" not used
+   int l;
+   int cw;
    Byte   *sb_str = str;
-   int      sb_col = msgColG;
-   int      wrap;
-   int      did_last_char;
-   int      where = PUT_APPEND;
-   Portal   *messagePort = NULL;
-   LineNr    lnum = 1;
+   int sb_col = msgColG;
+   int wrap;
+   int did_last_char;
+   int where = PUT_APPEND;
+   Portal* messagePort = NULL;
+   LineNr lnum = 1;
 
    if (inEchoPortalG) {
       messagePort = popup_get_messagePort();

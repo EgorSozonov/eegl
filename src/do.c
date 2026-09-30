@@ -17670,15 +17670,10 @@ cursor_pos_info(Bag* dict) {
          }
 
          if (VIsual_mode == Ctrl_V) {
-            CS saved_sbr = p_sbr;
-
-            //Make @showbreak empty for a moment to get the correct size.
-            p_sbr = null;
             oparg.is_VIsual = 1;
             oparg.block_mode = true;
             oparg.opTy = OP_NOP;
             getvcols(curPor, &min_pos, &max_pos, &oparg.start_vcol, &oparg.end_vcol);
-            p_sbr = saved_sbr;
             if (curPor->cursWant == MAXCOL)
                 oparg.end_vcol = MAXCOL;
             //Swap the start, end vcol if needed
@@ -19149,10 +19144,6 @@ getBreakindentForPort(Portal* po, CS line) {
    //add additional indent for numbered lists
    if (po->breakIndent.list > 0)
       bri += preList;
-
-   //indent minus the length of the showbreak string
-   if (po->breakIndent.showBreak && p_sbr)
-      bri -= eeglStrSize(p_sbr);
 
    //never indent past left portal margin
    if (bri < 0) {

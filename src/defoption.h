@@ -275,9 +275,8 @@ OPTION("winwidth", p_wiw, long, 20, 0, &did_set_winwidth, NULL)
 OPTION("writedelay", p_wd, long, 0, 0, null, null)
 OPTION("listchars", p_lcs, CS, "eol:$", P_RALL|P_ONECOMMA|P_NODUP, 
    &setListChars, &expand_set_chars_option)
-OPTION("fillchars", p_fcs, CS, "vert:|,fold: ,eob: ,lastline: ", 
+OPTION("fillchars", p_fcs, CS, "vert:|,fold: ,lastline: ", 
    P_RALL|P_ONECOMMA|P_NODUP, &setFillChars, &expand_set_chars_option)
-OPTION("showbreak", p_sbr, CS, null, P_RALL, &did_set_showbreak, NULL)
 OPTION("undolevels", p_ul, long, 128, 0, &did_set_undolevels, NULL)
 OPTION("termwinscroll", p_twsl, long, 10000, P_RBUF, &did_set_termwinscroll, null)
 
@@ -381,7 +380,7 @@ OPTION("swapfile", swapFile, Boole, true, P_RSTAT, &did_set_swapfile, null)
 OPTION("smartindent", smartIndent, Boole, true, 0, null, null)
 OPTION("suffixesadd", suffixesAdd, CS, ".java,.rust", P_ONECOMMA|P_NODUP, 
       NULL, NULL)
-OPTION("textwidth", textWidth, long, 0, P_RBUF|P_HLONLY, &did_set_textwidth, NULL)
+OPTION("textwidth", textWidth, long, 96, P_RBUF|P_HLONLY, &did_set_textwidth, NULL)
 OPTION("wrapmargin", wrapMargin, long, 0, 0, null, null)
 OPTION("grepformat", grepFormat, CS, "%f:%l:%m,%f:%l%m,%f  %l%m", P_ONECOMMA|P_NODUP, 
       null, null)

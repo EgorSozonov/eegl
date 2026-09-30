@@ -6147,10 +6147,11 @@ clear_chartabsize_arg(OUT CharTableSize* cts) {
    }
 }
 
-//Like chartabsize(), but also check for line breaks on the screen and text properties that insert
+//Like chartabsize(), but also check for line breaks on the screen and text properties that 
+//insert
 pub int
 lbr_chartabsize(CharTableSize* cts) {
-   if (!p_sbr && !curPor->o.breakIndent && !cts->cts_has_prop_with_text) {
+   if (!curPor->o.breakIndent && !cts->cts_has_prop_with_text) {
       if (curPor->o.wrap)
          return win_nolbr_chartabsize(cts, NULL);
       RET_PORT_BOOK_CHARSIZE(curPor, curBook, cts->cts_ptr, cts->cts_vcol)
@@ -6187,13 +6188,12 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
    ColNr vcol = cts->cts_vcol;
    int mb_added = 0;
    int n;
-   Boole no_sbr = false;
 
    cts->cts_cur_text_width = 0;
    cts->cts_first_char = 0;
 
-   //No @showbreak, @breakindent and text properties that insert text: finish quickly
-   if (!po->o.breakIndent && !p_sbr && !cts->cts_has_prop_with_text) {
+   //No @breakindent and text properties that insert text: finish quickly
+   if (!po->o.breakIndent && !cts->cts_has_prop_with_text) {
       if (po->o.wrap)
          return win_nolbr_chartabsize(cts, headp);
       RET_PORT_BOOK_CHARSIZE(po, po->book, s, vcol)
@@ -6251,7 +6251,6 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
                      po, tp, vcol, (vcol + size) % (po->width - col_off) + col_off, &n_extra, 
                      &p, NULL, NULL, false
                   );
-                  no_sbr = true;  //don't use @showbreak now
                } else
                   cells = eeglStrSize(p);
                cts->cts_cur_text_width += cells;
@@ -6289,9 +6288,8 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
    //May have to add something for 'breakindent' and/or 'showbreak'
    //string at the start of a screen line.
    int head = mb_added;
-   CS sbr = no_sbr || !p_sbr ? S"" : p_sbr;
    //When "size" is 0, no new screen line is started.
-   if (size > 0 && po->o.wrap && (*sbr != ZERO || po->o.breakIndent)) {
+   if (size > 0 && po->o.wrap && po->o.breakIndent) {
       int col_off_prev = normalPortalColumnOffset(po);
       int width2 = po->width - col_off_prev;
       ColNr wcol = vcol + col_off_prev;
@@ -6306,8 +6304,6 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
          col_off_prev = po->width - width2;
          if (wcol >= width2 && width2 > 0)
             wcol %= width2;
-         if (*sbr != ZERO)
-            head_prev += eeglStrSize(sbr);
          if (po->o.breakIndent) {
             if (cts->cts_bri_size < 0)
                cts->cts_bri_size = getBreakindentForPort(po, line);
@@ -6326,9 +6322,7 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
 
       if (wcol + size > (int)po->width) {
          //cells taken by 'showbreak'/'breakindent' halfway current char
-         int   head_mid = 0;
-         if (*sbr != ZERO)
-            head_mid += eeglStrSize(sbr);
+         int head_mid = 0;
          if (po->o.breakIndent) {
             if (cts->cts_bri_size < 0)
                cts->cts_bri_size = getBreakindentForPort(po, line);
@@ -6477,7 +6471,7 @@ getvcol(
    
    Unt c;
    if ((!po->o.list || listCharsG.tab1 != ZERO)
-       && !p_sbr && !po->o.breakIndent
+       && !po->o.breakIndent
        && !cts.cts_has_prop_with_text
    ) {
       for (;;) {

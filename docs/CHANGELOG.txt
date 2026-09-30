@@ -267,6 +267,7 @@
 [-] @shelltemp p_stmp
 [-] @mkspellmem, p_msm
 [-] @numberwidth (fixed at 2)
+[-] @showbreak (superfluous, we have line number column)
 [-] Vimvars
 [ ] s: variables
 [ ] need_highlight_changed?

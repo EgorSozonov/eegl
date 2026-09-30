@@ -922,7 +922,6 @@ items and must be separated by a comma:
    shift:{n}    After applying @breakindent, the wrapped line's beginning will be shifted by the 
                 given number of characters. It permits dynamic French paragraph indentation 
                 (negative) or emphasizing the line continuation (positive). (default: 0)
-   sbr          Display the @showbreak value before applying the additional indent. (default: off)
    list:{n}     Adds an additional indent for lines that match a numbered or bulleted list (using the
                 @formatlistpat setting). (default: 0)
    list:-1      Uses the width of a match with @formatlistpat for indentation.
@@ -1352,7 +1351,7 @@ You can also use |popup_findinfo()| and then set properties for an
 existing info popup with |popup_setoptions()|.  See |complete-popup|.
 
 
-@@confirm @cf             Global. Boolean. Default = off
+@@confirm                Global. Boolean. Default = off
    
 When @confirm is on, certain operations that would normally fail because of unsaved changes to a 
 book, e.g. ":q" and ":e", instead raise a |dialog| asking if you wish to save the current
@@ -1774,20 +1773,17 @@ It is a comma-separated list of items.  Each item has a name, a colon
 and the value of that item: |E1511|
 
      item name   default      Used for ~
-     stl      ' '      statusline of the current window
-     stlnc      ' '      statusline of the non-current portal
+     stl       ' '       statusline of the current portal
+     stlnc     ' '     statusline of the non-current portal
      vert      '|'      vertical separators |:vsplit|
      fold      '-'      filling @foldtext
-     foldopen   '-'      mark the beginning of a fold
-     foldclose   '+'      show a closed fold
+     foldopen  '-'     mark the beginning of a fold
+     foldclose '+'    show a closed fold
      foldsep   '|'      open fold middle character
      diff      '-'      deleted lines of the @diff option
-     eob      '~'      empty lines below the end of a book
-     lastline   '@'      @display contains lastline/truncate
-     trunc      '>'      truncated text in the
-               |ins-completion-menu|.
-     truncrl   '<'      same as "trunc" in @rightleft mode
-     tpl_vert   '|'      vertical separators of @tabpanel
+     lastline  '@'     @display contains lastline/truncate
+     trunc     '>'     truncated text in the |ins-completion-menu|.
+     tpl_vert  '|'     vertical separators of @tabpanel
 
 Any one that is omitted will fall back to the default.
 
@@ -2629,15 +2625,14 @@ comma-separated list of string settings. *E1511*
   tab:xy[z]   Two or three characters to be used to show a tab.
          The third character is optional.
 
-  tab:xy   The @x is always used, then @y as many times as will
-      fit.  Thus "tab:>-" displays:
+  tab:xy   The 'x' is always used, then 'y' as many times as will fit.  Thus "tab:>-" displays:
          >
          >-
          >--
          etc.
 
-  tab:xyz   The @z is always used, then @x is prepended, and
-      then @y is used as many times as will fit.  Thus
+  tab:xyz   The 'z' is always used, then 'x' is prepended, and
+      then 'y' is used as many times as will fit.  Thus
       "tab:<->" displays:
          >
          <>
@@ -2646,57 +2641,18 @@ comma-separated list of string settings. *E1511*
          etc.
 
       When "tab:" is omitted, a tab is shown as ^I.
-                  *lcs-space*
-  space:c   Character to show for a space.  When omitted, spaces are left blank.
-                  *lcs-multispace*
-  multispace:c...
-      One or more characters to use cyclically to show for
-      multiple consecutive spaces.  Overrides the "space"
-      setting, except for single spaces.  When omitted, the
-      "space" setting is used.  For example,
-      `:set listchars=multispace:---+` shows ten consecutive
-      spaces as:
-         ---+---+-- ~
-                  *lcs-lead*
-  lead:c   Character to show for leading spaces.  When omitted,
-      leading spaces are blank.  Overrides the "space" and
-      "multispace" settings for leading spaces.  You can
-      combine it with "tab:", for example: 
-         :set listchars+=tab:>-,lead:.
          
-                  *lcs-leadmultispace*
-  leadmultispace:c...
-      Like the |lcs-multispace| value, but for leading
-      spaces only.  Also overrides |lcs-lead| for leading
-      multiple spaces.
-      `:set listchars=leadmultispace:---+` shows ten
-      consecutive leading spaces as:
-         ---+---+--XXX ~
-      Where "XXX" denotes the first non-blank characters in
-      the line.
                   *lcs-trail*
   trail:c   Character to show for trailing spaces.  When omitted,
       trailing spaces are blank.  Overrides the "space" and
       "multispace" settings for trailing spaces.
-                  *lcs-extends*
-  extends:c   Character to show in the last column, when @wrap is
-      off and the line continues beyond the right of the
-      screen.
-                  *lcs-precedes*
-  precedes:c   Character to show in the first visible column of the
-      physical line, when there is text preceding the
-      character visible in the first column.
-                  *lcs-conceal*
-  conceal:c   Character to show in place of concealed text, when
-      @conceallevel is set to 1.
                   *lcs-nbsp*
   nbsp:c   Character to show for a non-breakable space character
       (0xA0 (160 decimal) and U+202F).  Left blank when
       omitted.
 
-The characters ':' and ',' should not be used.  UTF-8 characters can
-be used when @encoding is "utf-8", otherwise only printable
-characters are allowed.  All characters must be single width. *E1512*
+The characters ':' and ',' should not be used. UTF-8 characters can
+be used. But all characters must be single width. *E1512*
 
 Each character can be specified as hex: >
    set listchars=eol:\\x24
@@ -3076,27 +3032,6 @@ The `system()` function does not respect this option and always uses temp files.
 Number of columns that make up one level of (auto)indentation.  Used by @cindent, |<<|, |>>|, etc.
 If set to 0, Eegl uses the current @tabstop value.  Use |shiftwidth()|
 to obtain the effective value in scripts.
-
-
-@@showbreak              Global. String. Default = ""
-   
-String to put at the start of lines that have been wrapped. Useful values are "> " or "+++ ": 
-
-   :set showbreak=>\ 
-   
-Note the backslash to escape the trailing space. It's easier like this: 
-
-   :let &showbreak = '+++ '
-   
-Only printable single-cell characters are allowed, excluding <Tab> and
-comma (in a future version the comma might be used to separate the
-part that is shown at the end and at the start of a line).
-The characters are highlighted according to the '@' flag in @highlight.
-Note that tabs after the showbreak will be displayed differently.
-A window-local value overrules a global value.  If the global value is
-set and you want no value in the current window use NONE: 
-
-   :set showbreak=NONE
 
 
 @@showcmdloc             Global. Enum. Default = "last"
@@ -4534,8 +4469,8 @@ waiting for a surface to gain focus, see |wayland-focus-steal|.
 
 @@wrap                   Portal. Boolean. Default = on
    
-This option changes how text is displayed.  It doesn't change the text in the book, see @textwidth 
-for that. When on, lines longer than the width of the window will wrap and displaying continues on
+This option changes how text is displayed. It doesn't change the text in the book, see 
+@textwidth for that. When on, lines longer than the width of the window will wrap and displaying continues on
 the next line.  When off lines will not wrap and only part of long lines will be displayed.  When 
 the cursor is moved to a part that is not shown, the screen will scroll horizontally.
 The line will be broken in the middle of a word if necessary.  See @linebreak to get the break at 

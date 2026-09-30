@@ -1,6 +1,6 @@
 //Automatically generated code by the `make indices` command.
 typedef struct {CS name; Unt index;} NameIndex;
-static NameIndex const NAME_INDICES[189] = {
+static NameIndex const NAME_INDICES[188] = {
 {(Byte*)"autocomplete", 0},
 {(Byte*)"autocompletedelay", 1},
 {(Byte*)"autoindent", 131072},
@@ -132,7 +132,6 @@ static NameIndex const NAME_INDICES[189] = {
 {(Byte*)"scrolloff", 65557},
 {(Byte*)"scrollopt", 73},
 {(Byte*)"shiftwidth", 131102},
-{(Byte*)"showbreak", 113},
 {(Byte*)"showcmdloc", 74},
 {(Byte*)"showfulltag", 75},
 {(Byte*)"showmode", 76},
@@ -161,7 +160,7 @@ static NameIndex const NAME_INDICES[189] = {
 {(Byte*)"tagstack", 89},
 {(Byte*)"term", 90},
 {(Byte*)"termwinkey", 65558},
-{(Byte*)"termwinscroll", 115},
+{(Byte*)"termwinscroll", 114},
 {(Byte*)"termwinsize", 65559},
 {(Byte*)"textwidth", 131106},
 {(Byte*)"thesaurus", 131118},
@@ -172,7 +171,7 @@ static NameIndex const NAME_INDICES[189] = {
 {(Byte*)"ttimeoutlen", 94},
 {(Byte*)"ttyscroll", 95},
 {(Byte*)"undofile", 131120},
-{(Byte*)"undolevels", 114},
+{(Byte*)"undolevels", 113},
 {(Byte*)"undoreload", 96},
 {(Byte*)"updatetime", 97},
 {(Byte*)"verbose", 98},
@@ -212,14 +211,14 @@ static int const FIRST_LETTER_INDICES[27] = {
 124,
 125,
 127,
-150,
-170,
-174,
-176,
-189,
-189,
-189,
-189,
+149,
+169,
+173,
+175,
+188,
+188,
+188,
+188,
 };
 
-#define OPTION_COUNT 189
+#define OPTION_COUNT 188

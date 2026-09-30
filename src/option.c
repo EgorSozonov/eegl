@@ -361,7 +361,6 @@ private CS did_set_tabpanelopt(OptionChange* cha);
 private int expand_set_tabpanelopt(OptExpand* args, OUT ExpandMatch* matches);
 private CS setScrollopt(OptionChange* cha);
 private int expand_set_scrollopt(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_showbreak(OptionChange* cha);
 private CS did_set_showcmdloc(OptionChange* cha);
 private int expand_set_showcmdloc(OptExpand* args, OUT ExpandMatch* matches);
 private CS did_set_statusline(OptionChange* cha);
@@ -3208,20 +3207,6 @@ private CS backupCopyValues[] = {SMAP((CS),
    "yes", "auto", "no", "breaksymlink", "breakhardlink"
 )};
 
-private CS
-did_set_showbreak(OptionChange* cha) {
-   OptionRef ref = cha->ref;
-   Byte   *s;
-
-   for (s = *ref.string; *s; ) {
-      if (bookPtr2Cells(s) != 1)
-         return e_showbreak_contains_unprintable_or_wide_character;
-      MB_PTR_ADV(s);
-   }
-
-   return NULL;
-}
-
 private CS p_sloc_values[] = {S"last", S"statusline"};
 
 private CS
@@ -3467,7 +3452,7 @@ expand_set_backupcopy(OptExpand* args, OUT ExpandMatch* matches) {
 }
 
 //Note: Keep this in sync with checkBreakIndent()
-private CS brioptValues[] = {SMAP((CS), "shift:", "min:", "sbr", "list:", "column:")};
+private CS brioptValues[] = {SMAP((CS), "shift:", "min:", "list:", "column:")};
 
 //Check "briopt" as @breakindentopt and update the members of "po".
 //This is called when @breakindentopt is changed and when a portal is initialized.
@@ -3479,7 +3464,6 @@ checkBreakIndent(
 ){
    int bri_shift = 0;
    long bri_min = 20;
-   int bri_sbr = false;
    int bri_list = 0;
    int bri_vcol = 0;
 
@@ -3498,13 +3482,10 @@ checkBreakIndent(
       } ei (STRNCMP(p, brioptValues[1], 4) == 0 && EE_ISDIGIT(p[4])) {
          p += 4;
          bri_min = parseLong(&p);
-      } ei (STRNCMP(p, brioptValues[2], 3) == 0) {
-         p += 3;
-         bri_sbr = true;
-      } ei (STRNCMP(p, brioptValues[3], 5) == 0) {
+      } ei (STRNCMP(p, brioptValues[2], 5) == 0) {
          p += 5;
          bri_list = parseLong(&p);
-      } ei (STRNCMP(p, brioptValues[4], 7) == 0) {
+      } ei (STRNCMP(p, brioptValues[3], 7) == 0) {
          p += 7;
          bri_vcol = parseLong(&p);
       }
@@ -3519,7 +3500,6 @@ checkBreakIndent(
 
    po->breakIndent.shift = bri_shift;
    po->breakIndent.min   = bri_min;
-   po->breakIndent.showBreak = bri_sbr;
    po->breakIndent.list  = bri_list;
    po->breakIndent.vcol  = bri_vcol;
 

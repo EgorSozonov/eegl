@@ -3103,12 +3103,7 @@ clear_showcmd(void) {
       lines = bot - top + 1;
 
       if (VIsual_mode == Ctrl_V) {
-         CS saved_sbr = p_sbr;
-
-         //Make 'sbr' empty for a moment to get the correct size.
-         p_sbr = null;
          getvcols(curPor, &curPor->cursor, &VIsual, &leftcol, &rightcol);
-         p_sbr = saved_sbr;
          sprintf((char *)showcmd_buf, "%ldx%ld", lines, (long)(rightcol - leftcol + 1));
       } ei (VIsual_mode == 'V' || VIsual.lnum != curPor->cursor.lnum)
          sprintf((char *)showcmd_buf, "%ld", lines);
@@ -3917,14 +3912,10 @@ nv_screengo(Operator* oper, Unt dir, long dist) {
       coladvance(curPor->cursWant);
 
    if (curPor->cursor.col > 0 && curPor->o.wrap) {
-      //Check for landing on a character that got split at the end of the
-      //last line. We want to advance a screenline, not end up in the same
-      //screenline or move two screenlines.
+      //Check for landing on a character that got split at the end of the last line. We want 
+      //to advance a screenline, not end up in the same screenline or move two screenlines.
       validate_virtcol();
       ColNr virtcol = curPor->virtCol;
-      if (virtcol > (ColNr)width1 && p_sbr)
-         virtcol -= eeglStrSize(p_sbr);
-
       Unt c = mb_ptr2char(ml_get_cursor());
       if (dir == FORWARD && virtcol < curPor->cursWant
             && (curPor->cursWant <= (ColNr)width1)
@@ -7403,13 +7394,6 @@ pub int
 sms_marker_overlap(Portal* po, int extra2) {
    if (extra2 == -1)
       extra2 = normalPortalColumnOffset(po);
-   //There is no marker overlap when in showbreak mode, thus no need to
-   //account for it. See wlv_screen_line().
-   if (p_sbr)
-      return 0;
-   //Overlap when 'list' and @listchars "precedes" are set is 1.
-   if (po->o.list && listCharsG.prec)
-      return 1;
 
    return extra2 > 3 ? 0 : 3 - extra2;
 }

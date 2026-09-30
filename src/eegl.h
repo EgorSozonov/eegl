@@ -1516,35 +1516,26 @@ EXTERN CS p_langmap;//@langmap
 //Characters from the @listchars option
 typedef struct {
    Unt eol;
-   Unt ext;
-   Unt prec;
    Unt nbsp;
-   Unt space;
    Unt tab1;
    Unt tab2;
    Unt tab3;
    Unt trail;
-   Unt lead;
-   Unt* multispace;
-   Unt* leadmultispace;
-   //Unt conceal;
 } ListChars;
 
 //Characters from the @fillchars option
 typedef struct {
-   Unt   stl;
-   Unt   stlnc;
-   Unt   vert;
-   Unt   fold;
-   Unt   foldopen;
-   Unt   foldclosed;
-   Unt   foldsep;
-   Unt   diff;
-   Unt   eob;
-   Unt   lastline;
-   Unt   tpl_vert;
+   Unt stl;
+   Unt stlnc;
+   Unt vert;
+   Unt fold;
+   Unt foldopen;
+   Unt foldclosed;
+   Unt foldsep;
+   Unt diff;
+   Unt lastline;
+   Unt tpl_vert;
    Unt trunc;
-   Unt truncrl;
 } FillChars;
 
 EXTERN CS p_lcs;    //@listchars
@@ -1580,7 +1571,6 @@ EXTERN long p_sj;    //@scrolljump
 EXTERN Unt p_sbo;    //@scrollopt
 
 EXTERN CS p_ef;      //@errorfile
-EXTERN CS p_sbr;     //@showbreak
 EXTERN Byte p_sloc;  //@showcmdloc
 #define SHOW_COMM_LAST       1 //last screnline
 #define SHOW_COMM_STATUSLINE 2 //portal statusline
@@ -3852,7 +3842,6 @@ typedef struct {
 typedef struct {
    int min;       //minimum width for breakindent
    int shift;       //additional shift for breakindent
-   int showBreak;       //sbr in 'briopt'
    int list;      //additional indent for lists
    int vcol;       //indent for specific column
 } BreakIndent;
