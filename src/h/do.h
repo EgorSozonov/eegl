@@ -240,7 +240,7 @@ int get_pressedreturn(void);
 void set_pressedreturn(int val);
 int commandFlagNoSpacesInExtra();
 int commandFlagExpandWildcards();
-int ask_yesno(CS str, int direct);
+Unt ask_yesno(CS str, int direct);
 CS doExpandEnvInMultiplePaths(CS src);
 CS doExpandEnvInFilePaths(CS src, Boole singleFileName);
 Unt doExpandEnv(
@@ -342,7 +342,7 @@ Unt gchar_pos(Pos *pos);
 Unt gchar_cursor(void);
 int op_delete(Operator* oper);
 Boole swapchar(Unt opTy, Pos* pos);
-void op_insert(Operator *oper, long count1);
+void op_insert(Operator* oper, Long count1);
 int op_change(Operator *oper);
 void adjust_cursor_eol(void);
 CS skip_comment(CS line, Boole process, Boole include_space, OUT Boole* is_comment);

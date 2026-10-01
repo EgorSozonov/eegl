@@ -521,7 +521,7 @@ private Unt compl_get_info(CS line, int startcol, ColNr curs_col, OUT Boole* lin
 private void ins_compl_continue_search(CS line);
 private Unt ins_compl_start(void);
 private void ins_compl_show_statusmsg(void);
-private Unt ins_complete(Unt c, Boole enable_pum);
+private Unt insertModeCompletion(Unt c, Boole enable_pum);
 private Boole ins_compl_setup_autocompl(Unt c);
 private void show_pum(int prev_cursorRow, int prev_leftCol);
 private unsigned quote_meta(CS dest, CS src, int len);
@@ -932,7 +932,7 @@ bckend_word(
          while (cls() == sclass) {
             if ((i = dec_cursor()) == -1 || (eol && i == 1))
                return OK;
-         } 
+         }
       }
 
       //Move backward to end of the previous word
@@ -953,7 +953,7 @@ skip_chars(int cclass, int dir) {
    while (cls() == cclass) {
       if ((dir == FORWARD ? inc_cursor() : dec_cursor()) == -1)
          return true;
-   } 
+   }
    return false;
 }
 
@@ -1027,8 +1027,8 @@ current_word(
          if (end_word(1L, bigword, true, true) == FAIL)
             return FAIL;
       } else {
-         //If the start is not on white space, and white space should be included ("word    "), 
-         //or start is on white space and white space should not be included ("    "), find 
+         //If the start is not on white space, and white space should be included ("word    "),
+         //or start is on white space and white space should not be included ("    "), find
          //start of word. If we end up in the first column of the next line (single char
          //word) back up to end of the line.
          fwd_word(1L, bigword, true);
@@ -1087,8 +1087,8 @@ current_word(
    }
 
    if (include_white && (cls() != 0 || (curPor->cursor.col == 0 && !inclusive))) {
-      //If we don't include white space at the end, move the start to include some white space 
-      //there. This makes "daw" work better on the last word in a sentence (and "2daw" on 
+      //If we don't include white space at the end, move the start to include some white space
+      //there. This makes "daw" work better on the last word in a sentence (and "2daw" on
       //last-but-one word).  Also when "2daw" deletes "word." at the end of the line
       //(cursor is at start of next line). But don't delete white space at start of line (indent).
       pos = curPor->cursor;   //save cursor position
@@ -1254,7 +1254,7 @@ extend:
     return OK;
 }
 
-//Find block under the cursor, cursor at end. "what" and "other" are two matching 
+//Find block under the cursor, cursor at end. "what" and "other" are two matching
 //parentheses/braces/etc.
 private int
 current_block(
@@ -1458,20 +1458,20 @@ current_tagblock(Operator* oper, long count_arg, Boole includeWhiteSpace){
       while (inindent(1)) {
          if (inc_cursor() != 0)
             break;
-      } 
+      }
 
       if (in_html_tag(false)) {
          //cursor on start tag, move to its '>'
          while (*ml_get_cursor() != '>') {
             if (inc_cursor() < 0)
                break;
-         } 
+         }
       } ei (in_html_tag(true)) {
          //cursor on end tag, move to just before it
          while (*ml_get_cursor() != '<') {
             if (dec_cursor() < 0)
                break;
-         } 
+         }
          dec_cursor();
          old_end = curPor->cursor;
       }
@@ -1702,7 +1702,7 @@ current_par(
       if (includeWhitespace || do_white) {
          while (end_lnum < curBook->mem.lineCount && linewhite(end_lnum + 1))
             ++end_lnum;
-      } 
+      }
    }
 
    //If there are no empty lines at the end, try to find some empty lines at
@@ -1710,7 +1710,7 @@ current_par(
    if (!white_in_front && !linewhite(end_lnum) && includeWhitespace) {
       while (start_lnum > 1 && linewhite(start_lnum - 1))
          --start_lnum;
-   } 
+   }
 
    if (VIsual_active) {
       //Problem: when doing "Vipipip" nothing happens in a single white
@@ -1777,7 +1777,7 @@ find_prev_quote(
       if (escapeWithBackslash) {
           while (col_start > n && line[col_start - n - 1] == '\\')
              ++n;
-      } 
+      }
       if (n & 1)
          col_start -= n;   //uneven number of escape chars, skip it
       ei (line[col_start] == quotechar)
@@ -1915,7 +1915,7 @@ current_quote(
           goto abort_search;
    }
 
-   //When "includeQuote" is true, include spaces after closing quote or before the starting 
+   //When "includeQuote" is true, include spaces after closing quote or before the starting
    //quote
    if (includeQuote) {
       if (SPACE_OR_TAB(line[col_end + 1])) {
@@ -1924,7 +1924,7 @@ current_quote(
       } else {
          while (col_start > 0 && SPACE_OR_TAB(line[col_start - 1]))
             --col_start;
-      } 
+      }
    }
 
    //Set start position.  After vi" another i" must include the ".
@@ -2015,12 +2015,12 @@ get_mode(CS buf) {
       buf[i] = 'x';
       i++;
       buf[i] = '!';
-      i++; 
+      i++;
    } ei (term_use_loop()) {
       if (stateG & MODE_COMMLINE) {
           buf[i] = 'c';
           i++;
-      } 
+      }
       buf[i] = 't';
       i++;
    } ei (stateG == MODE_HITRETURN || stateG == MODE_ASKMORE
@@ -2033,8 +2033,8 @@ get_mode(CS buf) {
          i++;
       } ei (stateG == MODE_CONFIRM) {
          buf[i] = '?';
-         i++; 
-      } 
+         i++;
+      }
    } ei (stateG == MODE_EXTERNCMD) {
       buf[i] = '!';
       i++;
@@ -2046,14 +2046,14 @@ get_mode(CS buf) {
          i++;
       } ei (ctrl_x_mode_not_defined_yet()) {
          buf[i] = 'x';
-         i++; 
-      } 
+         i++;
+      }
    } ei (stateG & MODE_COMMLINE) {
       buf[i] = 'c';
       if ((stateG & MODE_COMMLINE) && cmdline_overstrike()) {
          buf[i] = 'r';
          i++;
-      } 
+      }
    } ei (VIsual_active) {
       buf[i] = VIsual_mode;
       i++;
@@ -2065,7 +2065,7 @@ get_mode(CS buf) {
          i++;
          //to be able to detect force-linewise/blockwise/characterwise operations
          buf[i] = motion_force;
-         i++; 
+         i++;
       } ei (restart_edit == 'I' || restart_edit == 'R' || restart_edit == 'V') {
          buf[i] = 'i';
          i++;
@@ -2074,7 +2074,7 @@ get_mode(CS buf) {
       } ei (term_in_normal_mode()) {
          buf[i] = 't';
          i++;
-      } 
+      }
    }
 
    buf[i] = ZERO;
@@ -2244,10 +2244,10 @@ getcount:
        aArg->oper->prev_opcount = aArg->opcount;
        aArg->oper->prev_count0 = aArg->count0;
    } ei (aArg->opcount != 0) {
-      //If we're in the middle of an operator (including after entering a yank buffer with '"') 
-      //AND we had a count before the operator, then that count overrides the current value of 
-      //ca.count0. What this means effectively, is that actions like "3dw" get turned into 
-      //"d3w" which makes things fall into place pretty neatly. If you give a count before AND 
+      //If we're in the middle of an operator (including after entering a yank buffer with '"')
+      //AND we had a count before the operator, then that count overrides the current value of
+      //ca.count0. What this means effectively, is that actions like "3dw" get turned into
+      //"d3w" which makes things fall into place pretty neatly. If you give a count before AND
       //after the operator, they are multiplied.
       if (aArg->count0) {
          if (aArg->opcount >= 999999999L / aArg->count0)
@@ -2391,8 +2391,8 @@ getMoreChars(
                aArg->ncharC2 = c;
          }
          ++no_mapping;
-         //Eegl may be in a different mode when the user types the next key, but when replaying 
-         //a recording the next key is already in the typeahead buffer, so record an <Ignore> 
+         //Eegl may be in a different mode when the user types the next key, but when replaying
+         //a recording the next key is already in the typeahead buffer, so record an <Ignore>
          //before that to prevent the vpeekc() above from applying wrong mappings when replaying.
          ++no_u_sync;
          gotchars_ignore();
@@ -2611,7 +2611,7 @@ normalAction(Operator* oper) { //true when called from main()
    }
 
    stateG = MODE_NORMAL;
-    
+
    if (action.nchar == ESC || action.extra_char == ESC) {
       clearop(oper);
       goto normal_end;
@@ -2640,7 +2640,7 @@ normalAction(Operator* oper) { //true when called from main()
    action.arg = actions[idx].cmd_arg;
    (actions[idx].fn)(&action);
 
-   //If we didn't start or finish an operator, reset oper->regname, unless we need it later. 
+   //If we didn't start or finish an operator, reset oper->regname, unless we need it later.
    if (!finish_op && !oper->opTy && (idx < 0 || !(actions[idx].cmd_flags & NV_KEEPREG))) {
       clearop(oper);
       reset_reg_var();
@@ -2760,7 +2760,7 @@ end_visual_mode_keep_button(void) {
 
    //Save the current VIsual area for '< and '> marks, and "gv"
    curBook->visual = (VisualInfo){
-      .vi_mode = VIsual_mode, .vi_start = VIsual, .vi_end = curPor->cursor, 
+      .vi_mode = VIsual_mode, .vi_start = VIsual, .vi_end = curPor->cursor,
       .vi_curswant = curPor->cursWant, .kind = VIsual_mode
    };
    if (!virtual_active())
@@ -2799,9 +2799,9 @@ restore_visual_mode(void) {
    }
 }
 
-//Check for a balloon-eval special item to include when searching for an identifier.  When "dir" 
+//Check for a balloon-eval special item to include when searching for an identifier.  When "dir"
 //is BACKWARD "ptr[-1]" must be valid! Return true if the character at "*ptr" should be included.
-//"dir" is FORWARD or BACKWARD, the direction of searching. "*colp" is in/decremented if 
+//"dir" is FORWARD or BACKWARD, the direction of searching. "*colp" is in/decremented if
 //"ptr[-dir]" should also be included. "bnp" points to a counter for square brackets.
 private int
 checkIsBalloonItem(CS ptr, int* colp, int* bnp, int dir){
@@ -3184,7 +3184,7 @@ add_to_showcmd(Unt c) {
       for (i = 0; ignore[i] != 0; ++i) {
          if (ignore[i] == c)
             return false;
-      } 
+      }
    }
 
    if (c <= 0x7f || !bookIsCharPrintable(c)) {
@@ -3290,10 +3290,10 @@ normPostProcessScrollbind(int check) {
             check_scrollbind(curPor->topLine - old_topline, (long)(curPor->leftCol - old_leftcol));
          }
       } ei ((p_sbo & SCR_JUMP) != 0) {//jump flag set in @scrollopt
-          //When switching between portals, make sure that the relative vertical offset is valid 
+          //When switching between portals, make sure that the relative vertical offset is valid
           //for the new portal. The relative offset is invalid whenever another scrollbound portal
-          //has scrolled to a point that would force the current portal to scroll past the 
-          //beginning or end of its buffer. When the resync is performed, some of the other 
+          //has scrolled to a point that would force the current portal to scroll past the
+          //beginning or end of its buffer. When the resync is performed, some of the other
           //scrollbound portals may need to jump so that the current portal's relative position is
           //visible on-screen.
           check_scrollbind(curPor->topLine - curPor->scbindPos, 0L);
@@ -3731,7 +3731,7 @@ wasAnyBookChanged(void) {
    FOR_ALL_BOOKS(book) {
       if (bookWasChanged(book))
          return true;
-   } 
+   }
    return false;
 }
 
@@ -3795,7 +3795,7 @@ nvPage(ActionArg* aArg) {
          gotoTabById((int)aArg->count0);
    } else {
        (void)pagescroll(aArg->arg, aArg->count1, false);
-   } 
+   }
 }
 
 //Implementation of "gd" and "gD" action.
@@ -3814,7 +3814,7 @@ nv_gd(Operator* oper, int nchar, int      thisblock) {  //1 for "1gd" and "1gD"
    if ((p_fdo & FDO_SEARCH) && keyWasTypedG && oper->opTy == OP_NOP)
       foldOpenCursor();
    //clear any search statistics
-   if (messaging() && !msg_silent)
+   if (!msg_silent)
       mustClearCommlineG = true;
 }
 
@@ -3852,7 +3852,7 @@ nv_screengo(Operator* oper, Unt dir, long dist) {
                curPor->cursWant += ((curPor->virtCol - curPor->cursWant - 1) / width2 + 1) * width2;
          }
       } else {
-         int n = (linelen > width1) 
+         int n = (linelen > width1)
             ? ((linelen - width1 - 1) / width2 + 1) * width2 + width1 :  width1;
          if (curPor->cursWant >= (ColNr)n)
             curPor->cursWant = n - 1;
@@ -3880,7 +3880,7 @@ nv_screengo(Operator* oper, Unt dir, long dist) {
                   curPor->cursWant += (((linelen - width1 - 1) / width2) + 1) * width2;
             }
          } else { //dir == FORWARD
-            int n = (linelen > width1) 
+            int n = (linelen > width1)
                ? ((linelen - width1 - 1) / width2 + 1) * width2 + width1 : width1;
             if (curPor->cursWant + width2 < (ColNr)n && !getFolds(curPor->cursor.lnum, NULL, NULL))
                //move forward within line
@@ -3894,8 +3894,8 @@ nv_screengo(Operator* oper, Unt dir, long dist) {
                cursor_down_inner(curPor, 1);
                curPor->cursWant %= width2;
 
-               //Check if the cursor has moved below the number display when width1 < width2 
-               //(with cpoptions+=n). Subtract width2 to get a negative value for cursWant, which 
+               //Check if the cursor has moved below the number display when width1 < width2
+               //(with cpoptions+=n). Subtract width2 to get a negative value for cursWant, which
                //will get clipped to column 0.
                if (curPor->cursWant >= width1)
                   curPor->cursWant -= width2;
@@ -3911,7 +3911,7 @@ nv_screengo(Operator* oper, Unt dir, long dist) {
       coladvance(curPor->cursWant);
 
    if (curPor->cursor.col > 0 && curPor->o.wrap) {
-      //Check for landing on a character that got split at the end of the last line. We want 
+      //Check for landing on a character that got split at the end of the last line. We want
       //to advance a screenline, not end up in the same screenline or move two screenlines.
       validate_virtcol();
       ColNr virtcol = curPor->virtCol;
@@ -3957,17 +3957,17 @@ appendDigitLong(OUT Long* value, int digit) {
 private int
 widthLeft(Portal* po) {
    return po->width - normalPortalColumnOffset(po);
-} 
+}
 
-//Get the count specified after a 'z' action. Only the 'z<CR>', 'zl', 'zh', 'z<Left>', and 
-//'z<Right>' commands accept a count after 'z'. Return true to process the 'z' command and 
+//Get the count specified after a 'z' action. Only the 'z<CR>', 'zl', 'zh', 'z<Left>', and
+//'z<Right>' commands accept a count after 'z'. Return true to process the 'z' command and
 //false to skip it.
 private int
 nv_z_get_count(ActionArg* aArg, Unt* nchar_arg) {
    //"z123{nchar}": edit the count before obtaining {nchar}
    if (checkclearop(aArg->oper))
       return false;
-      
+
    Unt nchar = *nchar_arg;
    Long n = (Long)nchar - '0';
 
@@ -4017,7 +4017,7 @@ nv_zet(ActionArg* aArg) {
        return;
 
    if (
-          //"zf" and "zF" are always an operator, "zd", "zo", "zO", "zc" and "zC" only in Visual 
+          //"zf" and "zF" are always an operator, "zd", "zo", "zO", "zc" and "zC" only in Visual
           //mode. "zj" and "zk" are motion actions.
           aArg->nchar != 'f' && aArg->nchar != 'F'
           && !(VIsual_active && firstOccurrence((CS)"dcCoO", aArg->nchar))
@@ -4058,7 +4058,7 @@ nv_zet(ActionArg* aArg) {
       beginline(BL_WHITE | BL_FIX);
       //FALLTHROUGH
 
-   case 't':  
+   case 't':
       scroll_cursor_top(0, true);
       redraw_later(UPD_VALID);
       set_fraction(curPor);
@@ -4119,7 +4119,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
    //"zs" - scroll screen, cursor at the start
-   case 's':   
+   case 's':
       if (!curPor->o.wrap)       {
          if (getFolds(curPor->cursor.lnum, NULL, NULL))
             col = 0;   //like the cursor is in col 0
@@ -4137,7 +4137,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
       //"ze" - scroll screen, cursor at the end
-    case 'e':   
+    case 'e':
       if (!curPor->o.wrap) {
          if (getFolds(curPor->cursor.lnum, NULL, NULL))
             col = 0;   //like the cursor is in col 0
@@ -4157,7 +4157,7 @@ nv_zet(ActionArg* aArg) {
 
       //"zp", "zP" in block mode put without adding trailing spaces
     case 'P':
-    case 'p':  
+    case 'p':
       nv_put(aArg);
       break;
       //"zy" Yank without trailing spaces
@@ -4166,7 +4166,7 @@ nv_zet(ActionArg* aArg) {
       //"zF": create fold action
       //"zf": create fold operator
    case 'F':
-   case 'f':   
+   case 'f':
       if (foldManualAllowed(true)) {
          aArg->nchar = 'f';
          nv_operator(aArg);
@@ -4185,7 +4185,7 @@ nv_zet(ActionArg* aArg) {
       //"zd": delete fold at cursor
       //"zD": delete fold at cursor recursively
    case 'd':
-   case 'D':   
+   case 'D':
       if (foldManualAllowed(false)) {
          if (VIsual_active)
             nv_operator(aArg);
@@ -4195,7 +4195,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
    //"zE": erase all folds
-   case 'E':   
+   case 'E':
       if (curPor->o.foldMethod == FOLD_MARKER && curPor->o.foldMarker)
          deleteFold((LineNr)1, curBook->mem.lineCount, true, false);
       else
@@ -4203,7 +4203,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
    //"zn": fold none: reset @foldenable
-   case 'n':   
+   case 'n':
       curPor->o.foldEnable = false;
       break;
 
@@ -4216,7 +4216,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
    //"za": open closed fold or close open fold at cursor
-   case 'a':   
+   case 'a':
       if (getFolds(curPor->cursor.lnum, NULL, NULL))
          openFold(curPor->cursor.lnum, aArg->count1);
       else {
@@ -4226,7 +4226,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
       //"zA": open fold at cursor recursively
-   case 'A':   
+   case 'A':
       if (getFolds(curPor->cursor.lnum, NULL, NULL))
          openFoldRecurse(curPor->cursor.lnum);
       else {
@@ -4236,7 +4236,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
       //"zo": open fold at cursor or Visual area
-    case 'o':   
+    case 'o':
       if (VIsual_active)
          nv_operator(aArg);
       else
@@ -4244,7 +4244,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
       //"zO": open fold recursively
-   case 'O':   
+   case 'O':
       if (VIsual_active)
          nv_operator(aArg);
       else
@@ -4252,7 +4252,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
       //"zc": close fold at cursor or Visual area
-    case 'c':   
+    case 'c':
       if (VIsual_active)
          nv_operator(aArg);
       else
@@ -4261,7 +4261,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
       //"zC": close fold recursively
-    case 'C':   
+    case 'C':
       if (VIsual_active)
          nv_operator(aArg);
       else
@@ -4270,12 +4270,12 @@ nv_zet(ActionArg* aArg) {
       break;
 
       //"zv": open folds at the cursor
-    case 'v':   
+    case 'v':
       foldOpenCursor();
       break;
 
       //"zx": re-apply 'foldlevel' and open folds at the cursor
-    case 'x':   
+    case 'x':
       curPor->o.foldEnable = true;
       curPor->foldNeedsRecomputation = true;   //recompute folds
       newFoldLevel();         //update right now
@@ -4283,14 +4283,14 @@ nv_zet(ActionArg* aArg) {
       break;
 
    //"zX": undo manual opens/closes, re-apply 'foldlevel'
-   case 'X':   
+   case 'X':
       curPor->o.foldEnable = true;
       curPor->foldNeedsRecomputation = true;   //recompute folds
       old_fdl = -1;         //force an update
       break;
 
    //"zm": fold more
-   case 'm':  
+   case 'm':
       if (curPor->o.foldLevel > 0) {
          curPor->o.foldLevel -= aArg->count1;
          if (curPor->o.foldLevel < 0)
@@ -4380,9 +4380,9 @@ nv_semicolon(OUT ActionArg* aArg) {
 
    //get a command line and execute it
    Unt flags = aArg->oper->opTy != OP_NOP ? DOCMD_KEEPLINE : 0;
-   
+
    int commResult = isCmdkey
-      ? do_cmdkey_command(aArg->cmdchar, flags) 
+      ? do_cmdkey_command(aArg->cmdchar, flags)
       : doCommand(NULL, scrGetTypedCommand, NULL, flags);
 
    if (commResult == FAIL) {
@@ -4395,7 +4395,7 @@ nv_semicolon(OUT ActionArg* aArg) {
    ) {
       //The start of the operator has become invalid by the command.
       clearopbeep(aArg->oper);
-   } 
+   }
 }
 
 //Handle CTRL-G action.
@@ -4405,7 +4405,7 @@ nv_ctrlg(ActionArg* aArg) {
    } ei (!checkclearop(aArg->oper)) {
        //print full name if count given or :cd used
        fileinfo((int)aArg->count0, false, true);
-   } 
+   }
 }
 
 //Handle CTRL-H <Backspace> action.
@@ -4453,16 +4453,16 @@ nv_Zet(ActionArg* aArg) {
 
    switch (aArg->nchar) {
    //"ZZ": equivalent to ";x".
-   case 'Z':   
+   case 'Z':
       executeCommLine(S"x");
       break;
 
    //"ZQ": equivalent to ";q!" (Elvis compatible).
-   case 'Q':   
+   case 'Q':
       executeCommLine(S"q!");
       break;
 
-   default:   
+   default:
       clearopbeep(aArg->oper);
    }
 }
@@ -4582,9 +4582,9 @@ nv_ident(ActionArg* aArg) {
           return;
    }
 
-   if (!ptr 
+   if (!ptr
          && (n = find_ident_under_cursor(
-               &ptr, 
+               &ptr,
                (cmdchar == '*' || cmdchar == '#') ? FIND_IDENT|FIND_STRING : FIND_IDENT)
             ) == 0
    ) {
@@ -4895,7 +4895,7 @@ nv_left(ActionArg* aArg) {
           //<BS> and <Del> wrap to previous line if 'whichwrap' has 'b'.
           //      'h' wraps to previous line if 'whichwrap' has 'h'.
           //     CURS_LEFT wraps to previous line if 'whichwrap' has '<'.
-          if (p_ww 
+          if (p_ww
                 && (((aArg->cmdchar == K_BS || aArg->cmdchar == Ctrl_H)
                       && firstOccurrence(p_ww, 'b') != NULL)
                      || (aArg->cmdchar == 'h' && firstOccurrence(p_ww, 'h') != NULL)
@@ -5301,7 +5301,7 @@ nv_brackets(ActionArg* aArg) {
       //Imitate strange Vi behaviour: When using "]]" with an operator
       //we also stop at '}'.
       if (!normFindNextParagraf(
-            OUT &aArg->oper->inclusive, aArg->arg, aArg->count1, flag, 
+            OUT &aArg->oper->inclusive, aArg->arg, aArg->count1, flag,
             (aArg->oper->opTy != OP_NOP && aArg->arg == FORWARD && flag == '{')
            )
       )
@@ -5559,9 +5559,9 @@ nv_replace(ActionArg* aArg) {
       return;
 
    if (had_ctrl_v != Ctrl_V && (aArg->nchar == '\r' || aArg->nchar == '\n')) {
-      //Replace character(s) by a single newline. Strange vi behaviour: Only one newline is 
+      //Replace character(s) by a single newline. Strange vi behaviour: Only one newline is
       //inserted. Delete the characters here.
-      //Insert the newline with an insert command, takes care of autoindent. 
+      //Insert the newline with an insert command, takes care of autoindent.
       //The insert command depends on being on the last character of a line or not.
       (void)del_chars(aArg->count1, false);   //delete the characters
       stuffcharReadbuff('\r');
@@ -5579,7 +5579,7 @@ nv_replace(ActionArg* aArg) {
       if (aArg->ncharC2 != 0)
          AppendCharToRedobuff(aArg->ncharC2);
 
-      //This is slow, but it handles replacing a single-byte with a multi-byte and the other 
+      //This is slow, but it handles replacing a single-byte with a multi-byte and the other
       //way around. Also handles adding composing characters for utf-8.
       for (n = aArg->count1; n > 0; --n) {
          if (aArg->nchar == Ctrl_E || aArg->nchar == Ctrl_Y) {
@@ -5726,7 +5726,7 @@ nv_pcmark(ActionArg* aArg) {
          clearopbeep(aArg->oper);
       return;
    }
-   Pos* pos = (aArg->cmdchar == 'g') 
+   Pos* pos = (aArg->cmdchar == 'g')
       ? movechangelist((int)aArg->count1) : movemark((int)aArg->count1);
    if (pos == (Pos *)-1) {     //jump to other file
       curPor->setCursWant = true;
@@ -5863,7 +5863,7 @@ nv_suspend(ActionArg* aArg) {
    executeCommLine(S"stop");
 }
 
-//"gv": Reselect the previous Visual area.  If Visual already active, exchange previous and 
+//"gv": Reselect the previous Visual area.  If Visual already active, exchange previous and
 //current Visual area.
 private void
 nv_gv_cmd(ActionArg*) {
@@ -6455,8 +6455,8 @@ nv_operator(ActionArg* aArg) { //:nv_operator
 
 //Handle linewise operator "dd", "yy", etc.
 //
-//"_" is is a strange motion command that helps make operators more logical. It is actually 
-//implemented, but not documented in the real Vi. This motion command actually refers to 
+//"_" is is a strange motion command that helps make operators more logical. It is actually
+//implemented, but not documented in the real Vi. This motion command actually refers to
 //"the current line". Commands like "dd" and "yy" are really an alternate form of "d_" and "y_".
 //It does accept a count, so "d3_" works to delete 3 lines.
 pub void
@@ -6604,8 +6604,8 @@ nv_normal(ActionArg* aArg) {
       if (VIsual_active)    {
           end_visual_mode();      //stop Visual
           drawCurBookLater(UPD_INVERTED);
-      } 
-   } else 
+      }
+   } else
       clearopbeep(aArg->oper);
 }
 
@@ -6722,8 +6722,8 @@ nv_edit(ActionArg* aArg) {
 
       if (*ml_get_cursor() != ZERO) {
          if (old_visual_mode == 'V') {
-            //In linewise Visual mode insert before the beginning of the next line. When the last 
-            //line in the book was deleted then create a new line, otherwise there is not need to 
+            //In linewise Visual mode insert before the beginning of the next line. When the last
+            //line in the book was deleted then create a new line, otherwise there is not need to
             //move cursor. Detect this by checking if cursor moved above Visual area.
             if (curPor->cursor.lnum < old_pos.lnum && curPor->cursor.lnum < old_visual.lnum
                   && u_save_cursor() == OK
@@ -6783,7 +6783,7 @@ nv_edit(ActionArg* aArg) {
    } ei (aArg->cmdchar == K_PS) {
       //drop the pasted text
       whBracketedPaste(PASTE_INSERT, true);
-   } 
+   }
 }
 
 //"o" and "O" commands.
@@ -7011,10 +7011,10 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
       dir = (aArg->cmdchar == ']' && aArg->nchar == 'p') ? FORWARD : BACKWARD;
       flags |= PUT_FIXINDENT;
    } else {
-      dir = (aArg->cmdchar == 'P' 
-            || ((aArg->cmdchar == 'g' || aArg->cmdchar == 'z') && aArg->nchar == 'P')) 
+      dir = (aArg->cmdchar == 'P'
+            || ((aArg->cmdchar == 'g' || aArg->cmdchar == 'z') && aArg->nchar == 'P'))
 	   ? BACKWARD : FORWARD;
-   } 
+   }
    prepareForRedo(aArg);
    if (aArg->cmdchar == 'g')
       flags |= PUT_CURSEND;
@@ -7022,7 +7022,7 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
       flags |= PUT_BLOCK_INNER;
 
    if (VIsual_active) {
-      //Putting in Visual mode: The put text replaces the selected text. First delete the selected 
+      //Putting in Visual mode: The put text replaces the selected text. First delete the selected
       //text, then put the new text. Need to save and restore the registers that the delete
       //overwrites if the old contents is being put.
       was_visual = true;
@@ -7045,13 +7045,13 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
       aArg->nchar = ZERO;
       aArg->oper->regname = '_';
       ++msg_silent;
-      
+
       nv_operator(aArg);
       doExecuteVisualOperator(aArg, 0, false);
-      
+
       empty = (curBook->mem.flags & ML_EMPTY);
       --msg_silent;
-      
+
       //delete PUT_LINE_BACKWARD;
       aArg->oper->regname = regname;
 
@@ -7082,7 +7082,7 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
    if (was_visual) {
       if (save_fen)
          curPor->o.foldEnable = true;
-      //What to reselect with "gv"?  Selecting the just put text seems to be the most useful, 
+      //What to reselect with "gv"?  Selecting the just put text seems to be the most useful,
       //since the original text was removed.
       curBook->visual.vi_start = curBook->opStart;
       curBook->visual.vi_end = curBook->opEnd;
@@ -7131,7 +7131,7 @@ n_swapchar(ActionArg* aArg) {
       did_change |= swapchar(aArg->oper->opTy, &curPor->cursor);
       inc_cursor();
       if (gchar_cursor() == ZERO) {
-         if (p_ww && firstOccurrence(p_ww, '~') != NULL 
+         if (p_ww && firstOccurrence(p_ww, '~') != NULL
                && curPor->cursor.lnum < curBook->mem.lineCount
          ) {
             ++curPor->cursor.lnum;
@@ -7377,11 +7377,11 @@ redraw_for_cursorcolumn(Portal* po) {
    }
 }
 
-//Calculate how much the @listchars "precedes" or 'smoothscroll' "<<<" marker overlaps with 
+//Calculate how much the @listchars "precedes" or 'smoothscroll' "<<<" marker overlaps with
 //buffer text for portal "po".
-//Parameter "extra2" should be the padding on the 2nd line, not the first line. When "extra2" 
+//Parameter "extra2" should be the padding on the 2nd line, not the first line. When "extra2"
 //is -1 calculate the padding.
-//Return the number of columns of overlap with buffer text, excluding the extra padding on the 
+//Return the number of columns of overlap with buffer text, excluding the extra padding on the
 //ledge.
 pub int
 sms_marker_overlap(Portal* po, int extra2) {
@@ -7417,7 +7417,7 @@ reset_skipcol(void) {
    redraw_later(UPD_SOME_VALID);
 }
 
-//Update curPor->topLine and redraw if necessary. Used to update the screen before printing a 
+//Update curPor->topLine and redraw if necessary. Used to update the screen before printing a
 //message
 pub void
 update_topline_redraw(void) {
@@ -7515,7 +7515,7 @@ update_topline(void) {
          } else
             n = curPor->topLine + *scrollOff - curPor->cursor.lnum;
 
-         //If we weren't very close to begin with, we scroll to put the cursor in the middle of 
+         //If we weren't very close to begin with, we scroll to put the cursor in the middle of
          //the portal. Otherwise put the cursor near the top of the portal.
          if (n >= halfheight)
             scroll_cursor_halfway(false, false);
@@ -7530,7 +7530,7 @@ update_topline(void) {
       }
    }
 
-   //If the cursor is below the bottom of the portal, scroll the portal to put the cursor on the 
+   //If the cursor is below the bottom of the portal, scroll the portal to put the cursor on the
    //portal. When bottomLine is invalid, recompute it first, to avoid a redraw later.
    //If bottomLine was approximated, we might need a redraw later in a few cases, but we don't
    //want to spend (a lot of) time recomputing bottomLine for every small change.
@@ -7540,10 +7540,10 @@ update_topline(void) {
 
       if (curPor->bottomLine <= curBook->mem.lineCount) {
          if (curPor->cursor.lnum < curPor->bottomLine) {
-            if ((long)curPor->cursor.lnum >= (long)curPor->bottomLine - *scrollOff 
+            if ((long)curPor->cursor.lnum >= (long)curPor->bottomLine - *scrollOff
                   || hasAnyFolding(curPor)
             ) {
-               //Cursor is (a few lines) above botline, check if there are 'scrolloff' portal 
+               //Cursor is (a few lines) above botline, check if there are 'scrolloff' portal
                //lines below the cursor.  If not, need to scroll.
                n = curPor->emptyRowCount;
                LineOffset   loff;
@@ -7569,13 +7569,13 @@ update_topline(void) {
               check_botline = false;
          }
          if (check_botline) {
-            long lineCount; 
+            long lineCount;
             if (hasAnyFolding(curPor)) {
-               //Count the number of logical lines between the cursor and botline - scrolloff 
+               //Count the number of logical lines between the cursor and botline - scrolloff
                //(approximation of how much will be scrolled).
                lineCount = 0;
-               for (LineNr lnum = curPor->cursor.lnum; 
-                    lnum >= curPor->bottomLine - *scrollOff; 
+               for (LineNr lnum = curPor->cursor.lnum;
+                    lnum >= curPor->bottomLine - *scrollOff;
                     --lnum
                ) {
                   ++lineCount;
@@ -7586,7 +7586,7 @@ update_topline(void) {
                }
             } else
                lineCount = curPor->cursor.lnum - curPor->bottomLine + 1 + *scrollOff;
-               
+
             if (lineCount <= curPor->height + 1)
                scroll_cursor_bot(scrolljump_value(), false);
             else
@@ -7703,7 +7703,7 @@ didChangePortalSettingBuf(Book* book) {
    FOR_ALL_TAB_PORTALS(t, po) {
       if (po->book == book)
           didChangePortalSetting(po);
-   } 
+   }
 }
 
 //Call didChangePortalSetting() for every portal.
@@ -7736,9 +7736,9 @@ set_topline(Portal* po, LineNr lnum) {
    redraw_later(UPD_VALID);
 }
 
-//Call this function when the length of the cursor line (in screen characters) has changed, and 
-//the change is before the cursor. If the line length changed the number of screen lines might 
-//change, requiring updating topLine.  That may also invalidate w_crow. Need to take care of 
+//Call this function when the length of the cursor line (in screen characters) has changed, and
+//the change is before the cursor. If the line length changed the number of screen lines might
+//change, requiring updating topLine.  That may also invalidate w_crow. Need to take care of
 //bottomLine separately!
 pub void
 changed_cline_bef_curs(void) {
@@ -7754,11 +7754,11 @@ changed_cline_bef_curs_win(Portal *po) {
    );
 }
 
-//Call this function when the length of a line (in screen characters) above the cursor have 
+//Call this function when the length of a line (in screen characters) above the cursor have
 //changed. Need to take care of bottomLine separately!
 pub void
 changed_line_abv_curs(void) {
-    curPor->cacheState &= 
+    curPor->cacheState &=
        ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW |VALID_CHEIGHT|VALID_TOPLINE);
 }
 
@@ -7777,8 +7777,8 @@ normInvalidateDisplayOfChangedBookLine(Book* book) {
              VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW|VALID_CHEIGHT|VALID_TOPLINE
              |VALID_BOTLINE|VALID_BOTLINE_AP
          );
-      } 
-   } 
+      }
+   }
 }
 
 //Make sure the value of curPor->bottomLine is valid.
@@ -8070,7 +8070,7 @@ curs_columns(int may_scroll) { //when true, may scroll horizontally
             diff = off_right;
 
          //When far off or not enough room on either side, put cursor in middle of portal.
-         
+
          int neleftCol;
          if (p_ss == 0 || diff >= width1 / 2 || off_right >= off_left)
             neleftCol = curPor->cursorCol - extra - width1 / 2;
@@ -8106,7 +8106,7 @@ curs_columns(int may_scroll) { //when true, may scroll horizontally
 
    if ((curPor->cursorRow >= (int)curPor->height
       || ((prev_skipcol > 0 || curPor->cursorRow + so >= curPor->height)
-          && (pLines = plines_win_nofill(curPor, curPor->cursor.lnum, false)) - 1 
+          && (pLines = plines_win_nofill(curPor, curPor->cursor.lnum, false)) - 1
              >= (int)curPor->height
          )
        )
@@ -8429,7 +8429,7 @@ scroll_redraw(int up, long count) {
       check_cursor_moved(curPor);
       curPor->cacheState |= VALID_TOPLINE;
 
-      //If moved back to where we were, at least move the cursor, otherwise we get stuck at one 
+      //If moved back to where we were, at least move the cursor, otherwise we get stuck at one
       //position. Don't move the cursor up if the first line of the book is already on the screen
       while (curPor->topLine == prev_topline
          && curPor->skipCol == prev_skipcol
@@ -8439,8 +8439,8 @@ scroll_redraw(int up, long count) {
             if (curPor->cursor.lnum > prev_lnum || cursor_down(1L, false) == FAIL)
                break;
          } else {
-            if (curPor->cursor.lnum < prev_lnum 
-                  || prev_topline == 1L 
+            if (curPor->cursor.lnum < prev_lnum
+                  || prev_topline == 1L
                   || cursor_up(1L, false) == FAIL
             )
                break;
@@ -8539,7 +8539,7 @@ scrolldown(long line_count, int byfold) {  //true: count a closed fold as one li
       validate_cheight();
       wrow += curPor->cursorLineHeight - 1 - curPor->virtCol / curPor->width;
    }
-    
+
    while (wrow >= (int)curPor->height && curPor->cursor.lnum > 1) {
       if (getFolds(curPor->cursor.lnum, &first, NULL)) {
          --wrow;
@@ -8552,7 +8552,7 @@ scrolldown(long line_count, int byfold) {  //true: count a closed fold as one li
       curPor->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_CHEIGHT|VALID_CROW|VALID_VIRTCOL);
       moved = true;
    }
-    
+
    if (moved) {
       //Move cursor to first line of closed fold.
       foldAdjustCursor();
@@ -8814,7 +8814,7 @@ scrollup_clamp(void) {
 }
 
 //Add one line above "lp->lnum".  This can be a filler line, a closed fold or
-//a (wrapped) text line.  Uses and sets "lp->fill". Return the height of the added line in 
+//a (wrapped) text line.  Uses and sets "lp->fill". Return the height of the added line in
 //"lp->height". Lines above the first one are incredibly high: MAXCOL.
 private void
 topline_back_winheight(LineOffset* lp, int winheight) {  //when true, limit to portal height
@@ -8843,7 +8843,7 @@ topline_back(LineOffset *lp) {
 
 
 //Add one line below "lp->lnum".  This can be a filler line, a closed fold or a (wrapped) text line.
-//Uses and sets "lp->fill". Return the height of the added line in "lp->height". Lines below the 
+//Uses and sets "lp->fill". Return the height of the added line in "lp->height". Lines below the
 //last one are incredibly high.
 private void
 botline_forw(LineOffset* lp) {
@@ -8969,7 +8969,7 @@ scroll_cursor_top(int min_scroll, int always) {
          || curPor->topFill != old_topfill
       ) {
          curPor->cacheState &= ~(VALID_WROW|VALID_CROW|VALID_BOTLINE|VALID_BOTLINE_AP);
-      } 
+      }
       curPor->cacheState |= VALID_TOPLINE;
    }
 }
@@ -9065,7 +9065,7 @@ scroll_cursor_bot(int min_scroll, int set_topbot) {
    //The lines of the cursor line itself are always used.
    used = plines_nofill(cln);
 
-   //If the cursor is on or below botline, we will at least scroll by the height of the cursor 
+   //If the cursor is on or below botline, we will at least scroll by the height of the cursor
    //line, which is "used". Correct for empty lines, which are really part of botline.
    if (cln >= curPor->bottomLine) {
       scrolled = used;
@@ -9073,8 +9073,8 @@ scroll_cursor_bot(int min_scroll, int set_topbot) {
          scrolled -= curPor->emptyRowCount;
       if (doSmoothly) {
          //'smoothscroll' and 'wrap' are set.
-         //Calculate how many screen lines the current top line of portal occupies. If it is 
-         //occupying more than the entire portal, we need to scroll the additional clipped 
+         //Calculate how many screen lines the current top line of portal occupies. If it is
+         //occupying more than the entire portal, we need to scroll the additional clipped
          //lines to scroll past the top line before we can move on to the other lines.
          int top_plines = plines_win_nofill (curPor, curPor->topLine, false);
          int width1 = widthLeft(curPor);
@@ -9264,7 +9264,7 @@ scroll_cursor_halfway(int atend, int prefer_above) {
       continue;
    }
 
-   //If not using smoothscroll, we have to iteratively find how many lines to scroll down to 
+   //If not using smoothscroll, we have to iteratively find how many lines to scroll down to
    //roughly fit the cursor. This may not be right in the middle if the lines' physical height > 1
    //(e.g. 'wrap' is on).
    //Depending on "prefer_above" we add a line above or below first.
@@ -9326,8 +9326,8 @@ scroll_cursor_halfway(int atend, int prefer_above) {
    curPor->cacheState |= VALID_TOPLINE;
 }
 
-//Correct the cursor position so that it is in a part of the screen at least 'scrolloff' lines 
-//from the top and bottom, if possible. If not possible, put it at the same position as 
+//Correct the cursor position so that it is in a part of the screen at least 'scrolloff' lines
+//from the top and bottom, if possible. If not possible, put it at the same position as
 //scroll_cursor_halfway(). When called topline must be valid!
 pub void
 cursor_correct(void) {
@@ -9448,7 +9448,7 @@ get_scroll_overlap(int dir) {
       return min_height + 2;  //no overlap, still handle 'smoothscroll'
 
    loff.lnum = dir == FORWARD ? curPor->bottomLine : curPor->topLine - 1;
-   loff.fill = diff_check_fill( curPor, loff.lnum + (dir == BACKWARD)) 
+   loff.fill = diff_check_fill( curPor, loff.lnum + (dir == BACKWARD))
                - (dir == FORWARD ? curPor->fillerRowCount : curPor->topFill);
    loff.height = loff.fill > 0 ? 1 : plines_nofill(loff.lnum);
 
@@ -9558,7 +9558,7 @@ pagescroll(int dir, long count, int half) {
       }
 
       //(Try to) scroll the portal unless already at the end of the book.
-      
+
       if (count > 0) {
          nochange = scrollSmoothly(dir, count, &curscount);
          curPor->cursor.lnum = prev_lnum;
@@ -9574,12 +9574,12 @@ pagescroll(int dir, long count, int half) {
       else
           cursor_up_inner(curPor, curscount);
    } else {
-       
+
       //Scroll [count] times @window or current portal height lines.
       count *= get_scroll_overlap(dir);
 
       nochange = scrollSmoothly(dir, count, &count);
-          
+
       if (!nochange) {
          //Place cursor at top or bottom of portal.
          validate_botline();
@@ -9594,7 +9594,7 @@ pagescroll(int dir, long count, int half) {
       cursor_correct();
    //Move cursor to first line of closed fold.
    foldAdjustCursor();
-    
+
    nochange = nochange
       && prev_col == curPor->cursor.col
       && prev_lnum == curPor->cursor.lnum;
@@ -9892,7 +9892,7 @@ addToMap(
    }
 
    //add the new entry in front of the abbrlist or mappingTable[] list
-    
+
    if (is_abbr) {
       mp->next = *abbr_table;
       *abbr_table = mp;
@@ -10130,12 +10130,12 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
       goto theend;
    }
 
-   //If mapping has been given as ^V<C_UP> say, then replace the term codes with the appropriate 
+   //If mapping has been given as ^V<C_UP> say, then replace the term codes with the appropriate
    //2 bytes. If it is a shifted special key, unshift it too, giving another two bytes.
-   //replace_termcodes() may move the result to allocated memory, which needs to be freed later 
+   //replace_termcodes() may move the result to allocated memory, which needs to be freed later
    //(*keysBuffer and *arg_buf).
-   //replace_termcodes() also removes CTRL-Vs and sometimes backslashes. If something like <C-H> 
-   //is simplified to 0x08 then mark it as simplified and also add an entry with a modifier, 
+   //replace_termcodes() also removes CTRL-Vs and sometimes backslashes. If something like <C-H>
+   //is simplified to 0x08 then mark it as simplified and also add an entry with a modifier,
    //which will work when using a key protocol.
    if (haskey) {
       Unt flags = REPTERM_FROM_PART | REPTERM_DO_LT;
@@ -10262,7 +10262,7 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
          listMappings(keyround, abbrev, haskey, keys, len, mode, &did_local);
       }
 
-      //Find an entry in the mappingTable[] list that matches. For ;unmap we may loop twice: 
+      //Find an entry in the mappingTable[] list that matches. For ;unmap we may loop twice:
       //once to try to unmap an entry with a matching 'from' part, a second time, if the first
       //fails, to unmap an entry with a matching 'to' part. This was done to allow
       //";ab foo bar" to be unmapped by typing ";unab foo", where "foo" will
@@ -10299,16 +10299,16 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
                   if (STRNCMP(p, keys, (Unt)(n < len ? n : len)) == 0) {
                      if (maptype == MAPTYPE_UNMAP) {
                         //Delete entry.
-                        //Only accept a full match.  For abbreviations we ignore trailing space 
+                        //Only accept a full match.  For abbreviations we ignore trailing space
                         //when matching with the "lhs", since an abbreviation can't have
                         //trailing space.
-                        if (n != len 
+                        if (n != len
                            && (!abbrev || round || n > len || *skipwhite(keys + n) != ZERO)
                         ) {
                            mpp = &(foundMapping->next);
                            continue;
                         }
-                        //In keyround for simplified keys, don't unmap a mapping without 
+                        //In keyround for simplified keys, don't unmap a mapping without
                         //simplified flag
                         if (keyroundIs1AndDidSimplify && !foundMapping->simplified)
                            { break; }
@@ -10718,7 +10718,7 @@ set_context_in_map_cmd(
             arg = skipwhite(arg + 8);
             continue;
          }
-         if (STRNCMP(arg, "<expr>", 6) == 0) { 
+         if (STRNCMP(arg, "<expr>", 6) == 0) {
             arg = skipwhite(arg + 6);
             continue;
          }
@@ -10749,7 +10749,7 @@ expandMappings(
 
    validateMappingTable();
    Fuzzy fuzzy = {.cap = 0, .len = 0, .a = matches->a};
-   
+
    Boole match;
 
    //First search in map modifier arguments
@@ -10762,7 +10762,7 @@ expandMappings(
       case 4: p = S"<book>"; break;
       case 5: p = S"<nowait>"; break;
       case 6: p = S"<special>"; break;
-      case 7: continue; 
+      case 7: continue;
       }
 
       if (doFuzzy) {
@@ -10816,7 +10816,7 @@ expandMappings(
             addExpandMatch(p, OUT matches);
       } //for (mp)
    } //for (hash)
-   
+
    int count = matches->len + fuzzy.len;
 
    if (count)
@@ -10957,7 +10957,7 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
          //Characters where IS_SPECIAL() == true: key codes, need
          //K_SPECIAL. Other characters (with ABBR_OFF): don't use CTRL-V.
          //
-         //Character CTRL-] is treated specially - it completes the abbreviation, but is not 
+         //Character CTRL-] is treated specially - it completes the abbreviation, but is not
          //inserted into the input stream.
          j = 0;
          if (c != Ctrl_RSB) {
@@ -11081,7 +11081,7 @@ copyStr_escape_csi(CS p) {
    return res;
 }
 
-//Remove escaping from CSI and K_SPECIAL characters. Reverse of copyStr_escape_csi(). 
+//Remove escaping from CSI and K_SPECIAL characters. Reverse of copyStr_escape_csi().
 //Work in-place.
 pub void
 eeUnescapeCsi(CS p) {
@@ -11388,7 +11388,7 @@ check_map_keycodes(void) {
    estack_pop();
 }
 
-//Check the string "keys" against the lhs of all mappings. Return pointer to rhs of mapping 
+//Check the string "keys" against the lhs of all mappings. Return pointer to rhs of mapping
 //(mapblock->m_str). NULL when no mapping found.
 pub CS
 norCheckMapping(
@@ -11445,7 +11445,7 @@ norCheckMapping(
             }
          }
       }
-   } 
+   }
 
    return NULL;
 }
@@ -11538,7 +11538,7 @@ getMapArg(Var* argvars, Var* returnVar, int exact) {
 
    Boole didSimplify = false;
    CS keysBuffer = NULL;
-   CS simplifiedKeys = 
+   CS simplifiedKeys =
       replace_termcodes(keys, &keysBuffer, 0, flags, OUT &didSimplify, false);
    int bookLocal;
    MapBlock* mp = NULL;
@@ -11567,7 +11567,7 @@ getMapArg(Var* argvars, Var* returnVar, int exact) {
                mp, returnVar->bag, didSimplify ? simplifiedKeys : NULL, bookLocal, abbr
          );
       }
-   } 
+   }
 
    eeglFree(keysBuffer);
    eeglFree(alt_keysBuffer);
@@ -11788,9 +11788,9 @@ add_map(CS map, int mode, int nore) {
    eeglFree(s);
 }
 
-//Any character has an equivalent 'langmap' character. This is used for keyboards that have a 
-//special language mode that sends characters above 128 (although other characters can be 
-//translated too). The "to" field is a Eegl command character.  This avoids having to switch the 
+//Any character has an equivalent 'langmap' character. This is used for keyboards that have a
+//special language mode that sends characters above 128 (although other characters can be
+//translated too). The "to" field is a Eegl command character.  This avoids having to switch the
 //keyboard back to ASCII mode when leaving Insert mode.
 //
 //langmap_mapchar[] maps any of 256 chars to an ASCII char used for Eegl commands.
@@ -11912,7 +11912,7 @@ setLangmap(OptionChange* args) {
          }
          if (to == ZERO) {
             return _(e_langmap_matching_character_missing_for_str);
-            //TODO growable string 
+            //TODO growable string
             //template:   (char*)_(e_langmap_matching_character_missing_for_str),
             //value:  transchar(from)
          }
@@ -11931,7 +11931,7 @@ setLangmap(OptionChange* args) {
                p = p2;
                if (p[0] != ZERO) {
                   if (p[0] != ',') {
-                     //TODO growable string 
+                     //TODO growable string
                      //template:   _(e_langmap_extra_characters_after_semicolon_str),
                      //value:  p
                      return _(e_langmap_extra_characters_after_semicolon_str);
@@ -11955,7 +11955,7 @@ mappingImpl(Invocation* invo, Boole isabbrev) {
    int mode = getMapMode(&cmdp, invo->forceit || isabbrev);
 
    switch (do_map(
-            *cmdp == 'n' 
+            *cmdp == 'n'
                ? MAPTYPE_NOREMAP
                : (*cmdp == 'u' ? MAPTYPE_UNMAP : MAPTYPE_MAP), invo->arg, mode, isabbrev
            )
@@ -12024,7 +12024,7 @@ private Boole needUndoS; //call u_save() before inserting a char. Set when edit(
 
 private int   dont_sync_undo = false;   //CTRL-G U prevents syncing undo for
                                        //the next left/right cursor key
-               
+
 //{{{Editing. Actual input character handling in Insert mode
 
 //Return the character immediately before the cursor.
@@ -12132,7 +12132,7 @@ edit(Unt commChar, int startln, long count){
       ins_applyAutocomms(EVENT_INSERTENTER);
 
       //Make sure the cursor didn't move. Do call check_cursor_col() in case the text was modified.
-      //Since Insert mode was not started yet a call to check_cursor_col() may move the cursor, 
+      //Since Insert mode was not started yet a call to check_cursor_col() may move the cursor,
       //especially with the "A" command, thus set stateG to avoid that. Also check that the
       //line number is still valid (lines may have been deleted).
       if (!EQUAL_POS(curPor->cursor, save_cursor)
@@ -12197,7 +12197,7 @@ edit(Unt commChar, int startln, long count){
    setmouse();
    clear_showcmd();
 
-   //Handle restarting Insert mode. Don't do this for "CTRL-O ." (repeat an insert): In 
+   //Handle restarting Insert mode. Don't do this for "CTRL-O ." (repeat an insert): In
    //that case we get here with something in the stuff buffer.
    if (restart_edit != 0 && stuff_empty()) {
       //After a paste we consider text typed to be part of the insert for
@@ -12223,7 +12223,7 @@ edit(Unt commChar, int startln, long count){
             i = utfCharLen(ptr);
             if (ptr[i] == ZERO)
                curPor->cursor.col += i;
-         } 
+         }
       }
       ins_at_eol = false;
    } else
@@ -12301,11 +12301,11 @@ edit(Unt commChar, int startln, long count){
          commChar_todo = ZERO;
       }
 
-      //If we inserted a character at the last position of the last line in the portal, scroll 
+      //If we inserted a character at the last position of the last line in the portal, scroll
       //the portal one line up. This avoids an extra redraw.
       //This is detected when the cursor column is smaller after inserting something.
-      //Don't do this when the topline changed already, it has already been adjusted 
-      //(by insertchar() calling openLine())). Also don't do this when @smoothscroll is set, as 
+      //Don't do this when the topline changed already, it has already been adjusted
+      //(by insertchar() calling openLine())). Also don't do this when @smoothscroll is set, as
       //the portal should then be scrolled by screen lines.
       if (curBook->needsRedraw
             && curPor->o.wrap
@@ -12348,7 +12348,7 @@ edit(Unt commChar, int startln, long count){
       if (curPor->o.diff) {
          normPostProcessScrollbind(true);
          do_check_cursorbind();
-      } 
+      }
       if (count <= 1)
          update_curswant();
       old_topline = curPor->topLine;
@@ -12389,7 +12389,7 @@ edit(Unt commChar, int startln, long count){
                goto doESCkey;
             }
          } while (c == K_IGNORE || c == K_NOP);
-      } 
+      }
 
       //Don't want K_CURSORHOLD for the second key, e.g., after CTRL-V.
       did_cursorhold = true;
@@ -12792,14 +12792,14 @@ edit(Unt commChar, int startln, long count){
          if (modMaskG & (MOD_MASK_SHIFT|MOD_MASK_CTRL)) {
             if (ins_tab())
                goto normalchar;   //insert TAB as a normal char
-         } ei (ctrl_x_mode_path_patterns()) 
+         } ei (ctrl_x_mode_path_patterns())
             goto docomplete;
          else {
             //go to normal mode
             goto doESCkey;
          }
-         
-         
+
+
          inserted_space = false;
          whAutoFormat(false, true);
          break;
@@ -12873,10 +12873,10 @@ edit(Unt commChar, int startln, long count){
 
    docomplete:
          isCompletionBusyS = true;
-         disable_fold_update++;  //don't redraw folds here
-         if (ins_complete(c, true) == FAIL)
+         //disable_fold_update++;  //don't redraw folds here
+         if (insertModeCompletion(c, true) == FAIL)
             compl_status_clear();
-         disable_fold_update--;
+         //disable_fold_update--;
          isCompletionBusyS = false;
          can_si = may_do_si(); //allow smartindenting
          break;
@@ -12908,7 +12908,7 @@ edit(Unt commChar, int startln, long count){
 
          //Insert a normal character and check for abbreviations on a
          //special character.  Let CTRL-] expand abbreviations without inserting it.
-         if (eeIsWordc(c) 
+         if (eeIsWordc(c)
                || (!echeck_abbr((c >= 0x100) ? (c + ABBR_OFF) : c)
                   //Add ABBR_OFF for characters above 0x100, this is what check_abbr() expects.
                   && c != Ctrl_RSB)
@@ -12931,12 +12931,12 @@ edit(Unt commChar, int startln, long count){
       }   //end of switch (c)
 
       //If typed something may trigger CursorHoldI again.
-      if (c != K_CURSORHOLD 
+      if (c != K_CURSORHOLD
          //but not in CTRL-X mode, a script can't restore the state
          && ctrl_x_mode_normal()
       ) {
          did_cursorhold = false;
-      } 
+      }
 
       //Check if we need to cancel completion mode because the portal or tab was changed
       if (ins_compl_active() && !ins_compl_win_active(curPor))
@@ -12950,7 +12950,7 @@ edit(Unt commChar, int startln, long count){
    //NOTREACHED
 }
 
-//Redraw for Insert mode. This is postponed until getting the next character to make '$' in the 
+//Redraw for Insert mode. This is postponed until getting the next character to make '$' in the
 //'cpo' option work correctly. Only redraw when there are no characters available. This speeds up
 //inserting sequences of characters (e.g., for CTRL-R).
 private void
@@ -12961,7 +12961,7 @@ redrawInInsertMode(Boole ready) {      //not busy with something
    //Trigger CursorMoved if the cursor moved.  Not when the popup menu is
    //visible, the command might delete it.
    if (ready && popup_visible && !EQUAL_POS(last_cursormoved, curPor->cursor) && !pum_visible()) {
-      //Need to update the screen first, to make sure syntax highlighting is correct after making 
+      //Need to update the screen first, to make sure syntax highlighting is correct after making
       //a change (e.g., inserting a "(".  The autocommand may also require a redraw, so it's done
       //again below, unfortunately.
       if (syntax_present(curPor) && mustRedrawG)
@@ -13124,7 +13124,7 @@ truncate_spaces(CS line, Unt len) {
    //find start of trailing white space
    for (int i = (int)len - 1; i >= 0 && SPACE_OR_TAB(line[i]); i--) {
       line[i + 1] = ZERO;
-   } 
+   }
 }
 
 //Backspace the cursor until the given column. May also be used when not in insert mode at all.
@@ -13166,7 +13166,7 @@ del_char_after_col(int limit_col) {
 //A one, two or three digit decimal number is interpreted as its byte value.
 //If one or two digits are entered, the next character is given to vungetc().
 //For Unicode a character > 255 may be returned.
-//If "noReduceKeys" is true do not change any modifyOtherKeys ESC sequence into a normal key, 
+//If "noReduceKeys" is true do not change any modifyOtherKeys ESC sequence into a normal key,
 //return ESC.
 pub int
 get_literal(int noReduceKeys) {
@@ -13256,8 +13256,8 @@ pub
 //Insert character, taking care of special keys and modMaskG
 private void
 insertRegular(Unt c, Boole allow_modmask, Boole ctrlv) {       //c was typed after CTRL-V
-   //Special function key, translate into "<Key>". Up to the last '>' is inserted with ins_str(), 
-   //so as not to replace characters in replace mode. Only use modMaskG for special keys, to 
+   //Special function key, translate into "<Key>". Up to the last '>' is inserted with ins_str(),
+   //so as not to replace characters in replace mode. Only use modMaskG for special keys, to
    //avoid things like <S-Space>, unless 'allow_modmask' is true.
    if (IS_SPECIAL(c) || (modMaskG && allow_modmask)) {
       CS p = get_special_key_name(c, modMaskG);
@@ -13276,9 +13276,9 @@ insertRegular(Unt c, Boole allow_modmask, Boole ctrlv) {       //c was typed aft
       insertchar0(c, ctrlv ? INSCHAR_CTRLV : 0, -1);
 }
 
-//Special characters in this context are those that need processing other than the simple 
+//Special characters in this context are those that need processing other than the simple
 //insertion that can be performed here. This includes ESC which terminates the insert, and CR/NL
-//which need special processing to open up a new line. This routine tries to optimize insertions 
+//which need special processing to open up a new line. This routine tries to optimize insertions
 //performed by the "redo", "undo" or "put" commands, so it needs to know when it should
 //stop and defer processing to the "normal" mechanism. '0' and '^' are special, because they can
 //be followed by CTRL-D.
@@ -13397,11 +13397,11 @@ insertchar0(
    can_si = false;
    can_si_back = false;
 
-   //If there's any pending input, grab up to INPUT_BUFLEN at once. This speeds up normal text 
+   //If there's any pending input, grab up to INPUT_BUFLEN at once. This speeds up normal text
    //input considerably. Don't do this when @indentexpr is set, because we might
    //need to re-indent at a ':', or any other character (but not what 'paste' is set)..
-   //Don't do this when there an InsertCharPre autocommand is defined, because we need to fire 
-   //the event for every character. Do the check for InsertCharPre before the call to vpeekc() 
+   //Don't do this when there an InsertCharPre autocommand is defined, because we need to fire
+   //the event for every character. Do the check for InsertCharPre before the call to vpeekc()
    //because the InsertCharPre autocommand could change the input buffer.
 
    if (!ISSPECIAL(c)
@@ -13518,7 +13518,7 @@ check_spell_redraw(void) {
 }
 
 //stop_arrow() is called before a change is made in insert mode.
-//If an arrow key has been used, start a new insertion. Return FAIL if undo is impossible, 
+//If an arrow key has been used, start a new insertion. Return FAIL if undo is impossible,
 //shouldn't insert then.
 pub int
 stop_arrow(void) {
@@ -13550,7 +13550,7 @@ stop_arrow(void) {
    return (arrow_used || needUndoS ? FAIL : OK);
 }
 
-//Do a few things to stop inserting. "end_insert_pos" is where insert ended. It is NULL when 
+//Do a few things to stop inserting. "end_insert_pos" is where insert ended. It is NULL when
 //we already jumped to another portal/book.
 private void
 stop_insert(
@@ -13609,7 +13609,7 @@ stop_insert(
       checkAutoFormat(true);
 
       //If we just did an auto-indent, remove the white space from the end
-      //of the line, and put the cursor back. Do this when ESC was used or moving the cursor 
+      //of the line, and put the cursor back. Do this when ESC was used or moving the cursor
       //up/down. Check for the old position still being valid, just in case the text
       //got changed unexpectedly.
       if (!nomove && didAindentG && (esc || curPor->cursor.lnum != end_insert_pos->lnum)
@@ -13673,7 +13673,7 @@ set_last_insert(Unt c) {
    *s++ = ESC;
    *s = ZERO;
    lastInsertP.len = (Unt)(s - lastInsertP.c);
-   
+
    last_insert_skip = 0;
 }
 
@@ -13718,8 +13718,8 @@ beginline(Unt flags) {
       curPor->cursor.coladd = 0;
 
       if ((flags & (BL_WHITE | BL_SOL)) != 0) {
-         for (CS ptr = ml_get_curline(); 
-              SPACE_OR_TAB(*ptr) && !((flags & BL_FIX) && ptr[1] == ZERO); 
+         for (CS ptr = ml_get_curline();
+              SPACE_OR_TAB(*ptr) && !((flags & BL_FIX) && ptr[1] == ZERO);
               ++ptr
          )
             ++curPor->cursor.col;
@@ -13910,7 +13910,7 @@ cursor_down(long n, int upd_topline) {      //When true: update topline
    return OK;
 }
 
-//Stuff the last inserted text in the read buffer. lastInsertP actually is a copy of the redo 
+//Stuff the last inserted text in the read buffer. lastInsertP actually is a copy of the redo
 //buffer, so we first have to remove the command.
 pub int
 stuff_inserted(
@@ -13991,7 +13991,7 @@ get_last_insert(void){
    return insert;
 }
 
-//Get last inserted string, and remove trailing <Esc>. Return pointer to allocated memory 
+//Get last inserted string, and remove trailing <Esc>. Return pointer to allocated memory
 //(must be freed) or NULL.
 pub CS
 get_last_insert_save(void){
@@ -14008,8 +14008,8 @@ get_last_insert_save(void){
    return s;
 }
 
-//Check the word in front of the cursor for an abbreviation. Called when the non-id character "c" 
-//has been entered. When an abbreviation is recognized it is removed from the text and the 
+//Check the word in front of the cursor for an abbreviation. Called when the non-id character "c"
+//has been entered. When an abbreviation is recognized it is removed from the text and the
 //replacement string is inserted in typeBufG.c[], followed by "c".
 private Boole
 echeck_abbr(Unt c) {
@@ -14120,7 +14120,7 @@ ins_ctrl_g(void) {
    //CTRL-G k and CTRL-G <Up>: cursor up to insertStartG.col
    case K_UP:
    case Ctrl_K:
-   case 'k': 
+   case 'k':
       ins_up(true);
       break;
 
@@ -14208,7 +14208,7 @@ ins_esc(long* count, int commChar, int nomove) {      //don't move cursor
       stop_insert(&curPor->cursor, true, nomove);
    }
 
-   if (commChar != 'r' && commChar != 'v') 
+   if (commChar != 'r' && commChar != 'v')
       ins_applyAutocomms(EVENT_INSERTLEAVEPRE);
 
    //When an autoindent was removed, curswant stays after the indent
@@ -14304,7 +14304,7 @@ ins_ctrl_o(void) {
       ins_at_eol = (gchar_cursor() == ZERO);
 }
 
-//If the cursor is on an indent, ^T/^D insert/delete one shiftwidth.  Otherwise ^T/^D behave 
+//If the cursor is on an indent, ^T/^D insert/delete one shiftwidth.  Otherwise ^T/^D behave
 //like a "<<" or ">>". Always round the indent to 'shiftwidth'.
 private void
 ins_shift(Unt c, int lastc) {
@@ -15042,7 +15042,7 @@ ins_ctrl_ey(Unt tc) {
       if (c != ZERO) {
          long   tw_save;
 
-         //The character must be taken literally, insert like it was typed after a CTRL-V, and 
+         //The character must be taken literally, insert like it was typed after a CTRL-V, and
          //pretend 'textwidth' wasn't set.  Digits, 'o' and 'x' are special after a
          //CTRL-V, don't use it for these.
          if (c < 256 && !SAFE_isalnum(c))
@@ -15097,14 +15097,14 @@ ins_applyAutocomms(AutoEvent event) {
 private Callback completeFnS;  //'completefunc' callback function
 private Callback omniFnS;      //'omnifunc' callback function
 private Callback thesaurusCbS; //'thesaurusfunc' callback function
-private Callback customCompleteFnS; 
+private Callback customCompleteFnS;
 
 #define CFC_KEYWORD         0x001
 #define CFC_FILES           0x002
 #define CFC_WHOLELINE       0x004
 
 //Definitions used for CTRL-X submode.
-//Note: If you change CTRL-X submode, you must also maintain ctrl_x_msgs[] and 
+//Note: If you change CTRL-X submode, you must also maintain ctrl_x_msgs[] and
 //ctrl_x_mode_names[] below
 #define CTRL_X_WANT_IDENT   0x100
 
@@ -15267,8 +15267,8 @@ private Portal* compl_curr_win = NULL;  //win where completion is active
 private Book* compl_curr_buf = NULL;  //buf where completion is active
 
 #define COMPL_INITIAL_TIMEOUT_MS    80
-//Autocomplete uses a decaying timeout: starting from COMPL_INITIAL_TIMEOUT_MS, if the current 
-//source exceeds its timeout, it is interrupted and the next begins with half the time. A small 
+//Autocomplete uses a decaying timeout: starting from COMPL_INITIAL_TIMEOUT_MS, if the current
+//source exceeds its timeout, it is interrupted and the next begins with half the time. A small
 //minimum timeout ensures every source gets at least a brief chance.
 private int compl_autocomplete = false;       //whether autocompletion is active
 private int insertCompletionTimeOutMs = COMPL_INITIAL_TIMEOUT_MS;
@@ -15289,7 +15289,7 @@ private int     compl_cont_status = 0;
 #define CONT_INTRPT (2 + 4) //a ^X interrupted the current expansion. Set only iff N_ADDS is set
 #define CONT_N_ADDS 4 //next ^X<> will add-new or expand-current
 #define CONT_S_IPOS 8 //next ^X<> will set initial_pos? if so, word-wise-expansion will set SOL
-#define CONT_SOL   16 //pattern includes start of line, just for word-wise expansion, 
+#define CONT_SOL   16 //pattern includes start of line, just for word-wise expansion,
                        //not set for ^X^L
 #define CONT_LOCAL 32 //for ctrl_x_mode 0, ^X^P/^X^N do a local expansion, (eg use complete=.)
 
@@ -15318,7 +15318,7 @@ private Arr(PopupItem) displayedCompletionsS = NULL;
 private int displayedCompletionsSsize;
 
 private Unt addMatchToList(
-   CS str, int len, CS fname, CS* cptext, Var *user_data, Unt cdir, Unt flags, 
+   CS str, int len, CS fname, CS* cptext, Var *user_data, Unt cdir, Unt flags,
    Boole adup, Arr(Decoration) userDecos, int score
 );
 private void ins_compl_longest_match(InsertCompletion *match);
@@ -15395,8 +15395,8 @@ private int ctrl_x_mode_dictionary(void)
     { return ctrl_x_mode == CTRL_X_DICTIONARY; }
 private int ctrl_x_mode_thesaurus(void)
     { return ctrl_x_mode == CTRL_X_THESAURUS; }
-private int ctrl_x_mode_cmdline(void) { 
-   return ctrl_x_mode == CTRL_X_CMDLINE || ctrl_x_mode == CTRL_X_CMDLINE_CTRL_X; 
+private int ctrl_x_mode_cmdline(void) {
+   return ctrl_x_mode == CTRL_X_CMDLINE || ctrl_x_mode == CTRL_X_CMDLINE_CTRL_X;
 }
 private int ctrl_x_mode_function(void)
     { return ctrl_x_mode == CTRL_X_FUNCTION; }
@@ -15547,7 +15547,7 @@ is_first_match(InsertCompletion *match) {
    return match == compl_first_match;
 }
 
-//true when character "c" is part of the item currently being completed. Used to decide 
+//true when character "c" is part of the item currently being completed. Used to decide
 //whether to abandon complete mode when the menu is visible.
 private int
 ins_compl_accept_char(int c) {
@@ -15657,7 +15657,7 @@ ins_compl_infercase_gettext(
          gap.len += (*mb_char2bytes)(wideChars[i], p);
          i++;
       } ei ((p - IObuff) + 6 >= IOSIZE) {
-         //Multi-byte characters can occupy up to five bytes more than ASCII characters, and we 
+         //Multi-byte characters can occupy up to five bytes more than ASCII characters, and we
          //also need one byte for ZERO, so when getting to six bytes from the edge of IObuff
          //switch to using a growarray. Add the character in the next round.
          if (ga_grow(&gap, IOSIZE) == FAIL) {
@@ -15682,7 +15682,7 @@ ins_compl_infercase_gettext(
    return IObuff;
 }
 
-//This is like addMatchToList(), but if 'ic' and 'inf' are set, then the case of the originally 
+//This is like addMatchToList(), but if 'ic' and 'inf' are set, then the case of the originally
 //typed text is used, and the case of the completed text is inferred, ie this tries to work out
 //what case you probably wanted the rest of the word to be in -- webb
 pub Unt
@@ -15859,7 +15859,7 @@ addMatchToList(
       current = compl_first_match->next;
       prev = compl_first_match;
       inserted = false;
-      //The direction is ignored when using longest and completefuzzycollect, because matches are 
+      //The direction is ignored when using longest and completefuzzycollect, because matches are
       //inserted and sorted by score.
       while (current != NULL && current != compl_first_match) {
          if (current->cp_score < score) {
@@ -15952,8 +15952,8 @@ ins_compl_has_multiple(void) {
    return firstOccurrence(compl_shown_match->cp_str.c, '\n') != NULL;
 }
 
-//Return true if the given line number falls within the range of a multi-line completion, i.e. 
-//between the starting line (compl_lnum) and current cursor line. Always return false for 
+//Return true if the given line number falls within the range of a multi-line completion, i.e.
+//between the starting line (compl_lnum) and current cursor line. Always return false for
 //single-line completions.
 pub int
 ins_compl_lnum_in_range(LineNr lnum) {
@@ -16192,7 +16192,7 @@ cp_compare_nearest(const void* a, const void* b) {
    return (score_a > score_b) ? 1 : (score_a < score_b) ? -1 : 0;
 }
 
-//Constructs a new string by prepending text from the current line (from startcol to compl_col) to 
+//Constructs a new string by prepending text from the current line (from startcol to compl_col) to
 //the given source string. Stores the result in dest. Returns OK or FAIL.
 private Unt
 prepend_startcol_text(Text* dest, Text* src, int startcol) {
@@ -16435,7 +16435,7 @@ ins_compl_build_pum(void) {
       displayedCompletionsS[i].kindDeco = compl->kindDeco;
       displayedCompletionsS[i].pum_extra = compl->cp_text[CPT_MENU] != NULL
                 ? compl->cp_text[CPT_MENU] : compl->fName;
-      i++; 
+      i++;
       matnext = compl->nextMatch;
       compl->nextMatch = NULL;
       compl = matnext;
@@ -16524,7 +16524,7 @@ ins_compl_dictionaries(
 ){
    if (!dict_start)
       return;
-      
+
    CS dict = dict_start;
    CS ptr;
    RegMatch   regmatch;
@@ -16545,7 +16545,7 @@ ins_compl_dictionaries(
       CS pat_esc = copyStr_escaped(pat, (CS)"\\");
       if (!pat_esc)
          goto theend;
-         
+
       Unt len = STRLEN(pat_esc) + 10;
       ptr = alloc(len);
       eeSnprintf(ptr, len, "^\\s*\\zs\\V%s", pat_esc);
@@ -16704,7 +16704,7 @@ filterFromFiles(
             line_end = find_line_end(ptr);
             while (ptr < line_end) {
                if (fuzzyMatchStr_in_line(&ptr, leader, &len, NULL, &score)) {
-                  CS end_ptr = ctrl_x_mode_line_or_eval() 
+                  CS end_ptr = ctrl_x_mode_line_or_eval()
                      ? find_line_end(ptr) : find_word_end(ptr);
                   add_r = ins_compl_add_infercase(
                      ptr, (int)(end_ptr - ptr), p_ic, files.c[i], *dir, false, score
@@ -16934,7 +16934,7 @@ ins_compl_new_leader(void) {
       compl_restarting = true;
       if (p_ac)
          compl_autocomplete = true;
-      if (ins_complete(Ctrl_N, false) == FAIL)
+      if (insertModeCompletion(Ctrl_N, false) == FAIL)
          compl_cont_status = 0;
       compl_restarting = false;
    }
@@ -16981,7 +16981,7 @@ ins_compl_addleader(int c) {
       ins_compl_delete();
    if (stop_arrow() == FAIL)
       return;
-      
+
    int cc;
    if ((cc = mb_char2len(c)) > 1) {
       Byte buf[MB_MAXBYTES + 1];
@@ -17154,8 +17154,8 @@ set_ctrl_x_mode(Unt c) {
    case Ctrl_N:
       //^X^P means LOCAL expansion if nothing interrupted (eg we just started ^X mode, or there
       //were enough ^X's to cancel the previous mode, say ^X^F^X^X^P or ^P^X^X^X^P, see below)
-      //do normal expansion when interrupting a different mode (say ^X^F^X^P or ^P^X^X^P, see 
-      //below) nothing changes if interrupting mode 0, (eg, the flag doesn't change when going 
+      //do normal expansion when interrupting a different mode (say ^X^F^X^P or ^P^X^X^P, see
+      //below) nothing changes if interrupting mode 0, (eg, the flag doesn't change when going
       //to ADDING mode  -- Acevedo
       if (!(compl_cont_status & CONT_INTRPT))
          compl_cont_status |= CONT_LOCAL;
@@ -17163,10 +17163,10 @@ set_ctrl_x_mode(Unt c) {
          compl_cont_status &= ~CONT_LOCAL;
       //FALLTHROUGH
    default:
-      //If we have typed at least 2 ^X's... for modes != 0, we set compl_cont_status = 0 (eg, as 
+      //If we have typed at least 2 ^X's... for modes != 0, we set compl_cont_status = 0 (eg, as
       //if we had just started ^X mode). For mode 0, we set "compl_cont_mode" to an impossible
       //value, in both cases ^X^X can be used to restart the same mode (avoiding ADDING mode).
-      //Undocumented feature: In a mode != 0 ^X^P and ^X^X^P start 'complete' and local ^P 
+      //Undocumented feature: In a mode != 0 ^X^P and ^X^X^P start 'complete' and local ^P
       //expansions respectively. In mode 0 an extra ^X is needed since ^X^P goes to ADDING mode
       //-- Acevedo
       if (c == Ctrl_X) {
@@ -17198,9 +17198,9 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
    if (compl_curr_match || compl_leader.c || c == Ctrl_E) {
       CS ptr = NULL;
 
-      //If any of the original typed text has been changed, eg when ignorecase is set, we must 
+      //If any of the original typed text has been changed, eg when ignorecase is set, we must
       //add back-spaces to the redo buffer. We add as few as necessary to delete just the part
-      //of the original text that has changed. When using the longest match, edited the match or 
+      //of the original text that has changed. When using the longest match, edited the match or
       //used CTRL-E then don't use the current match.
       if (compl_curr_match != NULL && complUsedMatchS && c != Ctrl_E)
          ptr = compl_curr_match->cp_str.c;
@@ -17304,7 +17304,7 @@ ins_compl_cancel(void) {
    return ins_compl_stop(' ', ctrl_x_mode, true);
 }
 
-//Prepare for Insert mode completion, or stop it. Called just after typing a character in Insert 
+//Prepare for Insert mode completion, or stop it. Called just after typing a character in Insert
 //mode. Return true when the character is not to be inserted;
 private Boole
 ins_compl_prep(Unt c) {
@@ -17388,7 +17388,7 @@ ins_compl_prep(Unt c) {
    }
 
    if (compl_started || ctrl_x_mode == CTRL_X_FINISHED) {
-      //Show error message from attempted keyword completion (probably 'Pattern not found') until 
+      //Show error message from attempted keyword completion (probably 'Pattern not found') until
       //another key is hit, then go back to showing what mode we are in.
       showmode();
       if ((ctrl_x_mode_normal() && c != Ctrl_N && c != Ctrl_P
@@ -17404,7 +17404,7 @@ ins_compl_prep(Unt c) {
     may_trigger_modechanged();
 
    //reset continue_* if we left expansion-mode, if we stay they'll be
-   //(re)set properly in ins_complete()
+   //(re)set properly in insertModeCompletion()
    if (!eeIsCtrlXKey(c)) {
       compl_cont_status = 0;
       compl_cont_mode = 0;
@@ -17444,7 +17444,7 @@ ins_compl_fixRedoBufForLeader(CS ptr_arg) {
       inpAppendLitToRedoBuff(ptr + len, -1);
 }
 
-//Loop through the list of portals, loaded-books or non-loaded-books (depending on flag) 
+//Loop through the list of portals, loaded-books or non-loaded-books (depending on flag)
 //starting from book and looking for a non-scanned book (other than curBook).  curBook is special:
 //if it is called with book=curBook then it has to be the first call for a given flag/expansion.
 //Return the book to scan, if any, otherwise returns curBook -- Acevedo
@@ -17556,7 +17556,7 @@ get_insert_callback(int type) {
    return curBook->o.thesaurusFn ? curBook->o.thesaurusFn : &thesaurusCbS;
 }
 
-//Execute user defined complete function 'completefunc', 'omnifunc' or 'thesaurusfunc', and get 
+//Execute user defined complete function 'completefunc', 'omnifunc' or 'thesaurusfunc', and get
 //matches in "matches". "type" can be one of CTRL_X_OMNI, CTRL_X_FUNCTION, or CTRL_X_THESAURUS.
 //Callback function "cb" is set if triggered by a function in the 'cpt' option; otherwise, it's null
 private void
@@ -17582,7 +17582,7 @@ expand_by_function(int type, CS base, Callback* cb) {
    args[2].tag = VAR_UNKNOWN;
 
    Pos pos = curPor->cursor;
-   //Lock the text to avoid weird things from happening. Also disallow switching to another portal, 
+   //Lock the text to avoid weird things from happening. Also disallow switching to another portal,
    //it should not be needed and may end up in Insert mode in a different book.
    ++textlock;
 
@@ -17668,7 +17668,7 @@ ins_compl_add_tv(Var* tv, Unt dir, int fast) {
       userDecos[1] = getUserDecoration(user_kind_hlname);
 
       bagGetVar(tv->bag, tConst("user_data"), &user_data);
-      if (bagGetString(tv->bag, tConst("icase"), false) != NULL 
+      if (bagGetString(tv->bag, tConst("icase"), false) != NULL
             && bagGetNumber(tv->bag, tConst("icase"))
       )
          flags |= CP_ICASE;
@@ -17676,7 +17676,7 @@ ins_compl_add_tv(Var* tv, Unt dir, int fast) {
          dup = bagGetNumber(tv->bag, tConst("dup"));
       if (bagGetString(tv->bag, tConst("empty"), false) != NULL)
          empty = bagGetNumber(tv->bag, tConst("empty"));
-      if (bagGetString(tv->bag, tConst("equal"), false) != NULL 
+      if (bagGetString(tv->bag, tConst("equal"), false) != NULL
             && bagGetNumber(tv->bag, tConst("equal"))
       )
          flags |= CP_EQUAL;
@@ -17782,12 +17782,12 @@ set_completion(ColNr startcol, List *list) {
    compl_curr_match = compl_first_match;
    int no_select = compl_no_select || compl_longest;
    if (compl_no_insert || no_select) {
-      ins_complete(K_DOWN, false);
+      insertModeCompletion(K_DOWN, false);
       if (no_select)
          //Down/Up has no real effect.
-         ins_complete(K_UP, false);
+         insertModeCompletion(K_UP, false);
    } else
-      ins_complete(Ctrl_N, false);
+      insertModeCompletion(Ctrl_N, false);
    compl_enter_selects = compl_no_insert;
 
    //Lazily show the popup menu, unless we got interrupted.
@@ -17970,12 +17970,12 @@ ins_compl_update_sequence_numbers(void) {
             number = match->cp_number;
             break;
          }
-      } 
+      }
       if (match) {
          //go up and assign all numbers which are not assigned yet
          for (match = match->next; match != NULL && match->cp_number == -1; match = match->next)
             match->cp_number = ++number;
-      } 
+      }
    } else { //BACKWARD
       //Search forwards (upwards) for the first valid (!= -1)
       //number. This should normally succeed already at the first loop cycle, so it's fast!
@@ -18182,10 +18182,10 @@ process_next_cpt_value(
    if (*st->e_cpt == '.' && !curBook->scanned && !skip_source && !insertCompletionTimeExpiredP) {
       st->scannedBook = curBook;
       st->first_match_pos = *start_match_pos;
-      //Move the cursor back one character so that ^N can match the word immediately after 
+      //Move the cursor back one character so that ^N can match the word immediately after
       //the cursor.
       if (ctrl_x_mode_normal() && (!fuzzy_collect && dec(&st->first_match_pos) < 0)) {
-          //Move the cursor to after the last character in the book, so that word at start of 
+          //Move the cursor to after the last character in the book, so that word at start of
           //book is found correctly.
           st->first_match_pos.lnum = st->scannedBook->mem.lineCount;
           st->first_match_pos.col = ml_get_len(st->first_match_pos.lnum);
@@ -18283,7 +18283,7 @@ get_next_include_file_completion(Unt insertCompletionType) {
       compl_pattern.c, compl_direction,
       (int)compl_pattern.len, false, false,
       (insertCompletionType == CTRL_X_PATH_DEFINES && !(compl_cont_status & CONT_SOL))
-       ? FIND_DEFINE : FIND_ANY, 
+       ? FIND_DEFINE : FIND_ANY,
       1L, ACTION_EXPAND, (LineNr)1, (LineNr)MAXLNUM, false, compl_autocomplete
    );
 }
@@ -18295,14 +18295,14 @@ get_next_dict_tsr_completion(int insertCompletionType, CS dict, int dict_f) {
       expand_by_function(insertCompletionType, compl_pattern.c, NULL);
    else {
       ins_compl_dictionaries(
-         dict 
+         dict
             ? dict
             : (insertCompletionType == CTRL_X_THESAURUS ? curBook->o.thesaurus : curBook->o.dictionary),
          compl_pattern.c,
          dict ? dict_f : 0,
          insertCompletionType == CTRL_X_THESAURUS
       );
-   } 
+   }
 }
 
 //Get the next set of tag names matching "compl_pattern".
@@ -18320,13 +18320,13 @@ get_next_tag_completion(void) {
    g_tag_at_cursor = true;
    if (find_tags(
          compl_pattern.c,
-         TAG_REGEXP | TAG_NAMES | TAG_NOIC | TAG_INS_COMP 
+         TAG_REGEXP | TAG_NAMES | TAG_NOIC | TAG_INS_COMP
             | (ctrl_x_mode_not_default() ? TAG_VERBOSE : 0),
          TAG_MANY, curBook->fullFileName, OUT &matches
       ) == OK && matches.len > 0
    )
       ins_compl_add_matches(OUT &matches, p_ic);
-   deleteArena(matches.a); 
+   deleteArena(matches.a);
    g_tag_at_cursor = false;
    p_ic = save_p_ic;
 }
@@ -18462,11 +18462,11 @@ get_next_filename_completion(void) {
 
    ExpandMatch matches = {};
    matches.a = createArena();
-   if (expand_wildcards(1, &compl_pattern.c, EW_FILE|EW_DIR|EW_ADDSLASH|EW_SILENT, OUT &matches) 
+   if (expand_wildcards(1, &compl_pattern.c, EW_FILE|EW_DIR|EW_ADDSLASH|EW_SILENT, OUT &matches)
          != OK) {
       deleteArena(matches.a);
       return;
-   } 
+   }
 
    //May change home directory back to "~".
    tilde_replace(compl_pattern.c, OUT &matches);
@@ -18513,7 +18513,7 @@ get_next_filename_completion(void) {
 
    if (matches.len > 0)
       ins_compl_add_matches(OUT &matches, p_wic);
-   deleteArena(matches.a); 
+   deleteArena(matches.a);
 }
 
 //Get the next set of command-line completions matching "compl_pattern".
@@ -18567,7 +18567,7 @@ ins_compl_get_next_word_or_line(
 
       if (compl_status_adding() && len == compl_length) {
          if (cur_match_pos->lnum < scannedBook->mem.lineCount) {
-            //Try next line, if any. the new word will be "join" as if the normal command "J" was 
+            //Try next line, if any. the new word will be "join" as if the normal command "J" was
             //used. IOSIZE is always greater than compl_length, so the next STRNCPY always
             //works -- Acevedo
             STRNCPY(IObuff, ptr, len);
@@ -18625,7 +18625,7 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
    if (st->scannedBook->o.inferCase)
       p_scs = false;
 
-   //Buffers other than curBook are scanned from the beginning or the end but never from the 
+   //Buffers other than curBook are scanned from the beginning or the end but never from the
    //middle, thus setting nowrapscan in this buffer is a good idea, on the other hand, we always set
    //wrapscan for curBook to avoid missing matches -- Acevedo,Webb
    if (!inCurBook)
@@ -18650,7 +18650,7 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
                 st->cur_match_pos, compl_direction, compl_pattern.c);
       else
          found_new_match = searchit(NULL, st->scannedBook, st->cur_match_pos,
-               NULL, compl_direction, compl_pattern, 
+               NULL, compl_direction, compl_pattern,
                1L, SEARCH_KEEP + SEARCH_NFMSG, RE_LAST, NULL);
       --msg_silent;
       if (!compl_started || st->set_match_pos) {
@@ -18719,7 +18719,7 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
    return found_new_match;
 }
 
-//Return the callback function associated with "p" if it refers to a user-defined function in the 
+//Return the callback function associated with "p" if it refers to a user-defined function in the
 //'complete' option. The "idx" parameter is used for indexing callback entries.
 private Callback *
 get_callback_if_cfn(CS p) {
@@ -19066,7 +19066,7 @@ ins_compl_get_exp(Pos* ini) {
       }
 
       if (compl_autocomplete && type == CTRL_X_FUNCTION)
-         //LSP servers may sporadically take >1s to respond (e.g., while loading modules), but 
+         //LSP servers may sporadically take >1s to respond (e.g., while loading modules), but
          //other sources might already have matches. To show results quickly use a short timeout
          //for keyword completion. Allow longer timeout for non-keyword completion
          //where only function based sources (e.g. LSP) are active.
@@ -19116,7 +19116,7 @@ ins_compl_get_exp(Pos* ini) {
       if (!compl_dir_forward()) {
          while (compl_curr_match->prev && !match_at_original_text(compl_curr_match->prev))
             compl_curr_match = compl_curr_match->prev;
-      } 
+      }
    }
    cpt_sources_index = -1;
    compl_started = true;
@@ -19274,7 +19274,7 @@ ins_compl_insert(int move_cursor) {
    Unt leader_len = ins_compl_leader_len();
    CS has_multiple = firstOccurrence(cp_str, '\n');
 
-   //Since completion sources may provide matches with varying start positions, insert only the 
+   //Since completion sources may provide matches with varying start positions, insert only the
    //portion of the match that corresponds to the intended replacement range
    if (cpt_sources_array) {
       int cpt_idx = compl_shown_match->indexOfSourceInCpt;
@@ -19307,7 +19307,7 @@ ins_compl_insert(int move_cursor) {
    ins_compl_allocBag(compl_shown_match);
 }
 
-//Show the file name for the completion match (if any). Truncate the file name to avoid a wait 
+//Show the file name for the completion match (if any). Truncate the file name to avoid a wait
 //for return
 private void
 ins_compl_show_filename(void) {
@@ -19334,8 +19334,8 @@ ins_compl_show_filename(void) {
    redrawCommlineG = false;       //don't overwrite!
 }
 
-//Find the appropriate completion item when 'complete' ('cpt') includes a 'max_matches' postfix. 
-//In this case, we search for a match where 'cp_in_match_array' is set, indicating that the match 
+//Find the appropriate completion item when 'complete' ('cpt') includes a 'max_matches' postfix.
+//In this case, we search for a match where 'cp_in_match_array' is set, indicating that the match
 //is also present in 'displayedCompletionsS'.
 private InsertCompletion *
 find_next_match_in_menu(void) {
@@ -19449,15 +19449,15 @@ find_next_completion_match(
 }
 
 //Fill in the next completion in the current direction.
-//If "allow_get_expansion" is true, then we may call ins_compl_get_exp() to get more completions. 
+//If "allow_get_expansion" is true, then we may call ins_compl_get_exp() to get more completions.
 //If it is false, then we just do nothing when there are no more completions in a given direction.
 //The latter case is used when we are still in the middle of finding completions, to allow browsing
 //through the ones found so far. Return the total number of matches, or -1 if still unknown -- webb.
 //
 //compl_curr_match is currently being used by ins_compl_get_exp(), so we use compl_shown_match here.
 //
-//Note that this function may be called recursively once only. First with "allow_get_expansion" 
-//true, which calls ins_compl_get_exp(), which in turn calls this function with 
+//Note that this function may be called recursively once only. First with "allow_get_expansion"
+//true, which calls ins_compl_get_exp(), which in turn calls this function with
 //"allow_get_expansion" false.
 private int
 ins_compl_next(
@@ -19537,7 +19537,7 @@ ins_compl_next(
       //display the updated popup menu
       ins_compl_show_pum();
 
-      //Delete old text to be replaced, since we're still searching and don't want to match 
+      //Delete old text to be replaced, since we're still searching and don't want to match
       //ourselves!
       ins_compl_delete();
    }
@@ -19555,7 +19555,7 @@ ins_compl_next(
    return num_matches;
 }
 
-//Check if the current completion source exceeded its timeout. If so, stop collecting 
+//Check if the current completion source exceeded its timeout. If so, stop collecting
 //& halve the timeout
 private void
 check_elapsed_time(void) {
@@ -19657,7 +19657,7 @@ ins_compl_key2count(Unt c) {
    return 1;
 }
 
-//Return true if completion with "c" should insert the match, false if only to change the 
+//Return true if completion with "c" should insert the match, false if only to change the
 //currently selected completion.
 private Boole
 shouldNewCharInsertTheMatch(int c) {
@@ -19853,7 +19853,7 @@ get_cmdline_compl_info(CS line, ColNr curs_col) {
    return OK;
 }
 
-//Set global variables related to completion: compl_col, compl_length, compl_pattern and 
+//Set global variables related to completion: compl_col, compl_length, compl_pattern and
 //cpt_compl_pattern.
 private int
 set_compl_globals(int startcol, ColNr curs_col, int is_cpt_compl) {
@@ -19886,9 +19886,9 @@ set_compl_globals(int startcol, ColNr curs_col, int is_cpt_compl) {
    return OK;
 }
 
-//Get the pattern, column and length for user defined completion ('omnifunc', 'completefunc' and 
+//Get the pattern, column and length for user defined completion ('omnifunc', 'completefunc' and
 //'thesaurusfunc').
-//Callback function "cb" is set if triggered by a function in the 'cpt' option; otherwise, it is 
+//Callback function "cb" is set if triggered by a function in the 'cpt' option; otherwise, it is
 //null. "startcol", when not NULL, contains the column returned by function.
 private int
 get_userdefined_compl_info(ColNr curs_col, Callback* cb, int* startcol) {
@@ -19936,7 +19936,7 @@ get_userdefined_compl_info(ColNr curs_col, Callback* cb, int* startcol) {
    if (startcol)
       *startcol = col;
 
-   //Return value -2 means the user complete function wants to cancel the complete without an 
+   //Return value -2 means the user complete function wants to cancel the complete without an
    //error, do the same if the function did not execute successfully.
    if (col == -2 || aborting())
       return FAIL;
@@ -19984,7 +19984,7 @@ compl_get_info(CS line, int startcol, ColNr curs_col, OUT Boole* line_invalid) {
          return FAIL;
       *line_invalid = true;   //"line" may have become invalid
    } else {
-      internal_error(S"ins_complete()");
+      internal_error(S"insertModeCompletion()");
       return FAIL;
    }
 
@@ -19992,9 +19992,9 @@ compl_get_info(CS line, int startcol, ColNr curs_col, OUT Boole* line_invalid) {
 }
 
 //Continue an interrupted completion mode search in "line".
-//If this same ctrl_x_mode has been interrupted use the text from "compl_startpos" to the cursor 
-//as a pattern to add a new word instead of expand the one before the cursor, in word-wise if 
-//"compl_startpos" is not in the same line as the cursor then fix it (the line has been split 
+//If this same ctrl_x_mode has been interrupted use the text from "compl_startpos" to the cursor
+//as a pattern to add a new word instead of expand the one before the cursor, in word-wise if
+//"compl_startpos" is not in the same line as the cursor then fix it (the line has been split
 //because it was longer than 'tw').  if SOL is set then skip the previous pattern, a word
 //at the beginning of the line has been inserted, we'll look for that.
 private void
@@ -20003,7 +20003,7 @@ ins_compl_continue_search(CS line) {
    compl_cont_status &= ~CONT_INTRPT;   //remove INTRPT
    if (ctrl_x_mode_normal() || ctrl_x_mode_path_patterns() || ctrl_x_mode_path_defines()) {
       if (compl_startpos.lnum != curPor->cursor.lnum) {
-         //line (probably) wrapped, set compl_startpos to the first non_blank in the line, if it 
+         //line (probably) wrapped, set compl_startpos to the first non_blank in the line, if it
          //is not a wordchar include it to get a better pattern, but then we don't
          //want the "\\<" prefix, check it below
          compl_col = (ColNr)getwhitecols(line);
@@ -20011,7 +20011,7 @@ ins_compl_continue_search(CS line) {
          compl_startpos.lnum = curPor->cursor.lnum;
          compl_cont_status &= ~CONT_SOL;   //clear SOL if present
       } else {
-         //S_IPOS was set when we inserted a word that was at the beginning of the line, which 
+         //S_IPOS was set when we inserted a word that was at the beginning of the line, which
          //means that we'll go to SOL mode but first we need to redefine compl_startpos
          if (compl_cont_status & CONT_S_IPOS) {
             compl_cont_status |= CONT_SOL;
@@ -20121,7 +20121,7 @@ ins_compl_start(void) {
    Unt flags = CP_ORIGINAL_TEXT;
    if (p_ic)
       flags |= CP_ICASE;
-   if (!compl_orig_text.c 
+   if (!compl_orig_text.c
          || addMatchToList(
                compl_orig_text.c, (int)compl_orig_text.len, NULL, NULL, NULL, 0, flags, false, NULL,
                FUZZY_SCORE_NONE
@@ -20132,7 +20132,7 @@ ins_compl_start(void) {
       return FAIL;
    }
 
-   //showmode might reset the internal line pointers, so it must be called before 
+   //showmode might reset the internal line pointers, so it must be called before
    //line = ml_get(), or when this address is no longer needed.  -- Acevedo.
    if (!compl_autocomplete) {
       editSubmodeExtraMsgG = (CS)_("-- Searching...");
@@ -20179,7 +20179,7 @@ ins_compl_show_statusmsg(void) {
 
             if (compl_matches > 0)
                eeSnprintf(
-                  match_ref, sizeof(match_ref), _("match %d of %d"), 
+                  match_ref, sizeof(match_ref), _("match %d of %d"),
                   compl_curr_match->cp_number, compl_matches
                );
             else
@@ -20206,10 +20206,10 @@ ins_compl_show_statusmsg(void) {
    }
 }
 
-//Do Insert mode completion. Called when character "c" was typed, which has a meaning for 
+//Do Insert mode completion. Called when character "c" was typed, which has a meaning for
 //completion. Return OK if completion was done, FAIL if something failed (out of mem).
 private Unt
-ins_complete(Unt c, Boole enable_pum) {
+insertModeCompletion(Unt c, Boole enable_pum) {
    Elapsed matchCollectionStart; //Timestamp when match collection starts
 
    compl_direction = ins_compl_key2dir(c);
@@ -20325,8 +20325,8 @@ show_pum(int prev_cursorRow, int prev_leftCol) {
    isRedrawingDisabledG = save_isRedrawingDisabledG;
 }
 
-//Looks in the first "len" chars. of "src" for search-metachars. If dest is not NULL the chars. 
-//are copied there quoting (with a backslash) the metachars, and dest would be ZERO 
+//Looks in the first "len" chars. of "src" for search-metachars. If dest is not NULL the chars.
+//are copied there quoting (with a backslash) the metachars, and dest would be ZERO
 //terminated. Return the length (needed) of dest
 private unsigned
 quote_meta(CS dest, CS src, int len) {
@@ -20422,7 +20422,7 @@ is_cfn_refresh_always(void) {
    for (int i = 0; i < cpt_sources_count; i++) {
       if (cpt_sources_array[i].refreshAlways)
          return true;
-   } 
+   }
    return false;
 }
 
@@ -20436,7 +20436,7 @@ ins_compl_make_linear(void) {
    compl_first_match->prev = NULL;
 }
 
-//Remove the matches linked to the current completion source (as indicated by cpt_sources_index) 
+//Remove the matches linked to the current completion source (as indicated by cpt_sources_index)
 //from the completion list.
 private InsertCompletion *
 remove_old_matches(void) {
@@ -20516,7 +20516,7 @@ get_cfn_completion_matches(Callback* cb) {
    }
 }
 
-//Retrieve completion matches from functions in the 'cpt' option where the 'refresh:always' 
+//Retrieve completion matches from functions in the 'cpt' option where the 'refresh:always'
 //flag is set
 private void
 cpt_compl_refresh(void) {
@@ -20585,8 +20585,8 @@ copyGlobalToBookLocalCb(Callback* globcb, Callback* bookCb) {
       evCopyCallback(bookCb, globcb);
 }
 
-//Parse the @completefunc option value and set the callback function. Invoked when @completefunc 
-//is set. The option value can be a name of a function (string), or function(<name>) or 
+//Parse the @completefunc option value and set the callback function. Invoked when @completefunc
+//is set. The option value can be a name of a function (string), or function(<name>) or
 //funcref(<name>) or a lambda expression.
 pub CS
 setCompletefunc(OptionChange* cha) {
@@ -20631,7 +20631,7 @@ pub CS
 setOmnifunc(OptionChange* cha) {
    if (!cha->newVal.string || *cha->newVal.string == ZERO)
       return e_invalid_argument;
-      
+
    if (optSetCallback(OUT &omniFnS, cha->newVal.string) == FAIL)
       return e_invalid_argument;
 
@@ -20639,7 +20639,7 @@ setOmnifunc(OptionChange* cha) {
    return NULL;
 }
 
-//Parse @complete option and initialize F{func} callbacks. Free any existing callbacks and 
+//Parse @complete option and initialize F{func} callbacks. Free any existing callbacks and
 //allocate new ones. Only F{func} entries are processed; others are ignored.
 pub Unt
 setCompletionCallbacks(OptionChange *cha) {
@@ -20819,7 +20819,7 @@ internal_format(
                if (wcc < 2)
                   wcc++;
            }
-           
+
            if (curPor->cursor.col == 0 && WHITECHAR(cc))
                break;      //only spaces in front of text
 
@@ -20973,9 +20973,9 @@ internal_format(
 
       if (first_line) {
           if ((flags & INSCHAR_COM_LIST) == 0) {
-             //This section is for auto-wrap of numeric lists. When not in insert mode (i.e. 
-             //format_lines()), the INSCHAR_COM_LIST flag will be set and openLine() will handle 
-             //it (as seen above). The code here (and in get_number_indent()) will recognize 
+             //This section is for auto-wrap of numeric lists. When not in insert mode (i.e.
+             //format_lines()), the INSCHAR_COM_LIST flag will be set and openLine() will handle
+             //it (as seen above). The code here (and in get_number_indent()) will recognize
              //comments if needed...
              if (second_indent < 0 && has_format_option(FO_Q_NUMBER))
                  second_indent = get_number_indent(curPor->cursor.lnum - 1);
@@ -20983,9 +20983,9 @@ internal_format(
                if (leader_len > 0 && second_indent - leader_len > 0) {
                    int padding = second_indent - leader_len;
 
-                   //We started at the first_line of a numbered list that has a comment. the 
+                   //We started at the first_line of a numbered list that has a comment. the
                    //openLine() function has inserted the proper comment leader and positioned
-                   //the cursor at the end of the split line. Now we add the additional whitespace 
+                   //the cursor at the end of the split line. Now we add the additional whitespace
                    //needed after the comment leader for the numbered list.
                    for (int i = 0; i < padding; i++)
                       ins_str(S" ", 1);
@@ -20997,7 +20997,7 @@ internal_format(
           first_line = false;
       }
 
-      //Check if cursor is not past the ZERO off the line, expression indent may have added 
+      //Check if cursor is not past the ZERO off the line, expression indent may have added
       //or removed indent.
       curPor->cursor.col += startcol;
       len = ml_get_curline_len();
@@ -21024,9 +21024,9 @@ internal_format(
    }
 }
 
-//Blank lines, and lines containing only the comment leader, are left untouched by the 
+//Blank lines, and lines containing only the comment leader, are left untouched by the
 //formatting. The function returns true in this case.  It also returns true when a line starts
-//with the end of a comment ('e' in comment flags), so that this line is skipped, and not 
+//with the end of a comment ('e' in comment flags), so that this line is skipped, and not
 //joined to the previous line.  A new paragraph starts after a blank line, or when the
 //comment leader changes -- webb.
 pub int
@@ -21077,8 +21077,8 @@ paragraph_start(LineNr lnum) {
          //change of comment leader.
          ||  !same_leader(lnum - 1, leader_len, leader_flags, next_leader_len, next_leader_flags)
    ){
-      return true;      
-   } 
+      return true;
+   }
 
    return false;
 }
@@ -21098,9 +21098,9 @@ whAutoFormat(Boole trailblank, Boole prev_line) {   //may start in previous line
    //may remove added space
    checkAutoFormat(false);
 
-   //Don't format in Insert mode when the cursor is on a trailing blank, the user might insert 
+   //Don't format in Insert mode when the cursor is on a trailing blank, the user might insert
    //normal text next. Also skip formatting when "1" is in 'formatoptions' and there is a single
-   //character before the cursor. Otherwise the line would be broken and when typing another 
+   //character before the cursor. Otherwise the line would be broken and when typing another
    //non-white next they are not joined back together.
    int wasatend = (pos.col == ml_get_curline_len());
    if (*old != ZERO && !trailblank && wasatend) {
@@ -21144,8 +21144,8 @@ whAutoFormat(Boole trailblank, Boole prev_line) {   //may start in previous line
    } else
       check_cursor_col();
 
-   //Insert mode: If the cursor is now after the end of the line while it previously wasn't, 
-   //the line was broken. Because of the rule above we need to add a space when 'w' is in 
+   //Insert mode: If the cursor is now after the end of the line while it previously wasn't,
+   //the line was broken. Because of the rule above we need to add a space when 'w' is in
    //@formatoptions to keep a paragraph formatted.
    if (!wasatend && has_format_option(FO_WHITE_PAR)) {
       CS new = ml_get_curline();

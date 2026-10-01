@@ -1482,47 +1482,6 @@ call_func_retlist(Byte* func, int argc, Var* argv) {
    return returnVar.list;
 }
 
-//Evaluate "arg", which is 'foldexpr'. Note: caller must set "curPor" to match "arg".
-//Return the foldlevel, and any character preceding it in "*cp". Don't give error messages.
-pub int
-eval_foldexpr(Portal *wp, int *cp) {
-   ScriptPos saved_sctx = scriptPosG;
-
-   CS arg = skipwhite(wp->o.foldExpr);
-   scriptPosG = wp->o.scriptLocs[PORTAL_foldExpr];
-
-   ++emsg_off;
-   ++textlock;
-   *cp = ZERO;
-
-   //Evaluate the expression. If the expression is "FuncName()", call the function directly.
-   Long   retval;
-   Var tv;
-   if (eval0_simple_funccal(arg, OUT &tv, &EVALARG_EVALUATE) == FAIL)
-      retval = 0;
-   else {
-      //If the result is a number, just return the number.
-      if (tv.tag == VAR_NUMBER)
-         retval = tv.number;
-      ei (tv.tag != VAR_STRING || tv.string == NULL)
-         retval = 0;
-      else {
-         //If the result is a string, check if there is a non-digit before the number.
-         CS s = tv.string;
-         if (*s != ZERO && !EE_ISDIGIT(*s) && *s != '-')
-            *cp = *s++;
-         retval = atol((char *)s);
-      }
-      clearVar(&tv);
-   }
-   --emsg_off;
-   --textlock;
-   clear_evalarg(&EVALARG_EVALUATE, NULL);
-   scriptPosG = saved_sctx;
-
-   return (int)retval;
-}
-
 //}}}
 //{{{lvalues
 

@@ -208,7 +208,7 @@ private void u_doit(int startcount);
 private void u_undoredo(Boole undo);
 private void u_undo_end(
    Boole did_undo,  //just did an undo
-   Boole absolute   //used ":undo N"
+   Boole absolute   //used ";undo N"
 );
 private void u_unch_branch(UndoHeader* uhp);
 private UndoEntry * u_get_headentry(void);
@@ -277,7 +277,7 @@ private int op_replace(Operator *oper, Unt c);
 private void op_tilde(Operator* oper);
 private Boole swapchars(Unt opTy, Pos* pos, int length);
 private int get_last_leader_offset(CS line, Byte **flags);
-private int do_addsub(
+private int addSubtractImpl(
    int opTy,
    Pos* pos,
    int length,
@@ -312,7 +312,7 @@ private CS skipStringLiteral(CS p);
 //}}}
 //{{{sortin' and filterin'
 
-//":ascii" and "ga".
+//";ascii" and "ga".
 pub void
 do_ascii(Invocation*){
    int cval;
@@ -344,7 +344,7 @@ do_ascii(Invocation*){
          eeSnprintf(buf2, sizeof(buf2), "  <M-%s>", (char *)transchar(c & 0x7f));
       } else {
          buf2[0] = ZERO;
-      } 
+      }
       eeSnprintf(
          IObuff, IOSIZE, _("<%s>%s%s  %d,  Hex %02x"), transchar(c), buf1, buf2, cval, cval
       );
@@ -373,7 +373,7 @@ do_ascii(Invocation*){
    msg(IObuff);
 }
 
-//":left", ":center" and ":right": align text.
+//";left", ";center" and ";right": align text.
 pub void
 c_align(Invocation* invo) {
    int      len;
@@ -399,7 +399,7 @@ c_align(Invocation* invo) {
       return;
 
    int new_indent;
-   for (curPor->cursor.lnum = invo->line1; curPor->cursor.lnum <= invo->line2; 
+   for (curPor->cursor.lnum = invo->line1; curPor->cursor.lnum <= invo->line2;
          ++curPor->cursor.lnum
    ) {
       if (invo->id == C_left)      //left align
@@ -431,7 +431,7 @@ c_align(Invocation* invo) {
                   }
                   --new_indent;
                }
-            } 
+            }
          }
       }
       if (new_indent < 0)
@@ -548,7 +548,7 @@ sort_compare(const void *s1, const void *s2) {
     return result;
 }
 
-//":sort".
+//";sort".
 pub void
 c_sort(Invocation* invo) {
    RegMatch   regmatch;
@@ -785,7 +785,7 @@ sortend:
       emsg(_(e_interrupted));
 }
 
-//":uniq".
+//";uniq".
 pub void
 c_uniq(Invocation* invo) {
    RegMatch   regmatch;
@@ -971,7 +971,7 @@ uniqend:
       emsg(_(e_interrupted));
 }
 
-//:move command - move lines line1-line2 to line dest
+//;move command - move lines line1-line2 to line dest
 //return FAIL for failure, OK otherwise
 pub int
 do_move(LineNr line1, LineNr line2, LineNr dest) {
@@ -1000,14 +1000,12 @@ do_move(LineNr line1, LineNr line2, LineNr dest) {
       return OK;
    }
 
-    num_lines = line2 - line1 + 1;
+   num_lines = line2 - line1 + 1;
 
-    /*
-     * First we copy the old text to its new location -- webb
-     * Also copy the flag that ":global" command uses.
-     */
+   //First we copy the old text to its new location -- webb
+   //Also copy the flag that ";global" command uses.
    if (u_save(dest, dest + 1) == FAIL)
-   return FAIL;
+      return FAIL;
    for (extra = 0, l = line1; l <= line2; l++) {
       str = copySubstr(ml_get(l + extra), ml_get_len(l + extra));
       if (str) {
@@ -1067,7 +1065,7 @@ do_move(LineNr line1, LineNr line2, LineNr dest) {
    if (!global_busy) {
       smsg(NGETTEXT("%ld line moved", "%ld lines moved", num_lines),
             (long)num_lines);
-   } 
+   }
 
    //Leave the cursor on the last of the moved lines.
    if (dest >= line1)
@@ -1087,7 +1085,7 @@ do_move(LineNr line1, LineNr line2, LineNr dest) {
    return OK;
 }
 
-//":copy"
+//";copy"
 private void
 doCopy(LineNr line1, LineNr line2, LineNr n) {
    CS p;
@@ -1156,9 +1154,8 @@ prevcmd_is_set(void) {
     return true;
 }
 
-//Handle the ":!cmd" command.   Also for ":r !cmd" and ":w !cmd"
-//Bangs in the argument are replaced with the previously entered command.
-//Remember the argument.
+//Handle the ";!cmd" command. Also for ";r !cmd" and ";w !cmd"
+//Bangs in the argument are replaced with the previously entered command. Remember the argument.
 pub void
 do_bang(
    int addr_count,
@@ -1176,14 +1173,14 @@ do_bang(
    CS p;
    int scroll_save = msg_scroll;
 
-   if (addr_count == 0) {     //:!
+   if (addr_count == 0) {     //;!
       msg_scroll = false;       //don't scroll here
       doFlushAllBooks();
       msg_scroll = scroll_save;
    }
 
-   //Try to find an embedded bang, like in ":!<cmd> ! [args]"
-   //":!!" is indicated by the 'forceit' variable.
+   //Try to find an embedded bang, like in ";!<cmd> ! [args]"
+   //";!!" is indicated by the 'forceit' variable.
    int ins_prevcmd = forceit;
 
    //Skip leading white space to avoid a strange error with some shells.
@@ -1248,7 +1245,7 @@ do_bang(
       inpAppendToRedoBuff((CS)"\n");
       bangredo = false;
    }
-   if (addr_count == 0) {     //:!
+   if (addr_count == 0) {     //;!
       //echo the command
       msg_start();
       msg_putchar(':');
@@ -1258,7 +1255,7 @@ do_bang(
       windgoto(msgRowG, msgColG);
 
       do_shell(newcmd, 0);
-   } else { //:range!
+   } else { //;range!
       //Careful: This may recursively call do_bang() again! (because of autocommands)
       do_filter(line1, line2, invo, newcmd, do_in, do_out);
       applyAutocomms(EVENT_SHELLFILTERPOST, NULL, NULL, false, curBook);
@@ -1271,11 +1268,11 @@ theend:
 
 //do_filter: filter lines through a command given by the user
 //
-//We mostly use temp files and the chCallShell() function here. This would normally be done using 
-//pipes on a Unix machine, but this is more portable to non-unix machines. The chCallShell() 
+//We mostly use temp files and the chCallShell() function here. This would normally be done using
+//pipes on a Unix machine, but this is more portable to non-unix machines. The chCallShell()
 //fn needs to be able to deal with redirection somehow, and should handle things like looking
-//at the PATH env. variable, and adding reasonable extensions to the command name given by the 
-//user. All reasonable versions of chCallShell() do this. Alternatively, if on Unix and redirecting 
+//at the PATH env. variable, and adding reasonable extensions to the command name given by the
+//user. All reasonable versions of chCallShell() do this. Alternatively, if on Unix and redirecting
 //input or output, but not both, and the @shelltemp option isn't set, use pipes.
 //We use input redirection if do_in is true. We use output redirection if do_out is true.
 private void
@@ -1370,8 +1367,8 @@ do_filter(
    windgoto((int)visibleRowsG - 1, 0);
    cursor_on();
 
-   //When not redirecting the output the command can write anything to the screen. Clear the 
-   //screen later. If do_in is false, this could be something like ":r !cat", which may
+   //When not redirecting the output the command can write anything to the screen. Clear the
+   //screen later. If do_in is false, this could be something like ";r !cat", which may
    //also mess up the screen, clear it later.
    if (!do_out || !do_in)
       redraw_later_clear();
@@ -1388,7 +1385,7 @@ do_filter(
    //When chCallShell() fails wait_return() is called to give the user a
    //chance to read the error messages. Otherwise errors are ignored, so you
    //can see the error messages from the command that appear on stdout; use 'u' to fix the text
-   //Switch to cooked mode when not redirecting stdin, avoids that something like ":r !cat" hangs.
+   //Switch to cooked mode when not redirecting stdin, avoids that something like ";r !cat" hangs.
    //Pass on the SHELL_DOOUT flag when the output is being redirected.
    if (chCallShell(text(cmd_buf), SHELL_FILTER | SHELL_COOKED | shell_flags).status != 0) {
       redraw_later_clear();
@@ -1440,7 +1437,7 @@ do_filter(
             markAdjust(line1 + read_linecount, line2, MAXLNUM, 0L, true);
          }
 
-         //Put cursor on first filtered line for ":range!cmd".
+         //Put cursor on first filtered line for ";range!cmd".
          //Adjust '[ and '] (set by bookWrite()).
          curPor->cursor.lnum = line1;
          del_lines(linecount, true);
@@ -1449,7 +1446,7 @@ do_filter(
          write_lnum_adjust(-linecount);      //adjust last line for next write
          foldUpdate(curPor, curBook->opStart.lnum, curBook->opEnd.lnum);
       } else {
-         //Put cursor on last new line for ":r !cmd".
+         //Put cursor on last new line for ";r !cmd".
          linecount = curBook->opEnd.lnum - curBook->opStart.lnum + 1;
          curPor->cursor.lnum = curBook->opEnd.lnum;
       }
@@ -1466,7 +1463,7 @@ do_filter(
          msgmore((long)linecount);
    } else {
 error:
-      //put cursor back in same position for ":w !cmd"
+      //put cursor back in same position for ";w !cmd"
       curPor->cursor = cursor_save;
       --no_wait_return;
       wait_return(false);
@@ -1496,7 +1493,7 @@ pub void
 do_shell(CS cmd, Unt flags) {   //may be SHELL_DOOUT when output is redirected
    int keep_termcap = !termcap_active;
 
-   //For autocommands we want to get the output on the current screen, to avoid having to type 
+   //For autocommands we want to get the output on the current screen, to avoid having to type
    //return below.
    msg_putchar('\r');         //put cursor at start of line
    if (!autocmd_busy && !keep_termcap)
@@ -1512,13 +1509,13 @@ do_shell(CS cmd, Unt flags) {   //may be SHELL_DOOUT when output is redirected
             break;
          }
       }
-   } 
-   //This windgoto is required for when the '\n' resulted in a 
+   }
+   //This windgoto is required for when the '\n' resulted in a
    //"delete line 1" command to the terminal.
    if (!termIsScreenBeingSwapped())
       windgoto(msgRowG, msgColG);
    cursor_on();
-   
+
    (void)chCallShell(text(cmd), SHELL_COOKED | flags);
    did_check_timestamps = false;
    need_check_timestamps = true;
@@ -1534,7 +1531,7 @@ do_shell(CS cmd, Unt flags) {   //may be SHELL_DOOUT when output is redirected
       if (msg_silent == 0)
          redraw_later_clear();
    } else {
-      //For ":sh" there is no need to call wait_return(), just redraw.
+      //For ";sh" there is no need to call wait_return(), just redraw.
       //Otherwise there is probably text on the screen that the user wants
       //to read before redrawing, so call wait_return().
 
@@ -1554,7 +1551,7 @@ prompt_for_number(int *mouse_used) {
    int      save_commlineRowG;
    int      save_State;
 
-   //When using ":silent" assume that <CR> was entered.
+   //When using ";silent" assume that <CR> was entered.
    if (mouse_used)
       msg_puts(_("Type number and <Enter> or click with the mouse (q or empty cancels): "));
    else
@@ -1612,11 +1609,11 @@ make_filter_cmd(CS cmd, NULLABLE CS inputFName, NULLABLE CS outputFName){
       STRCAT(stringBuild, " < ");
       STRCAT(stringBuild, inputFName);
    }
-    
+
    return stringBuild;
 }
 
-//Implementation of ":fixdel", also used by get_stty().
+//Implementation of ";fixdel", also used by get_stty().
 //<BS>    resulting <Del>
 // ^?      ^H
 //not ^?   ^?
@@ -1679,7 +1676,7 @@ renameBook(CS new_fname) {
       curBook->shortFileName = sfname;
       return FAIL;
    }
-   
+
    curBook->flags |= BF_NOTEDITED;
    if (xfname && *xfname != ZERO) {
       book = bookNew(fname, xfname, curPor->cursor.lnum, 0);
@@ -1698,10 +1695,10 @@ renameBook(CS new_fname) {
 //}}}
 //{{{writin' to files
 
-//":file[!] [fname]".
+//";file[!] [fname]".
 pub void
 c_file(Invocation* invo) {
-   //":0file" removes the file name.  Check for illegal uses ":3file", "0file name", etc.
+   //";0file" removes the file name.  Check for illegal uses ";3file", "0file name", etc.
    if (invo->addr_count > 0 && (*invo->arg != ZERO || invo->line2 > 0 || invo->addr_count > 1)) {
       emsg(_(e_invalid_argument));
       return;
@@ -1717,18 +1714,18 @@ c_file(Invocation* invo) {
    fileinfo(false, false, invo->forceit);
 }
 
-//":update".
+//";update".
 pub void
 c_update(Invocation* invo) {
    if (bookWasChanged(curBook))
       (void)do_write(invo);
 }
 
-//":write" and ":saveas".
+//";write" and ";saveas".
 pub void
 c_write(Invocation* invo) {
    if (invo->id == C_saveas) {
-      //:saveas does not take a range, uses all lines.
+      //;saveas does not take a range, uses all lines.
       invo->line1 = 1;
       invo->line2 = curBook->mem.lineCount;
    }
@@ -1748,7 +1745,7 @@ check_writable(CS fname) {
    return OK;
 }
 
-//Check if it is allowed to overwrite a file.  If flags has BF_NOTEDITED, BF_NEW or BF_READERR, 
+//Check if it is allowed to overwrite a file.  If flags has BF_NOTEDITED, BF_NEW or BF_READERR,
 //check for overwriting current file. May set invo->forceit if a dialog says it's OK to overwrite.
 //Return OK if it's OK, FAIL if it is not.
 private int
@@ -1759,9 +1756,9 @@ check_overwrite(
    CS fullFName,    //full path version of fname
    Boole other)       //writing under other name
 {
-   //Write to another file or flags set or not writing the whole file: overwriting only allowed 
+   //Write to another file or flags set or not writing the whole file: overwriting only allowed
    //with '!'. If "other" is false and bt_nofilename(book) is true, this must be
-   //writing an "acwrite" book to the same file as its fullFileName, and bookWrite() will only 
+   //writing an "acwrite" book to the same file as its fullFileName, and bookWrite() will only
    //allow writing with BufWriteCmd autocommands, so there is no need for an overwrite check.
    if (       (other
       || (!bt_nofilename(book)
@@ -1788,7 +1785,7 @@ check_overwrite(
          }
       }
 
-      //For ":w! filename" check that no swap file exists for "filename".
+      //For ";w! filename" check that no swap file exists for "filename".
       if (other && !emsg_silent) {
          CS swapname = fiBuildSwapOrUndoFname(fullFName, false);
          int r = eeFexists(swapname);
@@ -1897,8 +1894,8 @@ do_write(Invocation* invo) {
             retval = FAIL;
             goto theend;
          }
-         //Exchange the file names for the current and the alternate book. This makes it look 
-         //like we are now editing the book under the new name. Must be done before bookWrite(), 
+         //Exchange the file names for the current and the alternate book. This makes it look
+         //like we are now editing the book under the new name. Must be done before bookWrite(),
          //because if there is no file name and 'cpo' contains 'F', it will set the file name.
          fname = altBook->currFileName;
          altBook->currFileName = curBook->currFileName;
@@ -1939,8 +1936,8 @@ do_write(Invocation* invo) {
                 invo, invo->append, invo->forceit, true, false);
       if (retval == NOTDONE) {
          emsg(_(e_cannot_make_changes_modifiable_is_off));
-      } 
-      //After ":saveas fname" reset 'readonly'.
+      }
+      //After ";saveas fname" reset 'readonly'.
       if (invo->id == C_saveas) {
          if (retval == OK) {
             curBook->o.modifiable = true;
@@ -1958,7 +1955,7 @@ theend:
    return retval;
 }
 
-//Handle ":wnext", ":wNext" and ":wprevious" commands.
+//Handle ";wnext", ";wNext" and ";wprevious" commands.
 pub void
 c_wnext(Invocation* invo){
    int      i;
@@ -1975,7 +1972,7 @@ c_wnext(Invocation* invo){
 //}}}
 //{{{editing files
 
-//":wall", ":wqall" and ":xall": Write all changed files (and exit).
+//";wall", ";wqall" and ";xall": Write all changed files (and exit).
 pub void
 do_wqall(Invocation* invo){
    int error = 0;
@@ -2035,7 +2032,7 @@ isWritingForbidden(void) {
    if (IMMUTABLE) {
       emsg(_(e_file_not_written_writing_is_disabled_by_write_option));
       return false;
-   } 
+   }
    return false;
 }
 
@@ -2051,7 +2048,7 @@ check_readonly(OUT Boole* forceit, Book* book) {
    //We will send 0777 to check_file_readonly(), as the "perm" variable is
    //important for device checks but not here.
    if (!*forceit && (!book->o.modifiable
-         || (stat((char *)book->fullFileName, &st) >= 0 
+         || (stat((char *)book->fullFileName, &st) >= 0
                && check_file_readonly(book->fullFileName, 0777)))
    ) {
       if ((p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) && book->currFileName) {
@@ -2064,7 +2061,7 @@ check_readonly(OUT Boole* forceit, Book* book) {
             dialog_msg(buff, _("File permissions of \"%s\" are read-only.\n"
                      "It may still be possible to write it.\nDo you wish to try?"),
                 book->currFileName);
-         } 
+         }
 
          if (eeDialog_yesno(EE_QUESTION, NULL, buff, 2) == EE_YES) {
             //Set forceit, to force the writing of a readonly file
@@ -2147,7 +2144,7 @@ getfile(
 
 private int append_indent = 0;       //autoindent for first line
 
-//":insert" and ":append", also used by ":change"
+//";insert" and ";append", also used by ";change"
 pub void
 c_append(Invocation* invo) {
    CS theline;
@@ -2271,7 +2268,7 @@ c_append(Invocation* invo) {
    ex_no_reprint = true;
 }
 
-//":change"
+//";change"
 pub void
 c_change(Invocation* invo) {
    if (invo->line2 >= invo->line1 && u_save(invo->line1 - 1, invo->line2 + 1) == FAIL)
@@ -2292,7 +2289,7 @@ c_change(Invocation* invo) {
    check_cursor_lnum();
    deleted_lines_mark(invo->line1, (long)(invo->line2 - lnum));
 
-   //":append" on the line above the deleted lines.
+   //";append" on the line above the deleted lines.
    invo->line2 = invo->line1;
    c_append(invo);
 }
@@ -2307,7 +2304,7 @@ c_z(Invocation* invo) {
    int j;
    LineNr lnum = invo->line2;
 
-   //Vi compatible: ":z!" uses display height, without a count uses 'scroll'
+   //Vi compatible: ";z!" uses display height, without a count uses 'scroll'
    if (invo->forceit)
       bigness = visibleRowsG - 1;
    ei (!ONLY_ONE_PORTAL)
@@ -2323,7 +2320,7 @@ c_z(Invocation* invo) {
       ++x;
    while (*x == '-' || *x == '+') {
       ++x;
-   } 
+   }
 
    if (*x != 0) {
       if (!EE_ISDIGIT(*x)) {
@@ -2396,7 +2393,7 @@ c_z(Invocation* invo) {
          msg_putchar('\n');
 
          for (j = 1; j < visibleColsG; j++)
-            msg_putchar('-'); 
+            msg_putchar('-');
       }
 
       print_line(i, invo->flags & EXFLAG_LIST);
@@ -2420,7 +2417,7 @@ c_z(Invocation* invo) {
 //{{{substitutions
 
 private CS prevSubstS = NULL;   //previous substitute pattern
-private Boole globalNeedBeginlineS = false;   //call beginline() after ":g"
+private Boole globalNeedBeginlineS = false;   //call beginline() after ";g"
 
 //Flags that are kept between calls to :substitute.
 typedef struct {
@@ -2466,7 +2463,7 @@ check_regexp_delim(int c) {
 ///pattern/substitution/{flags}
 //
 //The usual escapes are supported as described in the regexp docs.
-//:S is the case-sensitive variant
+//;S is the case-sensitive variant
 //The & repeats previous substitute command
 pub void
 c_substitute(Invocation* invo) {
@@ -2508,7 +2505,7 @@ c_substitute(Invocation* invo) {
       which_pat = RE_LAST; //use last used regexp
    else
       which_pat = RE_SUBST; //use last substitute regexp new pattern and substitution
-      
+
    if ((invo->comm[0] == 's' || invo->comm[0] == 'S') && *cmd != ZERO && !SPACE_OR_TAB(*cmd)
       && firstOccurrence(S"0123456789cegriIp|\"", *cmd) == NULL
    ) {
@@ -2558,12 +2555,12 @@ c_substitute(Invocation* invo) {
       pat = (Text){null, 0};      //search_regcomp() will use previous pattern
       sub = copyStr(prevSubstS);
 
-      //Vi compatibility quirk: repeating with ":s" keeps the cursor in the
+      //Vi compatibility quirk: repeating with ";s" keeps the cursor in the
       //last column after using "$".
       endcolumn = (curPor->cursWant == MAXCOL);
    }
 
-   //Recognize ":%s/\n//" and turn it into a line join, which is much more efficient.
+   //Recognize ";%s/\n//" and turn it into a line join, which is much more efficient.
    //TODO: find a generic solution to make line-joining operations more
    //efficient, avoid allocating a string that grows in size.
    if (pat.len > 1 && STRCMP(pat.c, "\\n") == 0
@@ -2857,9 +2854,9 @@ c_substitute(Invocation* invo) {
             //2. If do_count is set only increase the counter.
             //   If do_ask is set, ask for confirmation.
             if (subflags.do_count) {
-               //For a multi-line match, put matchcol at the ZERO at the end of the line and 
+               //For a multi-line match, put matchcol at the ZERO at the end of the line and
                //set nmatch to one, so that we continue looking for a match on the next line.
-               //Avoids that ":s/\nB\@=//gc" get stuck.
+               //Avoids that ";s/\nB\@=//gc" get stuck.
                if (nmatch > 1) {
                   matchcol = (ColNr)STRLEN(sub_firstline);
                   nmatch = 1;
@@ -2888,7 +2885,6 @@ c_substitute(Invocation* invo) {
                while (subflags.do_ask) {
                   CS orig_line = NULL;
                   int len_change = 0;
-                  int save_p_lz = p_lz;
                   int save_p_fen = curPor->o.foldEnable;
 
                   curPor->o.foldEnable = false;
@@ -2896,12 +2892,9 @@ c_substitute(Invocation* invo) {
                   int save_isRedrawingDisabledG = isRedrawingDisabledG;
                   isRedrawingDisabledG = 0;
 
-                  //avoid calling drawUpdateScreen() in vgetorpeek()
-                  p_lz = false;
-
                   if (new_start) {
-                     //There already was a substitution, we would like to show this to the user. 
-                     //We cannot really update the line, it would change what matches.  
+                     //There already was a substitution, we would like to show this to the user.
+                     //We cannot really update the line, it would change what matches.
                      //Temporarily replace the line and change it back afterwards.
                      orig_line = copySubstr(ml_get(lnum), ml_get_len(lnum));
                      if (orig_line) {
@@ -2961,14 +2954,13 @@ c_substitute(Invocation* invo) {
                   msg_didout = false;   //don't scroll up
                   msgColG = 0;
                   gotoCommline(true);
-                  p_lz = save_p_lz;
 
                   //restore the line
                   if (orig_line)
                      ml_replace(lnum, orig_line, false);
 
                   need_wait_return = false; //no hit-return prompt
-                  if (typed == 'q' || typed == ESC || typed == Ctrl_C 
+                  if (typed == 'q' || typed == ESC || typed == Ctrl_C
                         || typed == extraInterruptCharG
                   ){
                      got_quit = true;
@@ -2997,9 +2989,9 @@ c_substitute(Invocation* invo) {
                setmouse();
 
                if (typed == 'n') {
-                  //For a multi-line match, put matchcol at the ZERO at the end of the line 
-                  //and set nmatch to one, so that we continue looking for a match on the next 
-                  //line. Avoids that ":%s/\nB\@=//gc" and ":%s/\n/,\r/gc" get stuck when 
+                  //For a multi-line match, put matchcol at the ZERO at the end of the line
+                  //and set nmatch to one, so that we continue looking for a match on the next
+                  //line. Avoids that ";%s/\nB\@=//gc" and ";%s/\n/,\r/gc" get stuck when
                   //pressing 'n'.
                   if (nmatch > 1) {
                      matchcol = (ColNr)STRLEN(sub_firstline);
@@ -3021,7 +3013,7 @@ c_substitute(Invocation* invo) {
                curBook->o.modifiable = false;
             }
             //Save flags for recursion.  They can change for e.g.
-            //:s/^/\=execute("s#^##gn")
+            //;s/^/\=execute("s#^##gn")
             subflags_save = subflags;
 
             //Disallow changing text or switching portal in an expression.
@@ -3061,7 +3053,7 @@ c_substitute(Invocation* invo) {
             if (nmatch == 1) {
                p1 = sub_firstline;
                if (curBook->hasTextprop) {
-                     int bytes_added = 
+                     int bytes_added =
                         sublen - 1 - (regmatch.endpos[0].col - regmatch.startpos[0].col);
 
                   //When text properties are changed, need to save for
@@ -3071,7 +3063,7 @@ c_substitute(Invocation* invo) {
                      )
                   ) {
                       apc_flags &= ~APC_SAVE_FOR_UNDO;
-                  } 
+                  }
                   //Offset for column byte number of the text property
                   //in the resulting buffer afterwards.
                   total_added += bytes_added;
@@ -3086,7 +3078,7 @@ c_substitute(Invocation* invo) {
                            )
                   ) {
                       apc_flags &= ~APC_SAVE_FOR_UNDO;
-                  } 
+                  }
                   total_added -= (ColNr)STRLEN( sub_firstline + regmatch.startpos[0].col);
 
                   //Props in the last line may be moved or deleted
@@ -3118,7 +3110,7 @@ c_substitute(Invocation* invo) {
             copy_len = regmatch.startpos[0].col - copycol;
             needed_len = copy_len + ((unsigned)STRLEN(p1) - regmatch.endpos[0].col) + sublen + 1;
             if (new_start == NULL) {
-               //Get some space for a temporary buffer to do the substitution into (and some 
+               //Get some space for a temporary buffer to do the substitution into (and some
                //extra space to avoid too many calls to alloc()/free()).
                new_start_len = needed_len + 50;
                new_start = allocZeroed(new_start_len);
@@ -3184,7 +3176,7 @@ c_substitute(Invocation* invo) {
 
             /*
              * Now the trick is to replace CTRL-M chars with a real line break. This would make
-             * it impossible to insert a CTRL-M in the text.  The line break can be avoided by 
+             * it impossible to insert a CTRL-M in the text.  The line break can be avoided by
              * preceding the CTRL-M with a backslash.  To be able to insert a backslash,
              * they must be doubled in the string and are halved here.
              */
@@ -3229,7 +3221,7 @@ c_substitute(Invocation* invo) {
             //4. If do_all is set, find next match.
             //Prevent endless loop with patterns that match empty
             //strings, e.g. :s/$/pat/g or :s/[a-z]* /(&)/g.
-            //But ":s/\n/#/" is OK.
+            //But ";s/\n/#/" is OK.
       skip:
             //We already know that we did the last subst when we are at
             //the end of the line, except that a pattern like
@@ -3244,10 +3236,10 @@ c_substitute(Invocation* invo) {
                       && !re_multiline(regmatch.regprog)));
             nmatch = -1;
 
-            //Replace the line in the buffer when needed.  This is skipped when there are more 
+            //Replace the line in the buffer when needed.  This is skipped when there are more
             //matches. The check for nmatch_tl is needed for when multi-line matching must replace
             //the lines before trying to do another match, otherwise "\@<=" won't work.
-            //When the match starts below where we start searching, also need to replace the line 
+            //When the match starts below where we start searching, also need to replace the line
             //first (using \zs after \n).
             if (lastone
                || nmatch_tl > 0
@@ -3257,7 +3249,7 @@ c_substitute(Invocation* invo) {
                || regmatch.startpos[0].lnum > 0
             ){
                 if (new_start) {
-                  //Copy the rest of the line, that didn't match. "matchcol" has to be adjusted, 
+                  //Copy the rest of the line, that didn't match. "matchcol" has to be adjusted,
                   //we use the end of the line as reference, because the substitute may
                   //have changed the number of characters. Same for "prev_matchcol".
                   STRCAT(new_start, sub_firstline + copycol);
@@ -3270,7 +3262,7 @@ c_substitute(Invocation* invo) {
                   if (text_props)
                      add_text_props(lnum, text_props, text_prop_count);
                   if (nmatch_tl > 0) {
-                     //Matched lines have now been substituted and are useless, delete them. 
+                     //Matched lines have now been substituted and are useless, delete them.
                      //The part after the match has been appended to new_start, we don't need
                      //it in the buffer.
                      ++lnum;
@@ -3309,7 +3301,7 @@ c_substitute(Invocation* invo) {
 
                //5. break if there is no other match on this line
                if (nmatch <= 0) {
-                  //If the match found didn't start where we were searching, do the next search in the 
+                  //If the match found didn't start where we were searching, do the next search in the
                   //line where we found the match.
                   if (nmatch == -1)
                      lnum -= regmatch.startpos[0].lnum;
@@ -3341,7 +3333,7 @@ outofmem:
 
    eeglFree(text_props);
 
-   //":s/pat//n" doesn't move the cursor
+   //";s/pat//n" doesn't move the cursor
    if (subflags.do_count)
       curPor->cursor = old_cursor;
 
@@ -3383,47 +3375,40 @@ outofmem:
    eeRegFree(regmatch.regprog);
    eeglFree(sub);
 
-   //Restore the flag values, they can be used for ":&&".
+   //Restore the flag values, they can be used for ";&&".
    subflags.do_all = save_do_all;
    subflags.do_ask = save_do_ask;
 }
 
-//Give message for number of substitutions. Can also be used after a ":global" command.
+//Give message for number of substitutions. Can also be used after a ";global" command.
 //Return true if a message was given.
 pub int
-do_sub_msg(int       count_only) {    //used 'n' flag for ":s"
+do_sub_msg(int       count_only) {    //used 'n' flag for ";s"
    //Only report substitutions when:
    //- command was typed by user, or number of changed lines > 0
    //- giving messages is not disabled by 'lazyredraw'
-   if (messaging()) {
 
-      if (gotInterruptG)
-         STRCPY(msg_buf, _("(Interrupted) "));
-      else
-         *msg_buf = ZERO;
+   if (gotInterruptG)
+      STRCPY(msg_buf, _("(Interrupted) "));
+   else
+      *msg_buf = ZERO;
 
-      CS msg_single = count_only
-          ? NGETTEXT("%ld match on %ld line", "%ld matches on %ld line", sub_nsubs)
-          : NGETTEXT("%ld substitution on %ld line", "%ld substitutions on %ld line", sub_nsubs);
-      CS msg_plural = count_only
-          ? NGETTEXT("%ld match on %ld lines", "%ld matches on %ld lines", sub_nsubs)
-          : NGETTEXT("%ld substitution on %ld lines", "%ld substitutions on %ld lines", sub_nsubs);
+   CS msg_single = count_only
+       ? NGETTEXT("%ld match on %ld line", "%ld matches on %ld line", sub_nsubs)
+       : NGETTEXT("%ld substitution on %ld line", "%ld substitutions on %ld line", sub_nsubs);
+   CS msg_plural = count_only
+       ? NGETTEXT("%ld match on %ld lines", "%ld matches on %ld lines", sub_nsubs)
+       : NGETTEXT("%ld substitution on %ld lines", "%ld substitutions on %ld lines", sub_nsubs);
 
-      eeSnprintfAdd(
-            msg_buf, sizeof(msg_buf), NGETTEXT(msg_single, msg_plural, sub_nlines),
-            sub_nsubs, (long)sub_nlines
-      );
+   eeSnprintfAdd(
+         msg_buf, sizeof(msg_buf), NGETTEXT(msg_single, msg_plural, sub_nlines),
+         sub_nsubs, (long)sub_nlines
+   );
 
-      if (msg(msg_buf))
-         //save message to display it after redraw
-         set_keep_msg(msg_buf, 0);
-      return true;
-   }
-   if (gotInterruptG) {
-      emsg(_(e_interrupted));
-      return true;
-   }
-   return false;
+   if (msg(msg_buf))
+      //save message to display it after redraw
+      set_keep_msg(msg_buf, 0);
+   return true;
 }
 
 //Get the previous substitute pattern.
@@ -3466,11 +3451,11 @@ global_exe_one(CS cmd, LineNr lnum) {
 //
 //where 'X' is a Command
 //
-//The command character (as well as the trailing slash) is optional, and is assumed to be 'p' if 
+//The command character (as well as the trailing slash) is optional, and is assumed to be 'p' if
 //missing.
 //
-//This is implemented in two passes: first we scan the file for the pattern and set a mark for 
-//each line that (not) matches. Secondly we execute the command for each line that has a mark. 
+//This is implemented in two passes: first we scan the file for the pattern and set a mark for
+//each line that (not) matches. Secondly we execute the command for each line that has a mark.
 //This is required because after deleting lines we do not know where to search for the next match.
 pub void
 c_global(Invocation* invo) {
@@ -3487,14 +3472,14 @@ c_global(Invocation* invo) {
    int which_pat;
 
    //When nesting the command works on one line.  This allows for
-   //":g/found/v/notfound/command".
+   //";g/found/v/notfound/command".
    if (global_busy && (invo->line1 != 1 || invo->line2 != curBook->mem.lineCount)) {
       //will increment global_busy to break out of the loop
       emsg(_(e_cannot_do_global_recursive_with_range));
       return;
    }
 
-   if (invo->forceit)          //":global!" is like ":vglobal"
+   if (invo->forceit)          //";global!" is like ";vglobal"
      type = 'v';
    else
      type = *invo->comm;
@@ -3502,7 +3487,7 @@ c_global(Invocation* invo) {
    which_pat = RE_LAST;       //default: use last used regexp
 
 
-   //undocumented feature: 
+   //undocumented feature:
    // "\/" and "\?": use previous search pattern.
    //     "\&": use previous substitute pattern.
    if (*cmd == '\\') {
@@ -3531,7 +3516,7 @@ c_global(Invocation* invo) {
           *cmd++ = ZERO;          //replace it with a ZERO
    }
 
-   if (search_regcomp(pat, &used_pat, RE_BOTH, which_pat, SEARCH_HIS, OUT &regmatch) 
+   if (search_regcomp(pat, &used_pat, RE_BOTH, which_pat, SEARCH_HIS, OUT &regmatch)
          == FAIL
    ) {
       emsg(_(e_invalid_command));
@@ -3660,7 +3645,7 @@ prepare_tagpreview(
       FOR_ALL_PORTALS(po) {
          if (po->isPreview)
             break;
-      } 
+      }
    }
    if (po) {
       enterPortal(po, undo_sync);
@@ -3704,14 +3689,14 @@ c_smile(Invocation*) {
          else {
             for (int n = *p++; n > 0; --n) {
                msg_putchar(*p);
-            } 
-         } 
-      } 
-   } 
+            }
+         }
+      }
+   }
    msg_clr_eos();
 }
 
-//":drop" Open the first argument in a portal, and the argument list is redefined.
+//";drop" Open the first argument in a portal, and the argument list is redefined.
 pub void
 c_drop(Invocation* invo) {
    int      split = false;
@@ -3734,15 +3719,15 @@ c_drop(Invocation* invo) {
       return;
 
    if (commModifierG.cmod_tab) {
-      //":tab drop file ...": open a tab for each argument that isn't
-      //edited in a portal yet.  It's like ":tab all" but without closing portals or tabs.
+      //";tab drop file ...": open a tab for each argument that isn't
+      //edited in a portal yet.  It's like ";tab all" but without closing portals or tabs.
       c_all(invo);
       commModifierG.cmod_tab = 0;
       c_rewind(invo);
       return;
    }
 
-   //":drop file ...": Edit the first argument.  Jump to an existing portal if possible, edit in 
+   //";drop file ...": Edit the first argument.  Jump to an existing portal if possible, edit in
    //current portal if the current book can be abandoned, otherwise open a new portal.
    Book* book = bookFindFileByBookNr(ARGLIST[0].fnum);
 
@@ -3760,7 +3745,7 @@ c_drop(Invocation* invo) {
       }
    }
 
-   //Fake a ":sfirst" or ":first" command edit the first argument.
+   //Fake a ";sfirst" or ";first" command edit the first argument.
    if (split) {
       invo->id = C_sfirst;
       invo->comm[0] = 's';
@@ -3776,7 +3761,7 @@ skipEeglGrepPat_ext(CS p, Byte **s, Unt* flags, Byte** nulp, int *cp) {
    int c;
 
    if (eeIsIdentifierChar(*p)) {
-      //":vimgrep pattern fname"
+      //";vimgrep pattern fname"
       if (s)
          *s = p;
       p = skiptowhite(p);
@@ -3788,7 +3773,7 @@ skipEeglGrepPat_ext(CS p, Byte **s, Unt* flags, Byte** nulp, int *cp) {
          *p++ = ZERO;
       }
    } else {
-      //":vimgrep /pattern/[g][j] fname"
+      //";vimgrep /pattern/[g][j] fname"
       if (s)
          *s = p + 1;
       c = *p;
@@ -3822,7 +3807,7 @@ skipEeglGrepPat_ext(CS p, Byte **s, Unt* flags, Byte** nulp, int *cp) {
    return p;
 }
 
-//Skip over the pattern argument of ":vimgrep /pat/[g][j]". Put the start of the pattern in "*s", 
+//Skip over the pattern argument of ";vimgrep /pat/[g][j]". Put the start of the pattern in "*s",
 //unless "s" is NULL. If "flags" is not NULL put the flags in it: VGR_GLOBAL, VGR_NOJUMP.
 //If "s" is not NULL terminate the pattern with a ZERO.
 //Return a pointer to the char just past the pattern plus flags.
@@ -3831,7 +3816,7 @@ skipEeglGrepPat(CS p, Byte **s, Unt *flags) {
    return skipEeglGrepPat_ext(p, s, flags, NULL, NULL);
 }
 
-//":argdo", ":windo", ":bufdo", ":tabdo", ":ldo"
+//";argdo", ";windo", ";bufdo", ";tabdo", ";ldo"
 pub void
 c_listDo(Invocation* invo) {
    int i;
@@ -3865,7 +3850,7 @@ c_listDo(Invocation* invo) {
 
       FOR_ALL_BOOKS(book) {
          book->flags &= ~BF_SYN_SET;
-      } 
+      }
       book = curBook;
    }
 
@@ -3891,15 +3876,15 @@ c_listDo(Invocation* invo) {
    //set pcmark now
    if (invo->id == C_bufdo) {
       //Advance to the first listed book after "invo->line1".
-      for (book = firstBook; 
-            book && (book->fiNum < invo->line1 || !book->o.bookListed); 
+      for (book = firstBook;
+            book && (book->fiNum < invo->line1 || !book->o.bookListed);
             book = book->next
       ) {
          if (book->fiNum > invo->line2) {
             book = NULL;
             break;
          }
-      } 
+      }
       if (book)
          bookGoto(invo, DOBOOK_FIRST, FORWARD, book->fiNum);
    } else
@@ -3933,14 +3918,14 @@ c_listDo(Invocation* invo) {
          t = t->next;
       } ei (invo->id == C_bufdo) {
          //Remember the number of the next listed book, in case
-         //":bwipe" is used or autocommands do something strange.
+         //";bwipe" is used or autocommands do something strange.
          next_fnum = -1;
          for (book = curBook->next; book; book = book->next) {
             if (book->o.bookListed) {
                next_fnum = book->fiNum;
                break;
             }
-         } 
+         }
       }
 
       ++i;
@@ -3956,7 +3941,7 @@ c_listDo(Invocation* invo) {
          FOR_ALL_BOOKS(book) {
             if (book->fiNum == next_fnum)
                break;
-         } 
+         }
          if (!book)
             break;
 
@@ -4015,7 +4000,7 @@ c_listDo(Invocation* invo) {
     }
 }
 
-//":compiler[!] {name}"
+//";compiler[!] {name}"
 pub void
 c_compiler(Invocation* invo) {
    CS old_cur_comp = NULL;
@@ -4031,11 +4016,11 @@ c_compiler(Invocation* invo) {
    CS buf = alloc(STRLEN(invo->arg) + 14);
 
    if (invo->forceit) {
-      //":compiler! {name}" sets global options
+      //";compiler! {name}" sets global options
       executeCommLine((CS)
          "command -nargs=* -keepscript CompilerSet set <args>");
    } else {
-      //":compiler! {name}" sets local options.
+      //";compiler! {name}" sets local options.
       //To remain backwards compatible "current_compiler" is always
       //used.  A user's compiler plugin may set it, the distributed
       //plugin will then skip the settings.  Afterwards set
@@ -4054,14 +4039,14 @@ c_compiler(Invocation* invo) {
       showErrFmtMsg(_(e_compiler_not_supported_str), invo->arg);
    eeglFree(buf);
 
-   executeCommLine((CS)":delcommand CompilerSet");
+   executeCommLine(S";delcommand CompilerSet");
 
    //Set "b:current_compiler" from "current_compiler".
    p = get_var_value((CS)"g:current_compiler");
    if (p)
       set_internal_string_var((CS)"b:current_compiler", p);
 
-   //Restore "current_compiler" for ":compiler {name}".
+   //Restore "current_compiler" for ";compiler {name}".
    if (!invo->forceit) {
       if (old_cur_comp) {
          set_internal_string_var((CS)"g:current_compiler", old_cur_comp);
@@ -4071,7 +4056,7 @@ c_compiler(Invocation* invo) {
    }
 }
 
-//":checktime [buffer]"
+//";checktime [buffer]"
 pub void
 c_checktime(Invocation* invo){
    Book   *book;
@@ -4156,8 +4141,8 @@ check_changed(Book *book, int flags) {
             FOR_ALL_BOOKS(buf2) {
                if (bookWasChanged(buf2) && (buf2->fullFileName)) {
                   ++count;
-               } 
-            } 
+               }
+            }
          }
          if (!bookRefValid(&bookRef))
             //Autocommand deleted buffer, oops!  It's not changed now.
@@ -4253,14 +4238,14 @@ add_bufnum(int *bufnrs, int *bufnump, int nr) {
    for (int i = 0; i < *bufnump; ++i) {
       if (bufnrs[i] == nr)
          return;
-   } 
+   }
    bufnrs[*bufnump] = nr;
    *bufnump = *bufnump + 1;
 }
 
-//true if any buffer was changed and cannot be abandoned. That changed buffer becomes the 
+//true if any buffer was changed and cannot be abandoned. That changed buffer becomes the
 //current buffer. When "unload" is true the current buffer is unloaded instead of making it
-//hidden.  This is used for ":q!".
+//hidden.  This is used for ";q!".
 pub int
 check_changed_any(Boole checkOnlyHidden, Boole unload) {
    int      ret = false;
@@ -4289,15 +4274,15 @@ check_changed_any(Boole checkOnlyHidden, Boole unload) {
    FOR_ALL_PORTALS(po) {
       if (po->book != curBook)
          add_bufnum(bufnrs, &bufnum, po->book->fiNum);
-   } 
+   }
 
     //buffers in other tabs
    FOR_ALL_TABS(t) {
       if (t != curtab) {
          FOR_ALL_PORTALS_IN_TAB(t, po)
             add_bufnum(bufnrs, &bufnum, po->book->fiNum);
-      } 
-   } 
+      }
+   }
 
    //any other book
    FOR_ALL_BOOKS(book)
@@ -4331,7 +4316,7 @@ check_changed_any(Boole checkOnlyHidden, Boole unload) {
    //Get here if "book" cannot be abandoned.
    ret = true;
    isExitingG = false;
-   //When ":confirm" used, don't give an error message.
+   //When ";confirm" used, don't give an error message.
    if (!(p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM))) {
       //There must be a wait_return() for this message, bookDo()
       //may cause a redraw.  But wait_return() is a no-op when vgetc()
@@ -4369,8 +4354,8 @@ check_changed_any(Boole checkOnlyHidden, Boole unload) {
                 goto theend;
             goto buf_found;
          }
-      } 
-   } 
+      }
+   }
 buf_found:
 
    //Open the changed buffer in the current portal.
@@ -4463,7 +4448,7 @@ saveDbgStuff(DebugStuff* dsp) {
    dsp->force_abort   = force_abort;      force_abort = false;
    dsp->caught_stack   = caught_stack;      caught_stack = NULL;
 
-   //Necessary for debugging an inactive ":catch", ":finally", ":endtry"
+   //Necessary for debugging an inactive ";catch", ";finally", ";endtry"
    dsp->anyEmsgG     = anyEmsgG;      anyEmsgG     = false;
    dsp->gotInterruptG = gotInterruptG; gotInterruptG  = false;
    dsp->did_throw    = did_throw;      did_throw    = false;
@@ -4549,7 +4534,7 @@ handle_did_throw(void) {
    MsgList* messages = NULL;
    ESTACK_CHECK_DECLARATION;
 
-   //If the uncaught exception is a user exception, report it as an error. If it is an error 
+   //If the uncaught exception is a user exception, report it as an error. If it is an error
    //exception, display the saved error message now.  For an interrupt exception, do nothing; the
    //interrupt message is given elsewhere.
    switch (current_exception->type) {
@@ -4719,8 +4704,8 @@ doCommand(
    //"fgetline" and "cookie" passed to doOneCommand()
    LineGetter commGetLine;
    void* commCookie;
-   //For every pair of doCommand()/doOneCommand() calls, use an extra memory location for storing 
-   //error messages to be converted to an exception. This ensures that the do_errthrow() call in 
+   //For every pair of doCommand()/doOneCommand() calls, use an extra memory location for storing
+   //error messages to be converted to an exception. This ensures that the do_errthrow() call in
    //doOneCommand() does not combine the messages stored by an earlier invocation of doOneCommand()
    //with the command name of the later one. This would happen when
    //BufWritePost autocommands are executed after a write error.
@@ -4743,11 +4728,11 @@ doCommand(
 
    //"did_throw" will be set to true if an exception will be thrown
    did_throw = false;
-   //"anyEmsgG" will be set to true when emsg() is used, in which case we cancel the whole command 
+   //"anyEmsgG" will be set to true when emsg() is used, in which case we cancel the whole command
    //line, and any if/endif or loop. If force_abort is set, we cancel everything.
    anyEmsgG = false;
 
-   //keyWasTypedG is only set when calling vgetc(). Reset it here when not calling vgetc() 
+   //keyWasTypedG is only set when calling vgetc(). Reset it here when not calling vgetc()
    //(sourced command lines).
    if ((flags & DOCMD_KEYTYPED) == 0 && fgetline != &scrGetTypedCommand)
       keyWasTypedG = false;
@@ -4795,8 +4780,8 @@ doCommand(
       commCookie = cookie;
 
       if (count++ == 0) {
-         //All output from the commands is put below each other, without waiting for a return. 
-         //Don't do this when executing commands from a script or when being called recursive 
+         //All output from the commands is put below each other, without waiting for a return.
+         //Don't do this when executing commands from a script or when being called recursive
          //(e.g. for ":e +command file").
          if ((flags & DOCMD_NOWAIT) == 0 && !recursive) {
             msg_didout_before_start = msg_didout;
@@ -4837,7 +4822,7 @@ doCommand(
          force_abort = false;
    }
    //Continue executing command lines when:
-   //- no CTRL-C typed, no aborting error, no exception thrown or try conditionals need to be 
+   //- no CTRL-C typed, no aborting error, no exception thrown or try conditionals need to be
    //checked for executing finally clauses or catching an interrupt exception
    //- didn't get an error message or lines are not typed
    //- looping for ":source" command.
@@ -4849,13 +4834,13 @@ doCommand(
    eeglFree(commlineCopy);
    anySyntaxEmsgS = false;
 
-   //When an exception is being thrown out of the outermost try conditional, discard the 
-   //uncaught exception, disable the conversion of interrupts or errors to exceptions, and 
+   //When an exception is being thrown out of the outermost try conditional, discard the
+   //uncaught exception, disable the conversion of interrupts or errors to exceptions, and
    //ensure that no more commands are executed.
    if (did_throw)
       handle_did_throw();
-   //On an interrupt or an aborting error not converted to an exception, disable the conversion 
-   //of errors to exceptions. (Interrupts are not converted anymore, here.) This enables also 
+   //On an interrupt or an aborting error not converted to an exception, disable the conversion
+   //of errors to exceptions. (Interrupts are not converted anymore, here.) This enables also
    //the interrupt message when force_abort is set and anyEmsgG unset in case of an interrupt
    //from a finally clause after an error.
    ei (gotInterruptG || (anyEmsgG && force_abort))
@@ -4933,7 +4918,7 @@ doOneCommand(
        && fgetline != &getnextac
    ) {
       --quitmore;
-   } 
+   }
 
    //Reset browse, confirm, etc..  They are restored when returning, for recursive calls.
    CommandModifier saveCommModifier = commModifierG;
@@ -4946,7 +4931,7 @@ doOneCommand(
       *commline = skipLine(*commline);
       if ((*commline)[0] == ZERO)
          *commline = null;
-      goto doend; 
+      goto doend;
    }
 
    int save_reg_executing = reg_executing;
@@ -4954,7 +4939,7 @@ doOneCommand(
    LineNr lnum;
    Long n;
    Unt sourcing = flags & DOCMD_VERBOSE;
-   
+
    //1. Skip comment lines and leading white space and colons.
    //2. Handle command modifiers.
    //The "invo" structure holds the arguments that can be used.
@@ -4973,7 +4958,7 @@ doOneCommand(
    //
    //We need the command to know what kind of range it uses.
    CS cmd = invo.comm;
-   
+
    Boole may_have_range = true;
    if (may_have_range)
       invo.comm = skip_range(invo.comm, true, NULL);
@@ -5000,7 +4985,7 @@ doOneCommand(
    //[+-NUM]..
    //NUM
    //
-   //The invo.comm pointer is updated to point to the first character following the range spec. 
+   //The invo.comm pointer is updated to point to the first character following the range spec.
    //If an initial address is found, but no second, the upper bound is equal to the lower.
 
    //invo.addressKind for user commands is set by find_ucmd
@@ -5010,7 +4995,7 @@ doOneCommand(
       else
          invo.addressKind = ADDR_LINES;
 
-      //:wincmd range depends on the argument.
+      //;wincmd range depends on the argument.
       if (invo.id == C_wincmd && p)
          getPortCommAddressType(skipwhite(p), &invo);
       if (invo.id == C_ll && isLocationListBook(curBook))
@@ -5204,8 +5189,8 @@ doOneCommand(
             errorMsg = _(e_invalid_argument);
             goto doend;
          }
-      } 
-   } 
+      }
+   }
 
    if (invo.id == C_write || invo.id == C_update) {
       if (*invo.arg == '>') {        //append
@@ -5215,7 +5200,7 @@ doOneCommand(
          }
          invo.arg = skipwhite(invo.arg + 1);
          invo.append = true;
-      } ei (*invo.arg == '!' && invo.id == C_write) { //:w !filter
+      } ei (*invo.arg == '!' && invo.id == C_write) { //;w !filter
          ++invo.arg;
          invo.usefilter = true;
       }
@@ -5223,9 +5208,9 @@ doOneCommand(
 
    if (invo.id == C_read) {
       if (invo.forceit) {
-         invo.usefilter = true;      //:r! filter if invo.forceit
+         invo.usefilter = true;     //;r! filter if invo.forceit
          invo.forceit = false;
-      } ei (*invo.arg == '!') {     //:r !filter
+      } ei (*invo.arg == '!') {     //;r !filter
          ++invo.arg;
          invo.usefilter = true;
       }
@@ -5323,14 +5308,14 @@ doOneCommand(
                e_line_number_out_of_range_nr_past_the_end, invo.line2 - curBook->mem.lineCount
             );
             invo.line2 = curBook->mem.lineCount;
-         } 
+         }
       }
    }
 
    //Check for flags: 'l', 'p' and '#'.
    if ((invo.argFlags & FLAGS) != 0)
       get_flags(&invo);
-      
+
    if (!ni && !(invo.argFlags & EXTRA) && *invo.arg != ZERO
         && !isComment(invo.arg) && (*invo.arg != '|' || (invo.argFlags & TRLBAR) == 0)
    ) {
@@ -5413,11 +5398,11 @@ doOneCommand(
    if ((invo.argFlags & XFILE) && expand_filename(&invo, OUT commline, OUT &errorMsg) == FAIL)
       goto doend;
 
-   //Accept book name. Cannot be used at the same time with a book number. Don't do this for 
+   //Accept book name. Cannot be used at the same time with a book number. Don't do this for
    //a user command.
    if ((invo.argFlags & BUFNAME) && *invo.arg != ZERO && invo.addr_count == 0
           && !IS_USER_COMMAND(invo.id)) {
-      //:bdelete, :bwipeout and :bunload take several arguments, separated
+      //;bdelete, ;bwipeout and ;bunload take several arguments, separated
       //by spaces: find next space (skipping over escaped characters).
       //The others take one argument: ignore trailing spaces.
       if (invo.id == C_bdelete || invo.id == C_bwipeout || invo.id == C_bunload)
@@ -5480,7 +5465,7 @@ doend:
 
 private Byte ex_error_buf[MSG_BUF_LEN];
 
-//Return an error message with argument included. Use a static buffer, only the last error will be 
+//Return an error message with argument included. Use a static buffer, only the last error will be
 //kept. "msg" will be translated, caller should use N_().
 pub CS
 ex_errmsg(CS msg, CS arg) {
@@ -5537,7 +5522,7 @@ checkforcmd_opt(
    for (i = 0; cmd[i] != ZERO; ++i) {
       if (((CS)cmd)[i] != (*pp)[i])
          break;
-   } 
+   }
    if (i >= len && !ASCII_ISALPHA((*pp)[i]) && (*pp)[i] != '_'
           && (!noparen || ((*pp)[i] != '(' && (*pp)[i] != '.'))) {
       *pp = skipwhite(*pp + i);
@@ -5573,7 +5558,7 @@ checkforcmd_noparen(
 //- store flags in "cmod".
 //- Set ex_pressedreturn for an empty command line.
 //When "skip_only" is true the global variables are not changed, except for "commModifierG".
-//When "skip_only" is false then undoCommModifier() must be called later to free any 
+//When "skip_only" is false then undoCommModifier() must be called later to free any
 //cmod_filter_regmatch.regprog.
 //Call applyCommModifiers() to get the side effects of the modifiers:
 //- set p_verbose for ":verbose"
@@ -5630,7 +5615,7 @@ parse_command_modifiers(
 
       switch (*p) {
       //When adding an entry, also modify modeInfoTable[].
-      case 'a':   
+      case 'a':
          if (!checkforcmd_noparen(&invo->comm, S"aboveleft", 3))
            break;
         cmod->cmod_split |= WSP_ABOVE;
@@ -5650,13 +5635,13 @@ parse_command_modifiers(
          cmod->cmod_split |= WSP_BOT;
          continue;
 
-      case 'c':   
+      case 'c':
         if (!checkforcmd_opt(OUT &invo->comm, S"confirm", 4, true))
            break;
         cmod->cmod_flags |= CMOD_CONFIRM;
         continue;
 
-      case 'k':   
+      case 'k':
         if (checkforcmd_noparen(&invo->comm, S"keepmarks", 3)) {
            cmod->cmod_flags |= CMOD_KEEPMARKS;
            continue;
@@ -5710,7 +5695,7 @@ parse_command_modifiers(
          continue;
       }
 
-      case 'h':   
+      case 'h':
          if (checkforcmd_noparen(&invo->comm, S"horizontal", 3)) {
             cmod->cmod_split |= WSP_HOR;
             continue;
@@ -5723,7 +5708,7 @@ parse_command_modifiers(
          cmod->cmod_flags |= CMOD_HIDE;
          continue;
 
-      case 'l':   
+      case 'l':
          if (checkforcmd_noparen(&invo->comm, S"lockmarks", 3)) {
             cmod->cmod_flags |= CMOD_LOCKMARKS;
             continue;
@@ -5734,7 +5719,7 @@ parse_command_modifiers(
         cmod->cmod_split |= WSP_ABOVE;
         continue;
 
-      case 'n':   
+      case 'n':
         if (checkforcmd_noparen(&invo->comm, S"noautocmd", 3)) {
            cmod->cmod_flags |= CMOD_NOAUTOCMD;
            continue;
@@ -5744,13 +5729,13 @@ parse_command_modifiers(
         cmod->cmod_flags |= CMOD_NOSWAPFILE;
         continue;
 
-      case 'r':   
+      case 'r':
         if (!checkforcmd_noparen(&invo->comm, S"rightbelow", 6))
            break;
         cmod->cmod_split |= WSP_BELOW;
         continue;
 
-      case 's':   
+      case 's':
         if (!checkforcmd_noparen(&invo->comm, S"silent", 3))
             break;
         cmod->cmod_flags |= CMOD_SILENT;
@@ -5761,7 +5746,7 @@ parse_command_modifiers(
         }
         continue;
 
-      case 't':   
+      case 't':
          if (checkforcmd_noparen(&p, S"tab", 3)) {
             if (!skip_only) {
                long tabnr = doGetCommandAddress(invo, &invo->comm,
@@ -5785,13 +5770,13 @@ parse_command_modifiers(
          cmod->cmod_split |= WSP_TOP;
          continue;
 
-      case 'u':   
+      case 'u':
          if (!checkforcmd_noparen(&invo->comm, S"unsilent", 3))
             break;
          cmod->cmod_flags |= CMOD_UNSILENT;
          continue;
 
-      case 'v':   
+      case 'v':
          if (checkforcmd_noparen(&invo->comm, S"vertical", 4)) {
             cmod->cmod_split |= WSP_VERT;
             continue;
@@ -5811,7 +5796,7 @@ parse_command_modifiers(
 
    if (has_visual_range) {
       if (invo->comm > cmd_start) {
-         //Move the '<,'> range to after the modifiers and insert a colon. Since the modifiers 
+         //Move the '<,'> range to after the modifiers and insert a colon. Since the modifiers
          //have been parsed put the colon on top of the space: "'<,'>mod cmd" -> "mod:'<,'>cmd
          //Put invo->comm after the colon.
          if (use_plus_cmd) {
@@ -5909,7 +5894,7 @@ undoCommModifier(CommandModifier *cmod) {
    }
 }
 
-//Parse the address range, if any, in "invo". May set the last search pattern, unless "silent" 
+//Parse the address range, if any, in "invo". May set the last search pattern, unless "silent"
 //is true. Return FAIL and set "errorMsg" or return OK.
 pub int
 parse_cmd_address(Invocation* invo, CS* errorMsg, int silent) {
@@ -6129,11 +6114,11 @@ number_method(CS cmd) {
    return p > cmd && (p = skipwhite(p))[0] == '-' && p[1] == '>';
 }
 
-//Find a Command by its name, either built-in or user. Start of the name can be found at 
+//Find a Command by its name, either built-in or user. Start of the name can be found at
 //invo->comm. Set invo->id and return a pointer to char after the command name.
 //"full" is set to true if the whole command name matched.
 //
-//If "lookup" is not NULL recognize expression without "eval" or "call" and assignment without 
+//If "lookup" is not NULL recognize expression without "eval" or "call" and assignment without
 //"let".  Sets invo->id to the command while returning "invo->comm".
 //
 //Return NULL for an ambiguous user command.
@@ -6209,7 +6194,7 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
              //g:[key] is an expression
              || STRNCMP(invo->comm, "g:[", 3) == 0
          ){
-            //When followed by "=" or "+=" then it is an assignment. Skip over the whole thing, 
+            //When followed by "=" or "+=" then it is an assignment. Skip over the whole thing,
             //which can be:
             //  name.member = val
             //  name[a : b] = val
@@ -6281,18 +6266,19 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
    } else {
       while (ASCII_ISALPHA(*p))
          ++p;
-          
+
       //check for non-alpha command
       if (p == invo->comm && firstOccurrence((CS)"@*!=><&~#}", *p) != NULL)
          ++p;
       len = (int)(p - invo->comm);
       //The "d" command can directly be followed by 'l' or 'p' flag
       if (*invo->comm == 'd' && (p[-1] == 'l' || p[-1] == 'p')) {
-          //Check for ":dl", ":dell", etc. to ":deletel": that's
-          //:delete with the 'l' flag.  Same for 'p'.
-          for (i = 0; i < len; ++i)
-         if (invo->comm[i] != ((CS)"delete")[i])
-             break;
+         //Check for ";dl", ";dell", etc. to ";deletel": that's
+         //;delete with the 'l' flag.  Same for 'p'.
+         for (i = 0; i < len; ++i) {
+            if (invo->comm[i] != (S"delete")[i])
+                break;
+         }
          if (i == len - 1) {
             --len;
             if (p[-1] == 'l')
@@ -6307,7 +6293,7 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
          int c2 = len == 1 ? ZERO : invo->comm[1];
 
          if (generatedCommandCount != (int)COUNT_COMMANDS) {
-            lo("Generated command count = %d but COUNT_COMMANDS = %d", 
+            lo("Generated command count = %d but COUNT_COMMANDS = %d",
                   generatedCommandCount, (int)COUNT_COMMANDS
             );
             internalErrMsg(e_command_table_needs_to_be_updated_run_make_ids);
@@ -6331,9 +6317,9 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
                *full = true;
             break;
          }
-      } 
+      }
 
-      //Do not recognize ":*" as the star command 
+      //Do not recognize ":*" as the star command
       if (invo->id == C_star)
          p = invo->comm;
 
@@ -6356,7 +6342,7 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
 typedef struct {
    char   *name;
    int      minlen;
-   int      has_count;  //:123verbose  :3tab
+   int      has_count;  //;123verbose  ;3tab
 } CommModeInfo;
 
 private CommModeInfo modeInfoTable[] = {
@@ -6397,7 +6383,7 @@ modifier_len(CS cmd) {
       for (; p[j] != ZERO; ++j) {
          if (p[j] != modeInfoTable[i].name[j])
             break;
-      } 
+      }
       if (!ASCII_ISALPHA(p[j]) && j >= modeInfoTable[i].minlen
                   && (p == cmd || modeInfoTable[i].has_count))
          return j + (int)(p - cmd);
@@ -6418,7 +6404,7 @@ cmd_exists(CS name) {
       for (; name[j] != ZERO; ++j) {
          if (name[j] != modeInfoTable[i].name[j])
             break;
-      } 
+      }
       if (name[j] == ZERO && j >= modeInfoTable[i].minlen)
          return (modeInfoTable[i].name[j] == ZERO ? 2 : 1);
    }
@@ -6478,8 +6464,8 @@ commandGetInd(CS cmd, int len) {
       for (idx = (CommIndex)0; (int)idx < (int)COUNT_COMMANDS; idx = (CommIndex)((int)idx + 1)) {
          if (STRNCMP(commands[(int)idx].name, cmd, (Unt)len) == 0)
             break;
-      } 
-   } 
+      }
+   }
 
    return idx;
 }
@@ -6604,7 +6590,7 @@ default_address(Invocation* invo) {
 
 //Get a single Command address.
 //
-//Set ptr to the next character after the part that was interpreted. Set ptr to NULL when an 
+//Set ptr to the next character after the part that was interpreted. Set ptr to NULL when an
 //error is encountered. This may set the last used search pattern.
 //
 //Return MAXLNUM when no address was found.
@@ -6762,7 +6748,7 @@ doGetCommandAddress(
                curPor->cursor.lnum = lnum > curBook->mem.lineCount ? curBook->mem.lineCount : lnum;
 
             //Start a forward search at the end of the line (unless before the first line).
-            //Start a backward search at the start of the line. This makes sure we never match in 
+            //Start a backward search at the start of the line. This makes sure we never match in
             //the current line, and can match anywhere in the next/previous line.
             curPor->cursor.col = (c == '/' && curPor->cursor.lnum > 0) ? MAXCOL : 0;
             searchcmdlen = 0;
@@ -7126,7 +7112,7 @@ replaceMakeProgramName(Invocation* invo, OUT CS p, OUT CS* commline) {
       }
       if (!programName)
          return p;
-         
+
       p = skipwhite(p);
 
       CS newCommline;
@@ -7154,7 +7140,7 @@ replaceMakeProgramName(Invocation* invo, OUT CS p, OUT CS* commline) {
          STRCPY(newCommline + programNameLen, " ");
          STRCPY(newCommline + programNameLen + 1, p);
       }
-      
+
       msg_make(p);
 
       //'invo->comm' is not set here, because it is not used at C_make
@@ -7165,7 +7151,7 @@ replaceMakeProgramName(Invocation* invo, OUT CS p, OUT CS* commline) {
    return p;
 }
 
-//Expand file name in a command argument. When an error is detected, "errorMsg" is set to a 
+//Expand file name in a command argument. When an error is detected, "errorMsg" is set to a
 //non-NULL pointer. Return FAIL for failure, OK otherwise.
 pub int
 expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg){
@@ -7199,7 +7185,7 @@ expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg){
 
       //Try to find a match at this position.
       repl = evalVars(
-            OUT &(invo->higherOrderLnum), OUT errorMsg, 
+            OUT &(invo->higherOrderLnum), OUT errorMsg,
             p, invo->arg, &srclen, &escaped, true
       );
       if (*errorMsg)      //error detected
@@ -7238,7 +7224,7 @@ expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg){
                repl = l;
                break;
             }
-         } 
+         }
       }
 
       //For a shell command a '!' must be escaped.
@@ -7272,11 +7258,11 @@ expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg){
 
          if (has_wildcards) {
             if (n == 1) {
-               //First loop: May expand environment variables. This can be done much faster with 
+               //First loop: May expand environment variables. This can be done much faster with
                //doExpandEnv() than with something else (e.g., calling a shell).
-               //After expanding environment variables, check again if there are still wildcards 
+               //After expanding environment variables, check again if there are still wildcards
                //present.
-               if (firstOccurrence(invo->arg, '$') != NULL 
+               if (firstOccurrence(invo->arg, '$') != NULL
                      || firstOccurrence(invo->arg, '~') != NULL
                ) {
                   doExpandEnvVarsWithEscaped(
@@ -7310,7 +7296,7 @@ expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg){
 }
 
 //Replace part of the command line, keeping invo->comm, invo->arg and invo->nextComm correct.
-//"src" points to the part that is to be replaced, of length "srclen". "repl" is the replacement 
+//"src" points to the part that is to be replaced, of length "srclen". "repl" is the replacement
 //string. Return a pointer to the character after the replaced string, or null for failure.
 private CS
 repl_commline(
@@ -7578,21 +7564,21 @@ c_doautocmd(Invocation* invo) {
    (void)do_doautocmd(arg, true, OUT &did_aucmd);
 }
 
-//:[N]bunload[!] [N] [bookname] unload book
-//:[N]bdelete[!] [N] [bookname] delete book from book list
-//:[N]bwipeout[!] [N] [bookname] delete book really
+//;[N]bunload[!] [N] [bookname] unload book
+//;[N]bdelete[!] [N] [bookname] delete book from book list
+//;[N]bwipeout[!] [N] [bookname] delete book really
 pub void
 c_bunload(Invocation* invo) {
    if (portErrorIfPopup(true))
       return;
    invo->errmsg = do_bufdel(
-       invo->id == C_bdelete 
+       invo->id == C_bdelete
        ? DOBOOK_DEL : (invo->id == C_bwipeout ? DOBOOK_WIPE : DOBOOK_UNLOAD), invo->arg,
        invo->addr_count, (int)invo->line1, (int)invo->line2, invo->forceit);
 }
 
-//:[N]book [N]   to book N
-//:[N]sbook [N]  to book N
+//;[N]book [N]   to book N
+//;[N]sbook [N]  to book N
 pub void
 c_book(Invocation* invo) {
    if (portErrorIfPopup(true))
@@ -7600,7 +7586,7 @@ c_book(Invocation* invo) {
    do_exbuffer(invo);
 }
 
-//":book" command and alike.
+//";book" command and alike.
 private void
 do_exbuffer(Invocation* invo) {
    if (*invo->arg)
@@ -7615,8 +7601,8 @@ do_exbuffer(Invocation* invo) {
    }
 }
 
-//:[N]bmodified [N]   to next mod. book
-//:[N]sbmodified [N]   to next mod. book
+//;[N]bmodified [N]   to next mod. book
+//;[N]sbmodified [N]   to next mod. book
 pub void
 c_bmodified(Invocation* invo) {
    bookGoto(invo, DOBOOK_MOD, FORWARD, (int)invo->line2);
@@ -7624,8 +7610,8 @@ c_bmodified(Invocation* invo) {
       do_cmd_argument(invo->higherOrderComm);
 }
 
-//:[N]bnext [N]   to next book
-//:[N]sbnext [N]   split and to next book
+//;[N]bnext [N]   to next book
+//;[N]sbnext [N]   split and to next book
 pub void
 c_bnext(Invocation* invo){
    if (portErrorIfPopup(true))
@@ -7636,10 +7622,10 @@ c_bnext(Invocation* invo){
       do_cmd_argument(invo->higherOrderComm);
 }
 
-//:[N]bNext [N]   to previous book
-//:[N]bprevious [N]   to previous book
-//:[N]sbNext [N]   split and to previous book
-//:[N]sbprevious [N]   split and to previous book
+//;[N]bNext [N]   to previous book
+//;[N]bprevious [N]   to previous book
+//;[N]sbNext [N]   split and to previous book
+//;[N]sbprevious [N]   split and to previous book
 pub void
 c_bprevious(Invocation* invo) {
    if (portErrorIfPopup(true))
@@ -7650,10 +7636,10 @@ c_bprevious(Invocation* invo) {
       do_cmd_argument(invo->higherOrderComm);
 }
 
-//:brewind      to first book
-//:bfirst      to first book
-//:sbrewind      split and to first book
-//:sbfirst      split and to first book
+//;brewind      to first book
+//;bfirst      to first book
+//;sbrewind      split and to first book
+//;sbfirst      split and to first book
 pub void
 c_brewind(Invocation* invo) {
    if (portErrorIfPopup(true))
@@ -7664,8 +7650,8 @@ c_brewind(Invocation* invo) {
       do_cmd_argument(invo->higherOrderComm);
 }
 
-//:blast      to last book
-//:sblast      split and to last book
+//;blast      to last book
+//;sblast      split and to last book
 pub void
 c_blast(Invocation* invo) {
    if (portErrorIfPopup(true))
@@ -7718,7 +7704,7 @@ private int
 before_quit_autocmds(Portal *po, int quit_all) {
    applyAutocomms(EVENT_QUITPRE, NULL, NULL, false, po->book);
 
-   //Bail out when autocommands closed the portal. Refuse to quit when the book in the last 
+   //Bail out when autocommands closed the portal. Refuse to quit when the book in the last
    //portal is being closed (can only happen in autocommands).
    if (!portalIsValid(po)
           || curBookLocked()
@@ -7727,7 +7713,7 @@ before_quit_autocmds(Portal *po, int quit_all) {
 
    if (quit_all) {
       applyAutocomms(EVENT_EXITPRE, NULL, NULL, false, curBook);
-      //Refuse to quit when locked or when the portal was closed or the book in the last portal 
+      //Refuse to quit when locked or when the portal was closed or the book in the last portal
       //is being closed (can only happen in autocommands).
       if (!portalIsValid(po) || curBookLocked()
               || (curBook->countPortals == 1 && curBook->locked > 0))
@@ -7737,8 +7723,8 @@ before_quit_autocmds(Portal *po, int quit_all) {
    return false;
 }
 
-//":quit": quit current portal, quit Eegl if the last portal is closed.
-//":{nr}quit": quit portal {nr}
+//";quit": quit current portal, quit Eegl if the last portal is closed.
+//";{nr}quit": quit portal {nr}
 //Also used when closing a terminal portal that's the last one.
 pub void
 c_quit(Invocation* invo) {
@@ -7777,10 +7763,10 @@ c_quit(Invocation* invo) {
       not_exiting();
    } else {
       //quit last portal
-      //Note: onlyOnePortal() returns true, even if a help portal is still open. In that case 
+      //Note: onlyOnePortal() returns true, even if a help portal is still open. In that case
       //only quit, if no address has been specified. Example:
-      //:h|wincmd w|1q     - don't quit
-      //:h|wincmd w|q      - quit
+      //;h|wincmd w|1q     - don't quit
+      //;h|wincmd w|q      - quit
       if (onlyOnePortal() && (ONLY_ONE_PORTAL || invo->addr_count == 0))
          exitEegl(0);
       not_exiting();
@@ -7789,7 +7775,7 @@ c_quit(Invocation* invo) {
     }
 }
 
-//":cquit".
+//";cquit".
 pub void
 c_cquit(Invocation* invo) {
    //this does not always pass on the exit code to the Manx compiler. why?
@@ -7819,7 +7805,7 @@ before_quit_all(Invocation* invo) {
    return OK;
 }
 
-//":qall": try to quit all portals
+//";qall": try to quit all portals
 pub void
 c_quit_all(Invocation* invo) {
    if (before_quit_all(invo) == FAIL)
@@ -7830,7 +7816,7 @@ c_quit_all(Invocation* invo) {
    not_exiting();
 }
 
-//":close": close current portal; if it is the last one, close the program
+//";close": close current portal; if it is the last one, close the program
 pub void
 c_close(Invocation* invo) {
    if (commPortTypeG != 0)
@@ -7860,7 +7846,7 @@ c_close(Invocation* invo) {
 private Callback findFnCb;
 
 
-//":pclose": Close any preview portal.
+//";pclose": Close any preview portal.
 pub void
 c_pclose(Invocation*) {
    Portal* port;
@@ -7991,7 +7977,7 @@ theend:
    return tabId;
 }
 
-//":tabclose": close current tab, unless it is the last one. ":tabclose N": close tab N.
+//";tabclose": close current tab, unless it is the last one. ";tabclose N": close tab N.
 pub void
 c_tabclose(Invocation* invo) {
    if (commPortTypeG != 0) {
@@ -8023,7 +8009,7 @@ c_tabclose(Invocation* invo) {
       tabClose();
 }
 
-//":tabonly": close all tabs except the current one
+//";tabonly": close all tabs except the current one
 pub void
 c_tabonly(Invocation* invo) {
    if (commPortTypeG != 0) {
@@ -8056,7 +8042,7 @@ c_tabonly(Invocation* invo) {
             //start over, "t" is now invalid
             break;
          }
-      } 
+      }
       if (firstTabG->next == NULL)
          break;
    }
@@ -8098,7 +8084,7 @@ tabCloseOther(Tab *t) {
    applyAutocomms(EVENT_TABCLOSED, NULL, NULL, false, curBook);
 }
 
-//":only".
+//";only".
 pub void
 c_only(Invocation* invo) {
    if (portalLayout_locked(C_only))
@@ -8119,7 +8105,7 @@ c_only(Invocation* invo) {
 
 pub void
 c_hide(Invocation* invo) {
-   //":hide" or ":hide | cmd": hide current portal
+   //";hide": hide current portal
    if (invo->skip)
       return;
 
@@ -8142,7 +8128,7 @@ c_hide(Invocation* invo) {
    }
 }
 
-//":exit", ":xit" and ":wq": Write file and quit the current portal.
+//";exit", ";xit" and ";wq": Write file and quit the current portal.
 pub void
 c_exit(Invocation* invo) {
    if (commPortTypeG != 0) {
@@ -8159,7 +8145,7 @@ c_exit(Invocation* invo) {
    if (onlyOnePortal())
       isExitingG = true;
 
-   //Write the book for ":wq" or when it was changed.
+   //Write the book for ";wq" or when it was changed.
    //Trigger QuitPre and ExitPre.
    //Check if we can exit now, after autocommands have changed things.
    if (((invo->id == C_wq || bookWasChanged(curBook)) && do_write(invo) == FAIL)
@@ -8176,7 +8162,7 @@ c_exit(Invocation* invo) {
    }
 }
 
-//":print", ":list", ":number".
+//";print", ";list", ";number".
 pub void
 c_print(Invocation* invo) {
    if (curBook->mem.flags & ML_EMPTY)
@@ -8202,20 +8188,20 @@ c_goto(Invocation* invo) {
    goto_byte(invo->line2);
 }
 
-//":shell".
+//";shell".
 pub void
 c_shell(Invocation*) {
    do_shell(NULL, 0);
 }
 
-//":preserve".
+//";preserve".
 pub void
 c_preserve(Invocation*) {
    curBook->flags |= BF_PRESERVED;
    ml_preserve(curBook, true);
 }
 
-//":recover".
+//";recover".
 pub void
 c_recover(Invocation* invo) {
    //Set recoveryModeG right away to avoid the ATTENTION prompt.
@@ -8248,7 +8234,7 @@ call_findfunc(CS pat, int cmdcomplete) {
    args[1].number = cmdcomplete;
    args[2].tag = VAR_UNKNOWN;
 
-   //Lock the text to prevent weird things from happening. Also disallow switching to another 
+   //Lock the text to prevent weird things from happening. Also disallow switching to another
    //portal, it should not be needed and may end up in Insert mode in another book.
    ++textlock;
 
@@ -8379,17 +8365,17 @@ set_ref_in_findfunc(int copyID) {
    return abort;
 }
 
-//:sview [+command] file   split portal with new file, read-only
-//:split [[+command] file]   split portal with current or new file
-//:vsplit [[+command] file]   split portal vertically with current or new file
-//:new [[+command] file]   split portal with no or new file
-//:vnew [[+command] file]   split vertically portal with no or new file
-//:sfind [+command] file   split portal with file in 'path'
+//;sview [+command] file   split portal with new file, read-only
+//;split [[+command] file]   split portal with current or new file
+//;vsplit [[+command] file]   split portal vertically with current or new file
+//;new [[+command] file]   split portal with no or new file
+//;vnew [[+command] file]   split vertically portal with no or new file
+//;sfind [+command] file   split portal with file in 'path'
 //
-//:tabedit         open new Tab with empty portal
-//:tabedit [+command] file   open new Tab and edit "file"
-//:tabnew [[+command] file]   just like :tabedit
-//:tabfind [+command] file   open new Tab and find "file"
+//;tabedit         open new Tab with empty portal
+//;tabedit [+command] file   open new Tab and edit "file"
+//;tabnew [[+command] file]   just like :tabedit
+//;tabfind [+command] file   open new Tab and find "file"
 pub void
 c_splitview(Invocation* invo) {
    Portal* old_curPor = curPor;
@@ -8401,8 +8387,8 @@ c_splitview(Invocation* invo) {
    if (portErrorIfPopup(true))
       return;
 
-   //A ":split" in the location portal works like ":new".  Don't want two
-   //location portals.  But it's OK when doing ":tab split".
+   //A ";split" in the location portal works like ";new".  Don't want two
+   //location portals.  But it's OK when doing ";tab split".
    if (isLocationListBook(curBook) && commModifierG.cmod_tab == 0) {
       if (invo->id == C_split)
          invo->id = C_new;
@@ -8419,7 +8405,7 @@ c_splitview(Invocation* invo) {
                       invo->addr_count > 0 ? invo->line2 : 1);
       } else {
          fname = findFileInPath(
-                mbText(invo->arg), FNAME_MESS, true, curBook->fullFileName, 
+                mbText(invo->arg), FNAME_MESS, true, curBook->fullFileName,
                 OUT &file_to_find, OUT &search_ctx
          );
          eeglFree(file_to_find);
@@ -8446,7 +8432,7 @@ c_splitview(Invocation* invo) {
              invo->addr_count > 0 ? (int)invo->line2 : 0, *invo->comm == 'v' ? WSP_VERT : 0
           ) != FAIL
    ) {
-      //Disable @diff when editing another file, but keep it when doing ":split" without arguments.
+      //Disable @diff when editing another file, but keep it when doing ";split" without arguments.
       if (*invo->arg != ZERO)
           curPor->o.diff = false;
       else
@@ -8469,7 +8455,7 @@ tabNew(void) {
    c_splitview(&invo);
 }
 
-//:tabnext command
+//;tabnext command
 pub void
 c_tabnext(Invocation* invo) {
    int tabId;
@@ -8524,7 +8510,7 @@ c_tabmove(Invocation* invo) {
       moveTab(tabId);
 }
 
-//:tabs command: List tabs and their contents.
+//;tabs command: List tabs and their contents.
 pub void
 c_tabs(Invocation*) {
    Portal* po;
@@ -8551,7 +8537,7 @@ c_tabs(Invocation*) {
          msg_putchar(' ');
          if (bookSpName(po->book) != NULL)
             copySubstrToAllocation(OUT IObuff, (Text){bookSpName(po->book), IOSIZE - 1});
-         ei (po->book->kind == BOOK_HELP) { 
+         ei (po->book->kind == BOOK_HELP) {
             strPrintShortName(po->book->currFileName, IObuff, IOSIZE);
          } else
             home_replace(po->book->currFileName, IObuff, IOSIZE, true);
@@ -8565,7 +8551,7 @@ c_tabs(Invocation*) {
 //}}}
 //{{{misc2
 
-//":mode": Set screen mode. If no argument given, just get the screen size and redraw.
+//";mode": Set screen mode. If no argument given, just get the screen size and redraw.
 pub void
 c_mode(Invocation* invo) {
    if (*invo->arg == ZERO)
@@ -8574,7 +8560,7 @@ c_mode(Invocation* invo) {
       emsg(_(e_screen_mode_setting_not_supported));
 }
 
-//":resize". set, increment or decrement current portal height
+//";resize". set, increment or decrement current portal height
 pub void
 c_resize(Invocation* invo) {
    int      n;
@@ -8602,7 +8588,7 @@ c_resize(Invocation* invo) {
    }
 }
 
-//":find [+command] <file>" command.
+//";find [+command] <file>" command.
 pub void
 c_find(Invocation* invo) {
    if (!portCheckCanSetCurBookForceIt(invo->forceit))
@@ -8619,10 +8605,10 @@ c_find(Invocation* invo) {
       );
    } else {
       fname = findFileInPath(
-         mbText(invo->arg), FNAME_MESS, true, curBook->fullFileName, 
+         mbText(invo->arg), FNAME_MESS, true, curBook->fullFileName,
          OUT &file_to_find, OUT &search_ctx
       );
-      
+
       if (invo->addr_count > 0) {
          //Repeat finding the file "count" times. This matters when it appears
          //several times in the path.
@@ -8630,7 +8616,7 @@ c_find(Invocation* invo) {
          while (fname && --count > 0) {
             eeglFree(fname);
             fname = findFileInPath(
-               (Text){NULL, 0}, FNAME_MESS, false, curBook->fullFileName, 
+               (Text){NULL, 0}, FNAME_MESS, false, curBook->fullFileName,
                OUT &file_to_find, OUT &search_ctx
             );
          }
@@ -8647,7 +8633,7 @@ c_find(Invocation* invo) {
    eeglFree(fname);
 }
 
-//":open" simulation: for now works just like ":visual".
+//";open" simulation: for now works just like ";visual".
 pub void
 c_open(Invocation* invo) {
    RegMatch   regmatch;
@@ -8656,7 +8642,7 @@ c_open(Invocation* invo) {
    curPor->cursor.lnum = invo->line2;
    beginline(BL_SOL | BL_FIX);
    if (*invo->arg == '/') {
-      //":open /pattern/": put cursor in column found with pattern
+      //";open /pattern/": put cursor in column found with pattern
       ++invo->arg;
       p = skip_regexp(invo->arg, '/', true);
       *p = ZERO;
@@ -8682,7 +8668,7 @@ c_open(Invocation* invo) {
    do_exedit(invo, NULL);
 }
 
-//":edit", ":badd", ":balt", ":visual".
+//";edit", ";badd", ";balt", ";visual".
 pub void
 c_edit(Invocation* invo) {
    CS fullFName = invo->id == C_enew ? NULL : invo->arg;
@@ -8694,8 +8680,8 @@ c_edit(Invocation* invo) {
           && (!isSameFile(0, fullFName) && !portCheckCanSetCurBookForceIt(invo->forceit))
    )
       return;
-      
-   if (invo->id == C_edit && STRCHR(invo->arg, ' ') != NULL) { //:e a.txt b.txt
+
+   if (invo->id == C_edit && STRCHR(invo->arg, ' ') != NULL) { //;e a.txt b.txt
       ArrayList names = splitBySpace(invo->arg);
       for (int i = 0; i < names.len; i++) {
          CS name = ((Arr(CS))names.c)[i];
@@ -8709,7 +8695,7 @@ c_edit(Invocation* invo) {
    }
 }
 
-//":edit <file>" command and alike.
+//";edit <file>" command and alike.
 pub void
 do_exedit(Invocation* invo, Portal* old_curPor) {      //curPor before doing a split or NULL
    if ((invo->id != C_pedit && portErrorIfPopup(false)) || portErrorIfTermPopup())
@@ -8718,7 +8704,7 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      //curPor before doing a s
    if ((invo->id == C_new || invo->id == C_tabnew || invo->id == C_tabedit || invo->id == C_vnew)
          && *invo->arg == ZERO
    ) {
-      //":new" or ":tabnew" without argument: edit a new empty book
+      //";new" or ";tabnew" without argument: edit a new empty book
       setpcmark();
       (void)startEditingFile(
          0, NULL, NULL, invo, ECMD_ONE, ECMD_HIDE + (invo->forceit ? ECMD_FORCEIT : 0),
@@ -8726,7 +8712,7 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      //curPor before doing a s
       );
    } ei ((invo->id != C_split && invo->id != C_vsplit) || *invo->arg != ZERO) {
       //Can't edit another file when "textlock" or "curBookLock" is set.
-      //Only ":edit" or ":script" can bring us here, others are stopped earlier.
+      //Only ";edit" or ";script" can bring us here, others are stopped earlier.
       if (*invo->arg != ZERO && text_or_buf_locked())
          return;
       Boole modifiable = false;
@@ -8736,7 +8722,7 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      //curPor before doing a s
       if (invo->id != C_balt && invo->id != C_badd)
          setpcmark();
       if (startEditingFile(
-           0, 
+           0,
            (invo->id == C_enew ? NULL : invo->arg),
            NULL, invo, invo->higherOrderLnum,
            ECMD_HIDE | (invo->forceit ? ECMD_FORCEIT : 0)
@@ -8761,8 +8747,8 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      //curPor before doing a s
             leave_cleanup(&cs);
          }
       } ei (curBook->o.modifiable && curBook->countPortals == 1) {
-         //When editing an already visited book, @modifiable won't be set but the previous value 
-         //is kept. With ":view" and ":sview" we want the file to be readonly, except when 
+         //When editing an already visited book, @modifiable won't be set but the previous value
+         //is kept. With ";view" and ";sview" we want the file to be readonly, except when
          //another portal is editing the same book.
          curBook->o.modifiable = false;
       }
@@ -8772,7 +8758,7 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      //curPor before doing a s
       check_arg_idx(curPor);
    }
 
-   //if ":split file" worked, set alternate file name in old portal to new file
+   //if ";split file" worked, set alternate file name in old portal to new file
    if (old_curPor
           && *invo->arg != ZERO
           && curPor != old_curPor
@@ -8780,12 +8766,12 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      //curPor before doing a s
           && old_curPor->book != curBook
           && (commModifierG.cmod_flags & CMOD_KEEPALT) == 0) {
       old_curPor->altFnum = curBook->fiNum;
-   } 
+   }
 
    ex_no_reprint = true;
 }
 
-//":syncbind" forces all scrollbound portals to have the same relative offset.
+//";syncbind" forces all scrollbound portals to have the same relative offset.
 //(1998-11-02 16:21:01  R. Edward Ralston <eralston@computer.org>)
 pub void
 c_syncbind(Invocation*) {
@@ -8844,7 +8830,7 @@ c_syncbind(Invocation*) {
 
 pub void
 c_read(Invocation* invo) {
-   if (invo->usefilter) {        //:r!cmd
+   if (invo->usefilter) {        //;r!cmd
       do_bang(1, invo, false, false, true);
       return;
    }
@@ -8892,8 +8878,8 @@ get_prevdir(CdScopeKind scope) {
 }
 
 //Deal with the side effects of changing the current directory.
-//When 'scope' is CDSCOPE_TABPAGE then this was after an ":tcd" command.
-//When 'scope' is CDSCOPE_WINDOW then this was after an ":lcd" command.
+//When 'scope' is CDSCOPE_TABPAGE then this was after an ";tcd" command.
+//When 'scope' is CDSCOPE_WINDOW then this was after an ";lcd" command.
 pub void
 post_chdir(CdScopeKind scope) {
    if (scope != CDSCOPE_WINDOW)
@@ -8947,7 +8933,7 @@ changedir_func(CS new_dir, CdScopeKind scope){
        return false;
    }
 
-   //":cd -": Change to previous directory
+   //";cd -": Change to previous directory
    if (STRCMP(new_dir, "-") == 0) {
       pdir = get_prevdir(scope);
       if (pdir == NULL) {
@@ -8957,10 +8943,10 @@ changedir_func(CS new_dir, CdScopeKind scope){
       new_dir = pdir;
    }
 
-   //Save current directory for next ":cd -"
+   //Save current directory for next ";cd -"
    pdir = (mch_dirname(nameBuffG, MAXPATHL) == OK) ? copyStr(nameBuffG) : null;
 
-   //":cd" means: go to home directory.
+   //";cd" means: go to home directory.
    if (*new_dir == ZERO) {
       //use nameBuffG for home directory name
       doExpandEnv(OUT nameBuffTextG, S"$HOME");
@@ -9000,7 +8986,7 @@ changedir_func(CS new_dir, CdScopeKind scope){
    return true;
 }
 
-//":cd", ":tcd", ":lcd", ":chdir" ":tchdir" and ":lchdir".
+//";cd", ";tcd", ";lcd", ";chdir" ";tchdir" and ";lchdir".
 pub void
 c_cd(Invocation* invo) {
    CS new_dir = invo->arg;
@@ -9016,7 +9002,7 @@ c_cd(Invocation* invo) {
       c_pwd(invo);
 }
 
-//":pwd".
+//";pwd".
 pub void
 c_pwd(Invocation*) {
    if (mch_dirname(nameBuffG, MAXPATHL) == OK) {
@@ -9082,7 +9068,7 @@ doSleep(Long msec, Boole hide_cursor) {
 
    termOutFlush();
    while (!gotInterruptG && done < msec) {
-      wait_now = msec - done > 1000L ? 1000L : msec - done; 
+      wait_now = msec - done > 1000L ? 1000L : msec - done;
       {
          Long due_time = check_due_timer();
 
@@ -9097,7 +9083,7 @@ doSleep(Long msec, Boole hide_cursor) {
          ui_breakcheck_force(true);
       else
          ui_breakcheck();
-      //Process the clientserver messages that may have been received in the call to ui_breakcheck() 
+      //Process the clientserver messages that may have been received in the call to ui_breakcheck()
       //when the GUI is in use. This may occur when running a test case.
       parse_queued_messages();
 
@@ -9134,7 +9120,7 @@ c_wincmd(Invocation* invo) {
    if (p[0] != ZERO && !isComment(p))
       emsg(_(e_invalid_argument));
    ei (!invo->skip) {
-      //Pass flags on for ":vertical wincmd ]".
+      //Pass flags on for ";vertical wincmd ]".
       postponed_split_flags = commModifierG.cmod_split;
       postponed_split_tab = commModifierG.cmod_tab;
       doPortal(*invo->arg, invo->addr_count > 0 ? invo->line2 : 0L, xchar);
@@ -9143,7 +9129,7 @@ c_wincmd(Invocation* invo) {
    }
 }
 
-//":winpos".
+//";winpos".
 pub void
 c_portPos(Invocation* invo) {
    int x, y;
@@ -9166,7 +9152,7 @@ c_portPos(Invocation* invo) {
     }
 }
 
-//Handle commands that work like operators: ":delete", ":yank", ":>" and ":<"
+//Handle commands that work like operators: ";delete", ";yank", ";>" and ";<"
 pub void
 c_operators(Invocation* invo) {
    Operator oper;
@@ -9210,10 +9196,10 @@ c_operators(Invocation* invo) {
    mayPrint(invo);
 }
 
-//":put".
+//";put".
 pub void
 c_put(Invocation* invo) {
-   //":0put" works like ":1put!".
+   //";0put" works like ";1put!".
    if (invo->line2 == 0) {
       invo->line2 = 1;
       invo->forceit = true;
@@ -9223,10 +9209,10 @@ c_put(Invocation* invo) {
    do_put(invo->regname, NULL, invo->forceit ? BACKWARD : FORWARD, 1L, PUT_LINE|PUT_CURSLINE);
 }
 
-//":iput".
+//";iput".
 pub void
 c_iput(Invocation* invo) {
-   //":0iput" works like ":1iput!".
+   //";0iput" works like ";1iput!".
    if (invo->line2 == 0) {
       invo->line2 = 1;
       invo->forceit = true;
@@ -9239,7 +9225,7 @@ c_iput(Invocation* invo) {
    );
 }
 
-//Handle ":copy" and ":move".
+//Handle ";copy" and ";move".
 pub void
 c_copymove(Invocation* invo) {
    long n = doGetCommandAddress(invo, &invo->arg, invo->addressKind, false, false, false, 1);
@@ -9273,12 +9259,12 @@ mayPrint(Invocation* invo) {
    }
 }
 
-//":join".
+//";join".
 pub void
 c_join(Invocation* invo) {
    curPor->cursor.lnum = invo->line1;
    if (invo->line1 == invo->line2) {
-      if (invo->addr_count >= 2)   //:2,2join does nothing
+      if (invo->addr_count >= 2)   //;2,2join does nothing
          return;
       if (invo->line2 == curBook->mem.lineCount) {
          inpFlushIfNotSilent();
@@ -9291,7 +9277,7 @@ c_join(Invocation* invo) {
    mayPrint(invo);
 }
 
-//":[addr]@r" or ":[addr]*r": execute register
+//";[addr]@r" or ";[addr]*r": execute register
 pub void
 c_at(Invocation* invo) {
    int prev_len = typeBufG.validLen;
@@ -9327,10 +9313,10 @@ c_bang(Invocation* invo) {
    do_bang(invo->addr_count, invo, invo->forceit, true, true);
 }
 
-//":undo".
+//";undo".
 pub void
 c_undo(Invocation* invo) {
-   if (invo->addr_count == 1)       //:undo 123
+   if (invo->addr_count == 1)       //;undo 123
       undo_time(invo->line2, false, false, true);
    else
       u_undo(1);
@@ -9352,13 +9338,13 @@ c_rundo(Invocation* invo) {
    u_read_undo(invo->arg, hash, NULL);
 }
 
-//":redo".
+//";redo".
 pub void
 c_redo(Invocation*) {
    u_redo(1);
 }
 
-//":earlier" and ":later".
+//";earlier" and ";later".
 pub void
 c_later(Invocation* invo) {
    long   count = 0;
@@ -9385,7 +9371,7 @@ c_later(Invocation* invo) {
       undo_time(invo->id == C_earlier ? -count : count, sec, file, false);
 }
 
-//":redir": start/stop redirection.
+//";redir": start/stop redirection.
 pub void
 c_redir(Invocation* invo) {
    CS mode;
@@ -9471,26 +9457,22 @@ c_redir(Invocation* invo) {
       redir_off = false;
 }
 
-//":redraw": force redraw, with clear for ":redraw!".
+//";redraw": force redraw, with clear for ";redraw!".
 pub void
 c_redraw(Invocation* invo) {
    redraw_cmd(invo->forceit);
 }
 
-//":redraw": force redraw, with clear if "clear" is true.
+//";redraw": force redraw, with clear if "clear" is true.
 pub void
 redraw_cmd(int clear) {
    int save_isRedrawingDisabledG = isRedrawingDisabledG;
    isRedrawingDisabledG = 0;
 
-   int save_p_lz = p_lz;
-   p_lz = false;
-
    validate_cursor();
    update_topline();
    drawUpdateScreen(clear ? UPD_CLEAR : VIsual_active ? UPD_INVERTED : 0);
    isRedrawingDisabledG = save_isRedrawingDisabledG;
-   p_lz = save_p_lz;
 
    //After drawing the statusline screen_attr may still be set.
    drawStopHilite();
@@ -9509,7 +9491,7 @@ redraw_cmd(int clear) {
    termOutFlush();
 }
 
-//":redrawstatus": force redraw of status line(s)
+//";redrawstatus": force redraw of status line(s)
 pub void
 c_redrawstatus(Invocation* invo) {
    if (invo->forceit)
@@ -9522,31 +9504,24 @@ c_redrawstatus(Invocation* invo) {
    int save_isRedrawingDisabledG = isRedrawingDisabledG;
    isRedrawingDisabledG = 0;
 
-   int save_p_lz = p_lz;
-   p_lz = false;
-
-   if (stateG & MODE_COMMLINE)
+   if ((stateG & MODE_COMMLINE) != 0)
       redraw_statuslines();
    else
       drawUpdateScreen(VIsual_active ? UPD_INVERTED : 0);
    isRedrawingDisabledG = save_isRedrawingDisabledG;
-   p_lz = save_p_lz;
    termOutFlush();
 }
 
-//":redrawtabpanel": force redraw of the tabpanel
+//";redrawtabpanel": force redraw of the tabpanel
 pub void
 c_redrawtabpanel(Invocation*) {
    int save_isRedrawingDisabledG = isRedrawingDisabledG;
    isRedrawingDisabledG = 0;
 
-   int save_p_lz = p_lz;
-   p_lz = false;
 
    draw_tabpanel();
 
    isRedrawingDisabledG = save_isRedrawingDisabledG;
-   p_lz = save_p_lz;
    termOutFlush();
 }
 
@@ -9593,7 +9568,7 @@ doOpenCommandsFile(CS fname, int forceit, CS mode) { //"w" for create new file o
    return fd;
 }
 
-//":mark" and ":k".
+//";mark" and ";k".
 pub void
 c_mark(Invocation* invo) {
    if (*invo->arg == ZERO) {     //No argument?
@@ -9601,7 +9576,8 @@ c_mark(Invocation* invo) {
       return;
    }
 
-   if (invo->arg[1] != ZERO) {  //more than one character? showErrFmtMsg(_(e_trailing_characters_str), invo->arg);
+   if (invo->arg[1] != ZERO) {  //more than one character?
+                                //showErrFmtMsg(_(e_trailing_characters_str), invo->arg);
       return;
    }
 
@@ -9638,7 +9614,7 @@ save_current_state(SaveState* sst) {
    msg_scroll = false;          //no msg scrolling in Normal mode
    restart_edit = 0;          //don't go to Insert mode
 
-   //Save the current typeahead.  This is required to allow using ":normal" from an event handler
+   //Save the current typeahead.  This is required to allow using ";normal" from an event handler
    //and makes sure we don't hang when the argument ends with half a command.
    save_typeahead(&sst->tabuf);
    return sst->tabuf.typebuf_valid;
@@ -9663,7 +9639,7 @@ restore_current_state(SaveState* sst) {
    ui_cursor_shape();      //may show different cursor shape
 }
 
-//":normal[!] {commands}": Execute normal mode commands.
+//";normal[!] {commands}": Execute normal mode commands.
 pub void
 c_normal(Invocation* invo) {
    SaveState saveState;
@@ -9688,7 +9664,7 @@ c_normal(Invocation* invo) {
       for (l = utfCharLen(p) - 1; l > 0; --l) {
          if (*++p == K_SPECIAL)     //trailbyte K_SPECIAL or CSI
             len += 2;
-      } 
+      }
    }
    if (len > 0) {
       arg = alloc(STRLEN(invo->arg) + len + 1);
@@ -9734,7 +9710,7 @@ c_normal(Invocation* invo) {
    eeglFree(arg);
 }
 
-//":startinsert", ":startreplace" and ":startgreplace"
+//";startinsert", ";startreplace" and ";startgreplace"
 pub void
 c_startinsert(Invocation* invo) {
    if (invo->forceit) {
@@ -9764,7 +9740,7 @@ c_startinsert(Invocation* invo) {
       showmode();
 }
 
-//":stopinsert"
+//";stopinsert"
 pub void
 c_stopinsert(Invocation*) {
    restart_edit = 0;
@@ -9822,7 +9798,7 @@ c_checkpath(Invocation* invo) {
       (LineNr)1, (LineNr)MAXLNUM, invo->forceit, false);
 }
 
-//":psearch"
+//";psearch"
 pub void
 c_psearch(Invocation* invo) {
    g_do_tagpreview = p_pvh;
@@ -9837,19 +9813,19 @@ c_findpat(Invocation* invo) {
    int      action;
 
    switch (commands[invo->id].name[2]) {
-   case 'e':   //":psearch", ":isearch" and ":dsearch"
+   case 'e':   //";psearch", ";isearch" and ";dsearch"
       if (commands[invo->id].name[0] == 'p')
          action = ACTION_GOTO;
       else
          action = ACTION_SHOW;
       break;
-   case 'i':   //":ilist" and ":dlist"
+   case 'i':   //";ilist" and ";dlist"
        action = ACTION_SHOW_ALL;
        break;
-   case 'u':   //":ijump" and ":djump"
+   case 'u':   //";ijump" and ";djump"
        action = ACTION_GOTO;
        break;
-   default:   //":isplit" and ":dsplit"
+   default:   //";isplit" and ";dsplit"
        action = ACTION_SPLIT;
        break;
    }
@@ -9881,18 +9857,17 @@ c_findpat(Invocation* invo) {
 
 private void
 tagCmd(Invocation* invo, CS name) {
-   int      cmd;
-
+   int cmd;
    switch (name[1]) {
-   case 'j': cmd = DT_JUMP;   //":tjump"
+   case 'j': cmd = DT_JUMP;   //";tjump"
         break;
-   case 's': cmd = DT_SELECT;   //":tselect"
+   case 's': cmd = DT_SELECT;   //";tselect"
         break;
-   case 'p': cmd = DT_PREV;   //":tprevious"
+   case 'p': cmd = DT_PREV;   //";tprevious"
         break;
-   case 'N': cmd = DT_PREV;   //":tNext"
+   case 'N': cmd = DT_PREV;   //";tNext"
         break;
-   case 'n': cmd = DT_NEXT;   //":tnext"
+   case 'n': cmd = DT_NEXT;   //";tnext"
         break;
    case 'o': cmd = DT_POP;      //":pop"
         break;
@@ -9920,17 +9895,17 @@ tagCmd(Invocation* invo, CS name) {
 
 
 
-//":ptag", ":ptselect", ":ptjump", ":ptnext", etc.
+//";ptag", ";ptselect", ";ptjump", ";ptnext", etc.
 pub void
 c_ptag(Invocation* invo) {
    g_do_tagpreview = p_pvh;  //will be reset to 0 in tagCmd()
    tagCmd(invo, commands[invo->id].name + 1);
 }
 
-//":pedit"
+//";pedit"
 pub void
 c_pedit(Invocation* invo) {
-   Portal   *curPor_save = curPor;
+   Portal* curPor_save = curPor;
    prepare_preview_window();
 
    //Edit the file.
@@ -9942,7 +9917,7 @@ c_pedit(Invocation* invo) {
 //":pbook"
 pub void
 c_pbuffer(Invocation* invo) {
-   Portal   *curPor_save = curPor;
+   Portal* curPor_save = curPor;
    prepare_preview_window();
 
    //Go to the book.
@@ -9995,24 +9970,24 @@ c_tag(Invocation* invo) {
 enum {
    SPEC_PERC = 0,
    SPEC_HASH,
-   SPEC_CWORD,       //cursor word
-   SPEC_CCWORD,    //cursor WORD
-   SPEC_CEXPR,       //expr under cursor
-   SPEC_CFILE,       //cursor path name
-   SPEC_SFILE,       //":so" file name
-   SPEC_SLNUM,       //":so" file line number
-   SPEC_STACK,       //call stack
-   SPEC_SCRIPT,    //script file name
-   SPEC_AFILE,       //autocommand file name
-   SPEC_ABUF,       //autocommand book number
-   SPEC_AMATCH,    //autocommand match name
-   SPEC_SFLNUM,    //script file line number
+   SPEC_CWORD,    //cursor word
+   SPEC_CCWORD,   //cursor WORD
+   SPEC_CEXPR,    //expr under cursor
+   SPEC_CFILE,    //cursor path name
+   SPEC_SFILE,    //":so" file name
+   SPEC_SLNUM,    //":so" file line number
+   SPEC_STACK,    //call stack
+   SPEC_SCRIPT,   //script file name
+   SPEC_AFILE,    //autocommand file name
+   SPEC_ABUF,     //autocommand book number
+   SPEC_AMATCH,   //autocommand match name
+   SPEC_SFLNUM,   //script file line number
    SPEC_SID       //script ID: <SNR>123_
 };
 
 //Check "str" for starting with a special commline variable.
 //If found return one of the SPEC_ values and set "*usedlen" to the length of
-//the variable.  Otherwise return -1 and "*usedlen" is unchanged.
+//the variable. Otherwise return -1 and "*usedlen" is unchanged.
 pub int
 find_commline_var(CS src, Unt *usedlen) {
    //must be sorted by the 'value' field because it is used by bsearch()!
@@ -10315,7 +10290,7 @@ evalVars(
       } ei (!skip_mod) {
          valid |= modify_fname(src, tilde_file, usedlen, &result, &resultbuf, &resultlen);
          if (!result) {
-            *errorMsg = S""; 
+            *errorMsg = S"";
             return NULL;
          }
       }
@@ -10343,7 +10318,7 @@ expand_sfile(CS arg) {
    CS result = copySubstr(arg, resultlen);
    if (!result)
       return NULL;
-      
+
 
    for (CS p = result; *p; ) {
       if (STRNCMP(p, "<sfile>", 7) != 0)
@@ -10444,7 +10419,7 @@ c_filetype(Invocation* invo) {
          if (plugin) {
             source_runtime((CS)FTPLUGIN_FILE, DIP_ALL);
             filetype_plugin = true;
-          }
+         }
          if (indent) {
             source_runtime((CS)INDENT_FILE, DIP_ALL);
             filetype_indent = true;
@@ -10499,8 +10474,8 @@ c_folddo(Invocation* invo) {
    //First set the marks for all lines closed/open.
    for (LineNr lnum = invo->line1; lnum <= invo->line2; ++lnum) {
       if (getFolds(lnum, NULL, NULL) == (invo->id == C_folddoclosed))
-          ml_setmarked(lnum);
-   } 
+         ml_setmarked(lnum);
+   }
 
    //Execute the command on the marked lines.
    global_exe(invo->arg);
@@ -10527,15 +10502,15 @@ commandFlagExpandWildcards() {
    return XFILE;
 }
 
-//Ask for a reply from the user, a 'y' or a 'n', with prompt "str" (which should have been 
+//Ask for a reply from the user, a 'y' or a 'n', with prompt "str" (which should have been
 //translated already). No other characters are accepted, the message is repeated until a valid
-//reply is entered or CTRL-C is hit. If direct is true, don't use vgetc() but ui_inchar(), don't 
+//reply is entered or CTRL-C is hit. If direct is true, don't use vgetc() but ui_inchar(), don't
 //get characters from any buffers but directly from the user.
 //
 //return the 'y' or 'n'
-pub int
+pub Unt
 ask_yesno(CS str, int direct) {
-   int r = ' ';
+   Unt r = ' ';
    int save_State = stateG;
 
    if (isExitingG)      //put terminal in raw mode for this question
@@ -10883,7 +10858,7 @@ private void
 u_check_tree(UndoHeader *uhp, UndoHeader *exp_uh_next, UndoHeader *exp_altPrev) {
    if (!uhp)
       return;
-      
+
    ++header_count;
    if (uhp == curBook->undo.currHead && ++seen_currHead > 1) {
       emsg("currHead found twice (looping?)");
@@ -10944,15 +10919,15 @@ u_check(int newhead_may_be_NULL) {
 }
 #endif
 
-//Save the current line for both the "u" and "U" command. Careful: may trigger autocommands that 
+//Save the current line for both the "u" and "U" command. Careful: may trigger autocommands that
 //reload the book. Return OK or FAIL.
 pub int
 u_save_cursor(void) {
    return (u_save((LineNr)(curPor->cursor.lnum - 1), (LineNr)(curPor->cursor.lnum + 1)));
 }
 
-//Save the lines between "top" and "bot" for both the "u" and "U" command. "top" may be 0 and 
-//"bot" may be curBook->mem.lineCount + 1. Careful: may trigger autocommands that reload the 
+//Save the lines between "top" and "bot" for both the "u" and "U" command. "top" may be 0 and
+//"bot" may be curBook->mem.lineCount + 1. Careful: may trigger autocommands that reload the
 //book. Return FAIL when lines could not be saved, OK otherwise.
 pub int
 u_save(LineNr top, LineNr bot) {
@@ -10979,7 +10954,7 @@ u_savesub(LineNr lnum) {
    return (u_savecommon(lnum - 1, lnum + 1, lnum + 1, false));
 }
 
-//A new line is inserted before line "lnum" (used by :s command). The line is inserted, so the new 
+//A new line is inserted before line "lnum" (used by :s command). The line is inserted, so the new
 //bottom line is lnum + 1. Careful: may trigger autocommands that reload the book.
 //Return FAIL when lines could not be saved, OK otherwise.
 private int
@@ -11242,9 +11217,9 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
                   u_getbot();
                   curBook->undo.synced = false;
 
-                  //Move the found entry to become the last entry. The order of undo/redo doesn't 
+                  //Move the found entry to become the last entry. The order of undo/redo doesn't
                   //matter for the entries we move it over, since they don't change the line
-                  //count and don't include this line. It does matter for the found entry if the line 
+                  //count and don't include this line. It does matter for the found entry if the line
                   //count is changed by the executed command.
                   prev_uep->ue_next = uep->ue_next;
                   uep->ue_next = curBook->undo.newHead->uh_entry;
@@ -11470,7 +11445,7 @@ serialize_header(BufInfo* bi, Arr(Byte) hash) {
    //book-specific data
    undo_write_bytes(bi, (Ulong)book->mem.lineCount, 4);
    undo_write_bytes(bi, (Ulong)book->undo.line.ul_textlen, 4);
-   if (book->undo.line.ul_textlen > 0 
+   if (book->undo.line.ul_textlen > 0
          && writeToUndoFile(bi, book->undo.line.ul_line, (Unt)book->undo.line.ul_textlen) == FAIL
    )
       return FAIL;
@@ -11783,7 +11758,7 @@ u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
             Byte mbuf[UF_START_MAGIC_LEN];
             int len = fiReadEintr(fd, mbuf, UF_START_MAGIC_LEN);
             close(fd);
-            
+
             if (len < UF_START_MAGIC_LEN || memcmp(mbuf, UF_START_MAGIC, UF_START_MAGIC_LEN) != 0) {
                if (p_verbose > 0)
                   verbose_enter();
@@ -12087,35 +12062,35 @@ u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
             corruption_error("duplicate uh_seq", file_name);
             goto error;
          }
-      } 
+      }
       for (int j = 0; j < num_head; j++) {
          if (uhp_table[j] != NULL && uhp_table[j]->uh_seq == uhp->next.seq) {
             uhp->next.ptr = uhp_table[j];
             SET_FLAG(j);
             break;
          }
-      } 
+      }
       for (int j = 0; j < num_head; j++) {
          if (uhp_table[j] != NULL && uhp_table[j]->uh_seq == uhp->prev.seq) {
             uhp->prev.ptr = uhp_table[j];
             SET_FLAG(j);
             break;
          }
-      } 
+      }
       for (int j = 0; j < num_head; j++) {
          if (uhp_table[j] != NULL && uhp_table[j]->uh_seq == uhp->altNext.seq) {
             uhp->altNext.ptr = uhp_table[j];
             SET_FLAG(j);
             break;
          }
-      } 
+      }
       for (int j = 0; j < num_head; j++) {
          if (uhp_table[j] != NULL && uhp_table[j]->uh_seq == uhp->altPrev.seq) {
             uhp->altPrev.ptr = uhp_table[j];
             SET_FLAG(j);
             break;
          }
-      } 
+      }
       if (old_header_seq > 0 && old_idx < 0 && uhp->uh_seq == old_header_seq) {
          old_idx = i;
          SET_FLAG(i);
@@ -12134,14 +12109,14 @@ u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
    //info and use the info from the file.
    u_blockfree(curBook);
    curBook->undo = (Undo){
-       .oldHead = old_idx < 0 ? NULL : uhp_table[old_idx],    
-       .newHead = neidx < 0 ? NULL : uhp_table[neidx],    
-       .currHead = cur_idx < 0 ? NULL : uhp_table[cur_idx],    
-       .line = line_ptr,     .lineLnum = line_lnum,    
-       .lineCol = line_colnr, .countHeaders = num_head,    
-       .seqLast = seq_last,     .seqCurr = seq_cur,    
-       .timeCurr = seq_time,    
-       .saveNrLast = last_save_nr,    
+       .oldHead = old_idx < 0 ? NULL : uhp_table[old_idx],
+       .newHead = neidx < 0 ? NULL : uhp_table[neidx],
+       .currHead = cur_idx < 0 ? NULL : uhp_table[cur_idx],
+       .line = line_ptr,     .lineLnum = line_lnum,
+       .lineCol = line_colnr, .countHeaders = num_head,
+       .seqLast = seq_last,     .seqCurr = seq_cur,
+       .timeCurr = seq_time,
+       .saveNrLast = last_save_nr,
        .saveNrCurr = last_save_nr,
        .synced = true
    };
@@ -12152,7 +12127,7 @@ u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
    for (i = 0; i < num_head; ++i) {
       if (uhp_table_used[i] == 0)
          showErrFmtMsg("uhp_table entry %ld not used, leaking memory", i);
-   } 
+   }
    eeglFree(uhp_table_used);
    u_check(true);
 #endif
@@ -12167,7 +12142,7 @@ error:
       for (int i = 0; i < num_read_uhps; i++) {
          if (uhp_table[i])
             u_free_uhp(uhp_table[i]);
-      } 
+      }
       eeglFree(uhp_table);
    }
 
@@ -12303,7 +12278,7 @@ undo_time(long step, int sec, int file, int absolute) {
           target = (long)(curBook->undo.timeCurr) + step;
       ei (dofile) {
          if (step < 0) {
-            //Going back to a previous write. If there were changes after the last write, count that as 
+            //Going back to a previous write. If there were changes after the last write, count that as
             //moving one file-write, so that ":earlier 1f" undoes all changes since the last save.
             uhp = curBook->undo.currHead;
             if (uhp)
@@ -12384,7 +12359,7 @@ undo_time(long step, int sec, int file, int absolute) {
             val = uhp->uh_seq;
 
          if (round == 1 && !(dofile && val == 0)) {
-            //Remember the header that is closest to the target. It must be at least in the right 
+            //Remember the header that is closest to the target. It must be at least in the right
             //direction (checked with "seqCurr").  When the timestamp is equal find the
             //highest/lowest sequence number.
             if ((step < 0 ? uhp->uh_seq <= curBook->undo.seqCurr
@@ -12471,10 +12446,10 @@ undo_time(long step, int sec, int file, int absolute) {
 
 target_zero:
    //If we found it: Follow the path to go to where we want to be.
-   
+
    if (!uhp && target != 0) {
       goto theEnd;
-   } 
+   }
    //First go up the tree as much as needed.
    while (!gotInterruptG) {
       //Do the change warning now, for the same reason as above.
@@ -12561,7 +12536,7 @@ target_zero:
          }
       }
    }
-theEnd: 
+theEnd:
    u_undo_end(did_undo, absolute);
 }
 
@@ -12775,8 +12750,8 @@ u_undoredo(Boole undo) {
       } else
          beginline(BL_SOL | BL_FIX);
    } else {
-      //We get here with the current cursor line being past the end (eg after adding lines at the 
-      //end of the file, and then undoing it). check_cursor() will move the cursor to the last 
+      //We get here with the current cursor line being past the end (eg after adding lines at the
+      //end of the file, and then undoing it). check_cursor() will move the cursor to the last
       //line. Move it to the first column here.
       curPor->cursor.col = 0;
       curPor->cursor.coladd = 0;
@@ -12814,12 +12789,12 @@ u_undoredo(Boole undo) {
 #endif
 }
 
-//If we deleted or added lines, report the number of less/more lines. Otherwise, report the number 
+//If we deleted or added lines, report the number of less/more lines. Otherwise, report the number
 //of changes (this may be incorrect in some cases, but it's better than nothing).
 private void
 u_undo_end(
    Boole did_undo,  //just did an undo
-   Boole absolute   //used ":undo N"
+   Boole absolute   //used ";undo N"
 ){
    CS msgstr;
    UndoHeader   *uhp;
@@ -12828,8 +12803,7 @@ u_undo_end(
    if ((p_fdo & FDO_UNDO) && keyWasTypedG)
       foldOpenCursor();
 
-   if (global_busy       //no messages now, wait until global is finished
-          || !messaging())  //'lazyredraw' set, don't do messages now
+   if (global_busy) //no messages now, wait until global is finished
       return;
 
    if (curBook->mem.flags & ML_EMPTY)
@@ -13280,7 +13254,7 @@ u_undoline(void) {
    if (u_savecommon(curBook->undo.lineLnum - 1,
              curBook->undo.lineLnum + 1, (LineNr)0, false) == FAIL)
       return;
-      
+
    UndoLine  oldp;
    if (u_save_line(&oldp, curBook->undo.lineLnum) == FAIL) {
       do_outofmem_msg((Ulong)0);
@@ -13327,7 +13301,7 @@ evalTree(Book* book, UndoHeader* first_uhp, List* list) {
 
       listAppendBag(list, dict);
       uhp = uhp->prev.ptr;
-   } 
+   }
 }
 
 //"undofile(name)" function
@@ -13392,7 +13366,7 @@ f_undotree(Var* argvars, Var* returnVar) {
 //}}}
 //{{{changes to text
 
-//If the file is readonly, give a warning message with the first change. Don't do this for 
+//If the file is readonly, give a warning message with the first change. Don't do this for
 //autocommands. Don't use emsg() because it flushes the macro buffer.
 //If we have undone all changes, "wasModified" will be false, but "didWarnReadonly" will be true.
 //"col" is the column for the message; non-zero when in insert mode and 'showmode' is on.
@@ -13487,7 +13461,7 @@ check_status(Book* book) {
          po->statusLineNeedsRedraw = true;
          drawSetMustRedraw(UPD_VALID);
       }
-   } 
+   }
 }
 
 //Internal part of changed(), no user interaction. Also used for recovery.
@@ -13793,7 +13767,7 @@ changed_common(
             }
          }
          if (add) {
-            //This is the first of a new sequence of undo-able changes and it's at some distance 
+            //This is the first of a new sequence of undo-able changes and it's at some distance
             //of the last change. Use a new position in the changelist.
             curBook->newChange = false;
 
@@ -13851,7 +13825,7 @@ changed_common(
                )
          ) {
             po->skipCol = 0;
-         } 
+         }
 
          //Check if a change in the book has invalidated the cached values for the cursor.
          //Update the folds for this portal.  Can't postpone this, because
@@ -13860,7 +13834,7 @@ changed_common(
 
          //The change may cause lines above or below the change to become included in a fold.
          //Set lnum/lnume to the first/last line that might be displayed differently.
-         //Set isCursorLineFolded here as an efficient way to update it when inserting lines 
+         //Set isCursorLineFolded here as an efficient way to update it when inserting lines
          //just above a closed fold.
          i = getFoldsPortal(po, lnum, OUT &lnum, NULL, false, NULL);
          if (po->cursor.lnum == lnum) {
@@ -13987,7 +13961,7 @@ changed_bytes(LineNr lnum, ColNr col) {
             if (poLnum > 0)
                changedOneline(po->book, poLnum);
          }
-      } 
+      }
    }
 }
 
@@ -14093,13 +14067,13 @@ doChangedLines(
             if (poLnum > 0)
                doChangedLinesBook(po->book, poLnum, lnume - lnum + poLnum, 0L);
          }
-      } 
+      }
    }
 
    changed_common(lnum, col, lnume, xtra);
 }
 
-//Called when the changed flag must be reset for book "book". When "always_inc_changedtick" is 
+//Called when the changed flag must be reset for book "book". When "always_inc_changedtick" is
 //true b:changedtick is incremented also when the changed flag was off.
 pub void
 unchanged(Book* book, int always_inc_changedtick) {
@@ -14171,7 +14145,7 @@ opInsertCharBytes(CS targetLine, int charlen, Boole replace) {
    int oldLineLen = (int)ml_get_len(lnum) + 1; //length of old line including ZERO
 
    //The lengths default to the values for when not replacing.
-   int oldCharLen = replace ? utfCharLen(oldp + col) : 0; //nr of bytes deleted (0 when not 
+   int oldCharLen = replace ? utfCharLen(oldp + col) : 0; //nr of bytes deleted (0 when not
                                                           //replacing)
    int newCharLen = charlen; //nr of bytes inserted
 
@@ -14361,19 +14335,19 @@ doInsertLine(Byte dir) { //FORWARD or BACKWARD
       return FAIL;
    }
    ++curPor->cursor.lnum;
-    
+
    (void)doSetIndent(newIndent, SIN_INSERT);
-    
+
    //Postpone calling doChangedLines(), because it would mess up folding with markers.
    markAdjust(curPor->cursor.lnum + 1, (LineNr)MAXLNUM, 1L, 0L, true);
-    
+
    doChangedLines(curPor->cursor.lnum, curPor->cursor.col, curPor->cursor.lnum + 1, 1L);
    curPor->cursor.lnum = oldCursor.lnum + 1;
    return OK;
 }
 
-//get_leader_len() returns the length in bytes of the prefix of the given string which introduces 
-//a comment. If this string is not a comment then 0 is returned. When "flags" is not NULL, it is 
+//get_leader_len() returns the length in bytes of the prefix of the given string which introduces
+//a comment. If this string is not a comment then 0 is returned. When "flags" is not NULL, it is
 //set to point to the flags of the recognized comment leader.
 //"backward" must be true for the "O" command.
 //If "include_space" is set, include trailing whitespace while calculating the length.
@@ -14382,7 +14356,7 @@ get_leader_len(CS line, Byte** flags, int backward, int include_space) {
    if (!curBook->o.comments) {
       return 0;
    }
-   
+
    int j;
    int got_com = false;
    Boole foundOne;
@@ -14442,15 +14416,15 @@ get_leader_len(CS line, Byte** flags, int backward, int include_space) {
          if (string[j] != ZERO)
             continue;  //string doesn't match
 
-         //When 'b' flag set, there must be white space or an end-of-line after the string in 
+         //When 'b' flag set, there must be white space or an end-of-line after the string in
          //the line
          if (firstOccurrence(part_buf, COM_BLANK) != NULL
                && !SPACE_OR_TAB(line[i + j]) && line[i + j] != ZERO)
             continue;
 
-         //We have found a match, stop searching unless this is a middle comment. The middle 
-         //comment can be a substring of the end comment in which case it's better to return 
-         //the length of the end comment and its flags. Thus we keep searching with middle and 
+         //We have found a match, stop searching unless this is a middle comment. The middle
+         //comment can be a substring of the end comment in which case it's better to return
+         //the length of the end comment and its flags. Thus we keep searching with middle and
          //end matches and use an end match if it matches better.
          if (firstOccurrence(part_buf, COM_MIDDLE) != NULL) {
             if (middle_match_len == 0) {
@@ -14514,7 +14488,7 @@ pub
 //For MODE_VREPLACE state, we only add a new line when we get to the end of
 //the file, otherwise we just start replacing the next line.
 //
-//Caller must take care of undo.  Since MODE_VREPLACE may affect any number of lines however, 
+//Caller must take care of undo.  Since MODE_VREPLACE may affect any number of lines however,
 //it may call u_save_cursor() again when starting to change a new line.
 //"flags": OPENLINE_DELSPACES   delete spaces after cursor
 //     OPENLINE_DO_COM   format comments
@@ -14524,7 +14498,7 @@ pub
 //     OPENLINE_FORCE_INDENT  set indent from second_line_indent, ignore 'autoindent'
 //
 //"second_line_indent": indent for after ^^D in Insert mode or if flag OPENLINE_COM_LIST
-//"did_do_comment" is set to true when intentionally putting the comment leader in front of the 
+//"did_do_comment" is set to true when intentionally putting the comment leader in front of the
 //new line.
 //
 //Return OK for success, FAIL for failure
@@ -14567,7 +14541,7 @@ openLine(Unt flags, int second_line_indent){
           first_char = *p;
       }
       transferLen = (int)STRLEN(transferText);
-      
+
       saved_char = *transferText;
       *transferText = ZERO;
    }
@@ -14593,11 +14567,11 @@ openLine(Unt flags, int second_line_indent){
           newindent = second_line_indent; //for ^^D command in insert mode
       }
 
-      //Do smart indenting. In insert/replace mode we may move 
-      //some text to the next line. If it starts with '{' don't add an indent. Fixes inserting 
+      //Do smart indenting. In insert/replace mode we may move
+      //some text to the next line. If it starts with '{' don't add an indent. Fixes inserting
       //a NL before '{' in line
       //  `if (condition) {`
-      if (!shouldTruncateLine && do_si && *savedLine != ZERO 
+      if (!shouldTruncateLine && do_si && *savedLine != ZERO
             && (transferText == NULL || first_char != '{')) {
          Byte  last_char;
 
@@ -14631,7 +14605,7 @@ openLine(Unt flags, int second_line_indent){
             if (p[0] == '*') {
                for (p++; *p; p++) {
                   if (p[0] == '/' && p[-1] == '*') {
-                     //End of C comment, indent should line up with the line containing 
+                     //End of C comment, indent should line up with the line containing
                      //the start of the comment.
                      curPor->cursor.col = (ColNr)(p - ptr);
                      if ((pos = findmatch(NULL, ZERO)) != NULL) {
@@ -14658,7 +14632,7 @@ openLine(Unt flags, int second_line_indent){
                   --p;
                 while (p > ptr && SPACE_OR_TAB(*p)) {
                    --p;
-                } 
+                }
             }
             //Try to catch lines that are split over multiple lines. eg:
             //      if (condition &&
@@ -14759,7 +14733,7 @@ openLine(Unt flags, int second_line_indent){
                   lead_repl_len = (int)STRLEN(lead_middle);
                 }
 
-                //If we have hit RETURN immediately after the start comment leader, then put 
+                //If we have hit RETURN immediately after the start comment leader, then put
                 //a space after the middle comment leader on the next line.
                 if (!SPACE_OR_TAB(savedLine[lead_len - 1])
                    && ((transferText != NULL && (int)curPor->cursor.col == lead_len)
@@ -14782,7 +14756,7 @@ openLine(Unt flags, int second_line_indent){
                 --p;
             for (
                lead_repl = p; lead_repl > curBook->o.comments && lead_repl[-1] != ':'; --lead_repl
-            ) {} 
+            ) {}
             lead_repl_len = (int)(p - lead_repl);
 
             //We can probably always add an extra space when doing "O" on the comment-end
@@ -14824,7 +14798,7 @@ openLine(Unt flags, int second_line_indent){
             for (int li = 0; li < comment_start; ++li) {
                if (!SPACE_OR_TAB(leader[li]))
                   leader[li] = ' ';
-            } 
+            }
 
             //Replace leader with lead_repl, right or left adjusted
             if (lead_repl != NULL) {
@@ -14842,7 +14816,7 @@ openLine(Unt flags, int second_line_indent){
                if (c == COM_RIGHT) {   //right adjusted leader
                   //find last non-white in the leader to line up with
                   for (p = leader + lead_len - 1; p > leader && SPACE_OR_TAB(*p); --p)
-                      {} 
+                      {}
                   ++p;
 
                   //Compute the length of the replaced characters in
@@ -14907,7 +14881,7 @@ openLine(Unt flags, int second_line_indent){
                   }
                   MEMMOVE(p, lead_repl, (Unt)lead_repl_len);
 
-                  //Replace any remaining non-white chars in the old leader by spaces. 
+                  //Replace any remaining non-white chars in the old leader by spaces.
                   //Keep Tabs, the indent must remain the same.
                   for (p += lead_repl_len; p < leader + lead_len; ++p) {
                      if (!SPACE_OR_TAB(*p)) {
@@ -14980,8 +14954,8 @@ openLine(Unt flags, int second_line_indent){
          }
          didSindentG = can_si = false;
       } ei (comment_end) {
-         //We have finished a comment, so we don't use the leader. If this was a C-comment 
-         //and 'ai' or 'si' is set do a normal indent to align with the line containing the 
+         //We have finished a comment, so we don't use the leader. If this was a C-comment
+         //and 'ai' or 'si' is set do a normal indent to align with the line containing the
          //start of the comment.
          if (comment_end[0] == '*' && comment_end[1] == '/' && (curBook->o.autoIndent || do_si)) {
             old_cursor = curPor->cursor;
@@ -15014,7 +14988,7 @@ openLine(Unt flags, int second_line_indent){
    } else {
       transferText = S"";          //append empty line
    }
-    
+
    //concatenate leader and transferText, if there is a leader
    if (lead_len) {
       if ((flags & OPENLINE_COM_LIST) != 0 && second_line_indent > 0) {
@@ -15180,12 +15154,6 @@ del_lines(long nlines,   int undo) {
 
 //implementation of various operators: op_shift, op_delete, op_tilde, op_change, op_yank, doJoinLinesUnderCursor
 
-private void shift_block(Operator *oper, int amount);
-private void mb_adjust_opend(Operator *oper);
-private int do_addsub(int opTy, Pos *pos, int length, LineNr prenum1);
-private void pbyte(Pos lp, int c);
-#define PBYTE(lp, c) pbyte(lp, c)
-
 
 //Flags for third item in "opchars".
 #define OPF_LINES  1   //operator always works on lines
@@ -15240,7 +15208,7 @@ get_op_type(Unt char1, Unt char2) {
       return OP_SUB;
    if (char1 == 'z' && char2 == 'y')   //OP_YANK
       return OP_YANK;
-      
+
    Unt i;
    for (i = 0; ; ++i) {
       if (opchars[i][0] == char1 && opchars[i][1] == char2)
@@ -15368,8 +15336,8 @@ get_new_sw_indent(
 
 //Shift the current line 'amount' shiftwidth(s) left (if 'left' is true) or right.
 //
-//The rules for choosing a shiftwidth are: If 'shiftwidth' is non-zero, use 'shiftwidth'; else if 
-//'vartabstop' is not empty, use 'vartabstop'; else use 'tabstop'. The Eegl documentation says 
+//The rules for choosing a shiftwidth are: If 'shiftwidth' is non-zero, use 'shiftwidth'; else if
+//'vartabstop' is not empty, use 'vartabstop'; else use 'tabstop'. The Eegl documentation says
 //nothing about 'softtabstop' or 'varsofttabstop' affecting the shiftwidth, and neither affects the
 //shiftwidth in current versions of Eegl, so they are not considered here.
 pub void
@@ -15403,7 +15371,7 @@ shift_block(Operator *oper, int amount) {
    int added;
    Unt new_line_len;   //the length of the line after the block shift
 
-   stateG = MODE_INSERT; 
+   stateG = MODE_INSERT;
    block_prep(oper, OUT &bd, curPor->cursor.lnum, true);
    if (bd.is_short)
       return;
@@ -15472,11 +15440,11 @@ shift_block(Operator *oper, int amount) {
       ColNr verbatim_copy_width;//the (displayed) width of this part of line
       Unt fill;      //nr of spaces that replace a TAB
       Byte* non_white = bd.textstart;
-      Unt fixedlen;      //length of string left of the shift position (ie the string not 
+      Unt fixedlen;      //length of string left of the shift position (ie the string not
                          //being shifted)
 
-      //Firstly, let's find the first non-whitespace character that is displayed after the 
-      //block's start column and the character's column number. Also, let's calculate the 
+      //Firstly, let's find the first non-whitespace character that is displayed after the
+      //block's start column and the character's column number. Also, let's calculate the
       //width of all the whitespace characters that are displayed in the block and precede the
       //searched non-whitespace character.
 
@@ -15550,7 +15518,7 @@ shift_block(Operator *oper, int amount) {
    //replace the line
    ml_replace(curPor->cursor.lnum, newp, false);
 
-   //compute the number of bytes added or subtracted. note new_line_len and oldlen are unsigned 
+   //compute the number of bytes added or subtracted. note new_line_len and oldlen are unsigned
    //so we have to be careful about how we calculate this.
    if (new_line_len >= oldlen)
       added = (int)(new_line_len - oldlen);
@@ -15675,7 +15643,7 @@ getviscol2(ColNr col, ColNr coladd) {
    pos.lnum = curPor->cursor.lnum;
    pos.col = col;
    pos.coladd = coladd;
-   
+
    ColNr   x;
    bookGetVirtualColInVirtualMode(curPor, &pos, OUT &x, NULL, NULL);
    return (int)x;
@@ -15701,7 +15669,7 @@ gchar_cursor(void) {
 //Handle a delete operation. Return FAIL if undo failed, OK otherwise.
 pub int
 op_delete(Operator* oper) {
-   int n;
+   Unt n;
    LineNr      lnum;
    BlockDef   bd;
    LineNr old_lcount = curBook->mem.lineCount;
@@ -15740,7 +15708,7 @@ op_delete(Operator* oper) {
       return OK;
    }
 
-   //Copy whatever we're about to delete to the register. If a yank register was specified, put 
+   //Copy whatever we're about to delete to the register. If a yank register was specified, put
    //the deleted text into that register. For the black hole register, '_' don't yank anything.
    if (oper->regname != '_') {
       if (oper->regname != 0) {
@@ -15755,7 +15723,7 @@ op_delete(Operator* oper) {
       } else
          reset_y_append(); //not appending to unnamed register
 
-      //Put deleted text into register 1 and shift number registers if the delete contains a line 
+      //Put deleted text into register 1 and shift number registers if the delete contains a line
       //break, or when using a specific operator (Vi compatible)
       if (oper->motion_type == MLINE || oper->line_count > 1 || oper->use_reg_one) {
          shift_delete_registers();
@@ -15765,7 +15733,7 @@ op_delete(Operator* oper) {
 
       //Yank into small delete register when no named register specified
       //and the delete is within one line.
-      if ((oper->regname == '*' || oper->regname == '+' || oper->regname == 0) 
+      if ((oper->regname == '*' || oper->regname == '+' || oper->regname == 0)
          && oper->motion_type != MLINE && oper->line_count == 1
       ){
          oper->regname = '-';
@@ -15888,7 +15856,7 @@ op_delete(Operator* oper) {
             coladvance_force(getviscol2(oper->end.col, oper->end.coladd));
             oper->end = curPor->cursor;
             curPor->cursor = oper->start;
-          }
+         }
          mb_adjust_opend(oper);
       }
 
@@ -16024,11 +15992,10 @@ op_replace(Operator *oper, Unt c) {
          //coladd offset as part of "startspaces"
          if (virtual_op && bd.is_short && *bd.textstart == ZERO) {
             Pos vpos;
-
-         vpos.lnum = curPor->cursor.lnum;
-         getvpos(&vpos, oper->start_vcol);
-         bd.startspaces += vpos.coladd;
-         n = bd.startspaces;
+            vpos.lnum = curPor->cursor.lnum;
+            getvpos(OUT &vpos, oper->start_vcol);
+            bd.startspaces += vpos.coladd;
+            n = bd.startspaces;
          } else
             //allow for pre spaces
             n = (bd.startspaces ? bd.start_char_vcols - 1 : 0);
@@ -16046,8 +16013,8 @@ op_replace(Operator *oper, Unt c) {
          //times.
          if (mb_char2cells(c) > 1) {
             if ((numc & 1) && !bd.is_short) {
-                ++bd.endspaces;
-                ++n;
+               ++bd.endspaces;
+               ++n;
             }
             numc = numc / 2;
          }
@@ -16074,11 +16041,10 @@ op_replace(Operator *oper, Unt c) {
             while (--num_chars >= 0)
                newlen += mb_char2bytes(c, newp + newlen);
             if (!bd.is_short) {
-                //insert post-spaces
-                memset(newp + newlen, ' ', (Unt)bd.endspaces);
-                //copy the part after the changed part
-                STRCPY(newp + newlen + bd.endspaces,
-                  oldp + bd.textcol + bd.textlen);
+               //insert post-spaces
+               memset(newp + newlen, ' ', (Unt)bd.endspaces);
+               //copy the part after the changed part
+               STRCPY(newp + newlen + bd.endspaces, oldp + bd.textcol + bd.textlen);
             }
          } else {
             //Replacing with \r or \n means splitting the line.
@@ -16126,10 +16092,8 @@ op_replace(Operator *oper, Unt c) {
                   int end_vcol = 0;
 
                   if (curPor->cursor.lnum == oper->end.lnum) {
-                      //oper->end has to be recalculated when
-                      //the tab breaks
-                      end_vcol = getviscol2(oper->end.col,
-                                   oper->end.coladd);
+                      //oper->end has to be recalculated when the tab breaks
+                      end_vcol = getviscol2(oper->end.col, oper->end.coladd);
                   }
                   coladvance_force(getviscol());
                   if (curPor->cursor.lnum == oper->end.lnum)
@@ -16137,7 +16101,7 @@ op_replace(Operator *oper, Unt c) {
                }
                //with "coladd" set may move to just after a TAB
                if (gchar_cursor() != ZERO) {
-                  PBYTE(curPor->cursor, c);
+                  pbyte(curPor->cursor, c);
                   done = true;
                }
             }
@@ -16146,8 +16110,9 @@ op_replace(Operator *oper, Unt c) {
             int virtcols = oper->end.coladd;
 
             if (curPor->cursor.lnum == oper->start.lnum
-               && oper->start.col == oper->end.col && oper->start.coladd)
-                virtcols -= oper->start.coladd;
+                  && oper->start.col == oper->end.col && oper->start.coladd
+            )
+               virtcols -= oper->start.coladd;
 
             //oper->end has been trimmed so it's effectively inclusive;
             //as a result an extra +1 must be counted so we don't trample the ZERO
@@ -16157,7 +16122,7 @@ op_replace(Operator *oper, Unt c) {
                if (mb_char2len(c) > 1)
                   replaceAndMoveBack(c);
                else
-                  PBYTE(curPor->cursor, c);
+                  pbyte(curPor->cursor, c);
                if (inc(&curPor->cursor) == -1)
                   break;
             }
@@ -16187,7 +16152,6 @@ private Boole swapchars(Unt opTy, Pos* pos, int length);
 //Handle the (non-standard vi) tilde operator.  Also for "gu", "gU" and "g?".
 private void
 op_tilde(Operator* oper) {
-   BlockDef   bd;
    Boole didChange = false;
 
    if (u_save((LineNr)(oper->start.lnum - 1), (LineNr)(oper->end.lnum + 1)) == FAIL)
@@ -16196,35 +16160,34 @@ op_tilde(Operator* oper) {
    Pos pos = oper->start;
    if (oper->block_mode) {         //Visual block mode
       for (; pos.lnum <= oper->end.lnum; ++pos.lnum) {
-         int one_change;
-
+         BlockDef bd;
          block_prep(oper, OUT &bd, pos.lnum, false);
          pos.col = bd.textcol;
-         one_change = swapchars(oper->opTy, &pos, bd.textlen);
+         int one_change = swapchars(oper->opTy, &pos, bd.textlen);
          didChange = didChange || one_change;
       }
       if (didChange)
          doChangedLines(oper->start.lnum, 0, oper->end.lnum + 1, 0L);
    } else {               //not block mode
       if (oper->motion_type == MLINE) {
-          oper->start.col = 0;
-          pos.col = 0;
-          oper->end.col = ml_get_len(oper->end.lnum);
-          if (oper->end.col)
-         --oper->end.col;
+         oper->start.col = 0;
+         pos.col = 0;
+         oper->end.col = ml_get_len(oper->end.lnum);
+         if (oper->end.col)
+            --oper->end.col;
       } ei (!oper->inclusive)
-          dec(&(oper->end));
+         dec(&(oper->end));
 
       if (pos.lnum == oper->end.lnum)
-          didChange = swapchars(oper->opTy, &pos, oper->end.col - pos.col + 1);
+         didChange = swapchars(oper->opTy, &pos, oper->end.col - pos.col + 1);
       else
          for (;;) {
             didChange = didChange || swapchars(
-               oper->opTy, &pos, 
+               oper->opTy, &pos,
                pos.lnum == oper->end.lnum ? oper->end.col + 1 : ml_get_pos_len(&pos)
             );
             if (LTOREQ_POS(oper->end, pos) || inc(&pos) == -1)
-                break;
+               break;
          }
       if (didChange) {
           doChangedLines(oper->start.lnum, oper->start.col, oper->end.lnum + 1, 0L);
@@ -16244,14 +16207,14 @@ op_tilde(Operator* oper) {
    smsg(NGETTEXT("%ld line changed", "%ld lines changed", oper->line_count), oper->line_count);
 }
 
-//Invoke swapchar() on "length" bytes at position "pos". "pos" is advanced to just after the 
+//Invoke swapchar() on "length" bytes at position "pos". "pos" is advanced to just after the
 //changed characters. "length" is rounded up to include the whole last multi-byte character.
 //Also work correctly when the number of bytes changes. Return true if some character was changed.
 private Boole
 swapchars(Unt opTy, Pos* pos, int length) {
-   int todo;
    Boole didChange = false;
 
+   int todo;
    for (todo = length; todo > 0; --todo) {
       int len = utfCharLen(ml_get_pos(pos));
 
@@ -16280,9 +16243,9 @@ swapchar(Unt opTy, Pos* pos) {
    Unt nc = c;
    if (MB_ISLOWER(c)) {
       if (opTy == OP_ROT13)
-          nc = ROT13(c, 'a');
+         nc = ROT13(c, 'a');
       ei (opTy != OP_LOWER)
-          nc = MB_TOUPPER(c);
+         nc = MB_TOUPPER(c);
    } ei (MB_ISUPPER(c)) {
       if (opTy == OP_ROT13)
          nc = ROT13(c, 'A');
@@ -16291,7 +16254,7 @@ swapchar(Unt opTy, Pos* pos) {
    }
    if (nc != c) {
       if (c >= 0x80 || nc >= 0x80) {
-         Pos   sp = curPor->cursor;
+         Pos sp = curPor->cursor;
 
          curPor->cursor = *pos;
          //don't use del_char(), it also removes composing chars
@@ -16299,7 +16262,7 @@ swapchar(Unt opTy, Pos* pos) {
          insertChar(nc);
          curPor->cursor = sp;
       } else
-         PBYTE(*pos, nc);
+         pbyte(*pos, nc);
       return true;
    }
    return false;
@@ -16307,14 +16270,11 @@ swapchar(Unt opTy, Pos* pos) {
 
 //op_insert - Insert and append operators for Visual mode.
 pub void
-op_insert(Operator *oper, long count1) {
-   long      pre_textlen = 0;
-   ColNr      ind_pre_col = 0, ind_post_col;
-   int         ind_pre_vcol = 0, ind_post_vcol = 0;
+op_insert(Operator* oper, Long count1) {
+   Long pre_textlen = 0;
+   ColNr ind_pre_col = 0, ind_post_col;
+   int ind_pre_vcol = 0, ind_post_vcol = 0;
    BlockDef   bd;
-   int         i;
-   Pos      t1;
-   Pos      start_insert;
 
    //edit() changes this - record it for OP_APPEND
    bd.is_MAX = (curPor->cursWant == MAXCOL);
@@ -16324,9 +16284,6 @@ op_insert(Operator *oper, long count1) {
    drawUpdateScreen(UPD_INVERTED);
 
    if (oper->block_mode) {
-      //When 'virtualedit' is used, need to insert the extra spaces before
-      //doing block_prep().  When only "block" is used, virtual edit is
-      //already disabled, but still need it when calling coladvance_force().
       if (curPor->cursor.coladd > 0) {
          if (u_save_cursor() == FAIL)
             return;
@@ -16347,41 +16304,38 @@ op_insert(Operator *oper, long count1) {
 
    if (oper->opTy == OP_APPEND) {
       if (oper->block_mode && curPor->cursor.coladd == 0) {
-          //Move the cursor to the character right of the block.
-          curPor->setCursWant = true;
-          while (*ml_get_cursor() != ZERO
-             && (curPor->cursor.col < bd.textcol + bd.textlen))
-         ++curPor->cursor.col;
-          if (bd.is_short && !bd.is_MAX) {
-            //First line was too short, make it longer and adjust the
-            //values in "bd".
+         //Move the cursor to the character right of the block.
+         curPor->setCursWant = true;
+         while (*ml_get_cursor() != ZERO && (curPor->cursor.col < bd.textcol + bd.textlen)) {
+            ++curPor->cursor.col;
+         }
+         if (bd.is_short && !bd.is_MAX) {
+            //First line was too short, make it longer and adjust the values in "bd".
             if (u_save_cursor() == FAIL)
-                return;
-            for (i = 0; i < bd.endspaces; ++i)
+               return;
+            for (int i = 0; i < bd.endspaces; ++i)
                insertChar(' ');
             bd.textlen += bd.endspaces;
          }
       } else {
-          curPor->cursor = oper->end;
-          check_cursor_col();
+         curPor->cursor = oper->end;
+         check_cursor_col();
 
-          //Works just like an 'i'nsert on the next character.
-          if (!LINEEMPTY(curPor->cursor.lnum)
-             && oper->start_vcol != oper->end_vcol)
-         inc_cursor();
+         //Works just like an 'i'nsert on the next character.
+         if (!LINEEMPTY(curPor->cursor.lnum) && oper->start_vcol != oper->end_vcol)
+            inc_cursor();
       }
    }
 
-   t1 = oper->start;
-   start_insert = curPor->cursor;
+   Pos t1 = oper->start;
+   Pos start_insert = curPor->cursor;
    (void)edit(ZERO, false, (LineNr)count1);
 
    //When a tab was inserted, and the characters in front of the tab
    //have been converted to a tab as well, the column of the cursor
    //might have actually been reduced, so need to adjust here.
-   if (t1.lnum == curBook->opStartOrig.lnum
-       && LT_POS(curBook->opStartOrig, t1))
-   oper->start = curBook->opStartOrig;
+   if (t1.lnum == curBook->opStartOrig.lnum && LT_POS(curBook->opStartOrig, t1))
+      oper->start = curBook->opStartOrig;
 
    //If user has moved off this line, we don't know what to do, so do nothing.
    //Also don't repeat the insert when Insert mode ended with CTRL-C.
@@ -16391,7 +16345,7 @@ op_insert(Operator *oper, long count1) {
    if (oper->block_mode) {
       int ins_len;
       Byte *firstline, *ins_text;
-      BlockDef   bd2;
+      BlockDef bd2;
       int did_indent = false;
       Unt len;
       Unt add;
@@ -16412,10 +16366,10 @@ op_insert(Operator *oper, long count1) {
       //to adjust the block for that.  But only do it, if the difference
       //does not come from indent kicking in.
       if (oper->start.lnum == curBook->opStartOrig.lnum && !bd.is_MAX && !did_indent) {
-          int t = getviscol2(curBook->opStartOrig.col, curBook->opStartOrig.coladd);
+         int t = getviscol2(curBook->opStartOrig.col, curBook->opStartOrig.coladd);
 
          if (oper->opTy == OP_INSERT
-             && oper->start.col + oper->start.coladd 
+             && oper->start.col + oper->start.coladd
                 != curBook->opStartOrig.col + curBook->opStartOrig.coladd
          ) {
             oper->start.col = curBook->opStartOrig.col;
@@ -16434,7 +16388,7 @@ op_insert(Operator *oper, long count1) {
          }
       }
 
-      //Spaces and tabs in the indent may have changed to other spaces and tabs. Get the 
+      //Spaces and tabs in the indent may have changed to other spaces and tabs. Get the
       //starting column again and correct the length.
       //Don't do this when "$" used, end-of-line will have changed.
       //
@@ -16455,13 +16409,13 @@ op_insert(Operator *oper, long count1) {
           oper->end_vcol -= ind_post_vcol - ind_pre_vcol;
       }
       if (!bd.is_MAX || bd2.textlen < bd.textlen) {
-          if (oper->opTy == OP_APPEND) {
-         pre_textlen += bd2.textlen - bd.textlen;
-         if (bd2.endspaces)
-             --bd2.textlen;
-          }
-          bd.textcol = bd2.textcol;
-          bd.textlen = bd2.textlen;
+         if (oper->opTy == OP_APPEND) {
+            pre_textlen += bd2.textlen - bd.textlen;
+            if (bd2.endspaces)
+               --bd2.textlen;
+         }
+         bd.textcol = bd2.textcol;
+         bd.textlen = bd2.textlen;
       }
 
       //Subsequent calls to ml_get() flush the firstline data - take a
@@ -16470,18 +16424,18 @@ op_insert(Operator *oper, long count1) {
       len = ml_get_len(oper->start.lnum);
       add = bd.textcol;
       if (oper->opTy == OP_APPEND) {
-          add += bd.textlen;
-          //account for pressing cursor in insert mode when '$' was used
+         add += bd.textlen;
+         //account for pressing cursor in insert mode when '$' was used
          if (bd.is_MAX
             && (start_insert.lnum == insertStartG.lnum && start_insert.col > insertStartG.col)
          ) {
             offset = (start_insert.col - insertStartG.col);
             add -= offset;
             if (oper->end_vcol > offset)
-                oper->end_vcol -= (offset + 1);
+               oper->end_vcol -= (offset + 1);
             else
-                //moved outside of the visual block, what to do?
-                return;
+               //moved outside of the visual block, what to do?
+               return;
          }
       }
       if (add > len)
@@ -16491,8 +16445,7 @@ op_insert(Operator *oper, long count1) {
       if (pre_textlen >= 0 && (ins_len = (int)len - pre_textlen - offset) > 0) {
          ins_text = copySubstr(firstline, ins_len);
          //block handled here
-         if (u_save(oper->start.lnum,
-                   (LineNr)(oper->end.lnum + 1)) == OK)
+         if (u_save(oper->start.lnum, (LineNr)(oper->end.lnum + 1)) == OK)
             block_insert(oper, ins_text, ins_len, (oper->opTy == OP_INSERT), &bd);
 
          curPor->cursor.col = oper->start.col;
@@ -16506,12 +16459,12 @@ op_insert(Operator *oper, long count1) {
 //return true if edit() returns because of a CTRL-O command
 pub int
 op_change(Operator *oper) {
-   LineNr      linenr;
-   long      pre_textlen = 0;
-   long      pre_indent = 0;
-   Byte      *firstline;
-   Byte      *ins_text, *newp, *oldp;
-   BlockDef   bd;
+   LineNr linenr;
+   Long  pre_textlen = 0;
+   Long  pre_indent = 0;
+   Byte* firstline;
+   Byte *ins_text, *newp, *oldp;
+   BlockDef bd;
 
    ColNr l = oper->start.col;
    if (oper->motion_type == MLINE) {
@@ -16543,13 +16496,13 @@ op_change(Operator *oper) {
    if (oper->motion_type == MLINE)
       fix_indent();
 
-    //Reset finish_op now, don't want it set inside edit().
-    int save_finish_op = finish_op;
-    finish_op = false;
+   //Reset finish_op now, don't want it set inside edit().
+   int save_finish_op = finish_op;
+   finish_op = false;
 
-    int retval = edit(ZERO, false, (LineNr)1);
+   int retval = edit(ZERO, false, (LineNr)1);
 
-    finish_op = save_finish_op;
+   finish_op = save_finish_op;
 
    //In Visual block mode, handle copying the new text to all lines of the block.
    //Don't repeat the insert when Insert mode ended with CTRL-C.
@@ -16574,7 +16527,6 @@ op_change(Operator *oper) {
                block_prep(oper, OUT &bd, linenr, true);
                if (!bd.is_short || virtual_op) {
                   Pos vpos;
-                  Unt newlen;
 
                   //If the block starts in virtual space, count the
                   //initial coladd offset as part of "startspaces"
@@ -16587,7 +16539,7 @@ op_change(Operator *oper) {
                   newp = alloc(ml_get_len(linenr) + vpos.coladd + ins_len + 1);
                   //copy up to block start
                   MEMMOVE(newp, oldp, (Unt)bd.textcol);
-                  newlen = bd.textcol;
+                  Unt newlen = bd.textcol;
                   memset(newp + newlen, ' ', (Unt)vpos.coladd);
                   newlen += vpos.coladd;
                   MEMMOVE(newp + newlen, ins_text, ins_len);
@@ -16683,8 +16635,8 @@ get_last_leader_offset(CS line, Byte **flags) {
             continue;
 
          if (firstOccurrence(part_buf, COM_MIDDLE) != NULL) {
-            //For a middlepart comment, only consider it to match if everything before the 
-            //current position in the line is whitespace.  Otherwise we would think we are 
+            //For a middlepart comment, only consider it to match if everything before the
+            //current position in the line is whitespace.  Otherwise we would think we are
             //inside a comment if the middle part appears somewhere in the middle
             //of the line. E.g. for C the "*" appears often.
             for (j = 0; SPACE_OR_TAB(line[j]) && j <= i; j++)
@@ -16931,8 +16883,6 @@ doJoinLinesUnderCursor(
    //should not really be a problem.
    props_remaining = propcount;
    for (t = count - 1; ; --t) {
-      int spaces_removed;
-
       cend -= currsize;
       MEMMOVE(cend, curr, (Unt)currsize);
 
@@ -16943,7 +16893,7 @@ doJoinLinesUnderCursor(
 
       //If deleting more spaces than adding, the cursor moves no more than
       //what is added if it is inside these spaces.
-      spaces_removed = (curr - curr_start) - spaces[t];
+      int spaces_removed = (curr - curr_start) - spaces[t];
 
       mark_col_adjust(curPor->cursor.lnum + t, (ColNr)0, -t,
              (long)(cend - newp - spaces_removed), spaces_removed);
@@ -17073,7 +17023,7 @@ block_prep(
          } else {
             bdp->startspaces = oper->end_vcol - oper->start_vcol + 1;
             if (is_del && oper->opTy != OP_LSHIFT) {
-               //just putting the sum of those two into bdp->startspaces doesn't work for Visual 
+               //just putting the sum of those two into bdp->startspaces doesn't work for Visual
                //replace, so we have to split the tab in two
                bdp->startspaces = bdp->start_char_vcols - (bdp->start_vcol - oper->start_vcol);
                bdp->endspaces = bdp->end_vcol - oper->end_vcol - 1;
@@ -17098,7 +17048,7 @@ block_prep(
                || oper->opTy == OP_REPLACE) //line too short
          ){
             bdp->is_short = true;
-            //Alternative: include spaces to fill up the block. Disadvantage: can lead to 
+            //Alternative: include spaces to fill up the block. Disadvantage: can lead to
             //trailing spaces when the line is short where the text is put
             //if (!is_del || oper->opTy == OP_APPEND)
             if (oper->opTy == OP_APPEND || virtual_op)
@@ -17200,19 +17150,12 @@ op_addsub(
    int change_cnt = 0;
    LineNr amount = prenum1;
 
-   //do_addsub() might trigger re-evaluation of 'foldexpr' halfway, when the
-   //book is not completely updated yet. Postpone updating folds until before
-   //the call to doChangedLines().
-   disable_fold_update++;
-
    if (!VIsual_active) {
       pos = curPor->cursor;
       if (u_save_cursor() == FAIL) {
-         disable_fold_update--;
          return;
       }
-      change_cnt = do_addsub(oper->opTy, &pos, 0, amount);
-      disable_fold_update--;
+      change_cnt = addSubtractImpl(oper->opTy, &pos, 0, amount);
       if (change_cnt)
          doChangedLines(pos.lnum, 0, pos.lnum + 1, 0L);
    } else {
@@ -17221,7 +17164,6 @@ op_addsub(
       Pos   startpos;
 
       if (u_save((LineNr)(oper->start.lnum - 1), (LineNr)(oper->end.lnum + 1)) == FAIL) {
-         disable_fold_update--;
          return;
       }
 
@@ -17251,7 +17193,7 @@ op_addsub(
                 length = oper->end.col - pos.col + 1;
             }
          }
-         one_change = do_addsub(oper->opTy, &pos, length, amount);
+         one_change = addSubtractImpl(oper->opTy, &pos, length, amount);
          if (one_change) {
             //Remember the start position of the first change.
             if (change_cnt == 0)
@@ -17263,7 +17205,6 @@ op_addsub(
             amount += prenum1;
       }
 
-      disable_fold_update--;
       if (change_cnt)
          doChangedLines(oper->start.lnum, 0, oper->end.lnum + 1, 0L);
 
@@ -17272,7 +17213,7 @@ op_addsub(
          drawCurBookLater(UPD_INVERTED);
 
       //Set '[ mark if something changed. Keep the last end
-      //position from do_addsub().
+      //position from addSubtractImpl().
       if (change_cnt > 0 && (commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
          curBook->opStart = startpos;
 
@@ -17280,10 +17221,10 @@ op_addsub(
    }
 }
 
-//Add or subtract 'prenum1' from a number in a line opTy is OP_ADD or OP_SUB
+//Add or subtract 'prenum1' from a number in a line. opTy is OP_ADD or OP_SUB
 //Return true if some character was changed.
 private int
-do_addsub(
+addSubtractImpl(
    int opTy,
    Pos* pos,
    int length,
@@ -17333,7 +17274,7 @@ do_addsub(
          && (ptr[col] == 'X' || ptr[col] == 'x')
          && ptr[col - 1] == '0'
          && (!(*mb_head_off)(ptr, ptr + col - 1))
-         && eeIsXDigit(ptr[col + 1])) 
+         && eeIsXDigit(ptr[col + 1]))
       ){
          //Found hexadecimal or binary number, move to its start.
          --col;
@@ -17514,9 +17455,9 @@ do_addsub(
 
          //leading zeros
          for (bit = bits; bit > 0; bit--) {
-            if ((n >> (bit - 1)) & 0x1) 
+            if ((n >> (bit - 1)) & 0x1)
                break;
-         } 
+         }
 
          for (buf2len = 0; bit > 0 && buf2len < (NUMBUFLEN - 1); bit--)
             buf2[buf2len++] = ((n >> (bit - 1)) & 0x1) ? '1' : '0';
@@ -17528,12 +17469,12 @@ do_addsub(
          buf2len = eeSnprintf(buf2, NUMBUFLEN, "%" PRIx64, n);
       length -= buf2len;
 
-      //Adjust number of zeros to the new number of digits, so the total length of the number 
+      //Adjust number of zeros to the new number of digits, so the total length of the number
       //remains the same.
       if (firstdigit == '0') {
          while (length-- > 0)
             *ptr++ = '0';
-      } 
+      }
       *ptr = ZERO;
       buf1len = (int)(ptr - buf1);
 
@@ -17598,8 +17539,8 @@ doClearOpArg(Operator *oper) {
 //Return value is byte count; word count for the line is added to "*wc".
 //Char count is added to "*cc".
 //
-//The function will only examine the first "limit" characters in the line, stopping if it 
-//encounters an end-of-line (ZERO byte). In that case, eol_size will be added to the 
+//The function will only examine the first "limit" characters in the line, stopping if it
+//encounters an end-of-line (ZERO byte). In that case, eol_size will be added to the
 //character count to account for the size of the EOL character.
 private Long
 line_count_info(
@@ -17745,7 +17686,7 @@ cursor_pos_info(Bag* dict) {
                char_count_cursor += char_count;
                byte_count_cursor = byte_count +
                line_count_info(
-                  ml_get(lnum), &word_count_cursor, &char_count_cursor, 
+                  ml_get(lnum), &word_count_cursor, &char_count_cursor,
                   (Long)(curPor->cursor.col + 1), eol_size
                );
             }
@@ -17805,7 +17746,7 @@ cursor_pos_info(Bag* dict) {
                );
             else
                eeSnprintf(
-                  IObuff, IOSIZE, 
+                  IObuff, IOSIZE,
                   _("Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; "
                      "Byte %ld of %ld"
                   ),
@@ -17988,8 +17929,8 @@ get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial) { //adjust posi
       curPor->cursor.col = MAXCOL;
       oper->end_vcol = 0;
       for (
-            curPor->cursor.lnum = oper->start.lnum; 
-            curPor->cursor.lnum <= oper->end.lnum; 
+            curPor->cursor.lnum = oper->start.lnum;
+            curPor->cursor.lnum <= oper->end.lnum;
             ++curPor->cursor.lnum
       ) {
          bookGetVirtualColInVirtualMode(curPor, &curPor->cursor, NULL, NULL, &end);
@@ -18085,7 +18026,7 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
             inpAppendLitToRedoBuff(aArg->searchbuf, -1);
             inpAppendToRedoBuff(NL_STR);
          } ei (isCommandModeChar(aArg)) {
-            //doCommand() has stored the first typed line in "repeatCommlineG". When several lines 
+            //doCommand() has stored the first typed line in "repeatCommlineG". When several lines
             //are typed repeating won't be possible.
             if (repeatCommlineG == NULL)
                 ResetRedobuff();
@@ -18271,7 +18212,7 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
 
          isRedoVisualBusy = false;
 
-         //Switch Visual off now, so screen updating does not show inverted text when the screen 
+         //Switch Visual off now, so screen updating does not show inverted text when the screen
          //is redrawn. With OP_YANK and sometimes with OP_COLON and OP_FILTER there is
          //no screen redraw, so it is done here to remove the inverted part.
          if (!clipbYank) {
@@ -18312,8 +18253,8 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
           drawCurBookLater(UPD_INVERTED);
       }
 
-      //If the end of an operator is in column one while oper->motion_type is MCHAR and 
-      //oper->inclusive is false, we put op_end after the last character in the previous line. If 
+      //If the end of an operator is in column one while oper->motion_type is MCHAR and
+      //oper->inclusive is false, we put op_end after the last character in the previous line. If
       //op_start is on or before the first non-blank in the line, the operator becomes linewise
       //(strange, but that's the way vi does it).
       if (  oper->motion_type == MCHAR
@@ -18519,8 +18460,7 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
     }
 }
 
-//put byte 'c' at position 'lp', but
-//verify, that the position to place is actually safe
+//Put byte 'c' at position 'lp', but verify that the position to place is actually safe
 private void
 pbyte(Pos lp, int c) {
    CS p = memGetLine(curBook, lp.lnum, true);
@@ -18529,7 +18469,7 @@ pbyte(Pos lp, int c) {
    //safety check
    if (lp.col >= len) {
       lp.col = (len > 1 ? len - 2 : 0);
-   } 
+   }
    *(p + lp.col) = c;
 }
 
@@ -18560,7 +18500,7 @@ coladvance_force(ColNr wcol) {
    return rc;
 }
 
-//Try to advance the Cursor to the specified screen column "wantcol". If virtual editing: fine 
+//Try to advance the Cursor to the specified screen column "wantcol". If virtual editing: fine
 //tune the cursor position. Note that all virtual positions off the end of a line should share
 //a curPor->cursor.col value (n.b. this is equal to STRLEN(line)), beginning at coladd 0.
 //return OK if desired column is reached, FAIL if not
@@ -18627,8 +18567,8 @@ coladvance2(
 
          if (wcol / width > (ColNr)csize / width
              && ((stateG & MODE_INSERT) == 0 || (int)wcol > csize + 1)) {
-            //In case of line wrapping don't move the cursor beyond the right screen edge. In 
-            //Insert mode allow going just beyond the last character (like what happens when 
+            //In case of line wrapping don't move the cursor beyond the right screen edge. In
+            //Insert mode allow going just beyond the last character (like what happens when
             //typing and reaching the right portal edge).
             wcol = (csize / width + 1) * width - 1;
          }
@@ -18649,7 +18589,7 @@ coladvance2(
       idx = (int)(cts.cts_ptr - line);
       clear_chartabsize_arg(&cts);
 
-      //Handle all the special cases. The virtual_active() check is needed to ensure that a 
+      //Handle all the special cases. The virtual_active() check is needed to ensure that a
       //virtual position off the end of a line has the correct indexing. The one_more comparison
       //replaces an explicit add of one_more later on.
       if (col > wcol || (!virtual_active() && one_more == 0)) {
@@ -18701,7 +18641,7 @@ coladvance2(
                else {
                   for (v = 0; v < csize; v++)
                      newline[s++] = ' ';
-               } 
+               }
             }
 
             newline[linelen + csize - 1] = ZERO;
@@ -19015,7 +18955,7 @@ doSetIndent(int size, Unt flags){
       }
       int added = ind_len - old_offset;
 
-      //When increasing indent this behaves like spaces were inserted at the old indent, when 
+      //When increasing indent this behaves like spaces were inserted at the old indent, when
       //decreasing indent it behaves like spaces were deleted at the new indent.
       adjustPropColumns(
          curPor->cursor.lnum, added > 0 ? old_offset : (ColNr)ind_len, added, APC_INDENT
@@ -19028,8 +18968,8 @@ doSetIndent(int size, Unt flags){
    return retval;
 }
 
-//Return the indent of the current line after a number. Return -1 if no number was found. Used 
-//for 'n' in 'formatoptions': numbered list. Since a pattern is used it can actually handle 
+//Return the indent of the current line after a number. Return -1 if no number was found. Used
+//for 'n' in 'formatoptions': numbered list. Since a pattern is used it can actually handle
 //more than numbers.
 pub int
 get_number_indent(LineNr lnum) {
@@ -19066,7 +19006,7 @@ get_number_indent(LineNr lnum) {
    return (int)col;
 }
 
-//Return appropriate space number for breakindent, taking influencing parameters into account. 
+//Return appropriate space number for breakindent, taking influencing parameters into account.
 //Portal must be specified, since it is not necessarily always the current one.
 pub int
 getBreakindentForPort(Portal* po, CS line) {
@@ -19227,7 +19167,7 @@ op_reindent(Operator *oper, int (*how)(void)) {
          ++curPor->cursor.lnum;
          curPor->cursor.col = 0;  //make sure it's valid
       }
-   } 
+   }
 
    //put cursor on first non-blank of indented line
    curPor->cursor.lnum = start_lnum;
@@ -19277,8 +19217,8 @@ doTrySmartIndent(int c) {
       //for '}' set indent equal to indent of line containing matching '{'
       if (c == '}' && (pos = findmatch(NULL, '{')) != NULL) {
          old_pos = curPor->cursor;
-         //If the matching '{' has a ')' immediately before it (ignoring white-space), then line 
-         //up with the start of the line containing the matching '(' if there is one.  This 
+         //If the matching '{' has a ')' immediately before it (ignoring white-space), then line
+         //up with the start of the line containing the matching '(' if there is one.  This
          //handles the case where an "if (..\n..) {" statement continues over multiple
          //lines -- webb
          ptr = ml_get(pos->lnum);
@@ -19286,7 +19226,7 @@ doTrySmartIndent(int c) {
          if (i > 0) {     //skip blanks before '{'
             while (--i > 0 && SPACE_OR_TAB(ptr[i]))
               {}
-         } 
+         }
          curPor->cursor.lnum = pos->lnum;
          curPor->cursor.col = i;
          if (ptr[i] == ')' && (pos = findmatch(NULL, '(')) != NULL)
@@ -19375,7 +19315,7 @@ opChangeIndent(
    insstart_less -= curPor->cursor.col;
 
    //Try to put cursor on same character.
-   //If the cursor is at or after the first non-blank in the line, compute the cursor column 
+   //If the cursor is at or after the first non-blank in the line, compute the cursor column
    //relative to the column of the first non-blank character.
    //If we are not in insert mode, leave the cursor on the first non-blank.
    //If the cursor is before the first non-blank, position it relative
@@ -19663,9 +19603,9 @@ get_expr_indent(void) {
    return indent;
 }
 
-//Re-indent the current line, based on the current contents of it and the surrounding lines. 
-//Fixing the cursor position seems really easy -- I'm very confused what all the part that 
-//handles Control-T is doing that I'm not. "get_the_indent" should be get_c_indent 
+//Re-indent the current line, based on the current contents of it and the surrounding lines.
+//Fixing the cursor position seems really easy -- I'm very confused what all the part that
+//handles Control-T is doing that I'm not. "get_the_indent" should be get_c_indent
 //or get_expr_indent
 private void
 fixthisline(int (*get_the_indent)(void)) {
@@ -19756,7 +19696,7 @@ skipStringLiteral(CS p) {
                   p += delim_len + 1;
                   break;
                }
-            } 
+            }
             if (p[0] == '"')
                continue; //continue for another string
          }

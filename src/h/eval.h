@@ -36,7 +36,6 @@ Long eval_to_number(CS expr, int use_simple_function);
 Var* eval_expr(CS arg, Invocation* invo);
 void * call_func_retstr(Byte* func, int argc, Var* argv);
 void * call_func_retlist(Byte* func, int argc, Var* argv);
-int eval_foldexpr(Portal *wp, int *cp);
 CS getLval( OUT Lval* retVal, GetLval arg);
 void clear_lval(OUT Lval* lp);
 Boole letImpl(

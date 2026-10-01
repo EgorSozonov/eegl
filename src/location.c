@@ -12102,7 +12102,7 @@ do_search(
       }
 
       showSearchStats = false;
-      if ((options & SEARCH_ECHO) && messaging() && !msg_silent && (!cmd_silent)) {
+      if ((options & SEARCH_ECHO) && !msg_silent && (!cmd_silent)) {
          Byte off_buf[40];
          Unt off_len = 0;
          Unt plen;

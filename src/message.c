@@ -1787,8 +1787,7 @@ set_keep_msg(Byte *s, char flags) {
 
 pub void
 msgmore(long n) {
-   if (global_busy || !messaging()) //no messages now, wait until global is finished
-                    //'lazyredraw' set, don't do messages now
+   if (global_busy) //no messages now, wait until global is finished
       return;
 
    //We don't want to overwrite another important message, but do overwrite

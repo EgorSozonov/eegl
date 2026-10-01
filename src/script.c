@@ -53,7 +53,7 @@ private Byte wim_flags[4];
 
 //Cookie used by scrGetSourceLine().
 //
-//It is used used to store info for each sourced file. It is shared between scriptRunFile() and 
+//It is used used to store info for each sourced file. It is shared between scriptRunFile() and
 //scrGetSourceLine(). This is passed to do_cmdline().
 typedef struct {
    FILE* fp;      //opened file for sourcing
@@ -530,7 +530,7 @@ private CS get_deleted_augroup(void);
 private void show_autocmd(AutoPat* ap, AutoEvent event);
 private void au_remove_pat(AutoPat* ap);
 private void au_remove_cmds(AutoPat *ap);
-private void  au_del_cmd(AutoComm* ac);
+private void au_del_cmd(AutoComm* ac);
 private void au_cleanup(void);
 private Unt au_new_group(CS name);
 private void au_del_group(CS name);
@@ -571,7 +571,7 @@ pub void
 estack_init(void){
    if (ga_grow(&exestack, 10) == FAIL)
       mch_exit(0);
-      
+
    Estack* entry;
    entry = ((Estack *)exestack.c) + exestack.len;
    entry->ty = ETYPE_TOP;
@@ -837,9 +837,9 @@ pub int
 find_script_by_name(Byte *name) {
    for (int sid = script_items.len; sid > 0; --sid) {
       //We used to check inode here, but that doesn't work:
-      //- If a script is edited and written, it may get a different inode number, even though to 
+      //- If a script is edited and written, it may get a different inode number, even though to
       //the user it is the same script.
-      //- If a script is deleted and another script is written, with a different name, the inode 
+      //- If a script is deleted and another script is written, with a different name, the inode
       //may be re-used.
       ScriptItem* si = SCRIPT_ITEM(sid);
       if (si->sn_name != NULL && fnamecmp(si->sn_name, name) == 0)
@@ -848,7 +848,7 @@ find_script_by_name(Byte *name) {
    return -1;
 }
 
-//Add a new scriptitem with all items initialized. When running out of memory "error" is set to 
+//Add a new scriptitem with all items initialized. When running out of memory "error" is set to
 //FAIL. Return the script ID.
 private int
 get_new_scriptitem(int* error) {
@@ -893,7 +893,7 @@ get_new_scriptitem_for_fname(int* error, CS fname) {
    return sid;
 }
 
-//If the script for "sid" is a symlink and "sn_source_sid" is not set then initialize it. A new 
+//If the script for "sid" is a symlink and "sn_source_sid" is not set then initialize it. A new
 //script_item is created if needed.
 pub void
 check_script_symlink(int sid) {
@@ -1003,7 +1003,7 @@ doInPath(
 
             //Expand wildcards, invoke the callback for each match.
             if (gen_expand_wildcards(
-                  1, (Arr(CS))&builderString, (flags & DIP_DIR) ? EW_DIR : EW_FILE, 
+                  1, (Arr(CS))&builderString, (flags & DIP_DIR) ? EW_DIR : EW_FILE,
                   OUT &files
                 ) == OK
             ) {
@@ -1017,7 +1017,7 @@ doInPath(
          }
       }
    }
-   
+
    if (!did_one && name) {
       if (flags & DIP_ERR)
          showErrFmtMsg(_(e_directory_not_found_in_str_str), path, name);
@@ -1027,8 +1027,8 @@ doInPath(
          verbose_leave();
       }
    }
-   
-   deleteArena(files.a);  
+
+   deleteArena(files.a);
    return did_one ? OK : FAIL;
 }
 
@@ -1088,7 +1088,7 @@ source_in_path(CS path, CS name, int flags, OUT int* ret_sid) {
    return do_in_path_and_pp(path, name, flags, source_callback, OUT ret_sid);
 }
 
-//Find "name" in runtime path. If found, a new scriptitem is created for it and its script ID is 
+//Find "name" in runtime path. If found, a new scriptitem is created for it and its script ID is
 //returned. If not found, return -1.
 pub int
 find_script_in_rtp(Byte *name){
@@ -1111,7 +1111,7 @@ source_all_matches(Byte *pat) {
 
    for (Unt i = 0; i < files.len; ++i)
       (void)scriptRunFile(files.c[i], NULL);
-   
+
    deleteArena(files.a);
 }
 
@@ -1218,7 +1218,7 @@ remove_duplicates(OUT ExpandMatch* matches) {
             fnames[j - 1] = fnames[j];
          matches->len--;
       }
-   } 
+   }
 }
 
 private void
@@ -1346,7 +1346,7 @@ expand_runtime_cmd(CS pat, OUT ExpandMatch* matches) {
             CS p = copyStrA(where_values[i], matches->a);
             addExpandMatch(p, OUT matches);
          }
-      } 
+      }
    }
 
    if (matches->len == 0)
@@ -1365,7 +1365,7 @@ expandPackAddDir(CS pat, OUT ExpandMatch* matches) {
    SPRINTF(s, "pack/*/opt/%s*", pat);
    fiGlobpath(runtimePath, s, OUT matches, 0, true);
    eeglFree(s);
-   
+
    if (matches->len == 0)
       return FAIL;
 
@@ -1422,7 +1422,7 @@ cmd_source(Byte *fname, Invocation* invo) {
    //":source" read commands
    ei (scriptRunFile(fname, NULL) == FAIL) {
       showErrFmtMsg(_(e_cant_open_file_str), fname);
-   } 
+   }
 }
 
 //":source {fname}"
@@ -1470,7 +1470,7 @@ source_nextline(void *cookie) {
    return ((SourceCookie *)cookie)->nextline;
 }
 
-//Special function to open a file without handle inheritance. When possible the handle is closed 
+//Special function to open a file without handle inheritance. When possible the handle is closed
 //on exec().
 private FILE *
 fopen_noinh_readbin(CS filename) {
@@ -1527,8 +1527,8 @@ errret:
    return NULL;
 }
 
-//If script "sid" is not loaded yet then load it now. Caller must make sure "sid" is a valid script 
-//ID. "loaded" is set to true if the script had to be loaded. Return FAIL if loading fails, OK if 
+//If script "sid" is not loaded yet then load it now. Caller must make sure "sid" is a valid script
+//ID. "loaded" is set to true if the script had to be loaded. Return FAIL if loading fails, OK if
 //already loaded or loaded now.
 pub int
 may_load_script(int sid, int *loaded) {
@@ -1689,7 +1689,7 @@ scriptRunFileInternal(CS fname, OUT int* ret_sid, Invocation* invo, Boole clearv
                   di = HI2DI(hi);
                   di->flags |= DI_FLAGS_RELOAD;
                }
-            } 
+            }
          }
       }
       if (ret_sid)
@@ -2139,7 +2139,7 @@ scrGetSourceLine(
                //drop a # comment or "\ comment line
          }
          ga_append(&ga, ZERO);
-          
+
          eeglFree(line);
          line = ga.c;
       }
@@ -2323,7 +2323,7 @@ free_type(TypeSpec *type) {
    eeglFree(type);
 }
 
-//Find the end of a variable or function name. Unlike findNameEnd() this does not recognize magic 
+//Find the end of a variable or function name. Unlike findNameEnd() this does not recognize magic
 //braces. When "use_namespace" is true recognize "b:", "s:", etc.
 //Return a pointer to just after the name.  Equal to "arg" if there is no valid name.
 pub CS
@@ -2338,7 +2338,7 @@ toNameEnd(Byte *arg, int use_namespace) {
       if (*p == ':' && (p != arg + 1 || !use_namespace)) {
           break;
       }
-   } 
+   }
    return p;
 }
 
@@ -2499,9 +2499,9 @@ do_debug(Byte *comm){
       msg_scroll = true;
       need_wait_return = false;
 
-      //Save the current typeahead buffer and replace it with an empty one. This makes sure we 
-      //get input from the user here and don't interfere with the commands being executed. 
-      //Reset "ex_normal_busy" to avoid the side effects of using ":normal". Save the stuff 
+      //Save the current typeahead buffer and replace it with an empty one. This makes sure we
+      //get input from the user here and don't interfere with the commands being executed.
+      //Reset "ex_normal_busy" to avoid the side effects of using ":normal". Save the stuff
       //buffer and make it empty. Set ignore_script to avoid reading from script input.
       save_ex_normal_busy = ex_normal_busy;
       ex_normal_busy = 0;
@@ -2553,34 +2553,34 @@ do_debug(Byte *comm){
                   tail = S"inish";
                }
                break;
-            case 'q': 
+            case 'q':
                last_cmd = CMD_QUIT;
                tail = S"uit";
                break;
-            case 'i': 
+            case 'i':
                last_cmd = CMD_INTERRUPT;
                tail = S"nterrupt";
                break;
-            case 'b': 
+            case 'b':
                last_cmd = CMD_BACKTRACE;
                if (p[1] == 't')
                   tail = S"t";
                else
                   tail = S"acktrace";
                break;
-            case 'w': 
+            case 'w':
                last_cmd = CMD_BACKTRACE;
                tail = S"here";
                break;
-            case 'u': 
+            case 'u':
                last_cmd = CMD_UP;
                tail = S"p";
                break;
-            case 'd': 
+            case 'd':
                last_cmd = CMD_DOWN;
                tail = S"own";
                break;
-            default: 
+            default:
                last_cmd = 0;
             }
             if (last_cmd != 0) {
@@ -2986,7 +2986,7 @@ update_has_expr_breakpoint(void) {
           has_expr_breakpoint = true;
           break;
       }
-   } 
+   }
 }
 
 //true if there is any expression breakpoint.
@@ -3015,7 +3015,7 @@ c_breakdel(Invocation* invo) {
             todel = i;
             break;
          }
-      } 
+      }
    } ei (*invo->arg == '*') {
       todel = 0;
       del_all = true;
@@ -3027,7 +3027,7 @@ c_breakdel(Invocation* invo) {
       for (i = 0; i < gap->len; ++i) {
          bpi = &DEBUGGY(gap, i);
          if (bp->dbg_type == bpi->dbg_type && STRCMP(bp->dbg_name, bpi->dbg_name) == 0
-                && (bp->dbg_lnum == bpi->dbg_lnum 
+                && (bp->dbg_lnum == bpi->dbg_lnum
                    || (bp->dbg_lnum == 0 && (best_lnum == 0 || bpi->dbg_lnum < best_lnum)))
          ) {
             todel = i;
@@ -3050,7 +3050,7 @@ c_breakdel(Invocation* invo) {
       --gap->len;
       if (todel < gap->len)
           MEMMOVE(
-             &DEBUGGY(gap, todel), &DEBUGGY(gap, todel + 1), 
+             &DEBUGGY(gap, todel), &DEBUGGY(gap, todel + 1),
              (gap->len - todel) * sizeof(Debuggy)
          );
        ++debug_tick;
@@ -3123,9 +3123,9 @@ debuggy_find(
    if (gap->len == 0)
       return (LineNr)0;
 
-   //For a script-local function remove the prefix, so that "profile func Func" matches "Func" in 
-   //any script.  Otherwise it's very difficult to profile/debug a script-local function.  It may 
-   //match a function in the wrong script, but that is much better than not being able to 
+   //For a script-local function remove the prefix, so that "profile func Func" matches "Func" in
+   //any script.  Otherwise it's very difficult to profile/debug a script-local function.  It may
+   //match a function in the wrong script, but that is much better than not being able to
    //profile/debug a function in a script with unknown ID. Also match a script-specific name.
    if (!is_file && fname[0] == K_SPECIAL) {
       short_name = firstOccurrence(fname, '_') + 1;
@@ -3553,10 +3553,7 @@ cmdline_pum_remove(CommlineInfo *cclp, int defer_redraw){
    EE_CLEAR(popupItemsS);
    popupItemsSsize = 0;
    if (!defer_redraw) {
-      int save_p_lz = p_lz;
-      p_lz = false;  //avoid the popup menu hanging around
       drawUpdateScreen(0);
-      p_lz = save_p_lz;
    } else
       pum_callUpdateScreen();
    redrawcmd();
@@ -3691,7 +3688,7 @@ redrawPortalStatusLine_matches(
             break;
          --firstMatch;
       }
-   } 
+   }
 
    Decoration deco;
    fillchar = statusLineNextChar(OUT &deco, curPor);
@@ -3749,7 +3746,7 @@ redrawPortalStatusLine_matches(
             //Put the wildmenu just above the command line. If there is
             //no room, scroll the screen one line up.
             if (commlineRowG == visibleRowsG - 1) {
-               screen_del_lines(0, 0, 1, (int)visibleRowsG, true, 0, NULL);
+               drawDeleteLinesFromScreen(0, 0, 1, (int)visibleRowsG, 0, NULL);
                ++msg_scrolled;
             } else {
                ++commlineRowG;
@@ -3854,8 +3851,8 @@ expandOne_start(int mode, OUT Expand* xp, CS str, Unt options){
 
    //Do the expansion.
    if (expandFromContext(xp, str, options, OUT &xp->files) == FAIL) {
-      //Illegal file name has been silently skipped.  But when there are wildcards, the real 
-      //problem is that there was no match, causing the pattern to be added, which has illegal 
+      //Illegal file name has been silently skipped.  But when there are wildcards, the real
+      //problem is that there was no match, causing the pattern to be added, which has illegal
       //characters.
       if (!(options & WILD_SILENT) && (options & WILD_LIST_NOTFOUND))
          showErrFmtMsg(_(e_no_match_str_2), str);
@@ -3881,10 +3878,10 @@ expandOne_start(int mode, OUT Expand* xp, CS str, Unt options){
             for (i = 0; i < 2; ++i) {
                if (strMatchLowPrioSuffix(xp->files.c[i], p_lpSuff))
                   ++non_suf_match;
-            } 
+            }
          }
          if (non_suf_match != 1) {
-            //Can we ever get here unless it's while expanding interactively? If not, we can get 
+            //Can we ever get here unless it's while expanding interactively? If not, we can get
             //rid of this all together. Don't really want to wait for this message
             //(and possibly have to hit return to continue!).
             if (!(options & WILD_SILENT))
@@ -4042,7 +4039,7 @@ expandWildcard(
              "%s%s%s",
              (i > 0) ? prefix : S"",
              xp->files.c[i],
-             (i < n) ? suffix : S"" 
+             (i < n) ? suffix : S""
          );
       }
    }
@@ -4177,7 +4174,7 @@ showmatches(Expand *xp, int wildmenu, int noselect){
    }
    ExpandMatch matches = {};
    matches.a = xp->files.a;
-   
+
    if (xp->files.len == 0) {
       int retval;
       set_expand_context(xp);
@@ -4374,11 +4371,11 @@ addstar(Text fname, Unt context) {  //EXPAND_FILES etc.
             case '*':   retval[j++] = '.'; break;
             case '~':   retval[j++] = '\\'; break;
             case '?':   retval[j] = '.'; continue;
-            case '.':   
+            case '.':
                if (context == EXPAND_BUFFERS)
                   retval[j++] = '\\';
                break;
-            case '\\':  
+            case '\\':
                if (context == EXPAND_USER_DEFINED || context == EXPAND_USER_LIST)
                   retval[j++] = '\\';
                break;
@@ -4432,7 +4429,7 @@ addstar(Text fname, Unt context) {  //EXPAND_FILES etc.
 //EXPAND_BUFFERS   Complete file names for :buf and :sbuf commands.
 //EXPAND_FILES     After command with XFILE set, or after setting
 //                 with P_EXPAND set.   eg :e ^I, :w>>^I
-//EXPAND_DIRECTORIES       In some cases this is used instead of the latter when we know only 
+//EXPAND_DIRECTORIES       In some cases this is used instead of the latter when we know only
 //   directories are of interest. E.g.  :set dir=^I  and  :cd ^I
 //EXPAND_SHELLCMD       After ":!comm", ":r !comm"  or ":w !comm".
 //EXPAND_OPTION       Complete variable names.  eg :set d^I
@@ -4476,7 +4473,7 @@ set_expand_context(Expand *xp){
    }
 
    //Fallback to command-line expansion
-   setCompletionContextForCommand(OUT xp, (Text){ccline->commBuf, ccline->cmdlen}, ccline->cmdpos, 
+   setCompletionContextForCommand(OUT xp, (Text){ccline->commBuf, ccline->cmdlen}, ccline->cmdpos,
          true
    );
 }
@@ -4524,7 +4521,7 @@ set_cmd_index(CS comm, Invocation* invo, Expand *xp, OUT Unt *context) {
       if ((comm[0] >= 'A' && comm[0] <= 'Z') || (fuzzy && invo->id != C_bang && *p != ZERO)) {
          while (ASCII_ISALNUM(*p) || *p == '*')   //Allow * wild card
             ++p;
-      } 
+      }
    }
 
    //If the cursor is touching the command, and it ends in an alphanumeric
@@ -4626,7 +4623,7 @@ set_context_for_wildcard_arg(
       for (p = xp->input.c + 1; *p != ZERO; ++p) {
          if (!eeIsIdentifierChar(*p))
             break;
-      } 
+      }
       if (*p == ZERO) {
          xp->context = EXPAND_ENV_VARS;
          xp->input.c++;
@@ -5078,11 +5075,11 @@ setContextByCommandName(
    case C_doautocmd:
    case C_doautoall:
        return set_context_in_autocmd(OUT xp, arg, true);
-   case C_get: 
+   case C_get:
    case C_set:
        optInitExpandContextForSet(OUT xp, arg, SET_LOCAL);
        break;
-   case C_getGlobal: 
+   case C_getGlobal:
    case C_setglobal:
        optInitExpandContextForSet(xp, arg, SET_GLOBAL);
        break;
@@ -5268,8 +5265,8 @@ setContextByCommandName(
    return NULL;
 }
 
-//This is all pretty much copied from doOneCommand(), with all the extra stuff we don't need/want 
-//deleted.  Maybe this could be done better if we didn't repeat all this stuff. The only problem 
+//This is all pretty much copied from doOneCommand(), with all the extra stuff we don't need/want
+//deleted.  Maybe this could be done better if we didn't repeat all this stuff. The only problem
 //is that they may not stay perfectly compatible with each other, but then the command line syntax
 //probably won't change that much -- webb.
 private CS
@@ -5474,7 +5471,7 @@ setCompletionContextForCommand(
    } else {
       while (nextComm)
          nextComm = set_one_cmd_context(xp, nextComm);
-   } 
+   }
 
    //Store the string here so that call_user_expand_func() can get to them easily.
    xp->fullInput = searchPattern.c;
@@ -5483,10 +5480,10 @@ setCompletionContextForCommand(
    searchPattern.c[col] = old_char;
 }
 
-//Expand the command line "str" from context "xp". "xp" must have been set by 
+//Expand the command line "str" from context "xp". "xp" must have been set by
 //setCompletionContextForCommand(). xp->input points into "str", to where the text that is to be
 //expanded starts. Return EXPAND_UNSUCCESSFUL when there is something illegal before the cursor.
-//Return EXPAND_NOTHING when there is nothing to expand, might insert the key that triggered 
+//Return EXPAND_NOTHING when there is nothing to expand, might insert the key that triggered
 //expansion literally. Return EXPAND_OK otherwise.
 pub int
 expandCommline(
@@ -5806,7 +5803,7 @@ expandFromContext(
          || xp->context == EXPAND_DIRS_IN_CDPATH
    )
       return expand_files_and_dirs(xp, pat, flags, options, OUT matches);
-      
+
    if (xp->context == EXPAND_HELP) {
       //With an empty argument we would get all the help tags, which is
       //very slow. Get matches for "help" instead.
@@ -5903,7 +5900,7 @@ expandFromContext(
 //Expand a list of names.
 //
 //Generic function for command line completion. It calls a function to obtain strings, one by one.
-//The strings are matched against a regexp program. Matching strings are copied into an array, 
+//The strings are matched against a regexp program. Matching strings are copied into an array,
 //which is returned.
 //If 'doFuzzy' is true, then fuzzy matching is used. Otherwise, regex matching is used.
 //
@@ -6045,7 +6042,7 @@ expandShellCommand_onedir(
    OUT ExpandMatch* matches
 ){
    //Expand matches in one directory of $PATH.
-   if (expand_wildcards(1, &pathed_pattern, flags, OUT matches) != OK)    
+   if (expand_wildcards(1, &pathed_pattern, flags, OUT matches) != OK)
       return;
 
    for (Unt i = 0; i < matches->len; ++i) {
@@ -6118,7 +6115,7 @@ expandShellCommand(
    //Go over all directories in $PATH. Expand matches in that directory and
    //collect them in "matches". When "." is not in $PATH also expand for the
    //current directory, to find "subdir/comm".
-   
+
    EeSet found_ht;
    hash_init(&found_ht);
    for (s = path; ; s = e) {
@@ -6397,7 +6394,7 @@ wildmenu_process_key_menunames(CommlineInfo *cclp, Unt key, Expand *xp){
     return key;
 }
 
-//Handle a key pressed when the wild menu for file names (EXPAND_FILES) or directory names 
+//Handle a key pressed when the wild menu for file names (EXPAND_FILES) or directory names
 //(EXPAND_DIRECTORIES) or shell command names (EXPAND_SHELLCMD) is displayed.
 private int
 wildmenu_process_key_filenames(CommlineInfo *cclp, Unt key, Expand *xp){
@@ -6774,7 +6771,7 @@ is_regex_match(Byte *pat, Byte *str) {
 
 //Construct a new match string by appending text from the buffer (starting at end_match_pos) to the
 //given pattern `pat`. The result is a concatenation of `pat` and the word following end_match_pos.
-//If 'lowercase' is true, the appended text is converted to lowercase before being combined. 
+//If 'lowercase' is true, the appended text is converted to lowercase before being combined.
 //Return the newly allocated match string, or NULL on failure.
 private CS
 concat_pattern_with_buffer_match(Text pat, Pos* end_match_pos, Boole lowercase) {
@@ -6841,7 +6838,7 @@ expandPatternInBook(
       ++emsg_off;
       ++msg_silent;
       int found_new_match = searchit(
-         NULL, curBook, &cur_match_pos, OUT &end_match_pos, dir, patTxt, 1L, searchFlags, 
+         NULL, curBook, &cur_match_pos, OUT &end_match_pos, dir, patTxt, 1L, searchFlags,
          RE_LAST, NULL
       );
       --msg_silent;
@@ -6857,7 +6854,7 @@ expandPatternInBook(
 
       if (compl_started) {
          //If we've looped back to an earlier match, stop
-         if ((dir == FORWARD && LTOREQ_POS(cur_match_pos, prev_match_pos)) 
+         if ((dir == FORWARD && LTOREQ_POS(cur_match_pos, prev_match_pos))
                || (dir == BACKWARD && LTOREQ_POS(prev_match_pos, cur_match_pos))
          ){
             if (looped_around)
@@ -6936,7 +6933,7 @@ cleanup:
 
 private HistoryEntry* history[HIST_COUNT] = {NULL, NULL, NULL, NULL, NULL};
 private int   hisidx[HIST_COUNT] = {-1, -1, -1, -1, -1};  //lastused entry
-private int   hisnum[HIST_COUNT] = {0, 0, 0, 0, 0}; //identifying (unique) number of newest 
+private int   hisnum[HIST_COUNT] = {0, 0, 0, 0, 0}; //identifying (unique) number of newest
                                                     //history entry
 private int   histLenG = 0;      //actual length of history tables
 
@@ -7149,7 +7146,7 @@ get_histtype(Byte *name) {
    for (int i = 0; historyNames[i] != NULL; ++i) {
       if (STRNICMP(name, historyNames[i], len) == 0)
           return i;
-   } 
+   }
 
    if (firstOccurrence((CS)":=@>?/", name[0]) != NULL && name[1] == ZERO)
       return hist_char2type(name[0]);
@@ -7287,7 +7284,7 @@ del_history_entry(int histype, Byte *str) {
    int last;
    Boole found = false;
 
-   if (histLenG == 0 || histype < 0 || histype >= HIST_COUNT 
+   if (histLenG == 0 || histype < 0 || histype >= HIST_COUNT
             || *str == ZERO || hisidx[histype] < 0)
       return false;
 
@@ -7456,7 +7453,7 @@ remove_key_from_history(void) {
          for (i = 0; p[i] && !SPACE_OR_TAB(p[i]); ++i) {
             if (p[i] == '\\' && p[i + 1])
                 ++i;
-         } 
+         }
 
          MEMMOVE(p, p + i, (p_end - (p + i)) + 1);       //+1 for the ZERO
          p_end -= i;                      //adjust p_end for shortened string
@@ -7549,7 +7546,7 @@ c_history(Invocation* invo) {
             if (i == idx)
                break;
          }
-      } 
+      }
    }
 }
 
@@ -7687,7 +7684,7 @@ set_search_match(Pos *t) {
    }
 }
 
-//Parse the :[range]s/foo like commands and return details needed for incsearch and wildmenu 
+//Parse the :[range]s/foo like commands and return details needed for incsearch and wildmenu
 //completion. Return true if pattern is valid.
 //Set skiplen, patlen, search_first_line, and search_last_line.
 pub int
@@ -8340,7 +8337,7 @@ commline_wildchar_complete(
           return COMMLINE_CHANGED;
       }
 
-      //when more than one match, and 'wildmode' first contains "list", or no change and 
+      //when more than one match, and 'wildmode' first contains "list", or no change and
       //'wildmode' contains "longest,list", list all matches
       if (res == OK && xp->files.len > (noselect ? 0 : 1)) {
          //a "longest" that didn't do anything is skipped (but not "list:longest")
@@ -8782,7 +8779,7 @@ getCommandWorker(
       saveCommline(&save_ccline);
       did_save_ccline = true;
    }
-   if (clear_ccline) 
+   if (clear_ccline)
       CLEAR_FIELD(commInfo);
 
    if (firstc == UNT) {
@@ -8871,7 +8868,7 @@ getCommandWorker(
             wp->statusLineNeedsRedraw = true;
             found_one = true;
          }
-      } 
+      }
 
       if (found_one)
          redraw_statuslines();
@@ -8978,7 +8975,7 @@ getCommandWorker(
             setHlsearch(false);
       }
 
-      //The wildmenu is cleared if the pressed key is not used for navigating the wild menu 
+      //The wildmenu is cleared if the pressed key is not used for navigating the wild menu
       //(i.e. the key is not 'wildchar' or 'wildcharm' or Ctrl-N or Ctrl-P or Ctrl-A or Ctrl-L).
       //If the popup menu is displayed, then PageDown and PageUp keys are
       //also used to navigate the menu.
@@ -9068,7 +9065,7 @@ getCommandWorker(
             ){
                //Trigger the popup menu when wildoptions=pum
                showmatches(
-                  &xp, 
+                  &xp,
                   p_wmnu && ((wim_flags[wim_index] & WIM_LIST) == 0),
                   wim_flags[0] & WIM_NOSELECT
                );
@@ -9463,7 +9460,7 @@ theend:
 }
 
 //Get a command line with a prompt.
-//This is prepared to be called recursively from getCommline() (e.g. by f_input() when evaluating 
+//This is prepared to be called recursively from getCommline() (e.g. by f_input() when evaluating
 //an expression from CTRL-R =). Return the command line in allocated memory, or NULL.
 pub Arr(Byte)
 getcmdline_prompt(
@@ -9657,7 +9654,7 @@ set_cmdspos_cursor(void) {
          break;
       }
       i += utfCharLen(commInfo.commBuf + i) - 1;
-   } 
+   }
 }
 
 //Check if the character at "idx", which is "cells" wide, is a multi-byte
@@ -9668,7 +9665,7 @@ correct_cmdspos(int idx, int cells) {
          && (*mb_ptr2cells)(commInfo.commBuf + idx) > 1
          && commInfo.cmdspos % visibleColsG + cells > visibleColsG) {
       commInfo.cmdspos++;
-   } 
+   }
 }
 
 //Get a command line for the ";" action
@@ -9826,7 +9823,7 @@ put_on_cmdline(Byte *str, int len, int redraw) {
       retval = reallocateCommBuf(commInfo.cmdlen + len + 1);
    else
       retval = OK;
-      
+
    if (retval == OK) {
       if (!commInfo.overstrike) {
           MEMMOVE(commInfo.commBuf + commInfo.cmdpos + len,
@@ -10028,7 +10025,7 @@ cmdline_paste_str(CS s, int literally) {
          stuffcharReadbuff(Ctrl_V);
          stuffcharReadbuff(c);
       }
-   } 
+   }
 }
 
 //This function is called when the screen size changes and with incremental
@@ -10068,7 +10065,7 @@ redrawPrompt(void) {
    } else {
       for (i = commInfo.cmdindent; i > 0; --i)
          msg_putchar(' ');
-   } 
+   }
 }
 
 //Redraw what is currently on the command line.
@@ -10146,14 +10143,14 @@ gotoCommline(int clr) {
 
 //}}}
 
-//Check the word in front of the cursor for an abbreviation. Called when the non-id character "c" 
+//Check the word in front of the cursor for an abbreviation. Called when the non-id character "c"
 //has been entered. When an abbreviation is recognized it is removed from the text with
 //backspaces and the replacement string is inserted, followed by "c".
 private int
 ccheck_abbr(int c) {
    int spos = 0;
 
-   if (no_abbr) 
+   if (no_abbr)
       return false;
 
    //Do not consider '<,'> be part of the mapping, skip leading whitespace. Actually accept any mark
@@ -10201,14 +10198,14 @@ escape_fname(Byte **pp) {
    *pp = p;
 }
 
-//For each file name in files[num_files]: If 'orig_pat' starts with "~/", replace the home 
+//For each file name in files[num_files]: If 'orig_pat' starts with "~/", replace the home
 //directory with "~".
 pub void
 tilde_replace(CS orig_pat, ExpandMatch* files) {
    if (orig_pat[0] == '~' && orig_pat[1] == '/') {
       for (Unt i = 0; i < files->len; ++i) {
          files->c[i] = homeReplaceA(NULL, files->c[i], files->a);
-         
+
       }
    }
 }
@@ -10469,7 +10466,7 @@ get_list_range(Byte **str, int *num1, int *num2) {
 }
 
 
-//Open a portal on the current command line and history. Allow editing in this portal. 
+//Open a portal on the current command line and history. Allow editing in this portal.
 //Return when the portal is closed.
 //Return:
 // CR    if the command is to be executed
@@ -10479,7 +10476,7 @@ private Unt
 openCommPort(void) {
    Portal      *wp;
    int i;
-   
+
    Portal* oldPort = curPor;
    int save_restart_edit = restart_edit;
    int save_State = stateG;
@@ -10490,7 +10487,7 @@ openCommPort(void) {
       inpFlushIfNotSilent();
       return K_IGNORE;
    }
-   
+
    BookRef oldBook;
    bookStoreInRef(OUT &oldBook, curBook);
 
@@ -10502,7 +10499,7 @@ openCommPort(void) {
    //command line portal, but we don't want the popup menu then.
    pum_undisplay();
 
-   //don't use a new tab 
+   //don't use a new tab
    commModifierG.cmod_tab = 0;
    commModifierG.cmod_flags |= CMOD_NOSWAPFILE;
 
@@ -10512,7 +10509,7 @@ openCommPort(void) {
       ga_clear(&portSizes);
       return K_IGNORE;
    }
-   
+
    //splitPortal() autocommands may have messed with the old portal or buffer.
    //Treat it as abandoning this commline.
    if (!portalIsValid(oldPort) || curPor == oldPort
@@ -10534,10 +10531,10 @@ openCommPort(void) {
    //autocommands from startEditingFile(), as commport restrictions do not apply to them!
    int newbuf_status = startEditingFile(0, NULL, NULL, NULL, ECMD_ONE, ECMD_HIDE, NULL);
    int commPortValid = portalIsValid(commPortPortG);
-   
+
    BookRef bufref;
-   if (newbuf_status == FAIL || !commPortValid || curPor != commPortPortG 
-         || !portalIsValid(oldPort) || !bookRefValid(&oldBook) 
+   if (newbuf_status == FAIL || !commPortValid || curPor != commPortPortG
+         || !portalIsValid(oldPort) || !bookRefValid(&oldBook)
          || oldPort->book != oldBook.c
    ) {
       if (newbuf_status == OK)
@@ -10588,7 +10585,7 @@ openCommPort(void) {
 
    //Fill the buffer with the history.
    init_history();
-   
+
    LineNr lnum;
    if (getHistLen() > 0) {
       i = *get_hisidx(histtype);
@@ -10601,7 +10598,7 @@ openCommPort(void) {
             if (history[i].hisstr != NULL) {
                ml_append(lnum, history[i].hisstr, (ColNr)0, false);
                lnum++;
-            } 
+            }
          }
          while (i != *get_hisidx(histtype));
       }
@@ -11157,7 +11154,7 @@ set_context_in_user_cmdarg(
       return arg;
    if (context == EXPAND_MAPPINGS)
       return set_context_in_map_cmd(xp, (CS)"map", arg, forceit, false, false, C_map);
-      
+
    //Find start of last argument.
    CS p = arg;
    while (*p) {
@@ -11196,7 +11193,7 @@ get_user_commands(Expand*, int idx) {
          if (STRCMP(name, USER_CMD_GA(&book->userCommands, i)->uc_name) == 0)
             //global command is overruled by buffer-local one
             return S"";
-      } 
+      }
       return name;
    }
    return NULL;
@@ -11263,7 +11260,7 @@ get_commandtype(int expand) {
    for (int i = 0; i < (int)ARRAY_LENGTH(command_complete_tab); ++i) {
       if (command_complete_tab[i].key == expand)
           return &command_complete_tab[i];
-   } 
+   }
 
    return NULL;
 }
@@ -11432,7 +11429,7 @@ uc_list(CS name, Unt name_len) {
                len += (int)addr_type_complete_tab[j].shortnamelen;
                break;
             }
-         } 
+         }
 
          do {
             IObuff[len++] = ' ';
@@ -11516,7 +11513,7 @@ parse_addr_type_arg(CS value, int vallen, CommandAddress* addr_type_arg) {
          CS err = value;
 
          for (i = 0; err[i] != ZERO && !SPACE_OR_TAB(err[i]); i++)
-            {} 
+            {}
          err[i] = ZERO;
          showErrFmtMsg(_(e_invalid_address_type_value_str), err);
          return FAIL;
@@ -11540,7 +11537,7 @@ cmp_addr_type(const void *a, const void *b) {
 
 //Parse a completion argument "value[vallen]".
 //The detected completion goes in "*context", argument type in "*argFlags".
-//When there is an argument, for function and user defined completion, it's copied to allocated 
+//When there is an argument, for function and user defined completion, it's copied to allocated
 //memory and stored in "*compl_arg". Return FAIL if something is wrong.
 pub int
 parse_compl_arg(
@@ -11884,7 +11881,7 @@ c_command(Invocation* invo) {
    if (ASCII_ISALPHA(*p)) {
       while (ASCII_ISALNUM(*p))
           ++p;
-   } 
+   }
    if (!endsComm(p) && !SPACE_OR_TAB(*p)) {
       emsg(_(e_invalid_command_name));
       goto theend;
@@ -12096,19 +12093,19 @@ add_win_cmd_modifiers(CS builder, CommandModifier* cmod, int* multi_mods) {
       buflen += add_cmd_modifier(
          builder, buflen, S"aboveleft", STRLEN_LITERAL("aboveleft"), multi_mods
       );
-   } 
+   }
    //:belowright and :rightbelow
    if (cmod->cmod_split & WSP_BELOW) {
       buflen += add_cmd_modifier(
          builder, buflen, S"belowright", STRLEN_LITERAL("belowright"), multi_mods
       );
-   } 
+   }
    //:botright
    if (cmod->cmod_split & WSP_BOT) {
       buflen += add_cmd_modifier(
          builder, buflen, S"botright", STRLEN_LITERAL("botright"), multi_mods
       );
-   } 
+   }
 
    //:tab
    if (cmod->cmod_tab > 0) {
@@ -12142,7 +12139,7 @@ add_win_cmd_modifiers(CS builder, CommandModifier* cmod, int* multi_mods) {
       buflen += add_cmd_modifier(
          builder, buflen, S"horizontal", STRLEN_LITERAL("horizontal"), multi_mods
       );
-   } 
+   }
 
    return buflen;
 }
@@ -12180,11 +12177,11 @@ produceCommModifiers(CS builder, CommandModifier *cmod, int quote) {
    for (i = 0; i < (int)ARRAY_LENGTH(mod_entry_tab); ++i) {
       if (cmod->cmod_flags & mod_entry_tab[i].key) {
          buflen += add_cmd_modifier(
-             builder, buflen, mod_entry_tab[i].value.c, mod_entry_tab[i].value.len, 
+             builder, buflen, mod_entry_tab[i].value.c, mod_entry_tab[i].value.len,
              &multi_mods
          );
-      } 
-   } 
+      }
+   }
 
    //:silent
    if (cmod->cmod_flags & CMOD_SILENT) {
@@ -12467,7 +12464,7 @@ do_ucmd(Invocation* invo) {
                && (start == NULL || ksp < start || end == NULL)
                && ((ksp[1] == KS_SPECIAL && ksp[2] == KE_FILLER)))
             {
-               //K_SPECIAL has been put in the buffer as K_SPECIAL KS_SPECIAL KE_FILLER, like for 
+               //K_SPECIAL has been put in the buffer as K_SPECIAL KS_SPECIAL KE_FILLER, like for
                //mappings, but doCommand() doesn't handle that, so convert it back.
                //Also change K_SPECIAL KS_EXTRA KE_CSI into CSI.
                len = ksp - p;
@@ -12573,7 +12570,7 @@ private void func_clear(UserFunc *fp, int force);
 private int func_free(UserFunc *fp, int force);
 private void applyDeferred(FnCall *funccal);
 private CS trans_function_name_ext(
-   OUT CS* pp, OUT Boole *is_global, Boole skip, Unt flags, FuncDict *fdp, 
+   OUT CS* pp, OUT Boole *is_global, Boole skip, Unt flags, FuncDict *fdp,
    PartiallyApplied **partial, TypeSpec **type, UserFunc **ufunc
 );
 
@@ -12603,7 +12600,7 @@ one_function_arg(
 
    while (ASCII_ISALNUM(*p) || *p == '_')
       ++p;
-      
+
    if (arg == p || SAFE_isdigit(*arg)
        || ((p - arg == 9 && STRNCMP(arg, "firstline", 9) == 0)
                 || (p - arg == 8 && STRNCMP(arg, "lastline", 8) == 0))
@@ -12629,7 +12626,7 @@ one_function_arg(
             eeglFree(arg_copy);
             return arg;
          }
-      } 
+      }
       ((Byte **)(newargs->c))[newargs->len] = arg_copy;
       newargs->len++;
 
@@ -12667,7 +12664,7 @@ get_function_line(
     return theline;
 }
 
-//Get function arguments. "argp" should point to just after the "(", possibly to white space. 
+//Get function arguments. "argp" should point to just after the "(", possibly to white space.
 //"argp" is advanced just after "endchar".
 private int
 get_function_args(
@@ -12818,7 +12815,7 @@ register_closure(UserFunc *fp) {
    return OK;
 }
 
-//If "name" starts with K_SPECIAL and "builder[bufsize]" is big enough return "builder" filled 
+//If "name" starts with K_SPECIAL and "builder[bufsize]" is big enough return "builder" filled
 //with a readable function name. Otherwise just return "name", thus the return value can always
 //be used. "name" and "builder" may be equal.
 pub CS
@@ -13065,7 +13062,7 @@ get_function_body(
                   //we can simply point into it, otherwise we need to
                   //change "invo->commline" to point to the last fetched line.
                   if (lines_to_free->len > 0
-                        && *invo->commline 
+                        && *invo->commline
                            != ((Byte **)lines_to_free->c)[lines_to_free->len - 1]
                   ) {
                       //*commline will be freed later, thus remove the line from lines_to_free.
@@ -13236,7 +13233,7 @@ theend:
    return ret;
 }
 
-//Parse a lambda expression and get a Funcref from "*arg" into "returnVar". "arg" points to the 
+//Parse a lambda expression and get a Funcref from "*arg" into "returnVar". "arg" points to the
 //opening brace in "{arg -> expr}" or the opening paren in "(arg) => expr"
 //Return OK or FAIL, or NOTDONE for dict or {expr}.
 pub int
@@ -13266,7 +13263,7 @@ get_lambda_tv(
    long   start_lnum = SOURCING_LNUM;
    if (equal_arrow) {
       return NOTDONE;
-   } 
+   }
 
    ga_init(&newargs);
    ga_init(&newlines);
@@ -13290,7 +13287,7 @@ get_lambda_tv(
       arg, equal_arrow ? ')' : '-', pnewargs,
       &varargs, &default_args, false, NULL, NULL
    );
-   if (ret == FAIL 
+   if (ret == FAIL
          || (s = skip_arrow(*arg, equal_arrow, equal_arrow ? &white_error : NULL)) == NULL
    ) {
       ga_clear_strings(&newargs);
@@ -13425,7 +13422,7 @@ errret:
    return FAIL;
 }
 
-//Check if "name" is a variable of type VAR_FUNC. If so, return the function name it contains, 
+//Check if "name" is a variable of type VAR_FUNC. If so, return the function name it contains,
 //otherwise return "name". If "partialp" is not NULL, and "name" is of type VAR_PARTIAL, also set
 //"partialp". If "found_var" is not NULL and a variable was found, set it to true.
 pub Text
@@ -13503,7 +13500,7 @@ emsg_funcname(CS ermsg, Byte *name) {
       eeglFree(p);
 }
 
-//Get function arguments at "*arg" and advance it. Return them in "*argvars[MAX_FUNC_ARGS + 1]" 
+//Get function arguments at "*arg" and advance it. Return them in "*argvars[MAX_FUNC_ARGS + 1]"
 //and the count in "argcount". On failure FAIL is returned but "argvars[argcount]" are still set
 pub int
 get_func_arguments(
@@ -13562,7 +13559,7 @@ get_func_tv(
 
    argp = *arg;
    ret = get_func_arguments(
-       &argp, OUT evalarg, (funcexe->fe_partial == NULL ? 0 : funcexe->fe_partial->argc), argvars, 
+       &argp, OUT evalarg, (funcexe->fe_partial == NULL ? 0 : funcexe->fe_partial->argc), argvars,
        &argcount
    );
 
@@ -13585,15 +13582,15 @@ get_func_tv(
    return ret;
 }
 
-//Return true if "p" starts with "<SID>" or "s:". Only works if scriptCheckScriptPrefix() returned 
+//Return true if "p" starts with "<SID>" or "s:". Only works if scriptCheckScriptPrefix() returned
 //non-zero for "p"!
 private int
 eval_fname_sid(Byte *p) {
     return (*p == 's' || TOUPPER_ASC(p[2]) == 'I');
 }
 
-//In a script change <SID>name() and s:name() to K_SNR 123_name(). Change <SNR>123_name() to 
-//K_SNR 123_name(). Use "fname_buf[FLEN_FIXED + 1]" when it fits, otherwise allocate memory and 
+//In a script change <SID>name() and s:name() to K_SNR 123_name(). Change <SNR>123_name() to
+//K_SNR 123_name(). Use "fname_buf[FLEN_FIXED + 1]" when it fits, otherwise allocate memory and
 //set "tofree".
 pub Byte *
 fname_trans_sid(
@@ -13707,7 +13704,7 @@ func_requires_g_prefix(UserFunc *ufunc) {
        && !SAFE_isdigit(ufunc->uf_name[0]);
 }
 
-//Copy the function name of "fp" to buffer "builder". "builder" must be able to hold the function 
+//Copy the function name of "fp" to buffer "builder". "builder" must be able to hold the function
 //name plus three bytes. Take care of script-local function names.
 private int
 cat_func_name(CS builder, Unt bufsize, UserFunc *fp) {
@@ -13756,7 +13753,7 @@ free_funccal(FnCall *fc) {
    eeglFree(fc);
 }
 
-//Free "fc" and what it contains. Can be called only when "fc" is kept beyond the period of it 
+//Free "fc" and what it contains. Can be called only when "fc" is kept beyond the period of it
 //called, i.e. after cleanup_function_call(fc).
 private void
 free_funccal_contents(FnCall *fc) {
@@ -13868,14 +13865,14 @@ func_name_refcount(Byte *name) {
     return numbered_function(name) || (name[0] == '<' && name[1] == 'l');
 }
 
-//Unreference "fc": decrement the reference count and free it when it becomes zero. "fp" is 
+//Unreference "fc": decrement the reference count and free it when it becomes zero. "fp" is
 //detached from "fc". When "force" is true, we are exiting.
 private void
 funccal_unref(FnCall *fc, UserFunc *fp, int force) {
    if (!fc)
       return;
 
-   if (--fc->refCount <= 0 
+   if (--fc->refCount <= 0
          && (force || (
          fc->arguments.refCount == DO_NOT_FREE_CNT
          && fc->localVars.refCount == DO_NOT_FREE_CNT
@@ -13888,11 +13885,11 @@ funccal_unref(FnCall *fc, UserFunc *fp, int force) {
             return;
          }
       }
-   } 
+   }
    for (int i = 0; i < fc->fc_ufuncs.len; ++i) {
       if (((UserFunc **)(fc->fc_ufuncs.c))[i] == fp)
           ((UserFunc **)(fc->fc_ufuncs.c))[i] = NULL;
-   } 
+   }
 }
 
 //Remove the function from the function hashtable.  If the function was
@@ -13922,7 +13919,7 @@ func_clear_items(UserFunc *fp) {
    EE_CLEAR(fp->uf_va_name);
 }
 
-//Free all things that a function contains. Does not free the function itself, use func_free() 
+//Free all things that a function contains. Does not free the function itself, use func_free()
 //for that. When "force" is true we are exiting.
 private void
 func_clear(UserFunc *fp, int force) {
@@ -13936,7 +13933,7 @@ func_clear(UserFunc *fp, int force) {
 }
 
 //Free a function and remove it from the list of functions. Does not free what a function contains,
-//call func_clear() first. When "force" is true we are exiting. Return OK when the function was 
+//call func_clear() first. When "force" is true we are exiting. Return OK when the function was
 //actually freed.
 private int
 func_free(UserFunc *fp, int force) {
@@ -13953,7 +13950,7 @@ func_free(UserFunc *fp, int force) {
    return FAIL;
 }
 
-//Free all things that a function contains and free the function itself. When "force" is true we 
+//Free all things that a function contains and free the function itself. When "force" is true we
 //are exiting.
 pub void
 func_clear_free(UserFunc *fp, int force) {
@@ -14095,7 +14092,7 @@ call_user_func(
          &fc->argVars, &fc->fc_fixvar[fixvar_idx++].var, S"0",
          (Long)(argcount >= fp->args.len ? argcount - fp->args.len : 0)
       );
-   } 
+   }
    fc->argVars.lock = VAR_FIXED;
    if ((fp->uf_flags & FC_NOARGS) == 0) {
       //Use "name" to avoid a warning from some compilers that checks the destination size.
@@ -14116,7 +14113,7 @@ call_user_func(
    //Skipped when no a: variables used (in lambda).
    if ((fp->uf_flags & FC_NOARGS) == 0) {
       add_nr_var(
-         &fc->argVars, &fc->fc_fixvar[fixvar_idx++].var, S"firstline", 
+         &fc->argVars, &fc->fc_fixvar[fixvar_idx++].var, S"firstline",
          (Long)funcexe->fe_firstline
       );
       add_nr_var(&fc->argVars, &fc->fc_fixvar[fixvar_idx++].var,
@@ -14508,7 +14505,7 @@ free_all_functions(void) {
             }
             --todo;
          }
-      } 
+      }
     }
 
    //Now actually free the functions.  Need to start all over every time,
@@ -14533,7 +14530,7 @@ free_all_functions(void) {
                ++skipped;
             }
          }
-      } 
+      }
    }
    if (skipped == 0)
       hash_clear(&userDefinedFnsS);
@@ -14819,10 +14816,10 @@ call_func(
                if (!has_varargs(fp) && fp->args.len <= argv_clear) {
                   //called function doesn't take a submatches argument
                   argcount = argv_clear;
-               } else { 
+               } else {
                   //postponed filling in the arguments, do it now
                   argcount = funcexe->fe_argv_func(argcount, argvars, argv_clear);
-               } 
+               }
             }
 
             if (funcexe->fe_basetv) {
@@ -14849,11 +14846,11 @@ call_func(
          error = call_internal_func(fname, argcount, argvars, returnVar);
       }
 
-      //The function call (or "FuncUndefined" autocommand sequence) might have been aborted by an 
-      //error, an interrupt, or an explicitly thrown exception that has not been caught so far. 
+      //The function call (or "FuncUndefined" autocommand sequence) might have been aborted by an
+      //error, an interrupt, or an explicitly thrown exception that has not been caught so far.
       //This situation can be tested for by calling aborting().  For an error in an internal
       //function or for the "E132" error in call_user_func(), however, the throw point at which the
-      //"force_abort" flag (temporarily reset by emsg()) is normally updated has not been reached 
+      //"force_abort" flag (temporarily reset by emsg()) is normally updated has not been reached
       //yet. We need to update that flag first to make aborting() reliable.
       update_force_abort();
    }
@@ -14877,7 +14874,7 @@ theend:
 }
 
 //Call a function without arguments, partial or dict. This is like call_func() when the call is
-//only "FuncName()". To be used by "expr" options. Return NOTDONE when the function could not be 
+//only "FuncName()". To be used by "expr" options. Return NOTDONE when the function could not be
 //found
 pub int
 call_simple_func(
@@ -15007,7 +15004,7 @@ list_func_head(UserFunc *fp, int indent) {
    return OK;
 }
 
-//Get a function name, translating "<SID>" and "<SNR>". Also handle a Funcref in a List or 
+//Get a function name, translating "<SID>" and "<SNR>". Also handle a Funcref in a List or
 //Dictionary. Return the function name in allocated memory, or NULL for failure.
 //Set "*is_global" to true when the function must be global, unless "is_global" is NULL.
 //flags:
@@ -15068,8 +15065,8 @@ trans_function_name_ext(
       start += lead;
 
    //Note that TFN_ flags use the same values as GLV_ flags.
-   Lval lv; 
-   end = getLval(OUT &lv, 
+   Lval lv;
+   end = getLval(OUT &lv,
       (GetLval){
          .name = mbText(start), .returnVar = null, .unlet = false, .skip = skip,
          .flags = flags | GLV_READ_ONLY | GLV_PREFER_FUNC, .fneFlag = lead > 2 ? 0 : FNE_CHECK_START
@@ -15078,7 +15075,7 @@ trans_function_name_ext(
    if (end == start) {
       if (!skip) {
          emsg(_(e_function_name_required));
-      } 
+      }
       goto theend;
    }
    if (!end || (lv.var != NULL && (lead > 2 || lv.ll_range))) {
@@ -15186,11 +15183,11 @@ trans_function_name_ext(
    if (len <= 0) {
       if (!skip) {
          emsg(_(e_function_name_required));
-      } 
+      }
       goto theend;
    }
 
-   //Copy the function name to allocated memory. Accept <SID>name() inside a script, translate 
+   //Copy the function name to allocated memory. Accept <SID>name() inside a script, translate
    //into <SNR>123_name(). Accept <SNR>123_name() outside a script.
    if (skip)
       lead = 0;   //do nothing
@@ -15244,8 +15241,8 @@ theend:
    return name;
 }
 
-//If the @funcname starts with "s:" or "<SID>", then expand it to the current script ID and 
-//return the expanded function name. The caller should free the returned name. If not called 
+//If the @funcname starts with "s:" or "<SID>", then expand it to the current script ID and
+//return the expanded function name. The caller should free the returned name. If not called
 //from a script context or the function name doesn't start with these prefixes, then return NULL.
 //Don't check whether the script-local function exists or not.
 pub CS
@@ -15308,7 +15305,7 @@ save_function_name(
       CLEAR_POINTER(fudi);
    } else
       saved = trans_function_name_ext(OUT &p, OUT is_global, skip, flags, fudi, NULL, NULL, NULL);
-    
+
    *name = p;
    return saved;
 }
@@ -15326,7 +15323,7 @@ list_functions(RegMatch *regmatch) {
 
          --todo;
          if ((fp->uf_flags & FC_DEAD) == 0
-             && (regmatch == NULL 
+             && (regmatch == NULL
                ? !message_filtered(fp->uf_name) && !func_name_refcount(fp->uf_name)
                : !SAFE_isdigit(*fp->uf_name) && eeRegexec(regmatch, fp->uf_name, 0))
          ) {
@@ -15457,8 +15454,8 @@ pub int
 scriptCheckScriptPrefix(CS p) {
    //Use caseInsensitiveCompareNChars() because in Turkish comparing the "I" may not work with
    //the standard library function.
-   if (p[0] == '<' 
-         && (caseInsensitiveCompareNChars(p + 1, S"SID>", 4) == 0 
+   if (p[0] == '<'
+         && (caseInsensitiveCompareNChars(p + 1, S"SID>", 4) == 0
             || caseInsensitiveCompareNChars(p + 1, S"SNR>", 4) == 0)
    )
       return 5;
@@ -15594,7 +15591,7 @@ c_delfunction(Invocation* invo) {
    } else {
       //A normal function (not a numbered function or lambda) has a
       //refcount of 1 for the entry in the hashtable.  When deleting
-      //it and the refcount is more than one, it should be kept. A numbered function and lambda 
+      //it and the refcount is more than one, it should be kept. A numbered function and lambda
       //should be kept if the refcount is one or more.
       if (fp->refCount > (func_name_refcount(fp->uf_name) ? 0 : 1)) {
          //Function is still referenced somewhere.  Don't free it but
@@ -15748,7 +15745,7 @@ callInner(
       if (doesrange)
          break;
 
-      //Stop when immediately aborting on error, or when an interrupt occurred or an exception 
+      //Stop when immediately aborting on error, or when an interrupt occurred or an exception
       //was thrown but not caught. get_func_tv() returned OK, so that the check for trailing
       //characters below is executed.
       if (aborting())
@@ -15906,7 +15903,7 @@ invoke_all_defer(void) {
    for (FnCallEntry* fce = funccal_stack; fce != NULL; fce = fce->next) {
       for (FnCall* fc = fce->top_funccal; fc != NULL; fc = fc->fc_caller)
           invoke_funccall_defer(fc);
-   } 
+   }
 }
 
 //":1,25call func(arg1, arg2)"   function call.
@@ -16100,7 +16097,7 @@ make_partial(Bag* selfdict_in, Var* returnVar) {
             pt->name = returnVar->string;
          } else {
             PartiallyApplied   *ret_pt = returnVar->partial;
-            //Partial: copy the function name, use selfdict and copy args. Can't take over name 
+            //Partial: copy the function name, use selfdict and copy args. Can't take over name
             //or args, the partial might be referenced elsewhere.
             if (ret_pt->name != NULL) {
                pt->name = copyStr(ret_pt->name);
@@ -16192,7 +16189,7 @@ get_funccal(void) {
    return funccal;
 }
 
-//Return the hashtable used for local variables in the current funccal. 
+//Return the hashtable used for local variables in the current funccal.
 //NULL if there is no current funccal.
 pub EeSet *
 get_funccal_local_ht(void) {
@@ -16331,15 +16328,15 @@ set_ref_in_call_stack(int copyID) {
    for (FnCall* fc = currentCallS; fc != NULL; fc = fc->fc_caller) {
       if (set_ref_in_funccal(fc, copyID))
          return true;
-   } 
+   }
 
    //Also go through the funccal_stack.
    for (FnCallEntry* entry = funccal_stack; entry; entry = entry->next) {
       for (FnCall* fc = entry->top_funccal; fc != NULL; fc = fc->fc_caller) {
          if (set_ref_in_funccal(fc, copyID))
             return true;
-      } 
-   } 
+      }
+   }
    return false;
 }
 
@@ -16364,7 +16361,7 @@ set_ref_in_func_args(int copyID) {
    for (int i = 0; i < funcargs.len; ++i) {
       if (set_ref_in_item(((Var **)funcargs.c)[i], copyID, NULL, NULL))
          return true;
-   } 
+   }
    return false;
 }
 
@@ -16374,8 +16371,8 @@ pub int
 set_ref_in_func(CS name, UserFunc* fp_in, int copyID) {
    if (!name && !fp_in) {
       return false;
-   } 
-   
+   }
+
    UserFunc* fp = fp_in;
    Byte   fnameBuilder[FLEN_FIXED + 1];
    Byte   *tofree = NULL;
@@ -16459,7 +16456,7 @@ define_function(Invocation* invo, ArrayList* lines_to_free) {
    CS name = save_function_name(OUT &p, OUT &is_global, invo->skip, tfn_flags, OUT &fudi);
    int paren = (firstOccurrence(p, '(') != NULL);
    if (!name && (!fudi.bag || !paren) && !invo->skip) {
-      //Return on an invalid expression in braces, unless the expression evaluation has been 
+      //Return on an invalid expression in braces, unless the expression evaluation has been
       //cancelled due to an aborting error, an interrupt, or an exception.
       if (!aborting()) {
          if (!invo->skip && fudi.newKey)
@@ -16517,10 +16514,10 @@ define_function(Invocation* invo, ArrayList* lines_to_free) {
          else
              ++name_base;
          }
-         for (i = 0; 
+         for (i = 0;
               name_base[i] != ZERO && (i == 0
                   ? isValidForScriptName1(name_base[i])
-                  : isValidForScriptName(name_base[i])); 
+                  : isValidForScriptName(name_base[i]));
               ++i
          )
             {}
@@ -16543,7 +16540,7 @@ define_function(Invocation* invo, ArrayList* lines_to_free) {
        ) == FAIL
    )
       goto errret_2;
-   
+
    //find extra arguments "range", "dict", "abort" and "closure"
    for (;;) {
       p = skipwhite(p);
@@ -16703,7 +16700,7 @@ define_function(Invocation* invo, ArrayList* lines_to_free) {
          }
          if (j == FAIL) {
             LineNr save_lnum = SOURCING_LNUM;
-            
+
             SOURCING_LNUM = sourcing_lnum_top;
             showErrFmtMsg(_(e_function_name_does_not_match_script_file_name_str), name);
             SOURCING_LNUM = save_lnum;
@@ -16809,7 +16806,7 @@ pub void
 c_function(Invocation* invo) {
    ArrayList linesToFree;
    ga_init2(OUT &linesToFree, sizeof(CS), 50);
-   
+
    (void)define_function(invo, &linesToFree);
    ga_clear_strings(&linesToFree);
 }
@@ -16822,7 +16819,7 @@ var_wrong_func_name(
    int new_var  //true when creating the variable
 ){
    //Allow for w: b: s: and t:. Allow autoload variable.
-   if (!((firstOccurrence(S"wbt", name.c[0]) != NULL || (name.c[0] == 's')) 
+   if (!((firstOccurrence(S"wbt", name.c[0]) != NULL || (name.c[0] == 's'))
             && name.c[1] == ':'
         )
           && !ASCII_ISUPPER((name.len > 0 && name.c[1] == ':') ? name.c[2] : name.c[0])
@@ -17135,12 +17132,12 @@ private void
 au_remove_cmds(AutoPat *ap) {
    for (AutoComm* ac = ap->comms; ac != NULL; ac = ac->next) {
       EE_CLEAR(ac->comm);
-   } 
+   }
    au_need_clean = true;
 }
 
 //Delete one command from an autocmd pattern.
-private void 
+private void
 au_del_cmd(AutoComm* ac) {
    EE_CLEAR(ac->comm);
    au_need_clean = true;
@@ -17214,7 +17211,7 @@ scrRemoveAutocommsFromBook(Book* book) {
    for (AutoPatComm* apc = active_apc_list; apc; apc = apc->next) {
       if (book->fiNum == apc->arg_bufnr)
          apc->arg_bufnr = 0;
-   } 
+   }
 
    //invalidate buflocals looping through events
    for (event = (AutoEvent)0; (int)event < NUM_EVENTS; event = (AutoEvent)((int)event + 1)) {
@@ -17230,8 +17227,8 @@ scrRemoveAutocommsFromBook(Book* book) {
                verbose_leave();
             }
          }
-      } 
-   } 
+      }
+   }
    au_cleanup();
 }
 
@@ -17246,7 +17243,7 @@ au_new_group(CS name) {
    for (i = 0; i < (Unt)augroups.len; ++i) {
       if (AUGROUP_NAME(i) == NULL)
           break;
-   } 
+   }
    if (i == (Unt)augroups.len && ga_grow(&augroups, 1) == FAIL)
       return AUGROUP_ERROR;
 
@@ -17280,7 +17277,7 @@ au_del_group(CS name) {
             event = NUM_EVENTS;
             break;
          }
-      } 
+      }
    }
    eeglFree(AUGROUP_NAME(i));
    if (in_use)
@@ -17296,7 +17293,7 @@ findGroup(CS name) {
       if (AUGROUP_NAME(i) != NULL && AUGROUP_NAME(i) != get_deleted_augroup()
             && STRCMP(AUGROUP_NAME(i), name) == 0)
          return i;
-   } 
+   }
    return AUGROUP_ERROR;
 }
 
@@ -17361,7 +17358,7 @@ is_autoCommPort(Portal *port) {
    for (int i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
       if (autoCommPortG[i].isPortUsed && autoCommPortG[i].port == port)
          return true;
-   } 
+   }
    return false;
 }
 
@@ -17481,9 +17478,9 @@ pub Boole
 event_ignored(AutoEvent event, NULLABLE CS evIgn) {
    if (!evIgn)
       return false;
-      
+
    int ignored = false;
-   
+
    while (*evIgn != ZERO) {
       int unignore = *evIgn == '-';
       evIgn += unignore;
@@ -17521,8 +17518,8 @@ check_ei(CS evIgn) {
 }
 
 
-//Add "what" to @eventignore to skip loading syntax hiliting for every book shown in 
-//the portal. "what" must start with a comma. Return the old value of 'eventignore' in allocated 
+//Add "what" to @eventignore to skip loading syntax hiliting for every book shown in
+//the portal. "what" must start with a comma. Return the old value of 'eventignore' in allocated
 //memory.
 pub CS
 au_event_disable(CS what) {
@@ -17555,7 +17552,7 @@ au_event_restore(CS old_ei) {
 //:autocmd <event> <pat>         Show the autocommands associated with <event> and <pat>.
 //:autocmd <event>               Show the autocommands associated with <event>.
 //:autocmd                       Show all autocommands.
-//:autocmd! <event> <pat> <comm> Remove all autocommands associated with <event> and <pat>, 
+//:autocmd! <event> <pat> <comm> Remove all autocommands associated with <event> and <pat>,
 //                              and add the command <comm>, for the current group.
 //:autocmd! <event> <pat>        Remove all autocommands associated with
 //                              <event> and <pat> for the current group.
@@ -17653,14 +17650,14 @@ do_autocmd(CS arg_in, int forceit) {
    //Loop over the events.
    last_event = (AutoEvent)-1;      //for listing the event name
    last_group = AUGROUP_ERROR;      //for listing the group name
-   
-   
+
+
    AutoCommCreation auCreation = (AutoCommCreation){
-      .group = group, .commandBody = comm, .deleteExisting = (Boole)forceit, 
+      .group = group, .commandBody = comm, .deleteExisting = (Boole)forceit,
       .once = once, .nested = nested
    };
-   
-   
+
+
    if (*arg == '*' || *arg == ZERO || *arg == '|') {
       if (*comm != ZERO)
           emsg(_(e_cannot_define_autocommands_for_all_events));
@@ -17668,12 +17665,12 @@ do_autocmd(CS arg_in, int forceit) {
          for (event = (AutoEvent)0; (int)event < NUM_EVENTS; event = (AutoEvent)((int)event + 1)) {
             if (autoEventImpl(event, pat, auCreation) == FAIL)
                break;
-         } 
+         }
    } else {
       while (*arg && *arg != '|' && !SPACE_OR_TAB(*arg)) {
          if (autoEventImpl(event_name2nr(arg, &arg), pat, auCreation) == FAIL)
             break;
-      } 
+      }
    }
 
    if (commNeedsFreeing)
@@ -17711,8 +17708,8 @@ autoEventImpl(AutoEvent event, CS pat, AutoCommCreation creation) {
    Byte buflocal_pat[25];   //for "<buffer=X>"
 
    Unt findgroup = creation.group == AUGROUP_ALL ? currAugroupS : creation.group;
-   Boole allgroups = creation.group == AUGROUP_ALL 
-      && !creation.deleteExisting 
+   Boole allgroups = creation.group == AUGROUP_ALL
+      && !creation.deleteExisting
       && *creation.commandBody == ZERO;
 
    //Show or delete all patterns for an event.
@@ -17732,7 +17729,7 @@ autoEventImpl(AutoEvent event, CS pat, AutoCommCreation creation) {
       //Find end of the pattern. Watch out for a comma in braces, like "*.\{obj,o\}".
       int brace_level = 0;
       for (endpat = pat;
-           *endpat && (*endpat != ',' || brace_level || (endpat > pat && endpat[-1] == '\\')); 
+           *endpat && (*endpat != ',' || brace_level || (endpat > pat && endpat[-1] == '\\'));
            ++endpat
       ) {
          if (*endpat == '{')
@@ -17774,9 +17771,9 @@ autoEventImpl(AutoEvent event, CS pat, AutoCommCreation creation) {
 
       //Find AutoPat entries with this pattern. When adding a command, it
       //always goes at or after the last one, so start at the end.
-      Arr(Arr(AutoPat)) prev_ap; 
-      if (!creation.deleteExisting 
-            && *creation.commandBody != ZERO 
+      Arr(Arr(AutoPat)) prev_ap;
+      if (!creation.deleteExisting
+            && *creation.commandBody != ZERO
             && lastAutopatS[(int)event]
       )
          prev_ap = &lastAutopatS[(int)event];
@@ -17816,7 +17813,7 @@ autoEventImpl(AutoEvent event, CS pat, AutoCommCreation creation) {
 
       //Add a new command.
       if (*creation.commandBody != ZERO) {
-         //If the pattern we want to add a command to does appear at the end of the list (or not 
+         //If the pattern we want to add a command to does appear at the end of the list (or not
          //is not in the list at all), add the pattern at the end of the list.
          if (!ap) {
             //refuse to add buffer-local ap if buffer number is invalid
@@ -17877,7 +17874,7 @@ autoEventImpl(AutoEvent event, CS pat, AutoCommCreation creation) {
 
          //Add the autocomm to the end of the AutoComm list.
          Arr(Arr(AutoComm)) prev_ac = &(ap->comms);
-         
+
          AutoComm* ac;
          while ((ac = *prev_ac) != NULL)
             prev_ac = &ac->next;
@@ -17887,7 +17884,7 @@ autoEventImpl(AutoEvent event, CS pat, AutoCommCreation creation) {
          newAutoCommand->comm = copyStr(creation.commandBody);
          newAutoCommand->scriptCtx = scriptPosG;
          newAutoCommand->scriptCtx.lineNr += SOURCING_LNUM;
-         
+
          newAutoCommand->next = NULL;
          *prev_ac = newAutoCommand;
          newAutoCommand->once = creation.once;
@@ -17932,7 +17929,7 @@ do_doautocmd(
    while (*arg && !endsComm(arg) && !SPACE_OR_TAB(*arg)) {
       if (applyAutocommGroup(event_name2nr(arg, &arg), fname, NULL, true, group, curBook, NULL))
          nothingDone = false;
-   } 
+   }
 
    if (nothingDone && do_msg && !aborting())
       smsg(_("No matching autocommands: %s"), arg_start);
@@ -17952,9 +17949,9 @@ c_doautoall(Invocation* invo) {
    CS arg = invo->arg;
    Boole did_aucmd;
 
-   //This is a bit tricky: For some commands curPor->book needs to be equal to curBook, but 
-   //for some buffers there may not be a portal. So we change the buffer for the current portal 
-   //for a moment. This gives problems when the autocommands make changes to the list of buffers 
+   //This is a bit tricky: For some commands curPor->book needs to be equal to curBook, but
+   //for some buffers there may not be a portal. So we change the buffer for the current portal
+   //for a moment. This gives problems when the autocommands make changes to the list of buffers
    //or portals...
    FOR_ALL_BOOKS(book) {
       //Only do loaded books and skip the current buffer, it's done last.
@@ -17991,7 +17988,7 @@ c_doautoall(Invocation* invo) {
 }
 
 //Prepare for executing autocommands for (hidden) book "book".
-//Search for a visible portal into the current book.  If there is none then use an entry in 
+//Search for a visible portal into the current book.  If there is none then use an entry in
 //"autoCommPortG[]". Set "curBook" and "curPor" to match "book".
 //When this fails "curBook" is not equal "book".
 pub void
@@ -18010,8 +18007,8 @@ auCommPrepareBook(
       FOR_ALL_PORTALS(port) {
          if (port->book == book)
             break;
-      } 
-   } 
+      }
+   }
 
    //Allocate a portal when needed.
    Portal *aucPort = NULL;
@@ -18026,9 +18023,9 @@ auCommPrepareBook(
                autoCommPortG[auc_idx].isPortUsed = true;
             break;
          }
-      } 
+      }
 
-      //If this fails (out of memory or using all AUCMD_WIN_COUNT entries) then we can't reliably 
+      //If this fails (out of memory or using all AUCMD_WIN_COUNT entries) then we can't reliably
       //execute the autocmd, return with "curBook" unequal "book".
       if (!aucPort)
          return;
@@ -18046,8 +18043,8 @@ auCommPrepareBook(
       aco->use_autoCommPort_idx = -1;
       curPor = port;
    } else {
-      //There is no portal into "book", use "aucPort".  To minimize the side effects, insert it in 
-      //the current tab. Anything related to a portal (e.g., setting folds) may have unexpected 
+      //There is no portal into "book", use "aucPort".  To minimize the side effects, insert it in
+      //the current tab. Anything related to a portal (e.g., setting folds) may have unexpected
       //results.
       aco->use_autoCommPort_idx = auc_idx;
 
@@ -18226,8 +18223,8 @@ auCommApplyWithInvo(
    return applyAutocommGroup(event, fname, fname_io, force, AUGROUP_ALL, book, invo);
 }
 
-//Like applyAutocomms(), but handles the caller's retval.  If the script processing is being 
-//aborted or if retval is FAIL when inside a try conditional, no autocommands are executed.  If 
+//Like applyAutocomms(), but handles the caller's retval.  If the script processing is being
+//aborted or if retval is FAIL when inside a try conditional, no autocommands are executed.  If
 //otherwise the autocommands cause the script to be aborted, retval is set to FAIL.
 pub int
 applyAutocommsRetval(
@@ -18374,7 +18371,7 @@ applyAutocommGroup(
             portIgnore = false;
             break;
          }
-      } 
+      }
    }
    if (portIgnore)
       goto BYPASS_AU;
@@ -18761,7 +18758,7 @@ getnextac(Unt, void* cookie, int, GetlineAlgo) {
    return retval;
 }
 
-//Return true if there is a matching autocommand for "fname". To account for buffer-local 
+//Return true if there is a matching autocommand for "fname". To account for buffer-local
 //autocommands, function needs to know in which buffer the file will be opened.
 pub int
 has_autocmd(AutoEvent event, CS sfname, Book* book) {
@@ -18783,7 +18780,7 @@ has_autocmd(AutoEvent event, CS sfname, Book* book) {
           retval = true;
           break;
       }
-   } 
+   }
 
    eeglFree(fname);
 
@@ -18822,7 +18819,7 @@ set_context_in_autocmd(Expand* xp, CS arg, int doautocmd) {  //true for :doauto*
    for (p = arg; *p != ZERO && !SPACE_OR_TAB(*p); ++p) {
       if (*p == ',')
           arg = p + 1;
-   } 
+   }
    if (*p == ZERO) {
       if (group == AUGROUP_ALL)
          include_groups = true;
@@ -18849,7 +18846,7 @@ set_context_in_autocmd(Expand* xp, CS arg, int doautocmd) {  //true for :doauto*
 pub CS
 get_event_name(Expand*, int idx) {
    if (idx < augroups.len) {     //First list group names, if wanted
-      if (!include_groups || AUGROUP_NAME(idx) == NULL 
+      if (!include_groups || AUGROUP_NAME(idx) == NULL
             || AUGROUP_NAME(idx) == get_deleted_augroup()
       )
          return S"";   //skip deleted entries
@@ -18976,7 +18973,7 @@ au_exists(CS arg) {
           retval = true;
           break;
       }
-   } 
+   }
 
 theend:
    eeglFree(arg_save);
@@ -19123,7 +19120,7 @@ autocommAddOrDelete(Arr(Var) argvars, Var* returnVar, Boole delete) {
          ) {
             if (autoEventImpl(event, pat,
                         (AutoCommCreation){
-                           .group = group, .commandBody = comm, .deleteExisting = delete, 
+                           .group = group, .commandBody = comm, .deleteExisting = delete,
                            .once = once, .nested = nested
                         }
                 ) == FAIL
@@ -19163,7 +19160,7 @@ autocommAddOrDelete(Arr(Var) argvars, Var* returnVar, Boole delete) {
                 retval = VVAL_FALSE;
                 break;
             }
-            
+
             AutoCommCreation auCreation = (AutoCommCreation){
                .group = group, .commandBody = comm, .deleteExisting = delete || replace,
                .once = once, .nested = nested
@@ -19194,7 +19191,7 @@ autocommAddOrDelete(Arr(Var) argvars, Var* returnVar, Boole delete) {
 
       //if only the autocmd group name is specified for delete and the
       //autocomm event, pattern and comm are not specified, then delete the autocomm group.
-      if (delete && group_name 
+      if (delete && group_name
             && (!event_name || event_name[0] == ZERO)
             && (!pat || pat[0] == ZERO)
             && (!comm || comm[0] == ZERO)
@@ -19231,7 +19228,7 @@ f_autocmd_get(Arr(Var) argvars, Var* returnVar) {
    List   *event_list;
    Bag* event_dict;
    CS event_name = NULL;
-   CS pat = NULL; 
+   CS pat = NULL;
    CS name = NULL;
    Unt group = AUGROUP_ALL;
 

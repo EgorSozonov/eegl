@@ -69,13 +69,12 @@ int drawInsertLines(
    int clearHiId,
    Portal* po       //NULL or portal to use width from
 );
-int screen_del_lines(
-   int      off,
-   int      row,
-   int      line_count,
-   int      end,
-   int      force,      //even when line_count > p_ttyscroll
-   Int      clearHiId,   //used for clearing lines
+int drawDeleteLinesFromScreen(
+   int off,
+   int row,
+   int line_count,
+   int end,
+   Int clearHiId,   //used for clearing lines
    Portal* po      //NULL or portal to use width from
 );
 int skip_showmode(void);
@@ -84,7 +83,6 @@ void unshowmode(int force);
 void clearmode(void);
 Unt statusLineNextChar(OUT Decoration* deco, Portal* po);
 int redrawing(void);
-int messaging(void);
 void computeColumnsForRulerAndCommand(void);
 Unt number_width(Portal* po);
 int screen_screencol(void);

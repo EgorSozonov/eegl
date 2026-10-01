@@ -341,7 +341,6 @@ private int expand_set_wildmode(OptExpand* args, OUT ExpandMatch* matches);
 private CS setWildoptions(OptionChange* cha);
 private int expandWildoptions(OptExpand* args, OUT ExpandMatch* matches);
 private int expand_set_eventignore(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_foldexpr(OptionChange* cha);
 private CS did_set_foldignore(OptionChange*);
 private CS did_set_foldmarker(OptionChange* cha);
 private CS setFoldMethod(OptionChange* cha);
@@ -1691,7 +1690,6 @@ showoneopt(Option* o, SetScope setScope) {   //OPT_LOCAL or OPT_GLOBAL
 pub int
 makefoldset(FILE *fd) {
    if (put_setnum(fd, S"set", S"foldmethod", refNum((long*)&curPor->o.foldMethod)) == FAIL
-       || put_setstring(fd, S"set", S"foldexpr", refStr(&curPor->o.foldExpr), 0) == FAIL
        || put_setstring(fd, S"set", S"foldmarker", refStr(&curPor->o.foldMarker), 0) == FAIL
        || put_setstring(fd, S"set", S"foldignore", refStr(&curPor->o.foldIgnore), 0) == FAIL
        || put_setnum(fd, S"set", S"foldlevel", refNum(&curPor->o.foldLevel)) == FAIL
@@ -2800,7 +2798,7 @@ did_set_helplang(OptionChange* cha) {
    return null;
 }
 
-//One of the '*expr' options is changed: @balloonexpr, @diffexpr, @foldexpr, @foldtext, 
+//One of the '*expr' options is changed: @balloonexpr, @diffexpr, @foldtext, 
 //@formatexpr, @includeexpr, @indentexpr, @patchexpr or @printexpr.
 private CS
 setOptexpr(OptionChange* cha) {
@@ -2959,14 +2957,6 @@ expand_set_eventignore(OptExpand* args, OUT ExpandMatch* matches) {
        args,
        &get_eventignore_name
    );
-}
-
-private CS
-did_set_foldexpr(OptionChange* cha) {
-   (void)setOptexpr(cha);
-   if (curPor->o.foldMethod == FOLD_EXPR)
-      foldUpdateAll(curPor);
-   return NULL;
 }
 
 private CS

@@ -338,7 +338,7 @@ p##acc L##T * create_L##T (int initCapacity, Arena* a) {\
    result->c = arr;\
    return result;\
 }
-   
+
 pub
 #define last(l) (l)->c[(l)->len - 1]
 
@@ -397,7 +397,7 @@ list_fix_watch(List* l, ListItem* item) {
    FOR_ALL_WATCHERS(l, lw) {
       if (lw->c == item)
           lw->c = item->next;
-   } 
+   }
 }
 
 
@@ -439,7 +439,7 @@ list_alloc_with_items(int count) {
       return l;
 
    ListItem* li = (ListItem *)(l + 1);
-   
+
    l->len = count;
    l->withItems = count;
    l->first = li;
@@ -513,14 +513,14 @@ list_free_contents(List* l) {
          clearVar(&item->c);
          list_free_item(l, item);
       }
-   } 
+   }
 }
 
 //Used by the garbage collector.
 #define COPYID_INC 2
 #define COPYID_MASK (~0x1)
 
-//Go through the list of lists and free items without the copyID. But don't free a list that has 
+//Go through the list of lists and free items without the copyID. But don't free a list that has
 //a watcher (used in a for loop), these are not referenced anywhere.
 pub int
 list_free_nonref(int copyID) {
@@ -533,7 +533,7 @@ list_free_nonref(int copyID) {
           list_free_contents(ll);
           did_free = true;
       }
-   } 
+   }
    return did_free;
 }
 
@@ -636,7 +636,7 @@ list_equal(List* l1, List* l2, int ic) {  //ignore case for strings
    ) {
       if (!tv_equal(&item1->c, &item2->c, ic))
          return false;
-   } 
+   }
    return item1 == NULL && item2 == NULL;
 }
 
@@ -770,7 +770,7 @@ pub long
 list_idx_of_item(List *l, ListItem *item) {
    if (!l)
       return -1;
-   
+
    CHECK_LIST_MATERIALIZE(l);
    long idx = 0;
    ListItem   *li;
@@ -798,23 +798,23 @@ list_append(List* l, ListItem* item) {
    item->next = NULL;
 }
 
-//Append Var "tv" to the end of list "l". "tv" is copied. 
+//Append Var "tv" to the end of list "l". "tv" is copied.
 //Return FAIL when out of memory or the tag is wrong.
 pub int
 list_append_tv(List* l, Var* newVal) {
    ListItem* newItem = listitem_alloc();
-      
+
    copy_tv(OUT &newItem->c, newVal);
    list_append(l, newItem);
    return OK;
 }
 
-//Append Var "tv" to the end of list "l". "tv" is moved. 
+//Append Var "tv" to the end of list "l". "tv" is moved.
 //Return FAIL when out of memory or the tag is wrong.
 private int
 list_append_tv_move(List* l, Var* tv) {
    ListItem* li = listitem_alloc();
-      
+
    li->c = *tv;
    list_append(l, li);
    return OK;
@@ -835,7 +835,7 @@ listAppendBag(List *list, Bag* bag) {
 pub int
 list_append_list(List *list1, List *list2) {
    ListItem   *li = listitem_alloc();
-      
+
    li->c = (Var){.tag = VAR_LIST, .lock = 0, .list = list2};
    list_append(list1, li);
    ++list2->refCount;
@@ -847,7 +847,7 @@ list_append_list(List *list1, List *list2) {
 pub int
 list_append_string(List *l, CS str, int len) {
    ListItem *li = listitem_alloc();
-      
+
    list_append(l, li);
    li->c.tag = VAR_STRING;
    li->c.lock = 0;
@@ -863,7 +863,7 @@ list_append_string(List *l, CS str, int len) {
 pub int
 list_append_number(List* l, Long n) {
    ListItem* li = listitem_alloc();
-   li->c = (Var){.tag = VAR_NUMBER, .lock = 0, .number = n};   
+   li->c = (Var){.tag = VAR_NUMBER, .lock = 0, .number = n};
    list_append(l, li);
    return OK;
 }
@@ -1022,7 +1022,7 @@ list_flatten(List* list, ListItem* first, long maxitems, long maxdepth) {
    if (maxdepth == 0)
       return;
    CHECK_LIST_MATERIALIZE(list);
-   ListItem* item = first ? first : list->first; 
+   ListItem* item = first ? first : list->first;
 
    while (item != NULL && done < maxitems) {
       ListItem   *next = item->next;
@@ -1044,7 +1044,7 @@ list_flatten(List* list, ListItem* first, long maxitems, long maxdepth) {
             list_flatten(list, item->prev == NULL
                        ? list->first : item->prev->next,
                   itemlist->len, maxdepth - 1);
-         } 
+         }
          clearVar(&item->c);
          list_free_item(list, item);
       }
@@ -1189,7 +1189,7 @@ list_extend(List *l1, List *l2, ListItem *bef) {
       item = item == bef_prev ? bef : item->next) {
       if (list_insert_tv(l1, &item->c, bef) == FAIL)
          return FAIL;
-   } 
+   }
    return OK;
 }
 
@@ -1909,7 +1909,7 @@ do_uniq(List *l, SortInfo *info) {
    //f_uniq(): ptrs will be a stack of items to remove
    info->item_compare_func_err = false;
    info->item_compare_keep_zero = true;
-   item_compare_func_ptr = info->item_compare_func || info->item_compare_partial 
+   item_compare_func_ptr = info->item_compare_func || info->item_compare_partial
        ? item_compare2 : item_compare;
 
    for (li = l->first; li != NULL && li->next != NULL; li = li->next) {
@@ -2209,11 +2209,11 @@ list_filter_map(
 private void
 filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
     CS funcName = (CS)(
-          filtermap == FILTERMAP_MAP 
+          filtermap == FILTERMAP_MAP
              ? "map()"
-             : filtermap == FILTERMAP_MAPNEW 
+             : filtermap == FILTERMAP_MAPNEW
                 ? "mapnew()"
-                : filtermap == FILTERMAP_FILTER 
+                : filtermap == FILTERMAP_FILTER
                    ? "filter()"
                    : "foreach()"
    );
@@ -2246,7 +2246,7 @@ filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
       return;
    }
 
-   //On type errors, the preceding call has already displayed an error message. Avoid a 
+   //On type errors, the preceding call has already displayed an error message. Avoid a
    //misleading error message for an empty string that was not passed as argument.
    Var* expr = &argvars[1];
    if (expr->tag == VAR_UNKNOWN)
@@ -2338,7 +2338,7 @@ list_count(List *l, Var *needle, long idx, int ic) {
    for ( ; li; li = li->next) {
       if (tv_equal(&li->c, needle, ic))
          ++n;
-   } 
+   }
 
    return n;
 }
@@ -2392,7 +2392,7 @@ list_extend_func(
    List* l2 = argvars[1].list;
    if (!(is_new || !value_check_lock(l1->lock, mbText(arg_errmsg), true)) || !l2) {
       return;
-   } 
+   }
    if (is_new) {
       l1 = list_copy(l1, false, true, get_copyID());
       if (!l1)
@@ -2685,18 +2685,18 @@ ga_grow_id(ArrayList *gap, int n, AllocId id) {
 //}}}
 //{{{hashtable: Handling of a hashtable with Eegl-specific properties.
 
-//Each item in a hashtable has a ZERO-terminated string key.  A key can appear only once in 
+//Each item in a hashtable has a ZERO-terminated string key.  A key can appear only once in
 //the table.
 //
-//A hash number is computed from the key for quick lookup.  When the hashes of two different keys 
-//point to the same entry an algorithm is used to iterate over other entries in the table until 
+//A hash number is computed from the key for quick lookup.  When the hashes of two different keys
+//point to the same entry an algorithm is used to iterate over other entries in the table until
 //the right one is found. To make the iteration work removed keys are different from entries where
 //a key was never present.
 //
-//The mechanism has been partly based on how Python Dictionaries are implemented. The algorithm 
+//The mechanism has been partly based on how Python Dictionaries are implemented. The algorithm
 //is from Knuth Vol. 3, Sec. 6.4.
 //
-//The hashtable grows to accommodate more entries when needed.  At least 1/3 of the entries is 
+//The hashtable grows to accommodate more entries when needed.  At least 1/3 of the entries is
 //empty to keep the lookup efficient (at the cost of extra memory).
 
 #if 0
@@ -2752,7 +2752,7 @@ hash_clear(EeSet* ht) {
 }
 
 //Free the array of a hash table and all the keys it contains.  The keys must have been allocated.
-//"off" is the offset from the start of the allocate memory to the location of the key (it's 
+//"off" is the offset from the start of the allocate memory to the location of the key (it's
 //always positive).
 pub void
 hash_clear_all(EeSet* ht, int off) {
@@ -2770,7 +2770,7 @@ hash_clear_all(EeSet* ht, int off) {
 
 //Find "key" in hashtable "ht". "key" must not be NULL. Always return a pointer to a EeSetItem.
 //If the item was not found, then HASHITEM_EMPTY() is true.  The pointer is then the place where
-//the key would be added. WARNING: The returned pointer becomes invalid when the hashtable is 
+//the key would be added. WARNING: The returned pointer becomes invalid when the hashtable is
 //changed (adding, setting or removing an item)!
 pub EeSetItem *
 hash_find(EeSet* ht, Text key) {
@@ -2795,7 +2795,7 @@ hash_lookup(EeSet* ht, Text key, Hash hash) {
 
    if (hi->len == 0)
       return hi;
-      
+
    EeSetItem* freeitem;
    if (hi->hi_key == HI_KEY_REMOVED)
       freeitem = hi;
@@ -2804,10 +2804,10 @@ hash_lookup(EeSet* ht, Text key, Hash hash) {
    else
       freeitem = NULL;
 
-   //Need to search through the table to find the key. The algorithm to step through the table 
-   //starts with large steps, gradually becoming smaller down to (1/4 table size + 1). This 
-   //means it goes through all table entries in the end. When we run into a NULL key it's clear 
-   //that the key isn't there. Return the first available slot found (can be a slot of a 
+   //Need to search through the table to find the key. The algorithm to step through the table
+   //starts with large steps, gradually becoming smaller down to (1/4 table size + 1). This
+   //means it goes through all table entries in the end. When we run into a NULL key it's clear
+   //that the key isn't there. Return the first available slot found (can be a slot of a
    //removed item).
    for (perturb = hash; ; perturb >>= PERTURB_SHIFT) {
 #ifdef HT_DEBUG
@@ -2840,7 +2840,7 @@ hash_debug_results(void) {
 # endif
 }
 
-//Add item with key "key" to hashtable "ht". "command" is used for the error message when the 
+//Add item with key "key" to hashtable "ht". "command" is used for the error message when the
 //hashtab if frozen. Return FAIL when out of memory or the key is already present.
 pub int
 hash_add(EeSet* ht, Text key, CS command) {
@@ -2856,7 +2856,7 @@ hash_add(EeSet* ht, Text key, CS command) {
    return hash_add_item(ht, hi, key, hash);
 }
 
-//Add item "hi" with "key" to hashtable "ht". "key" must not be NULL and "hi" must have been 
+//Add item "hi" with "key" to hashtable "ht". "key" must not be NULL and "hi" must have been
 //obtained with hash_lookup() and point to an empty item. "hi" is invalid after this!
 //Return OK or FAIL (out of memory).
 pub int
@@ -2928,7 +2928,7 @@ hash_unlock(EeSet* ht) {
    (void)hash_may_resize(ht, 0);
 }
 
-//Shrink a hashtable when there is too much empty space. Grow a hashtable when there is not 
+//Shrink a hashtable when there is too much empty space. Grow a hashtable when there is not
 //enough empty space. Return OK or FAIL (overflow on size).
 private int
 hash_may_resize(EeSet* ht, int minitems) {     //minimal number of items
@@ -3030,7 +3030,7 @@ hash_may_resize(EeSet* ht, int minitems) {     //minimal number of items
          *newitem = *olditem;
          --todo;
       }
-   } 
+   }
 
    if (ht->array != ht->smallArray)
       eeglFree(ht->array);
@@ -3043,8 +3043,8 @@ hash_may_resize(EeSet* ht, int minitems) {     //minimal number of items
    return OK;
 }
 
-//Get the hash number for a key. If you think you know a better hash function: Compile with 
-//HT_DEBUG set and run a script that uses hashtables a lot. Eegl will then print statistics when 
+//Get the hash number for a key. If you think you know a better hash function: Compile with
+//HT_DEBUG set and run a script that uses hashtables a lot. Eegl will then print statistics when
 //exiting. Try that with the current hash algorithm and yours. The lower the percentage the better.
 pub Hash
 calcHash(Text const key) {
@@ -3285,7 +3285,7 @@ convertToBoolOrNumber(
    return n;
 }
 
-//Get the numeric value of a variable. If it is a String variable, use readLongNumber(). For 
+//Get the numeric value of a variable. If it is a String variable, use readLongNumber(). For
 //incompatible types, return 0. varGetNumberChk() is similar to tv_get_number(), but informs the
 //caller of incompatible types: set *denote to true if "denote" is not NULL or return -1 otherwise.
 pub Long
@@ -3940,7 +3940,7 @@ tv_check_lock(Var* tv, Text name, Boole use_gettext) {
          || (lock != 0 && value_check_lock(lock, name, use_gettext));
 }
 
-//Copy the values from Var "from" to Var "to". When needed allocates string or increases reference 
+//Copy the values from Var "from" to Var "to". When needed allocates string or increases reference
 //count. Does not make a copy of a list, blob or dict but copies the reference!
 //It is OK for "from" and "to" to point to the same item. This is used to make a copy later.
 pub void
@@ -4288,15 +4288,15 @@ daCompareVars_string(
    if (type != EXPR_MATCH && type != EXPR_NOMATCH)
       i = ignoreCase ? caseInsensitiveCompareMaxCol(s1, s2) : STRCMP(s1, s2);
    switch (type) {
-   case EXPR_IS: 
+   case EXPR_IS:
       //FALLTHROUGH
-   case EXPR_EQUAL:    
+   case EXPR_EQUAL:
       val = (i == 0); break;
-   case EXPR_ISNOT:    
+   case EXPR_ISNOT:
       //FALLTHROUGH
-   case EXPR_NEQUAL:   
+   case EXPR_NEQUAL:
       val = (i != 0); break;
-   case EXPR_GREATER:  
+   case EXPR_GREATER:
       val = (i > 0); break;
    case EXPR_GEQUAL:   val = (i >= 0); break;
    case EXPR_SMALLER:  val = (i < 0); break;
@@ -4377,7 +4377,7 @@ func_equal(Var *tv1, Var *tv2, int ic) {      //ignore case
    for (i = 0; i < a1; ++i) {
       if (!tv_equal(tv1->partial->argv + i, tv2->partial->argv + i, ic))
          return false;
-   } 
+   }
 
    return true;
 }
@@ -4394,9 +4394,9 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      //ignore case
    int      r;
    static int   tv_equal_recurse_limit;
 
-   //Catch lists and dicts that have an endless loop by limiting recursiveness to a limit. We 
+   //Catch lists and dicts that have an endless loop by limiting recursiveness to a limit. We
    //guess they are equal then. A fixed limit has the problem of still taking an awful long time.
-   //Reduce the limit every time running into it. That should work fine for deeply linked 
+   //Reduce the limit every time running into it. That should work fine for deeply linked
    //structures that are not recursively linked and catch recursiveness quickly.
    if (recursive_cnt == 0)
    tv_equal_recurse_limit = 1000;
@@ -4406,7 +4406,7 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      //ignore case
    }
 
    //For VAR_FUNC and VAR_PARTIAL compare the function name, bound dict and arguments.
-   if ((tv1->tag == VAR_FUNC || (tv1->tag == VAR_PARTIAL && tv1->partial)) 
+   if ((tv1->tag == VAR_FUNC || (tv1->tag == VAR_PARTIAL && tv1->partial))
          && (tv2->tag == VAR_FUNC || (tv2->tag == VAR_PARTIAL && tv2->partial))
    ) {
       ++recursive_cnt;
@@ -4718,7 +4718,7 @@ equal_type(TypeSpec *type1, TypeSpec *type2, int flags) {
          if ((flags & ETYPE_ARG_UNKNOWN) == 0
             && !equal_type(type1->args[i], type2->args[i], flags))
              return false;
-      } 
+      }
       return true;
     }
     return true;
@@ -4736,7 +4736,7 @@ get_compare_type(CS p, int* len, int* type_is) {
       ei (p[1] == '~')
          type = EXPR_MATCH;
       break;
-   case '!': 
+   case '!':
       if (p[1] == '=')
          type = EXPR_NEQUAL;
       ei (p[1] == '~')
@@ -4749,14 +4749,14 @@ get_compare_type(CS p, int* len, int* type_is) {
       } else
          type = EXPR_GEQUAL;
       break;
-   case '<':   
+   case '<':
       if (p[1] != '=') {
          type = EXPR_SMALLER;
          *len = 1;
       } else
          type = EXPR_SEQUAL;
       break;
-   case 'i':   
+   case 'i':
       if (p[1] == 's') {
          //"is" and "isnot"; but not a prefix of a name
          if (p[2] == 'n' && p[3] == 'o' && p[4] == 't')
@@ -5036,7 +5036,7 @@ bagAddFn(Bag* d, CS key, UserFunc* fp) {
 }
 
 //Initialize "iter" for iterating over dictionary items with bagIterateNext().
-//If "var" is not a Bag or an empty Bag then there will be nothing to iterate over, no error 
+//If "var" is not a Bag or an empty Bag then there will be nothing to iterate over, no error
 //is given. NOTE: The dictionary must not change until iterating is finished!
 pub void
 bagIterateStart(Var* var, DictIterator* iter) {
@@ -5133,8 +5133,8 @@ bagGetVar(Bag *d, Text key, Var* returnVar) {
    return OK;
 }
 
-//Get a string item from a dictionary. When "save" is true allocate memory for it. When false 
-//a shared buffer is used, can only be used once! Return NULL if the entry doesn't exist or out 
+//Get a string item from a dictionary. When "save" is true allocate memory for it. When false
+//a shared buffer is used, can only be used once! Return NULL if the entry doesn't exist or out
 //of memory.
 pub CS
 bagGetString(Bag* d, Text key, Boole save) {
@@ -5275,9 +5275,9 @@ bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
    Byte buf[NUMBUFLEN];
    int had_comma;
 
-   //First check if it's not a curly-braces expression: {expr}. Must do this without evaluating, 
-   //otherwise a function may be called twice. Unfortunately this means we need to call eval1() 
-   //twice for the first item. 
+   //First check if it's not a curly-braces expression: {expr}. Must do this without evaluating,
+   //otherwise a function may be called twice. Unfortunately this means we need to call eval1()
+   //twice for the first item.
    //"{}" is an empty Dictionary. "#{abc}" is never a curly-braces expression.
    if (*curly_expr != '}'
           && !literal
@@ -5568,7 +5568,7 @@ bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar) {
       for (i = 0; i < 3; ++i) {
          if (STRCMP(action, av[i]) == 0)
             break;
-      } 
+      }
       if (i == 3) {
          if (is_new)
             bagUnref(d1);
@@ -5839,7 +5839,7 @@ dict_free_nonref(int copyID) {
          dict_free_contents(dd);
          did_free = true;
       }
-   } 
+   }
    return did_free;
 }
 
@@ -5953,7 +5953,7 @@ dict_copy(Bag* orig, int deep, int top, int copyID) {
       return NULL;
 
    Bag* copy = allocBag();
-      
+
    DictItem   *di;
 
    if (copyID != 0) {
@@ -6821,7 +6821,7 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
             if (argvars[4].tag != VAR_STRING) {
                wrong_arg_msg = e_assert_fails_fifth_argument;
                goto theend;
-            } ei (argvars[4].string 
+            } ei (argvars[4].string
                   && !pattern_match(argvars[4].string, emsg_assert_fails_context, false)
             ) {
                error_found = true;
@@ -7034,21 +7034,17 @@ f_test_override(Arr(Var) argvars, Var*) {
    ei (STRCMP(name, (CS)"no_query_mouse") == 0)
       no_query_mouse_for_testing = val;
    ei (STRCMP(name, (CS)"no_wait_return") == 0)
-   no_wait_return = val;
-    ei (STRCMP(name, (CS)"ui_delay") == 0)
-   ui_delay_for_testing = val;
-    ei (STRCMP(name, (CS)"unreachable") == 0)
-   ignore_unreachable_code_for_testing = val;
-    ei (STRCMP(name, (CS)"term_props") == 0)
-   reset_term_props_on_termresponse = val;
-    ei (STRCMP(name, (CS)"vterm_title") == 0)
-   disable_vterm_title_for_testing = val;
+      no_wait_return = val;
+   ei (STRCMP(name, (CS)"ui_delay") == 0)
+      ui_delay_for_testing = val;
+   ei (STRCMP(name, (CS)"unreachable") == 0)
+      ignore_unreachable_code_for_testing = val;
+   ei (STRCMP(name, (CS)"term_props") == 0)
+      reset_term_props_on_termresponse = val;
+   ei (STRCMP(name, (CS)"vterm_title") == 0)
+      disable_vterm_title_for_testing = val;
    ei (STRCMP(name, S"uptime") == 0)
       overrideSysinfoUptimeG = val;
-   ei (STRCMP(name, S"autoload") == 0)
-      override_autoload = val;
-   ei (STRCMP(name, S"defcompile") == 0)
-      override_defcompile = val;
    ei (STRCMP(name, S"ALL") == 0) {
       disable_char_avail_for_testing = false;
       disable_redraw_for_testing = false;
@@ -7342,7 +7338,7 @@ eval_index_inner(
          n1 = 0;
       if (var2 == NULL)
          n2 = LONG_MAX;
-      if (list_slice_or_index(returnVar->list, is_range, n1, n2, exclusive, returnVar, verbose) 
+      if (list_slice_or_index(returnVar->list, is_range, n1, n2, exclusive, returnVar, verbose)
             == FAIL)
          return FAIL;
       break;
@@ -7527,14 +7523,14 @@ blob2string(Blob *blob, Byte **tofree, Byte *numbuf) {
    return *tofree;
 }
 
-//Convert a string variable, in the format of blob2string(), to a blob. Return NULL when 
+//Convert a string variable, in the format of blob2string(), to a blob. Return NULL when
 //the conversion failed.
 pub Blob*
 string2blob(CS str) {
    Blob  *blob = blob_alloc();
    if (!blob)
       return NULL;
-      
+
    CS s = str;
    if (s[0] != '0' || (s[1] != 'z' && s[1] != 'Z'))
       goto failed;
@@ -7671,7 +7667,7 @@ check_blob_range(long bloblen, Long n1, Long n2, int quiet) {
    return OK;
 }
 
-//Set bytes "n1" to "n2" (inclusive) in "dest" to the value of "src". Caller must make sure 
+//Set bytes "n1" to "n2" (inclusive) in "dest" to the value of "src". Caller must make sure
 //"src" is a blob. Returns FAIL if the number of bytes does not match.
 pub int
 blob_set_range(Blob *dest, long n1, long n2, Var *src) {
@@ -7681,7 +7677,7 @@ blob_set_range(Blob *dest, long n1, long n2, Var *src) {
    }
 
    int ir = 0;
-   
+
    for (int il = n1; il <= n2; il++)
       blob_set(dest, il, blob_get(src->blob, ir++));
    return OK;
@@ -7950,7 +7946,7 @@ pub void
 f_list2blob(Arr(Var) argvars, Var* returnVar) {
    if (returnVar_blob_alloc(returnVar) == FAIL)
       return;
-      
+
    Blob* blob = returnVar->blob;
 
    if (confirmVarIsList(argvars, 0) == FAIL)
@@ -7961,7 +7957,7 @@ f_list2blob(Arr(Var) argvars, Var* returnVar) {
       return;
 
    CHECK_LIST_MATERIALIZE(l);
-   
+
    ListItem* li;
    FOR_ALL_LIST_ITEMS(l, li) {
       Boole error = false;
@@ -7992,7 +7988,7 @@ blob_from_string(CS str, Blob* blob) {
    }
 }
 
-//Return a string created from the bytes in blob starting at "start_idx". A NL character in the 
+//Return a string created from the bytes in blob starting at "start_idx". A NL character in the
 //blob indicates end of string. A ZERO character in the blob is translated to a NL.
 //On return, "start_idx" points to next byte to process in blob.
 private CS
@@ -8115,7 +8111,7 @@ f_str2blob(Arr(Var) argvars, OUT Var* returnVar) {
 
 private int fuzzy_match_item_compare(const void *s1, const void *s2);
 private void fuzzy_match_in_list(
-      List *l, Byte *str, int matchseq, Byte *key, Callback *item_cb, int retmatchpos, 
+      List *l, Byte *str, int matchseq, Byte *key, Callback *item_cb, int retmatchpos,
       List *fmatchlist, long max_matches
 );
 private void do_fuzzymatch(Arr(Var) argvars, OUT Var* returnVar, int retmatchpos);
@@ -8318,7 +8314,7 @@ fuzzy_match_in_list(
             argv[0].tag = VAR_BAG;
             argv[0].bag = li->c.bag;
             argv[1].tag = VAR_UNKNOWN;
-            if (call_callback(item_cb, -1, &returnVar, 1, argv) != FAIL 
+            if (call_callback(item_cb, -1, &returnVar, 1, argv) != FAIL
                   && returnVar.tag == VAR_STRING
             ) {
                itemstr = returnVar.string;
@@ -8639,7 +8635,7 @@ find_word_end(CS ptr) {
          if (mb_get_class(ptr) != start_class)
             break;
       }
-   } 
+   }
    return ptr;
 }
 
@@ -8720,8 +8716,8 @@ fuzzyMatchStr_in_line(
    return found;
 }
 
-//Search for the next fuzzy match in the specified buffer. Attempt to find the next occurrence of 
-//the given pattern in the buffer, starting from the current position. Handle line wrapping and 
+//Search for the next fuzzy match in the specified buffer. Attempt to find the next occurrence of
+//the given pattern in the buffer, starting from the current position. Handle line wrapping and
 //direction of search. Return true if a match is found, otherwise false.
 pub int
 search_for_fuzzy_match(
@@ -8847,7 +8843,7 @@ defuzz(
 
    for (Unt i = 0; i < len; i++)
       matches->c[i] = fuzzy.c[i].str;
-   
+
 theend:
    matches->len = len;
    return OK;
@@ -9002,7 +8998,7 @@ match_positions(Byte *needle, Byte *haystack, Unt *positions) {
       if (positions) {
          for (int i = 0; i < n; i++)
             positions[i] = i;
-      } 
+      }
       return SCORE_MAX;
    }
 
@@ -9286,7 +9282,7 @@ f_str2nr(Var* argvars, Var* returnVar) {
    Boole isneg = (*p == '-');
    if (*p == '+' || *p == '-')
       p = skipwhite(p + 1);
-      
+
    switch (base) {
    case 2: what |= STR2NR_BIN + STR2NR_FORCE; break;
    case 16: what |= STR2NR_HEX + STR2NR_FORCE; break;
@@ -9304,7 +9300,7 @@ f_strgetchar(Var* argvars, Var* returnVar) {
    CS str = convertVarToStringSingleUse(&argvars[0]);
    if (!str)
       return;
-      
+
    int len = (int)STRLEN(str);
    int charidx = (int)varGetNumberChk(argvars + 1, OUT &error);
    if (error)
@@ -9368,10 +9364,10 @@ private void
 strchar_common(Arr(Var) argvars, OUT Var* returnVar, int skipcc) {
    CS s = tv_get_string(&argvars[0]);
    Long len = 0;
-   
+
    Unt (*func_strAdvanceMultibyte)(OUT CS* pp);
    func_strAdvanceMultibyte = skipcc ? strAdvanceMultibyte : mb_cptr2char_adv;
-   
+
    while (*s != ZERO) {
       func_strAdvanceMultibyte(&s);
       ++len;
@@ -9587,7 +9583,7 @@ f_tr(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->string = NULL;
    if (fromstr == NULL || tostr == NULL)
       return;      //type error; errmsg already given
-      
+
    ArrayList   ga;
    ga_init2(&ga, sizeof(char), 80);
 
@@ -9642,9 +9638,9 @@ f_tr(Arr(Var) argvars, OUT Var* returnVar) {
    ga_append(&ga, ZERO);
 
    returnVar->string = ga.c;
-   
-   return;   
-   
+
+   return;
+
 error:
    showErrFmtMsg(_(e_invalid_argument_str), fromstr);
    ga_clear(&ga);
@@ -9990,12 +9986,12 @@ adjust_types(OUT Byte*** ap_types, int arg, int* num_posarg, CS type) {
 
          if (pt[0] != '*') {
             switch (pt[0]) {
-            case 'd': case 'i': 
+            case 'd': case 'i':
                break;
             default:
                showErrFmtMsg(
-                     _(e_positional_num_field_spec_reused_str_str), 
-                     arg, 
+                     _(e_positional_num_field_spec_reused_str_str),
+                     arg,
                      format_typename((*ap_types)[arg - 1]), format_typename(type)
                );
                return FAIL;
@@ -10003,7 +9999,7 @@ adjust_types(OUT Byte*** ap_types, int arg, int* num_posarg, CS type) {
          }
       } else {
          if (format_typeof(type) != format_typeof((*ap_types)[arg - 1])) {
-            showErrFmtMsg(_( e_positional_arg_num_type_inconsistent_str_str), arg, format_typename(type), 
+            showErrFmtMsg(_( e_positional_arg_num_type_inconsistent_str_str), arg, format_typename(type),
                   format_typename((*ap_types)[arg - 1]));
             return FAIL;
          }
@@ -10350,7 +10346,7 @@ skip_to_arg(
       }
    }
 
-   //Because we know that after we return from this call, a va_arg() call is made, we can 
+   //Because we know that after we return from this call, a va_arg() call is made, we can
    //pre-emptively increment the current argument index.
    ++*arg_cur;
    ++*arg_idx;
@@ -10382,7 +10378,7 @@ eeVarPrintf0(
    va_list ap_start,
    Var* tvs
 ) {
-   Unt str_l = 0; //number of formatted characters. That is, the number of characters that 
+   Unt str_l = 0; //number of formatted characters. That is, the number of characters that
                   //would have been written to the string buf if it were large enough.
 
    CS p = (CS)fmt;
@@ -10512,8 +10508,8 @@ eeVarPrintf0(
             }
 
             j = tvs
-               ? tv_nr(tvs, OUT &arg_idx) 
-               : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt), 
+               ? tv_nr(tvs, OUT &arg_idx)
+               : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                    va_arg(ap, int)
                  );
 
@@ -10576,9 +10572,9 @@ eeVarPrintf0(
                   ++p;
                }
 
-               j = tvs 
-                  ? tv_nr(tvs, OUT &arg_idx) 
-                  : (skip_to_arg( ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt), 
+               j = tvs
+                  ? tv_nr(tvs, OUT &arg_idx)
+                  : (skip_to_arg( ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                      va_arg(ap, int)
                     );
 
@@ -10645,8 +10641,8 @@ eeVarPrintf0(
             case 'c': {
                int j;
 
-               j = tvs 
-                  ? tv_nr(tvs, OUT &arg_idx) 
+               j = tvs
+                  ? tv_nr(tvs, OUT &arg_idx)
                   : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                         va_arg(ap, int)
                     );
@@ -10659,8 +10655,8 @@ eeVarPrintf0(
 
             case 's':
             case 'S':
-               str_arg = tvs 
-                  ? tv_str(tvs, &arg_idx, &tofree) 
+               str_arg = tvs
+                  ? tv_str(tvs, &arg_idx, &tofree)
                   : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                     va_arg(ap, Byte *)
                     );
@@ -10713,8 +10709,8 @@ eeVarPrintf0(
             //NOTE: the u, b, o, x, X and p conversion specifiers
             //imply the value is unsigned;  d implies a signed value
 
-            //0 if numeric argument is zero (or if pointer is NULL for 'p'), +1 if greater than 
-            //zero (or nonzero for unsigned arguments), -1 if negative (unsigned argument is 
+            //0 if numeric argument is zero (or if pointer is NULL for 'p'), +1 if greater than
+            //zero (or nonzero for unsigned arguments), -1 if negative (unsigned argument is
             //never negative)
             int arg_sign = 0;
 
@@ -10739,7 +10735,7 @@ eeVarPrintf0(
             if (fmt_spec == 'p') {
                length_modifier = '\0';
                ptr_arg = tvs
-                  ? (void *)tv_str(tvs, &arg_idx, NULL) 
+                  ? (void *)tv_str(tvs, &arg_idx, NULL)
                   : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                      va_arg(ap, void *)
                     );
@@ -10747,8 +10743,8 @@ eeVarPrintf0(
                if (ptr_arg != NULL)
                    arg_sign = 1;
             } ei (fmt_spec == 'b' || fmt_spec == 'B') {
-               bin_arg = tvs 
-                  ? (Ulong)tv_nr(tvs, OUT &arg_idx) 
+               bin_arg = tvs
+                  ? (Ulong)tv_nr(tvs, OUT &arg_idx)
                   : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                      va_arg(ap, Ulong)
                     );
@@ -10762,7 +10758,7 @@ eeVarPrintf0(
                case 'h':
                    //char and short arguments are passed as int.
                    int_arg = tvs
-                      ? tv_nr(tvs, OUT &arg_idx) 
+                      ? tv_nr(tvs, OUT &arg_idx)
                       : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                          va_arg(ap, int)
                         );
@@ -10773,8 +10769,8 @@ eeVarPrintf0(
                   arg_sign = -1;
                    break;
                case 'l':
-                   long_arg = tvs 
-                      ? tv_nr(tvs, OUT &arg_idx) 
+                   long_arg = tvs
+                      ? tv_nr(tvs, OUT &arg_idx)
                       : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                          va_arg(ap, long int)
                         );
@@ -10786,7 +10782,7 @@ eeVarPrintf0(
                    break;
                case 'L':
                    llong_arg = tvs
-                      ? tv_nr(tvs, OUT &arg_idx) 
+                      ? tv_nr(tvs, OUT &arg_idx)
                       : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                          va_arg(ap, Long)
                          );
@@ -10803,7 +10799,7 @@ eeVarPrintf0(
                case '\0':
                case 'h':
                   uint_arg = tvs
-                     ? (unsigned)tv_nr(tvs, OUT &arg_idx) 
+                     ? (unsigned)tv_nr(tvs, OUT &arg_idx)
                      : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                         va_arg(ap, unsigned int)
                        );
@@ -10813,7 +10809,7 @@ eeVarPrintf0(
                   break;
                case 'l':
                   ulong_arg = tvs
-                     ? (unsigned long) tv_nr(tvs, OUT &arg_idx) 
+                     ? (unsigned long) tv_nr(tvs, OUT &arg_idx)
                      : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                          va_arg(ap, unsigned long int)
                        );
@@ -10823,7 +10819,7 @@ eeVarPrintf0(
                   break;
                case 'L':
                   ullong_arg = tvs
-                     ? (Ulong) tv_nr(tvs, OUT &arg_idx) 
+                     ? (Ulong) tv_nr(tvs, OUT &arg_idx)
                      : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                         va_arg(ap, Ulong)
                        );
@@ -10915,7 +10911,7 @@ eeVarPrintf0(
                   }
                }
 
-               //include the optional minus sign and possible "0x" in the region before the zero 
+               //include the optional minus sign and possible "0x" in the region before the zero
                //padding insertion point
                if (zero_padding_insertion_ind < str_arg_l && tmp[zero_padding_insertion_ind] == '-')
                   zero_padding_insertion_ind++;
@@ -10953,8 +10949,8 @@ eeVarPrintf0(
             int      remove_trailing_zeroes = false;
 
             double f = tvs
-               ? tv_float(tvs, &arg_idx) 
-               : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt), 
+               ? tv_float(tvs, &arg_idx)
+               : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
                   va_arg(ap, double)
                  );
 
@@ -11048,7 +11044,7 @@ eeVarPrintf0(
                          --tp;
                          --str_arg_l;
                      }
-                  } 
+                  }
                } else {
                   //Be consistent: some printf("%e") use 1.0e+12
                   //and some 1.0e+012.  Remove one zero in the last case.
@@ -11146,7 +11142,7 @@ eeVarPrintf0(
             if (str_l < str_m) {
                Unt avail = str_m - str_l;
                MEMMOVE(
-                  str + str_l, str_arg + zero_padding_insertion_ind, 
+                  str + str_l, str_arg + zero_padding_insertion_ind,
                   (Unt)sn > avail ? avail : (Unt)sn
                );
             }
@@ -11255,7 +11251,7 @@ op_format(Operator* oper, int keep_cursor){ //keep cursor on same text char
    }
 }
 
-//Implementation of the format operator 'gq' for when using 'formatexpr'.
+//Implementation of the format operator 'gq' for when using @formatexpr
 pub void
 op_formatexpr(Operator* oper) {
    if (oper->is_VIsual)
@@ -11273,7 +11269,7 @@ fex_format() {  //character to be inserted
 
    //Make a copy, the option could be changed while calling it.
    CS fex = copyStr(curBook->o.formatExpr);
-   scriptPosG = curBook->o.scriptLocs[PORTAL_foldExpr];
+   scriptPosG = curBook->o.scriptLocs[BOOK_formatExpr];
 
    //Evaluate the function.
    int r = (int)eval_to_number(fex, true);
@@ -11286,7 +11282,7 @@ fex_format() {  //character to be inserted
 
 //Escape "string" for use as a shell argument with system().
 //This uses single quotes.
-//Escape a newline, depending on the 'shell' option. When "do_special" is true also replace 
+//Escape a newline, depending on the 'shell' option. When "do_special" is true also replace
 //"!", "%", "#" and things starting
 //with "<" like "<cfile>".
 //When "do_newline" is false do not escape newline unless it is csh shell.
@@ -11297,7 +11293,7 @@ copyStr_shellescape(CS string, int do_special, int do_newline) {
 
    //First count the number of extra bytes required.
    Unt length = STRLEN(string) + 3;  //two quotes and a trailing ZERO
-   CS p; 
+   CS p;
    for (p = string; *p != ZERO; MB_PTR_ADV(p)) {
       if (*p == '\'') {
          length += 3;      //' => '\''
@@ -11614,12 +11610,12 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
                      ga_append(gap, ',');
                   write_string(gap, hi->hi_key);
                   ga_append(gap, ':');
-                  if (json_encode_item(gap, &bagLookup(hi)->c, copyID, options | JSON_NO_NONE) 
+                  if (json_encode_item(gap, &bagLookup(hi)->c, copyID, options | JSON_NO_NONE)
                         == FAIL
                   )
                      return FAIL;
                }
-            } 
+            }
             ga_append(gap, '}');
             d->copyId = 0;
          }
@@ -11813,8 +11809,8 @@ typedef struct {
    CS key;
 } JsonDecodeItem;
 
-//Decode one item and put it in "res".  If "res" is NULL only advance. Must already have skipped 
-//white space. Return FAIL for a decoding error (and give an error). Return MAYBE for an 
+//Decode one item and put it in "res".  If "res" is NULL only advance. Must already have skipped
+//white space. Return FAIL for a decoding error (and give an error). Return MAYBE for an
 //incomplete message.
 private int
 json_decode_item(JsReader* reader, Var *res) {
@@ -11895,7 +11891,7 @@ json_decode_item(JsReader* reader, Var *res) {
          }
          if (cur_item) {
             allocReturnList(cur_item);
-         } 
+         }
 
          ++reader->js_used; //consume the '{'
          topJson = ((JsonDecodeItem *)stack.c) + stack.len;
@@ -12192,7 +12188,7 @@ json_decode_all(OUT Var* res, JsReader* reader) {
 }
 
 //Decode the JSON from "reader" and store the result in "res".
-//Return FAIL for a decoding error. Return MAYBE for an incomplete message. Consume the message 
+//Return FAIL for a decoding error. Return MAYBE for an incomplete message. Consume the message
 //anyway.
 pub int
 json_decode(OUT Var* res, JsReader* reader) {
@@ -12207,8 +12203,8 @@ json_decode(OUT Var* res, JsReader* reader) {
 
 //Decode the JSON from "reader" to find the end of the message. "options" can be JSON_JS or zero.
 //This is only used for testing. Return FAIL if the message has a decoding error.
-//Return MAYBE if the message is truncated, need to read more. This only works reliable if the 
-//message contains an object, array or string. A number might be truncated without knowing. Does 
+//Return MAYBE if the message is truncated, need to read more. This only works reliable if the
+//message contains an object, array or string. A number might be truncated without knowing. Does
 //not advance the reader.
 pub int
 json_find_end(JsReader* reader) {
@@ -12491,7 +12487,7 @@ lalloc(Unt size, Boole message) {
    if (message && p)
       do_outofmem_msg(size);
    mch_exit(2);
-   
+
 success:
 #ifdef MEM_PROFILE
    mem_post_alloc(&p, size);
@@ -12561,7 +12557,7 @@ free_all_mem(void) {
    //Don't try freeing everything again.
    if (entered_free_all_mem)
       return;
-      
+
    entered_free_all_mem = true;
    //Don't want to trigger autocommands from here on.
    block_autocmds();
@@ -12680,7 +12676,7 @@ free_all_mem(void) {
    for (;;) {
       if (delete_first_msg() == FAIL)
           break;
-   } 
+   }
 
    channel_free_all();
    timer_free_all();
@@ -12854,7 +12850,7 @@ garbage_collect(int testing) {
    //book-local variables
    FOR_ALL_BOOKS(book) {
       abort = abort || set_ref_in_item(&book->bookVar.c, copyID, NULL, NULL);
-   } 
+   }
 
    //portal-local variables
    FOR_ALL_TAB_PORTALS(tab, wp)
@@ -12863,14 +12859,14 @@ garbage_collect(int testing) {
    for (Unt i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
       if (autoCommPortG[i].port) {
          abort = abort || set_ref_in_item( &autoCommPortG[i].port->wVar.c, copyID, NULL, NULL);
-      } 
-   } 
+      }
+   }
    FOR_ALL_POPUPPORTS(wp)
       abort = abort || set_ref_in_item(&wp->wVar.c, copyID, NULL, NULL);
    FOR_ALL_TABS(tab) {
       FOR_ALL_POPUPPORTS_IN_TAB(tab, wp)
          abort = abort || set_ref_in_item(&wp->wVar.c, copyID, NULL, NULL);
-   } 
+   }
 
    //tab-local variables
    FOR_ALL_TABS(tab) {
@@ -12886,7 +12882,7 @@ garbage_collect(int testing) {
       || set_ref_in_func_args(copyID);
 
     //v: vars
-    abort = abort 
+    abort = abort
       //callbacks in books
       || setRefInBooks(copyID)
       //@completefunc, @omnifunc and @thesaurusfunc callbacks
@@ -12898,7 +12894,7 @@ garbage_collect(int testing) {
       //@findfunc callback
       || set_ref_in_findfunc(copyID);
 
-    abort = abort 
+    abort = abort
       || set_ref_in_channel(copyID)
       || set_ref_in_job(copyID)
       || set_ref_in_timer(copyID)

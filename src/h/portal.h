@@ -44,7 +44,7 @@ Portal * portRemoveFrame(
    Portal* port,
    OUT Byte* dirp,  //set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
    Tab* t,      //tab "port" is in, NULL for current
-   OUT Frame** unflat_altfr //if not NULL, set to pointer of frame that got the space, and it 
+   OUT Frame** unflat_altfr //if not NULL, set to pointer of frame that got the space, and it
                             //is not flattened
 );
 void portCloseOthers(Boole message);

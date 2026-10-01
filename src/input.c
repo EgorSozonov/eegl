@@ -2877,9 +2877,8 @@ vGetOrPeek(Boole advance) {
                //In Insert mode, a screen update is skipped when characters are still available. 
                //But when those available characters are part of a mapping, and we are going to 
                //do a blocking wait here. Need to update the screen to display the changed text
-               //so far. Also for when 'lazyredraw' is set and redrawing was postponed because 
-               //there was something in the input buffer (e.g., termresponse).
-               if (((stateG & MODE_INSERT) != 0 || p_lz)
+               //so far.
+               if (((stateG & MODE_INSERT) != 0)
                      && (stateG & MODE_COMMLINE) == 0 && advance && mustRedrawG != 0 
                      && !need_wait_return
                      ) {

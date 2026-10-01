@@ -114,7 +114,7 @@ typedef Byte Byte;
 #define MAX_TYPENR 65535
 
 
-typedef struct tm Tm; 
+typedef struct tm Tm;
 
 
 //{{{version
@@ -168,7 +168,7 @@ typedef struct tm Tm;
 //Macros should be ALL_CAPS. An exception is for where a function is
 //replaced and an argument is not used more than once.
 
-//This will let macros expand before gluing them 
+//This will let macros expand before gluing them
 #define _GL(x, y) x ## y
 #define GLUE(x, y) _GL(x, y)
 
@@ -257,8 +257,8 @@ typedef struct tm Tm;
                     x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18 ) \
    SMAP_8(m, x0, x1, x2, x3, x4, x5, x6, x7), SMAP_8(m, x8, x9, x10, x11, x12, x13, x14, x15),\
    SMAP_3(m, x16, x17, x18)
-   
-   
+
+
 //Map an operator to first element of every pair, and assemble them into pairs
 //SMAP1((int), a, b, c, d) => {(int)(a), b}, {(int)(c), d}
 #define SMAP1(op, ...) GLUE(SMAP1_, NARGS(__VA_ARGS__))(op, __VA_ARGS__)
@@ -268,11 +268,11 @@ typedef struct tm Tm;
 #define SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3) \
       {m(x0), y0}, {m(x1), y1}, {m(x2), y2}, {m(x3), y3}
 #define SMAP1_10(m, x0, y0, x1, y1, x2, y2, x3, y3, x4, y4) \
-      SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), {m(x4), y4} 
+      SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), {m(x4), y4}
 #define SMAP1_12(m, x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5) \
-      SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), SMAP1_4(m, x4, y4, x5, y5) 
+      SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), SMAP1_4(m, x4, y4, x5, y5)
 #define SMAP1_14(m, x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, x7) \
-      SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), SMAP1_6(m, x4, y4, x5, y5, x6, y6) 
+      SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), SMAP1_6(m, x4, y4, x5, y5, x6, y6)
 #define SMAP1_16(m, x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6, x7, y7) \
       SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), SMAP1_8(m, x4, y4, x5, y5, x6, y6, x7, y7)
 #define SMAP1_18(m, x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6, x7, y7, x8, y8) \
@@ -320,13 +320,13 @@ typedef struct tm Tm;
       SMAP1_8(m, x8, y8, x9, y9, x10, y10, x11, y11), \
       SMAP1_8(m, x12, y12, x13, y13, x14, y14, x15, y15), SMAP1_4(m, x16, y16, x17, y17)
 
-   
-//}}} 
 
-//The is*() and to*() functions declared in <ctype.h> have undefined behavior for values other 
+//}}}
+
+//The is*() and to*() functions declared in <ctype.h> have undefined behavior for values other
 //than EOF outside the range of unsigned char. If plain char is signed, a call with a negative
-//value has undefined behavior. These macros cast the argument to unsigned char. (Most 
-//implementations behave more or less sanely with negative values, and most character values in 
+//value has undefined behavior. These macros cast the argument to unsigned char. (Most
+//implementations behave more or less sanely with negative values, and most character values in
 //practice are positive, but we want to avoid undefined behavior anyway)
 #define SAFE_isalnum(c)  (isalnum((unsigned char)(c)))
 #define SAFE_isalpha(c)  (isalpha((unsigned char)(c)))
@@ -344,9 +344,9 @@ typedef struct tm Tm;
 #define SAFE_toupper(c)  (toupper((unsigned char)(c)))
 
 //toupper() and tolower() that use the current locale.
-//On some systems toupper()/tolower() only work on lower/uppercase characters, first use islower() 
+//On some systems toupper()/tolower() only work on lower/uppercase characters, first use islower()
 //or isupper() then.
-//Careful: Only call TOUPPER_LOC() and TOLOWER_LOC() with a character in the range 0 - 255.  
+//Careful: Only call TOUPPER_LOC() and TOLOWER_LOC() with a character in the range 0 - 255.
 //toupper()/tolower() on some systems can't handle others.
 //Note: It is often better to use MB_TOLOWER() and MB_TOUPPER(), because many
 //toupper() and tolower() implementations only work for ASCII.
@@ -365,7 +365,7 @@ typedef struct tm Tm;
 //Returns empty string if it is NULL.
 #define EMPTY_IF_NULL(x) ((x) ? (x) : (Byte *)"")
 
-//Adjust chars in a language according to 'langmap' option. NOTE that there is no noticeable 
+//Adjust chars in a language according to 'langmap' option. NOTE that there is no noticeable
 //overhead if 'langmap' is not set. When set the overhead for characters < 256 is small.
 //Don't apply 'langmap' if the character comes from the Stuff buffer or from
 //a mapping and the langnoremap option was set.
@@ -567,7 +567,7 @@ typedef struct tm Tm;
 #define DECO_ITALIC       4
 #define DECO_UNDERLINE    8
 #define DECO_UNDERCURL   16
-#define DECO_UNDERDASH   32 
+#define DECO_UNDERDASH   32
 #define DECO_ALTERED_BG  64
 
 //special attribute addition: Put message in history
@@ -612,11 +612,11 @@ typedef struct tm Tm;
                             //may be reset by ";book")
 #define BF_NEVERLOADED 0x04 //file has never been loaded into book,
                             //many variables still need to be set
-#define BF_NOTEDITED   0x08 //Set when file name is changed after starting to edit, reset when 
+#define BF_NOTEDITED   0x08 //Set when file name is changed after starting to edit, reset when
                             //file is written out.
 #define BF_NEW         0x10 //file didn't exist when editing started
 #define BF_NEW_W       0x20 //Warned for BF_NEW and file created
-#define BF_READERR     0x40 //got errors while reading the file 
+#define BF_READERR     0x40 //got errors while reading the file
 #define BF_DUMMY       0x80 //dummy book, only used internally
 #define BF_PRESERVED  0x100 //":preserve" was used
 #define BF_SYN_SET    0x200 //'syntax' option was set
@@ -1400,8 +1400,7 @@ typedef int Socket;
 
 //The following are actual variables for the options
 
-EXTERN Boole p_asd;     //@autoshelldir
-EXTERN CS p_tsrfu; //@thesaurusfunc
+EXTERN CS p_tsrfu;      //@thesaurusfunc
 EXTERN Boole p_aw;      //@autowrite
 EXTERN Boole p_awa;     //@autowriteall
 EXTERN Boole p_bk;      //@backup
@@ -1534,7 +1533,6 @@ EXTERN CS p_fcs;    //@fillchars
 EXTERN FillChars fillCharsG;     //@fillchars characters
 EXTERN Boole p_intro;//@intro
 EXTERN Boole p_lrm;  //@langremap
-EXTERN Boole p_lz;   //@lazyredraw
 EXTERN Boole p_more; //@more
 EXTERN Boole makeOpenWhenDoneG; //@makeOpenWhenDone
 EXTERN CS p_mef;     //@makeef
@@ -1598,18 +1596,17 @@ EXTERN Boole   p_tbs; //@tagbsearch
 #define TC_SMART       0x10
 EXTERN Boole p_tgst;  //@tagstack
 EXTERN CS p_tenc;     //@termencoding
-EXTERN long p_twsl;   //@termwinscroll
+EXTERN Long p_twsl;   //@termwinscroll
 EXTERN int p_tx;      //@textmode
-EXTERN long p_tw;     //@textwidth
+EXTERN Long p_tw;     //@textwidth
 EXTERN Boole p_timeout;//@timeout
-EXTERN long p_tm;     //@timeoutlen
+EXTERN Long p_tm;     //@timeoutlen
 EXTERN Boole p_ttimeout; //@ttimeout
-EXTERN long   p_ttm;  //@ttimeoutlen
-EXTERN long   p_ttyscroll; //@ttyscroll
+EXTERN Long p_ttm;  //@ttimeoutlen
 EXTERN unsigned ttym_flags;
-EXTERN long   p_ul;   //@undolevels
-EXTERN long   p_ur;   //@undoreload
-EXTERN long   p_ut;   //@updatetime
+EXTERN Long p_ul;   //@undolevels
+EXTERN Long p_ur;   //@undoreload
+EXTERN Long p_ut;   //@updatetime
 EXTERN CS p_eeglinfo; //@eeglinfo
 EXTERN CS p_eeglinfofile; //@eeglinfofile
 EXTERN long p_verbose;//@verbose
@@ -1695,8 +1692,8 @@ declStruct(Bag);
 declStruct(PartiallyApplied);
 typedef struct Blob Blob;
 typedef sighandler_T SigHandler;
-declStruct(Portal); 
-declStruct(Job); 
+declStruct(Portal);
+declStruct(Job);
 
 declStruct(PortInfo);
 declStruct(Frame);
@@ -1865,8 +1862,7 @@ typedef struct {
 //PortLocal.foldMethod values
 #define FOLD_INDENT 0
 #define FOLD_MARKER 1
-#define FOLD_EXPR 2
-#define FOLD_DIFF 3
+#define FOLD_DIFF   2
 
 //Info used to pass info about a fold from the fold-detection code to the
 //code that displays the folds.
@@ -2081,7 +2077,7 @@ declStruct(RegProg);
 //This goes up to the tenth (index 9), referenced with "\9".
 #define NSUBEXP  10
 
-//Structure to be used for single-line matching. Sub-match "no" starts at "startp[no]" and ends 
+//Structure to be used for single-line matching. Sub-match "no" starts at "startp[no]" and ends
 //just before "endp[no]". When there is no match, the pointer is NULL.
 typedef struct {
    RegProg* regprog;
@@ -2169,7 +2165,7 @@ struct MatchItem {
 //}}}
 //{{{command line
 
-//For conditional commands a stack is kept of nested conditionals. When cs_idx < 0, there is no 
+//For conditional commands a stack is kept of nested conditionals. When cs_idx < 0, there is no
 //conditional command.
 #define CSTACK_LEN   50
 
@@ -2443,7 +2439,7 @@ typedef struct {
    int id;      //id of this arglist
 } EeArgList;
 
-//For each argument remember the file name as it was given, and the book number that contains 
+//For each argument remember the file name as it was given, and the book number that contains
 //the expanded file name (required for when ":cd" is used).
 typedef struct ArgFileEntry {
    CS fname;   //file name as specified
@@ -2649,8 +2645,8 @@ typedef struct EeSet {
 typedef Ulong Hash;      //Type for hi_hash
 
 
-//Struct that holds both a normal function name and a PartiallyApplied, as used for a callback 
-//argument. When used temporarily, "name" is not allocated. The refcounts to either the 
+//Struct that holds both a normal function name and a PartiallyApplied, as used for a callback
+//argument. When used temporarily, "name" is not allocated. The refcounts to either the
 //function or the partial are incremented and need to be decremented later with free_callback().
 struct Callback {
    CS name;
@@ -2853,7 +2849,7 @@ typedef void (*cfunc_free_T)(void *state);
 typedef struct FnCall FnCall;
 
 
-//Structure to hold info for a user function. When adding a field, check 
+//Structure to hold info for a user function. When adding a field, check
 //copy_lambda_to_global_func()
 struct UserFunc {
    int uf_varargs;   //variable nr of arguments (old style)
@@ -2917,12 +2913,12 @@ struct FnCall {
    } fc_fixvar[FIXVAR_CNT];
    Bag localVars;   //l: local function variables
    DictItem localVarsVar;   //variable for l: scope
-   
+
    Bag argVars;   //a: function argument variables
    DictItem argVarsVar;   //variable for the a: scope
    List arguments;   //list for a:000
    ListItem fc_l_listitems[MAX_FUNC_ARGS];   //listitems for a:000
-   
+
    Var   *fc_returnVar;   //return value
    LineNr fc_breakpoint;   //next line with breakpoint or zero
    int fc_dbg_tick;   //debug_tick when breakpoint was set
@@ -3132,7 +3128,7 @@ typedef struct {
       AutoPatComm* aucmd; //autocommand info
       Exception* except;  //exception info
    } info;
-   
+
    ScriptPos sctxSaved;   //saved current_sctx when calling function
 } Estack;
 
@@ -3290,13 +3286,13 @@ typedef struct {
 
    void (*finishNativeCb)(void); //native C function to call when the job finishes
    Callback   jo_callback;
-   
+
    void (*outNativeCb)(Arr(Byte)); //callbacks for the "stdout" file descriptor. If the native one is present,
    Callback   jo_out_cb; //only it is called.
-   
+
    void (*errNativeCb)(Arr(Byte)); //callbacks for the "error" file descriptor. If the native one is present,
    Callback   jo_err_cb; //only it is called.
-   
+
    Callback   closeCb;
    Callback   exitCb;
    int      dropNever;
@@ -3417,14 +3413,14 @@ typedef struct {
    int      b_syn_conceal;     //auto-conceal for :syn cmds
    int      b_syn_folditems;   //number of patterns with the HL_FOLD flag set
    SyntaxState   *array; //the state stack for a number of lines, for the
-                         //start of that line (col == 0).  This avoids having to recompute 
-                         //the syntax state too often. It is allocated to hold the state for all 
+                         //start of that line (col == 0).  This avoids having to recompute
+                         //the syntax state too often. It is allocated to hold the state for all
                          //displayed lines, and states for 1 out of about 20 other lines.
    int len;   //number of entries in b_sst_array[]
    SyntaxState   *first; //pointer to first used entry in b_sst_array[] or NULL
    SyntaxState   *firstFree; //pointer to first free entry in b_sst_array[] or NULL
    int      freeCount; //number of free entries in array[]
-   LineNr checkAfterLnum; //entries after this lnum need to be checked for validity 
+   LineNr checkAfterLnum; //entries after this lnum need to be checked for validity
                           //(MAXLNUM means no check needed)
    Short   lastDisplayTick;
 
@@ -3432,7 +3428,7 @@ typedef struct {
    ArrayList   b_langp;     //list of pointers to slang_T, see spell.c
    Byte midwordFlags[256];  //flags: is midword char
    CS multibyteMidwordChars;   //multi-byte midword chars
-   CS spellFile; 
+   CS spellFile;
    CS spellLang;
    CS spellOpts;       //'spelloptions'
    Byte   b_syn_chartab[32];  //syntax iskeyword option
@@ -3452,11 +3448,11 @@ typedef struct {
 //Must be in sync with p_buftype_values
 #define p_buftypeValuesLen 10
 
-EXTERN CS p_buftype_values[] 
+EXTERN CS p_buftype_values[]
 #ifdef MAIN_C
 //must be in sync with eegl.h:p_buftypeValuesLen
 = (CS[]){ SMAP((CS),
-   "normal", "nofile", "nowrite", "location", "help", "terminal", "acwrite", "prompt", "popup", 
+   "normal", "nofile", "nowrite", "location", "help", "terminal", "acwrite", "prompt", "popup",
    "spell"
 )}
 #endif
@@ -3502,9 +3498,9 @@ typedef struct {
 #include "defoption.h"
 #undef OPTIONS_LIST_BOOK
 #undef OPTIONS_FIELDS
-   
-   
-   //flags for use of ":lmap" 
+
+
+   //flags for use of ":lmap"
    long b_p_iminsert;    //input mode for insert
    long b_p_imsearch;    //input mode for search
 #define B_IMODE_USE_INSERT (-1)	//	Use b_p_iminsert value for search
@@ -3512,7 +3508,7 @@ typedef struct {
 #define B_IMODE_LMAP 1   //Input via langmap
 #define B_IMODE_IM   2   //Input via input method
 #define B_IMODE_LAST 2
-   
+
    Boole initialized;   //set when all options were initialized
    ScriptPos scriptLocs[OPTION_BOOK_COUNT]; //script locations for all book-local options
    Polystring stringOptions;      //Storage for all the string options
@@ -3631,7 +3627,7 @@ struct Book { //:Book
 
    Byte kind;        //BOOK_ constants
    BookOptions o;
-   
+
    Boole hasLocationEntry;
    LineNr noEolLnum; //non-zero lnum when last line of next binary
                      //write should not have an end-of-line
@@ -3681,16 +3677,16 @@ struct Book { //:Book
 # define DB_COUNT 8   //up to eight books can be diff'ed
 
 //Each diffblock defines where a block of lines starts in each of the books and how many lines it
-//occupies in that book.  When the lines are missing in the book the df_count[] is zero. This 
-//is all counted in book lines. Usually there is always at least one unchanged line in between 
-//the diffs as otherwise it would have been included in the diff above or below it. When linematch 
-//or diff anchors are used, this is no longer guaranteed, and we may have adjacent diff blocks. In 
+//occupies in that book.  When the lines are missing in the book the df_count[] is zero. This
+//is all counted in book lines. Usually there is always at least one unchanged line in between
+//the diffs as otherwise it would have been included in the diff above or below it. When linematch
+//or diff anchors are used, this is no longer guaranteed, and we may have adjacent diff blocks. In
 //all cases they will not overlap, although it is possible to have multiple 0-count diff blocks at
-//the same line. df_lnum[] + df_count[] is the lnum below the change.  When in one book lines 
+//the same line. df_lnum[] + df_count[] is the lnum below the change.  When in one book lines
 //have been inserted, in the other book df_lnum[] is the line below the insertion and df_count[]
 //is zero.  When appending lines at the end of the book, df_lnum[] is one beyond the end!
-//This is using a linked list, because the number of differences is expected to be reasonable 
-//small. The list is sorted on lnum. Each diffblock also contains a cached list of inline diff of 
+//This is using a linked list, because the number of differences is expected to be reasonable
+//small. The list is sorted on lnum. Each diffblock also contains a cached list of inline diff of
 //changes within the block, used for highlighting.
 declStruct(DiffBlock);
 
@@ -3725,8 +3721,8 @@ typedef enum {
 #define SNAP_AUCMD_IDX 1
 #define SNAP_COUNT     2
 
-//Tabs point to the top frame of each tab. Note: Most values inside here are NOT valid! Use 
-//"curPor", "firstPor", etc. for that. .topframe is always valid and can be compared against 
+//Tabs point to the top frame of each tab. Note: Most values inside here are NOT valid! Use
+//"curPor", "firstPor", etc. for that. .topframe is always valid and can be compared against
 //topframeG to find the current tab.
 declStruct(Tab);
 struct Tab {        //:Tab
@@ -3755,11 +3751,11 @@ struct Tab {        //:Tab
 };
 
 //Structure to cache info for displayed lines in lines[]. Each logical line has one entry.
-//The entry tells how the logical line is currently displayed in the portal. This is updated 
-//when displaying the portal. When the display is changed (e.g., when clearing the screen) 
+//The entry tells how the logical line is currently displayed in the portal. This is updated
+//when displaying the portal. When the display is changed (e.g., when clearing the screen)
 //validLines is changed to exclude invalid entries.
-//When making changes to the book, wl_valid is reset to indicate wl_size may not reflect what 
-//is actually in the book.  When wl_valid is false, the entries can only be used to count the 
+//When making changes to the book, wl_valid is reset to indicate wl_size may not reflect what
+//is actually in the book.  When wl_valid is false, the entries can only be used to count the
 //number of displayed lines used. wl_lnum and wl_lastlnum are invalid too.
 typedef struct w_line {
    LineNr   bookLnum;   //book line number for logical line
@@ -3900,9 +3896,9 @@ struct Portal { //:Portal
    int locked;     //don't let autocommands close the portal
    Frame* frame;   //frame containing this portal
    Pos   cursor;   //cursor position in book
-   ColNr cursWant; //The column we'd like to be at. This is used to try to stay in the same 
+   ColNr cursWant; //The column we'd like to be at. This is used to try to stay in the same
                    //column for up/down cursor motions.
-   Boole setCursWant;    //If set, then update w_curswant the next time through cursupdate() 
+   Boole setCursWant;    //If set, then update w_curswant the next time through cursupdate()
                          //to the current virtual column
    LineNr lastCursorLine;//where last time 'cursorline' was drawn
                          //the next seven are used to update the Visual highlighting
@@ -3924,7 +3920,7 @@ struct Portal { //:Portal
    int bottFill;     //true when filler lines are actually below w_topline (at end of file)
    int bottFillOld;  //w_botfill at last redraw
    ColNr leftCol; //screen col of the leftmost character in the portal; used if 'wrap' is off
-   ColNr skipCol; //starting screen column for the first line in the portal; used when @wrap is 
+   ColNr skipCol; //starting screen column for the first line in the portal; used when @wrap is
                   //on; does not include win_col_off()
 
    int emptyRowCount;   //number of ~ rows in portal
@@ -3944,7 +3940,7 @@ struct Portal { //:Portal
    Unt height;       //number of rows in portal, excluding status/command line(s)
    int prevPortRow;  //previous portrow used for 'splitkeep'
    Unt prevHeight;   //previous height used for 'splitkeep'
-   
+
    int scroll; //scroll height
 
    int windowCol;    //Leftmost column of portal in window
@@ -3961,8 +3957,8 @@ struct Portal { //:Portal
 ///////////////////////////////////////////////////////////////////
 //=== start of cached values ===
 ///////////////////////////////////////////////////////////////////
-   //Recomputing is minimized by storing the result of computations. Use functions in draw.c to 
-   //check if they are valid and to update. cacheState is a bitfield of flags, which indicate if 
+   //Recomputing is minimized by storing the result of computations. Use functions in draw.c to
+   //check if they are valid and to update. cacheState is a bitfield of flags, which indicate if
    //specific values are valid or need to be recomputed. See draw.c for values.
    int cacheState;
    Pos lastKnownCursor;      //last known position of cursor, used to adjust cacheState
@@ -3974,23 +3970,23 @@ struct Portal { //:Portal
    Unt cursorLineHeight; //current size of cursor line
    int isCursorLineFolded; //cursor line is folded
    int cursorLineRow;    //starting row of the cursor line
-   ColNr virtCol;  //column number of the cursor in the book line, as opposed to the column 
+   ColNr virtCol;  //column number of the cursor in the book line, as opposed to the column
                      //number we're at on the screen. This makes a difference on lines which span
                      //more than one screen line or when w_leftcol is non-zero
 
-   ColNr virtColFirstChar; //offset for w_virtcol when there are virtual text properties 
+   ColNr virtColFirstChar; //offset for w_virtcol when there are virtual text properties
                                //above the line
 #define WFLAG_WCOL_OFF_ADDED 1 //popup border and padding were added to cursorCol
 #define WFLAG_WROW_OFF_ADDED 2 //popup border and padding were added to cursorRow
-   //The cursor position in the portal. This is related to positions in 
+   //The cursor position in the portal. This is related to positions in
    //the portal, not in the display or book, thus cursorRow is relative to windowRow.
    int cursorRow, cursorCol; //cursor position in portal
 
-   //Info about the lines currently in the portal is remembered to avoid recomputing it every 
-   //time.  The allocated size of lines[] is visibleRowsG. Only the validLines entries are 
+   //Info about the lines currently in the portal is remembered to avoid recomputing it every
+   //time.  The allocated size of lines[] is visibleRowsG. Only the validLines entries are
    //actually valid. When the display is up-to-date lines[0].wl_lnum is equal to topLine
    //and lines[validLines - 1].wl_lnum is equal to bottomLine.
-   //Between changing text and updating the display lines[] represents what is currently 
+   //Between changing text and updating the display lines[] represents what is currently
    //displayed.  wl_valid is reset to indicate this. This is used for efficient redrawing.
    int validLines;     //number of valid entries
    Arr(PortLine) lines;
@@ -4228,7 +4224,7 @@ struct JsReader {
 typedef struct {
    Text name;   //start of variable name (can be NULL)
    Text expandedName;   //NULL or expanded name in allocated memory.
-   Var* var;   //Typeval of item being used. 
+   Var* var;   //Typeval of item being used.
                //If "newkey" isn't NULL, it's the Bag to which to add the item.
    ListItem   *ll_li;      //The list item or NULL.
    List   *ll_list;   //The list or NULL.
@@ -4373,7 +4369,7 @@ typedef struct {
 
    //old value of the option (can be a string, number or a boolean)
    OptionValue oldVal;
-    
+
    //new value of the option (can be a string, number or a boolean)
    OptionValue newVal;
 
@@ -4590,7 +4586,7 @@ typedef enum {
 
 //{{{termdefs
 
-//This list contains the defines for the machine dependent escape sequences that the editor needs 
+//This list contains the defines for the machine dependent escape sequences that the editor needs
 //to perform various operations. All of the sequences here are optional, except "cm" (cursor motion)
 
 
@@ -4801,7 +4797,7 @@ EXTERN int vgetcOrigCharG INIT(= 0);
 //CommlineRowG is the row where the command line starts, just below the last portal.
 //When the commline gets longer than the available space, the screen gets scrolled up. After a
 //CTRL-D (show matches), after hitting ':' after "hit return", and for the :global command, the
-//command line is temporarily moved.  The old position is restored with the next call to 
+//command line is temporarily moved.  The old position is restored with the next call to
 //update_screen()
 EXTERN Unt commlineRowG;
 
@@ -4912,30 +4908,30 @@ EXTERN int trylevel INIT(= 0);
 //When "force_abort" is true, always skip commands after an error message, even after the outermost
 //":endif", ":endwhile" or ":endfor" or for a function without the "abort" flag.  It is set to true
 //when "trylevel" is non-zero (and ":silent!" was not used) or an exception is being thrown at
-//the time an error is detected. It is set to false when "trylevel" gets zero again and there was 
+//the time an error is detected. It is set to false when "trylevel" gets zero again and there was
 //no error or interrupt or throw.
 EXTERN Boole force_abort INIT(= false);
 
-//"msg_list" points to a variable in the stack of do_cmdline() which keeps the list of arguments 
-//of several emsg() calls, one of which is to be converted to an error exception immediately 
-//after the failing command returns.  The message to be used for the exception value is pointed 
-//to by the "throw_msg" field of the first element in the list.  It is usually the same as the 
-//"msg" field of that element, but can be identical to the "msg" field of a later list element, 
+//"msg_list" points to a variable in the stack of do_cmdline() which keeps the list of arguments
+//of several emsg() calls, one of which is to be converted to an error exception immediately
+//after the failing command returns.  The message to be used for the exception value is pointed
+//to by the "throw_msg" field of the first element in the list.  It is usually the same as the
+//"msg" field of that element, but can be identical to the "msg" field of a later list element,
 //when the "emsg_severe" flag was set when the emsg() call was made.
 EXTERN MsgList **msg_list INIT(= NULL);
 
-//suppress_errthrow: When true, don't convert an error to an exception.  Used when displaying the 
-//interrupt message or reporting an exception that is still uncaught at the top level (which has 
+//suppress_errthrow: When true, don't convert an error to an exception.  Used when displaying the
+//interrupt message or reporting an exception that is still uncaught at the top level (which has
 //already been discarded then).  Also used for the error message when no exception can be thrown.
 EXTERN Boole suppress_errthrow INIT(= false);
 
-//The stack of all caught and not finished exceptions.  The exception on the top of the stack is 
-//the one got by evaluation of v:exception.  The complete stack of all caught and pending 
-//exceptions is embedded in the various cstacks; the pending exceptions, however, are not on the 
+//The stack of all caught and not finished exceptions.  The exception on the top of the stack is
+//the one got by evaluation of v:exception.  The complete stack of all caught and pending
+//exceptions is embedded in the various cstacks; the pending exceptions, however, are not on the
 //caught stack.
 EXTERN Exception* caught_stack INIT(= NULL);
 
-//Garbage collection can only take place when we are sure there are no Lists or Dictionaries 
+//Garbage collection can only take place when we are sure there are no Lists or Dictionaries
 //being used internally. This is flagged with "may_garbage_collect" when we are at the toplevel.
 //"want_garbage_collect" is set by the garbagecollect() function, which means
 //we do garbage collection before waiting for a char at the toplevel.
@@ -4956,8 +4952,8 @@ EXTERN int hiComplIncludeNoneG INIT(= 0);   //when 1 include "None"
 EXTERN int hiComplIncludeDefaultG INIT(= 0);   //when 1 include "default"
 EXTERN int hiComplIncludeLinkG INIT(= 0);   //when 2 include "link" and "clear"
 
-//When highlight_match is true, hilite a match starting at the cursor position. 
-//Search_match_lines is the number of lines after the match (0 for a match within one line), 
+//When highlight_match is true, hilite a match starting at the cursor position.
+//Search_match_lines is the number of lines after the match (0 for a match within one line),
 //search_match_endcol the column number of the character just after the match in the last line.
 EXTERN Boole highlight_match INIT(= false); //show search match pos
 EXTERN LineNr search_match_lines;       //lines of matched string
@@ -4992,7 +4988,7 @@ EXTERN Boole movingTabsForbiddenG INIT(= false);  //moving tabpages around disal
 EXTERN BookRef auNewCurBookG INIT3(NULL, 0, 0);
 
 //When deleting a book/portal and autocmd_busy is true, do not free the
-//book/portal. but link it in the list starting with au_pending_free_buf/ap_pending_free_win, 
+//book/portal. but link it in the list starting with au_pending_free_buf/ap_pending_free_win,
 //using b_next/next. Free the book/portal when autocmd_busy is being set to false.
 EXTERN Arr(Book) auPendingFreeBooksG INIT(= NULL);
 EXTERN Arr(Portal) auPendingFreePortalsG INIT(= NULL);
@@ -5020,7 +5016,7 @@ EXTERN Boole redraw_not_allowed INIT(= false);
 EXTERN Boole dont_parse_messages INIT(= false);
 
 
-//All regular portals are linked in a list. "firstpor" points to the first entry, "lastpor" to the 
+//All regular portals are linked in a list. "firstpor" points to the first entry, "lastpor" to the
 //last entry (can be the same as firstwin) and "curpor" to the currently active portal.
 //When switching tabs these swapped with the pointers in "Tab".
 EXTERN Portal* firstPor;      //first portal
@@ -5030,8 +5026,8 @@ EXTERN Portal* prevPor INIT(= NULL);   //previous portal (may equal curPor)
 
 EXTERN Portal* curPor;   //currently active portal
 
-//When executing autocommands for a book without any portals, a special portal is created to 
-//handle the side effects.  When autocommands nest we may need more than one.  Allow for up to 
+//When executing autocommands for a book without any portals, a special portal is created to
+//handle the side effects.  When autocommands nest we may need more than one.  Allow for up to
 //five, if more are needed something crazy is happening.
 #define AUCMD_PORTAL_COUNT 5
 
@@ -5068,7 +5064,7 @@ EXTERN Frame   *topframeG;   //root of the portal frame tree
 EXTERN Tab* firstTabG;
 EXTERN Tab* curtab;
 EXTERN Tab* lastUsedTabG;
-EXTERN Boole needRedrawTabpanelG INIT(= false); 
+EXTERN Boole needRedrawTabpanelG INIT(= false);
 
 //All boks are linked in a list. 'firstBook' points to the first entry,
 //'lastBook' to the last entry and 'curBook' to the currently active book.
@@ -5109,7 +5105,7 @@ EXTERN int textlock INIT(= 0);
 EXTERN int curBookLock INIT(= 0);
             //non-zero when the current book can't be changed.  Used for FileChangedRO.
 EXTERN int allBookLock INIT(= 0);
-            //non-zero when no book name can be changed, no book can be deleted and current 
+            //non-zero when no book name can be changed, no book can be deleted and current
             //directory can't be changed. Used for SwapExists et al.
 
 EXTERN Boole silentModeG INIT(= false); //set to true when "-s" commandline argument used for ex
@@ -5136,7 +5132,7 @@ EXTERN ColNr   resel_VIsual_vcol;      //nr of cols or end col
 //restart_edit set, remember where it started so we can set Insstart.
 EXTERN Pos   where_paste_started;
 
-//This flag is used to make auto-indent work right on lines where only a <RETURN> or <ESC> is 
+//This flag is used to make auto-indent work right on lines where only a <RETURN> or <ESC> is
 //typed. It is set when an auto-indent is done, and reset when any other editing is done on the
 //line. If an <ESC> or <RETURN> is received, and didAindentG is true, the line is truncated.
 EXTERN Boole didAindentG INIT(= false);
@@ -5145,7 +5141,7 @@ EXTERN Boole didAindentG INIT(= false);
 //when 'backspace' is 0, to avoid backspacing over autoindent.
 EXTERN ColNr autoindentColG INIT(= 0);
 
-//This is a character which will end a start-middle-end comment when typed as the first 
+//This is a character which will end a start-middle-end comment when typed as the first
 //character on a new line. It is taken from the last character of the "end" comment leader when
 //the COM_AUTO_END flag is given for that comment end in 'comments'. It is only valid when
 //didAindentG is true.
@@ -5384,8 +5380,8 @@ EXTERN int g_tag_at_cursor INIT(= false); //whether the tag command comes
 
 
 EXTERN Byte   *escape_chars INIT(= (Byte *)" \t\\\"|"); //need backslash in cmd line
-                   
-EXTERN int concatenateBackslashesG INIT(= true);                   
+
+EXTERN int concatenateBackslashesG INIT(= true);
 
 EXTERN int   keep_help_flag INIT(= false); //doing :ta from help file
 
@@ -5412,7 +5408,7 @@ EXTERN CS homedir INIT(= NULL);
 //directory is not a local directory, globaldir is NULL.
 EXTERN CS globaldir INIT(= NULL);
 
-EXTERN int   disable_fold_update INIT(= 0);
+//EXTERN int disable_fold_update INIT(= 0);
 
 //Whether 'keymodel' contains "stopsel" and "startsel".
 EXTERN int   km_stopsel INIT(= false);
@@ -5479,17 +5475,15 @@ EXTERN int  ui_delay_for_testing INIT(= 0);
 EXTERN int  reset_term_props_on_termresponse INIT(= false);
 EXTERN int  disable_vterm_title_for_testing INIT(= false);
 EXTERN long overrideSysinfoUptimeG INIT(= -1);
-EXTERN int  override_autoload INIT(= false);
-EXTERN int  override_defcompile INIT(= false);
-EXTERN int  ignore_unreachable_code_for_testing INIT(= false);
+EXTERN int ignore_unreachable_code_for_testing INIT(= false);
 
-EXTERN int  in_free_unref_items INIT(= false);
+EXTERN int in_free_unref_items INIT(= false);
 
-EXTERN int  did_add_timer INIT(= false);
-EXTERN int  timer_busy INIT(= 0);   //when timer is inside vgetc() then > 0
-EXTERN int  input_busy INIT(= 0);   //when inside get_user_input() then > 0
+EXTERN int did_add_timer INIT(= false);
+EXTERN int timer_busy INIT(= 0);   //when timer is inside vgetc() then > 0
+EXTERN int input_busy INIT(= 0);   //when inside get_user_input() then > 0
 
-EXTERN int  bevalexpr_due_set INIT(= false);
+EXTERN int bevalexpr_due_set INIT(= false);
 EXTERN ProfTime bevalexpr_due;
 
 EXTERN Tyme time_for_testing INIT(= 0);
@@ -5512,7 +5506,7 @@ EXTERN EvalCtx EVALARG_EVALUATE
           {0, 0, (int)sizeof(Byte *), 20, NULL}, 0}
 # endif
    ;
-   
+
 
 EXTERN char *chanFdNames[]
 # ifdef MAIN_C
@@ -5545,9 +5539,6 @@ EXTERN Byte showcmd_buf[SHOWCMD_BUFLEN];
 
 //If we've already warned about missing/unavailable clipboard
 EXTERN int did_warn_clipboard INIT(= false);
-
-EXTERN int wayland_display_fd; //Wayland display file descriptor; set by wayland_init_client()
-
 
 //}}}
 //{{{:::errors. Error message declarations
@@ -8201,9 +8192,9 @@ EXTERN Byte e_symlink_dereference_error[]
    INIT(= "E1575: Symlink derefence error");
 EXTERN Byte e_symlink_dereference_buffer_overflow[]
    INIT(= "E1576: Buffer overflow during symlink derefence");
-   
+
 EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
-   
+
 //}}}
 
 //Note: a NULL argument for eeRealloc() is not portable, don't use it.

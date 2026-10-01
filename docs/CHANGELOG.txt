@@ -80,7 +80,7 @@
 [-] FEAT_MZSCHEME
 [-] FEAT_BROWSE
 [-] FEAT_WAK
-[-] beeping (misc.c) 
+[-] beeping (misc.c)
 [-] FEAT_AUTOCHDIR
 [-] FEAT_BEVAL_TIP
 [-] 'compatible'
@@ -169,6 +169,7 @@
 [-] p_cb (clipboard)
 [-] p_sn (short, MSDOS-style file names)
 [-] p_sta (smarttab), p_ts (tab stop), p_sts (softtabstop)
+[-] @autoshelldir (p_asd, actively harmful)
 [-] window title & icon
 [-] restricted, check_restricted()
 [-] suspending, c_stop (useless)
@@ -267,13 +268,18 @@
 [-] @shelltemp p_stmp
 [-] @mkspellmem, p_msm
 [-] @numberwidth (fixed at 2)
-[-] @showbreak (superfluous, we have line number column)
+[-] @showbreak (p_lz, superfluous, we have line number column)
+[-] @foldexpr (superfluous, and folding is side-effect free without it
+    (commented out disable_fold_update))
+[-] @ttyscroll (p_ttyscroll, obsolete)
+[-] @lazyredraw (superfluous)
+[-] @loadplugins
 [-] Vimvars
 [ ] s: variables
 [ ] need_highlight_changed?
 [ ] p_writeany
 [ ] forceit?
-[ ] keymodel? (p_km)
+[-] keymodel (p_km)
 [ ] alloc_type?
 [ ] regex match syntax coloring ?
 [-] @relativenumber (always on)
@@ -307,7 +313,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] %s (and the substitute command in general) does NOT clobber the last, highlighted search
 [+] Do not clobber registers when pasting in Visual mode
 [+] asynchronous "make"
-[+] the :edit command should work with multiple files `:e a.txt b.txt` 
+[+] the :edit command should work with multiple files `:e a.txt b.txt`
 [+] Skip the quickfix buffer when looping through buffers
 [+] The :S command: a case-sensitive version of :s substitution
 [ ] Correct handling of /r, /n in substitutions. `s| |\n|g` should work correctly!
@@ -322,7 +328,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [~] `"10abc" + 2` is not 12 anymore, but an evaluation error - will be corrected by Wren
 [ ] Correct tab handling (insert tabs only at the beginning of a line)
 [?] Command to comment or uncomment out a block
-[+] sane discriminated unions in options.c instead of byte casting 
+[+] sane discriminated unions in options.c instead of byte casting
 [+] move @signcolumn option from string to bool
 [-] ml_get_alloc_lines (some weird crap that made separate allocations for every text line)
 [+] draw.c:screenLinesCG: change array layout to improve cache locality
@@ -336,7 +342,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [ ] Replace the "messages" mess with popup portals
 [ ] function to reformat minified JSON into human-readable form? Maybe just use jq? And just
    a general way to create auto-updateable views of buffers?
-[+] remove dependency on libattr - migrate to glibc 
+[+] remove dependency on libattr - migrate to glibc
 [ ] Frozen options mode? (options cannot be changed after the init script)
 [+] Transition to pure 256-color palette and removal of double-width symbols
 [ ] Project dir and src dir settings at command line (-P and -Psrc options)
@@ -347,11 +353,11 @@ selection automatically replaces the selection with the snippet where the value 
 selection has been used as argument.
 [ ] Snippets phase 2: an interactive portal when > 1 parameters
 [ ] @errorformat is unsuitable for an option: it should be per-filetype. We need a new event type
-   to control via autocommands: the IsCodeChange. Scratch books are created with isCode = false. 
+   to control via autocommands: the IsCodeChange. Scratch books are created with isCode = false.
    Then when they are saved with .txt, .json, .yaml or without file extension, they stay that way.
    But if they are saved with another extension, they get isCode = true and the IsCodeChange fires.
-   The existing @errorformat should be repurposed as a global option that the autocommand can 
-   choose to use. But we need separate commands to set the errorformat property for a book, also 
+   The existing @errorformat should be repurposed as a global option that the autocommand can
+   choose to use. But we need separate commands to set the errorformat property for a book, also
    to set isCode.
 [ ] Replace clipboard with shelling out to wl-copy and wl-paste
 
@@ -380,7 +386,7 @@ selection has been used as argument.
 
 
    [[[Wren enhancements]]]
-   
-[+] "\a b c\" parameter lists instead of "|a b c|" 
-[+] "foo/3" signatures instead of "foo(_,_,_)" 
+
+[+] "\a b c\" parameter lists instead of "|a b c|"
+[+] "foo/3" signatures instead of "foo(_,_,_)"
 [+] API functions for lists of different types
