@@ -138,6 +138,13 @@ pub typedef enum {
    FLUSH_INPUT      //flush typebuf and inchar() input
 } FlushBuffers;
 
+//Codes for mouse button events in lower three bits:
+#define MOUSE_LEFT    0x00
+#define MOUSE_MIDDLE  0x01
+#define MOUSE_RIGHT   0x02
+#define MOUSE_RELEASE 0x03
+
+
 //}}}
 #include "h/input.h"
 //{{{@@forward declarations
@@ -1899,7 +1906,7 @@ plain_vgetc(void) {
    if (c == K_PS) {
       //Only handle the first pasted character. Drop the rest, since we
       //don't know what to do with it.
-      c = bracketed_paste(PASTE_ONE_CHAR, false, NULL);
+      c = whBracketedPaste(PASTE_ONE_CHAR, false);
    } 
 
    return c;
@@ -3519,10 +3526,7 @@ format_lines(LineNr   line_count, int avoid_fex) { //don't use 'formatexpr'
                if (curPor->cursor.lnum == first_line)
                   indent = get_indent();
                else {
-                 if (doIsIndentationExpressionBased()) {
-                     indent = curBook->o.indentExpr ? get_expr_indent() : get_indent();
-                 } else
-                     indent = get_indent();
+                  indent = curBook->o.indentExpr ? get_expr_indent() : get_indent();
                }
                (void)doSetIndent(indent, SIN_CHANGED);
             }
@@ -4814,7 +4818,7 @@ ins_mouse(int c) {
          curPor = new_curPor;
          curBook = curPor->book;
       }
-      set_can_cindent(true);
+      whSetCanIndentExpr(true);
     }
 
     //redraw status lines (in case another portal became active)
@@ -4945,7 +4949,7 @@ ins_mousescroll(int dir) {
 
    if (!EQUAL_POS(curPor->cursor, orig_cursor)) {
       start_arrow(&orig_cursor);
-      set_can_cindent(true);
+      whSetCanIndentExpr(true);
    }
 }
 

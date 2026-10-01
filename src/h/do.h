@@ -408,9 +408,8 @@ void opChangeIndent(
 );
 void c_retab(Invocation *eap);
 int get_expr_indent(void);
-Boole doIsIndentationExpressionBased(void);
 void fix_indent(void);
 void f_indent(Arr(Var) argVars, OUT Var* returnVar);
 int is_pos_in_string(CS line, ColNr col);
 Pos* find_start_comment(int ind_maxcomment)  ;
-void do_expr_indent(void);
+void doIndentExpr(void);

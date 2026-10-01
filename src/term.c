@@ -1556,9 +1556,9 @@ win_new_shellsize(void) {
    static int old_Columns = 0;
    static int old_coloff = 0;
 
-   if (old_Columns != COLUMNS_WITHOUT_TPL() || old_coloff != TPL_LCOL()) {
+   if (old_Columns != COLUMNS_WITHOUT_TPL() || old_coloff != tabpanel_leftcol()) {
       old_Columns = COLUMNS_WITHOUT_TPL();
-      old_coloff = TPL_LCOL();
+      old_coloff = tabpanel_leftcol();
 
       shell_new_columns();
    }
@@ -1575,8 +1575,7 @@ shell_resized(void){
    set_shellsize(0, 0, false);
 }
 
-//Check if the shell size changed.  Handle a resize.
-//When the size didn't change, nothing happens.
+//Check if the shell size changed. Handle a resize. When the size didn't change, nothing happens
 pub void
 shell_resized_check(void) {
    int old_Rows = visibleRowsG;
@@ -1700,7 +1699,7 @@ out_str_t_TE(void) {
 
    //The seenModifyOtherKeys flag is not reset here.  We do expect t_TE to
    //disable modifyOtherKeys, but until Xterm version 377 there is no way to
-   //detect it's enabled again after the following t_TI.  We assume that when
+   //detect it's enabled again after the following t_TI. We assume that when
    //seenModifyOtherKeys was set before it will still be valid.
 
    //When the modifyOtherKeys level is detected to be 2 we expect t_TE to disable it. Remembering
@@ -1796,10 +1795,10 @@ starttermcap(void) {
 
    MAY_WANT_TO_LOG_THIS;
 
-   out_str(termCodesG[KS_TI]);         //start termcap mode
-   out_str_t_TI();         //start "raw" mode
-   out_str(termCodesG[KS_KS]);         //start "keypad transmit" mode
-   out_str_t_BE();         //enable bracketed paste mode
+   out_str(termCodesG[KS_TI]);  //start termcap mode
+   out_str_t_TI();              //start "raw" mode
+   out_str(termCodesG[KS_KS]);  //start "keypad transmit" mode
+   out_str_t_BE();              //enable bracketed paste mode
 
    //Enable xterm's focus reporting mode when 'esckeys' is set.
    if (termCodesG[KS_FE] != S"")
@@ -1822,11 +1821,9 @@ termStopTerminfo(void) {
    if (termrequest_any_pending()) {
       //Give the terminal a chance to respond.
       mch_delay(100L, 0);
-#ifdef TCIFLUSH
       //Discard data received but not read.
       if (isExitingG)
          tcflush(fileno(stdin), TCIFLUSH);
-#endif
    }
    //Check for recognizedTermcodesP first, otherwise an external program may get them.
    handleUnansweredRequests();
@@ -4660,11 +4657,9 @@ trans_special(
 
 #include <termios.h>
 
-#ifdef ISC
-# include <sys/tty.h>
-# include <sys/sioctl.h>
-# include <sys/pty.h>
-#endif
+//#include <sys/tty.h>
+//#include <sys/sioctl.h>
+//#include <sys/pty.h>
 
 //if no PTYRANGE[01] is in the config file, we pick a default
 #ifndef PTYRANGE0
@@ -4674,10 +4669,6 @@ trans_special(
 # define PTYRANGE1 "0123456789abcdef"
 #endif
 
-//Open all ptys with O_NOCTTY, just to be on the safe side.
-#ifndef O_NOCTTY
-# define O_NOCTTY 0
-#endif
 
 //These should be in stdlib.h, but it depends on _XOPEN_SOURCE.
 pub char *ptsname(int);
@@ -4710,6 +4701,7 @@ openpty(char **ttyn) {
    int f;
    static Byte TtyName[32];  //used for opening a new pty-pair
 
+   //Open all ptys with O_NOCTTY, just to be on the safe side.
    if ((f = posix_openpt(O_RDWR | O_NOCTTY | O_EXTRA)) == -1)
       return -1;
 

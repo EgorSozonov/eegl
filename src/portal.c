@@ -4250,7 +4250,9 @@ enterTab(Tab* t, Book* oldCurBuf, Boole trigger_enter_autocmds, Boole trigger_le
    //the frames for that. When the Eegl portal was resized need to update frame sizes too.
    if (curtab->old_Rows != visibleRowsG || (old_off != firstPor->windowRow))
       shell_new_rows();
-   if (curtab->old_Columns != COLUMNS_WITHOUT_TPL() || curtab->old_coloff != TPL_LCOL()) {
+   if (curtab->old_Columns != COLUMNS_WITHOUT_TPL() 
+         || curtab->old_coloff != tabpanel_leftcol()
+   ) {
       if (starting == 0) {
          shell_new_columns();   //update portal widths
          curtab->old_Columns = topframeG->width;
@@ -4639,7 +4641,7 @@ allocPortal(Portal* after, int hidden) {
    //link the portal in the portal list
    if (!hidden)
       append(after, newPort);
-   newPort->windowCol = TPL_LCOL();
+   newPort->windowCol = tabpanel_leftcol();
    newPort->width = COLUMNS_WITHOUT_TPL();
 
    //position the display and the cursor at the top of the file.
@@ -4961,7 +4963,7 @@ portRestoreSize(ArrayList *gap) {
 pub void
 computePosPortal(void) {
    int row = 0;
-   int col = TPL_LCOL();
+   int col = tabpanel_leftcol();
    recomputeFramePositions(topframeG, OUT &row, OUT &col);
 }
 

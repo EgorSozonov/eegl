@@ -1482,6 +1482,16 @@ typedef struct buf_state {
 #define SST_DIST        16   //normal distance between entries
 #define SST_INVALID   ((synstate_T *)-1)   //invalid syn_state pointer
 
+//values for b_syn_spell: what to do with toplevel text
+#define SYNSPL_DEFAULT 0   //spell check if @Spell not defined
+#define SYNSPL_TOP     1   //spell check toplevel text
+#define SYNSPL_NOTOP   2   //don't spell check toplevel text
+
+//values for b_syn_foldlevel: how to compute foldlevel on a line
+#define SYNFLD_START   0   //use level of item at start of line
+#define SYNFLD_MINIMUM   1   //use lowest local minimum level on line
+
+
 
 //syn_state contains the syntax state stack for the start of one line. Used by array[].
 typedef struct SyntaxState SyntaxState;

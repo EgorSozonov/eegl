@@ -11,6 +11,7 @@
 #include "h/input.types.h"
 #include "h/input.h"
 #include "h/diff.h"
+#include "h/do.types.h"
 #include "h/do.h"
 #include "h/draw.types.h"
 #include "h/draw.h"
@@ -549,24 +550,21 @@ private int cls(void);
 private int skip_chars(int, int);
 
 //Find the start of the next sentence, searching in the direction specified
-//by the "dir" argument.  The cursor is positioned on the start of the next
-//sentence when found.  If the next sentence is found, return OK.  Return FAIL
-//otherwise.  See ":h sentence" for the precise definition of a "sentence" text object.
+//by the "dir" argument. The cursor is positioned on the start of the next
+//sentence when found. If the next sentence is found, return OK.  Return FAIL
+//otherwise. See ";h sentence" for the precise definition of a "sentence" text object.
 pub int
 findsent(int dir, long count) {
-   Pos   pos, tpos;
-   Pos   prev_pos;
-   int      c;
-   int      (*func)(Pos *);
-   int      startlnum;
-   int      noskip = false;       //do not skip blanks
-   int      found_dot;
+   Pos tpos;
+   Pos prev_pos;
+   int c;
+   int (*func)(Pos *);
+   int startlnum;
+   Boole noskip = false;       //do not skip blanks
+   int found_dot;
 
-   pos = curPor->cursor;
-   if (dir == FORWARD)
-      func = incl;
-   else
-      func = decl;
+   Pos pos = curPor->cursor;
+   func = (dir == FORWARD) ? incl : decl;
 
    while (count--) {
       prev_pos = pos;
@@ -598,11 +596,11 @@ findsent(int dir, long count) {
 
          if (found_dot)
             break;
-         if (firstOccurrence((CS) ".!?", c) != NULL)
+         if (firstOccurrence(S".!?", c) != NULL)
             found_dot = true;
 
-         if (firstOccurrence((CS) ")]\"'", c) != NULL
-               && firstOccurrence((CS) ".!?)]\"'", gchar_pos(&tpos)) == NULL)
+         if (firstOccurrence(S")]\"'", c) != NULL
+               && firstOccurrence(S".!?)]\"'", gchar_pos(&tpos)) == NULL)
             break;
 
           decl(&pos);
@@ -631,13 +629,13 @@ findsent(int dir, long count) {
                inc(&pos);
                 break;
             }
-          }
-          if ((*func)(&pos) == -1) {
-         if (count)
-             return FAIL;
-         noskip = true;
-         break;
-          }
+         }
+         if ((*func)(&pos) == -1) {
+            if (count)
+                return FAIL;
+            noskip = true;
+            break;
+         }
       }
    found:
           //skip white space
@@ -1487,8 +1485,8 @@ again:
    //Search backwards for unclosed "<aaa>". Put this position in start_pos.
    for (n = 0; n < count; ++n) {
       if (do_searchpair((CS)"<[^ \t>/!]\\+\\%(\\_s\\_[^>]\\{-}[^/]>\\|$\\|\\_s\\=>\\)",
-             (CS)"",
-             (CS)"</[^>]*>", BACKWARD, NULL, 0, NULL, (LineNr)0, 0L) <= 0)
+             S"",
+             S"</[^>]*>", BACKWARD, NULL, 0, NULL, (LineNr)0, 0L) <= 0)
       {
           curPor->cursor = old_pos;
           goto theend;
@@ -1597,20 +1595,20 @@ theend:
 
 pub int
 current_par(
-   Operator   *oper,
-   long   count,
-   int      include,   //true == include white space
-   int      type      //'p' for paragraph, 'S' for section
+   Operator* oper,
+   Long count,
+   Boole includeWhitespace,
+   int type      //'p' for paragraph, 'S' for section
 ){
-   LineNr   end_lnum;
-   int      white_in_front;
-   int      dir;
-   int      start_is_white;
-   int      prev_start_is_white;
-   int      retval = OK;
-   int      do_white = false;
-   int      t;
-   int      i;
+   LineNr end_lnum;
+   int white_in_front;
+   int dir;
+   int start_is_white;
+   int prev_start_is_white;
+   int retval = OK;
+   int do_white = false;
+   int t;
+   int i;
 
    if (type == 'S')       //not implemented yet
       return FAIL;
@@ -1647,7 +1645,7 @@ current_par(
                   break;
                start_lnum += dir;
             }
-            if (!include)
+            if (!includeWhitespace)
                break;
             if (start_lnum == (dir == BACKWARD ? 1 : curBook->mem.lineCount))
                break;
@@ -1679,16 +1677,16 @@ current_par(
 
    --end_lnum;
    i = count;
-   if (!include && white_in_front)
+   if (!includeWhitespace && white_in_front)
       --i;
    while (i--) {
       if (end_lnum == curBook->mem.lineCount)
          return FAIL;
 
-      if (!include)
+      if (!includeWhitespace)
          do_white = linewhite(end_lnum + 1);
 
-      if (include || !do_white) {
+      if (includeWhitespace || !do_white) {
           ++end_lnum;
           //skip to end of paragraph
           while (end_lnum < curBook->mem.lineCount
@@ -1697,11 +1695,11 @@ current_par(
          ++end_lnum;
       }
 
-      if (i == 0 && white_in_front && include)
+      if (i == 0 && white_in_front && includeWhitespace)
          break;
 
       //skip to end of white lines after paragraph
-      if (include || do_white) {
+      if (includeWhitespace || do_white) {
          while (end_lnum < curBook->mem.lineCount && linewhite(end_lnum + 1))
             ++end_lnum;
       } 
@@ -1709,7 +1707,7 @@ current_par(
 
    //If there are no empty lines at the end, try to find some empty lines at
    //the start (unless that has been done already).
-   if (!white_in_front && !linewhite(end_lnum) && include) {
+   if (!white_in_front && !linewhite(end_lnum) && includeWhitespace) {
       while (start_lnum > 1 && linewhite(start_lnum - 1))
          --start_lnum;
    } 
@@ -1793,7 +1791,7 @@ pub int
 current_quote(
    Operator* oper,
    long count,
-   int include,   //true == include quote char
+   Boole includeQuote,
    int quotechar   //Quote character
 ){
    CS line = ml_get_curline();
@@ -1917,8 +1915,9 @@ current_quote(
           goto abort_search;
    }
 
-   //When "include" is true, include spaces after closing quote or before the starting quote.
-   if (include) {
+   //When "includeQuote" is true, include spaces after closing quote or before the starting 
+   //quote
+   if (includeQuote) {
       if (SPACE_OR_TAB(line[col_end + 1])) {
          while (SPACE_OR_TAB(line[col_end + 1]))
             ++col_end;
@@ -1930,7 +1929,7 @@ current_quote(
 
    //Set start position.  After vi" another i" must include the ".
    //For v2i" include the quotes.
-   if (!include && count < 2 && (vis_empty || !inside_quotes))
+   if (!includeQuote && count < 2 && (vis_empty || !inside_quotes))
       ++col_start;
    curPor->cursor.col = col_start;
    if (VIsual_active) {
@@ -1956,7 +1955,7 @@ current_quote(
 
    //Set end position.
    curPor->cursor.col = col_end;
-   if ((include || count > 1 //After vi" another i" must include the ".
+   if ((includeQuote || count > 1 //After vi" another i" must include the ".
             || (!vis_empty && inside_quotes)
          ) && inc_cursor() == 2)
       inclusive = true;
@@ -2321,7 +2320,7 @@ getMoreChars(
    //Get a second or third character.
    if (cp != NULL) {
       if (lang && curBook->o.b_p_iminsert == B_IMODE_LMAP) {
-         //Allow mappings defined with ":lmap".
+         //Allow mappings defined with ";lmap".
          --no_mapping;
          --allow_keys;
          stateG = MODE_LANGMAP;
@@ -3277,12 +3276,12 @@ normPostProcessScrollbind(int check) {
    static ColNr old_leftcol = 0;
 
    if (check && curPor->o.diff) {
-      //If the ":syncbind" command was just used, don't scroll, only reset the values.
+      //If the ";syncbind" command was just used, don't scroll, only reset the values.
       if (did_syncbind)
           did_syncbind = false;
       ei (curPor == old_curPor) {
          //Synchronize other portals, as necessary according to
-         //@diff. Don't do this after an ":edit" command, except when @diff is set.
+         //@diff. Don't do this after an ";edit" command, except when @diff is set.
          if ((curPor->book == old_buf || curPor->o.diff)
            && (curPor->topLine != old_topline
               || curPor->topFill != old_topfill
@@ -4352,7 +4351,7 @@ nv_zet(ActionArg* aArg) {
       newFoldLevel();
 }
 
-//Handle a ";" action.
+//Handle a ";" action (start of a command)
 private void
 nv_semicolon(OUT ActionArg* aArg) {
    Boole isCmdkey = aArg->cmdchar == K_COMMAND || aArg->cmdchar == K_SCRIPT_COMMAND;
@@ -4367,7 +4366,7 @@ nv_semicolon(OUT ActionArg* aArg) {
       aArg->oper->motion_type = MCHAR;
       aArg->oper->inclusive = false;
    } ei (aArg->count0 && !isCmdkey) {
-      //translate "count:" into ":.,.+(count - 1)"
+      //translate "count:" into ";.,.+(count - 1)"
       stuffcharReadbuff('.');
       if (aArg->count0 > 1) {
          stuffReadbuff(S",.+");
@@ -4382,8 +4381,9 @@ nv_semicolon(OUT ActionArg* aArg) {
    //get a command line and execute it
    Unt flags = aArg->oper->opTy != OP_NOP ? DOCMD_KEEPLINE : 0;
    
-   int commResult = (isCmdkey) 
-      ? do_cmdkey_command(aArg->cmdchar, flags) : doCommand(NULL, scrGetTypedCommand, NULL, flags);
+   int commResult = isCmdkey
+      ? do_cmdkey_command(aArg->cmdchar, flags) 
+      : doCommand(NULL, scrGetTypedCommand, NULL, flags);
 
    if (commResult == FAIL) {
       //The command failed, do not execute the operator.
@@ -4437,7 +4437,7 @@ nv_ctrlo(ActionArg* aArg) {
    nv_pcmark(aArg);
 }
 
-//CTRL-^ command, short for ":e #".  Works even when the alternate book is not named.
+//CTRL-^ command, short for ";e #".  Works even when the alternate book is not named.
 private void
 nv_hat(ActionArg* aArg) {
    if (!checkclearopq(aArg->oper)) {
@@ -4452,14 +4452,14 @@ nv_Zet(ActionArg* aArg) {
       return;
 
    switch (aArg->nchar) {
-   //"ZZ": equivalent to ":x".
+   //"ZZ": equivalent to ";x".
    case 'Z':   
       executeCommLine(S"x");
       break;
 
-   //"ZQ": equivalent to ":q!" (Elvis compatible).
+   //"ZQ": equivalent to ";q!" (Elvis compatible).
    case 'Q':   
-      executeCommLine((CS)"q!");
+      executeCommLine(S"q!");
       break;
 
    default:   
@@ -4555,17 +4555,9 @@ nv_K_getcmd(
 // g  ']'   :tselect for current identifier
 private void
 nv_ident(ActionArg* aArg) {
-   CS ptr = NULL;
-   CS buffer;
-   Unt bufsize;
-   Unt buflen;
-   CS newbuf;
    CS p;
-   CS kp;      //value of 'keywordprg'
-   int kp_help;   //'keywordprg' is ":he"
-   int kp_ex;      //'keywordprg' starts with ":"
    int n = 0;      //init for GCC
-   int cmdchar;
+   Unt cmdchar;
    int g_cmd;      //"g" command
    int tag_cmd = false;
    CS aux_ptr;
@@ -4582,6 +4574,7 @@ nv_ident(ActionArg* aArg) {
       cmdchar = '#';
 
    //The "]", "CTRL-]" and "K" commands accept an argument in Visual mode.
+   CS ptr = NULL;
    if (cmdchar == ']' || cmdchar == Ctrl_RSB || cmdchar == 'K') {
       if (VIsual_active && get_visual_text(aArg, OUT &ptr, OUT &n) == FAIL)
           return;
@@ -4601,17 +4594,18 @@ nv_ident(ActionArg* aArg) {
 
    //Allocate buffer to put the command in. Inserting backslashes can
    //double the length of the word. curBook->o.keywordProg could be added and some numbers.
-   kp = curBook->o.keywordProg;
-   kp_help = (!kp || STRCMP(kp, ":he") == 0 || STRCMP(kp, ":help") == 0);
+   CS kp = curBook->o.keywordProg;     //value of @keywordprog
+   //'keywordprg' is ";he"
+   Boole kp_help = (!kp || STRCMP(kp, ";he") == 0 || STRCMP(kp, ";help") == 0);
    if (kp_help && *skipwhite(ptr) == ZERO) {
        emsg(_(e_no_identifier_under_cursor));    //found white space only
        return;
    }
-   kp_ex = (*kp == ':');
-   bufsize = (Unt)(n * 2 + 30 + STRLEN(kp));
-   buffer = alloc(bufsize);
+   Boole kp_ex = (*kp == ';'); //@keywordprog starts with ";"
+   Unt bufsize = (Unt)(n * 2 + 30 + STRLEN(kp));
+   CS buffer = alloc(bufsize);
    buffer[0] = ZERO;
-   buflen = 0;
+   Unt buflen = 0;
 
    switch (cmdchar) {
    case '*':
@@ -4625,7 +4619,7 @@ nv_ident(ActionArg* aArg) {
          STRCPY(buffer, "\\<");
          buflen = STRLEN_LITERAL("\\<");
       }
-      no_smartcase = true;   //don't use 'smartcase' now
+      no_smartcase = true;   //don't use @smartcase now
       break;
 
    case 'K':
@@ -4658,7 +4652,7 @@ nv_ident(ActionArg* aArg) {
             STRCPY(buffer, "ta ");
             buflen = STRLEN_LITERAL("ta ");
          } else
-            buflen = eeSnprintf(buffer, bufsize, ":%ldta ", aArg->count0);
+            buflen = eeSnprintf(buffer, bufsize, ";%ldta ", aArg->count0);
       }
    }
 
@@ -4674,7 +4668,7 @@ nv_ident(ActionArg* aArg) {
          p = copyStr_shellescape(ptr, true, true);
       eeglFree(ptr);
       Unt plen = STRLEN(p);
-      newbuf = eeRealloc(buffer, buflen + plen + 1);
+      CS newbuf = eeRealloc(buffer, buflen + plen + 1);
       buffer = newbuf;
       STRCPY(buffer + buflen, p);
       buflen += plen;
@@ -4686,7 +4680,7 @@ nv_ident(ActionArg* aArg) {
          aux_ptr = S"/?.*~[^$\\";
       ei (tag_cmd) {
          if (curBook->kind == BOOK_HELP)
-            //":help" handles unescaped argument
+            //";help" handles unescaped argument
             aux_ptr = S"";
          else
             aux_ptr = S"\\|\"\n[";
@@ -5677,7 +5671,7 @@ private void
 nvOperatorAliases(ActionArg* aArg) {
    static CS aliases = S"DCsSY&";
    static CS replacements[8] = {SMAP((CS),
-         "d$", "c$", "cl", "cc", "y$", ":s\r"
+         "d$", "c$", "cl", "cc", "y$", ";s\r"
    )};
 
    if (!checkclearopq(aArg->oper)) {
@@ -5851,13 +5845,13 @@ nv_visual(ActionArg* aArg) {
 //CTRL-W: Portal commands
 private void
 nv_portal(ActionArg* aArg) {
-   if (aArg->nchar == ':') {
-      //"CTRL-W :" is the same as typing ":"; useful in a terminal portal
+   if (aArg->nchar == ';') {
+      //"CTRL-W ;" is the same as typing ";"; useful in a terminal portal
       aArg->cmdchar = ';';
       aArg->nchar = ZERO;
       nv_semicolon(aArg);
    } ei (!checkclearop(aArg->oper))
-      doPortal(aArg->nchar, aArg->count0, ZERO); //everything is in window.c
+      doPortal(aArg->nchar, aArg->count0, ZERO); //everything is in portal.c
 }
 
 //CTRL-Z: Suspend
@@ -6307,8 +6301,7 @@ nv_g_cmd(ActionArg* aArg) {
       nv_operator(aArg);
       break;
 
-   //"gd": Find first occurrence of pattern under the cursor in the
-   //   current function
+   //"gd": Find first occurrence of pattern under the cursor in the current function
    //"gD": idem, but in the current file.
    case 'd':
    case 'D':
@@ -6709,7 +6702,7 @@ nv_edit(ActionArg* aArg) {
       clearop(aArg->oper);
       if (aArg->cmdchar == K_PS)
          //drop the pasted text
-         bracketed_paste(PASTE_INSERT, true, NULL);
+         whBracketedPaste(PASTE_INSERT, true);
    } ei (aArg->cmdchar == K_PS && VIsual_active) {
       Pos old_pos = curPor->cursor;
       Pos old_visual = VIsual;
@@ -6789,14 +6782,14 @@ nv_edit(ActionArg* aArg) {
       invokeEdit(aArg, false, aArg->cmdchar, false);
    } ei (aArg->cmdchar == K_PS) {
       //drop the pasted text
-      bracketed_paste(PASTE_INSERT, true, NULL);
+      whBracketedPaste(PASTE_INSERT, true);
    } 
 }
 
 //"o" and "O" commands.
 private void
 nvOpen(ActionArg* aArg) {
-   //"do" is ":diffget"
+   //"do" is ";diffget"
    if (aArg->oper->opTy == OP_DELETE && aArg->cmdchar == 'o') {
       clearop(aArg->oper);
       nvDiffGetPut(false, aArg->opcount);
@@ -6918,7 +6911,7 @@ nv_record(ActionArg* aArg) {
    if (checkclearop(aArg->oper))
       return;
 
-   if (aArg->nchar == ':' || aArg->nchar == '/' || aArg->nchar == '?')     {
+   if (aArg->nchar == ';' || aArg->nchar == '/' || aArg->nchar == '?')     {
       if (commPortTypeG != 0)    {
          emsg(_(e_cmdline_window_already_open));
          return;
@@ -7000,7 +6993,7 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
    int save_fen = curPor->o.foldEnable;
 
    if (aArg->oper->opTy != OP_NOP) {
-      //"dp" is ":diffput"
+      //"dp" is ";diffput"
       if (aArg->oper->opTy == OP_DELETE && aArg->cmdchar == 'p') {
          clearop(aArg->oper);
          nvDiffGetPut(true, aArg->opcount);
@@ -10053,7 +10046,7 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
       maptype = MAPTYPE_UNMAP;
    }
 
-   //For ":noremap" don't remap, otherwise do remap.
+   //For ";noremap" don't remap, otherwise do remap.
    Unt noremap = (maptype == MAPTYPE_NOREMAP) ? REMAP_NONE : REMAP_YES;
 
    //{{{ Accept <book>, <nowait>, <silent>, <expr> <script> and <unique> in any order.
@@ -10269,11 +10262,10 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
          listMappings(keyround, abbrev, haskey, keys, len, mode, &did_local);
       }
 
-      //Find an entry in the mappingTable[] list that matches.
-      //For :unmap we may loop two times: once to try to unmap an entry with
-      //a matching 'from' part, a second time, if the first fails, to unmap
-      //an entry with a matching 'to' part. This was done to allow
-      //":ab foo bar" to be unmapped by typing ":unab foo", where "foo" will
+      //Find an entry in the mappingTable[] list that matches. For ;unmap we may loop twice: 
+      //once to try to unmap an entry with a matching 'from' part, a second time, if the first
+      //fails, to unmap an entry with a matching 'to' part. This was done to allow
+      //";ab foo bar" to be unmapped by typing ";unab foo", where "foo" will
       //be replaced by "bar" because of the abbreviation.
       num_rounds = maptype == MAPTYPE_UNMAP && !unmap_lhs_only ? 2 : 1;
       for (round = 0; round < num_rounds && !did_it && !gotInterruptG; ++round) {
@@ -10473,7 +10465,7 @@ getMapMode(CS* cmdp, Boole forceit) {
    return mode;
 }
 
-//Clear all mappings (":mapclear") or abbreviations (":abclear").
+//Clear all mappings (";mapclear") or abbreviations (";abclear").
 //"abbr" should be false for mappings, true for abbreviations.
 private void
 mapClear(CS cmdp, CS arg, Boole forceit, int abbr) {
@@ -10739,7 +10731,7 @@ set_context_in_map_cmd(
 }
 
 //Find all mapping/abbreviation names that match regexp "regmatch"'.
-//For command line expansion of ":[un]map" and ":[un]abbrev" in all modes.
+//For command line expansion of ";[un]map" and ";[un]abbrev" in all modes.
 //Return OK if matches found, FAIL otherwise.
 pub int
 expandMappings(
@@ -11034,8 +11026,8 @@ eval_map_expr(MapBlock* mp, int) { //ZERO or typed character for abbreviation
    CS expr = copyStr(mp->rhs);
    eeUnescapeCsi(expr);
 
-   //Forbid changing text or using ":normal" to avoid most of the bad side
-   //effects.  Also restore the cursor position.
+   //Forbid changing text or using ";normal" to avoid most of the bad side
+   //effects. Also restore the cursor position.
    ++textlock;
    ++ex_normal_lock;
    Pos save_cursor = curPor->cursor;
@@ -11147,7 +11139,7 @@ makemap(FILE* fd, NULLABLE Book* book) {     //the book for local mappings or NU
             if (*p != ZERO)
                 continue;
 
-           //It's possible to create a mapping and then ":unmap" certain
+           //It's possible to create a mapping and then ";unmap" certain
            //modes. We recreate this here by mapping the individual
            //modes, which requires up to three of them.
            c1 = ZERO;
@@ -11236,7 +11228,7 @@ makemap(FILE* fd, NULLABLE Book* book) {     //the book for local mappings or NU
    return OK;
 }
 
-//write escape string to file. "what": 0 for :map lhs, 1 for :map rhs, 2 for :set
+//write escape string to file. "what": 0 for ;map lhs, 1 for ;map rhs, 2 for ;set
 //return FAIL for failure, OK otherwise
 pub int
 put_escstr(FILE* fd, CS strstart, int what) {
@@ -11310,8 +11302,7 @@ put_escstr(FILE* fd, CS strstart, int what) {
         //prevent them from misinterpreted in DoOneCmd().
         //A space, Tab and '"' has to be escaped with a backslash to
         //prevent it to be misinterpreted in do_set().
-        //A space has to be escaped with a CTRL-V when it's at the start of a
-        //":map" rhs.
+        //A space has to be escaped with a CTRL-V when it's at the start of a ";map" rhs.
         //A '<' has to be escaped with a CTRL-V to prevent it being
         //interpreted as the start of a special key name.
         //A space in the lhs of a :map needs a CTRL-V.
@@ -11332,7 +11323,7 @@ put_escstr(FILE* fd, CS strstart, int what) {
    return OK;
 }
 
-//Check all mappings for the presence of special key codes. Used after ":set term=xxx".
+//Check all mappings for the presence of special key codes. Used after ";set term=xxx".
 pub void
 check_map_keycodes(void) {
    MapBlock   *mp;
@@ -11976,31 +11967,31 @@ mappingImpl(Invocation* invo, Boole isabbrev) {
    }
 }
 
-//":abbreviate" and friends.
+//";abbreviate" and friends.
 pub void
 c_abbreviate(Invocation* invo) {
    mappingImpl(invo, true);   //almost the same as mapping
 }
 
-//":map" and friends.
+//";map" and friends.
 pub void
 c_map(Invocation* invo) {
    mappingImpl(invo, false);
 }
 
-//":unmap" and friends.
+//";unmap" and friends.
 pub void
 c_unmap(Invocation* invo) {
    mappingImpl(invo, false);
 }
 
-//":mapclear" and friends.
+//";mapclear" and friends.
 pub void
 c_mapclear(Invocation* invo) {
    mapClear(invo->comm, invo->arg, invo->forceit, false);
 }
 
-//":abclear" and friends.
+//";abclear" and friends.
 pub void
 c_abclear(Invocation* invo) {
    mapClear(invo->comm, invo->arg, true, true);
@@ -12026,7 +12017,7 @@ private int last_insert_skip; //nr of chars in front of previous insert
 private int new_insert_skip;  //nr of chars in front of current insert
 private int did_restart_edit; //"restart_edit" when calling edit()
 
-private int can_cindent; //may do cindenting on this line
+private int canIndentExprP; //may do expression-based indenting on this line
 
 private Boole needUndoS; //call u_save() before inserting a char. Set when edit() is called.
                              //after that, arrow_used is used.
@@ -12243,7 +12234,7 @@ edit(Unt commChar, int startln, long count){
    needUndoS = true;
 
    where_paste_started.lnum = 0;
-   can_cindent = true;
+   canIndentExprP = true;
    //The cursor line is not in a closed fold
    if (did_restart_edit == 0)
       foldOpenCursor();
@@ -12278,7 +12269,7 @@ edit(Unt commChar, int startln, long count){
          insertStartOrigG = insertStartG;
 
       if (stop_insert_mode && !ins_compl_active()) {
-         //":stopinsert" used or 'insertmode' reset
+         //";stopinsert" used or 'insertmode' reset
          count = 0;
          goto doESCkey;
       }
@@ -12683,7 +12674,7 @@ edit(Unt commChar, int startln, long count){
          break;
 
       case K_PS:
-         bracketed_paste(PASTE_INSERT, false, NULL);
+         whBracketedPaste(PASTE_INSERT, false);
          if (commChar == K_PS)
             //invoked from normal mode, bail out
             goto doESCkey;
@@ -12910,7 +12901,7 @@ edit(Unt commChar, int startln, long count){
          if (c == ' ') {
             inserted_space = true;
          if (inindent(0))
-            can_cindent = false;
+            canIndentExprP = false;
          if (insertStartG_blank_vcol == MAXCOL && curPor->cursor.lnum == insertStartG.lnum)
             insertStartG_blank_vcol = get_nolist_virtcol();
          }
@@ -13407,7 +13398,7 @@ insertchar0(
    can_si_back = false;
 
    //If there's any pending input, grab up to INPUT_BUFLEN at once. This speeds up normal text 
-   //input considerably. Don't do this when 'cindent' or 'indentexpr' is set, because we might
+   //input considerably. Don't do this when @indentexpr is set, because we might
    //need to re-indent at a ':', or any other character (but not what 'paste' is set)..
    //Don't do this when there an InsertCharPre autocommand is defined, because we need to fire 
    //the event for every character. Do the check for InsertCharPre before the call to vpeekc() 
@@ -13418,7 +13409,7 @@ insertchar0(
        //Skip typeahead if test_override("char_avail", 1) was called.
        && !disable_char_avail_for_testing
        && vpeekc() != ZERO
-       && !doIsIndentationExpressionBased()
+       && !curBook->o.indentExpr
    ) {
 #define INPUT_BUFLEN 100
       Byte buf[INPUT_BUFLEN + 1];
@@ -14094,7 +14085,7 @@ insertRegisterContents(void) {
       }
       ei (stop_insert_mode)
          //When the '=' register was used and a function was invoked that
-         //did ":stopinsert" then stuff_empty() returns false but we won't
+         //did ";stopinsert" then stuff_empty() returns false but we won't
          //insert anything, need to remove the '"'
          need_redraw = true;
    }
@@ -14164,8 +14155,8 @@ ins_ctrl_g(void) {
 //CTRL-^ in Insert mode.
 private void
 ins_ctrl_hat(void) {
-   if (map_to_exists_mode((CS)"", MODE_LANGMAP, false)) {
-      //":lmap" mappings exists, Toggle use of ":lmap" mappings.
+   if (map_to_exists_mode(S"", MODE_LANGMAP, false)) {
+      //";lmap" mappings exists, Toggle use of ";lmap" mappings.
       if (stateG & MODE_LANGMAP) {
          curBook->o.b_p_iminsert = B_IMODE_NONE;
          stateG &= ~MODE_LANGMAP;
@@ -14336,7 +14327,7 @@ ins_shift(Unt c, int lastc) {
    didSindentG = false;
    can_si = false;
    can_si_back = false;
-   can_cindent = false;   //no cindenting after ^D or ^T
+   canIndentExprP = false;   //no expression-indenting after ^D or ^T
 }
 
 //"Delete" key
@@ -14394,7 +14385,7 @@ ins_bs(int c, int mode, int* inserted_space_p) {
       return false;
    int in_indent = inindent(0);
    if (in_indent)
-      can_cindent = false;
+      canIndentExprP = false;
    end_comment_pending = ZERO;   //After BS, don't auto-end comment
 
    //Virtualedit:
@@ -14459,7 +14450,7 @@ ins_bs(int c, int mode, int* inserted_space_p) {
    } else {
       //Delete character(s) before the cursor.
       mincol = 0; //keep indent
-      if (mode == BACKSPACE_LINE && (curBook->o.autoIndent || doIsIndentationExpressionBased())) {
+      if (mode == BACKSPACE_LINE && (curBook->o.autoIndent || curBook->o.indentExpr)) {
          save_col = curPor->cursor.col;
          beginline(BL_WHITE);
          if (curPor->cursor.col < save_col) {
@@ -14603,7 +14594,7 @@ ins_bs(int c, int mode, int* inserted_space_p) {
 //Handle receiving P_PS: start paste mode. Insert the following text up to P_PE literally.
 //When "drop" is true then consume the text and drop it.
 pub int
-bracketed_paste(PasteMode mode, int drop, ArrayList *gap) {
+whBracketedPaste(PasteMode mode, int drop) {
    Unt c;
    Byte buf[NUMBUFLEN + MB_MAXBYTES];
    int idx = 0;
@@ -14627,7 +14618,7 @@ bracketed_paste(PasteMode mode, int drop, ArrayList *gap) {
 
       if (c == ZERO || gotInterruptG || (ex_normal_busy > 0 && c == Ctrl_C))
           //When CTRL-C was encountered the typeahead will be flushed and we
-          //won't get the end sequence.  Except when using ":normal".
+          //won't get the end sequence. Except when using ";normal".
           break;
 
       idx += (*mb_char2bytes)(c, buf + idx);
@@ -14641,14 +14632,6 @@ bracketed_paste(PasteMode mode, int drop, ArrayList *gap) {
          switch (mode) {
          case PASTE_CMDLINE:
             put_on_cmdline(buf, idx, true);
-            break;
-
-         case PASTE_EX:
-            //add one for the ZERO that is going to be appended
-            if (gap != NULL && ga_grow(gap, idx + 1) == OK) {
-               MEMMOVE((char *)gap->c + gap->len, buf, (Unt)idx);
-               gap->len += idx;
-            }
             break;
 
          case PASTE_INSERT:
@@ -14797,7 +14780,7 @@ ins_up( int      startcol) {  //when true move to insertStartG.col
       if (old_topline != curPor->topLine || old_topfill != curPor->topFill)
           redraw_later(UPD_VALID);
       start_arrow(&tpos);
-      can_cindent = true;
+      canIndentExprP = true;
    }
 }
 
@@ -14815,7 +14798,7 @@ ins_pageup(void) {
    Pos tpos = curPor->cursor;
    if (pagescroll(BACKWARD, 1L, false) == OK) {
       start_arrow(&tpos);
-      can_cindent = true;
+      canIndentExprP = true;
    }
 }
 
@@ -14831,7 +14814,7 @@ ins_down(int startcol) {  //when true move to insertStartG.col
       if (old_topline != curPor->topLine || old_topfill != curPor->topFill)
          redraw_later(UPD_VALID);
       start_arrow(&tpos);
-      can_cindent = true;
+      canIndentExprP = true;
    }
 }
 
@@ -14849,7 +14832,7 @@ ins_pagedown(void) {
    Pos tpos = curPor->cursor;
    if (pagescroll(FORWARD, 1L, false) == OK) {
       start_arrow(&tpos);
-      can_cindent = true;
+      canIndentExprP = true;
    }
 }
 
@@ -14872,7 +14855,7 @@ ins_tab(void) {
 
    int ind = inindent(0);
    if (ind)
-      can_cindent = false;
+      canIndentExprP = false;
 
    //When nothing special, insert TAB like a normal character.
    if (!curBook->o.expandTab && get_sw_value(curBook) == 0)
@@ -15012,7 +14995,7 @@ ins_eol(Unt c) {
    inpAppendToRedoBuff(NL_STR);
    int i = openLine(has_format_option(FO_RET_COMS) ? OPENLINE_DO_COM : 0, old_indent);
    old_indent = 0;
-   can_cindent = true;
+   canIndentExprP = true;
    //When inserting a line the cursor line must never be in a closed fold.
    foldOpenCursor();
 
@@ -15090,8 +15073,8 @@ get_nolist_virtcol(void) {
 }
 
 pub void
-set_can_cindent(int val) {
-    can_cindent = val;
+whSetCanIndentExpr(int val) {
+   canIndentExprP = val;
 }
 
 //Trigger "event" and take care of fixing undo.
@@ -17224,15 +17207,15 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
       ins_compl_fixRedoBufForLeader(ptr);
    }
 
-   Boole want_cindent = (can_cindent && doIsIndentationExpressionBased());
+   Boole wantIndentExpr = (canIndentExprP && curBook->o.indentExpr);
 
-   //When completing whole lines: fix indent for 'cindent'.
+   //When completing whole lines: fix indent for @indentexpr.
    //Otherwise, break line if it's too long.
    if (compl_cont_mode == CTRL_X_WHOLE_LINE) {
       //re-indent the current line
-      if (want_cindent) {
-          do_expr_indent();
-          want_cindent = false;   //don't do it again
+      if (wantIndentExpr) {
+          doIndentExpr();
+          wantIndentExpr = false;   //don't do it again
       }
    } else {
       int prev_col = curPor->cursor.col;
@@ -21014,16 +20997,16 @@ internal_format(
           first_line = false;
       }
 
-      //Check if cursor is not past the ZERO off the line, cindent
-      //may have added or removed indent.
+      //Check if cursor is not past the ZERO off the line, expression indent may have added 
+      //or removed indent.
       curPor->cursor.col += startcol;
       len = ml_get_curline_len();
       if (curPor->cursor.col > len)
          curPor->cursor.col = len;
 
       haveto_redraw = true;
-      set_can_cindent(true);
-      //moved the cursor, don't autoindent or cindent now
+      whSetCanIndentExpr(true);
+      //moved the cursor, don't autoindent or expression indent now
       didAindentG = false;
       didSindentG = false;
       can_si = false;
@@ -21041,10 +21024,10 @@ internal_format(
    }
 }
 
-//Blank lines, and lines containing only the comment leader, are left untouched by the formatting.
-//The function returns true in this case.  It also returns true when a line starts with the end 
-//of a comment ('e' in comment flags), so that this line is skipped, and not joined to the
-//previous line.  A new paragraph starts after a blank line, or when the
+//Blank lines, and lines containing only the comment leader, are left untouched by the 
+//formatting. The function returns true in this case.  It also returns true when a line starts
+//with the end of a comment ('e' in comment flags), so that this line is skipped, and not 
+//joined to the previous line.  A new paragraph starts after a blank line, or when the
 //comment leader changes -- webb.
 pub int
 fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComments) {
@@ -21116,7 +21099,7 @@ whAutoFormat(Boole trailblank, Boole prev_line) {   //may start in previous line
    checkAutoFormat(false);
 
    //Don't format in Insert mode when the cursor is on a trailing blank, the user might insert 
-   //normal text next. Also skip formatting when "1" is in 'formatoptions' and there is a single 
+   //normal text next. Also skip formatting when "1" is in 'formatoptions' and there is a single
    //character before the cursor. Otherwise the line would be broken and when typing another 
    //non-white next they are not joined back together.
    int wasatend = (pos.col == ml_get_curline_len());
@@ -21139,7 +21122,7 @@ whAutoFormat(Boole trailblank, Boole prev_line) {   //may start in previous line
    )
       return;
 
-   //May start formatting in a previous line, so that after "x" a word is moved to the previous 
+   //May start formatting in a previous line, so that after "x" a word is moved to the previous
    //line if it fits there now.  Only when this is not the start of a paragraph.
    if (prev_line && !paragraph_start(curPor->cursor.lnum)) {
       --curPor->cursor.lnum;
@@ -21161,9 +21144,9 @@ whAutoFormat(Boole trailblank, Boole prev_line) {   //may start in previous line
    } else
       check_cursor_col();
 
-   //Insert mode: If the cursor is now after the end of the line while it
-   //previously wasn't, the line was broken.  Because of the rule above we
-   //need to add a space when 'w' is in 'formatoptions' to keep a paragraph formatted.
+   //Insert mode: If the cursor is now after the end of the line while it previously wasn't, 
+   //the line was broken. Because of the rule above we need to add a space when 'w' is in 
+   //@formatoptions to keep a paragraph formatted.
    if (!wasatend && has_format_option(FO_WHITE_PAR)) {
       CS new = ml_get_curline();
       ColNr len = ml_get_curline_len();

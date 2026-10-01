@@ -28,15 +28,15 @@ int current_word(
 int current_sent(Operator *oper, long count, int include);
 int current_tagblock(Operator* oper, long count_arg, Boole includeWhiteSpace);
 int current_par(
-   Operator   *oper,
-   long   count,
-   int      include,   //true == include white space
-   int      type      //'p' for paragraph, 'S' for section
+   Operator* oper,
+   Long count,
+   Boole includeWhitespace,
+   int type      //'p' for paragraph, 'S' for section
 );
 int current_quote(
    Operator* oper,
    long count,
-   int include,   //true == include quote char
+   Boole includeQuote,
    int quotechar   //Quote character
 );
 int virtual_active(void);
@@ -248,10 +248,10 @@ int stuff_inserted(
 );
 Text get_last_insert(void);
 CS get_last_insert_save(void);
-int bracketed_paste(PasteMode mode, int drop, ArrayList *gap);
+int whBracketedPaste(PasteMode mode, int drop);
 int ins_copychar(LineNr lnum);
 ColNr get_nolist_virtcol(void);
-void set_can_cindent(int val);
+void whSetCanIndentExpr(int val);
 int ins_applyAutocomms(AutoEvent event);
 void ins_ctrl_x(void);
 int ctrl_x_mode_whole_line(void)    ;

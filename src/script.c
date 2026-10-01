@@ -9322,7 +9322,7 @@ getCommandWorker(
          ignore_drag_release = true;
          putcmdline('^', true);
 
-         //Get next (two) character(s).  Do not change any
+         //Get next (two) character(s). Do not change any
          //modifyOtherKeys ESC sequence to a normal key for CTRL-SHIFT-V.
          c = get_literal(modMaskG & MOD_MASK_SHIFT);
 
@@ -9337,7 +9337,7 @@ getCommandWorker(
          break;
          }
       case K_PS:
-         bracketed_paste(PASTE_CMDLINE, false, NULL);
+         whBracketedPaste(PASTE_CMDLINE, false);
          goto commlineChanged;
 
       default:
@@ -9412,12 +9412,12 @@ returncmd:
    finish_incsearch_highlighting(gotesc, &is_state, false);
 
    if (commInfo.commBuf) {
-      //Put line in history buffer (":" and "=" only when it was typed).
+      //Put line in history buffer (";" and "=" only when it was typed).
       if (commInfo.cmdlen && firstc != ZERO && (some_key_typed || histype == HIST_SEARCH)) {
          scrAddToHistory(histype, (Text){commInfo.commBuf, commInfo.cmdlen}, true,
                       histype == HIST_SEARCH ? firstc : ZERO
          );
-         if (firstc == ':') {
+         if (firstc == ';') {
             eeglFreeString(newLastCommlineG);
             newLastCommlineG = copySubstr(commInfo.commBuf, commInfo.cmdlen);
          }
@@ -9514,18 +9514,18 @@ getcmdline_prompt(
 //Read the 'wildmode' option, fill wim_flags[].
 pub int
 check_opt_wim(void) {
-  Byte   new_wim_flags[4];
-  CS p;
-  int      i;
-  int      idx = 0;
-  if (!p_wim)
-     return OK;
+   Byte   new_wim_flags[4];
+   CS p;
+   int i;
+   int idx = 0;
+   if (!p_wim)
+      return OK;
 
-  for (i = 0; i < 4; ++i)
-     new_wim_flags[i] = 0;
+   for (i = 0; i < 4; ++i)
+      new_wim_flags[i] = 0;
 
-  for (p = p_wim; *p; ++p) {
-     //Note: Keep this in sync with p_wim_values.
+   for (p = p_wim; *p; ++p) {
+      //Note: Keep this in sync with p_wim_values.
       for (i = 0; ASCII_ISALPHA(p[i]); ++i)
          ;
       if (p[i] != ZERO && p[i] != ',' && p[i] != ':')
@@ -9671,16 +9671,16 @@ correct_cmdspos(int idx, int cells) {
    } 
 }
 
-//Get a command line for the ":" action
+//Get a command line for the ";" action
 pub CS
 scrGetTypedCommand(
-   Unt  c,      //normally ':', NUL for ":append"
+   Unt  c,      //normally ';', NUL for ":append"
    void*,
    int indent,      //indent for inside conditionals
    GetlineAlgo options
 ){
-   //When executing a register, remove ':' that's in front of each line.
-   if (executingFromRegG && vpeekc() == ':')
+   //When executing a register, remove ';' that's in front of each line.
+   if (executingFromRegG && vpeekc() == ';')
       (void)vgetc();
    return getCommline(c, 1L, indent, options);
 }
@@ -10232,7 +10232,7 @@ get_ccline_ptr(void) {
    return NULL;
 }
 
-//Get the current command-line type. Return ':' or '/' or '?' or '@' or '>' or '-'
+//Get the current command-line type. Return ';' or '/' or '?' or '@' or '>' or '-'
 //Only work when the command line is being edited. Return ZERO when something is wrong.
 private int
 getCommlineType(void) {
@@ -10674,7 +10674,7 @@ openCommPort(void) {
             commPortResultG = ENTER;
          } else {
             //First need to cancel what we were doing.
-            stuffcharReadbuff(':');
+            stuffcharReadbuff(';');
             stuffReadbuff((CS)p);
             stuffcharReadbuff(ENTER);
          }
@@ -10688,7 +10688,7 @@ openCommPort(void) {
       }
 
       if (commInfo.commBuf == NULL)    {
-         commInfo.commBuf = copySubstr((CS)"", 0);
+         commInfo.commBuf = copySubstr(S"", 0);
          commInfo.cmdlen = 0;
          commInfo.cmdbufflen = 1;
          commInfo.cmdpos = 0;
@@ -10884,17 +10884,17 @@ f_wildtrigger(Arr(Var), Var*) {
 
    int cmd_type = getCommlineType();
 
-   if (cmd_type == ':' || cmd_type == '/' || cmd_type == '?')     {
-   //Add K_WILD as a single special key
-   Byte   key_string[4];
+   if (cmd_type == ';' || cmd_type == '/' || cmd_type == '?') {
+      //Add K_WILD as a single special key
+      Byte key_string[4];
 
-   key_string[0] = K_SPECIAL;
-   key_string[1] = KS_EXTRA;
-   key_string[2] = KE_WILD;
-   key_string[3] = ZERO;
+      key_string[0] = K_SPECIAL;
+      key_string[1] = KS_EXTRA;
+      key_string[2] = KE_WILD;
+      key_string[3] = ZERO;
 
-   //Insert it into the typeahead buffer
-   insertIntoTypebuf(key_string, REMAP_NONE, 0, true, false);
+      //Insert it into the typeahead buffer
+      insertIntoTypebuf(key_string, REMAP_NONE, 0, true, false);
    }
 }
 
@@ -12652,9 +12652,9 @@ get_function_line(
    CS theline;
 
    if (invo->ea_getline == NULL)
-      theline = getCommline(':', 0L, indent, 0);
+      theline = getCommline(';', 0L, indent, 0);
    else
-      theline = invo->ea_getline(':', invo->cookie, indent, getline_options);
+      theline = invo->ea_getline(';', invo->cookie, indent, getline_options);
    if (theline != NULL) {
       if (lines_to_free->len > 0
             && invo->commline != NULL
@@ -13667,13 +13667,17 @@ find_func_with_prefix(Byte *name, int sid) {
 pub UserFunc *
 find_func_even_dead(CS name, int flags) {
    if ((flags & FFED_NO_GLOBAL) == 0) {
-      EeSetItem* hi = hash_find(&userDefinedFnsS, text(STRNCMP(name, "g:", 2) == 0 ? name + 2 : name));
+      EeSetItem* hi = hash_find(
+            &userDefinedFnsS, text(STRNCMP(name, "g:", 2) == 0 ? name + 2 : name)
+      );
       if (!HASHITEM_EMPTY(hi))
          return HI2UF(hi);
    }
 
    //Find autoload function if this is an autoload script.
-   return find_func_with_prefix(name[0] == 's' && name[1] == ':' ? name + 2 : name, scriptPosG.sid);
+   return find_func_with_prefix(
+         name[0] == 's' && name[1] == ':' ? name + 2 : name, scriptPosG.sid
+   );
 }
 
 //Find a function by name, return pointer to it in ufuncs.
@@ -13852,15 +13856,13 @@ numbered_function(Byte *name) {
        || (name[0] == 'g' && name[1] == ':' && SAFE_isdigit(name[2]));
 }
 
-/*
- * There are two kinds of function names:
- * 1. ordinary names, function defined with :function or :def;
- *    can start with "<SNR>123_" literally or with K_SPECIAL.
- * 2. Numbered functions and lambdas: "<lambda>123"
- * For the first we only count the name stored in userDefinedFnsS as a reference,
- * using function() does not count as a reference, because the function is
- * looked up by name.
- */
+//There are two kinds of function names:
+//1. ordinary names, function defined with :function or :def;
+//   can start with "<SNR>123_" literally or with K_SPECIAL.
+//2. Numbered functions and lambdas: "<lambda>123"
+//For the first we only count the name stored in userDefinedFnsS as a reference,
+//using function() does not count as a reference, because the function is
+//looked up by name.
 pub int
 func_name_refcount(Byte *name) {
     return numbered_function(name) || (name[0] == '<' && name[1] == 'l');
@@ -16816,9 +16818,9 @@ c_function(Invocation* invo) {
 //true and give an error if not.
 pub int
 var_wrong_func_name(
-   Text name,    //points to start of variable name
-   int    new_var)  //true when creating the variable
-{
+   Text name,   //points to start of variable name
+   int new_var  //true when creating the variable
+){
    //Allow for w: b: s: and t:. Allow autoload variable.
    if (!((firstOccurrence(S"wbt", name.c[0]) != NULL || (name.c[0] == 's')) 
             && name.c[1] == ':'
@@ -16861,7 +16863,7 @@ var_wrong_func_name(
 //                          NULL
 //
 //lastAutopatS[1]  --------+
-//                        V
+//                         V
 //firstAutopatS[1] --> Autopat.next  -->  NULL
 //                    Autopat.comms
 //                        |
@@ -17042,18 +17044,9 @@ private Byte *deleted_augroup = NULL;
 private Unt currAugroupS = AUGROUP_DEFAULT;
 
 private int au_need_clean = false;   //need to delete marked patterns
-
-private AutoEvent event_name2nr(Byte *start, Byte **end);
-private CS event_nr2name(AutoEvent event);
-private int au_get_grouparg(Byte **argp);
-private int applyAutocommGroup(AutoEvent event, CS fname, CS fname_io, Boole force, 
-   Unt group, Book* book, Invocation* invo);
-private void auto_next_pat(AutoPatComm *apc, int stop_at_last);
-private Unt findGroup(Byte *name);
-
-private AutoEvent   last_event;
-private Unt   last_group;
-private Boole   autocommsBlockedS = 0;   //block all autocmds
+private AutoEvent last_event;
+private Unt last_group;
+private Boole autocommsBlockedS = 0;   //block all autocmds
 
 private CS
 get_deleted_augroup(void) {

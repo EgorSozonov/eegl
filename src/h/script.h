@@ -199,7 +199,7 @@ int text_or_buf_locked(void);
 int curBookLocked(void);
 int allbuf_locked(void);
 CS scrGetTypedCommand(
-   Unt  c,      //normally ':', NUL for ":append"
+   Unt  c,      //normally ';', NUL for ":append"
    void*,
    int indent,      //indent for inside conditionals
    GetlineAlgo options
@@ -440,9 +440,9 @@ int set_ref_in_func(CS name, UserFunc* fp_in, int copyID);
 UserFunc * define_function(Invocation* invo, ArrayList* lines_to_free);
 void c_function(Invocation* invo);
 int var_wrong_func_name(
-   Text name,    //points to start of variable name
-   int    new_var)  //true when creating the variable
-;
+   Text name,   //points to start of variable name
+   int new_var  //true when creating the variable
+);
 void scrRemoveAutocommsFromBook(Book* book);
 Boole auGroupExists(CS name);
 void do_augroup(CS arg, Boole del_group);

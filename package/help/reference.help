@@ -22,33 +22,33 @@ achieve special effects.  These options come in three forms:
 ==============================================================================
 1. Setting options               *set-option* *E764*
 
-                     *:se* *:set*
-:ge[t][!]      Show all options that differ from their default value.
+                     *:se* *;set*
+;ge[t][!]      Show all options that differ from their default value.
          When [!] is present, every option is on a separate line.
 
-:se[t][!] all      Show all but terminal options.
+;se[t][!] all      Show all but terminal options.
          When [!] is present every option is on a separate
          line.
 
-:se[t] termcap      Show all terminal options. 
+;se[t] termcap      Show all terminal options. 
          The options have the form t_AB, see |terminal-options|.
 
-:se[t]! termcap      Idem, but don't use multiple columns.
+;se[t]! termcap      Idem, but don't use multiple columns.
 
                         *E518* *E519*
-:se[t] {option}?   Show value of {option}.
+;se[t] {option}?   Show value of {option}.
 
-:se[t] {option}      Toggle option: set, switch it on.
+;se[t] {option}      Toggle option: set, switch it on.
          Number option: show value.
          String option: show value.
 
-:se[t] no{option}   Toggle option: Reset, switch it off.
+;se[t] no{option}   Toggle option: Reset, switch it off.
 
-                        *:set-!* *:set-inv*
-:se[t] {option}!   or
+                        *;set-!* *;set-inv*
+;se[t] {option}!   or
 
-            *:set-default* *:set-&* *:set-&vi* *:set-&vim*
-:se[t] {option} = default   Reset option to its default value.
+            *;set-default* *;set-&* *;set-&vi* *;set-&vim*
+;se[t] {option} = default   Reset option to its default value.
 
 :se[t] all = default      Set all options to their default value.  The values of
          these options are not changed:
@@ -62,8 +62,8 @@ achieve special effects.  These options come in three forms:
            @ttytype
          Warning: This may have a lot of side effects.
 
-                   *:set-args* *:set=* *E487* *E521*
-:se[t] {option}={value} 
+                   *;set-args* *;set=* *E487* *E521*
+;se[t] {option}={value} 
          Set string or number option to {value}.
          For numeric options the value can be given in decimal,
          hex (preceded with 0x) or octal (preceded with '0' or '0o').
@@ -78,7 +78,7 @@ achieve special effects.  These options come in three forms:
          See |option-backslash| for using white space and
          backslashes in {value}.
 
-:se[t] {option}+={value}            *:set+=*
+;se[t] {option}+={value}            *;set+=*
          Add the {value} to a number option, or append the
          {value} to a string option.  When the option is a
          comma-separated list, a comma is added, unless the
@@ -86,16 +86,16 @@ achieve special effects.  These options come in three forms:
          If the option is a list of flags, superfluous flags
          are removed.  When adding a flag that was already
          present the option value doesn't change.
-         Also see |:set-args| above.
+         Also see |;set-args| above.
 
-:se[t] {option}^={value}            *:set^=*
+;se[t] {option}^={value}            *;set^=*
          Multiply the {value} to a number option, or prepend
          the {value} to a string option.  When the option is a
          comma-separated list, a comma is added, unless the
          value was empty.
-         Also see |:set-args| above.
+         Also see |;set-args| above.
 
-:se[t] {option}-={value}            *:set-=*
+;se[t] {option}-={value}            *;set-=*
          Subtract the {value} from a number option, or remove
          the {value} from a string option, if it is there.
          If the {value} is not found in a string option, there
@@ -108,24 +108,24 @@ achieve special effects.  These options come in three forms:
          The individual values from a comma separated list or
          list of flags can be inserted by typing @wildchar.
          See |complete-set-option|.
-         Also see |:set-args| above.
+         Also see |;set-args| above.
 
-The {option} arguments to ":set" may be repeated.  For example: >
-   :set ai nosi sw=3 ts=3
+The {option} arguments to ";set" may be repeated.  For example: >
+   ;set ai nosi sw=3 ts=3
 If you make an error in one of the arguments, an error message will be given
 and the following arguments will be ignored.
 
-                     *:set-verbose*
+                     *;set-verbose*
 When @verbose is non-zero, displaying an option value will also tell where it
 was last set.  Example:
 
-   :verbose set shiftwidth cindent?
+   ;verbose set shiftwidth cindent?
    
   shiftwidth=4 ~
   cindent ~
      Last set from /usr/local/share/vim/vim60/ftplugin/c.vim line 30 ~
-This is only done when specific option values are requested, not for ":verbose
-set all" or ":verbose set" without an argument.
+This is only done when specific option values are requested, not for ";verbose
+set all" or ";verbose set" without an argument.
 When the option was set by hand there is no "Last set" message.
 When the option was set while executing a function, user command or
 autocommand, the script in which it was defined is reported.
@@ -144,7 +144,7 @@ A few special texts:
 
 
 
-The listing from ":set" looks different from Vi.  Long string options are put
+The listing from ";set" looks different from Vi.  Long string options are put
 at the end of the list.  The number of options is quite large.  The output of
 "set all" probably does not fit on the screen, causing Eegl to give the
 |more-prompt|.
@@ -160,31 +160,34 @@ be separated by either commas or spaces.
 Comma-separated options like @backupdir and @tags will also require commas
 to be escaped with two backslashes, whereas this is not needed for
 non-comma-separated ones like @makeprog.
-When setting options using |:let| and |literal-string|, you need to use one
+When setting options using |;let| and |literal-string|, you need to use one
 fewer layer of backslash.
 A few examples: >
-   :set makeprog=make\ file       results in "make file"
-   :set makeprog=make\\\ file       results in "make\ file"
-   :set tags=tags\ /usr/tags       results in "tags" and "/usr/tags"
-   :set tags=tags\\\ file       results in "tags file"
+   ;set makeprog=make\ file       results in "make file"
+   ;set makeprog=make\\\ file       results in "make\ file"
+   ;set tags=tags\ /usr/tags       results in "tags" and "/usr/tags"
+   ;set tags=tags\\\ file       results in "tags file"
 
-   :set makeprog=make,file       results in "make,file"
-   :set makeprog=make\\,file       results in "make\,file"
-   :set tags=tags,file          results in "tags" and "file"
-   :set tags=tags\\,file       results in "tags\,file"
-   :let &tags='tags\,file'       (same as above)
+   ;set makeprog=make,file       results in "make,file"
+   ;set makeprog=make\\,file       results in "make\,file"
+   ;set tags=tags,file          results in "tags" and "file"
+   ;set tags=tags\\,file       results in "tags\,file"
+   ;let &tags='tags\,file'       (same as above)
 
-The "|" character separates a ":set" command from a following command.  To
+The "|" character separates a ";set" command from a following command.  To
 include the "|" in the option value, use "\|" instead.  This example sets the
-@@titlestring option to "hi|there": >
-   :set titlestring=hi\|there
-This sets the @titlestring option to "hi" and @iconstring to "there": >
-   :set titlestring=hi|set iconstring=there
+@@titlestring option to "hi|there": 
+
+   ;set titlestring=hi\|there
+   
+This sets the @titlestring option to "hi" and @iconstring to "there":
+
+   ;set titlestring=hi|set iconstring=there
 
 Similarly, in legacy script the double quote character starts a comment.  To
 include the '"' in the option value, use '\"' instead.  This example sets the
 @@titlestring option to 'hi "there"': >
-   :set titlestring=hi\ \"there\"
+   ;set titlestring=hi\ \"there\"
 
 In |Eegl9| script it's simpler, comments start with a '#' character, and only
 when preceded by white space.  A backslash is needed less often: >
@@ -194,9 +197,9 @@ when preceded by white space.  A backslash is needed less often: >
    set titlestring=hi\ \#there#
 
 There is one special situation, when the value starts with "\\": >
-   :set dir=\\machine\path       results in "\\machine\path"
-   :set dir=\\\\machine\\path       results in "\\machine\path"
-   :set dir=\\path\\file       results in "\\path\file" (wrong!)
+   ;set dir=\\machine\path       results in "\\machine\path"
+   ;set dir=\\\\machine\\path       results in "\\machine\path"
+   ;set dir=\\path\\file       results in "\\path\file" (wrong!)
 For the first one the start is kept, but for the second one the backslashes
 are halved.  This makes sure it works both when you expect backslashes to be
 halved and when you expect the backslashes to be kept.  The third gives a
@@ -206,24 +209,24 @@ result which is probably not what you want.  Avoid it.
             *E539* *E550* *E551* *E552*
 Some options are a list of flags.  When you want to add a flag to such an
 option, without changing the existing ones, you can do it like this: >
-   :set guioptions+=a
+   ;set guioptions+=a
 Remove a flag from an option like this: >
-   :set guioptions-=a
+   ;set guioptions-=a
 This removes the @a flag from @guioptions.
 Note that you should add or remove one flag at a time.  If @guioptions has
 the value "ab", using "set guioptions-=ba" won't work, because the string "ba"
 doesn't appear.
 
-            *:set_env* *expand-env* *expand-environment-var*
+            *;set_env* *expand-env* *expand-environment-var*
 Environment variables in specific string options will be expanded.  If the
 environment variable exists the '$' and the following environment variable
 name is replaced with its value.  If it does not exist the '$' and the name
 are not modified.  Any non-id character (not a letter, digit or '_') may
 follow the environment variable name.  That character and what follows is
 appended to the value of the environment variable.  Examples: >
-   :set term=$TERM.new
-   :set path=/usr/$INCLUDE,$HOME/include,.
-When adding or removing a string from an option with ":set opt-=val" or ":set
+   ;set term=$TERM.new
+   ;set path=/usr/$INCLUDE,$HOME/include,.
+When adding or removing a string from an option with ";set opt-=val" or ";set
 opt+=val" the expansion is done before the adding or removing.
 
 
@@ -244,17 +247,16 @@ expects is a bit complicated...
 When splitting a window, the local options are copied to the new window.  Thus
 right after the split the contents of the two portals look the same.
 
-When editing a new book, its local option values must be initialized.  Since
-the local options of the current book might be specifically for that book,
-these are not used.  Instead, for each book-local option there also is a
-global value, which is used for new books.  With ":set" both the local and
-global value is changed.  With "setlocal" only the local value is changed,
-thus this value is not used when editing a new book.
+When editing a new book, its local option values must be initialized. Since the local options
+of the current book might be specifically for that book, these are not used. Instead, for each
+book-local option there also is a global value, which is used for new books. With ";set" both
+the local and global value is changed.  With "setlocal" only the local value is changed, thus
+this value is not used when editing a new book.
 
-When editing a book that has been edited before, the options from the window
-that was last closed are used again.  If this book has been edited in this
-window, the values from back then are used.  Otherwise the values from the
-last closed window where the book was edited last are used.
+When editing a book that has been edited before, the options from the window that was last
+closed are used again.  If this book has been edited in this window, the values from back then
+are used.  Otherwise the values from the last closed window where the book was edited last are
+used.
 
 It's possible to set a local window option specifically for a type of book.
 When you edit another book in the same portal, you don't want to keep
@@ -263,16 +265,17 @@ local window options, which is used when editing another book. Each portal
 has its own copy of these values.  Thus these are local to the window, but
 global to all books in the window.  With this you can do: >
    :e one
-   :set list
+   ;set list
    :e two
-Now the @list option will also be set in "two", since with the ":set list"
-command you have also set the global value. >
-   :set nolist
-   :e one
-   :setlocal list
-   :e two
-Now the @list option is not set, because ":set nolist" resets the global
-value, ":setlocal list" only changes the local value and ":e two" gets the
+Now the @list option will also be set in "two", since with the ";set list"
+command you have also set the global value.
+   ;set nolist
+   ;e one
+   ;setlocal list
+   ;e two
+   
+Now the @list option is not set, because ";set nolist" resets the global
+value, ";setlocal list" only changes the local value and ";e two" gets the
 global value.  Note that if you do this next: >
    :e one
 You will get back the @list value as it was the last time you edited "one".
@@ -310,7 +313,7 @@ created, thus they behave slightly differently:
          For all other options, the global value is copied to
          the local value.
 
-:setl[ocal] {option}<   Set the effective value of {option} to its global
+;setl[ocal] {option}<   Set the effective value of {option} to its global
          value.
          For number and boolean |global-local| options, the
          local value is removed, so that the global value will
@@ -322,8 +325,8 @@ created, thus they behave slightly differently:
 Note that the behaviour for |global-local| options is slightly different
 between string and number-based options.
 
-                     *:setg* *:setglobal*
-:setg[lobal][!] ...   Like ":set" but set only the global value for a local
+                     *;setg* *;setglobal*
+;setg[lobal][!] ...   Like ";set" but set only the global value for a local
          option without changing the local value.
          When displaying an option, the global value is shown.
          With the "all" argument: display global values for all
@@ -333,48 +336,48 @@ between string and number-based options.
 
 For book-local and portal-local options:
    Command       global value     local value          condition ~
-      :set option=value        set         set
- :setlocal option=value         -            set
-:setglobal option=value        set          -
-      :set option?         -           display    local value is set
-      :set option?       display          -    local value is not set
- :setlocal option?         -           display
-:setglobal option?       display          -
+      ;set option=value        set         set
+ ;setlocal option=value         -            set
+;setglobal option=value        set          -
+      ;set option?         -           display    local value is set
+      ;set option?       display          -    local value is not set
+ ;setlocal option?         -           display
+;setglobal option?       display          -
 
 
 Global options with a local value         *global-local*
 
 Options are global when you mostly use one value for all books and portals.
 For some global options it's useful to sometimes have a different local value.
-You can set the local value with ":setlocal".  That book or portal will then
+You can set the local value with ";setlocal".  That book or portal will then
 use the local value, while other books and portals continue using the global
 value.
 
 For example, you have two portals, both on C source code. They use the global @makeprog option. If
 you do this in one of the two windows:
 
-   :set makeprog=gmake
+   ;set makeprog=gmake
    
 then the other window will switch to the same value.  There is no need to set
 the @makeprog option in the other C source window too.
 However, if you start editing a Perl file in a new window, you want to use
 another @makeprog for it, without changing the value used for the C source
 files.  You use this command: >
-   :setlocal makeprog=perlmake
+   ;setlocal makeprog=perlmake
 You can switch back to using the global value by making the local value empty: >
-   :setlocal makeprog=
+   ;setlocal makeprog=
 This only works for a string option.  For a number or boolean option you need
 to use the "<" flag, like this: >
-   :setlocal autoread<
+   ;setlocal autoread<
 Note that for non-boolean and non-number options using "<" copies the global
 value to the local value, it doesn't switch back to using the global value
 (that matters when the global value changes later).  You can also use: >
-   :set path<
+   ;set path<
 This will make the local value of @path empty, so that the global value is
 used.  Thus it does the same as: >
-   :setlocal path=
+   ;setlocal path=
 Note: In the future more global options can be made |global-local|.  Using
-":setlocal" on a global option might work differently then.
+";setlocal" on a global option might work differently then.
 
                   *option-value-function*
 Some options (@completefunc, @findfunc, @imactivatefunc, @imstatusfunc,
@@ -413,7 +416,7 @@ context of where it was defined.
 
 Setting the filetype
 
-:setf[iletype] [FALLBACK] {filetype}         *:setf* *:setfiletype*
+;setf[iletype] [FALLBACK] {filetype}         *;setf* *;setfiletype*
          Set the @filetype option to {filetype}, but only if
          not done yet in a sequence of (nested) autocommands.
          This is short for: >
@@ -425,13 +428,13 @@ Setting the filetype
          settings and syntax files to be loaded.
 
          When the optional FALLBACK argument is present, a
-         later :setfiletype command will override the
+         later ;setfiletype command will override the
          @filetype.  This is to be used for filetype
          detections that are just a guess.  |did_filetype()|
          will return false after this command.
 
             *option-window* *optwin*
-:bro[wse] se[t]         *:set-browse* *:browse-set* *:opt* *:options*
+:bro[wse] se[t]         *;set-browse* *:browse-set* *:opt* *:options*
 :opt[ions]      Open a window for viewing and setting all options.
          Options are grouped by function.
          Offers short help for each option.  Hit <CR> on the
@@ -452,14 +455,14 @@ option and after a space or comma.
 
 On Unix systems "~user" can be used too.  It is replaced by the home directory
 of user "user".  Example: >
-    :set path=~mool/include,/usr/include,.
+    ;set path=~mool/include,/usr/include,.
 
 On Unix systems the form "${HOME}" can be used too.  The name between {} can
 contain non-id characters then.  Note that if you want to use this for the
 "gf" command, you need to add the '{' and '}' characters to @isfname.
 
-NOTE: expanding environment variables and "~/" is only done with the ":set"
-command, not when assigning a value to an option with ":let".
+NOTE: expanding environment variables and "~/" is only done with the ";set"
+command, not when assigning a value to an option with ";let".
 
 
 Note the maximum length of an expanded option is limited.  How much depends on
@@ -492,7 +495,7 @@ the system, mostly it is something like 256 or 1024 characters.
          with your terminal name.
 
          If your <Delete> key sends a strange key sequence (not
-         CTRL-? or CTRL-H) you cannot use ":fixdel".  Then use: >
+         CTRL-? or CTRL-H) you cannot use ";fixdel".  Then use: >
             :if &term == "termname"
             :  set t_kD=^V<Delete>
             :endif
@@ -517,14 +520,14 @@ the system, mostly it is something like 256 or 1024 characters.
 ==============================================================================
 2. Automatically setting options         *auto-setting*
 
-Besides changing options with the ":set" command, there are three alternatives
+Besides changing options with the ";set" command, there are three alternatives
 to set options automatically for one or more files:
 
-1. When starting Eegl initializations are read from various places.  See
-   |initialization|.  Most of them are performed for all editing sessions,
-   and some of them depend on the directory where Eegl is started.
-   You can create an initialization file with |:mkvimrc|, |:mkview| and
-   |:mksession|.
+1. When starting Eegl initializations are read from various places.  See |initialization|.  Most
+   of them are performed for all editing sessions, and some of them depend on the directory where
+   Eegl is started. You can create an initialization file with |;mkvimrc|, |;mkview| and
+   |;mksession|.
+   
 2. If you start editing a new file, the automatic commands are executed.
    This can be used to set options for files matching a particular pattern and
    many other things.  See |autocommand|.
@@ -536,7 +539,7 @@ Note that for the first form all of the rest of the line is used, thus a line
 like:
    /* vi:ts=4: */ ~
 will give an error message for the trailing "*/".  This line is OK:
-   /* vi:set ts=4: */ ~
+   /* vi;set ts=4: */ ~
 
 If an error is detected the rest of the line is skipped.
 
@@ -546,8 +549,8 @@ If an error is detected the rest of the line is skipped.
 In the list below all the options are mentioned with their full name and with
 an abbreviation if there is one.  Both forms may be used.
 
-In this document when a boolean option is "set" that means that ":set option"
-is entered.  When an option is "reset", ":set nooption" is used.
+In this document when a boolean option is "set" that means that ";set option"
+is entered.  When an option is "reset", ";set nooption" is used.
 
 Most options are the same in all books and portals.  There are a few that
 are specific to how the text is presented in a window.  These can be set to a
@@ -578,12 +581,12 @@ below.  When an option is not supported it may still be set without getting an
 error, this is called a hidden option.  You can't get the value of a hidden
 option though, it is not stored.
 
-To test if option "foo" can be used with ":set" use something like this: >
+To test if option "foo" can be used with ";set" use something like this: >
    if exists('&foo')
 This also returns true for a hidden option.  To test if option "foo" is really
-supported use something like this: >
+supported use something like this: 
    if exists('+foo')
-<
+
                      *E355*
 A jump table for the options with a short description can be found at |Q_op|.
 
@@ -651,24 +654,24 @@ When the parsing of the OSC sequence fails you get *E1179* .
 @@autowrite              Global. Boolean. Default = off
 
 Write the contents of the file, if it has been modified, on each
-`:next`, `:rewind`, `:last`, `:first`, `:previous`, `:stop`,
-`:suspend`, `:tag`, `:!`, `:make`, CTRL-] and CTRL-^ command; and when
-a `:book`, CTRL-O, CTRL-I, '{A-Z0-9}, or `{A-Z0-9} command takes one to another file.
+`;next`, `;rewind`, `;last`, `;first`, `;previous`, `;stop`,
+`;suspend`, `;tag`, `;!`, `;make`, CTRL-] and CTRL-^ command; and when
+a `;book`, CTRL-O, CTRL-I, '{A-Z0-9}, or `{A-Z0-9} command takes one to another file.
 A book is not written if it becomes hidden, e.g. when @bufhidden is
-set to "hide" and `:next` is used.
+set to "hide" and `;next` is used.
 Note that for some commands the @autowrite option is not used, see @autowriteall for that.
 Some books will not be written, specifically when @buftype is
 "nowrite", "nofile", "terminal" or "prompt".
 USE WITH CARE: If you make temporary changes to a book that you
 don't want to be saved this option may cause it to be saved anyway.
-Renaming the book with ":file {name}" may help avoid this.
+Renaming the book with ";file {name}" may help avoid this.
 
 
 @@autowriteall           Global. Boolean. Default = off
    
-Like @autowrite, but also used for commands ":edit", ":enew", ":quit",
-":qall", ":exit", ":xit", ":recover" and closing the Eegl window.
-Setting this option also implies that Eegl behaves like @autowrite has been set.
+Like @autowrite, but also used for commands ";edit", ";enew", ";quit", ";qall", ";exit", ";xit",
+";recover" and closing the Eegl window. Setting this option also implies that Eegl behaves like
+@autowrite has been set.
 
    
 @@backup                 Global. Boolean. Default = off
@@ -745,8 +748,7 @@ List of directories for the backup file, separated with commas.
   where this is possible.  The directory must exist, Eegl will not create it for you.
 - Empty means that no backup file will be created (@patchmode is
   impossible!).  Writing may fail because of this.
-- A directory "." means to put the backup file in the same directory
-  as the edited file.
+- A directory "." means to put the backup file in the same directory as the edited file.
 - A directory starting with "./"  means to put
   the backup file relative to where the edited file is.  The leading
   "." is replaced with the path name of the edited file.
@@ -760,33 +762,29 @@ List of directories for the backup file, separated with commas.
   the backup file name will be built from the complete path to the
   file with all path separators changed to percent '%' signs. This
   will ensure file name uniqueness in the backup directory.
-- Environment variables are expanded |:set_env|.
+- Environment variables are expanded |;set_env|.
     
 - For backwards compatibility with Eegl version 3.0 a '>' at the start
   of the option is removed.
 See also @backup and @writebackup options.
 If you want to hide your backup files on Unix, consider this value: 
 
-   :set backupdir=./.backup,~/.backup,.,/tmp
+   ;set backupdir=./.backup,~/.backup,.,/tmp
    
-You must create a ".backup" directory in each directory and in your
-home directory for this to work properly.
-The use of |:set+=| and |:set-=| is preferred when adding or removing
-directories from the list.  This avoids problems when a future version
-uses another default.
+You must create a ".backup" directory in each directory and in your home directory for this to
+work properly. The use of |;set+=| and |;set-=| is preferred when adding or removing directories
+from the list.  This avoids problems when a future version uses another default.
    
 
 @@backupext        Global. String. Default = ".bak"
    
-String which is appended to a file name to make the name of the
-backup file.  The default is quite unusual, because this avoids
-accidentally overwriting existing files with a backup file.  You might
-prefer using ".bak", but make sure that you don't have files with ".bak" that you want to keep.
-Only normal file name characters can be used; "/\*?[|<>" are illegal.
+String which is appended to a file name to make the name of the backup file. The default is
+quite unusual, because this avoids accidentally overwriting existing files with a backup file.
+You might prefer using ".bak", but make sure that you don't have files with ".bak" that you want
+to keep. Only normal file name characters can be used; "/\*?[|<>" are illegal.
 
-If you like to keep a lot of backups, you could use a BufWritePre
-autocommand to change @backupext just before writing the file to
-include a timestamp.
+If you like to keep a lot of backups, you could use a BufWritePre autocommand to change
+@backupext just before writing the file to include a timestamp.
 
    :au BufWritePre * let &bex = '-' .. strftime("%Y%b%d%X") .. '~'
    
@@ -795,32 +793,29 @@ Use @backupdir to put the backup in a different directory.
 
 @@backupskip             Global. String. Default = "/tmp/*,$TMPDIR/*,$TMP/*,$TEMP/*"
    
-A list of file patterns.  When one of the patterns matches with the
-name of the file which is written, no backup file is created.  Both
-the specified file name and the full path name of the file are used.
-The pattern is used like with |:autocmd|, see |autocmd-patterns|.
-Watch out for special characters, see |option-backslash|.
-When $TMPDIR, $TMP or $TEMP is not defined, it is not used for the
-default value.  "/tmp/*" is only used for Unix.
+A list of file patterns.  When one of the patterns matches with the name of the file which is
+written, no backup file is created.  Both the specified file name and the full path name of the
+file are used. The pattern is used like with |;autocmd|, see |autocmd-patterns|. Watch out for
+special characters, see |option-backslash|. When $TMPDIR, $TMP or $TEMP is not defined, it is
+not used for the default value.  "/tmp/*" is only used for Unix.
 
-WARNING: Not having a backup file means that when Eegl fails to write
-your book correctly and then, for whatever reason, Eegl exits, you
-lose both the original file and what you were writing.  Only disable
-backups if you don't care about losing the file.
+WARNING: Not having a backup file means that when Eegl fails to write your book correctly and
+then, for whatever reason, Eegl exits, you lose both the original file and what you were
+writing.  Only disable backups if you don't care about losing the file.
 
-Note that environment variables are not expanded.  If you want to use
-$HOME you must expand it explicitly, e.g.: 
+Note that environment variables are not expanded. If you want to use $HOME you must expand it
+explicitly, e.g.: 
 
    :let &backupskip = escape(expand('$HOME'), '\') .. '/tmp/*'
 
-Note that the default also makes sure that "crontab -e" works (when a
-backup would be made by renaming the original file crontab won't see
-the newly created file).  Also see @backupcopy and |crontab|.
+Note that the default also makes sure that "crontab -e" works (when a backup would be made by
+renaming the original file crontab won't see the newly created file). Also see @backupcopy and
+|crontab|.
 
 
 @@balloondelay         Global. Numeric. Default = 600
    
-Delay in milliseconds before a balloon may pop up.  See |balloon-eval|.
+Delay in milliseconds before a balloon may pop up. See |balloon-eval|.
 
 
 @@balloonevalterm        Global. Boolean. Default = on
@@ -854,23 +849,21 @@ The evaluation of the expression must not have side effects! Example:
   set bexpr=MyBalloonExpr()
   set ballooneval balloonevalterm
 
-Also see |balloon_show()|, it can be used if the content of the balloon
-is to be fetched asynchronously.  In that case evaluating
-@balloonexpr should result in an empty string.  If you get a balloon
-with only "0" you probably didn't return anything from your function.
+Also see |balloon_show()|, it can be used if the content of the balloon is to be fetched
+asynchronously.  In that case evaluating @balloonexpr should result in an empty string.  If you
+get a balloon with only "0" you probably didn't return anything from your function.
 
-NOTE: The balloon is displayed only if the cursor is on a text
-character.  If the result of evaluating @balloonexpr is not empty,
-Eegl does not try to send a message to an external debugger (Netbeans
-or Sun Workshop).
+NOTE: The balloon is displayed only if the cursor is on a text character.  If the result of
+evaluating @balloonexpr is not empty, Eegl does not try to send a message to an external
+debugger (Netbeans or Sun Workshop).
 
 If the expression starts with s: or |<SID>|, then it is replaced with
 the script ID (|local-function|). Example: 
    set bexpr=s:MyBalloonExpr()
    set bexpr=<SID>SomeBalloonExpr()
    
-Otherwise, the expression is evaluated in the context of the script
-where the option was set, thus script-local items are available.
+Otherwise, the expression is evaluated in the context of the script where the option was set,
+thus script-local items are available.
 
 It is not allowed to change text or jump to another portal while
 evaluating @balloonexpr, see |textlock|.
@@ -892,16 +885,15 @@ options will be changed (also when it already was on):
    @wrapmargin will be set to 0
    @expandtab  will be off
    
-NOTE: When you start editing a(nother) file while the @binary option is
-on, settings from autocommands may change the settings again (e.g., @textwidth), causing 
-trouble when editing. You might want to set @binary again when the file has been loaded.
-The previous values of these options are remembered and restored when
-@binary is switched from on to off. Each book has its own set of saved option values.
-To edit a file with @binary set you can use the |++bin| argument.
-This avoids you have to do ":set binary = true", which would have effect for all files you edit.
-When writing a file the <EOL> for the last line is only written if
-there was one in the original file (normally Eegl appends an <EOL> to
-the last line if there is none; this would make the file longer). See the @endofline option.
+NOTE: When you start editing a(nother) file while the @binary option is on, settings from
+autocommands may change the settings again (e.g., @textwidth), causing trouble when editing. You
+might want to set @binary again when the file has been loaded. The previous values of these
+options are remembered and restored when @binary is switched from on to off. Each book has its
+own set of saved option values. To edit a file with @binary set you can use the |++bin|
+argument. This avoids you have to do ";set binary = true", which would have effect for all files
+you edit. When writing a file the <EOL> for the last line is only written if there was one in
+the original file (normally Eegl appends an <EOL> to the last line if there is none; this would
+make the file longer). See the @endofline option.
 
 
 @@breakindent            Portal. Boolean. Default = off
@@ -932,9 +924,9 @@ items and must be separated by a comma:
 @@booklisted             Book. Boolean. Default = on
    
 When this option is set, the book shows up in the book list. If it is reset, it is not used for
-":bnext", "ls", etc. This option is reset by Eegl for books that are only used to remember
+";bnext", "ls", etc. This option is reset by Eegl for books that are only used to remember
 a file name or marks. Eegl sets it when starting to edit a book. But not when moving to a book
-with ":book".
+with ";book".
 
 
 @@buftype                Book. Enumerated. Default = normal
@@ -943,7 +935,7 @@ The value of this option specifies the type of a book:
      normal    common book
      nofile    a book which is not related to a file and will not be written
      nowrite   book which will not be written
-     location  location list book, contains a list of locations |:lwindow|
+     location  location list book, contains a list of locations |;lwindow|
      help      help book (you are not supposed to set this manually)
      terminal  book for a |terminal| (you are not supposed to set this manually)
      acwrite   book which will always be written with BufWriteCmd autocommands.
@@ -961,62 +953,50 @@ One such effect is that Eegl will not check the timestamp of the file,
 if the file is changed by another program this will not be noticed.
 
 A "location" book is only used for the error list and the location
-list.  This value is set by the |:cwindow| and |:lwindow| commands and
+list.  This value is set by the |;cwindow| and |;lwindow| commands and
 you are not supposed to change it.
 
 "nofile" and "nowrite" books are similar:
-   both:      The book is not to be written to disk, ":w" doesn't
-              work (":w filename" does work though).
+   both:      The book is not to be written to disk, ";w" doesn't
+              work (";w filename" does work though).
    both:      The book is never considered to be @modified.
               There is no warning when the changes will be lost, for
               example when you quit Eegl.
    both:      A swap file is only created when using too much memory
               (when @swapfile has been reset there is never a swap file).
    nofile only:   The book name is fixed, it is not handled like a
-               file name.  It is not modified in response to a |:cd| command.
-   both:      When using ":e bufname" and already editing "bufname"
+               file name.  It is not modified in response to a |;cd| command.
+   both:      When using ";e bufname" and already editing "bufname"
                the book is made empty and autocommands are
-               triggered as usual for |:edit|.
+               triggered as usual for |;edit|.
                   *E676*
-"acwrite" implies that the buffer name is not related to a file, like
-"nofile", but it will be written.  Thus, in contrast to "nofile" and
-"nowrite", ":w" does work and a modified book can't be abandoned
-without saving.  For writing there must be matching |BufWriteCmd|,
-|FileWriteCmd| or |FileAppendCmd| autocommands.
+                  
+"acwrite" implies that the buffer name is not related to a file, like "nofile", but it will be
+written.  Thus, in contrast to "nofile" and "nowrite", ";w" does work and a modified book can't
+be abandoned without saving.  For writing there must be matching |BufWriteCmd|, |FileWriteCmd|
+or |FileAppendCmd| autocommands.
 
 
 @@cdpath                 Global. String. Default: ",,"
    
-This is a list of directories which will be searched when using the
-|:cd|, |:tcd| and |:lcd| commands, provided that the directory being
-searched for has a relative path, not an absolute part starting with
-"/", "./" or "../", the @cdpath option is not used then.
-The @cdpath option's value has the same form and semantics as @path.  Also see |file-searching|.
-The default value is taken from $CDPATH, with a "," prepended to look
-in the current directory first.
-If the default value taken from $CDPATH is not what you want, include
-a modified version of the following command in your init.vim file to override it: 
+This is a list of directories which will be searched when using the |;cd|, |;tcd| and |;lcd|
+commands, provided that the directory being searched for has a relative path, not an absolute
+part starting with "/", "./" or "../", the @cdpath option is not used then. The @cdpath option's
+value has the same form and semantics as @path.  Also see |file-searching|. The default value is
+taken from $CDPATH, with a "," prepended to look in the current directory first. If the default
+value taken from $CDPATH is not what you want, include a modified version of the following
+command in your init.vim file to override it: 
 
   :let &cdpath = ',' .. substitute(substitute($CDPATH, '[, ]', '\\\0', 'g'), ':', ',', 'g')
   
 (parts of @cdpath can be passed to the shell to expand file names).
 
 
-@@cindent                Book. Boolean. Defaul = off
-   
-Enables automatic C program indenting. See @cinkeys to set the keys that trigger reindenting in 
-insert mode and @cinoptions to set your preferred indent style.
-If @indentexpr is not empty, it overrules @cindent. If both @indentexpr and @equalprg are empty,
-the "=" operator indents using this algorithm rather than calling an external program.
-See |C-indenting|. When you don't like the way @cindent works, try the @smartindent
-option or @indentexpr. This option is not used when @paste is set.
-
-
 @@cinwords               Book. String. Default = "if,else,while,do,for,switch"
    
-These keywords start an extra indent in the next line when @smartindent is set. 
-Note that @ignorecase isn't used for @cinwords. If case doesn't
-matter, include the keyword both the uppercase and lowercase: "if,If,IF".
+These keywords start an extra indent in the next line when @smartindent is set. Note that
+@ignorecase isn't used for @cinwords. If case doesn't matter, include the keyword both the
+uppercase and lowercase: "if,If,IF".
 
 
 @@commheight             Global. Numeric. Default = 1
@@ -1034,14 +1014,13 @@ Number of screen lines to use for the command-line window. |cmdwin|
 
 @@columns                Global. Numeric. Default = 100
    
-Number of columns of the screen.  Normally this is set by the terminal initialization and does 
-not have to be set by hand.  Also see |posix-screen-size|.
-Setting this option will cause the window size to be changed.  
-When you set this option and Eegl is unable to change the physical
-number of columns of the display, the display may be messed up. Eegl limits the number of 
+Number of columns of the screen.  Normally this is set by the terminal initialization and does
+not have to be set by hand.  Also see |posix-screen-size|. Setting this option will cause the
+window size to be changed.  When you set this option and Eegl is unable to change the physical
+number of columns of the display, the display may be messed up. Eegl limits the number of
 columns to what fits on the screen. You can use this command to get the widest window possible: 
 
-   :set columns=9999
+   ;set columns=9999
    
 Minimum value is 12, maximum value is 10000.
 
@@ -1094,7 +1073,7 @@ include leading or trailing blanks unless the blanks are a required part of the 
 When one comment leader is part of another, specify the part after the whole.
 For example, to include both "-" and "->", use >
 
-	:set comments=f:->,f:-
+	;set comments=f:->,f:-
 
 A three-piece comment must always be given as start,middle,end, with no other parts in between. An
 example of a three-piece comment is 
@@ -1112,14 +1091,14 @@ comment you just have to type "/" before typing anything else on the new line. T
 the middle-comment leader with the end-comment leader and apply any specified
 alignment, leaving just `" */"`. There is no need to hit Backspace first.
 
-When there is a match with a middle part, but there also is a matching end part which is longer, 
-the end part is used. This makes a C style comment work without requiring the middle part to end 
+When there is a match with a middle part, but there also is a matching end part which is longer,
+the end part is used. This makes a C style comment work without requiring the middle part to end
 with a space.
 
 Here is an example of alignment flags at work to make a comment stand out
 (kind of looks like a 1 too). Consider comment string: 
 
-	:set comments=sr:/***,m:**,ex-2:******/
+	;set comments=sr:/***,m:**,ex-2:******/
 
                                    /*** ~
                                      **<--right aligned from "r" flag ~
@@ -1150,10 +1129,9 @@ a compromise.
 
 @@commentstring          Book. String. Default = "//%s"
    
-A template for a comment.  The "%s" in the value is replaced with the
-comment text, and should be padded with a space when possible.
-Currently used to add markers for folding, see |fold-marker|.  Also
-commonly used by commenting plugins (e.g. |comment-install|).
+A template for a comment.  The "%s" in the value is replaced with the comment text, and should
+be padded with a space when possible. Currently used to add markers for folding, see
+|fold-marker|.  Also commonly used by commenting plugins (e.g. |comment-install|).
 
                   
 @@complete               Book. String. Default = ".,w,b,u,t,i"
@@ -1172,7 +1150,7 @@ and the places to scan.  It is a comma-separated list of flags:
    k{dict}   scan the file {dict}.  Several "k" flags can be given,
       patterns are valid too.  For example: 
    
-      :set cpt=k/usr/dict/*,k~/spanish
+      ;set cpt=k/usr/dict/*,k~/spanish
       
    s   scan the files given with the @thesaurus option
    s{tsr}   scan the file {tsr}.  Several "s" flags can be given, patterns
@@ -1202,7 +1180,7 @@ and the places to scan.  It is a comma-separated list of flags:
    o   equivalent to using "F{func}", where the function is taken from
       the @omnifunc option.
 
-Unloaded books are not loaded, thus their autocmds |:autocmd| are not executed, this may lead to 
+Unloaded books are not loaded, thus their autocmds |;autocmd| are not executed, this may lead to 
 unexpected completions from some files (gzipped files for example).  Unloaded books are not 
 scanned for whole-line completion.
 
@@ -1354,10 +1332,10 @@ existing info popup with |popup_setoptions()|.  See |complete-popup|.
 @@confirm                Global. Boolean. Default = off
    
 When @confirm is on, certain operations that would normally fail because of unsaved changes to a 
-book, e.g. ":q" and ":e", instead raise a |dialog| asking if you wish to save the current
+book, e.g. ";q" and ";e", instead raise a |dialog| asking if you wish to save the current
 file(s).  You can still use a ! to unconditionally |abandon| a book. If @confirm is off you can 
 still activate confirmation for one command only (this is most useful in mappings) with the 
-|:confirm| command. Also see the |confirm()| function.
+|;confirm| command. Also see the |confirm()| function.
 
 
 @@cscopepathcomp         Global. Numeric. Default = 0
@@ -1383,7 +1361,7 @@ Use cscope for tag commands.  See |cscope-options|.
 
 @@cscopetagorder         Global. Numeric. Default = 0
 
-Determines the order in which ":cstag" performs a search.  See |cscopetagorder|.
+Determines the order in which ";cstag" performs a search.  See |cscopetagorder|.
 
 
 @@cscopeverbose          Global. Boolean. Default = off
@@ -1398,10 +1376,9 @@ The cursor in Insert mode. Can be one of: bar, block, underscore
 
 @@cursorline             Portal. Boolean. Default = on
 
-Highlight the text line of the cursor with CursorLine |hl-CursorLine|.
-Useful to easily spot the cursor.  Will make screen redrawing slower.
-When Visual mode is active the highlighting isn't used to make it
-easier to see the selected text.
+Highlight the text line of the cursor with CursorLine |hl-CursorLine|. Useful to easily spot the
+cursor.  Will make screen redrawing slower. When Visual mode is active the highlighting isn't
+used to make it easier to see the selected text.
    
    
 @@cursorNormal           Global. Enumerated. Default = block
@@ -1423,18 +1400,18 @@ The values can be combined, separated by a comma.
 
 @@define                 Book. String.  Default = "^\s*#\s*define"
 
-Pattern to be used to find a macro definition.  It is a search
-pattern, just like for the "/" command.  This option is used for the
-commands like "[i" and "[d" |include-search|.  The @isident option is
-used to recognize the defined name after the match:
-   {match with @define}{non-ID chars}{defined name}{non-ID char}
-See |option-backslash| about inserting backslashes to include a space or backslash.
-The default value is for C programs.  For C++ this value would be
-useful, to include const type declarations: >
+Pattern to be used to find a macro definition.  It is a search pattern, just like for the "/"
+command. This option is used for the commands like "[i" and "[d" |include-search|. The
+@isident option is used to recognize the defined name after the match: {match with
+@define}{non-ID chars}{defined name}{non-ID char} See |option-backslash| about inserting
+backslashes to include a space or backslash. The default value is for C programs.  For C++ this
+value would be useful, to include const type declarations: 
+
    ^\(#\s*define\|[a-z]*\s*const\s*[a-z]*\)
-<   You can also use "\ze" just before the name and continue the pattern
-to check what is following.  E.g. for Javascript, if a function is
-defined with "func_name = function(args)": 
+   
+You can also use "\ze" just before the name and
+continue the pattern to check what is following.  E.g. for Javascript, if a function is defined
+with "func_name = function(args)": 
 
    ^\s*\ze\i\+\s*=\s*function(
    
@@ -1442,21 +1419,17 @@ If the function is defined with "func_name : function() {...":
 
         ^\s*\ze\i\+\s*[:]\s*(*function\s*(
         
-When using the ":set" command, you need to double the backslashes!
-To avoid that use `:let` with a single quote string: 
+When using the ";set" command, you need to double the backslashes!
+To avoid that use `;let` with a single quote string: 
 
    let &l:define = '^\s*\ze\k\+\s*=\s*function('
 
 
 @@delcombine             Global. Boolean. Default = off
 
-If editing Unicode and this option is set, backspace and Normal mode
-"x" delete each combining character on its own.  When it is off (the
-default) the character along with its combining characters are deleted.
-Note: When @delcombine is set "xx" may work differently from "2x"!
-
-This is useful for Arabic, Hebrew and many other languages where one may have combining characters 
-overtop of base characters, and want to remove only the combining ones.
+If editing Unicode and this option is set, backspace and Normal mode "x" delete each combining
+character on its own.  When it is off (the default) the character along with its combining
+characters are deleted. Note: When @delcombine is set "xx" may work differently from "2x"!
 
 
 @@dictionary             Book. String. Default = ""
@@ -1470,12 +1443,12 @@ When this option is empty or an entry "spell" is present, and spell checking is 
 in the word lists for the currently active @spelllang are used. See |spell|.
 
 To include a comma in a file name precede it with a backslash.  Spaces
-after a comma are ignored, otherwise spaces are included in the file
-name. See |option-backslash| about using backslashes.
+after a comma are ignored, otherwise spaces are included in the file name. See 
+|option-backslash| about using backslashes.
 This has nothing to do with the |Dictionary| variable type. Where to find a list of words?
 - In the Simtel archive, look in the "msdos/linguist" directory.
 - In "miscfiles" of the GNU collection.
-The use of |:set+=| and |:set-=| is preferred when adding or removing
+The use of |;set+=| and |;set-=| is preferred when adding or removing
 directories from the list. This avoids problems when a future version uses another default.
 Backticks cannot be used in this option for security reasons.
 
@@ -1492,8 +1465,8 @@ column. Inserted and deleted lines (though not characters within a line) are tak
 When this option is set, scrolling the current portal also scrolls other diff portals (portals 
 that also have this option set).
 See @scrollopt for options that determine how this option should be interpreted. This option is 
-mostly reset when splitting a portal to edit another file. This means that ":split | edit file" 
-results in two portals with scroll-binding, but ":split file" does not.
+mostly reset when splitting a portal to edit another file. This means that ";split | edit file" 
+results in two portals with scroll-binding, but ";split file" does not.
 
 
 @@diffanchors            Book. String. Default = ""
@@ -1526,8 +1499,8 @@ or unified-style) from two versions of a file.  See |diff-diffexpr|.
 
 @@diffopt                Global. String. Default = "internal,filler,closeoff,inline:simple"
 
-Option settings for diff mode.  It can consist of the following items.
-All are optional.  Items must be separated by a comma.
+Option settings for diff mode. It can consist of the following items.
+All are optional. Items must be separated by a comma.
 
    algorithm:{text} Use the specified diff algorithm with the
          internal diff engine. Currently supported
@@ -1543,7 +1516,7 @@ All are optional.  Items must be separated by a comma.
 
    closeoff   When a portal is closed where @diff is set
          and there is only one portal remaining in the same tab with @diff set, execute
-         `:diffoff` in that portal.  This undoes a `:diffsplit` command.
+         `;diffoff` in that portal.  This undoes a `;diffsplit` command.
 
    context:{n}   Use a context of {n} lines between a change and a fold that contains unchanged 
          lines. When omitted, a context of 6 lines is used.
@@ -1563,18 +1536,14 @@ All are optional.  Items must be separated by a comma.
    hiddenoff   Do not use diff mode for a book when it
          becomes hidden.
 
-   iblank      Ignore changes where lines are all blank.  Adds
-         the "-B" flag to the "diff" command if
-         @diffexpr is empty.  Check the documentation
-         of the "diff" command for what this does
-         exactly.
-         NOTE: the diff portals will get out of sync,
-         because no differences between blank lines are
-         taken into account.
+   iblank   Ignore changes where lines are all blank. Adds the "-B" flag to the "diff"
+            command if @diffexpr is empty.  Check the documentation of the "diff" command for 
+            what this does exactly. NOTE: the diff portals will get out of sync, because no 
+            differences between blank lines are taken into account.
 
-   icase      Ignore changes in case of text.  "a" and "A"
-         are considered the same.  Adds the "-i" flag
-         to the "diff" command if @diffexpr is empty.
+   icase    Ignore changes in case of text.  "a" and "A"
+            are considered the same.  Adds the "-i" flag
+            to the "diff" command if @diffexpr is empty.
 
    indent-heuristic
          Use the indent heuristic for the internal
@@ -1628,10 +1597,10 @@ All are optional.  Items must be separated by a comma.
          explicitly specified otherwise).
 
 Examples:
-      :set diffopt=internal,filler,context:4
-      :set diffopt=
-      :set diffopt=internal,filler,foldcolumn:3
-      :set diffopt-=internal  " do NOT use the internal diff parser
+      ;set diffopt=internal,filler,context:4
+      ;set diffopt=
+      ;set diffopt=internal,filler,foldcolumn:3
+      ;set diffopt-=internal  " do NOT use the internal diff parser
 
 
 @@eadirection            Global. Enumerated. Default = "both"
@@ -1658,11 +1627,11 @@ currently not equalized (it's complicated, but may be implemented in the future)
 
 @@errorfile              Global. String. Default = "errors.err"
    
-Name of the errorfile for the QuickFix mode (see |:cf|).
+Name of the errorfile for the QuickFix mode (see |;cf|).
 When the "-q" command-line argument is used, @errorfile is set to the
 following argument.  See |-q|.
-NOT used for the ":make" command.  See @makeef for that.
-Environment variables are expanded |:set_env|.
+NOT used for the ";make" command.  See @makeef for that.
+Environment variables are expanded |;set_env|.
 See |option-backslash| about including spaces and backslashes.
 
 
@@ -1678,11 +1647,11 @@ When set to "all" or when "all" is one of the items, all autocommand
 events are ignored, autocommands will not be executed.
 Otherwise this is a comma-separated list of event names.  Example:
 
-    :set ei=WinEnter,WinLeave
+    ;set ei=WinEnter,WinLeave
     
 To ignore all but some events, a "-" prefix can be used:
 
-    :set ei=all,-WinLeave
+    ;set ei=all,-WinLeave
        
        
 @@eventignoreport        Portal. String. Default = off
@@ -1761,7 +1730,7 @@ window context and thus cannot be ignored by @eventignorewin:
 
 In Insert mode: Use the appropriate number of spaces to insert a <Tab>. Spaces are used in indents 
 with the '>' and '<' commands and when @autoindent is on.  To insert a real tab when @expandtab is
-on, use CTRL-V<Tab>.  See also |:retab| and |ins-expandtab|. This option is reset when the @paste 
+on, use CTRL-V<Tab>.  See also |;retab| and |ins-expandtab|. This option is reset when the @paste 
 option is set and restored when the @paste option is reset.
 
 
@@ -1775,7 +1744,7 @@ and the value of that item: |E1511|
      item name   default      Used for ~
      stl       ' '       statusline of the current portal
      stlnc     ' '     statusline of the non-current portal
-     vert      '|'      vertical separators |:vsplit|
+     vert      '|'      vertical separators |;vsplit|
      fold      '-'      filling @foldtext
      foldopen  '-'     mark the beginning of a fold
      foldclose '+'    show a closed fold
@@ -1788,7 +1757,7 @@ and the value of that item: |E1511|
 Any one that is omitted will fall back to the default.
 
 Example: 
-       :set fillchars=stl:\ ,stlnc:\ ,vert:\|,fold:-,diff:-,tpl_vert:\|
+       ;set fillchars=stl:\ ,stlnc:\ ,vert:\|,fold:-,diff:-,tpl_vert:\|
 
 All items support single-byte and multibyte characters.  But
 double-width characters are not supported. |E1512|
@@ -1812,30 +1781,28 @@ The hiliting used for these items:
 
 @@findfunc               Book. String. Default = off
    
-Function that is called to obtain the filename(s) for the |:find|
+Function that is called to obtain the filename(s) for the |;find|
 command.  When this option is empty, the internal |file-searching| mechanism is used.
 
-The value can be the name of a function, a |lambda| or a |Funcref|.
-See |option-value-function| for more information.
+The value can be the name of a function, a |lambda| or a |Funcref|. See |option-value-function|
+for more information.
 
-The function is called with two arguments.  The first argument is a
-|String| and is the |:find| command argument.  The second argument is
-a |Boolean| and is set to |v:true| when the function is called to get
-a List of command-line completion matches for the |:find| command.
-The function should return a List of strings.
+The function is called with two arguments.  The first argument is a |String| and is the |;find|
+command argument.  The second argument is a |Boolean| and is set to |v:true| when the function
+is called to get a List of command-line completion matches for the |;find| command. The function
+should return a List of strings.
 
-The function is called only once per |:find| command invocation.
-The function can process all the directories specified in @path.
+The function is called only once per |;find| command invocation. The function can process all
+the directories specified in @path.
 
-If a match is found, the function should return a |List| containing
-one or more file names.  If a match is not found, the function
-should return an empty List.
+If a match is found, the function should return a |List| containing one or more file names.  If
+a match is not found, the function should return an empty List.
 
-If any errors are encountered during the function invocation, an
-empty List is used as the return value.
+If any errors are encountered during the function invocation, an empty List is used as the
+return value.
 
-It is not allowed to change text or jump to another window while
-executing the @findfunc |textlock|.
+It is not allowed to change text or jump to another window while executing the @findfunc
+|textlock|.
 
 
 Examples:
@@ -1859,29 +1826,26 @@ Examples:
 
 @@foldenable             Portal. Boolean. Default = on
    
-When off, all folds are open.  This option can be used to quickly
-switch between showing all text unfolded and viewing the text with
-folds (including manually opened or closed folds).  It can be toggled
-with the |zi| command.  The @foldcolumn will remain blank when @foldenable is off.
-This option is set by commands that create a new fold or close a fold. See |folding|.
+When off, all folds are open.  This option can be used to quickly switch between showing all
+text unfolded and viewing the text with folds (including manually opened or closed folds).  It
+can be toggled with the |zi| command.  The @foldcolumn will remain blank when @foldenable is
+off. This option is set by commands that create a new fold or close a fold. See |folding|.
 
 
 @@foldexpr               Portal. String. Default = "0"
    
-The expression used for when @foldmethod is "expr". It is evaluated
-for each line to obtain its fold level.  The context is set to the
-script where @foldexpr was set, script-local items can be accessed.
-See |fold-expr| for the usage.
+The expression used for when @foldmethod is "expr". It is evaluated for each line to obtain its
+fold level.  The context is set to the script where @foldexpr was set, script-local items can be
+accessed. See |fold-expr| for the usage.
 
 It is not allowed to change text or jump to another window while evaluating @foldexpr |textlock|.
 
                   
 @@foldignore             Portal. String. Default = "#"
    
-Used only when @foldmethod is "indent".  Lines starting with
-characters in @foldignore will get their fold level from surrounding
-lines.  White space is skipped before checking for this character.
-The default "#" works well for C programs.  See |fold-indent|.
+Used only when @foldmethod is "indent".  Lines starting with characters in @foldignore will get
+their fold level from surrounding lines.  White space is skipped before checking for this
+character. The default "#" works well for C programs.  See |fold-indent|.
 
 
 @@foldlevel              Portal. Numeric. Default = 0
@@ -1893,19 +1857,18 @@ This option is set by commands like |zm|, |zM| and |zR|. See |fold-foldlevel|.
 
 @@foldlevelstart         Global. Numeric. Default = -1
    
-Sets @foldlevel when starting to edit another book in a portal.
-Useful to always start editing with all folds closed (value zero),
-some folds closed (one) or no folds closed (99).
-Starting to edit a file for |diff-mode| also ignores this option and closes all folds.
-It is also done before BufReadPre autocommands, to allow an autocmd to
-overrule the @foldlevel value for specific files. When the value is negative, it is not used.
+Sets @foldlevel when starting to edit another book in a portal. Useful to always start editing
+with all folds closed (value zero), some folds closed (one) or no folds closed (99). Starting to
+edit a file for |diff-mode| also ignores this option and closes all folds. It is also done
+before BufReadPre autocommands, to allow an autocmd to overrule the @foldlevel value for
+specific files. When the value is negative, it is not used.
 
 
 @@foldmarker             Portal. String. Default = "{{{,}}}"
    
-The start and end marker used when @foldmethod is "marker". There
-must be one comma, which separates the start and end marker. The
-marker is a literal string (a regular expression would be too slow). See |fold-marker|.
+The start and end marker used when @foldmethod is "marker". There must be one comma, which
+separates the start and end marker. The marker is a literal string (a regular expression would
+be too slow). See |fold-marker|.
 
 
 @@foldmethod             Portal. Enumerated. Default = "marker"
@@ -1934,11 +1897,11 @@ Add the |zv| command to the mapping to get the same effect.
       jump      far jumps: "G", "gg", etc.
       mark      jumping to a mark: "'m", CTRL-O, etc.
       percent   "%"
-      location  ":cn", ":crew", ":make", etc.
+      location  ";cn", ";crew", ";make", etc.
       search    search for a pattern: "/", "n", "*", "gd", etc.
-                (not for a search pattern in a ":" command)
+                (not for a search pattern in a ";" command)
                 Also for |[s| and |]s|.
-      tag       jumping to a tag: ":ta", CTRL-T, etc.
+      tag       jumping to a tag: ";ta", CTRL-T, etc.
       undo      undo or redo: "u" and CTRL-R
       
 When a movement command is used for an operator (e.g., "dl" or "y%")
@@ -1972,7 +1935,7 @@ The |v:char|  variable holds the character that is going to be
          automatic formatting. This can be empty. Don't insert it yet!
 
 Example: 
-      :set formatexpr=mylang#Format()
+      ;set formatexpr=mylang#Format()
       
 This will invoke the mylang#Format() function in the
 autoload/mylang.vim file in @runtimepath. |autoload|
@@ -2015,7 +1978,7 @@ This is a sequence of letters which describes how automatic formatting is to be 
 See the table below for possible values and |gq| for how to format text.
 Commas can be inserted for readability.
 To avoid problems with flags that are added in the future, use the
-"+=" and "-=" feature of ":set" |add-option-flags|.
+"+=" and "-=" feature of ";set" |add-option-flags|.
    
 letter        meaning
 
@@ -2147,9 +2110,9 @@ All of this should be really cool, especially in conjunction with the new
 
 Some examples:
   for C code (only format comments): 
-    :set fo=croq
+    ;set fo=croq
   for Mail/news   (format all, don't start comment with "o" command): 
-    :set fo=tcrq
+    ;set fo=tcrq
 
 
 @@formatprog             Global. String. Default = off
@@ -2160,7 +2123,7 @@ stdin and produce the output on stdout.  The Unix program "fmt" is such a progra
 If the @formatexpr option is not empty it will be used instead.
 Otherwise, if @formatprg option is an empty string, the internal
 format function will be used |C-indenting|.
-Environment variables are expanded |:set_env|.  See |option-backslash|
+Environment variables are expanded |;set_env|.  See |option-backslash|
 about including spaces and backslashes.
 
 
@@ -2176,34 +2139,34 @@ overrule it) and when writing undo files (see |undo-persistence|).
 
 @@grepformat             Book. String. Default = "%f:%l:%m,%f:%l%m,%f  %l%m"
    
-Format to recognize for the ":grep" command output.
+Format to recognize for the ";grep" command output.
 This is a scanf-like string that uses the same format as the
 @errorformat option: see |errorformat|.
 
 
 @@grepprog               Book. String. Default = "grep -n $* /dev/null",
    
-Program to use for the |:grep| command.  This option may contain '%'
+Program to use for the |;grep| command.  This option may contain '%'
 and '#' characters, which are expanded like when used in a command-
 line.  The placeholder "$*" is allowed to specify where the arguments
-will be included.  Environment variables are expanded |:set_env|.  See
+will be included.  Environment variables are expanded |;set_env|.  See
 |option-backslash| about including spaces and backslashes.
-When your "grep" accepts the "-H" argument, use this to make ":grep"
+When your "grep" accepts the "-H" argument, use this to make ";grep"
 also work well with a single file: 
 
-      :set grepprg=grep\ -nH
+      ;set grepprg=grep\ -nH
       
-Special value: When @grepprg is set to "internal" the |:grep| command
-works like |:vimgrep|, |:lgrep| like |:lvimgrep|, |:grepadd| like
-|:vimgrepadd| and |:lgrepadd| like |:lvimgrepadd|.
-See also the section |:make_makeprg|, since most of the comments there
+Special value: When @grepprg is set to "internal" the |;grep| command
+works like |;vimgrep|, |;lgrep| like |;lvimgrep|, |;grepadd| like
+|;vimgrepadd| and |;lgrepadd| like |;lvimgrepadd|.
+See also the section |;make_makeprg|, since most of the comments there
 apply equally to @grepprg.
 
 
 @@helpheight             Global. Numeric. Default = 20
    
 Minimal initial height of the help window when it is opened with the
-":help" command.  The initial height of the help window is half of the
+";help" command.  The initial height of the help window is half of the
 current window, or (when the @ea option is on) the same as other
 portals.  When the height is less than @helpheight, the height is
 set to @helpheight. Set to zero to disable.
@@ -2218,17 +2181,17 @@ another language, but that will only find tags that exist in that
 language and not in the English help.
 Example: 
 
-   :set helplang=de,it
+   ;set helplang=de,it
    
 This will first search German, then Italian and finally English help files.
-When using |CTRL-]| and ":help!" in a non-English help file Eegl will
+When using |CTRL-]| and ";help!" in a non-English help file Eegl will
 try to find the tag in the current language before using this option.
 See |help-translated|.
 
 
 @@history                Global. Numeric. Default = 200
 
-A history of ":" commands, and a history of previous search patterns
+A history of ";" commands, and a history of previous search patterns
 is remembered.  This option decides how many entries may be stored in
 each of these histories (see |cmdline-editing| and @messagesopt for
 the number of messages to remember). The maximum value is 10000.
@@ -2242,9 +2205,9 @@ The type of highlighting used can be set with the @l occasion in the
 default.  Note that only the matching text is highlighted, any offsets
 are not applied.  If the "CurSearch" highlight group is set then the
 current match is highlighted with that.
-See also: @incsearch and |:match|.
+See also: @incsearch and |;match|.
 When you get bored looking at the highlighted matches, you can turn it
-off with |:nohlsearch|. This does not change the option value, as
+off with |;nohlsearch|. This does not change the option value, as
 soon as you use a search command, the highlighting comes back.
 @redrawtime specifies the maximum time spent on finding matches.
 When the search pattern can match an end-of-line, Eegl will try to
@@ -2280,14 +2243,14 @@ the matched text. See |option-backslash| about including spaces and backslashes.
 Expression to be used to transform the string found with the @include
 option to a file name.  Mostly useful to change "." to "/" for Java: 
    
-      :setlocal includeexpr=substitute(v:fname,'\\.','/',@g)
+      ;setlocal includeexpr=substitute(v:fname,'\\.','/',@g)
       
 The "v:fname" variable will be set to the file name that was detected.
-Note the double backslash: the `:set` command first halves them, then
+Note the double backslash: the `;set` command first halves them, then
 one remains it the value, where "\." matches a dot literally.  For
 simple character replacements `tr()` avoids the need for escaping: 
 
-      :setlocal includeexpr=tr(v:fname,'.','/')
+      ;setlocal includeexpr=tr(v:fname,'.','/')
 
 Also used for the |gf| command if an unmodified file name can't be
 found.  Allows doing "gf" on the name after an @include statement.
@@ -2345,8 +2308,8 @@ autocmd.  Example:
 
       augroup vimrc-incsearch-highlight
         autocmd!
-        autocmd CmdlineEnter /,\? :set hlsearch
-        autocmd CmdlineLeave /,\? :set nohlsearch
+        autocmd CmdlineEnter /,\? ;set hlsearch
+        autocmd CmdlineLeave /,\? ;set nohlsearch
       augroup END
 
 CTRL-L can be used to add one character from after the current match
@@ -2385,7 +2348,7 @@ not change the text, jump to another window, etc.  Afterwards the
 cursor position is always restored, thus the cursor may be moved.
 Normally this option would be set to call a function: 
 
-      :set indentexpr=GetMyIndent()
+      ;set indentexpr=GetMyIndent()
 Error messages will be suppressed, unless the @debug option contains "msg". See |indent-expression|.
 
 It is not allowed to change text or jump to another window while evaluating @indentexpr |textlock|.
@@ -2480,7 +2443,7 @@ that is not white space or punctuation).
 For C programs you could use "a-z,A-Z,48-57,_,.,-,>".
 For a help file it is set to all non-blank printable characters except
 '*', '"' and '|' (so that CTRL-] on a command finds the help for that command).
-This option also influences syntax highlighting, unless the syntax uses |:syn-iskeyword|.
+This option also influences syntax highlighting, unless the syntax uses |;syn-iskeyword|.
 
 
 @@keymodel               Global. Flags. Default = off
@@ -2494,24 +2457,20 @@ can do.  These values can be used:
       stopsel   Using a not-shifted special key stops selection.
       
 Special keys in this context are the cursor keys, <End>, <Home>, <PageUp> and <PageDown>.
-The @keymodel option is set by the |:behave| command.
+The @keymodel option is set by the |;behave| command.
 
 
 @@keywordprog             Book. String.  Default = "man -s"
 
-Program to use for the |K| command.  Environment variables are
-expanded |:set_env|.  ":help" may be used to access the Eegl internal
-help.  (Note that previously setting the global option to the empty
-value did this, which is now deprecated.)
-When the first character is ":", the command is invoked as a Eegl
-Ex command with [count] added as an argument if it is not zero.
-When "man", "man -s" or an Ex command is used, Eegl will automatically
-translate a count for the "K" command and pass it as the first
-argument.  For "man -s" the "-s" is removed when there is no count.
-See |option-backslash| about including spaces and backslashes.
-Example: 
+Program to use for the |K| command.  Environment variables are expanded |;set_env|. ";help" may
+be used to access the Eegl internal help.  (Note that previously setting the global option to
+the empty value did this, which is now deprecated.) When the first character is ";", the command
+is invoked as a Eegl Ex command with [count] added as an argument if it is not zero. When "man",
+"man -s" or an Ex command is used, Eegl will automatically translate a count for the "K" command
+and pass it as the first argument.  For "man -s" the "-s" is removed when there is no count. See
+|option-backslash| about including spaces and backslashes. Example: 
 
-   :set keywordprog=man\ -s
+   ;set keywordprog=man\ -s
    
 
 @@langmap                Global. String. Default = off
@@ -2528,11 +2487,11 @@ resulting from a mapping.
 
 Example (for Greek, in UTF-8):            *greek*  
 
-       :set langmap=ΑA,ΒB,ΨC,ΔD,ΕE,ΦF,ΓG,ΗH,ΙI,ΞJ,ΚK,ΛL,ΜM,ΝN,ΟO,ΠP,QQ,ΡR,ΣS,ΤT,ΘU,ΩV,WW,ΧX,ΥY,ΖZ,αa,βb,ψc,δd,εe,φf,γg,ηh,ιi,ξj,κk,λl,μm,νn,οo,πp,qq,ρr,σs,τt,θu,ωv,ςw,χx,υy,ζz
+       ;set langmap=ΑA,ΒB,ΨC,ΔD,ΕE,ΦF,ΓG,ΗH,ΙI,ΞJ,ΚK,ΛL,ΜM,ΝN,ΟO,ΠP,QQ,ΡR,ΣS,ΤT,ΘU,ΩV,WW,ΧX,ΥY,ΖZ,αa,βb,ψc,δd,εe,φf,γg,ηh,ιi,ξj,κk,λl,μm,νn,οo,πp,qq,ρr,σs,τt,θu,ωv,ςw,χx,υy,ζz
        
 Example (exchanges meaning of z and y for commands): 
 
-       :set langmap=zy,yz,ZY,YZ
+       ;set langmap=zy,yz,ZY,YZ
 
 
 The @langmap option is a list of parts, separated with commas. Each part can be in one of two forms:
@@ -2570,44 +2529,38 @@ that works for you to avoid mappings to break.
 
 @@lazyredraw             Global. Boolean. Default = off
 
-When this option is set, the screen will not be redrawn while
-executing macros, registers and other commands that have not been
-typed.  To force an update, use |:redraw|.
-This may occasionally cause display errors.  It is only meant to be set
-temporarily when performing an operation where redrawing may cause
-flickering or cause a slowdown.
+When this option is set, the screen will not be redrawn while executing macros, registers and
+other commands that have not been typed. To force an update, use |;redraw|. This may
+occasionally cause display errors.  It is only meant to be set temporarily when performing an
+operation where redrawing may cause flickering or cause a slowdown.
 
 
 @@lines                  Global. Numeric. Default =  24 or terminal height
    
-Number of lines of the Eegl window.
-Normally you don't need to set this.  It is done automatically by the
-terminal initialization code.  Also see |posix-screen-size|.
-When Eegl is running in in a resizable window, setting this
-option will cause the window size to be changed.  When you only want
-to use the size for the GUI, put the command in your |gvimrc| file.
-Eegl limits the number of lines to what fits on the screen.  You can
-use this command to get the tallest window possible: 
+Number of lines of the Eegl window. Normally you don't need to set this.  It is done
+automatically by the terminal initialization code.  Also see |posix-screen-size|. When Eegl is
+running in in a resizable window, setting this option will cause the window size to be changed.
+When you only want to use the size for the GUI, put the command in your |gvimrc| file. Eegl
+limits the number of lines to what fits on the screen.  You can use this command to get the
+tallest window possible: 
 
-      :set lines=999
+      ;set lines=999
       
-Minimum value is 2, maximum value is 1000.
-If you get fewer lines than expected, check the @guiheadroom option.
-When you set this option and Eegl is unable to change the physical
-number of lines of the display, the display may be messed up.
+Minimum value is 2, maximum value is 1000. If you get fewer lines than expected, check the
+@guiheadroom option. When you set this option and Eegl is unable to change the physical number
+of lines of the display, the display may be messed up.
 
 
 @@list                   Portal. Boolean. Default = off
    
-List mode: By default show tabs as CTRL-I is displayed, display $
-after end of line.  Useful to see the difference between tabs and
-spaces and for trailing blanks.  Further changed by the @listchars option.
+List mode: By default show tabs as CTRL-I is displayed, display $ after end of line.  Useful to
+see the difference between tabs and spaces and for trailing blanks.  Further changed by the
+@listchars option.
 
-The cursor is displayed at the start of the space a Tab character
-occupies, not at the end as usual in Normal mode.  To get this cursor
-position while displaying Tabs with spaces, use: 
+The cursor is displayed at the start of the space a Tab character occupies, not at the end as
+usual in Normal mode.  To get this cursor position while displaying Tabs with spaces, use: 
 
-   :set list lcs=tab:\ \ 
+   ;set list lcs=tab:\ \ 
 
 Note that list mode will also affect formatting (set with @textwidth
 or @wrapmargin) when @cpoptions includes @L.  See @listchars for
@@ -2616,7 +2569,7 @@ changing the way tabs are displayed.
 
 @@listchars              Global. String.  Default = "eol:$"
    
-Strings to use in @list mode and for the |:list| command.  It is a
+Strings to use in @list mode and for the |;list| command.  It is a
 comma-separated list of string settings. *E1511*
                   *lcs-eol*
   eol:c      Character to show at the end of each line.  When
@@ -2662,9 +2615,9 @@ Each character can be specified as hex: >
 must be exactly 2 for \\x, 4 for \\u and 8 for \\U.
 
 Examples: >
-    :set lcs=tab:>-,trail:-
-    :set lcs=tab:>-,eol:<,nbsp:%
-    :set lcs=extends:>,precedes:<
+    ;set lcs=tab:>-,trail:-
+    ;set lcs=tab:>-,eol:<,nbsp:%
+    ;set lcs=extends:>,precedes:<
 <   The "NonText" highlighting will be used for "eol", "extends" and
 "precedes".  "SpecialKey" will be used for "tab", "nbsp", "space",
 "multispace", "lead" and "trail".
@@ -2681,33 +2634,33 @@ line arguments reset this option.  See |-u| and |--noplugin|.
 
 @@makeef                 Global. String. Default = off
 
-Name of the errorfile for the |:make| command (see |:make_makeprg|) and the |:grep| command.
+Name of the errorfile for the |;make| command (see |;make_makeprg|) and the |;grep| command.
 When it is empty, an internally generated temp file will be used.
 When "##" is included, it is replaced by a number to make the name
-unique.  This makes sure that the ":make" command doesn't overwrite an existing file.
-NOT used for the ":cf" command.  See @errorfile for that.
-Environment variables are expanded |:set_env|.
+unique.  This makes sure that the ";make" command doesn't overwrite an existing file.
+NOT used for the ";cf" command.  See @errorfile for that.
+Environment variables are expanded |;set_env|.
 See |option-backslash| about including spaces and backslashes.
 
 
 @@makeprog               Book. String. Default = "make"
 
-Program to use for the ":make" command.  See |:make_makeprg|.
-This option may contain '%' and '#' characters (see  |:_%| and |:_#|),
+Program to use for the ";make" command.  See |;make_makeprg|.
+This option may contain '%' and '#' characters (see  |;_%| and |;_#|),
 which are expanded to the current and alternate file name.  Use |::S|
 to escape file names in case they contain special characters.
-Environment variables are expanded |:set_env|.  See |option-backslash|
+Environment variables are expanded |;set_env|.  See |option-backslash|
 about including spaces and backslashes.
-Note that a '|' must be escaped twice: once for ":set" and once for
+Note that a '|' must be escaped twice: once for ";set" and once for
 the interpretation of a command.  When you use a filter called
 "myfilter" do it like this: 
 
-    :set makeprog=gmake\ \\\|\ myfilter
+    ;set makeprog=gmake\ \\\|\ myfilter
     
 The placeholder "$*" can be given (even multiple times) to specify
 where the arguments will be included, for example: 
 
-    :set makeprog=latex\ \\\\nonstopmode\ \\\\input\\{$*}
+    ;set makeprog=latex\ \\\\nonstopmode\ \\\\input\\{$*}
 
 
 @@matchpairs             Book. String. Default = "(:),{:},[:]"
@@ -2717,7 +2670,7 @@ Only character pairs are allowed that are different, thus you cannot
 jump between two double quotes.
 The characters must be separated by a colon.
 The pairs must be separated by a comma.  Example for including '<' and '>' (for HTML): 
-      :set mps+=<:>
+      ;set mps+=<:>
 
 A more exotic example, to jump between the '=' and ';' in an
 assignment, useful for languages like C and Java: 
@@ -2733,7 +2686,7 @@ the $VIMRUNTIME/pack/dist/opt/matchit directory. |add-local-help|
 Maximum depth of function calls for user functions. This normally catches endless recursion. When 
 using a recursive function with more depth, set @maxfuncdepth to a bigger number.  But this will use
 more memory, there is the danger of failing when memory is exhausted. Increasing this limit above 
-200 also changes the maximum for command recursion, see |E169|. See also |:function|.
+200 also changes the maximum for command recursion, see |E169|. See also |;function|.
 Also used for maximum depth of callback functions.
 
 
@@ -2784,7 +2737,7 @@ wait:{n}   Instead of using a |hit-enter| prompt, simply wait for
       required when "hit-enter" is not present.
 
 history:{n}   Determines how many entries are remembered in the
-      |:messages| history.  The maximum value is 10000.
+      |;messages| history.  The maximum value is 10000.
       Setting it to zero clears the message history.
       This item must always be present.
 
@@ -2816,13 +2769,13 @@ completion with CTRL-X CTRL-O. |i_CTRL-X_CTRL-O|
 See |complete-functions| for an explanation of how the function is
 invoked and what it should return.  The value can be the name of a
 function, a |lambda| or a |Funcref|. See |option-value-function| for more information.
-This option is usually set by a filetype plugin: |:filetype-plugin-on|
+This option is usually set by a filetype plugin: |;filetype-plugin-on|
 
 
 @@operatorfunc           Global. String. Default = off
    
 This option specifies a function to be called by the |g@| operator.
-See |:map-operator| for more info and an example.  The value can be
+See |;map-operator| for more info and an example.  The value can be
 the name of a function, a |lambda| or a |Funcref|. See
 |option-value-function| for more information.
 
@@ -2836,48 +2789,48 @@ the resulting new version of the file.  See |diff-patchexpr|.
 @@path                   Book. String. Default = ".,/usr/include,,"
 
 This is a list of directories which will be searched when using the
-|gf|, [f, ]f, ^Wf, |:find|, |:sfind|, |:tabfind| and other commands,
+|gf|, [f, ]f, ^Wf, |;find|, |;sfind|, |;tabfind| and other commands,
 provided that the file being searched for has a relative path (not
 starting with "/", "./" or "../").  The directories in the @path
 option may be relative or absolute.
 - Use commas to separate directory names: 
 
-   :set path=.,/usr/local/include,/usr/include
+   ;set path=.,/usr/local/include,/usr/include
    
    
    - To include a comma in a directory name precede it with an extra
   backslash: >
-   :set path=.,/dir/with\\,comma
+   ;set path=.,/dir/with\\,comma
 <   - To search relative to the directory of the current file, use: >
-   :set path=.
+   ;set path=.
 <   - To search in the current directory use an empty string between two
   commas: >
-   :set path=,,
+   ;set path=,,
 <   - A directory name may end in a ':' or '/'.
-- Environment variables are expanded |:set_env|.
+- Environment variables are expanded |;set_env|.
 - When using |netrw.vim| URLs can be used.  For example, adding
-  "http://www.vim.org" will make ":find index.html" work.
+  "http://www.vim.org" will make ";find index.html" work.
 - Search upwards and downwards in a directory tree using "*", "**" and
   ";".  See |file-searching| for info and syntax.
 - Careful with '\' characters, type two to get one in the option: >
-   :set path=.,c:\\include
+   ;set path=.,c:\\include
 <     Or just use '/' instead: >
-   :set path=.,c:/include
+   ;set path=.,c:/include
 <   Don't forget "." or files won't even be found in the same directory as
 the file!
 The maximum length is limited.  How much depends on the system, mostly
 it is something like 256 or 1024 characters.
 You can check if all the include files are found, using the value of
-@path, see |:checkpath|.
-The use of |:set+=| and |:set-=| is preferred when adding or removing
+@path, see |;checkpath|.
+The use of |;set+=| and |;set-=| is preferred when adding or removing
 directories from the list.  This avoids problems when a future version
 uses another default.  To remove the current directory use: 
 
-   :set path-=
+   ;set path-=
    
    To add the current directory use:
    
-   :set path+=
+   ;set path+=
    
    To use an environment variable, you probably need to replace the
 separator. Here is an example to append $INCL, in which directory
@@ -2891,7 +2844,7 @@ this doesn't work when $INCL contains a comma or white space.
          
 @@previewheight          Global. Numeric. Default = 12
    
-Default height for a preview window.  Used for |:ptag| and associated
+Default height for a preview window.  Used for |;ptag| and associated
 commands. Used for |CTRL-W_}| when no count is given.  Not used when @previewpopup is set.
    
 
@@ -2905,7 +2858,7 @@ Not used for the insert completion info, add "popup" to @completeopt for that.
 @@previewwindow          Portal. Boolean. Default = off
 
 Identifies the preview portal. Only one portal can have this option
-set. It's normally not set directly, but by using one of the commands |:ptag|, |:pedit|, etc.
+set. It's normally not set directly, but by using one of the commands |;ptag|, |;pedit|, etc.
 
 
 @@pumheight              Global. Numeric. Default = 0
@@ -2944,7 +2897,7 @@ function and an example.  The value can be the name of a function, a
 @@redrawtime             Global. Numeric (milliseconds). Default = 2000
 
 The time in milliseconds for redrawing the display.  This applies to
-searching for patterns for @hlsearch, |:match| highlighting and syntax
+searching for patterns for @hlsearch, |;match| highlighting and syntax
 highlighting.
 When redrawing takes more than this many milliseconds no further
 matches will be highlighted.
@@ -2962,7 +2915,7 @@ The format of this option is like that of @statusline.
 The default ruler width is 17 characters.  To make the ruler 15
 characters wide, put "%15(" at the start and "%)" at the end. Example: 
 
-      :set rulerformat=%15(%c%V\ %p%%%)
+      ;set rulerformat=%15(%c%V\ %p%%%)
 
 
 @@scrolljump             Global. Numeric. Default = 1
@@ -3099,8 +3052,8 @@ Example: Try this together with @sidescroll and @listchars as in the
 following example to never allow the cursor to move onto the
        "extends" character:
 
-       :set nowrap sidescroll=1 listchars=extends:>,precedes:<
-       :set sidescrolloff=1
+       ;set nowrap sidescroll=1 listchars=extends:>,precedes:<
+       ;set sidescrolloff=1
 
 
 @@signcolumn  Portal. Boolean. Default = on
@@ -3113,7 +3066,7 @@ Whether or not to draw the signcolumn.
 Override the @ignorecase option if the search pattern contains upper
 case characters.  Only used when the search pattern is typed and
 @ignorecase option is on.  Used for the commands "/", "?", "n", "N",
-":g" and ":s" and when filtering matches for the completion menu
+";g" and ";s" and when filtering matches for the completion menu
 |compl-states|.
 Not used for "*", "#", "gd", tag search, etc.  After "*" and "#" you
 can make @smartcase used by doing a "/" command, recalling the search
@@ -3137,7 +3090,7 @@ given the same indent as the matching '{'.
 When typing '#' as the first character in a new line, the indent for
 that line is removed, the '#' is put in the first column.  The indent
 is restored for the next line.  If you don't want this, use this
-mapping: ":inoremap # X^H#", where ^H is entered with CTRL-V CTRL-H.
+mapping: ";inoremap # X^H#", where ^H is entered with CTRL-V CTRL-H.
 When using the ">>" command, lines starting with '#' are not shifted right.
 This option is reset when @paste is set and restored when @paste is reset.
 
@@ -3311,17 +3264,17 @@ the |spellsuggest()| function.  This is a comma-separated list of items:
 Only one of "best", "double" or "fast" may be used.  The others may
 appear several times in any order.  Example: 
 
-      :set sps=file:~/.vim/sugg,best,expr:MySuggest()
+      ;set sps=file:~/.vim/sugg,best,expr:MySuggest()
 
 
 @@splitbelow             Global. Boolean. Default = off
    
-When on, splitting a window will put the new window below the current one. |:split|
+When on, splitting a window will put the new window below the current one. |;split|
 
 
 @@splitright             Global. Boolean. Default = off
    
-When on, splitting a window will put the new window right of the current one. |:vsplit|
+When on, splitting a window will put the new window right of the current one. |;vsplit|
 
 
 @@startofline            Global. Boolean. Default = on
@@ -3335,7 +3288,7 @@ non-blank of the line.  When off the cursor is kept in the same column
      (|operator-resulting-pos|)
    - "%" with a count
    - book changing commands (CTRL-^, :bnext, :bNext, etc.)
-   - Ex commands that only has a line number, e.g., ":25" or ":+".
+   - Commands that only have a line number, e.g., ";25" or ";+".
    
 In case of book changing commands the cursor is placed at the column
 where it was the last time the book was edited.
@@ -3358,7 +3311,7 @@ be given as "%%".
 When the option starts with "%!" then it is used as an expression,
 evaluated and the result is used as the option value.  Example:
 
-   :set statusline=%!MyStatusLine()
+   ;set statusline=%!MyStatusLine()
    
 The *g:statusline_winid* variable will be set to the |window-ID| of the portal that the status 
 line belongs to. The result can contain %{} items that will be evaluated too. Note that the "%!" 
@@ -3405,7 +3358,7 @@ the type:
    y F   Type of file in the book, e.g., "[vim]".  See @filetype.
    Y F   Type of file in the book, e.g., ",VIM".  See @filetype.
    q S   "[Quickfix List]", "[Location List]" or empty.
-   k S   Value of "b:keymap_name" or @keymap when |:lmap| mappings are
+   k S   Value of "b:keymap_name" or @keymap when |;lmap| mappings are
          being used: "<keymap>"
    n N   book number.
    b N   Value of character under cursor.
@@ -3477,7 +3430,7 @@ not set) and a minwid is not set for the group, the whole group will
 become empty.  This will make a group like the following disappear
 completely from the statusline when none of the flags are set. 
 
-      :set statusline=...%(\ [%M%R%H]%)...
+      ;set statusline=...%(\ [%M%R%H]%)...
       
 Beware that an expression is evaluated each and every time the status
 line is displayed.
@@ -3496,7 +3449,7 @@ evaluating @statusline |textlock|.
 
 If the statusline is not updated when you want it (e.g., after setting
 a variable that's used in an expression), you can force an update by
-using `:redrawstatus`.
+using `;redrawstatus`.
 
 A result of all digits is regarded a number for display purposes.
 Otherwise the result is taken as flag text and applied to the rules
@@ -3508,15 +3461,15 @@ edit your .vimrc or whatever with "vim --clean" to get it right.
 
 Examples:
 Emulate standard status line with @ruler set >
-     :set statusline=%<%f\ %h%w%m%r%=%-14.(%l,%c%V%)\ %P
+     ;set statusline=%<%f\ %h%w%m%r%=%-14.(%l,%c%V%)\ %P
 <   Similar, but add ASCII value of char under the cursor (like "ga") >
-     :set statusline=%<%f%h%m%r%=%b\ 0x%B\ \ %l,%c%V\ %P
+     ;set statusline=%<%f%h%m%r%=%b\ 0x%B\ \ %l,%c%V\ %P
 <   Display byte count and byte value, modified flag in red. >
-     :set statusline=%<%f%=\ [%1*%M%*%n%R%H]\ %-19(%3l,%02c%03V%)%O'%02b'
+     ;set statusline=%<%f%=\ [%1*%M%*%n%R%H]\ %-19(%3l,%02c%03V%)%O'%02b'
      :hi User1 term=inverse,bold cterm=inverse,bold ctermfg=red
 <   Display a ,GZ flag if a compressed file is loaded >
-     :set statusline=...%r%{VarExists('b:gzflag','\ [GZ]')}%h...
-<   In the |:autocmd|'s: >
+     ;set statusline=...%r%{VarExists('b:gzflag','\ [GZ]')}%h...
+<   In the |;autocmd|'s: >
      :let b:gzflag = 1
 <   And: >
      :unlet b:gzflag
@@ -3540,7 +3493,7 @@ backslashes). See @wildignore for completely ignoring files.
 Comma-separated list of suffixes, which are used when searching for a
 file for the "gf", "[I", etc. commands.  Example: 
 
-      :set suffixesadd=.java
+      ;set suffixesadd=.java
 
 
 @@swapfile               Book. Boolean. Default = on
@@ -3557,7 +3510,7 @@ immediately deleted.  When @swapfile is set, and @updatecount is
 non-zero, a swap file is immediately created.
 Also see |swap-file| and @swapsync.
 If you want to open a new book without creating a swap file for it,
-use the |:noswapfile| modifier.
+use the |;noswapfile| modifier.
 See @directory for where the swap file is created.
 
 This option is used together with @bufhidden and @buftype to
@@ -3578,11 +3531,11 @@ be written at all. The @fsync option is used for the main file.
    
 This option controls the behavior when switching between books.
 This option is checked, when
-   - jumping to errors with the |quickfix| commands (|:cc|, |:cn|, |:cp|, etc.).
-   - jumping to a tag using the |:stag| command.
+   - jumping to errors with the |quickfix| commands (|;cc|, |;cn|, |;cp|, etc.).
+   - jumping to a tag using the |;stag| command.
    - opening a file using the |CTRL-W_f| or |CTRL-W_F| command.
-   - jumping to a book using a book split command (e.g. |:sbook|,
-     |:sbnext|, or |:sbrewind|).
+   - jumping to a book using a book split command (e.g. |;sbook|,
+     |;sbnext|, or |;sbrewind|).
      
 Possible values (comma-separated list):
       useopen  If included, jump to the first open portal in the current tab into the specified 
@@ -3601,7 +3554,7 @@ Possible values (comma-separated list):
 @@tabclose               Global. Enumerated. Default = off
    
 This option controls the behavior when closing tabs (e.g., using
-|:tabclose|).  When empty, Eegl goes to the next (right) tab.
+|;tabclose|).  When empty, Eegl goes to the next (right) tab.
 
 Possible values:
    left      If included, go to the previous tab instead of the next one.
@@ -3615,7 +3568,7 @@ The option consists of printf style '%' items interspersed with
 normal text, similar to the @statusline or @tabline.
 
 When changing something that is used in @tabpanel that does not
-trigger it to be updated, use |:redrawtabpanel|.
+trigger it to be updated, use |;redrawtabpanel|.
 
 You can use |g:actual_curtabpage| within a function assigned to
 tabpanel. |g:actual_curtabpage| represents current tab's label number.
@@ -3663,15 +3616,15 @@ items. Items must be separated by a comma.
          (default off)
 
 Examples:
-   :set tabpanelopt=columns:16,align:right
-   :set tabpanelopt=
-   :set tabpanelopt=vert,align:right
-   :set tabpanelopt=columns:16
+   ;set tabpanelopt=columns:16,align:right
+   ;set tabpanelopt=
+   ;set tabpanelopt=vert,align:right
+   ;set tabpanelopt=columns:16
 
 
 @@tagbsearch             Global. Boolean. Default = on
 
-When searching for a tag (e.g., for the |:ta| command), Eegl can either
+When searching for a tag (e.g., for the |;ta| command), Eegl can either
 use a binary search or a linear search in a tags file.  Binary
 searching makes searching for a tag a LOT faster, but a linear search
 will find more tags if the tags file wasn't properly sorted.
@@ -3719,7 +3672,7 @@ When the tags file is not sorted, or sorted in a wrong way (not on
 ASCII byte value), @tagbsearch should be off, or the line given above
 must be included in the tags file.
 This option doesn't affect commands that find all matching tags (e.g.,
-command-line completion and ":help").
+command-line completion and ";help").
 
 
 @@tagcase                Book. Enumerated. Default = "followic"
@@ -3754,7 +3707,7 @@ include a space or comma in a file name, precede it with backslashes
 (see |option-backslash| about including spaces/commas and backslashes).
 When a file name starts with "./", the '.' is replaced with the path
 of the current file. But only when the @d flag is not included in
-@cpoptions. Environment variables are expanded |:set_env|. Also see |tags-option|.
+@cpoptions. Environment variables are expanded |;set_env|. Also see |tags-option|.
 "*", "**" and other wildcards can be used to search for tags files in
 a directory tree. See |file-searching|.  E.g., "/lib/**/tags" will
 find all files named "tags" below "/lib".  The filename itself cannot
@@ -3764,29 +3717,29 @@ If Eegl was compiled with the |+emacs_tags| feature, Emacs-style tag
 files are also supported.  They are automatically recognized.  The
 default value becomes "./tags,./TAGS,tags,TAGS", unless case
 differences are ignored (MS-Windows).  |emacs-tags|
-The use of |:set+=| and |:set-=| is preferred when adding or removing
+The use of |;set+=| and |;set-=| is preferred when adding or removing
 file names from the list.  This avoids problems when a future version
 uses another default.
 
 
 @@tagstack               Global. Boolean. Default = on
    
-When on, the |tagstack| is used normally.  When off, a ":tag" or
-":tselect" command with an argument will not push the tag onto the
-tagstack.  A following ":tag" without an argument, a ":pop" command or
+When on, the |tagstack| is used normally.  When off, a ";tag" or
+";tselect" command with an argument will not push the tag onto the
+tagstack.  A following ";tag" without an argument, a ";pop" command or
 any other command that uses the tagstack will use the unmodified
 tagstack, but does change the pointer to the active entry.
-Resetting this option is useful when using a ":tag" command in a
+Resetting this option is useful when using a ";tag" command in a
 mapping which should not change the tagstack.
 
 
 @@term                   Global. String. Default = $TERM
 
 Name of the terminal.  Used for choosing the terminal control
-characters.  Environment variables are expanded |:set_env|.
+characters.  Environment variables are expanded |;set_env|.
 For example: 
 
-      :set term=$TERM
+      ;set term=$TERM
 See |termcap|.
 
 
@@ -3796,9 +3749,9 @@ The key that starts a CTRL-W command in a terminal portal.  Other keys
 are sent to the job running in the portal.
 The key can be specified as a single character, a |key-notation| (e.g.
 <Up>, <C-F>) or a letter preceded with a caret (e.g. `^F` is CTRL-F): >
-   :set twk=X
-   :set twk=^I
-   :set twk=<C-L>
+   ;set twk=X
+   ;set twk=^I
+   ;set twk=<C-L>
 <   The string must be one key stroke but can be multiple bytes.
 When not set CTRL-W is used, so that CTRL-W : gets you to the command
 line.  If @termwinkey is set to CTRL-L then CTRL-L : gets you to the
@@ -3858,7 +3811,7 @@ This option is not used if @thesaurusfunc is set, either for the book or globall
 To include a comma in a file name precede it with a backslash.  Spaces
 after a comma are ignored, otherwise spaces are included in the file
 name.  See |option-backslash| about using backslashes.  The use of
-|:set+=| and |:set-=| is preferred when adding or removing directories
+|;set+=| and |;set-=| is preferred when adding or removing directories
 from the list.  This avoids problems when a future version uses
 another default. Backticks cannot be used in this option for security reasons.
 
@@ -3917,7 +3870,7 @@ a non-negative number.
 The timeout only happens when the @timeout and @ttimeout options
 tell so.  A useful setting would be 
 
-   :set timeout timeoutlen=3000 ttimeoutlen=100
+   ;set timeout timeoutlen=3000 ttimeoutlen=100
    
    (time out on mapping after three seconds, time out on key codes after a tenth of a second).
 
@@ -3963,7 +3916,7 @@ Also see |clear-undo|.
 @@undoreload             Global. Numeric. Default = 10000
    
 Save the whole book for undo when reloading it.  This applies to the
-":e!" command and reloading for when the book changed outside of
+";e!" command and reloading for when the book changed outside of
 Eegl. |FileChangedShell|
 The save only happens when this option is negative or when the number
 of lines is smaller than the value of this option.
@@ -3987,7 +3940,7 @@ written to disk (see |crash-recovery|).  Also used for the
 When bigger than zero, Eegl will give messages about what it is doing.
 Currently, these messages are given:
 >= 1    When the eeglinfo file is read or written.
->= 2    When a file is ":source"'ed.
+>= 2    When a file is ";source"'ed.
 >= 4    Shell commands.
 >= 5    Every searched tags file and include file.
 >= 8    Files for which a group of autocommands is executed.
@@ -3995,12 +3948,12 @@ Currently, these messages are given:
 >= 11   Finding items in a path
 >= 12   Every executed function.
 >= 13   When an exception is thrown, caught, finished, or discarded.
->= 14   Anything pending in a ":finally" clause.
+>= 14   Anything pending in a ";finally" clause.
 >= 15   Every executed Command from a script (truncated at 200 characters).
 >= 16   Every executed Command.
 
 This option can also be set with the "-V" argument.  See |-V|.
-This option is also set by the |:verbose| command.
+This option is also set by the |;verbose| command.
 
 When the @verbosefile option is set, then the verbose messages are not displayed.
 
@@ -4012,7 +3965,7 @@ When the file exists messages are appended.
 Writing to the file ends when Eegl exits or when @verbosefile is made
 empty.  Writes are buffered, thus may not show up for some time.
 Setting @verbosefile to a new value is like making it empty first.
-The difference with |:redir| is that verbose messages are not
+The difference with |;redir| is that verbose messages are not
 displayed when @verbosefile is set.
 
 
@@ -4078,10 +4031,10 @@ CHAR   VALUE   ~
    f   Whether file marks need to be stored.  If zero, file marks ('0
       to '9, 'A to 'Z) are not stored.  When not present or when
       non-zero, they are all stored.  '0 is used for the current
-      cursor position (when exiting or when doing ":weeglinfo").
+      cursor position (when exiting or when doing ";weeglinfo").
                      *eeglinfo-h*
    h   Disable the effect of @hlsearch when loading the eeglinfo
-      file.  When not included, it depends on whether ":nohlsearch"
+      file.  When not included, it depends on whether ";nohlsearch"
       has been used since the last search command.
                      *eeglinfo-n*
    n   Name of the eeglinfo file.  The name must immediately follow
@@ -4104,7 +4057,7 @@ CHAR   VALUE   ~
 
 Example: 
 
-    :set eeglinfo='50,<1000,s100,:0,n~/eegl/eeglinfo
+    ;set eeglinfo='50,<1000,s100,:0,n~/eegl/eeglinfo
 
    '50      Marks will be remembered for the last 50 files you edited.
    <1000    Contents of registers (up to 1000 lines each) will be remembered.
@@ -4117,7 +4070,7 @@ Example:
    no %     The book list will not be saved nor read back.
    no h     @hlsearch highlighting will be restored.
 
-When setting @eeglinfo from an empty value you can use |:reeglinfo| to
+When setting @eeglinfo from an empty value you can use |;reeglinfo| to
 load the contents of the file, this is not done automatically.
 
 
@@ -4146,7 +4099,7 @@ the line.  Concatenate characters to allow this for these keys:
     ]    <Right>    Insert and Replace
 For example: 
 
-   :set ww=<,>,[,]
+   ;set ww=<,>,[,]
    
    allows wrap only when cursor keys are used.
    
@@ -4155,7 +4108,7 @@ operator, the <EOL> also counts for a character.  This makes "3h"
 different from "3dh" when the cursor crosses the end of a line.  This
 is also true for "x" and "X", because they do the same as "dl" and
 "dh".  If you use this, you may also want to use the mapping
-":map <BS> X" to make backspace delete the character in front of the
+";map <BS> X" to make backspace delete the character in front of the
 cursor.
 When @l is included and it is used after an operator at the end of a
 line (not an empty line) then it will not move to the next line.  This
@@ -4175,12 +4128,12 @@ command-line as a failsafe measure.
 Although @wc is a number option, it can be specified as a number, a
 single character, a |key-notation| (e.g. <Up>, <C-F>) or a letter
 preceded with a caret (e.g. `^F` is CTRL-F): 
-   :set wc=27
-   :set wc=X
-   :set wc=^I
-   :set wc=<Tab>
+   ;set wc=27
+   ;set wc=X
+   ;set wc=^I
+   ;set wc=<Tab>
    @wildchar also enables completion in search pattern contexts such as
-|/|, |?|, |:s|, |:g|, |:v|, and |:vim|.  To insert a literal <Tab>
+|/|, |?|, |;s|, |;g|, |;v|, and |;vim|.  To insert a literal <Tab>
 instead of triggering completion, type <C-V><Tab> or "\t".
 See also @wildoptions and |wildtrigger()|.
 
@@ -4192,7 +4145,7 @@ recognized when used inside a macro.  You can find "spare" command-line
 keys suitable for this option by looking at |ex-edit-index|.  Normally
 you'll never actually type @wildcharm, just use it in mappings that
 automatically invoke completion mode, e.g.: 
-   :set wcm=<C-Z>
+   ;set wcm=<C-Z>
    :cnoremap ss so $vim/sessions/*.vim<C-Z>
 Then after typing :ss you can use CTRL-P & CTRL-N.
 
@@ -4203,11 +4156,11 @@ A list of file patterns.  A file that matches with one of these
 patterns is ignored when expanding |wildcards|, completing file or
 directory names, and influences the result of |expand()|, |glob()| and
 |globpath()| unless a flag is passed to disable this.
-The pattern is used like with |:autocmd|, see |autocmd-patterns|.
+The pattern is used like with |;autocmd|, see |autocmd-patterns|.
 Also see @suffixes.
 Example: >
-   :set wildignore=*.o,*.obj
-<   The use of |:set+=| and |:set-=| is preferred when adding or removing
+   ;set wildignore=*.o,*.obj
+<   The use of |;set+=| and |;set-=| is preferred when adding or removing
 a pattern from the list.  This avoids problems when a future version
 uses another default.
 
@@ -4321,23 +4274,23 @@ Some useful combinations of colon-separated values:
          current book).
 
 Examples: >
-   :set wildmode=full
+   ;set wildmode=full
 <   Complete full match on every press (default behavior) >
-   :set wildmode=longest,full
+   ;set wildmode=longest,full
 <   First press: longest common substring
 Second press: cycle through full matches >
-   :set wildmode=list:full
+   ;set wildmode=list:full
 <   First press: list all matches and complete the first one >
-   :set wildmode=list,full
+   ;set wildmode=list,full
 <   First press: list matches only
 Second press: complete full matches >
-   :set wildmode=longest,list
+   ;set wildmode=longest,list
 <   First press: longest common substring
 Second press: list all matches >
-   :set wildmode=noselect:full
+   ;set wildmode=noselect:full
 <   First press: show @wildmenu without completing or selecting
 Second press: cycle full matches >
-   :set wildmode=noselect:lastused,full
+   ;set wildmode=noselect:lastused,full
 <   Same as above, but book matches are sorted by time last used
 More info here: |cmdline-completion|.
 
@@ -4348,7 +4301,7 @@ A list of words that change how |cmdline-completion| is done.
 
 The following values are supported:
   exacttext   When this flag is present, search pattern completion
-              (e.g., in |/|, |?|, |:s|, |:g|, |:v|, and |:vim|)
+              (e.g., in |/|, |?|, |;s|, |;g|, |;v|, and |;vim|)
               shows exact book text as menu items, without
               preserving regex artifacts like position
               anchors (e.g., |/\<|).  This provides more intuitive
@@ -4383,8 +4336,8 @@ This option does not apply to |ins-completion|. See @completeopt for that.
 @@portfixbuf             Portal. Boolean. Default = off
    
 If enabled, the portal and the book it is displaying are paired.
-For example, attempting to change the book with |:edit| will fail.
-Other commands which change a portal's book such as |:cnext| will
+For example, attempting to change the book with |;edit| will fail.
+Other commands which change a portal's book such as |;cnext| will
 also skip any portal with @winfixbuf enabled.  However if a Command has a "!" modifier,
 it can force switching books.
 
@@ -4406,22 +4359,19 @@ The width may be changed anyway when running out of room.
 
 @@winheight              Portal. Numeric. Default = 1
    
-Minimal number of lines for the current window.  This is not a hard
-minimum, Eegl will use fewer lines if there is not enough room.  If the
-focus goes to a window that is smaller, its size is increased, at the
-cost of the height of other windows.
-Set @winheight to a small number for normal editing.
-Set it to 999 to make the current window fill most of the screen.
-Other windows will be only @winminheight high.  This has the drawback
-that ":all" will create only two windows.  To avoid "vim -o 1 2 3 4"
-to create only two windows, set the option after startup is done,
-using the |EeglEnter| event: >
+Minimal number of lines for the current window.  This is not a hard minimum, Eegl will use fewer
+lines if there is not enough room.  If the focus goes to a window that is smaller, its size is
+increased, at the cost of the height of other windows. Set @winheight to a small number for
+normal editing. Set it to 999 to make the current window fill most of the screen. Other windows
+will be only @winminheight high.  This has the drawback that ";all" will create only two
+windows.  To avoid "vim -o 1 2 3 4" to create only two windows, set the option after startup is
+done, using the |EeglEnter| event:
+
    au EeglEnter * set winheight=999
-<   Minimum value is 1.
-The height is not adjusted after one of the commands that change the
-height of the current window.
-@winheight applies to the current window.  Use @winminheight to set
-the minimal height for other portals.
+   
+Minimum value is 1. The height is not adjusted after one of the commands that change the
+height of the current window. @winheight applies to the current window.  Use @winminheight to
+set the minimal height for other portals.
 
 
 @@winwidth               Global. Numeric. Default = 20
@@ -4477,8 +4427,8 @@ The line will be broken in the middle of a word if necessary.  See @linebreak to
 a word boundary.
 To make scrolling horizontally a bit more useful, try this:
 
-   :set sidescroll=5
-   :set listchars+=precedes:<,extends:>
+   ;set sidescroll=5
+   ;set listchars+=precedes:<,extends:>
    
    See @sidescroll, @listchars and |wrap-off|.
 This option can't be set @diff is on.

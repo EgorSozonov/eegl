@@ -14498,6 +14498,17 @@ get_leader_len(CS line, Byte** flags, int backward, int include_space) {
    return result;
 }
 
+//flags for openLine()
+pub
+#define OPENLINE_DELSPACES    0x01 //delete spaces after cursor
+#define OPENLINE_DO_COM       0x02 //format comments
+#define OPENLINE_KEEPTRAIL    0x04 //keep trailing spaces
+#define OPENLINE_MARKFIX      0x08 //fix mark positions
+#define OPENLINE_COM_LIST     0x10 //format comments with list/2nd line indent
+#define OPENLINE_FORMAT       0x20 //formatting long comment
+#define OPENLINE_FORCE_INDENT 0x40 //use second_line_indent without indent logic
+
+
 //openLine: Open a new line below the current line with an "Enter" in insert mode
 //
 //For MODE_VREPLACE state, we only add a new line when we get to the end of
@@ -15283,8 +15294,8 @@ op_shift(Operator *oper, int curs_top, int amount) {
       ei (oper->block_mode)
          shift_block(oper, amount);
       ei (first_char != '#' || !preprocs_left())
-         //Move the line right if it doesn't start with '#', 'smartindent'
-         //isn't set or 'cindent' isn't set or '#' isn't in 'cino'.
+         //Move the line right if it doesn't start with '#', @smartindent
+         //isn't set or @indentexpr isn't set
          shift_line(oper->opTy == OP_LSHIFT, true, amount, false);
       ++curPor->cursor.lnum;
    }
@@ -19668,18 +19679,11 @@ fixthisline(int (*get_the_indent)(void)) {
       didAindentG = true;   //delete the indent if the line stays empty
 }
 
-
-//true if current book has expression-based indenting.
-pub Boole
-doIsIndentationExpressionBased(void) {
-   return curBook->o.indentExpr != null;
-}
-
 //Fix indent for 'expr' indentation
 pub void
 fix_indent(void) {
-   if (doIsIndentationExpressionBased())
-      do_expr_indent();
+   if (curBook->o.indentExpr)
+      doIndentExpr();
 }
 
 pub void
@@ -19800,8 +19804,8 @@ find_start_comment(int ind_maxcomment)   {//XXX
 
 //Do expression indenting on the current line.
 pub void
-do_expr_indent(void) {
-   if (*curBook->o.indentExpr != ZERO)
+doIndentExpr(void) {
+   if (curBook->o.indentExpr[0] != ZERO)
       fixthisline(&get_expr_indent);
 }
 

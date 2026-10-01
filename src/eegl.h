@@ -724,29 +724,28 @@ typedef struct tm Tm;
 #define WILD_FUNC_TRIGGER  0x10000 //called from wildtrigger()
 
 //Flags for expand_wildcards()
-#define EW_DIR          0x01  //include directory names
-#define EW_FILE         0x02  //include file names
-#define EW_NOTFOUND     0x04  //include not found names
-#define EW_ADDSLASH     0x08  //append slash to directory name
-#define EW_KEEPALL      0x10  //keep all matches
-#define EW_SILENT       0x20  //don't print "1 returned" from shell
-#define EW_EXEC         0x40  //executable files
-#define EW_PATH         0x80  //search in 'path' too
-#define EW_ICASE       0x100  //ignore case
-#define EW_NOERROR     0x200  //no error for bad regexp
-#define EW_NOTWILD     0x400  //add match with literal name if exists
-#define EW_KEEPDOLLAR  0x800  //do not escape $, $var is expanded
+#define EW_DIR         0x01  //include directory names
+#define EW_FILE        0x02  //include file names
+#define EW_NOTFOUND    0x04  //include not found names
+#define EW_ADDSLASH    0x08  //append slash to directory name
+#define EW_KEEPALL     0x10  //keep all matches
+#define EW_SILENT      0x20  //don't print "1 returned" from shell
+#define EW_EXEC        0x40  //executable files
+#define EW_PATH        0x80  //search in 'path' too
+#define EW_ICASE      0x100  //ignore case
+#define EW_NOERROR    0x200  //no error for bad regexp
+#define EW_NOTWILD    0x400  //add match with literal name if exists
+#define EW_KEEPDOLLAR 0x800  //do not escape $, $var is expanded
 //Note: mostly EW_NOTFOUND and EW_SILENT are mutually exclusive: EW_NOTFOUND
 //is used when executing commands and EW_SILENT for interactive expanding.
-#define EW_ALLLINKS   0x1000  //also links not pointing to existing file
-#define EW_SHELLCMD   0x2000  //called from expand_shellcmd(), don't check if executable in $PATH
-#define EW_DODOT      0x4000  //also files starting with a dot
-#define EW_EMPTYOK    0x8000  //no matches is not an error
-#define EW_NOTENV    0x10000  //do not expand environment variables
-#define EW_CDPATH    0x20000  //search in 'cdpath' too
+#define EW_ALLLINKS  0x1000  //also links not pointing to existing file
+#define EW_SHELLCMD  0x2000  //called from expand_shellcmd(), don't check if executable in $PATH
+#define EW_DODOT     0x4000  //also files starting with a dot
+#define EW_EMPTYOK   0x8000  //no matches is not an error
+#define EW_NOTENV   0x10000  //do not expand environment variables
+#define EW_CDPATH   0x20000  //search in 'cdpath' too
 
 #define COLUMNS_WITHOUT_TPL() (visibleColsG - tabpanel_width())
-#define TPL_LCOL()  tabpanel_leftcol()
 
 #define P_ENDCOL(wp)  ((wp)->windowCol + (wp)->width)
 
@@ -934,15 +933,6 @@ typedef struct tm Tm;
 #define SIN_CHANGED  1   //call changed_bytes() when line changed
 #define SIN_INSERT   2   //insert indent before existing text
 #define SIN_UNDO     4   //save line for undo before changing it
-
-//flags for openLine()
-#define OPENLINE_DELSPACES    0x01 //delete spaces after cursor
-#define OPENLINE_DO_COM       0x02 //format comments
-#define OPENLINE_KEEPTRAIL    0x04 //keep trailing spaces
-#define OPENLINE_MARKFIX      0x08 //fix mark positions
-#define OPENLINE_COM_LIST     0x10 //format comments with list/2nd line indent
-#define OPENLINE_FORMAT       0x20 //formatting long comment
-#define OPENLINE_FORCE_INDENT 0x40 //use second_line_indent without indent logic
 
 //Values for do_tag().
 #define DT_TAG     1   //jump to newer position or same tag again
@@ -3380,15 +3370,6 @@ typedef struct {
    EeSetItem* dit_hi;
 } DictIterator;
 
-//values for b_syn_spell: what to do with toplevel text
-#define SYNSPL_DEFAULT 0   //spell check if @Spell not defined
-#define SYNSPL_TOP     1   //spell check toplevel text
-#define SYNSPL_NOTOP   2   //don't spell check toplevel text
-
-//values for b_syn_foldlevel: how to compute foldlevel on a line
-#define SYNFLD_START   0   //use level of item at start of line
-#define SYNFLD_MINIMUM   1   //use lowest local minimum level on line
-
 declStruct(LocationStack);
 
 declStruct(Timer);
@@ -3405,26 +3386,6 @@ struct Timer {
    Callback callback;
    int tr_emsg_count;
 };
-
-//}}}
-//{{{ Popups
-
-typedef enum {
-   POPPOS_BOTLEFT,
-   POPPOS_TOPLEFT,
-   POPPOS_BOTRIGHT,
-   POPPOS_TOPRIGHT,
-   POPPOS_CENTER,
-   POPPOS_BOTTOM,   //bottom of popup just above the command line
-   POPPOS_NONE
-} PopupPosition;
-
-typedef enum {
-   POPCLOSE_NONE,
-   POPCLOSE_BUTTON,
-   POPCLOSE_CLICK
-} PopupClosing;
-
 
 //}}}
 //{{{Book
@@ -3830,6 +3791,22 @@ struct Frame { //:Frame
 
 //}}}
 //{{{portal
+
+typedef enum {
+   POPPOS_BOTLEFT,
+   POPPOS_TOPLEFT,
+   POPPOS_BOTRIGHT,
+   POPPOS_TOPRIGHT,
+   POPPOS_CENTER,
+   POPPOS_BOTTOM,   //bottom of popup just above the command line
+   POPPOS_NONE
+} PopupPosition;
+
+typedef enum {
+   POPCLOSE_NONE,
+   POPCLOSE_BUTTON,
+   POPCLOSE_CLICK
+} PopupClosing;
 
 //Structure to store last cursor position and topline.  Used by check_lnums() and reset_lnums().
 typedef struct {
@@ -4520,12 +4497,6 @@ typedef enum {
 #define PROF_YES    1 //profiling busy
 #define PROF_PAUSED 2 //profiling paused
 
-//Codes for mouse button events in lower three bits:
-#define MOUSE_LEFT    0x00
-#define MOUSE_MIDDLE  0x01
-#define MOUSE_RIGHT   0x02
-#define MOUSE_RELEASE 0x03
-
 #define MOUSE_X1  0x300 //Mouse-button X1 (6th)
 #define MOUSE_X2  0x400 //Mouse-button X2
 
@@ -4547,12 +4518,12 @@ typedef enum {
 #define VVAL_TRUE   1L   //VAR_BOOL
 
 //There are five history tables:
-#define HIST_CMD     0   //semicolon commands
-#define HIST_SEARCH  1   //search commands
-#define HIST_EXPR    2   //expressions (from entering = register)
-#define HIST_INPUT   3   //input() lines
-#define HIST_DEBUG   4   //debug commands
-#define HIST_COUNT   5   //number of history tables
+#define HIST_CMD    0 //semicolon commands
+#define HIST_SEARCH 1 //search commands
+#define HIST_EXPR   2 //expressions (from entering = register)
+#define HIST_INPUT  3 //input() lines
+#define HIST_DEBUG  4 //debug commands
+#define HIST_COUNT  5 //number of history tables
 
 
 #if (defined(__GNUC__) || defined(__clang__))
@@ -4574,9 +4545,8 @@ typedef enum {
 
 //Mode for bracketed_paste().
 typedef enum {
-   PASTE_INSERT,   //insert mode
+   PASTE_INSERT,    //insert mode
    PASTE_CMDLINE,   //command line
-   PASTE_EX,      //ex mode line
    PASTE_ONE_CHAR   //return first character
 } PasteMode;
 
@@ -4749,12 +4719,10 @@ int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
    ATTRIBUTE_FORMAT_PRINTF(3, 0);
 #define eeVarPrintf(a, b, fmt, ...) eeVarPrintf0((char*)a, b, (char const*)fmt, ##__VA_ARGS__)
 
-
 //Not generated automatically so that we can add an extra attribute.
 void ch_log(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 void lo(const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(1, 2);
 void ch_error(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
-
 
 //}}}
 
@@ -4913,10 +4881,10 @@ EXTERN ArrayList exestack INIT5(0, 0, sizeof(Estack), 50, NULL);
 //Script context being sourced or was sourced to define the current function.
 EXTERN ScriptPos scriptPosG INIT3(0, 0, 0);
 
-EXTERN int   debug_break_level INIT(= -1);   //break below this level
-EXTERN int   debug_did_msg INIT(= false);   //did "debug mode" message
-EXTERN int   debug_tick INIT(= 0);      //breakpoint change count
-EXTERN int   debug_backtrace_level INIT(= 0); //breakpoint backtrace level
+EXTERN int debug_break_level INIT(= -1);   //break below this level
+EXTERN int debug_did_msg INIT(= false);   //did "debug mode" message
+EXTERN int debug_tick INIT(= 0);      //breakpoint change count
+EXTERN int debug_backtrace_level INIT(= 0); //breakpoint backtrace level
 EXTERN ArrayList script_items INIT5(0, 0, sizeof(ScriptItem *), 20, NULL);
 # define SCRIPT_ITEM(id)    (((ScriptItem **)script_items.c)[(id) - 1])
 # define SCRIPT_ID_VALID(id)    ((id) > 0 && (id) <= script_items.len)
@@ -4937,10 +4905,6 @@ EXTERN int did_throw INIT(= false);
 //need_rethrow: set to true when a throw that cannot be handled in do_cmdline()
 //must be propagated to the cstack of the previously called do_cmdline().
 EXTERN int need_rethrow INIT(= false);
-
-//check_cstack: set to true when a ":finish" or ":return" that cannot be
-//handled in do_cmdline() must be propagated to the cstack of the previously called do_cmdline().
-EXTERN int check_cstack INIT(= false);
 
 //Number of nested try conditionals (across function calls and ":source" commands).
 EXTERN int trylevel INIT(= 0);
@@ -4971,8 +4935,8 @@ EXTERN Boole suppress_errthrow INIT(= false);
 //caught stack.
 EXTERN Exception* caught_stack INIT(= NULL);
 
-//Garbage collection can only take place when we are sure there are no Lists or Dictionaries being 
-//used internally. This is flagged with "may_garbage_collect" when we are at the toplevel.
+//Garbage collection can only take place when we are sure there are no Lists or Dictionaries 
+//being used internally. This is flagged with "may_garbage_collect" when we are at the toplevel.
 //"want_garbage_collect" is set by the garbagecollect() function, which means
 //we do garbage collection before waiting for a char at the toplevel.
 //"garbage_collect_at_exit" indicates garbagecollect(1) was called.
@@ -8249,6 +8213,8 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 #define eeRealloc(ptr, size) realloc((ptr), (size))
 #endif
 
+//{{{Constants
+
 //Return byte length of character that starts with byte "b".
 //Return 1 for a single-byte character.
 //MB_BYTE2LEN_CHECK() can be used to count a special key as one byte.
@@ -8376,3 +8342,4 @@ void __attribute__((noinline)) __bp(); //breakpoints for debugger
 //RUNTIME_DIRNAME Generic name for the directory of the runtime files.
 #define RUNTIME_DIRNAME "runtime"
 
+//}}}
