@@ -222,29 +222,19 @@ private CS string_tv2string(Var* tv, Byte** tofree, int echo_style, int composit
 private CS func_tv2string(Var* tv, Byte** tofree, int echo_style);
 private CS method_tv2string(Var* tv, Byte** tofree, int echo_style);
 private CS partial_tv2string(
-    Var   *tv,
-    Byte   **tofree,
-    Byte   *numbuf,
-    int      copyID
+    Var* tv,
+    Byte** tofree,
+    Byte* numbuf,
+    Unt copyID
 );
-private CS list_tv2string(
-   Var   *tv,
-   Byte   **tofree,
-   int      copyID,
-   int      restore_copyID
-);
+private CS list_tv2string(Var* tv, Byte** tofree, Unt copyID, Unt restore_copyID);
 private CS dict_tv2string(
-   Var   *tv,
-   Byte   **tofree,
-   int      copyID,
-   int      restore_copyID)
-;
-private CS jobchan_tv2string(
    Var* tv,
-   OUT Byte** tofree,
-   OUT CS numBuf,
-   int composite_val
+   Byte** tofree,
+   Unt copyID,
+   int restore_copyID
 );
+private CS jobchan_tv2string(Var* tv, OUT Byte** tofree, OUT CS numBuf, int composite_val);
 private int buf_byteidx_to_charidx(Book *book, int lnum, int byteidx);
 private Text expandCurlyBraces(Text braces, Text outer);
 private CS eval_next_line(CS arg, EvalCtx* evalarg);
@@ -359,8 +349,6 @@ private void f_col(Arr(Var) argvars, Var* returnVar);
 private void f_confirm(Arr(Var) argvars, Var* returnVar);
 private void f_copy(Arr(Var) argvars, Var* returnVar);
 private void set_cursorpos(Var* argvars, OUT Var* returnVar, int charcol);
-private void f_cursor(Var* argvars, Var* returnVar);
-private void f_deepcopy(Var* argvars, Var* returnVar);
 private void f_did_filetype(Var*, Var* returnVar);
 private void f_echoraw(Var* argvars, Var*);
 private void f_empty(Var* argvars, Var* returnVar);
@@ -378,7 +366,6 @@ private void f_fnameescape(Arr(Var) argvars, Var* returnVar);
 private void common_function(Arr(Var) argvars, Var* returnVar, int is_funcref);
 private void f_funcref(Var* argvars, Var* returnVar);
 private void f_function(Var* argvars, Var* returnVar);
-private void f_garbagecollect(Var* argvars, Var*);
 private void f_get(Var* argvars, Var*  returnVar);
 private void f_getcellpixels(Var*, Var* returnVar);
 private void f_getchangelist(Var* argvars, Var* returnVar);
@@ -508,7 +495,6 @@ private void f_wildmenumode(Arr(Var), Var* returnVar);
 private void f_wordcount(Arr(Var), Var* returnVar);
 private void f_xor(Arr(Var) argvars, Var* returnVar);
 private void free_msglist(MsgList* l);
-private void discard_exception(Exception *excp, int was_finished);
 private void report_pending(int action, int pending, void* value);
 private void report_resume_pending(int pending, void* value);
 private void report_discard_pending(int pending, void* value);
@@ -642,10 +628,7 @@ eval_clear(void) {
    //autoloaded script names
    free_autoload_scriptnames();
 
-   //unreferenced lists and dicts
-   (void)garbage_collect(false);
-
-   //functions not garbage collected
+   //functions
    free_all_functions();
 }
 #endif
@@ -1018,14 +1001,11 @@ eval_to_string(CS arg, Boole join_list, Boole use_simple_function) {
 pub CS
 eval_to_string_safe(CS arg, Boole use_simple_function) {
    FnCallEntry funccal_entry;
-   int save_garbage = may_garbage_collect;
 
    save_funccal(&funccal_entry);
    ++textlock;
-   may_garbage_collect = false;
    CS retval = eval_to_string(arg, false, use_simple_function);
    --textlock;
-   may_garbage_collect = save_garbage;
    restore_funccal();
    return retval;
 }
@@ -4268,10 +4248,10 @@ method_tv2string(Var* tv, Byte** tofree, int echo_style) {
 //"numbuf" is used for a number.  May return NULL.
 private CS
 partial_tv2string(
-    Var   *tv,
-    Byte   **tofree,
-    Byte   *numbuf,
-    int      copyID
+    Var* tv,
+    Byte** tofree,
+    Byte* numbuf,
+    Unt copyID
 ) {
    Byte   *r = NULL;
    PartiallyApplied   *pt;
@@ -4325,15 +4305,10 @@ partial_tv2string(
 //to it, otherwise NULL. When "copyID" is not zero replace recursive lists with "...". When
 //"restore_copyID" is false, repeated items in lists are replaced with "...". May return NULL.
 private CS
-list_tv2string(
-   Var   *tv,
-   Byte   **tofree,
-   int      copyID,
-   int      restore_copyID
-) {
+list_tv2string(Var* tv, Byte** tofree, Unt copyID, Unt restore_copyID) {
    CS r = NULL;
 
-   if (tv->list == NULL) {
+   if (!tv->list) {
       //NULL list is equivalent to empty list.
       *tofree = NULL;
       r = (CS)"[]";
@@ -4341,7 +4316,7 @@ list_tv2string(
       *tofree = NULL;
       r = (CS)"[...]";
    } else {
-      int old_copyID;
+      Unt old_copyID;
       if (restore_copyID)
           old_copyID = tv->list->copyId;
 
@@ -4361,11 +4336,11 @@ list_tv2string(
 //return NULL.
 private CS
 dict_tv2string(
-   Var   *tv,
-   Byte   **tofree,
-   int      copyID,
-   int      restore_copyID)
-{
+   Var* tv,
+   Byte** tofree,
+   Unt copyID,
+   int restore_copyID
+) {
    CS r = NULL;
 
    if (tv->bag == NULL) {
@@ -4395,12 +4370,7 @@ dict_tv2string(
 //When "composite_val" is false, put quotes around strings as "string()",
 //otherwise does not put quotes around strings. May return NULL.
 private CS
-jobchan_tv2string(
-   Var* tv,
-   OUT Byte** tofree,
-   OUT CS numBuf,
-   int composite_val
-) {
+jobchan_tv2string(Var* tv, OUT Byte** tofree, OUT CS numBuf, int composite_val) {
    Byte* r = NULL;
 
    *tofree = NULL;
@@ -4430,16 +4400,16 @@ jobchan_tv2string(
 //May return NULL.
 pub CS
 echo_string_core(
-   Var   *tv,
-   Byte   **tofree,
-   Byte   *numbuf,
-   int      copyID,
-   int      echo_style,
-   int      restore_copyID,
-   int      composite_val
+   Var* tv,
+   Byte** tofree,
+   Byte* numbuf,
+   Unt copyID,
+   int echo_style,
+   int restore_copyID,
+   int composite_val
 ) {
-   static int   recurse = 0;
-   Byte   *r = NULL;
+   static int recurse = 0;
+   Byte* r = NULL;
 
    if (recurse >= DICT_MAXNEST) {
       if (!did_echo_string_emsg) {
@@ -4449,7 +4419,7 @@ echo_string_core(
           emsg(_(e_variable_nested_too_deep_for_displaying));
       }
       *tofree = NULL;
-      return (CS)"{E724}";
+      return S"{E724}";
    }
    ++recurse;
 
@@ -4511,15 +4481,10 @@ echo_string_core(
 //Return a string with the string representation of a variable.
 //If the memory is allocated "tofree" is set to it, otherwise NULL. "numbuf" is used for a number.
 //Does not put quotes around strings, as ":echo" displays values.
-//When "copyID" is not zero replace recursive lists and dicts with "...". May return NULL.
+//When "copyID" is not zero, replace recursive lists and dicts with "...". May return NULL.
 pub CS
-echo_string(
-    Var   *tv,
-    Byte   **tofree,
-    Byte   *numbuf,
-    int      copyID)
-{
-    return echo_string_core(tv, tofree, numbuf, copyID, true, false, false);
+echo_string(Var* tv, Byte** tofree, Byte* numbuf, Unt copyID) {
+   return echo_string_core(tv, tofree, numbuf, copyID, true, false, false);
 }
 
 //Convert the specified byte index of line 'lnum' in book 'book' to a character index. Works only
@@ -4562,9 +4527,9 @@ var2fpos(
    Var* varp,
    int dollar_lnum,   //true when $ is last line
    int* fnum,      //set to fnum for '0, 'A, etc.
-   int charcol)   //return character column
-{
-   static Pos   pos;
+   int charcol   //return character column
+){
+   static Pos pos;
    Pos* pp;
 
    //Argument can be [lnum, col, coladd].
@@ -5049,24 +5014,18 @@ handle_subscript(
    return ret;
 }
 
-//Make a copy of an item. Lists and Dictionaries are also copied.  A deep copy if "deep" is set.
-//"top" is true for the toplevel of copy(). For deepcopy() "copyID" is zero for a full copy or the
-//ID for when a reference to an already copied list/dict can be used. Return FAIL or OK.
+//Make a copy of an item. Lists and Dictionaries are also copied. A deep copy if "deep" is set.
+//"top" is true for the toplevel of copy(). For deepcopy() "copyID" is zero for a full copy or
+//the ID for when a reference to an already copied list/dict can be used. Return FAIL or OK.
 pub int
-item_copy(
-   Var   *from,
-   Var   *to,
-   int      deep,
-   int      top,
-   int      copyID)
-{
-   static int   recurse = 0;
-   int      ret = OK;
+evCopyItem(Var* from, Var* to, int deep, int top, Unt copyID) {
+   static int recurse = 0;
 
    if (recurse >= DICT_MAXNEST) {
       emsg(_(e_variable_nested_too_deep_for_making_copy));
       return FAIL;
    }
+   int ret = OK;
    ++recurse;
 
    switch (from->tag) {
@@ -5112,7 +5071,7 @@ item_copy(
    case VAR_UNKNOWN:
    case VAR_ANY:
    case VAR_VOID:
-      internal_error_no_abort(S"item_copy(UNKNOWN)");
+      internal_error_no_abort(S"evCopyItem(UNKNOWN)");
       ret = FAIL;
    }
    --recurse;
@@ -5600,28 +5559,6 @@ evalvars_clear(void) {
       vars_clear(&SCRIPT_VARS(i));
 }
 #endif
-
-pub int
-garbage_collect_globvars(int copyID) {
-   return setRefInSet(&globvarht, copyID, NULL);
-}
-
-pub int
-garbage_collect_scriptvars(int copyID) {
-   int abort = false;
-   for (Unt i = 1; i <= (Unt)script_items.len; ++i) {
-      abort = abort || setRefInSet(&SCRIPT_VARS(i), copyID, NULL);
-
-      ScriptItem* si = SCRIPT_ITEM(i);
-      for (int idx = 0; idx < si->sn_var_vals.len; ++idx) {
-         Svar    *sv = ((Svar *)si->sn_var_vals.c) + idx;
-         if (sv->sv_name)
-            abort = abort || set_ref_in_item(sv->sv_tv, copyID, NULL, NULL);
-      }
-   }
-
-   return abort;
-}
 
 //Set an internal variable to a string value. Creates the variable if it does not already exist.
 pub void
@@ -8589,7 +8526,6 @@ private BuiltinFn globalFunctions[] = {
    {S"fullcommand",   1, 2, FEARG_1,        &f_fullcommand},
    {S"funcref",      1, 3, FEARG_1,     &f_funcref},
    {S"function",   1, 3, FEARG_1,      &f_function},
-   {S"garbagecollect",   0, 1, 0,          &f_garbagecollect},
    {S"get",      2, 3, FEARG_1,          &f_get},
    {S"getbufinfo",   0, 1, FEARG_1,   &f_getbufinfo},
    {S"getbufline",   2, 3, FEARG_1,     &f_getbufline},
@@ -8905,8 +8841,6 @@ private BuiltinFn globalFunctions[] = {
    {S"test_alloc_fail",   3, 3, FEARG_1,       &f_test_alloc_fail},
    {S"test_autochdir",   0, 0, 0,           &f_test_autochdir},
    {S"test_feedinput",   1, 1, FEARG_1,        &f_test_feedinput},
-   {S"test_garbagecollect_now",   0, 0, 0,        &f_test_garbagecollect_now},
-   {S"test_garbagecollect_soon", 0, 0, 0,        &f_test_garbagecollect_soon},
    {S"test_getvalue",   1, 1, FEARG_1,           &f_test_getvalue},
    {S"test_ignore_error", 1, 1, FEARG_1,         &f_test_ignore_error},
    {S"test_null_blob",   0, 0, 0,            &f_test_null_blob},
@@ -9550,7 +9484,7 @@ f_confirm(Arr(Var) argvars, Var* returnVar) {
 
 private void
 f_copy(Arr(Var) argvars, Var* returnVar) {
-   item_copy(&argvars[0], returnVar, false, true, 0);
+   evCopyItem(&argvars[0], returnVar, false, true, 0);
 }
 
 //Set the cursor position. If "charcol" is true, then use the column number as a character offset.
@@ -9615,22 +9549,22 @@ set_cursorpos(Var* argvars, OUT Var* returnVar, int charcol) {
 //"cursor(lnum, col)" function, or "cursor(list)"
 //Move the cursor to the specified line and column.
 //Return 0 when the position could be set, -1 otherwise.
-private void
+pub void
 f_cursor(Var* argvars, Var* returnVar) {
    set_cursorpos(argvars, OUT returnVar, false);
 }
 
-private void
+pub void
 f_deepcopy(Var* argvars, Var* returnVar) {
-   Long   noref = 0;
+   Long noref = 0;
 
    if (check_for_opt_bool_arg(argvars, 1) == FAIL)
       return;
 
    if (argvars[1].tag != VAR_UNKNOWN)
-   noref = varGetNumberChk(argvars + 1, NULL);
+      noref = varGetNumberChk(argvars + 1, NULL);
 
-   item_copy(&argvars[0], returnVar, true, true, noref == 0 ? get_copyID() : 0);
+   evCopyItem(&argvars[0], returnVar, true, true, noref == 0 ? get_copyID() : 0);
 }
 
 private void
@@ -10367,16 +10301,6 @@ f_funcref(Var* argvars, Var* returnVar) {
 private void
 f_function(Var* argvars, Var* returnVar) {
    common_function(argvars, returnVar, false);
-}
-
-private void
-f_garbagecollect(Var* argvars, Var*) {
-   //This is postponed until we are back at the toplevel, because we may be
-   //using Lists and Dicts internally.  E.g.: ":echo [garbagecollect()]".
-   want_garbage_collect = true;
-
-   if (argvars[0].tag != VAR_UNKNOWN && tv_get_bool(&argvars[0]) == 1)
-      garbage_collect_at_exit = true;
 }
 
 private void
@@ -13797,116 +13721,6 @@ aborted_in_try(void) {
    return force_abort;
 }
 
-//cause_errthrow(): Cause a throw of an error exception if appropriate. Return true if the error
-//message should not be displayed by emsg(). Set "ignore", if the emsg() call should be ignored
-//completely.
-//When several messages appear in the same command, the first is usually the most specific one and
-//used as the exception value.  The "severe" flag can be set to true, if a later but severer
-//message should be used instead.
-pub int
-cause_errthrow(CS mesg, int severe, int* ignore) {
-   MsgList* elem;
-   MsgList** plist;
-
-   //Do nothing when displaying the interrupt message or reporting an
-   //uncaught exception (which has already been discarded then) at the top
-   //level.  Also when no exception can be thrown. The message will be displayed by emsg().
-   if (suppress_errthrow)
-      return false;
-
-   //If emsg() has not been called previously, temporarily reset
-   //"force_abort" until the throw point for error messages has been
-   //reached.  This ensures that aborting() returns the same value for all
-   //errors that appear in the same command.  This means particularly that
-   //for parsing errors during expression evaluation emsg() will be called
-   //multiply, even when the expression is evaluated from a finally clause
-   //that was activated due to an aborting error, interrupt, or exception.
-   if (!anyEmsgG) {
-      cause_abort = force_abort;
-      force_abort = false;
-   }
-
-   //If no try conditional is active and no exception is being thrown and there has not been an
-   //error in a try conditional or a throw so far, do nothing (for compatibility of non-EH
-   //scripts). The message will then be displayed by emsg(). When ":silent!" was used and we are
-   //not currently throwing an exception, do nothing.  The message text will
-   //then be stored to v:errmsg by emsg() without displaying it.
-   if (((trylevel == 0 && !cause_abort) || emsg_silent) && !did_throw)
-      return false;
-
-   //Ignore an interrupt message when inside a try conditional or when an exception is being
-   //thrown or when an error in a try conditional or throw has been detected previously.
-   //This is important in order that an interrupt exception is catchable by the innermost try
-   //conditional and not replaced by an interrupt message error exception.
-   if (mesg == (CS)_(e_interrupted)) {
-      *ignore = true;
-      return true;
-   }
-
-   //Ensure that all commands in nested function calls and sourced files are aborted immediately
-   cause_abort = true;
-
-   //When an exception is being thrown, some commands (like conditionals) are not skipped. Errors
-   //in those commands may affect what of the subsequent commands are regarded part of catch and
-   //finally clauses. Catching the exception would then cause execution of commands not intended
-   //by the user, who wouldn't even get aware of the problem. Therefore, discard the
-   //exception currently being thrown to prevent it from being caught. Just
-   //execute finally clauses and terminate.
-   if (did_throw) {
-      //When discarding an interrupt exception, reset gotInterruptG to prevent the
-      //same interrupt being converted to an exception again and discarding
-      //the error exception we are about to throw here.
-      if (current_exception->type == ET_INTERRUPT)
-         gotInterruptG = false;
-      discard_current_exception();
-   }
-
-#ifdef THROW_TEST
-   if (!THROW_ON_ERROR) {
-      //Print error message immediately without searching for a matching
-      //catch clause; just finally clauses are executed before the script is terminated.
-      return false;
-   } else
-#endif
-    {
-   //Prepare the throw of an error exception, so that everything will be aborted (except for
-   //executing finally clauses), until the error exception is caught; if still uncaught at
-   //the top level, the error message will be displayed and the script processing terminated
-   //then.  -  This function has no access to the conditional stack. Thus, the actual throw is made
-   //after the failing command has returned.  -  Throw only the first of several errors in a row,
-   //except a severe error is following.
-   if (msg_list) {
-      plist = msg_list;
-      while (*plist != NULL)
-         plist = &(*plist)->next;
-
-      elem = ALLOC_CLEAR_ONE(MsgList);
-      elem->msg = copyStr(mesg);
-      elem->next = NULL;
-      elem->throw_msg = NULL;
-      *plist = elem;
-      if (plist == msg_list || severe) {
-         //Skip the extra "Eegl " prefix for message "E458".
-         CS tmsg = elem->msg;
-         if (STRNCMP(tmsg, "Eegl E", 5) == 0
-               && EE_ISDIGIT(tmsg[5])
-               && EE_ISDIGIT(tmsg[6])
-               && EE_ISDIGIT(tmsg[7])
-               && tmsg[8] == ':'
-               && tmsg[9] == ' ')
-            (*msg_list)->throw_msg = &tmsg[4];
-         else
-            (*msg_list)->throw_msg = tmsg;
-       }
-
-       //Get the source name and lnum now, it may change before reaching do_errthrow().
-       elem->sfile = estack_sfile(ESTACK_NONE);
-       elem->slnum = SOURCING_LNUM;
-   }
-   return true;
-   }
-}
-
 //Free a "msg_list" and the messages it contains.
 private void
 free_msglist(MsgList* l) {
@@ -13925,301 +13739,6 @@ pub void
 free_global_msglist(void) {
    free_msglist(*msg_list);
    *msg_list = NULL;
-}
-
-//Get an exception message that is to be stored in current_exception->value.
-pub CS
-get_exception_string(void* value, ExceptionKind type, CS cmdname, int* should_free) {
-   CS ret;
-   CS mesg;
-   int      cmdlen;
-   CS   p;
-   CS val;
-
-   if (type == ET_ERROR) {
-      *should_free = true;
-      mesg = ((MsgList *)value)->throw_msg;
-      if (cmdname && *cmdname != ZERO) {
-         cmdlen = (int)STRLEN(cmdname);
-         ret = copySubstr(S"Eegl(", 4 + cmdlen + 2 + STRLEN(mesg));
-         STRCPY(&ret[4], cmdname);
-         STRCPY(&ret[4 + cmdlen], "):");
-         val = ret + 4 + cmdlen + 2;
-      } else {
-         ret = copySubstr(S"Eegl:", 4 + STRLEN(mesg));
-         val = ret + 4;
-      }
-
-      //msg_add_fname may have been used to prefix the message with a file
-      //name in quotes.  In the exception value, put the file name in
-      //parentheses and move it to the end.
-      for (p = mesg; ; p++) {
-          if (*p == ZERO
-             || (*p == 'E'
-            && EE_ISDIGIT(p[1])
-            && (p[2] == ':'
-                || (EE_ISDIGIT(p[2])
-               && (p[3] == ':'
-                   || (EE_ISDIGIT(p[3])
-                  && p[4] == ':')))))
-         ){
-            if (*p == ZERO || p == mesg)
-                STRCAT(val, mesg);  //'E123' missing or at beginning
-            else {
-               //'"filename" E123: message text'
-               if (mesg[0] != '"' || p-2 < &mesg[1] || p[-2] != '"' || p[-1] != ' ')
-                  //"E123:" is part of the file name.
-                  continue;
-
-                STRCAT(val, p);
-                p[-2] = ZERO;
-                sprintf((char *)(val + STRLEN(p)), " (%s)", &mesg[1]);
-                p[-2] = '"';
-            }
-            break;
-        }
-      }
-   } else {
-      *should_free = false;
-      ret = value;
-   }
-
-   return ret;
-}
-
-
-//Throw a new exception.  Return FAIL when out of memory or it was tried to throw an illegal user
-//exception. "value" is the exception string for a user or interrupt exception, or points to a
-//message list in case of an error exception.
-pub int
-throw_exception(void *value, ExceptionKind type, CS commName) {
-   int      should_free;
-
-   //Disallow faking Interrupt or error exceptions as user exceptions.  They
-   //would be treated differently from real interrupt or error exceptions
-   //when no active try block is found, see doCommand().
-   if (type == ET_USER) {
-      if (STRNCMP((CS)value, "Eegl", 3) == 0
-         && (((CS)value)[3] == ZERO || ((CS)value)[3] == ':'
-             || ((CS)value)[3] == '(')
-      ){
-          emsg(_(e_cannot_throw_exceptions_with_eegl_prefix));
-          goto fail;
-      }
-   }
-
-   Exception* excp = ALLOC_ONE(Exception);
-
-   if (type == ET_ERROR)
-      //Store the original message and prefix the exception value with
-      //"Eegl:" or, if a command name is given, "Eegl(commname):".
-      excp->messages = (MsgList *)value;
-
-   excp->value = get_exception_string(value, type, commName, &should_free);
-   if (excp->value == NULL && should_free)
-      goto nomem;
-
-   excp->type = type;
-   if (type == ET_ERROR && ((MsgList *)value)->sfile != NULL) {
-      MsgList *entry = (MsgList *)value;
-
-      excp->throw_name = entry->sfile;
-      entry->sfile = NULL;
-      excp->throw_lnum = entry->slnum;
-   } else {
-      excp->throw_name = estack_sfile(ESTACK_NONE);
-      if (excp->throw_name == NULL)
-         excp->throw_name = copyStr((CS)"");
-      excp->throw_lnum = SOURCING_LNUM;
-   }
-
-   excp->stacktrace = stacktrace_create();
-   if (excp->stacktrace)
-      excp->stacktrace->refCount = 1;
-
-   if (p_verbose >= 13 || debug_break_level > 0) {
-   int   save_msg_silent = msg_silent;
-
-   if (debug_break_level > 0)
-       msg_silent = false;      //display messages
-   else
-       verbose_enter();
-   ++no_wait_return;
-   if (debug_break_level > 0 || !p_vfile)
-       msg_scroll = true;       //always scroll up, don't overwrite
-
-   smsg(_("Exception thrown: %s"), excp->value);
-   msg_puts(S"\n");   //don't overwrite this either
-
-   if (debug_break_level > 0 || !p_vfile)
-       commlineRowG = msgRowG;
-   --no_wait_return;
-   if (debug_break_level > 0)
-       msg_silent = save_msg_silent;
-   else
-       verbose_leave();
-   }
-
-   current_exception = excp;
-   return OK;
-
-nomem:
-   eeglFree(excp);
-   suppress_errthrow = true;
-   emsg(_(e_out_of_memory));
-fail:
-   current_exception = NULL;
-   return FAIL;
-}
-
-//Discard an exception.  "was_finished" is set when the exception has been caught and the catch
-//clause has been ended normally.
-private void
-discard_exception(Exception *excp, int was_finished) {
-   Byte      *saved_IObuff;
-
-   if (current_exception == excp)
-      current_exception = NULL;
-   if (excp == NULL) {
-      internal_error(S"discard_exception()");
-      return;
-   }
-
-   if (p_verbose >= 13 || debug_break_level > 0) {
-      int   save_msg_silent = msg_silent;
-
-      saved_IObuff = copyStr(IObuff);
-      if (debug_break_level > 0)
-          msg_silent = false;      //display messages
-      else
-          verbose_enter();
-      ++no_wait_return;
-      if (debug_break_level > 0 || !p_vfile)
-          msg_scroll = true;       //always scroll up, don't overwrite
-      smsg(was_finished
-             ? _("Exception finished: %s")
-             : _("Exception discarded: %s"),
-         excp->value);
-      msg_puts(S"\n");   //don't overwrite this either
-      if (debug_break_level > 0 || !p_vfile)
-          commlineRowG = msgRowG;
-      --no_wait_return;
-      if (debug_break_level > 0)
-          msg_silent = save_msg_silent;
-      else
-          verbose_leave();
-      STRCPY(IObuff, saved_IObuff);
-      eeglFree(saved_IObuff);
-   }
-   if (excp->type != ET_INTERRUPT)
-      eeglFree(excp->value);
-   if (excp->type == ET_ERROR)
-      free_msglist(excp->messages);
-   eeglFree(excp->throw_name);
-   list_unref(excp->stacktrace);
-   eeglFree(excp);
-}
-
-pub void
-discard_current_exception(void) {
-   if (current_exception)
-      discard_exception(current_exception, false);
-   did_throw = false;
-   need_rethrow = false;
-}
-
-//Put an exception on the caught stack.
-pub void
-catch_exception(Exception *excp) {
-   excp->caught = caught_stack;
-   caught_stack = excp;
-   if (*excp->throw_name != ZERO) {
-      if (excp->throw_lnum != 0)
-         eeSnprintf(
-            IObuff, IOSIZE, _("%s, line %ld"), excp->throw_name, (long)excp->throw_lnum
-         );
-      else
-         eeSnprintf(IObuff, IOSIZE, "%s", excp->throw_name);
-   }
-
-   if (p_verbose >= 13 || debug_break_level > 0) {
-      int save_msg_silent = msg_silent;
-
-      if (debug_break_level > 0)
-         msg_silent = false;      //display messages
-      else
-         verbose_enter();
-      ++no_wait_return;
-      if (debug_break_level > 0 || !p_vfile)
-         msg_scroll = true;       //always scroll up, don't overwrite
-
-      smsg(_("Exception caught: %s"), excp->value);
-      msg_puts(S"\n");   //don't overwrite this either
-
-      if (debug_break_level > 0 || !p_vfile)
-         commlineRowG = msgRowG;
-      --no_wait_return;
-      if (debug_break_level > 0)
-         msg_silent = save_msg_silent;
-      else
-         verbose_leave();
-    }
-}
-
-//Remove an exception from the caught stack.
-pub void
-finish_exception(Exception *excp) {
-   if (excp != caught_stack)
-      internal_error(S"finish_exception()");
-   caught_stack = caught_stack->caught;
-   if (caught_stack) {
-      if (*caught_stack->throw_name != ZERO) {
-         if (caught_stack->throw_lnum != 0) {
-            eeSnprintf(
-               IObuff, IOSIZE, _("%s, line %ld"), caught_stack->throw_name,
-               (long)caught_stack->throw_lnum
-            );
-         } else {
-            eeSnprintf(IObuff, IOSIZE, "%s", caught_stack->throw_name);
-         }
-      }
-   }
-
-   //Discard the exception, but use the finish message for 'verbose'.
-   discard_exception(excp, true);
-}
-
-//Save the current exception state in "estate"
-pub void
-exception_state_save(ExceptionState *estate) {
-   estate->currentException = current_exception;
-   estate->didThrow = did_throw;
-   estate->needRethrow = need_rethrow;
-   estate->tryLevel = trylevel;
-   estate->didEmsg = anyEmsgG;
-}
-
-//Restore the current exception state from "estate"
-pub void
-exception_state_restore(ExceptionState *estate) {
-   //Handle any outstanding exceptions before restoring the state
-   if (did_throw)
-      handle_did_throw();
-   current_exception = estate->currentException;
-   did_throw = estate->didThrow;
-   need_rethrow = estate->needRethrow;
-   trylevel = estate->tryLevel;
-   anyEmsgG = estate->didEmsg;
-}
-
-//Clear the current exception state
-pub void
-exception_state_clear(void) {
-   current_exception = NULL;
-   did_throw = false;
-   need_rethrow = false;
-   trylevel = 0;
-   anyEmsgG = 0;
 }
 
 //}}}
@@ -14272,12 +13791,7 @@ report_pending(int action, int pending, void* value) {
        break;
 
    default:
-      if (pending & CSTP_THROW) {
-         eeSnprintf(IObuff, IOSIZE, mesg, _("Exception"));
-         mesg = copySubstr(IObuff, STRLEN(IObuff) + 4);
-         STRCAT(mesg, ": %s");
-         s = ((Exception *)value)->value;
-      } ei ((pending & CSTP_ERROR) && (pending & CSTP_INTERRUPT))
+      if ((pending & CSTP_ERROR) && (pending & CSTP_INTERRUPT))
          s = _("Error and interrupt");
       ei (pending & CSTP_ERROR)
          s = _("Error");
@@ -14301,19 +13815,6 @@ report_pending(int action, int pending, void* value) {
       eeglFree(s);
    ei (pending & CSTP_THROW)
       eeglFree(mesg);
-}
-
-//If something is made pending in a finally clause, report it if required by
-//the @verbose option or when debugging.
-pub void
-report_make_pending(int pending, void *value) {
-   if (p_verbose >= 14 || debug_break_level > 0) {
-      if (debug_break_level <= 0)
-          verbose_enter();
-      report_pending(RP_MAKE, pending, value);
-      if (debug_break_level <= 0)
-          verbose_leave();
-   }
 }
 
 //If something pending in a finally clause is resumed at the ":endtry", report
@@ -14377,8 +13878,6 @@ c_eval(Invocation* invo) {
 //call to doCommand() that is going to be made for the cleanup autocommand execution.
 pub void
 enter_cleanup(Cleanup *csp) {
-   int      pending = CSTP_NONE;
-
    //Postpone anyEmsgG, gotInterruptG, did_throw.  The pending values will be
    //restored by leave_cleanup() except if there was an aborting error,
    //interrupt, or uncaught exception after this function ends.
@@ -14388,28 +13887,14 @@ enter_cleanup(Cleanup *csp) {
               | (did_throw    ? CSTP_THROW     : 0)
               | (need_rethrow ? CSTP_THROW     : 0);
 
-      //If we are currently throwing an exception (did_throw), save it as well. On an error not
-      //yet converted to an exception, update "force_abort" and reset "cause_abort" (as
-      //do_errthrow() would do). This is needed for the doCommand() call that is going to be made
-      //for autocommand execution.  We need not save *msg_list because there is an extra instance
-      //for every call of doCommand(), anyway.
-      if (did_throw || need_rethrow) {
-         csp->exception = current_exception;
-         current_exception = NULL;
-      } else {
-         csp->exception = NULL;
-         if (anyEmsgG) {
-            force_abort |= cause_abort;
-            cause_abort = false;
-         }
+      if (anyEmsgG) {
+         force_abort |= cause_abort;
+         cause_abort = false;
       }
       anyEmsgG = gotInterruptG = did_throw = need_rethrow = false;
-
       //Report if required by the 'verbose' option or when debugging.
-      report_make_pending(pending, csp->exception);
    } else {
       csp->pending = CSTP_NONE;
-      csp->exception = NULL;
    }
 }
 
@@ -14427,8 +13912,8 @@ enter_cleanup(Cleanup *csp) {
 //cleanup autocommands.  In the latter case, the saved error/interrupt/
 //exception state is discarded.
 pub void
-leave_cleanup(Cleanup *csp) {
-   int      pending = csp->pending;
+leave_cleanup(Cleanup* csp) {
+   int pending = csp->pending;
 
    if (pending == CSTP_NONE)   //nothing to do
       return;
@@ -14438,7 +13923,7 @@ leave_cleanup(Cleanup *csp) {
    //to the user if required by the 'verbose' option or when debugging.
    if (aborting() || need_rethrow) {
       if (pending & CSTP_THROW) //Cancel the pending exception (includes report).
-         discard_exception(csp->exception, false);
+         ;
       else
          report_discard_pending(pending, NULL);
 
@@ -14451,15 +13936,11 @@ leave_cleanup(Cleanup *csp) {
    //If there was no new error, interrupt, or throw between the calls to enter_cleanup() and
    //leave_cleanup(), restore the pending error/interrupt/exception state.
    else {
-      //If there was an exception being thrown when enter_cleanup() was
-      //called, we need to rethrow it.  Make it the exception currently being thrown.
-      if (pending & CSTP_THROW)
-         current_exception = csp->exception;
 
       //If an error was about to be converted to an exception when
       //enter_cleanup() was called, let "cause_abort" take the part of
       //"force_abort" (as done by cause_errthrow()).
-      ei (pending & CSTP_ERROR) {
+      if (pending & CSTP_ERROR) {
          cause_abort = force_abort;
          force_abort = false;
       }
@@ -14473,7 +13954,7 @@ leave_cleanup(Cleanup *csp) {
          need_rethrow = true;    //did_throw will be set by do_one_cmd()
 
       //Report if required by the 'verbose' option or when debugging.
-      report_resume_pending(pending, (pending & CSTP_THROW) ? (void *)current_exception : NULL);
+      report_resume_pending(pending, null);
    }
 }
 

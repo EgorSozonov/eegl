@@ -8,8 +8,6 @@ void allocReturnList(OUT Var* returnVar);
 int allocReturnList_id(Var* returnVar, AllocId id);
 void returnVar_list_set(OUT Var* returnVar, List *l);
 void list_unref(List* l);
-int list_free_nonref(int copyID);
-void list_free_items(int copyID);
 void list_free(List* l);
 ListItem * listitem_alloc(void);
 void listitem_free(List* l, ListItem* item);
@@ -56,16 +54,16 @@ int list_slice_or_index(
    Var* returnVar,
    int verbose
 );
-List * list_copy(List *orig, int deep, int top, int copyID);
+List * list_copy(List *orig, int deep, int top, Unt copyID);
 void list_remove(List* l, ListItem* item, ListItem* item2);
-CS list2string(Var* tv, int copyID, int restore_copyID);
+CS list2string(Var* tv, Unt copyID, int restore_copyID);
 int list_join(
     ArrayList* gap,
     List* l,
     CS sep,
     int echo_style,
     int restore_copyID,
-    int copyID
+    Unt copyID
 );
 void f_join(Arr(Var) argvars, Var* returnVar);
 int eval_list(Byte **arg, Var* returnVar, EvalCtx *evalarg, int do_error);
@@ -216,12 +214,7 @@ CS daStringOfVar(Var *arg, int quotes);
 int tv_islocked(Var *tv);
 int tv_equal(Var* tv1, Var* tv2, int ic);
 int eval_number(CS* arg, Var* returnVar, int evaluate, int want_string);
-CS tv2string(
-   Var* tv,
-   Byte** tofree,
-   CS numbuf,
-   int copyID)
-;
+CS tv2string(Var* tv, Byte** tofree, CS numbuf, Unt copyID);
 int eval_env_var(OUT CS* arg, Var* returnVar, int evaluate);
 LineNr tv_get_lnum(Arr(Var) argvars);
 LineNr daGetLnumFromBookOrVar(Var* argvars, Book* book);
@@ -260,7 +253,7 @@ Long bagGetNumber(Bag *d, Text key);
 Long bagGetNumber_def(Bag* b, Text const key, int def);
 Long bagGetNumber_check(Bag* b, Text const key);
 Boole bagGetBool(Bag *d, Text key, Boole def);
-CS bagToString(Var* tv, int copyID, int restore_copyID);
+CS bagToString(Var* tv, Unt copyID, int restore_copyID);
 int bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal);
 int bagEvalLiteral(OUT CS* arg, Var* returnVar, EvalCtx *evalarg);
 void bagExtend(Bag* d1, Bag* d2, CS action);
@@ -283,14 +276,12 @@ void bagSetItemsRo(Bag* di);
 void f_has_key(Arr(Var) argvars, Var* returnVar);
 CS string_slice(CS str, Long first, Long last, int exclusive);
 void bagUnref(Bag* b);
-int dict_free_nonref(int copyID);
 void hashtab_free_contents(EeSet* ht);
-void dict_free_items(int copyID);
-void dict_free_contents(Bag *d);
+void dict_free_contents(Bag* b);
 DictItem * dictitem_alloc(Text value);
 void dictitem_remove(Bag* bag, DictItem* item, CS command);
 void dictitem_free(DictItem *item);
-Bag * dict_copy(Bag* orig, int deep, int top, int copyID);
+Bag * dict_copy(Bag* orig, int deep, int top, Unt copyID);
 int dictWrongFuncName(Bag* b, Var* tv, Text name);
 int string2float(CS text, OUT double* value, Boole skip_quotes);
 void f_abs(Arr(Var) argvars, Var* returnVar);
@@ -334,8 +325,6 @@ void f_test_feedinput(Arr(Var) argvars, Var*);
 void f_test_getvalue(Arr(Var) argvars, Var* returnVar);
 void f_test_override(Arr(Var) argvars, Var*);
 void f_test_refcount(Arr(Var) argvars, Var* returnVar);
-void f_test_garbagecollect_now(Arr(Var), Var*);
-void f_test_garbagecollect_soon(Arr(Var), Var*);
 void f_test_ignore_error(Arr(Var) argvars, Var*);
 void f_test_null_blob(Arr(Var), Var* returnVar);
 void f_test_null_channel(Arr(Var), Var* returnVar);
@@ -423,16 +412,6 @@ int fuzzyMatchStr_in_line(
    Pos* current_pos,
    int* score)
 ;
-int search_for_fuzzy_match(
-   Book* book,
-   Pos* pos,
-   CS pattern,
-   int dir,
-   Pos* start_pos,
-   OUT int* len,
-   OUT CS* ptr,
-   int* score
-);
 void fuzmatch_str_free(FuzzyMatch *fuzmatch, int count);
 int defuzz(
    OUT ExpandMatch* matches,
@@ -468,8 +447,6 @@ int eeVarPrintf0(
    va_list ap_start,
    Var* tvs
 );
-void op_format(Operator* oper, int keep_cursor);
-void op_formatexpr(Operator* oper);
 int fex_format();
 CS copyStr_shellescape(CS string, int do_special, int do_newline);
 CS json_encode(Var* val, int options);
@@ -500,10 +477,6 @@ void eeglFree(void* x);
 void eeglFreeString(CS x);
 void mch_free_mem(void);
 CS toFullFileName(Text fileName, DirName* dn);
-int get_copyID(void);
-int garbage_collect(int testing);
-int setRefInSet(EeSet* eeset, int copyID, ListStack** list_stack);
-int set_ref_in_list(List *ll, int copyID);
-int set_ref_in_list_items(List* l, int copyID, HtStack** ht_stack);
-Boole memSetRefInCallback(Callback* cb, int copyID);
-int set_ref_in_item(Var* tv, int copyID, HtStack** ht_stack, ListStack** list_stack);
+Int get_copyID(void);
+Boole set_checkForCircularRefs(OUT EeSet* set, Unt copyId, ListStack** listStack);
+Boole list_checkForCircularRefs(OUT List* , Unt , ListStack** );

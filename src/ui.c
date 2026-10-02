@@ -9487,22 +9487,6 @@ term_clear_status_text(Terminal* term) {
    EE_CLEAR(term->tl_status_text);
 }
 
-//Mark references in jobs of terminals.
-pub int
-set_ref_in_term(int copyID) {
-   int      abort = false;
-
-   for (Terminal* term = fstTermP; !abort && term; term = term->next) {
-      if (term->job) {
-         Var tv;
-         tv.tag = VAR_JOB;
-         tv.job = term->job;
-         abort = abort || set_ref_in_item(&tv, copyID, NULL, NULL);
-      }
-   }
-   return abort;
-}
-
 //Get the buffer from the first argument in "argvars".
 //Return NULL when the buffer is not for a terminal portal and logs a message with "where".
 private Book *

@@ -53,12 +53,10 @@ private Boole anySyntaxEmsgS; //anyEmsgG set because of a syntax error
 //Struct to save a few things while debugging.  Used in doCommand() only.
 typedef struct {
    int force_abort;
-   Exception* caught_stack;
    int anyEmsgG;
    int gotInterruptG;
    int did_throw;
    Boole need_rethrow;
-   Exception* current_exception;
 } DebugStuff;
 
 
@@ -295,6 +293,8 @@ private void op_function(Operator* oper);
 private void get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial);
 private int isCommandModeChar(ActionArg* aArg);
 private void pbyte(Pos lp, int c);
+private void op_format(Operator* oper, int keep_cursor);
+private void op_formatexpr(Operator* oper);
 private int coladvance2(
    Pos   *pos,
    int      addspaces,   //change the text to achieve our goal?
@@ -4446,26 +4446,21 @@ private Byte dollar_command[2] = {'$', ZERO};
 private void
 saveDbgStuff(DebugStuff* dsp) {
    dsp->force_abort   = force_abort;      force_abort = false;
-   dsp->caught_stack   = caught_stack;      caught_stack = NULL;
 
    //Necessary for debugging an inactive ";catch", ";finally", ";endtry"
    dsp->anyEmsgG     = anyEmsgG;      anyEmsgG     = false;
    dsp->gotInterruptG = gotInterruptG; gotInterruptG  = false;
    dsp->did_throw    = did_throw;      did_throw    = false;
    dsp->need_rethrow = need_rethrow;   need_rethrow = false;
-   dsp->current_exception = current_exception;   current_exception = NULL;
 }
 
 private void
 restore_DebugStuff(DebugStuff* dsp) {
-   suppress_errthrow = false;
    force_abort = dsp->force_abort;
-   caught_stack = dsp->caught_stack;
    anyEmsgG = dsp->anyEmsgG;
    gotInterruptG = dsp->gotInterruptG;
    did_throw = dsp->did_throw;
    need_rethrow = dsp->need_rethrow;
-   current_exception = dsp->current_exception;
 }
 
 //Check if files are the same file.
@@ -4525,60 +4520,6 @@ executeCommLine(CS cmd) {
 private int
 do_cmd_argument(CS cmd) {
    return doCommand(cmd, NULL, NULL, DOCMD_VERBOSE|DOCMD_NOWAIT|DOCMD_KEYTYPED);
-}
-
-//Handle when "did_throw" is set after executing commands.
-pub void
-handle_did_throw(void) {
-   CS p = NULL;
-   MsgList* messages = NULL;
-   ESTACK_CHECK_DECLARATION;
-
-   //If the uncaught exception is a user exception, report it as an error. If it is an error
-   //exception, display the saved error message now.  For an interrupt exception, do nothing; the
-   //interrupt message is given elsewhere.
-   switch (current_exception->type) {
-   case ET_USER:
-      eeSnprintf(IObuff, IOSIZE, _(e_exception_not_caught_str), current_exception->value);
-      p = copyStr(IObuff);
-      break;
-   case ET_ERROR:
-      messages = current_exception->messages;
-      current_exception->messages = NULL;
-      break;
-   case ET_INTERRUPT:
-      break;
-   }
-
-   estack_push(ETYPE_EXCEPT, current_exception->throw_name, current_exception->throw_lnum);
-   ESTACK_CHECK_SETUP;
-   current_exception->throw_name = NULL;
-
-   discard_current_exception();   //uses IObuff if 'verbose'
-
-   //If "silent!" is active the uncaught exception is not fatal.
-   if (emsg_silent == 0) {
-      suppress_errthrow = true;
-      force_abort = true;
-   }
-
-   if (messages) {
-      do {
-         MsgList* next = messages->next;
-         emsg(messages->msg);
-         eeglFree(messages->msg);
-         eeglFree(messages->sfile);
-         eeglFree(messages);
-         messages = next;
-      }
-      while (messages);
-   } ei (p) {
-      emsg(p);
-      eeglFree(p);
-   }
-   eeglFree(SOURCING_NAME);
-   ESTACK_CHECK_NOW;
-   estack_pop();
 }
 
 //Get the next line source line without advancing.
@@ -4712,10 +4653,9 @@ doCommand(
    saved_msg_list = msg_list;
    msg_list = &private_msg_list;
 
-   //Initialize "force_abort"  and "suppress_errthrow" at the top level.
+   //Initialize "force_abort"  at the top level.
    if (!recursive) {
       force_abort = false;
-      suppress_errthrow = false;
    }
 
    //If requested, store and reset the global values controlling the
@@ -4833,18 +4773,6 @@ doCommand(
 
    eeglFree(commlineCopy);
    anySyntaxEmsgS = false;
-
-   //When an exception is being thrown out of the outermost try conditional, discard the
-   //uncaught exception, disable the conversion of interrupts or errors to exceptions, and
-   //ensure that no more commands are executed.
-   if (did_throw)
-      handle_did_throw();
-   //On an interrupt or an aborting error not converted to an exception, disable the conversion
-   //of errors to exceptions. (Interrupts are not converted anymore, here.) This enables also
-   //the interrupt message when force_abort is set and anyEmsgG unset in case of an interrupt
-   //from a finally clause after an error.
-   ei (gotInterruptG || (anyEmsgG && force_abort))
-      suppress_errthrow = true;
 
    if (fgetline == &scrGetSourceLine) {
    } else {
@@ -8358,13 +8286,6 @@ doFreeFindFnOption(void) {
 }
 # endif
 
-//Mark the global @findfunc callback with "copyID" so that it is not garbage collected.
-pub int
-set_ref_in_findfunc(int copyID) {
-   int abort = memSetRefInCallback(&findFnCb, copyID);
-   return abort;
-}
-
 //;sview [+command] file   split portal with new file, read-only
 //;split [[+command] file]   split portal with current or new file
 //;vsplit [[+command] file]   split portal vertically with current or new file
@@ -11403,7 +11324,8 @@ undo_read(BufInfo *bi, CS buffer, Unt size) {
       retval = FAIL;
 
    if (retval == FAIL)
-      //Error may be checked for only later. Fill with zeros, so that the reader won't use garbage
+      //Error may be checked for only later. Fill with zeros, so that the reader won't use
+      //garbage
       memset(buffer, 0, size);
    return retval;
 }
@@ -17845,12 +17767,6 @@ opsFreeOperatorFnOption(void) {
 }
 #endif
 
-//Mark the global 'operatorfunc' callback with "copyID" so that it is not garbage collected.
-pub int
-set_ref_in_opfunc(int copyID) {
-   return memSetRefInCallback(&opfunc_cb, copyID);
-}
-
 //Handle the "g@" operator: call 'operatorfunc'.
 private void
 op_function(Operator* oper) {
@@ -18471,6 +18387,81 @@ pbyte(Pos lp, int c) {
       lp.col = (len > 1 ? len - 2 : 0);
    }
    *(p + lp.col) = c;
+}
+
+//Implementation of the format operator 'gq'.
+private void
+op_format(Operator* oper, int keep_cursor){ //keep cursor on same text char
+   long old_line_count = curBook->mem.lineCount;
+
+   //Place the cursor where the "gq" or "gw" command was given, so that "u" can put it back there.
+   curPor->cursor = oper->cursor_start;
+
+   if (u_save((LineNr)(oper->start.lnum - 1), (LineNr)(oper->end.lnum + 1)) == FAIL)
+      return;
+   curPor->cursor = oper->start;
+
+   if (oper->is_VIsual)
+      //When there is no change: need to remove the Visual selection
+      drawCurBookLater(UPD_INVERTED);
+
+   if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
+      //Set '[ mark at the start of the formatted area
+      curBook->opStart = oper->start;
+
+   //For "gw" remember the cursor position and put it back below (adjusted
+   //for joined and split lines).
+   if (keep_cursor)
+      saved_cursor = oper->cursor_start;
+
+   format_lines(oper->line_count, keep_cursor);
+
+   //Leave the cursor at the first non-blank of the last formatted line.
+   //If the cursor was moved one line back (e.g. with "Q}") go to the next
+   //line, so "." will do the next lines.
+   if (oper->end_adjusted && curPor->cursor.lnum < curBook->mem.lineCount)
+      ++curPor->cursor.lnum;
+   beginline(BL_WHITE | BL_FIX);
+   old_line_count = curBook->mem.lineCount - old_line_count;
+   msgmore(old_line_count);
+
+   if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
+      //put '] mark on the end of the formatted area
+      curBook->opEnd = curPor->cursor;
+
+   if (keep_cursor) {
+      curPor->cursor = saved_cursor;
+      saved_cursor.lnum = 0;
+
+      //formatting may have made the cursor position invalid
+      check_cursor();
+   }
+
+   if (oper->is_VIsual) {
+      Portal* po;
+      FOR_ALL_PORTALS(po) {
+         if (po->prevVisualEnd != 0) {
+            //When lines have been inserted or deleted, adjust the end of
+            //the Visual area to be redrawn.
+            if (po->prevVisualEnd > po->oldVisualLnum)
+               po->prevVisualEnd += old_line_count;
+            else
+               po->oldVisualLnum += old_line_count;
+         }
+      }
+   }
+}
+
+//Implementation of the format operator 'gq' for when using @formatexpr
+private void
+op_formatexpr(Operator* oper) {
+   if (oper->is_VIsual)
+      //When there is no change: need to remove the Visual selection
+      drawCurBookLater(UPD_INVERTED);
+
+   if (fex_format() != 0)
+      //As documented: when 'formatexpr' returns non-zero fall back to internal formatting.
+      op_format(oper, false);
 }
 
 //}}}
@@ -19487,12 +19478,6 @@ get_expr_indent(void) {
    curPor->setCursWant = save_set_curswant;
    check_cursor();
    stateG = save_State;
-
-   //Reset did_throw, unless 'debug' has "throw" and inside a try/catch.
-   if (did_throw && ((p_debug && firstOccurrence(p_debug, 't') == NULL) || trylevel == 0)) {
-      handle_did_throw();
-      did_throw = false;
-   }
 
    //If there is an error, just keep the current indent.
    if (indent < 0)

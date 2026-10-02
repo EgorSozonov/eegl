@@ -481,6 +481,16 @@ private CS ins_compl_get_next_word_or_line(
    int* cont_s_ipos
 );
 private Unt get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos);
+private int search_for_fuzzy_match(
+   Book* book,
+   Pos* pos,
+   CS pattern,
+   int dir,
+   Pos* start_pos,
+   OUT int* len,
+   OUT CS* ptr,
+   int* score
+);
 private Callback * get_callback_if_cfn(CS p);
 private void get_register_completion(void);
 private Unt get_next_completion_match(int type, InsertionCompletionNext *st, Pos *ini);
@@ -13706,12 +13716,12 @@ add_char2buf(Unt c, CS s) {
 }
 
 //move cursor to start of line
-//if flags & BL_WHITE   move to first non-white
-//if flags & BL_SOL   move to first non-white if startofline is set,
-//           otherwise keep "curswant" column
+//if flags & BL_WHITE move to first non-white
+//if flags & BL_SOL   move to first non-white if startofline is set, otherwise keep "curswant"
+//                    column
 //if flags & BL_FIX   don't leave the cursor on a ZERO.
 pub void
-beginline(Unt flags) {
+beginline(Unt flags) { //:beginline
    if ((flags & BL_SOL) != 0 && !p_sol)
       coladvance(curPor->cursWant);
    else {
@@ -13720,7 +13730,7 @@ beginline(Unt flags) {
 
       if ((flags & (BL_WHITE | BL_SOL)) != 0) {
          for (CS ptr = ml_get_curline();
-              SPACE_OR_TAB(*ptr) && !((flags & BL_FIX) && ptr[1] == ZERO);
+              SPACE_OR_TAB(*ptr) && !((flags & BL_FIX) != 0 && ptr[1] == ZERO);
               ++ptr
          )
             ++curPor->cursor.col;
@@ -16616,12 +16626,12 @@ filterFromFiles(
    Unt add_r;
    CS leader = NULL;
    int leader_len = 0;
-   int in_fuzzy_collect = cfc_has_mode();
+   int inFuzzyCollect = cfc_has_mode();
    int score = 0;
    int len = 0;
    CS line_end = NULL;
 
-   if (in_fuzzy_collect) {
+   if (inFuzzyCollect) {
       leader = ins_compl_leader();
       leader_len = (int)ins_compl_leader_len();
    }
@@ -16664,7 +16674,7 @@ filterFromFiles(
                if (*ptr == '\n' || gotInterruptG)
                   break;
             }
-         } ei (in_fuzzy_collect && leader_len > 0) {
+         } ei (inFuzzyCollect && leader_len > 0) {
             line_end = find_line_end(ptr);
             while (ptr < line_end) {
                if (fuzzyMatchStr_in_line(&ptr, leader, &len, NULL, &score)) {
@@ -17485,17 +17495,6 @@ did_set_thesaurusfunc(OptionChange* cha) {
    }
 
    return retval == FAIL ? e_invalid_argument : NULL;
-}
-
-//Mark the global 'completefunc' 'omnifunc' and 'thesaurusfunc' callbacks with
-//"copyID" so that they are not garbage collected.
-pub int
-set_ref_in_insexpand_funcs(int copyID) {
-   return memSetRefInCallback(&completeFnS, copyID)
-                 || memSetRefInCallback(&omniFnS, copyID)
-                 || memSetRefInCallback(&thesaurusCbS, copyID)
-                 || memSetRefInCallback(&customCompleteFnS, copyID);
-
 }
 
 //Get the user-defined completion function name for completion "type"
@@ -18390,14 +18389,14 @@ get_next_filename_completion(void) {
    CS ptr;
    CS leader = ins_compl_leader();
    Unt   leader_len = ins_compl_leader_len();;
-   int      in_fuzzy_collect = (cfc_has_mode() && leader_len > 0);
+   int      inFuzzyCollect = (cfc_has_mode() && leader_len > 0);
    CS last_sep = NULL;
-   int need_collect_bests = in_fuzzy_collect && compl_get_longest;
+   int need_collect_bests = inFuzzyCollect && compl_get_longest;
    int max_score = 0;
    int current_score = 0;
    Unt dir = compl_direction;
 
-   if (in_fuzzy_collect) {
+   if (inFuzzyCollect) {
       last_sep = lastOccurrence(leader, '/');
       if (!last_sep) {
          //No path separator or separator is the last character,
@@ -18408,7 +18407,7 @@ get_next_filename_completion(void) {
             return;
          compl_pattern.len = 1;
       } ei (*(last_sep + 1) == '\0')
-         in_fuzzy_collect = false;
+         inFuzzyCollect = false;
       else {
          //Split leader into path and file parts
          int path_len = last_sep - leader + 1;
@@ -18435,7 +18434,7 @@ get_next_filename_completion(void) {
    //May change home directory back to "~".
    tilde_replace(compl_pattern.c, OUT &matches);
 
-   if (in_fuzzy_collect) {
+   if (inFuzzyCollect) {
       Fuzzy fuzzy = {};
       fuzzy.a = matches.a;
 
@@ -18578,7 +18577,7 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
    int looped_around = false;
    CS ptr = NULL;
    int len = 0;
-   int in_fuzzy_collect = (cfc_has_mode() && compl_length > 0)
+   int inFuzzyCollect = (cfc_has_mode() && compl_length > 0)
       || ((curBook->o.completeOpt & COT_FUZZY) && compl_autocomplete);
    CS leader = ins_compl_leader();
    int score = FUZZY_SCORE_NONE;
@@ -18589,9 +18588,9 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
    if (st->scannedBook->o.inferCase)
       p_scs = false;
 
-   //Buffers other than curBook are scanned from the beginning or the end but never from the
-   //middle, thus setting nowrapscan in this buffer is a good idea, on the other hand, we always set
-   //wrapscan for curBook to avoid missing matches -- Acevedo,Webb
+   //Books other than curBook are scanned from the beginning or the end but never from the
+   //middle, thus setting nowrapscan in this buffer is a good idea, on the other hand, we always
+   //set wrapscan for curBook to avoid missing matches -- Acevedo,Webb
    if (!inCurBook)
       wrapSearchG = false;
    ei (*st->e_cpt == '.')
@@ -18601,7 +18600,7 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
       int   cont_s_ipos = false;
       ++msg_silent;  //Don't want messages for wrapscan.
 
-      if (in_fuzzy_collect) {
+      if (inFuzzyCollect) {
          found_new_match = search_for_fuzzy_match(
             st->scannedBook, st->cur_match_pos, leader, compl_direction, start_pos, OUT &len, &ptr,
             &score
@@ -18630,8 +18629,8 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
       } ei (compl_dir_forward()
          && (st->prev_match_pos.lnum > st->cur_match_pos->lnum
              || (st->prev_match_pos.lnum == st->cur_match_pos->lnum
-            && st->prev_match_pos.col >= st->cur_match_pos->col)))
-      {
+            && st->prev_match_pos.col >= st->cur_match_pos->col))
+      ) {
          if (looped_around)
             found_new_match = FAIL;
          else
@@ -18639,8 +18638,8 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
       } ei (!compl_dir_forward()
          && (st->prev_match_pos.lnum < st->cur_match_pos->lnum
              || (st->prev_match_pos.lnum == st->cur_match_pos->lnum
-            && st->prev_match_pos.col <= st->cur_match_pos->col)))
-      {
+            && st->prev_match_pos.col <= st->cur_match_pos->col))
+      ) {
          if (looped_around)
             found_new_match = FAIL;
          else
@@ -18656,8 +18655,10 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
             && start_pos->col  == st->cur_match_pos->col)
          continue;
 
-      if (!in_fuzzy_collect)
-         ptr = ins_compl_get_next_word_or_line(st->scannedBook, st->cur_match_pos, &len, &cont_s_ipos);
+      if (!inFuzzyCollect)
+         ptr = ins_compl_get_next_word_or_line(
+               st->scannedBook, st->cur_match_pos, &len, &cont_s_ipos
+         );
       if (!ptr || (ins_compl_has_preinsert() && STRCMP(ptr, compl_pattern.c) == 0))
          continue;
 
@@ -18671,7 +18672,7 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
             inCurBook ? NULL : st->scannedBook->shortFileName,
             0, cont_s_ipos, score) != NOTDONE)
       {
-         if (in_fuzzy_collect && score == compl_first_match->next->cp_score)
+         if (inFuzzyCollect && score == compl_first_match->next->cp_score)
             complCountBestS++;
          found_new_match = OK;
          break;
@@ -18679,6 +18680,95 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
    }
    p_scs = smartCaseSaved;
    wrapSearchG = true;
+
+   return found_new_match;
+}
+
+//Search for the next fuzzy match in the specified book. Attempt to find the next occurrence of
+//the given pattern in the book, starting from the current position. Handle line wrapping and
+//direction of search. Return true if a match is found, otherwise false.
+private int
+search_for_fuzzy_match(
+   Book* book,
+   Pos* pos,
+   CS pattern,
+   int dir,
+   Pos* start_pos,
+   OUT int* len,
+   OUT CS* ptr,
+   int* score
+) {
+   Pos current_pos = *pos;
+   Pos circly_end;
+   int found_new_match = false;
+   int looped_around = false;
+   int whole_line = ctrl_x_mode_whole_line();
+
+   if (book == curBook)
+      circly_end = *start_pos;
+   else {
+      circly_end.lnum = book->mem.lineCount;
+      circly_end.col = 0;
+      circly_end.coladd = 0;
+   }
+
+   if (whole_line && start_pos->lnum != pos->lnum)
+      current_pos.lnum += dir;
+
+   do {
+      //Check if looped around and back to start position
+      if (looped_around && EQUAL_POS(current_pos, circly_end))
+         break;
+
+      //Ensure current_pos is valid
+      if (current_pos.lnum >= 1 && current_pos.lnum <= book->mem.lineCount) {
+         //Get the current line buffer
+         *ptr = memGetLine(book, current_pos.lnum, false);
+         if (!whole_line)
+            *ptr += current_pos.col;
+
+         //If ptr is end of line is reached, move to next line
+         //or previous line based on direction
+         if (*ptr != NULL && **ptr != ZERO) {
+            if (!whole_line) {
+               //Try to find a fuzzy match in the current line starting from current position
+               found_new_match = fuzzyMatchStr_in_line(ptr, pattern, len, &current_pos, score);
+               if (found_new_match) {
+                  *pos = current_pos;
+                  break;
+               } ei (looped_around && current_pos.lnum == circly_end.lnum)
+                  break;
+            } else {
+               if (fuzzyMatchStr(*ptr, pattern) != FUZZY_SCORE_NONE) {
+                  found_new_match = true;
+                  *pos = current_pos;
+                  *len = (int)memGetBookLen(book, current_pos.lnum);
+                  break;
+               }
+            }
+         }
+      }
+
+      //Move to the next line or previous line based on direction
+      if (dir == FORWARD) {
+         if (++current_pos.lnum > book->mem.lineCount) {
+            if (wrapSearchG) {
+               current_pos.lnum = 1;
+               looped_around = true;
+            } else
+               break;
+         }
+      } else {
+         if (--current_pos.lnum < 1) {
+            if (wrapSearchG) {
+               current_pos.lnum = book->mem.lineCount;
+               looped_around = true;
+            } else
+               break;
+         }
+      }
+      current_pos.col = 0;
+   } while (true);
 
    return found_new_match;
 }

@@ -151,7 +151,7 @@ int * get_hisnum(int hist_type);
 int hist_char2type(int c);
 CS get_history_arg(Expand *xp, int idx);
 void init_history(void);
-void clear_hist_entry(HistoryEntry *hisptr);
+void clear_hist_entry(HistoryEntry* hisptr);
 int in_history(
     int       type,
     Byte  *str,
@@ -423,7 +423,6 @@ CS func_name(void* cookie);
 LineNr * func_breakpoint(void *cookie);
 int * func_dbg_tick(void *cookie);
 int current_func_returned(void);
-int free_unref_funccal(int copyID, int testing);
 EeSet * get_funccal_local_ht(void);
 DictItem * get_funccal_local_var(void);
 EeSet * get_funccal_args_ht(void);
@@ -432,11 +431,6 @@ void list_func_vars(int *first);
 Bag * get_current_funccal_dict(EeSet *ht);
 EeSetItem* find_hi_in_scoped_ht(CS name, EeSet** pht);
 DictItem * findVar_in_scoped_ht(Text name, Boole no_autoload);
-int set_ref_in_previous_funccal(int copyID);
-int set_ref_in_call_stack(int copyID);
-int set_ref_in_functions(int copyID);
-int set_ref_in_func_args(int copyID);
-int set_ref_in_func(CS name, UserFunc* fp_in, int copyID);
 UserFunc * define_function(Invocation* invo, ArrayList* lines_to_free);
 void c_function(Invocation* invo);
 int var_wrong_func_name(

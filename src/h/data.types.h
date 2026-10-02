@@ -11,13 +11,16 @@ typedef enum {
    FILTERMAP_FOREACH
 } FilterMap;
 #define getRefCount(a) _Generic((a),\
-   Job*: _getRefCount\
+   Job*: _getRefCount,\
+   Channel*: _getRefCount\
 )(a)
 #define incRefCount(a) _Generic((a),\
-   Job*: _incRefCount\
+   Job*: _incRefCount,\
+   Channel*: _incRefCount\
 )(a)
 #define decRefCount(a) _Generic((a),\
-   Job*: _decRefCount\
+   Job*: _decRefCount,\
+   Channel*: _decRefCount\
 )(a)
 #define GEN_add_L(acc, T) p##acc void add_L##T (L##T * l, T newItem) {\
    if (l->len < l->cap) {\

@@ -129,9 +129,9 @@ private int list_join_inner(
     CS sep,
     int echo_style,
     int restore_copyID,
-    int copyID,
-    ArrayList* join_gap)   //to keep each list item string
-;
+    Unt copyID,
+    ArrayList* join_gap   //to keep each list item string
+);
 private void listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg);
 private int item_compare(const void *s1, const void *s2);
 private int item_compare2(const void *s1, const void *s2);
@@ -259,7 +259,7 @@ private void skip_to_arg(
 private CS infinity_str(Unt positive, char fmt_spec, int force_sign, int space_for_positive);
 private int json_encode_gap(ArrayList* gap, Var* val, int options);
 private void write_string(ArrayList* gap, CS str);
-private int json_encode_item(ArrayList *gap, Var *val, int copyID, int options);
+private int json_encode_item(ArrayList *gap, Var *val, Unt copyID, int options);
 private void fill_numbuflen(JsReader* reader);
 private void json_skip_white(JsReader* reader);
 private int json_decode_string(JsReader* reader, Var* res, int quote);
@@ -269,44 +269,26 @@ private void mem_pre_alloc_s(Unt *sizep);
 private void mem_pre_alloc_l(Unt *sizep);
 private void mem_post_alloc(void **pp, Unt size);
 private void mem_pre_free(void **pp);
-private int free_unref_items(int copyID);
-private Boole set_ref_in_item_dict(
-   Bag* bag,
-   int copyID,
-   HtStack** ht_stack,
-   ListStack** list_stack
-);
-private Boole set_ref_in_item_list(
-   OUT List* ll,
-   int copyID,
-   HtStack** ht_stack,
-   ListStack** list_stack
-);
-private Boole set_ref_in_item_partial(
-   PartiallyApplied* pt,
-   int copyID,
-   HtStack** ht_stack,
-   ListStack** list_stack
-);
-private Boole set_ref_in_item_job(Job* job, int copyID, HtStack** ht_stack, ListStack** list_stack);
-private Boole set_ref_in_item_channel(Channel* ch, int copyID, HtStack** ht_stack, ListStack** list_stack);
 //}}}
 //{{{reference counting
 
 //These macros must only be defined for structs where the first value is an Unt holding the refcount
 pub
 #define getRefCount(a) _Generic((a),\
-   Job*: _getRefCount\
+   Job*: _getRefCount,\
+   Channel*: _getRefCount\
 )(a)
 
 pub
 #define incRefCount(a) _Generic((a),\
-   Job*: _incRefCount\
+   Job*: _incRefCount,\
+   Channel*: _incRefCount\
 )(a)
 
 pub
 #define decRefCount(a) _Generic((a),\
-   Job*: _decRefCount\
+   Job*: _decRefCount,\
+   Channel*: _decRefCount\
 )(a)
 
 //}}}
@@ -516,26 +498,9 @@ list_free_contents(List* l) {
    }
 }
 
-//Used by the garbage collector.
+//Used by the deep copying algorithms
 #define COPYID_INC 2
 #define COPYID_MASK (~0x1)
-
-//Go through the list of lists and free items without the copyID. But don't free a list that has
-//a watcher (used in a for loop), these are not referenced anywhere.
-pub int
-list_free_nonref(int copyID) {
-   int did_free = false;
-
-   for (List* ll = first_list; ll != NULL; ll = ll->usedNext) {
-      if ((ll->copyId & COPYID_MASK) != (copyID & COPYID_MASK) && ll->watcher == NULL) {
-          //Free the List and ordinary items it contains, but don't recurse
-          //into Lists and Dictionaries, they will be in the list of dicts or list of lists.
-          list_free_contents(ll);
-          did_free = true;
-      }
-   }
-   return did_free;
-}
 
 private void
 list_free_list(List* l) {
@@ -549,19 +514,6 @@ list_free_list(List* l) {
 
    free_type(l->ty);
    eeglFree(l);
-}
-
-pub void
-list_free_items(int copyID) {
-   List* ll_next;
-   for (List* ll = first_list; ll != NULL; ll = ll_next) {
-      ll_next = ll->usedNext;
-      if ((ll->copyId & COPYID_MASK) != (copyID & COPYID_MASK) && ll->watcher == NULL) {
-         //Free the List and ordinary items it contains, but don't recurse
-         //into Lists and Dictionaries, they will be in the list of dicts or list of lists.
-         list_free_list(ll);
-      }
-   }
 }
 
 pub void
@@ -1275,9 +1227,9 @@ list_slice_or_index(
 
 //Make a copy of list "orig".  Shallow if "deep" is false.
 //The refcount of the new list is set to 1.
-//See item_copy() for "top" and "copyID". Return NULL when out of memory.
+//See evCopyItem() for "top" and "copyID". Return NULL when out of memory.
 pub List *
-list_copy(List *orig, int deep, int top, int copyID) {
+list_copy(List *orig, int deep, int top, Unt copyID) {
    ListItem   *ni;
 
    if (!orig)
@@ -1300,7 +1252,7 @@ list_copy(List *orig, int deep, int top, int copyID) {
    for (item = orig->first; item != NULL && !gotInterruptG; item = item->next) {
       ni = listitem_alloc();
       if (deep) {
-         if (item_copy(&item->c, &ni->c, deep, false, copyID) == FAIL) {
+         if (evCopyItem(&item->c, &ni->c, deep, false, copyID) == FAIL) {
             eeglFree(ni);
             break;
          }
@@ -1347,7 +1299,7 @@ list_remove(List* l, ListItem* item, ListItem* item2) {
 
 //Return an allocated string with the string representation of a list. May return NULL.
 pub CS
-list2string(Var* tv, int copyID, int restore_copyID) {
+list2string(Var* tv, Unt copyID, int restore_copyID) {
    if (tv->list == NULL)
       return NULL;
    ArrayList   ga;
@@ -1375,9 +1327,9 @@ list_join_inner(
     CS sep,
     int echo_style,
     int restore_copyID,
-    int copyID,
-    ArrayList* join_gap)   //to keep each list item string
-{
+    Unt copyID,
+    ArrayList* join_gap   //to keep each list item string
+){
     int i;
     Join* p;
     int len;
@@ -1446,7 +1398,7 @@ list_join(
     CS sep,
     int echo_style,
     int restore_copyID,
-    int copyID
+    Unt copyID
 ) {
    ArrayList   join_ga;
 
@@ -3940,9 +3892,9 @@ tv_check_lock(Var* tv, Text name, Boole use_gettext) {
          || (lock != 0 && value_check_lock(lock, name, use_gettext));
 }
 
-//Copy the values from Var "from" to Var "to". When needed allocates string or increases reference
-//count. Does not make a copy of a list, blob or dict but copies the reference!
-//It is OK for "from" and "to" to point to the same item. This is used to make a copy later.
+//Copy the values from Var "from" to Var "to". When needed allocates string or increases
+//reference count. Does not make a copy of a list, blob or dict but copies the reference! It is
+//OK for "from" and "to" to point to the same item. This is used to make a copy later.
 pub void
 copy_tv(OUT Var* to, Var* from) {
    to->tag = from->tag;
@@ -3963,7 +3915,7 @@ copy_tv(OUT Var* to, Var* from) {
    case VAR_CHANNEL:
       to->channel = from->channel;
       if (to->channel)
-         ++to->channel->refCount;
+         incRefCount(to->channel);
       break;
    case VAR_STRING:
    case VAR_FUNC:
@@ -3976,7 +3928,7 @@ copy_tv(OUT Var* to, Var* from) {
       }
       break;
    case VAR_PARTIAL:
-      if (from->partial == NULL)
+      if (!from->partial)
          to->partial = NULL;
       else {
          to->partial = from->partial;
@@ -4562,12 +4514,7 @@ eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
 //"numbuf" is used for a number.
 //Puts quotes around strings, so that they can be parsed back by eval(). May return NULL.
 pub CS
-tv2string(
-   Var* tv,
-   Byte** tofree,
-   CS numbuf,
-   int copyID)
-{
+tv2string(Var* tv, Byte** tofree, CS numbuf, Unt copyID) {
    return echo_string_core(tv, tofree, numbuf, copyID, false, true, false);
 }
 
@@ -5187,7 +5134,7 @@ bagGetBool(Bag *d, Text key, Boole def) {
 
 //Return an allocated string with the string representation of a Dictionary. May return NULL.
 pub CS
-bagToString(Var* tv, int copyID, int restore_copyID) {
+bagToString(Var* tv, Unt copyID, int restore_copyID) {
    ArrayList   ga;
    Boole first = true;
    Byte numbuf[NUMBUFLEN];
@@ -5826,29 +5773,12 @@ bagUnref(Bag* b) {
       dict_free(b);
 }
 
-//Go through the list of dicts and free items without the copyID. true if anything was freed.
-pub int
-dict_free_nonref(int copyID) {
-   Boole did_free = false;
-
-   for (Bag* dd = first_dict; dd != NULL; dd = dd->dv_used_next) {
-      if ((dd->copyId & COPYID_MASK) != (copyID & COPYID_MASK)) {
-         //Free the Dictionary and ordinary items it contains, but don't
-         //recurse into Lists and Dictionaries, they will be in the list
-         //of dicts or list of lists.
-         dict_free_contents(dd);
-         did_free = true;
-      }
-   }
-   return did_free;
-}
-
 //Clear hashtab "ht" and dict items it contains.
 //If "ht" is not freed then you should call hash_init() next!
 pub void
 hashtab_free_contents(EeSet* ht) {
-   EeSetItem   *hi;
-   DictItem   *di;
+   EeSetItem* hi;
+   DictItem* di;
 
    if (check_hashtab_frozen(ht, S"clear dict"))
       return;
@@ -5892,24 +5822,12 @@ dict_free(Bag* d) {
    }
 }
 
-pub void
-dict_free_items(int copyID) {
-   Bag* dd_next;
-
-   //Return the slice "str[first : last]" using character indexes.  Composing
-   for (Bag* dd = first_dict; dd != NULL; dd = dd_next) {
-      dd_next = dd->dv_used_next;
-      if ((dd->copyId & COPYID_MASK) != (copyID & COPYID_MASK))
-          dict_free_dict(dd);
-   }
-}
-
 //Free a Dictionary, including all non-container items it contains. Ignore the reference count.
 pub void
-dict_free_contents(Bag *d) {
-   hashtab_free_contents(&d->hashTable);
-   free_type(d->ty);
-   d->ty = NULL;
+dict_free_contents(Bag* b) {
+   hashtab_free_contents(&b->hashTable);
+   free_type(b->ty);
+   b->ty = NULL;
 }
 
 //Allocate a Dictionary item. The "key" is copied to the new item.
@@ -5946,9 +5864,9 @@ dictitem_free(DictItem *item) {
 }
 
 //Make a copy of dict "d".  Shallow if "deep" is false. The refcount of the new dict is set to 1.
-//See item_copy() for "top" and "copyID". Return NULL when out of memory.
+//See evCopyItem() for "top" and "copyID". Return NULL when out of memory.
 pub Bag *
-dict_copy(Bag* orig, int deep, int top, int copyID) {
+dict_copy(Bag* orig, int deep, int top, Unt copyID) {
    if (!orig)
       return NULL;
 
@@ -5969,7 +5887,7 @@ dict_copy(Bag* orig, int deep, int top, int copyID) {
 
          di = dictitem_alloc(textOfItem(hi));
          if (deep) {
-            if (item_copy(&HI2DI(hi)->c, &di->c, deep, false, copyID) == FAIL) {
+            if (evCopyItem(&HI2DI(hi)->c, &di->c, deep, false, copyID) == FAIL) {
                 eeglFree(di);
                 break;
             }
@@ -6750,7 +6668,6 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
 
    //trylevel must be zero for a ":throw" command to be considered failed
    trylevel = 0;
-   suppress_errthrow = true;
    in_assert_fails = true;
    ++no_wait_return;
 
@@ -6759,7 +6676,6 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
 
    //reset here for any errors reported below
    trylevel = save_trylevel;
-   suppress_errthrow = false;
 
    if (called_emsg == called_emsg_before) {
       prepare_assert_error(&ga);
@@ -6856,7 +6772,6 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
 
 theend:
    trylevel = save_trylevel;
-   suppress_errthrow = false;
    in_assert_fails = false;
    anyEmsgG = false;
    gotInterruptG = false;
@@ -7084,7 +6999,7 @@ f_test_refcount(Arr(Var) argvars, Var* returnVar) {
       break;
    case VAR_CHANNEL:
       if (argvars[0].channel)
-         retval = argvars[0].channel->refCount - 1;
+         retval = getRefCount(argvars[0].channel) - 1;
       break;
    case VAR_FUNC:
       if (argvars[0].string) {
@@ -7113,16 +7028,6 @@ f_test_refcount(Arr(Var) argvars, Var* returnVar) {
 
    returnVar->tag = VAR_NUMBER;
    returnVar->number = retval;
-}
-
-pub void
-f_test_garbagecollect_now(Arr(Var), Var*) {
-   garbage_collect(true);
-}
-
-pub void
-f_test_garbagecollect_soon(Arr(Var), Var*) {
-   may_garbage_collect = true;
 }
 
 pub void
@@ -8714,96 +8619,6 @@ fuzzyMatchStr_in_line(
       *ptr = line_end;
 
    return found;
-}
-
-//Search for the next fuzzy match in the specified buffer. Attempt to find the next occurrence of
-//the given pattern in the buffer, starting from the current position. Handle line wrapping and
-//direction of search. Return true if a match is found, otherwise false.
-pub int
-search_for_fuzzy_match(
-   Book* book,
-   Pos* pos,
-   CS pattern,
-   int dir,
-   Pos* start_pos,
-   OUT int* len,
-   OUT CS* ptr,
-   int* score
-) {
-   Pos current_pos = *pos;
-   Pos circly_end;
-   int found_new_match = false;
-   int looped_around = false;
-   int whole_line = ctrl_x_mode_whole_line();
-
-   if (book == curBook)
-      circly_end = *start_pos;
-   else {
-      circly_end.lnum = book->mem.lineCount;
-      circly_end.col = 0;
-      circly_end.coladd = 0;
-   }
-
-   if (whole_line && start_pos->lnum != pos->lnum)
-      current_pos.lnum += dir;
-
-   do {
-
-      //Check if looped around and back to start position
-      if (looped_around && EQUAL_POS(current_pos, circly_end))
-         break;
-
-      //Ensure current_pos is valid
-      if (current_pos.lnum >= 1 && current_pos.lnum <= book->mem.lineCount) {
-         //Get the current line buffer
-         *ptr = memGetLine(book, current_pos.lnum, false);
-         if (!whole_line)
-            *ptr += current_pos.col;
-
-         //If ptr is end of line is reached, move to next line
-         //or previous line based on direction
-         if (*ptr != NULL && **ptr != ZERO) {
-            if (!whole_line) {
-               //Try to find a fuzzy match in the current line starting from current position
-               found_new_match = fuzzyMatchStr_in_line(ptr, pattern, len, &current_pos, score);
-               if (found_new_match) {
-                  *pos = current_pos;
-                  break;
-               } ei (looped_around && current_pos.lnum == circly_end.lnum)
-                  break;
-            } else {
-               if (fuzzyMatchStr(*ptr, pattern) != FUZZY_SCORE_NONE) {
-                  found_new_match = true;
-                  *pos = current_pos;
-                  *len = (int)memGetBookLen(book, current_pos.lnum);
-                  break;
-               }
-            }
-         }
-      }
-
-      //Move to the next line or previous line based on direction
-      if (dir == FORWARD) {
-         if (++current_pos.lnum > book->mem.lineCount) {
-            if (wrapSearchG) {
-               current_pos.lnum = 1;
-               looped_around = true;
-            } else
-               break;
-         }
-      } else {
-         if (--current_pos.lnum < 1) {
-            if (wrapSearchG) {
-               current_pos.lnum = book->mem.lineCount;
-               looped_around = true;
-            } else
-               break;
-         }
-      }
-      current_pos.col = 0;
-   } while (true);
-
-   return found_new_match;
 }
 
 //Free an array of fuzzy string matches "fuzmatch[count]".
@@ -11188,81 +11003,6 @@ error:
    return str_l;
 }
 
-//Implementation of the format operator 'gq'.
-pub void
-op_format(Operator* oper, int keep_cursor){ //keep cursor on same text char
-   long old_line_count = curBook->mem.lineCount;
-
-   //Place the cursor where the "gq" or "gw" command was given, so that "u" can put it back there.
-   curPor->cursor = oper->cursor_start;
-
-   if (u_save((LineNr)(oper->start.lnum - 1), (LineNr)(oper->end.lnum + 1)) == FAIL)
-      return;
-   curPor->cursor = oper->start;
-
-   if (oper->is_VIsual)
-      //When there is no change: need to remove the Visual selection
-      drawCurBookLater(UPD_INVERTED);
-
-   if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
-      //Set '[ mark at the start of the formatted area
-      curBook->opStart = oper->start;
-
-   //For "gw" remember the cursor position and put it back below (adjusted
-   //for joined and split lines).
-   if (keep_cursor)
-      saved_cursor = oper->cursor_start;
-
-   format_lines(oper->line_count, keep_cursor);
-
-   //Leave the cursor at the first non-blank of the last formatted line.
-   //If the cursor was moved one line back (e.g. with "Q}") go to the next
-   //line, so "." will do the next lines.
-   if (oper->end_adjusted && curPor->cursor.lnum < curBook->mem.lineCount)
-      ++curPor->cursor.lnum;
-   beginline(BL_WHITE | BL_FIX);
-   old_line_count = curBook->mem.lineCount - old_line_count;
-   msgmore(old_line_count);
-
-   if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
-      //put '] mark on the end of the formatted area
-      curBook->opEnd = curPor->cursor;
-
-   if (keep_cursor) {
-      curPor->cursor = saved_cursor;
-      saved_cursor.lnum = 0;
-
-      //formatting may have made the cursor position invalid
-      check_cursor();
-   }
-
-   if (oper->is_VIsual) {
-      Portal* po;
-      FOR_ALL_PORTALS(po) {
-         if (po->prevVisualEnd != 0) {
-            //When lines have been inserted or deleted, adjust the end of
-            //the Visual area to be redrawn.
-            if (po->prevVisualEnd > po->oldVisualLnum)
-               po->prevVisualEnd += old_line_count;
-            else
-               po->oldVisualLnum += old_line_count;
-         }
-      }
-   }
-}
-
-//Implementation of the format operator 'gq' for when using @formatexpr
-pub void
-op_formatexpr(Operator* oper) {
-   if (oper->is_VIsual)
-      //When there is no change: need to remove the Visual selection
-      drawCurBookLater(UPD_INVERTED);
-
-   if (fex_format() != 0)
-      //As documented: when 'formatexpr' returns non-zero fall back to internal formatting.
-      op_format(oper, false);
-}
-
 pub int
 fex_format() {  //character to be inserted
    ScriptPos save_sctx = scriptPosG;
@@ -11352,8 +11092,6 @@ copyStr_shellescape(CS string, int do_special, int do_newline) {
 
 //json.c: Encoding and decoding JSON.
 //Follows this standard: https://tools.ietf.org/html/rfc7159.html
-
-private int json_encode_item(ArrayList *gap, Var *val, int copyID, int options);
 
 //Encode "val" into a JSON format string. The result is added to "gap"
 //Return FAIL on failure and make gap->c empty.
@@ -11511,7 +11249,7 @@ write_string(ArrayList* gap, CS str) {
 
 //Encode "val" into "gap". Return FAIL or OK.
 private int
-json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
+json_encode_item(ArrayList *gap, Var *val, Unt copyID, int options) {
    Byte numbuf[NUMBUFLEN];
    CS res;
    Blob* b;
@@ -12448,7 +12186,7 @@ lallocZeroed(Unt size, Boole message){
 //Low-level memory allocation function. This is used often, KEEP IT FAST!
 pub void *
 lalloc(Unt size, Boole message) {
-   static int   releasing = false;  //don't do mf_release_all() recursive
+   static int releasing = false;  //don't do mf_release_all() recursive
 
 #ifdef MEM_PROFILE
    //Safety check for allocating zero bytes
@@ -12751,7 +12489,7 @@ toFullFileName(Text fileName, DirName* dn) {
 }
 
 //}}}
-//{{{garbage collection of variables
+//{{{deep copying
 
 //structure used for explicit stack while garbage collecting hash tables
 struct HtStack {
@@ -12765,466 +12503,30 @@ struct ListStack{
    ListStack* prev;
 };
 
-//When recursively copying lists and dicts we need to remember which ones we
-//have done to avoid endless recursiveness.  This unique ID is used for that.
-//The last bit is used for previous_funccal, ignored when comparing.
-private int current_copyID = 0;
-
-private int free_unref_items(int copyID);
+//When recursively copying lists and dicts, we need to remember which ones we have done to avoid
+//endless cycles. This unique ID is used for that. The last bit is used for previous_funccal,
+//ignored when comparing.
+private Int current_copyID = 0;
 
 //Return the next (unique) copy ID. Used for serializing nested structures.
-pub int
-get_copyID(void) {
+pub Int
+get_copyID(void) { //:get_copyID
    current_copyID += COPYID_INC;
    return current_copyID;
 }
 
-//Garbage collection for lists and dictionaries.
-//
-//We use reference counts to be able to free most items right away when they
-//are no longer used.  But for composite items it's possible that it becomes
-//unused while the reference count is > 0: When there is a recursive
-//reference.  Example:
-//  :let l = [1, 2, 3]
-//  :let d = {9: l}
-//  :let l[1] = d
-//
-//Since this is quite unusual we handle this with garbage collection: every
-//once in a while find out which lists and dicts are not referenced from any
-//variable.
-//
-//Here is a good reference text about garbage collection (refers to Python
-//but it applies to all reference-counting mechanisms):
-//  http://python.ca/nas/python/gc/
-
-//Perform garbage collection for lists and dicts.
-//When "testing" is true this is called from test_garbagecollect_now().
-//Return true if some memory was freed.
-pub int
-garbage_collect(int testing) {
-   int copyID;
-   int abort = false;
-   Book* book;
-   Portal* wp;
-   int did_free = false;
-   Tab* tab;
-
-   if (!testing) {
-      //Only do this once.
-      want_garbage_collect = false;
-      may_garbage_collect = false;
-      garbage_collect_at_exit = false;
-   }
-
-   //The execution stack can grow big, limit the size.
-   if (exestack.cap - exestack.len > 500) {
-      Unt new_len;
-      Byte* pp;
-
-      //Keep 150% of the current size, with a minimum of the growth size.
-      int n = exestack.len / 2;
-      if (n < exestack.ga_growsize)
-         n = exestack.ga_growsize;
-
-      //Don't make it bigger though.
-      if (exestack.len + n < exestack.cap) {
-         new_len = (Unt)exestack.ga_itemsize * (exestack.len + n);
-         pp = eeRealloc(exestack.c, new_len);
-         exestack.cap = exestack.len + n;
-         exestack.c = pp;
-      }
-   }
-
-   //We advance by two because we add one for items referenced through previous_funccal.
-   copyID = get_copyID();
-
-   //1. Go through all accessible variables and mark all lists and dicts with copyID.
-
-   //Don't free variables in the previous_funccal list unless they are only
-   //referenced through previous_funccal.  This must be first, because if
-   //the item is referenced elsewhere the funccal must not be freed.
-   abort = abort || set_ref_in_previous_funccal(copyID)
-                 //script-local variables
-                 || garbage_collect_scriptvars(copyID);
-
-   //book-local variables
-   FOR_ALL_BOOKS(book) {
-      abort = abort || set_ref_in_item(&book->bookVar.c, copyID, NULL, NULL);
-   }
-
-   //portal-local variables
-   FOR_ALL_TAB_PORTALS(tab, wp)
-      abort = abort || set_ref_in_item(&wp->wVar.c, copyID,  NULL, NULL);
-   //portal-local variables in autocmd portals
-   for (Unt i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
-      if (autoCommPortG[i].port) {
-         abort = abort || set_ref_in_item( &autoCommPortG[i].port->wVar.c, copyID, NULL, NULL);
-      }
-   }
-   FOR_ALL_POPUPPORTS(wp)
-      abort = abort || set_ref_in_item(&wp->wVar.c, copyID, NULL, NULL);
-   FOR_ALL_TABS(tab) {
-      FOR_ALL_POPUPPORTS_IN_TAB(tab, wp)
-         abort = abort || set_ref_in_item(&wp->wVar.c, copyID, NULL, NULL);
-   }
-
-   //tab-local variables
-   FOR_ALL_TABS(tab) {
-      abort = abort || set_ref_in_item(&tab->tabVar.c, copyID, NULL, NULL);
-   }
-   //global variables
-   abort = abort || garbage_collect_globvars(copyID)
-      //function-local variables
-      || set_ref_in_call_stack(copyID)
-      //named functions (matters for closures)
-      || set_ref_in_functions(copyID)
-      //function call arguments, if v:testing is set.
-      || set_ref_in_func_args(copyID);
-
-    //v: vars
-    abort = abort
-      //callbacks in books
-      || setRefInBooks(copyID)
-      //@completefunc, @omnifunc and @thesaurusfunc callbacks
-      || set_ref_in_insexpand_funcs(copyID)
-      //@operatorfunc callback
-      || set_ref_in_opfunc(copyID)
-      //@tagfunc callback
-      || set_ref_in_tagfunc(copyID)
-      //@findfunc callback
-      || set_ref_in_findfunc(copyID);
-
-    abort = abort
-      || set_ref_in_channel(copyID)
-      || set_ref_in_job(copyID)
-      || set_ref_in_timer(copyID)
-      || llSetRef(copyID)
-      || set_ref_in_term(copyID)
-      || set_ref_in_popups(copyID);
-
-   if (!abort) {
-      //2. Free lists and dictionaries that are not referenced.
-      did_free = free_unref_items(copyID);
-
-      //3. Check if any funccal can be freed now. This may call us back recursively.
-      free_unref_funccal(copyID, testing);
-   } ei (p_verbose > 0) {
-      verb_msg(_("Not enough memory to set references, garbage collection aborted!"));
-   }
-
-   return did_free;
-}
-
-//Free lists, dictionaries, channels and jobs that are no longer referenced.
-private int
-free_unref_items(int copyID) {
-
-   //Let all "free" functions know that we are here.  This means no
-   //dictionaries, lists, channels or jobs are to be freed, because we will do that here.
-   in_free_unref_items = true;
-
-   //PASS 1: free the contents of the items.  We don't free the items
-   //themselves yet, so that it is possible to decrement refcount counters
-
-   //Go through the list of dicts and free items without this copyID.
-   int did_free = dict_free_nonref(copyID);
-
-   //Go through the list of lists and free items without this copyID.
-   did_free |= list_free_nonref(copyID);
-
-   //Go through the list of jobs and free items without the copyID. This
-   //must happen before doing channels, because jobs refer to channels, but
-   //the reference from the channel to the job isn't tracked.
-   did_free |= free_unused_jobs_contents(copyID, COPYID_MASK);
-
-   //Go through the list of channels and free items without the copyID.
-   did_free |= free_unused_channels_contents(copyID, COPYID_MASK);
-
-   //PASS 2: free the items themselves.
-   dict_free_items(copyID);
-   list_free_items(copyID);
-
-   //Go through the list of jobs and free items without the copyID. This
-   //must happen before doing channels, because jobs refer to channels, but
-   //the reference from the channel to the job isn't tracked.
-   free_unused_jobs(copyID, COPYID_MASK);
-
-   //Go through the list of channels and free items without the copyID.
-   free_unused_channels(copyID, COPYID_MASK);
-
-   in_free_unref_items = false;
-
-   return did_free;
-}
-
-//Mark all lists and dicts referenced through EeSet "eeset" with "copyID".
-//"list_stack" is used to add lists to be marked.  Can be NULL.
-//
-//Return true if setting references failed somehow.
-pub int
-setRefInSet(EeSet* eeset, int copyID, ListStack** list_stack) {
-   int      todo;
-   int      abort = false;
-   EeSetItem* hi;
-   EeSet   *cur_ht;
-   HtStack   *ht_stack = NULL;
-   HtStack   *tempitem;
-
-   cur_ht = eeset;
-   for (;;) {
-      if (!abort) {
-         //Mark each item in the hashtab.  If the item contains a hashtab
-         //it is added to ht_stack, if it contains a list it is added to list_stack.
-         todo = (int)cur_ht->count;
-         FOR_ALL_HASHTAB_ITEMS(cur_ht, hi, todo) {
-            if (!HASHITEM_EMPTY(hi)) {
-               --todo;
-               abort = abort || set_ref_in_item(&HI2DI(hi)->c, copyID, &ht_stack, list_stack);
-            }
-         }
-      }
-
-      if (ht_stack == NULL)
-         break;
-
-      //take an item from the stack
-      cur_ht = ht_stack->ht;
-      tempitem = ht_stack;
-      ht_stack = ht_stack->prev;
-      free(tempitem);
-   }
-
-   return abort;
-}
-
-//Mark a list and its items with "copyID". Return true if setting references failed somehow.
-pub int
-set_ref_in_list(List *ll, int copyID) {
-   if (ll && ll->copyId != copyID) {
-      ll->copyId = copyID;
-      return set_ref_in_list_items(ll, copyID, NULL);
-   }
-   return false;
-}
-
-//Mark all lists and dicts referenced through list "l" with "copyID".
-//"ht_stack" is used to add hashtabs to be marked.  Can be NULL.
-//
-//Return true if setting references failed somehow.
-pub int
-set_ref_in_list_items(List* l, int copyID, HtStack** ht_stack) {
-   ListItem    *li;
-   int       abort = false;
-   List    *cur_l;
-   ListStack *list_stack = NULL;
-   ListStack *tempitem;
-
-   cur_l = l;
-   for (;;) {
-      if (!abort && cur_l->first != &range_list_item)
-         //Mark each item in the list.  If the item contains a hashtab
-         //it is added to ht_stack, if it contains a list it is added to list_stack.
-         for (li = cur_l->first; !abort && li != NULL; li = li->next)
-            abort = abort || set_ref_in_item(&li->c, copyID, ht_stack, &list_stack);
-      if (list_stack == NULL)
-         break;
-
-      //take an item from the stack
-      cur_l = list_stack->list;
-      tempitem = list_stack;
-      list_stack = list_stack->prev;
-      free(tempitem);
-   }
-
-   return abort;
-}
-
-//Mark the partial in callback 'cb' with "copyID".
 pub Boole
-memSetRefInCallback(Callback* cb, int copyID) {
-   if (!cb || !cb->name || *cb->name == ZERO || cb->cb_partial == NULL)
-      return false;
+set_checkForCircularRefs(OUT EeSet* set, Unt copyId, ListStack** listStack) {
+   //TODO
+   return true;
 
-   Var tv;
-   tv.tag = VAR_PARTIAL;
-   tv.partial = cb->cb_partial;
-   return set_ref_in_item(&tv, copyID, NULL, NULL);
 }
 
-//Mark the dict "dd" with "copyID". Also see set_ref_in_item().
-private Boole
-set_ref_in_item_dict(
-   Bag* bag,
-   int copyID,
-   HtStack** ht_stack,
-   ListStack** list_stack
-){
-   if (!bag || bag->copyId == copyID)
-      return false;
+pub Boole
+list_checkForCircularRefs(OUT List* , Unt , ListStack** ) {
+   //TODO
+   return true;
 
-   //Didn't see this bag yet.
-   bag->copyId = copyID;
-   if (!ht_stack)
-      return setRefInSet(&bag->hashTable, copyID, list_stack);
-
-   HtStack *newitem = ALLOC_ONE(HtStack);
-   newitem->ht = &bag->hashTable;
-   newitem->prev = *ht_stack;
-   *ht_stack = newitem;
-
-   return false;
-}
-
-//Mark the list "ll" with "copyID". Also see set_ref_in_item().
-private Boole
-set_ref_in_item_list(
-   OUT List* ll,
-   int copyID,
-   HtStack** ht_stack,
-   ListStack** list_stack
-) {
-   if (!ll || ll->copyId == copyID)
-      return false;
-
-   //Didn't see this list yet.
-   ll->copyId = copyID;
-   if (!list_stack)
-      return set_ref_in_list_items(ll, copyID, ht_stack);
-
-   ListStack *newitem = ALLOC_ONE(ListStack);
-   if (newitem == NULL)
-      return true;
-
-   newitem->list = ll;
-   newitem->prev = *list_stack;
-   *list_stack = newitem;
-
-   return false;
-}
-
-//Mark the partial "pt" with "copyID". Also see set_ref_in_item().
-private Boole
-set_ref_in_item_partial(
-   PartiallyApplied* pt,
-   int copyID,
-   HtStack** ht_stack,
-   ListStack** list_stack
-) {
-   if (!pt)
-      return false;
-
-   int abort = set_ref_in_func(pt->name, pt->fn, copyID);
-
-   if (pt->self) {
-      Var dtv;
-      dtv.tag = VAR_BAG;
-      dtv.bag = pt->self;
-      set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
-   }
-
-
-   for (int i = 0; i < pt->argc; ++i)
-      abort = abort || set_ref_in_item(&pt->argv[i], copyID, ht_stack, list_stack);
-
-   return abort;
-}
-
-//Mark the job "pt" with "copyID". Also see set_ref_in_item().
-private Boole
-set_ref_in_item_job(Job* job, int copyID, HtStack** ht_stack, ListStack** list_stack) {
-   if (!job || chJobGetCopyId(job) == copyID)
-      return false;
-
-   chJobSetCopyId(job, copyID);
-   Var dtv;
-   if (chJobGetChannel(job)) {
-      dtv.tag = VAR_CHANNEL;
-      dtv.channel = chJobGetChannel(job);
-      set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
-   }
-   if (chJobGetExitCb(job).cb_partial != NULL) {
-      dtv.tag = VAR_PARTIAL;
-      dtv.partial = chJobGetExitCb(job).cb_partial;
-      set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
-   }
-
-   return false;
-}
-
-//Mark the channel "ch" with "copyID". Also see set_ref_in_item().
-private Boole
-set_ref_in_item_channel(Channel* ch, int copyID, HtStack** ht_stack, ListStack** list_stack) {
-   Var    dtv;
-
-   if (!ch || ch->copyId == copyID)
-      return false;
-
-   ch->copyId = copyID;
-   for (ChannelFdKind part = PART_SOCK; part < PART_COUNT; ++part) {
-      for (JsonQ *jq = ch->fds[part].ch_json_head.jq_next; jq; jq = jq->jq_next)
-         set_ref_in_item(jq->jq_value, copyID, ht_stack, list_stack);
-      for (CbNode *cq = ch->fds[part].ch_cb_head.cq_next; cq != NULL; cq = cq->cq_next)
-         if (cq->cq_callback.cb_partial != NULL) {
-            dtv.tag = VAR_PARTIAL;
-            dtv.partial = cq->cq_callback.cb_partial;
-            set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
-         }
-      if (ch->fds[part].ch_callback.cb_partial != NULL) {
-         dtv.tag = VAR_PARTIAL;
-         dtv.partial = ch->fds[part].ch_callback.cb_partial;
-         set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
-      }
-   }
-   if (ch->ch_callback.cb_partial != NULL) {
-      dtv.tag = VAR_PARTIAL;
-      dtv.partial = ch->ch_callback.cb_partial;
-      set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
-   }
-   if (ch->ch_close_cb.cb_partial != NULL) {
-      dtv.tag = VAR_PARTIAL;
-      dtv.partial = ch->ch_close_cb.cb_partial;
-      set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
-   }
-
-   return false;
-}
-
-//Mark all lists, dicts and other container types referenced through Var "tv" with "copyID".
-//"list_stack" is used to add lists to be marked. May be NULL.
-//"ht_stack" is used to add hashtabs to be marked. May be NULL.
-//
-//Return true if setting references failed somehow.
-pub int
-set_ref_in_item(Var* tv, int copyID, HtStack** ht_stack, ListStack** list_stack){
-   Boole abort = false;
-
-   switch (tv->tag) {
-   case VAR_BAG:
-      return set_ref_in_item_dict(tv->bag, copyID, ht_stack, list_stack);
-   case VAR_LIST: return set_ref_in_item_list(tv->list, copyID, ht_stack, list_stack);
-   case VAR_FUNC: abort = set_ref_in_func(tv->string, NULL, copyID); break;
-   case VAR_PARTIAL:
-       return set_ref_in_item_partial(tv->partial, copyID, ht_stack, list_stack);
-
-   case VAR_JOB:
-       return set_ref_in_item_job(tv->job, copyID, ht_stack, list_stack);
-
-   case VAR_CHANNEL:
-       return set_ref_in_item_channel(tv->channel, copyID, ht_stack, list_stack);
-
-   case VAR_UNKNOWN:
-   case VAR_ANY:
-   case VAR_VOID:
-   case VAR_BOOL:
-   case VAR_NUMBER:
-   case VAR_FLOAT:
-   case VAR_STRING:
-   case VAR_BLOB:
-       //Types that do not contain any other item
-       break;
-   }
-
-   return abort;
 }
 
 //}}}

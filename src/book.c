@@ -5008,34 +5008,6 @@ mf_hash_grow(MfHashTable *mht) {
 //}}}
 //{{{builtins. Book related builtin functions
 
-//Mark references in functions of books.
-pub Boole
-setRefInBooks(int copyID) {
-   Boole abort = false;
-   Book* bp;
-   FOR_ALL_BOOKS(bp) {
-      for (Listener* lnr = bp->listener; !abort && lnr; lnr = lnr->next)
-         abort = abort || memSetRefInCallback(&lnr->callback, copyID);
-      if (abort)
-         return true;
-
-      abort = abort
-         || memSetRefInCallback(&bp->promptCallback, copyID)
-         || memSetRefInCallback(&bp->promptInterrupt, copyID)
-         || memSetRefInCallback(bp->o.completeFn, copyID)
-         || memSetRefInCallback(bp->o.omniFn, copyID)
-         || memSetRefInCallback(bp->o.thesaurusFn, copyID);
-      if (!abort && bp->o.completeFn)
-         abort = abort || memSetRefInCallback(bp->o.completeFn, copyID);
-      if (!abort)
-         abort = abort || memSetRefInCallback(bp->o.tagFn, copyID)
-                       || memSetRefInCallback(bp->o.findFn, copyID);
-      if (abort)
-         return true;
-   }
-   return false;
-}
-
 pub Book*
 bookFindByName(CS name, Boole curtab_only) {
    return bookFindFileByBookNr(

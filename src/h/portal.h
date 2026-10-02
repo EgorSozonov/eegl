@@ -296,7 +296,6 @@ void popup_check_cursor_pos(void);
 void may_update_popup_mask(int type);
 void may_update_popup_position(void);
 void update_popups(void (*portUpdate)(Portal* po, Boole *));
-int set_ref_in_popups(int copyID);
 int portalIsPopup(Portal* po);
 Portal * popupFindPreviewPortal(void);
 Portal * popupFindInfoPortal(void);

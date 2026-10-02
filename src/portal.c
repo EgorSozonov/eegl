@@ -303,7 +303,6 @@ private void update_popupTransparencyG(Portal* po, int val);
 private int check_popup_unhidden(Portal* po);
 private inline int popup_need_position_adjust(Portal* po);
 private CS get_spaces(int len);
-private int set_ref_in_one_popup(Portal* po, int copyID);
 private void popup_hide_info(void);
 private void mayStartMessagePortalTimer(Portal* po);
 private int popup_closePortal(Portal* port);
@@ -13451,44 +13450,6 @@ update_popups(void (*portUpdate)(Portal* po, Boole *)) {
 
    //In case portUpdate() called draw.c:start_search_hl().
    end_search_hl();
-}
-
-//Mark references in callbacks of one popup portal.
-private int
-set_ref_in_one_popup(Portal* po, int copyID) {
-   Boole abort = false;
-   Var tv;
-
-   if (po->pup.closeCb.cb_partial != NULL) {
-      tv.tag = VAR_PARTIAL;
-      tv.partial = po->pup.closeCb.cb_partial;
-      abort = abort || set_ref_in_item(&tv, copyID, NULL, NULL);
-   }
-   if (po->pup.filterCb.cb_partial != NULL) {
-      tv.tag = VAR_PARTIAL;
-      tv.partial = po->pup.filterCb.cb_partial;
-      abort = abort || set_ref_in_item(&tv, copyID, NULL, NULL);
-   }
-   abort = abort || set_ref_in_list(po->pup.mask, copyID);
-   return abort;
-}
-
-//Set reference in callbacks of popup portals.
-pub int
-set_ref_in_popups(int copyID) {
-   Boole abort = false;
-
-   for (Portal* po = firstPopupPortG; !abort && po; po = po->next)
-      abort = abort || set_ref_in_one_popup(po, copyID);
-
-   Tab* tab;
-   FOR_ALL_TABS(tab) {
-      for (Portal* po = tab->firstPopupPort; !abort && po; po = po->next)
-         abort = abort || set_ref_in_one_popup(po, copyID);
-      if (abort)
-         break;
-   }
-   return abort;
 }
 
 pub int

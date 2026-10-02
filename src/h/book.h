@@ -76,7 +76,6 @@ BlockId mf_trans_del(MemFile* mfp, BlockId old_nr);
 void mf_set_ffname(MemFile* mfp);
 void mf_fullname(MemFile* mfp);
 int mf_need_trans(MemFile* mfp);
-Boole setRefInBooks(int copyID);
 Book* bookFindByName(CS name, Boole curtab_only);
 Book* findBook(Var* avar);
 void f_append(Var *argvars, OUT Var* returnVar);

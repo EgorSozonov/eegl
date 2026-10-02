@@ -376,14 +376,6 @@ free_tagfunc_option(void) {
 }
 # endif
 
-//Mark the global 'tagfunc' callback with "copyID" so that it is not garbage collected.
-pub int
-set_ref_in_tagfunc(int copyID) {
-   int abort = memSetRefInCallback(&tfu_cb, copyID);
-
-   return abort;
-}
-
 //{{{jump to tag
 
 //Jump to tag; handling of tag commands and tag stack

@@ -66,6 +66,7 @@ typedef struct {
    LineNr ch_buf_bot;   //last line to send
 } ChannelFd;
 struct Channel {
+   Unt refCount;   //reference count
    Channel* next;
    Channel* prev;
 
@@ -94,8 +95,7 @@ struct Channel {
    int ch_anonymous_pipe;  //ConPTY
    int isBeingKilled;       //TerminateJobObject() was called
 
-   Unt refCount;   //reference count
-   int copyId;
+   Unt copyId;
 };
 typedef struct HistoryEntry {
    int      hisnum;      //identifying number

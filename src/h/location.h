@@ -41,7 +41,6 @@ int setLocationList(
    CS title,
    Bag* specific
 );
-Boole llSetRef(int copyId);
 void c_lbook(Invocation* invo);
 CS cexpr_get_auname(CommIndex id);
 int trigger_cexpr_autocmd(int id);

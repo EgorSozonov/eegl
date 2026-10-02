@@ -2498,25 +2498,7 @@ struct MsgList {
    CS msg;      //original message, allocated
    CS throw_msg;   //msg to throw: usually original one
    CS sfile;      //value from estack_sfile(), allocated
-   long   slnum;      //line number for "sfile"
-};
-
-//The exception types.
-typedef enum {
-   ET_USER,      //exception caused by ":throw" command
-   ET_ERROR,      //error exception
-   ET_INTERRUPT,   //interrupt exception triggered by Ctrl-C
-} ExceptionKind;
-
-typedef struct Exception Exception;
-struct Exception {
-   ExceptionKind   type;      //exception type
-   CS value;      //exception value
-   MsgList* messages;   //message(s) causing error exception
-   CS throw_name;   //name of the throw point
-   LineNr      throw_lnum;   //line number of the throw point
-   List* stacktrace;   //stacktrace
-   Exception* caught;   //next exception on the caught stack
+   Long slnum;      //line number for "sfile"
 };
 
 //Structure to save the error/interrupt/exception state between calls to
@@ -2524,18 +2506,7 @@ struct Exception {
 //variable by the (common) caller of these functions.
 typedef struct {
    int pending;      //error/interrupt/exception state
-   Exception* exception;   //exception value
 } Cleanup;
-
-//Exception state that is saved and restored when calling timer callback
-//functions and deferred functions.
-typedef struct {
-   Exception* currentException;
-   int didThrow;
-   int needRethrow;
-   int tryLevel;
-   int didEmsg;
-} ExceptionState;
 
 declStruct(SyntaxState);
 
@@ -2770,7 +2741,7 @@ struct List {
    Unt refCount;   //reference count
    int len;      //number of items
    int withItems;   //number of items following this struct that should not be freed
-   int copyId;   //ID used by deepcopy()
+   Unt copyId;   //ID used by deepcopy()
    char lock;   //zero, VAR_LOCKED, VAR_FIXED
 };
 
@@ -2814,7 +2785,7 @@ struct Bag {
    Byte lock;   //zero, VAR_LOCKED, VAR_FIXED
    Byte scope;   //zero, VAR_SCOPE, VAR_DEF_SCOPE
    Unt refCount;   //reference count
-   int copyId;   //ID used by deepcopy()
+   Unt copyId;   //ID used by deepcopy()
    EeSet hashTable;   //hashtab that refers to the items
    TypeSpec* ty;   //current type, allocated by alloc_type()
    Bag* dv_copydict;   //copied bag used by deepcopy()
@@ -2916,7 +2887,6 @@ struct FnCall {
 
    //for closure
    Unt refCount;   //number of user functions that reference this funccal
-   int copyId;   //for garbage collection
    ArrayList   fc_ufuncs;   //list of UserFunc* which keep a reference to "fc_func"
 };
 
@@ -3112,7 +3082,6 @@ typedef struct {
       ScriptPos* sctx;    //script info
       UserFunc* ufunc;    //function info
       AutoPatComm* aucmd; //autocommand info
-      Exception* except;  //exception info
    } info;
 
    ScriptPos sctxSaved;   //saved current_sctx when calling function
@@ -4116,7 +4085,7 @@ typedef struct {
    CS pum_extra;     //extra menu text (may be truncated)
    CS pum_info;      //extra info
    int pum_cpt_source_idx;   //index of completion source in 'cpt'
-   Decoration abbreviationDeco;   //hilite decoration for abbr
+   Decoration abbreviationDeco; //hilite decoration for abbr
    Decoration kindDeco;   //hilite decoration for kind
 } PopupItem;
 
@@ -4197,8 +4166,8 @@ typedef struct {
    Text expandedName;   //NULL or expanded name in allocated memory.
    Var* var;   //Typeval of item being used.
                //If "newkey" isn't NULL, it's the Bag to which to add the item.
-   ListItem   *ll_li;      //The list item or NULL.
-   List   *ll_list;   //The list or NULL.
+   ListItem* ll_li;      //The list item or NULL.
+   List* ll_list;   //The list or NULL.
    int      ll_range;   //true when a [i:j] range was used
    int      ll_empty2;   //Second index is empty: [i:]
    long   ll_n1;      //First index for list
@@ -4220,16 +4189,16 @@ typedef enum {
 
 //argument for mouse_find_win()
 typedef enum {
-   IGNORE_POPUP,   //only check non-popup windows
-   FIND_POPUP,      //also find popup windows
-   FAIL_POPUP      //return NULL if mouse on popup window
+   IGNORE_POPUP,   //only check non-popup portals
+   FIND_POPUP,     //also find popup portals
+   FAIL_POPUP      //return NULL if mouse on popup portal
 } MouseFindKind;
 
 //Symbolic names for some registers.
-#define DELETION_REGISTER   36
+#define DELETION_REGISTER  36
 #define STAR_REGISTER      37
-#define PLUS_REGISTER   STAR_REGISTER       //there is only one
-#define TILDE_REGISTER      (PLUS_REGISTER + 1)
+#define PLUS_REGISTER      STAR_REGISTER       //there is only one
+#define TILDE_REGISTER     (PLUS_REGISTER + 1)
 
 #define NUM_REGISTERS      (TILDE_REGISTER + 1)
 
@@ -4255,8 +4224,8 @@ typedef struct BlockDef {
 //Each yank register has an array of pointers to lines.
 typedef struct {
    Arr(Text) y_array;
-   LineNr y_size;      //number of lines in y_array
-   Byte y_type;      //MLINE, MCHAR or MBLOCK
+   LineNr y_size;   //number of lines in y_array
+   Byte y_type;     //MLINE, MCHAR or MBLOCK
    ColNr y_width;   //only set if y_type == MBLOCK
    Tyme y_time_set;
 } YankReg;
@@ -4274,13 +4243,13 @@ typedef struct {
    int dir;      //search direction, '/' or '?'
    int line;      //search has line offset
    int end;      //search set cursor at end
-   long   off;      //line or char offset
+   Long off;      //line or char offset
 } SearchOffset;
 
 //A search pattern and its attributes are stored in a spat struct
 typedef struct {
    Text pat;//the pattern (in allocated memory) or NULL
-   int magic;   //magicness of the pattern
+   Boole magic;   //magicness of the pattern
    Boole no_scs;   //no smartcase for this pattern
    SearchOffset off;
 } SearchPattern;
@@ -4370,22 +4339,6 @@ typedef struct {
    int cs_xpixel;
    int cs_ypixel;
 } CellSize;
-
-typedef enum {
-   WAYLAND_SELECTION_NONE       = 0x0,
-   WAYLAND_SELECTION_REGULAR    = 0x1,
-   WAYLAND_SELECTION_PRIMARY    = 0x2,
-} WaylandSelection;
-
-//Callback when another client wants us to send data to them
-typedef void (*wayland_cb_send_data_func_T)(
-   const char *mime_type,
-   int fd,
-   WaylandSelection type
-);
-
-//Callback when the selection is lost (data source object overwritten)
-typedef void (*wayland_cb_selection_cancelled_func_T)(WaylandSelection type);
 
 //}}}
 //{{{spelling
@@ -4832,8 +4785,8 @@ EXTERN int vgetcBusyG INIT(= 0);         //when inside vgetc() then > 0
 
 //Lines left before a "more" message.  Ex mode needs to be able to reset this
 //after you type something.
-EXTERN int   lines_left INIT(= -1);       //lines left for listing
-EXTERN int   msg_no_more INIT(= false);  //don't use more prompt, truncate messages
+EXTERN int lines_left INIT(= -1);       //lines left for listing
+EXTERN int msg_no_more INIT(= false);  //don't use more prompt, truncate messages
 
 EXTERN Boole frozenOptionsG INIT(= false);
 
@@ -4860,11 +4813,6 @@ EXTERN ArrayList script_items INIT5(0, 0, sizeof(ScriptItem *), 20, NULL);
 
 # define FUNCLINE(fp, j)   ((Byte **)(fp->lines.c))[j]
 
-//The exception currently being thrown.  Used to pass an exception to
-//a different cstack.  Also used for discarding an exception before it is
-//caught or made pending.  Only valid when did_throw is true.
-EXTERN Exception* current_exception;
-
 //did_throw: An exception is being thrown.  Reset when the exception is caught
 //or as long as it is pending in a finally clause.
 EXTERN int did_throw INIT(= false);
@@ -4890,26 +4838,6 @@ EXTERN Boole force_abort INIT(= false);
 //"msg" field of that element, but can be identical to the "msg" field of a later list element,
 //when the "emsg_severe" flag was set when the emsg() call was made.
 EXTERN MsgList **msg_list INIT(= NULL);
-
-//suppress_errthrow: When true, don't convert an error to an exception.  Used when displaying the
-//interrupt message or reporting an exception that is still uncaught at the top level (which has
-//already been discarded then).  Also used for the error message when no exception can be thrown.
-EXTERN Boole suppress_errthrow INIT(= false);
-
-//The stack of all caught and not finished exceptions.  The exception on the top of the stack is
-//the one got by evaluation of v:exception.  The complete stack of all caught and pending
-//exceptions is embedded in the various cstacks; the pending exceptions, however, are not on the
-//caught stack.
-EXTERN Exception* caught_stack INIT(= NULL);
-
-//Garbage collection can only take place when we are sure there are no Lists or Dictionaries
-//being used internally. This is flagged with "may_garbage_collect" when we are at the toplevel.
-//"want_garbage_collect" is set by the garbagecollect() function, which means
-//we do garbage collection before waiting for a char at the toplevel.
-//"garbage_collect_at_exit" indicates garbagecollect(1) was called.
-EXTERN Boole may_garbage_collect INIT(= false);
-EXTERN Boole want_garbage_collect INIT(= false);
-EXTERN Boole garbage_collect_at_exit INIT(= false);
 
 EXTERN Boole   did_source_packages INIT(= false);
 

@@ -36,7 +36,6 @@ Decoration uiGetDeco(Portal* po, LineNr lnum, int col);
 void term_update_colors_all(void);
 CS term_get_status_text(Terminal* term);
 void term_clear_status_text(Terminal* term);
-int set_ref_in_term(int copyID);
 void f_term_dumpwrite(Var* argvars, Var*);
 int term_swap_diff(void);
 void f_term_dumpdiff(Arr(Var) argvars, Var* returnVar);

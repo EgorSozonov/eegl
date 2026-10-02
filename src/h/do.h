@@ -59,7 +59,6 @@ int check_changed_any(Boole checkOnlyHidden, Boole unload);
 int check_fname(void);
 int bookWrite_all(Book* book, Boole forceit);
 int executeCommLine(CS cmd);
-void handle_did_throw(void);
 CS getline_peek(
    LineGetter fgetline,
    void* cookie      //argument for fgetline()
@@ -159,7 +158,6 @@ void c_wrongmodifier(Invocation* invo);
 int expand_findfunc(CS pat, OUT ExpandMatch* matches);
 CS setFindFn(OptionChange* cha);
 void doFreeFindFnOption(void);
-int set_ref_in_findfunc(int copyID);
 void c_splitview(Invocation* invo);
 void tabNew(void);
 void c_tabnext(Invocation* invo);
@@ -375,7 +373,6 @@ void doClearOpArg(Operator *oper);
 void cursor_pos_info(Bag* dict);
 CS did_set_operatorfunc(OptionChange *cha);
 void opsFreeOperatorFnOption(void);
-int set_ref_in_opfunc(int copyID);
 void doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank);
 int getviscol(void);
 int coladvance_force(ColNr wcol);

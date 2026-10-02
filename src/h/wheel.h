@@ -279,7 +279,6 @@ int ins_compl_win_active(Portal *wp);
 int ins_compl_interrupted(void);
 int ins_compl_len(void);
 CS did_set_thesaurusfunc(OptionChange* cha);
-int set_ref_in_insexpand_funcs(int copyID);
 void f_complete(Arr(Var) argvars, Var*);
 void f_complete_add(Arr(Var) argvars, Var* returnVar);
 void f_complete_check(Arr(Var), Var* returnVar);

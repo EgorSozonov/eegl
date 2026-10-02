@@ -474,15 +474,10 @@ private int get_function_body(
 private int eval_fname_sid(Byte *p);
 private UserFunc * find_func_with_prefix(Byte *name, int sid);
 private int cat_func_name(CS builder, Unt bufsize, UserFunc *fp);
-private void add_nr_var(
-   Bag   *dp,
-   DictItem   *v,
-   CS name,
-   Long nr)
-;
+private void add_nr_var(Bag* dp, DictItem   *v, CS name, Long nr);
 private void free_funccal(FnCall *fc);
-private void free_funccal_contents(FnCall *fc);
-private void cleanup_function_call(FnCall *fc);
+private void free_funccal_contents(FnCall* fc);
+private void cleanup_function_call(FnCall* fc);
 private int numbered_function(Byte *name);
 private void funccal_unref(FnCall *fc, UserFunc *fp, int force);
 private int func_remove(UserFunc *fp);
@@ -512,7 +507,6 @@ private CS trans_function_name_ext(
 );
 private Byte * list_functions_matching_pat(Invocation* invo);
 private UserFunc* listOneFunction(Invocation* invo, CS name, CS p, Boole is_global);
-private int can_free_funccal(FnCall *fc, int copyID);
 private int callInner(
    Invocation* invo,
    CS name,
@@ -525,7 +519,6 @@ private int deferInner(CS name, CS* arg, PartiallyApplied* partial, EvalCtx* eva
 private void applyDeferred(FnCall *funccal);
 private void invoke_funccall_defer(FnCall *fc);
 private FnCall * get_funccal(void);
-private int set_ref_in_funccal(FnCall *fc, int copyID);
 private CS get_deleted_augroup(void);
 private void show_autocmd(AutoPat* ap, AutoEvent event);
 private void au_remove_pat(AutoPat* ap);
@@ -1968,8 +1961,7 @@ f_getscriptinfo(Arr(Var) argvars, Var* returnVar) {
       if (sid > 0) {
           Bag   *var_dict;
 
-          var_dict = dict_copy(&si->sn_vars->sv_dict, true, true,
-                           get_copyID());
+          var_dict = dict_copy(&si->sn_vars->sv_dict, true, true, get_copyID());
           if (var_dict == NULL
              || bagAddBag(d, S"variables", var_dict) == FAIL
              || bagAddList(d, S"functions", get_script_local_funcs(sid)) == FAIL)
@@ -13720,12 +13712,7 @@ cat_func_name(CS builder, Unt bufsize, UserFunc *fp) {
 
 //Add a number variable "name" to dict "dp" with value "nr".
 private void
-add_nr_var(
-   Bag   *dp,
-   DictItem   *v,
-   CS name,
-   Long nr)
-{
+add_nr_var(Bag* dp, DictItem   *v, CS name, Long nr) {
    STRCPY(v->key, name);
    v->flags = DI_FLAGS_RO | DI_FLAGS_FIX;
    hash_add(&dp->hashTable, (Text){v->key, v->len}, S"add variable");
@@ -13756,7 +13743,7 @@ free_funccal(FnCall *fc) {
 //Free "fc" and what it contains. Can be called only when "fc" is kept beyond the period of it
 //called, i.e. after cleanup_function_call(fc).
 private void
-free_funccal_contents(FnCall *fc) {
+free_funccal_contents(FnCall* fc) {
    ListItem   *li;
 
    //Free all l: variables.
@@ -13775,13 +13762,13 @@ free_funccal_contents(FnCall *fc) {
 //Handle the last part of returning from a function: free the local hashtable.
 //Unless it is still in use by a closure.
 private void
-cleanup_function_call(FnCall *fc) {
-    int   may_free_fc = fc->refCount <= 0;
-    int   free_fc = true;
+cleanup_function_call(FnCall* fc) {
+   int may_free_fc = fc->refCount <= 0;
+   int free_fc = true;
 
-    currentCallS = fc->fc_caller;
+   currentCallS = fc->fc_caller;
 
-    //Free all l: variables if not referred.
+   //Free all l: variables if not referred.
    if (may_free_fc && fc->localVars.refCount == DO_NOT_FREE_CNT)
       vars_clear(&fc->localVars.hashTable);
    else
@@ -13813,11 +13800,9 @@ cleanup_function_call(FnCall *fc) {
    if (may_free_fc && fc->arguments.refCount == DO_NOT_FREE_CNT)
       fc->arguments.first = NULL;
    else {
-      ListItem *li;
-
       free_fc = false;
-
       //Make a copy of the a:000 items, since we didn't do that above.
+      ListItem *li;
       FOR_ALL_LIST_ITEMS(&fc->arguments, li)
          copy_tv(OUT &li->c, &li->c);
    }
@@ -13825,25 +13810,12 @@ cleanup_function_call(FnCall *fc) {
    if (free_fc)
       free_funccal(fc);
    else {
-      static int made_copy = 0;
-
       //"fc" is still in use.  This can happen when returning "a:000",
       //assigning "l:" to a global variable or defining a closure.
       //Link "fc" in the list for garbage collection later.
       fc->fc_caller = previous_funccal;
       previous_funccal = fc;
-
-      if (want_garbage_collect)
-          //If garbage collector is ready, clear count.
-          made_copy = 0;
-      ei (++made_copy >= (int)((4096 * 1024) / sizeof(*fc))) {
-          //We have made a lot of copies, worth 4 Mbyte.  This can happen
-          //when repetitively calling a function that creates a reference to
-          //itself somehow. Call the garbage collector soon to avoid using too much memory.
-          made_copy = 0;
-          want_garbage_collect = true;
-      }
-    }
+   }
 }
 
 //Return true if "name" is a numbered function, ignoring a "g:" prefix.
@@ -14637,13 +14609,6 @@ call_callback(
    ++callback_depth;
    ret = call_func(callback->name, len, returnVar, argcount, argvars, &funcexe);
    --callback_depth;
-
-   //When a :def function was called that uses :try an error would be turned
-   //into an exception.  Need to give the error here.
-   if (need_rethrow && current_exception != NULL && trylevel == 0) {
-      need_rethrow = false;
-      handle_did_throw();
-   }
 
    return ret;
 }
@@ -15649,17 +15614,7 @@ func_ptr_ref(UserFunc *fp) {
       ++fp->refCount;
 }
 
-//Return true if items in "fc" do not have "copyID". That means they are not
-//referenced from anywhere that is in use.
-private int
-can_free_funccal(FnCall *fc, int copyID) {
-    return (fc->arguments.copyId != copyID
-       && fc->localVars.copyId != copyID
-       && fc->argVars.copyId != copyID
-       && fc->copyId != copyID);
-}
-
-//":return [expr]"
+//";return [expr]"
 pub void
 c_return(Invocation* invo) {
    Byte   *arg = invo->arg;
@@ -15869,16 +15824,7 @@ applyDeferred(FnCall *funccal) {
       CS name = dr->dr_name;
       dr->dr_name = NULL;
 
-      //If the deferred function is called after an exception, then only the
-      //first statement in the function will be executed (because of the
-      //exception). So save and restore the try/catch/throw exception state.
-      ExceptionState estate;
-      exception_state_save(&estate);
-      exception_state_clear();
-
       call_func(name, -1, &returnVar, dr->argc, dr->dr_argvars, &funcexe);
-
-      exception_state_restore(&estate);
 
       clearVar(&returnVar);
       eeglFree(name);
@@ -16145,29 +16091,6 @@ current_func_returned(void) {
    return currentCallS->fc_returned;
 }
 
-pub int
-free_unref_funccal(int copyID, int testing) {
-   int      did_free = false;
-   int      did_free_funccal = false;
-   FnCall   *fc, **pfc;
-
-   for (pfc = &previous_funccal; *pfc != NULL; ) {
-      if (can_free_funccal(*pfc, copyID)) {
-         fc = *pfc;
-         *pfc = fc->fc_caller;
-         free_funccal_contents(fc);
-         did_free = true;
-         did_free_funccal = true;
-      } else
-         pfc = &(*pfc)->fc_caller;
-   }
-   if (did_free_funccal)
-      //When a funccal was freed some more items might be garbage collected, so run again.
-      (void)garbage_collect(testing);
-
-   return did_free;
-}
-
 //Get function call environment based on backtrace debug level
 private FnCall *
 get_funccal(void) {
@@ -16294,102 +16217,6 @@ findVar_in_scoped_ht(Text name, Boole no_autoload) {
    }
    currentCallS = old_currentCallS;
    return v;
-}
-
-//Set "copyID + 1" in previous_funccal and callers.
-pub int
-set_ref_in_previous_funccal(int copyID) {
-   for (FnCall* fc = previous_funccal; fc != NULL; fc = fc->fc_caller) {
-      fc->copyId = copyID + 1;
-      if (setRefInSet(&fc->localVars.hashTable, copyID + 1, NULL)
-            || setRefInSet(&fc->argVars.hashTable, copyID + 1, NULL)
-            || set_ref_in_list_items(&fc->arguments, copyID + 1, NULL))
-         return true;
-   }
-   return false;
-}
-
-private int
-set_ref_in_funccal(FnCall *fc, int copyID) {
-   if (fc->copyId != copyID) {
-      fc->copyId = copyID;
-      if (setRefInSet(&fc->localVars.hashTable, copyID, NULL)
-            || setRefInSet(&fc->argVars.hashTable, copyID, NULL)
-            || set_ref_in_list_items(&fc->arguments, copyID, NULL)
-            || set_ref_in_func(NULL, fc->fn, copyID))
-         return true;
-   }
-   return false;
-}
-
-//Set "copyID" in all local vars and arguments in the call stack.
-pub int
-set_ref_in_call_stack(int copyID) {
-   for (FnCall* fc = currentCallS; fc != NULL; fc = fc->fc_caller) {
-      if (set_ref_in_funccal(fc, copyID))
-         return true;
-   }
-
-   //Also go through the funccal_stack.
-   for (FnCallEntry* entry = funccal_stack; entry; entry = entry->next) {
-      for (FnCall* fc = entry->top_funccal; fc != NULL; fc = fc->fc_caller) {
-         if (set_ref_in_funccal(fc, copyID))
-            return true;
-      }
-   }
-   return false;
-}
-
-//Set "copyID" in all functions available by name.
-pub int
-set_ref_in_functions(int copyID) {
-   int todo = (int)userDefinedFnsS.count;
-   for (EeSetItem* hi = userDefinedFnsS.array; todo > 0 && !gotInterruptG; ++hi) {
-      if (!HASHITEM_EMPTY(hi)) {
-         --todo;
-         UserFunc* fp = HI2UF(hi);
-         if (!func_name_refcount(fp->uf_name) && set_ref_in_func(NULL, fp, copyID))
-            return true;
-      }
-   }
-   return false;
-}
-
-//Set "copyID" in all function arguments.
-pub int
-set_ref_in_func_args(int copyID) {
-   for (int i = 0; i < funcargs.len; ++i) {
-      if (set_ref_in_item(((Var **)funcargs.c)[i], copyID, NULL, NULL))
-         return true;
-   }
-   return false;
-}
-
-//Mark all lists and dicts referenced through function "name" with "copyID".
-//Return true if setting references failed somehow.
-pub int
-set_ref_in_func(CS name, UserFunc* fp_in, int copyID) {
-   if (!name && !fp_in) {
-      return false;
-   }
-
-   UserFunc* fp = fp_in;
-   Byte   fnameBuilder[FLEN_FIXED + 1];
-   Byte   *tofree = NULL;
-   int      abort = false;
-
-   if (!fp_in) {
-      FnError error = FCERR_NONE;
-      CS fname = fname_trans_sid(name, fnameBuilder, &tofree, &error);
-      fp = find_func(fname, false);
-   }
-   if (fp) {
-      for (FnCall* fc = fp->uf_scoped; fc; fc = fc->fn->uf_scoped)
-         abort = abort || set_ref_in_funccal(fc, copyID);
-   }
-
-   eeglFree(tofree);
-   return abort;
 }
 
 //":function". "lines_to_free" is a list of strings to be freed later.

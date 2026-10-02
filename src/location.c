@@ -588,9 +588,6 @@ private int setCurrentIndex(LocationStack *stack, LocationList *ll, DictItem *di
 private int setTextFn(LocationList *ll, DictItem *di);
 private int setProperties(LocationStack *stack, Bag *specifics, LocListAction action, CS title);
 private void freeTheStack(LocationStack* stack);
-private Boole checkIfUserDataLocked(LocationStack* stack, int copyID);
-private Boole checkIfContextAndCallbackLocked(LocationStack* stack, int copyID);
-private Boole markReferencesInStack(LocationStack* st, int copyId);
 private inline Arr(Byte) getAutocmdNameForCbuffer(CommIndex id);
 private int processCbookArgs(Invocation* invo, OUT Book** outBook, LineNr* line1, LineNr* line2);
 private void searchInFile(
@@ -7199,68 +7196,6 @@ setLocationList(
    decrementLlBusyness();
 
    return retval;
-}
-
-private Boole
-checkIfUserDataLocked(LocationStack* stack, int copyID) {
-   Boole abort = false;
-   for (Unt i = 0; i < stack->cap && !abort; ++i) {
-      LocationList *ll = &stack->lists[i];
-      if (!ll->hasUserData)
-         continue;
-      LocLine *lline;
-      int j;
-      FOR_ALL_LL_ITEMS(ll, lline, j) {
-         Var* user_data = &lline->userData;
-         if (user_data != NULL && user_data->tag != VAR_NUMBER
-               && user_data->tag != VAR_STRING && user_data->tag != VAR_FLOAT
-         ) {
-            abort = abort || set_ref_in_item(user_data, copyID, NULL, NULL);
-         }
-      }
-   }
-   return abort;
-}
-
-//Check the location context and callback function if they are in use. For all the lists
-//in a location stack.
-private Boole
-checkIfContextAndCallbackLocked(LocationStack* stack, int copyID) {
-   Boole abort = false;
-
-   for (Unt i = 0; i < stack->cap && !abort; ++i) {
-      Var* ctx = stack->lists[i].qf_ctx;
-      if (ctx != NULL && ctx->tag != VAR_NUMBER
-            && ctx->tag != VAR_STRING && ctx->tag != VAR_FLOAT) {
-         abort = abort || set_ref_in_item(ctx, copyID, NULL, NULL);
-      }
-
-      Callback* cb = &stack->lists[i].textFn;
-      abort = abort || memSetRefInCallback(cb, copyID);
-   }
-
-   return abort;
-}
-
-private Boole
-markReferencesInStack(LocationStack* st, int copyId) {
-   return checkIfContextAndCallbackLocked(st, copyId) || checkIfUserDataLocked(st, copyId);
-}
-
-//Mark the context of the quickfix list and the location lists (if present) as "in use". So that
-//garbage collection doesn't free the context.
-pub Boole
-llSetRef(int copyId) {
-   if (!mainStackG)
-      return true;
-
-   Boole abort = false;
-   for (int i = 0; i < COUNT_LOC_LISTS; i++) {
-      abort = abort || markReferencesInStack(locationStacksP + i, copyId);
-      if (abort)
-         return true;
-   }
-   return abort || memSetRefInCallback(&locationTextFnS, copyId);
 }
 
 //Return the autocmd name for the :lbook commands

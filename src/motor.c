@@ -156,7 +156,7 @@ struct Job {
 
    Book* inBook;   //book from "in-name"
 
-   int copyId;
+   Unt copyId;
 
    Channel* channel; //channel for I/O, reference-counted
    Arr(CS) argv;   //command line used to start the job
@@ -206,6 +206,7 @@ typedef struct {
 
 pub
 struct Channel {
+   Unt refCount;   //reference count
    Channel* next;
    Channel* prev;
 
@@ -234,8 +235,7 @@ struct Channel {
    int ch_anonymous_pipe;  //ConPTY
    int isBeingKilled;       //TerminateJobObject() was called
 
-   Unt refCount;   //reference count
-   int copyId;
+   Unt copyId;
 };
 
 typedef enum {
@@ -1303,11 +1303,6 @@ mainLoop(Boole inCommPort) {  //true when working in the command-line window
          gotInterruptG = false;
       }
 
-      //At the toplevel there is no exception handling.  Discard any that
-      //may be hanging around (e.g. from "interrupt" at the debug prompt).
-      if (did_throw && !ex_normal_busy)
-         discard_current_exception();
-
       msg_scroll = false;
       quitMoreG = false;
 
@@ -1424,10 +1419,6 @@ mainLoop(Boole inCommPort) {  //true when working in the command-line window
       //Postponed until here to avoid computing virtCol too often.
       update_curswant();
 
-      //May perform garbage collection when waiting for a character, but
-      //only at the very toplevel. Otherwise we may be using a List or Dict internally somewhere.
-      //"may_garbage_collect" is reset in vgetc() which is invoked through normalAction().
-      may_garbage_collect = (!inCommPort);
       //get and execute a normal mode command.
       if (term_use_loop()
           && oper.opTy == OP_NOP && oper.regname == ZERO
@@ -1550,8 +1541,6 @@ exitEegl(int exitval) {
 
    job_stop_on_exit();
    cs_end();
-   if (garbage_collect_at_exit)
-      garbage_collect(false);
 
    mch_exit(exitval);
 }
@@ -3191,10 +3180,6 @@ check_due_timer(void) {
          int save_called_emsg = called_emsg;
          Unt mustRedrawSaved = mustRedrawG;
          int save_ex_pressedreturn = get_pressedreturn();
-         int save_may_garbage_collect = may_garbage_collect;
-         ExceptionState estate;
-
-         exception_state_save(&estate);
 
          //Create a scope for running the timer callback, ignoring most of
          //the current scope, such as being inside a try/catch.
@@ -3203,8 +3188,6 @@ check_due_timer(void) {
          called_emsg = 0;
          anyEmsgG = false;
          mustRedrawG = 0;
-         may_garbage_collect = false;
-         exception_state_clear();
 
          //Invoke the callback.
          timer->tr_firing = true;
@@ -3220,12 +3203,10 @@ check_due_timer(void) {
             ++timer->tr_emsg_count;
          anyEmsgG = save_anyEmsgG;
          called_emsg = save_called_emsg;
-         exception_state_restore(&estate);
          if (mustRedrawG != 0)
             need_drawUpdateScreen = true;
          mustRedrawG = mustRedrawG > mustRedrawSaved ? mustRedrawG : mustRedrawSaved;
          set_pressedreturn(save_ex_pressedreturn);
-         may_garbage_collect = save_may_garbage_collect;
 
          //Only fire the timer again if it repeats and stop_timer() wasn't
          //called while inside the callback (id == -1).
@@ -3350,25 +3331,6 @@ add_timer_info_all(OUT Var* returnVar) {
       if (timer->id != -1)
          add_timer_info(returnVar, timer);
    }
-}
-
-//Mark references in partials of timers.
-pub int
-set_ref_in_timer(int copyID) {
-   int abort = false;
-   Var   tv;
-
-   for (Timer* timer = firstTimerS; !abort && timer; timer = timer->next) {
-      if (timer->callback.cb_partial) {
-         tv.tag = VAR_PARTIAL;
-         tv.partial = timer->callback.cb_partial;
-      } else {
-         tv.tag = VAR_FUNC;
-         tv.string = timer->callback.name;
-      }
-      abort = abort || set_ref_in_item(&tv, copyID, NULL, NULL);
-   }
-   return abort;
 }
 
 //Return true if "timer" exists in the list of timers.
@@ -4037,38 +3999,6 @@ channel_unref(Channel* channel) {
    if (channel && --channel->refCount <= 0)
       return channel_may_free(channel);
    return false;
-}
-
-pub int
-free_unused_channels_contents(int copyID, int mask) {
-   int did_free = false;
-
-   //This is invoked from the garbage collector, which only runs at a safe point.
-   ++safe_to_invoke_callback;
-
-   Channel* ch;
-   FOR_ALL_CHANNELS(ch) {
-      if (!channel_still_useful(ch) && (ch->copyId & mask) != (copyID & mask)) {
-          //Free the channel and ordinary items it contains, but don't
-          //recurse into Lists, Dictionaries etc.
-          channel_free_contents(ch);
-          did_free = true;
-      }
-   }
-
-   --safe_to_invoke_callback;
-   return did_free;
-}
-
-pub void
-free_unused_channels(int copyID, int mask) {
-   Channel* next;
-   for (Channel* ch = firstChannelP; ch; ch = next) {
-      next = ch->next;
-      if (!channel_still_useful(ch) && (ch->copyId & mask) != (copyID & mask))
-         //Free the channel struct itself.
-         channel_free_channel(ch);
-   }
 }
 
 //"flags": MCH_DELAY_IGNOREINPUT - don't read input
@@ -6991,23 +6921,6 @@ channel_any_readahead(void) {
    return false;
 }
 
-//Mark references to lists used in channels.
-pub int
-set_ref_in_channel(int copyID) {
-   int abort = false;
-   Channel* channel;
-   Var tv;
-
-   for (channel = firstChannelP; !abort && channel; channel = channel->next) {
-      if (channel_still_useful(channel)) {
-         tv.tag = VAR_CHANNEL;
-         tv.channel = channel;
-         abort = abort || set_ref_in_item(&tv, copyID, NULL, NULL);
-      }
-   }
-   return abort;
-}
-
 //Return the "part" to write to for "channel".
 private ChannelFdKind
 channel_part_send(Channel* channel) {
@@ -9066,23 +8979,7 @@ job_cleanup(Job* job) {
       job_free_later(job);
 }
 
-//Mark references in jobs that are still useful.
-pub int
-set_ref_in_job(int copyID) {
-   int abort = false;
-   Var tv;
-
-   for (Job* job = firstJobS; !abort && job != NULL; job = job->next) {
-      if (job_still_useful(job)) {
-         tv.tag = VAR_JOB;
-         tv.job = job;
-         abort = abort || set_ref_in_item(&tv, copyID, NULL, NULL);
-      }
-   }
-   return abort;
-}
-
-//Dereference "job".  Note that after this "job" may have been freed.
+//Dereference "job". Note that after this, "job" may have been freed.
 pub void
 job_unref(Job* job) {
    if (!job || --job->refCount > 0)
@@ -9096,42 +8993,13 @@ job_unref(Job* job) {
    //"stoponexit" flag or an exit callback.
    if (!job_need_end_check(job)) {
       job_free(job);
-   } ei (job->channel != NULL) {
-      //Do remove the link to the channel, otherwise it hangs
-      //around until Eegl exits. See job_free() for refcount.
+   } ei (job->channel) {
+      //Do remove the link to the channel, otherwise it hangs around until Eegl exits. See
+      //job_free() for refcount.
       ch_log(job->channel, "detaching channel from job");
       job->channel->job = NULL;
       channel_unref(job->channel);
       job->channel = NULL;
-   }
-}
-
-pub int
-free_unused_jobs_contents(int copyID, int mask) {
-   int did_free = false;
-   Job* job;
-
-   FOR_ALL_JOBS(job) {
-      if ((job->copyId & mask) != (copyID & mask) && !job_still_useful(job)) {
-         //Free the channel and ordinary items it contains, but don't
-         //recurse into Lists, Dictionaries etc.
-         job_free_contents(job);
-         did_free = true;
-      }
-   }
-   return did_free;
-}
-
-pub void
-free_unused_jobs(int copyID, int mask) {
-   Job* job_next;
-
-   for (Job* job = firstJobS; job; job = job_next) {
-      job_next = job->next;
-      if ((job->copyId & mask) != (copyID & mask) && !job_still_useful(job)) {
-         //Free the job struct itself.
-         job_free_job(job);
-      }
    }
 }
 
@@ -11804,21 +11672,23 @@ write_eeglinfo_varlist(FILE* fp) {
             case VAR_NUMBER:  s = S"NUM"; break;
             case VAR_FLOAT:   s = S"FLO"; break;
             case VAR_BAG: {
-               Bag   *di = this_var->c.bag;
-               int   copyID = get_copyID();
+               Bag* di = this_var->c.bag;
+               Unt copyID = get_copyID();
 
                s = S"DIC";
-               if (di && !setRefInSet(&di->hashTable, copyID, NULL) && di->copyId == copyID)
+               if (di && set_checkForCircularRefs(&di->hashTable, copyID, NULL)
+                     && di->copyId == copyID
+               )
                   //has a circular reference, can't turn the value into a string
                   continue;
                break;
             }
             case VAR_LIST: {
-               List   *l = this_var->c.list;
-               int   copyID = get_copyID();
+               List* l = this_var->c.list;
+               Unt copyID = get_copyID();
 
                s = S"LIS";
-               if (l && !set_ref_in_list_items(l, copyID, NULL) && l->copyId == copyID)
+               if (l && list_checkForCircularRefs(l, copyID, NULL) && l->copyId == copyID)
                   //has a circular reference, can't turn the value into a string
                   continue;
                break;

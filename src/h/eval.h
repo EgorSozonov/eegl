@@ -63,26 +63,21 @@ CS partial_name(PartiallyApplied* pt);
 void partial_unref(PartiallyApplied *pt);
 void f_test_option_not_set(Arr(Var) argvars, Var*);
 CS echo_string_core(
-   Var   *tv,
-   Byte   **tofree,
-   Byte   *numbuf,
-   int      copyID,
-   int      echo_style,
-   int      restore_copyID,
-   int      composite_val
+   Var* tv,
+   Byte** tofree,
+   Byte* numbuf,
+   Unt copyID,
+   int echo_style,
+   int restore_copyID,
+   int composite_val
 );
-CS echo_string(
-    Var   *tv,
-    Byte   **tofree,
-    Byte   *numbuf,
-    int      copyID)
-;
+CS echo_string(Var* tv, Byte** tofree, Byte* numbuf, Unt copyID);
 Pos* var2fpos(
    Var* varp,
    int dollar_lnum,   //true when $ is last line
    int* fnum,      //set to fnum for '0, 'A, etc.
-   int charcol)   //return character column
-;
+   int charcol   //return character column
+);
 int list2fpos(
    Var* arg,
    Pos* posp,
@@ -100,13 +95,7 @@ int handle_subscript(
    EvalCtx   *evalarg,
    int      verbose)   //give error messages
 ;
-int item_copy(
-   Var   *from,
-   Var   *to,
-   int      deep,
-   int      top,
-   int      copyID)
-;
+int evCopyItem(Var* from, Var* to, int deep, int top, Unt copyID);
 int mch_get_random(OUT CS buf, int len);
 void echo_one(Var* returnVar, int with_space, int *atstart, int *needclr);
 void c_echo(Invocation* invo);
@@ -125,8 +114,6 @@ CS do_string_sub(
    Unt* ret_len      //length of returned buffer
 );
 void evalvars_clear(void);
-int garbage_collect_globvars(int copyID);
-int garbage_collect_scriptvars(int copyID);
 void set_internal_string_var(CS name, CS value);
 void eval_diff(CS, CS, CS);
 void eval_patch(CS, CS, CS);
@@ -223,6 +210,8 @@ FnError call_internal_method(
 int non_zero_arg(Var* argvars);
 Book * evGetBookArg(Var* arg);
 Portal* getOptionalPortal(Arr(Var) argvars, int idx);
+void f_cursor(Var* argvars, Var* returnVar);
+void f_deepcopy(Var* argvars, Var* returnVar);
 void execute_redir_str(CS value, int value_len);
 void execute_cmds_from_string(CS str);
 CS get_list_line(Unt, void* cookie, int, GetlineAlgo);
@@ -250,18 +239,8 @@ int aborting(void);
 void update_force_abort(void);
 int should_abort(int retcode);
 int aborted_in_try(void);
-int cause_errthrow(CS mesg, int severe, int* ignore);
 void free_global_msglist(void);
-CS get_exception_string(void* value, ExceptionKind type, CS cmdname, int* should_free);
-int throw_exception(void *value, ExceptionKind type, CS commName);
-void discard_current_exception(void);
-void catch_exception(Exception *excp);
-void finish_exception(Exception *excp);
-void exception_state_save(ExceptionState *estate);
-void exception_state_restore(ExceptionState *estate);
-void exception_state_clear(void);
-void report_make_pending(int pending, void *value);
 void c_eval(Invocation* invo);
 void enter_cleanup(Cleanup *csp);
-void leave_cleanup(Cleanup *csp);
+void leave_cleanup(Cleanup* csp);
 void c_endfunction(Invocation* invo);

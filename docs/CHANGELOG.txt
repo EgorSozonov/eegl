@@ -302,6 +302,7 @@
 [-] PROTO (now we have BetterC instead)
 [-] clipboard object (no need, we have wl-copy & wl-paste)
 [-] xxd (we have `hexdump -C` instead)
+[-] garbage collection (refcounting & weak refs FTW)
 
 tag.c:do_tag (weird matches is static, also newMatches?)
 
