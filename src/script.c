@@ -7069,7 +7069,7 @@ init_history(void) {
 }
 
 pub void
-clear_hist_entry(HistoryEntry *hisptr) {
+clear_hist_entry(HistoryEntry* hisptr) {
     hisptr->hisnum = 0;
     hisptr->eeglinfo = false;
     hisptr->hisstr = NULL;
@@ -10555,7 +10555,7 @@ openCommPort(void) {
    commPortBookG = curBook;
 
    optChangeAndReportError(
-      S"booktype", (OptionValue){.tag = OPTION_STRING, .string = S"nofile"}, SET_LOCAL
+      S"book.type", (OptionValue){.tag = OPTION_STRING, .string = S"nofile"}, SET_LOCAL
    );
    curBook->o.modifiable = true;
    curPor->o.foldEnable = false;

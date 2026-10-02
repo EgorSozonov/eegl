@@ -9112,7 +9112,7 @@ uiBeforeLeavingTerminal(void) {
    drawBookLater(term->book, UPD_NOT_VALID);
 
    //The book is now like a normal book, it cannot be easily abandoned when changed.
-   optChangeStringOptionDirect(S"booktype", BOOK_NORMAL, OPT_LOCAL, 0);
+   optChangeStringOptionDirect(S"book.type", BOOK_NORMAL, OPT_LOCAL, 0);
 }
 
 //Get the screen decoration for a position in the buffer. Use a negative "col" to get the
@@ -12147,7 +12147,7 @@ startsWithPercentAndBang(Tabpanel* tapa) {
 
       if (anyEmsgG > anyEmsgG_before) {
          usefmt = NULL;
-         optChangeStringOptionDirect(S"tabpanel", S"", opt_scope, SID_ERROR);
+         optChangeStringOptionDirect(S"tab.panel", S"", opt_scope, SID_ERROR);
       }
    }
 

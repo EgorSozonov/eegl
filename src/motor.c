@@ -34,7 +34,7 @@
 
 #include <errno.h> //for errno
 #include <ctype.h> //for isalpha()
-#include <poll.h> 
+#include <poll.h>
 #include <sys/file.h> //for open
 #include <sys/stat.h> //for stat, fstat, S_ISDIR
 #include <sys/socket.h> //for socket()
@@ -165,10 +165,10 @@ struct Job {
 
 #define FOR_ALL_CHANNELS(ch) \
     for ((ch) = firstChannelP; (ch) != NULL; (ch) = (ch)->next)
-    
+
 #define FOR_ALL_JOBS(job) \
     for ((job) = firstJobS; (job) != NULL; (job) = (job)->next)
-    
+
 //The per-fd info for a channel.
 pub
 typedef struct {
@@ -182,8 +182,8 @@ typedef struct {
    ReadChunk head;   //header for circular raw read queue
    JsonQ ch_json_head;   //header for circular json read queue
    ArrayList ch_block_ids;   //list of IDs that channel_read_json_block() is waiting for
-   //When ch_wait_len is non-zero use deadline to wait for incomplete message to be complete. 
-   //The value is the length of the incomplete message when the deadline was set.  If it gets 
+   //When ch_wait_len is non-zero use deadline to wait for incomplete message to be complete.
+   //The value is the length of the incomplete message when the deadline was set.  If it gets
    //longer (something was received) the deadline is reset.
    Unt ch_wait_len;
    TimeSpec deadline;
@@ -218,8 +218,8 @@ struct Channel {
    Boole ch_to_be_closed; //bitset of readable fds to be closed.
             //When all readable fds have been closed, set to (1 << PART_COUNT).
    Boole ch_to_be_freed; //When TRUE, channel must be freed when it's safe to invoke callbacks
-   int error;   //When TRUE an error was reported.  Avoids giving pages full of error 
-                //messages when the other side has exited, only mention the first error 
+   int error;   //When TRUE an error was reported.  Avoids giving pages full of error
+                //messages when the other side has exited, only mention the first error
                 //until the connection works again.
 
    Callback ch_callback;   //call when any msg is not handled
@@ -228,7 +228,7 @@ struct Channel {
    int ch_keep_open;   //do not close on read error
    int ch_nonblock;
 
-   Job* job;   //Job that uses this channel; this does not count as a reference to avoid a 
+   Job* job;   //Job that uses this channel; this does not count as a reference to avoid a
                   //circular reference, the job refers to the channel.
    int ch_job_killed;   //TRUE when there was a job and it was killed or we know it died.
    int ch_anonymous_pipe;  //ConPTY
@@ -246,6 +246,16 @@ typedef enum {
 
 typedef struct sockaddr_un SockAddrUn;
 typedef struct sockaddr SockAddr;
+
+//Structure used for the command line history.
+pub
+typedef struct HistoryEntry {
+   int      hisnum;      //identifying number
+   int      eeglinfo;   //when true hisstr comes from eeglinfo
+   Byte   *hisstr;   //actual entry, separator char after the ZERO
+   Unt   hisstrlen;   //length of hisstr (excluding the ZERO)
+   Tyme   time_set;   //when it was typed, zero if unknown
+} HistoryEntry;
 
 //}}}
 #include "h/motor.h"
@@ -539,7 +549,7 @@ private CS mediumVersion = (CS)EEGL_VERSION_MEDIUM;
 private Byte longVersion[] = EEGL_VERSION_LONG_DATE __DATE__ " " __TIME__ ")";
 
 
-private int included_patches[] = {   
+private int included_patches[] = {
 //Add new patch number below this line */
    0
 };
@@ -833,7 +843,7 @@ libMain(void) {
    no_wait_return = false;
    msg_scroll = false;
 
-   //If "-" argument given: Read file from stdin. Do this before starting Raw mode, because it may 
+   //If "-" argument given: Read file from stdin. Do this before starting Raw mode, because it may
    //change things that the writing end of the pipe doesn't like, e.g., in case stdin and stderr
    //are the same terminal: "cat | eegl -". Using autocommands here may cause trouble...
    if (paramsP.edit_type == EDIT_STDIN && !recoveryModeG)
@@ -844,10 +854,10 @@ libMain(void) {
    if ((anyEmsgG || msg_didout) && *termCodesG[KS_TI] != ZERO && paramsP.edit_type != EDIT_STDIN)
       newlineOnExitG = true;
 
-   //When done something that is not allowed or given an error message call wait_return(). This 
+   //When done something that is not allowed or given an error message call wait_return(). This
    //must be done before starttermcap(), because it may switch to another screen. It must be done
    //after termSetMode(TMODE_RAW), because we want to react on a single key stroke.
-   //Call termSetMode and starttermcap here, so the KS_KS and KS_TI may be defined by 
+   //Call termSetMode and starttermcap here, so the KS_KS and KS_TI may be defined by
    //termInitTerminfo()
    termSetMode(TMODE_RAW);
    TIME_MSG("setting raw mode");
@@ -985,11 +995,11 @@ init0(void) {
 private void
 init1(OUT MainParams* par) {
    //Setup to use the current locale (for ctype() and many other things).
-   //NOTE: Translated messages with encodings other than latin1 will not work until 
+   //NOTE: Translated messages with encodings other than latin1 will not work until
    //optInit0() has been called!
    init_locale();
    TIME_MSG("locale set");
-   
+
    //Set the default values for the options.
    //First find out the home directory, needed to expand "~" in options.
    init_homedir();      //find real value of $HOME
@@ -1012,7 +1022,7 @@ init1(OUT MainParams* par) {
 
    //Initialize global values of all options
    optInit0();
-   
+
    //Allocate the first portal and book. Can't do anything without it, exit when it fails.
    if (portAllocFirst() == FAIL)
       mch_exit(0);
@@ -1023,7 +1033,7 @@ init1(OUT MainParams* par) {
    argListG.id = 0;
 
    init_signs();
-   
+
    set_internal_string_var(S"g:mapleader", S",");
 
    //initialize location lists. don't send an error message when memory allocation fails.
@@ -1048,11 +1058,11 @@ initUi(void) {
 
 pub int
 appMain(int argc, char** argv) {
-   //Do any system-specific initialisations.  These can NOT use IObuff or nameBuffG.  
+   //Do any system-specific initialisations.  These can NOT use IObuff or nameBuffG.
    //Thus emsg2() cannot be called!
    mch_early_init();
 
-   //Many variables are in "par" so that we can pass them to invoked functions without a lot 
+   //Many variables are in "par" so that we can pass them to invoked functions without a lot
    //of arguments. "argc" and "argv" are also copied, so that they can be changed.
    CLEAR_FIELD(paramsP);
    paramsP.argc = argc;
@@ -1085,7 +1095,7 @@ appMain(int argc, char** argv) {
 
    //Figure out the way to work from the command name argv[0]. "eegldiff" starts diff mode, etc.
    parseCommandName(OUT &paramsP);
-   
+
    p_modifiable = true;
 
    //Process command line arguments. File names are put into the global argument list "argListG"
@@ -1110,7 +1120,7 @@ appMain(int argc, char** argv) {
    if (recoveryModeG && paramsP.fname == NULL)
       paramsP.want_full_screen = false;
 
-   //initUi() sets up the terminal (window) for use. This must be done after resetting 
+   //initUi() sets up the terminal (window) for use. This must be done after resetting
    //fullScreenG, otherwise it may move the cursor. Note that we may use mch_exit() before initUi()!
    initUi();
    TIME_MSG("shell init");
@@ -1318,7 +1328,7 @@ mainLoop(Boole inCommPort) {  //true when working in the command-line window
             last_cursormoved = curPor->cursor;
          }
 
-         //Ensure curPor->topLine and curPor->leftCol are up to date before triggering a 
+         //Ensure curPor->topLine and curPor->leftCol are up to date before triggering a
          //WinScrolled autocommand.
          update_topline();
          validate_cursor();
@@ -1370,8 +1380,8 @@ mainLoop(Boole inCommPort) {  //true when working in the command-line window
          //display message after redraw
          if (msgAfterRedrawG) {
             CS p = copyStr(msgAfterRedrawG);
-            //msg_start() will set msgAfterRedrawG to NULL, make a copy first. Don't reset 
-            //msgAfterRedrawG, msgDeco_keep() uses it to check for duplicates. Never append this 
+            //msg_start() will set msgAfterRedrawG to NULL, make a copy first. Don't reset
+            //msgAfterRedrawG, msgDeco_keep() uses it to check for duplicates. Never append this
             //message to history.
             msg_hist_off = true;
             msgDeco(p, decoAfterRedrawG);
@@ -1424,7 +1434,7 @@ mainLoop(Boole inCommPort) {  //true when working in the command-line window
           && !VIsual_active
           && !skip_term_loop
       ){
-         //If terminal_loop() returns OK we got a key that is handled in Normal mode.  With FAIL 
+         //If terminal_loop() returns OK we got a key that is handled in Normal mode.  With FAIL
          //we first need to position the cursor and the screen needs to be redrawn.
          if (terminal_loop(true) == OK) {
             normalAction(OUT &oper);
@@ -1438,7 +1448,7 @@ mainLoop(Boole inCommPort) {  //true when working in the command-line window
    currOperatorG = operPrev;
 }
 
-//Exit properly. This is the only way to exit Eegl after startup has succeeded. We are certain 
+//Exit properly. This is the only way to exit Eegl after startup has succeeded. We are certain
 //to exit here, no way to abort it.
 pub void
 exitEegl(int exitval) {
@@ -1640,7 +1650,7 @@ scanCommandLineArgs(MainParams *par) {
             argv_idx = -1;      //skip to next argument
             break;
 
-         case '-': 
+         case '-':
             //"--" don't take any more option arguments
             //"--help" give help message
             //"--version" give version message
@@ -1744,7 +1754,7 @@ scanCommandLineArgs(MainParams *par) {
             break;
 
          case 'q':      //"-q" QuickFix mode
-            if (par->edit_type != EDIT_NONE) 
+            if (par->edit_type != EDIT_NONE)
                mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
             par->edit_type = EDIT_QF;
             if (argv[0][argv_idx]) {     //"-q{errorfile}"
@@ -1790,7 +1800,7 @@ scanCommandLineArgs(MainParams *par) {
             p_verbose = getNumericArg((CS)argv[0], &argv_idx, 10);
             if (argv[0][argv_idx] != ZERO) {
                optChangeAndReportError(
-                  S"verbosefile", optStr((CS)argv[0] + argv_idx), SET_GLOBAL 
+                  S"verbosefile", optStr((CS)argv[0] + argv_idx), SET_GLOBAL
                );
                argv_idx = (int)STRLEN(argv[0]);
             }
@@ -1860,7 +1870,7 @@ scanCommandLineArgs(MainParams *par) {
                } else
                   par->commands[par->n_commands++] = (CS)argv[0];
                break;
-               
+
             case 'P':   //"-P {dir}" project mode at dir
                projectDirG = (CS)argv[0];
                break;
@@ -1894,7 +1904,7 @@ scripterror:
                   mch_errmsg(argv[0]);
                   mch_errmsg("\"\n");
                   mch_exit(2);
-               } 
+               }
                if ((scriptin[0] = fopen(argv[0], READBIN)) == NULL) {
                   mch_errmsg(_("Cannot open for reading: \""));
                   mch_errmsg(argv[0]);
@@ -1945,13 +1955,13 @@ scripterror:
          //Add the file to the global argument list.
          if (ga_grow(&argListG.al_ga, 1) == FAIL)
             mch_exit(2);
-         text = copyStr((CS)argv[0]); 
+         text = copyStr((CS)argv[0]);
          if (
-            par->diff_mode && mch_isdir(text) 
-            && GARGCOUNT > 0 
+            par->diff_mode && mch_isdir(text)
+            && GARGCOUNT > 0
             && !mch_isdir(alist_name(&GARGLIST[0]))
          ) {
-            CS concattedFnames = 
+            CS concattedFnames =
                concat_fnames(text, fiGetShortFiName(alist_name(&GARGLIST[0])), true);
             if (concattedFnames) {
                eeglFree(text);
@@ -2058,8 +2068,8 @@ createPortals(MainParams* par) {
       if (bookNoMemfile(curBook)) //failed
          exitEegl(1);
    } else {
-      //Open a buffer for portals that don't have one yet. Commands in the .vimrc might have loaded 
-      //a file or split the window. Watch out for autocommands that delete a portal. Don't execute 
+      //Open a buffer for portals that don't have one yet. Commands in the .vimrc might have loaded
+      //a file or split the window. Watch out for autocommands that delete a portal. Don't execute
       //Win/Buf Enter/Leave autocommands here
       ++autocmd_no_enter;
       ++autocmd_no_leave;
@@ -2098,7 +2108,7 @@ createPortals(MainParams* par) {
                   anyEmsgG = false;   //avoid hit-enter prompt
                   exitEegl(1);
                }
-               //We can't close the window, it would disturb what happens next. Clear the file 
+               //We can't close the window, it would disturb what happens next. Clear the file
                //name and set the arg index to -1 to delete it later.
                setfname(curBook, NULL, NULL, false);
                curPor->argListInd = -1;
@@ -2123,7 +2133,7 @@ createPortals(MainParams* par) {
    }
 }
 
-//If opened more than one portal, start editing files in the other portals. portMakePortals() has 
+//If opened more than one portal, start editing files in the other portals. portMakePortals() has
 //already opened the portals.
 private void
 editBuffers(MainParams* par, CS cwd) {        //current working dir
@@ -2171,7 +2181,7 @@ editBuffers(MainParams* par, CS cwd) {        //current working dir
          //Edit file from arg list, if there is one.  When "Quit" selected
          //at the ATTENTION prompt close the window.
          swap_exists_did_quit = false;
-         (void)startEditingFile(0, 
+         (void)startEditingFile(0,
             arg_idx < GARGCOUNT ? alist_name(&GARGLIST[arg_idx]) : NULL,
             NULL, NULL, ECMD_LASTL, ECMD_HIDE, curPor
          );
@@ -2235,7 +2245,7 @@ executePreCommands(MainParams* par) {
    scriptPosG.sid = SID_CMDARG;
    for (i = 0; i < cnt; ++i) {
       executeCommLine(comms[i]);
-   } 
+   }
    ESTACK_CHECK_NOW;
    estack_pop();
    scriptPosG.sid = 0;
@@ -2439,7 +2449,7 @@ set_progpath(CS argv0) {
       val = linkBuf;
    }
 
-   if (strIsRelative(val) 
+   if (strIsRelative(val)
          && fiGetShortFiName(val) != val && eeFullFileName(val, OUT buf, MAXPATHL, true) != FAIL
    )
       val = buf;
@@ -2516,8 +2526,8 @@ private void
 catch_sigpwr(int) {
    //this is not required on all systems, but it doesn't hurt anybody
    motSignalHandler(SIGPWR, catch_sigpwr);
-   //I'm not sure we get the SIGPWR signal when the system is really going down or when the 
-   //batteries are almost empty. Just preserve the swap files and don't exit, that can't do any 
+   //I'm not sure we get the SIGPWR signal when the system is really going down or when the
+   //batteries are almost empty. Just preserve the swap files and don't exit, that can't do any
    //harm.
    ml_sync_all(false, false);
 }
@@ -2529,16 +2539,16 @@ catch_sigpwr(int) {
 private void
 deathtrap(int sigarg) {
    static int entered = 0;  //count the number of times we got here.
-                            //Note: when memory has been corrupted this may get an arbitrary 
+                            //Note: when memory has been corrupted this may get an arbitrary
                             //value!
 
-   //While in mch_delay() we go to cooked mode to allow a CTRL-C to interrupt us. But in cooked 
+   //While in mch_delay() we go to cooked mode to allow a CTRL-C to interrupt us. But in cooked
    //mode we may also get SIGQUIT, e.g., when pressing CTRL-\, but we don't want Eegl to exit then.
    if ((inMchDelayP && sigarg == SIGQUIT) != 0)
       return;
 
-   //When SIGHUP, SIGQUIT, etc. are blocked: postpone the effect and return here. This avoids that 
-   //a non-reentrant function is interrupted, e.g., free(). Calling free() again may then cause a 
+   //When SIGHUP, SIGQUIT, etc. are blocked: postpone the effect and return here. This avoids that
+   //a non-reentrant function is interrupted, e.g., free(). Calling free() again may then cause a
    //crash.
    if (entered == 0
        && ( sigarg == SIGHUP
@@ -2588,7 +2598,7 @@ deathtrap(int sigarg) {
    for (i = 0; signalInfos[i].sig != -1; i++) {
       if (sigarg == signalInfos[i].sig)
          break;
-   } 
+   }
    deadlySignalP = sigarg;
 
    fullScreenG = false; //don't write messages to the UI, it might be part of the problem...
@@ -2644,7 +2654,7 @@ private void sigcont_handler(int);
 //signal handler for SIGCONT
 private void
 sigcont_handler(int) {
-   //We didn't suspend ourselves, assume we were stopped by a SIGSTOP signal (which can't 
+   //We didn't suspend ourselves, assume we were stopped by a SIGSTOP signal (which can't
    //be intercepted) and get a SIGCONT. Need to get back to a sane mode. We should redraw, but
    //we can't really do that in a signal handler, do a redraw later.
    after_sigcont();
@@ -2680,7 +2690,7 @@ catch_signals(void (*func_deadly)(int), void (*func_other)(int)) {
       } ei (func_other != SIG_ERR) {
          //Deal with non-deadly signals.
          motSignalHandler(
-            signalInfos[i].sig, 
+            signalInfos[i].sig,
             signalInfos[i].sig == SIGTSTP && ignore_sigtstp ? SIG_IGN : func_other
          );
       }
@@ -2742,7 +2752,7 @@ get_signal_name(int sig) {
    for (i = 0; signalInfos[i].sig != -1; i++) {
       if (sig == signalInfos[i].sig)
          return strlow_save((CS)signalInfos[i].name);
-   } 
+   }
 
    i = eeSnprintf(numbuf, NUMBUFLEN, "%d", sig);
    return copySubstr(numbuf, i);
@@ -2777,11 +2787,11 @@ eeHandleSignal(int sig) {
    static int blocked = true;
 
    switch (sig) {
-   case SIGNAL_BLOCK:   
+   case SIGNAL_BLOCK:
       blocked = true;
       break;
 
-   case SIGNAL_UNBLOCK: 
+   case SIGNAL_UNBLOCK:
       blocked = false;
       if (got_signal != 0) {
          kill(getpid(), got_signal);
@@ -2837,8 +2847,8 @@ mch_exit(int r) {
    isExitingG = true;
    termSetMode(TMODE_COOK);
 
-   //When t_ti is not empty but it doesn't cause swapping terminal pages, need to output a 
-   //newline when msg_didout is set. But when t_ti does swap pages it should not go to the shell 
+   //When t_ti is not empty but it doesn't cause swapping terminal pages, need to output a
+   //newline when msg_didout is set. But when t_ti does swap pages it should not go to the shell
    //page. Do this before termStopTerminfo().
    if (termIsScreenBeingSwapped() && !newlineOnExitG)
       exit_scroll();
@@ -2855,7 +2865,7 @@ mch_exit(int r) {
    //when doing "eegl -u vimrc" and vimrc contains ":q".
    if (fullScreenG)
       cursor_on();
-   
+
    termOutFlush();
    ml_close_all(true);      //remove all memfiles
 
@@ -2883,14 +2893,14 @@ private Byte tz_cache[64];
 
 #define FOR_ALL_TIMERS(t) \
     for ((t) = firstTimerS; (t) != NULL; (t) = (t)->next)
-    
+
 
 //Call either localtime(3) or localtime_r(3) from POSIX libc time.h, with the
 //latter version preferred for reentrancy.
 //
-//If we use localtime_r(3) and we have tzset(3) available, check to see if the environment variable 
-//TZ has changed since the last run, and call tzset(3) to update the global timezone variables if 
-//it has.  This is because the POSIX standard doesn't require localtime_r(3) implementations to do 
+//If we use localtime_r(3) and we have tzset(3) available, check to see if the environment variable
+//TZ has changed since the last run, and call tzset(3) to update the global timezone variables if
+//it has.  This is because the POSIX standard doesn't require localtime_r(3) implementations to do
 //that as it does with localtime(3), and we don't want to call tzset(3) every time.
 private Tm *
 eeLocaltime(
@@ -2951,7 +2961,7 @@ private int
 list2proftime(Var *arg, ProfTime *tm) {
    if (arg->tag != VAR_LIST || arg->list == NULL || arg->list->len != 2)
       return FAIL;
-      
+
    Boole error = false;
    long n1 = list_find_nr(arg->list, 0L, &error);
    long n2 = list_find_nr(arg->list, 1L, &error);
@@ -3276,7 +3286,7 @@ find_timer(long id) {
    FOR_ALL_TIMERS(timer) {
       if (timer->id == id)
           return timer;
-   } 
+   }
    return NULL;
 }
 
@@ -3339,7 +3349,7 @@ add_timer_info_all(OUT Var* returnVar) {
    FOR_ALL_TIMERS(timer) {
       if (timer->id != -1)
          add_timer_info(returnVar, timer);
-   } 
+   }
 }
 
 //Mark references in partials of timers.
@@ -3371,7 +3381,7 @@ timer_valid(Timer *timer) {
    FOR_ALL_TIMERS(t) {
       if (t == timer)
          return true;
-   } 
+   }
    return false;
 }
 
@@ -3524,7 +3534,7 @@ time_msg(CS mesg, TimeSpec* tv_start){
       fprintf(time_fd, " clock   self+sourced   self:  sourced script\n");
       fprintf(time_fd, " clock   elapsed:              other lines\n\n");
    }
-   
+
    TimeSpec now;
    timespec_get(OUT &now, TIME_UTC);
    time_diff(&start, &now);
@@ -3577,8 +3587,8 @@ time_to_bytes(Tyme the_time, CS buf) {
    Tyme   wtime = the_time;
 
    //Tyme can be up to 8 bytes in size, more than Ulong, thus we can't use put_bytes() here.
-   //Another problem is that ">>" may do an arithmetic shift that keeps the sign. This happens 
-   //for large values of wtime. A cast to Ulong may truncate if Tyme is 8 bytes. So only use a 
+   //Another problem is that ">>" may do an arithmetic shift that keeps the sign. This happens
+   //for large values of wtime. A cast to Ulong may truncate if Tyme is 8 bytes. So only use a
    //cast when it is 4 bytes, it's safe to assume that Ulong is 4 bytes or more and when using 8
    //bytes the top bit won't be set.
    for (i = 7; i >= 0; --i) {
@@ -3640,7 +3650,7 @@ pub int
 profile_passed_limit(ProfTime *tm) {
    if (tm->tv_sec == 0)    //timer was not set
       return false;
-      
+
    ProfTime   now;
    PROF_GET_TIME(&now);
    return (now.tv_sec > tm->tv_sec || (now.tv_sec == tm->tv_sec && now.tv_fsec > tm->tv_fsec));
@@ -3829,7 +3839,7 @@ stop_timeout(void) {
 //Start the timeout timer.
 //
 //The return value is a pointer to a flag that is initialised to false. If the timeout expires, the
-//flag is set to true. This will only return pointers to static memory; i.e. any pointer returned 
+//flag is set to true. This will only return pointers to static memory; i.e. any pointer returned
 //by this function may always be safely dereferenced.
 //
 //This function is not expected to fail, but if it does it will still return a valid flag pointer;
@@ -3869,7 +3879,7 @@ start_timeout(long msec) {
    //Set up the alarm handler first.
    ret = sigemptyset(&handle_alarm.sa_mask);
    handle_alarm.sa_handler = set_flag;
-   
+
    handle_alarm.sa_flags = 0;
    ret = ret == 0 ?  sigaction(SIGALRM, &handle_alarm, &prev_sigaction) : ret;
    if (ret < 0) {
@@ -4044,7 +4054,7 @@ free_unused_channels_contents(int copyID, int mask) {
           channel_free_contents(ch);
           did_free = true;
       }
-   } 
+   }
 
    --safe_to_invoke_callback;
    return did_free;
@@ -4129,7 +4139,7 @@ channel_connect(Channel* channel, SockAddr* server_addr, int server_addrlen, int
          break;
 
       SOCK_ERRNO;
-      if (*waittime < 0 
+      if (*waittime < 0
             || (errno != EWOULDBLOCK && errno != ECONNREFUSED && errno != EINPROGRESS)
       ) {
          ch_error(channel, "channel_connect: Connect failed with errno %d", errno);
@@ -4168,9 +4178,9 @@ channel_connect(Channel* channel, SockAddr* server_addr, int server_addrlen, int
          }
 
          //See socket(7) for the behavior
-         //After putting the socket in non-blocking mode, connect() will return EINPROGRESS, 
-         //poll() will not wait (as if writing is possible), need to use getsockopt() to check 
-         //if the socket is actually able to connect. We detect a failure to connect when either 
+         //After putting the socket in non-blocking mode, connect() will return EINPROGRESS,
+         //poll() will not wait (as if writing is possible), need to use getsockopt() to check
+         //if the socket is actually able to connect. We detect a failure to connect when either
          //read and write fds are set. Use getsockopt() to find out what kind of failure.
          if ((pollFd.revents & (POLLIN|POLLOUT)) != 0) {
             ret = getsockopt(sd, SOL_SOCKET, SO_ERROR, &so_error, &so_error_len);
@@ -4201,7 +4211,7 @@ channel_connect(Channel* channel, SockAddr* server_addr, int server_addrlen, int
       }
 
       if (*waittime > 1 && elapsed_msec < *waittime) {
-         //The port isn't ready but we also didn't get an error. This happens when the server 
+         //The port isn't ready but we also didn't get an error. This happens when the server
          //didn't open the socket yet. poll() may return early, wait until the remaining
          //"waitnow"  and try again.
          waitnowMs -= elapsed_msec;
@@ -4291,8 +4301,7 @@ prepareBookForWriting(Book* book) {
 
    optsCopyToBook(book, BCO_ENTER);
    curBook = book;
-   optChangeAndReportError(S"booktype", optStr("nofile"), SET_LOCAL);
-   optChangeAndReportError(S"bufhidden", optStr("hide"), SET_LOCAL);
+   optChangeAndReportError(S"book.type", optStr("nofile"), SET_LOCAL);
    if (!curBook->mem.mfile)
       ml_open(curBook);
    curBook = curBookSaved;
@@ -4323,7 +4332,7 @@ chaFindBook(CS name, int err, int msg) {
    if (msg) {
       ml_replace(1, (CS)(err ? "Reading from channel error..."
           : "Reading from channel output..."), true);
-   } 
+   }
    changed_bytes(1, 0);
    curBook = curBookSaved;
 
@@ -4337,7 +4346,7 @@ channel_set_options(Channel* channel, JobOptions* opt) {
    if ((opt->set & JO_MODE) != 0) {
       for (part = PART_SOCK; part < PART_COUNT; ++part)
          channel->fds[part].ch_mode = opt->mode;
-   } 
+   }
    if (opt->set & JO_IN_MODE)
       channel->fds[PART_IN].ch_mode = opt->jo_in_mode;
    if (opt->set & JO_OUT_MODE)
@@ -4349,7 +4358,7 @@ channel_set_options(Channel* channel, JobOptions* opt) {
    if (opt->set & JO_TIMEOUT) {
       for (part = PART_SOCK; part < PART_COUNT; ++part)
          channel->fds[part].ch_timeout = opt->jo_timeout;
-   } 
+   }
    if (opt->set & JO_OUT_TIMEOUT)
       channel->fds[PART_OUT].ch_timeout = opt->jo_out_timeout;
    if (opt->set & JO_ERR_TIMEOUT)
@@ -4364,13 +4373,13 @@ channel_set_options(Channel* channel, JobOptions* opt) {
    } ei(opt->set & JO_OUT_CALLBACK) {
       setCallback(&channel->fds[PART_OUT].ch_callback, &opt->jo_out_cb);
    }
-   
+
    if (opt->errNativeCb) {
       channel->fds[PART_ERR].nativeCb = opt->errNativeCb;
    } ei(opt->set & JO_ERR_CALLBACK) {
       setCallback(&channel->fds[PART_ERR].ch_callback, &opt->jo_err_cb);
    }
-   
+
    if (opt->set & JO_CLOSE_CALLBACK)
       setCallback(&channel->ch_close_cb, &opt->closeCb);
    channel->ch_drop_never = opt->dropNever;
@@ -4408,7 +4417,7 @@ channel_set_options(Channel* channel, JobOptions* opt) {
       }
     }
 
-   if ((opt->set & JO_ERR_IO) 
+   if ((opt->set & JO_ERR_IO)
          && (opt->ioMode[PART_ERR] == JIO_BUFFER
           || (opt->ioMode[PART_ERR] == JIO_OUT && (opt->set & JO_OUT_IO)
                       && opt->ioMode[PART_OUT] == JIO_BUFFER))
@@ -4470,7 +4479,7 @@ channel_open_func(Arr(Var) argvars) {
    } else {
       showErrFmtMsg(_(e_invalid_argument_str), address);
       return null;
-   } 
+   }
 
    //parse options
    CLEAR_POINTER(&opt);
@@ -4606,7 +4615,7 @@ write_buf_line(Book* book, LineNr lnum, Channel* channel) {
       for (i = 0; i < len; ++i) {
          if (p[i] == NL)
             p[i] = ZERO;
-      } 
+      }
 
       p[len] = NL;
    }
@@ -4666,8 +4675,8 @@ channel_write_in(Channel* channel) {
 
    int written = 0;
    LineNr lnum;
-   for (lnum = intake->ch_buf_top; 
-        lnum <= intake->ch_buf_bot && lnum <= book->mem.lineCount; 
+   for (lnum = intake->ch_buf_top;
+        lnum <= intake->ch_buf_bot && lnum <= book->mem.lineCount;
         ++lnum
    ) {
       if (!can_write_buf_line(channel))
@@ -4711,7 +4720,7 @@ chaFreeBook(Book* book) {
             fds->bookref.c = NULL;
          }
       }
-   } 
+   }
 }
 
 //Write any lines waiting to be written to "channel".
@@ -4735,7 +4744,7 @@ channel_write_any_lines(void) {
    Channel* channel;
    FOR_ALL_CHANNELS(channel) {
       channel_write_input(channel);
-   } 
+   }
 }
 
 //Write appended lines above the last one in "book" to the channel.
@@ -4806,7 +4815,7 @@ channel_first_nl(ReadChunk* node) {
    for (Unt i = 0; i < node->len; ++i) {
       if (buffer[i] == NL)
          return buffer + i;
-   } 
+   }
    return NULL;
 }
 
@@ -4902,8 +4911,8 @@ channel_consume(Channel *channel, ChannelFdKind part, int len) {
 }
 
 //Collapses the first and second buffer for "channel"/"part". Return FAIL if nothing was done.
-//When "want_nl" is true collapse more buffers until a NL is found. When the channel part mode 
-//is "lsp", collapse all the buffers as the http header and the JSON content can be present in 
+//When "want_nl" is true collapse more buffers until a NL is found. When the channel part mode
+//is "lsp", collapse all the buffers as the http header and the JSON content can be present in
 //multiple buffers.
 pub int
 channel_collapse(Channel *channel, ChannelFdKind part, int want_nl) {
@@ -4922,7 +4931,7 @@ channel_collapse(Channel *channel, ChannelFdKind part, int want_nl) {
           last_node = last_node->next;
           len += last_node->len;
       }
-   } 
+   }
    CS newbuf = alloc(len + 1);
    CS p = newbuf;
    MEMMOVE(p, node->c, node->len);
@@ -4970,7 +4979,7 @@ saveMsg(Channel* channel, ChannelFdKind part, CS msg, int len, int prepend, CS l
       for (i = 0; i < len; ++i) {
          if (msg[i] != ENTER || i + 1 >= len || msg[i + 1] != NL)
             *p++ = msg[i];
-      } 
+      }
       *p = ZERO;
       node->len = (Ulong)(p - node->c);
    } else {
@@ -5281,7 +5290,7 @@ channel_remove_block_id(ChannelFd* chanpart, int id) {
          }
          return;
       }
-   } 
+   }
    internalErrFmtMsg("channel_remove_block_id(): cannot find id %d", id);
 }
 
@@ -5292,13 +5301,13 @@ channel_has_block_id(ChannelFd* chanpart, int id) {
    for (int i = 0; i < gap->len; ++i) {
       if (((int *)gap->c)[i] == id)
           return true;
-   } 
+   }
    return false;
 }
 
-//Get a message from the JSON queue for channel "channel". When "id" is positive it must match 
-//the first number in the list. When "id" is zero or negative jut get the first message. But not 
-//one in the ch_block_ids list. When "without_callback" is true also get messages that were 
+//Get a message from the JSON queue for channel "channel". When "id" is positive it must match
+//the first number in the list. When "id" is zero or negative jut get the first message. But not
+//one in the ch_block_ids list. When "without_callback" is true also get messages that were
 //pushed back. Return OK when found and return the value in "returnVar". FAIL otherwise.
 private int
 channel_get_json(
@@ -5320,7 +5329,7 @@ channel_get_json(
          CHECK_LIST_MATERIALIZE(l);
          tv = &l->first->c;
       } else {
-         //LSP message payload is a JSON-RPC dict. For RPC requests and responses, the 'id' 
+         //LSP message payload is a JSON-RPC dict. For RPC requests and responses, the 'id'
          //item will be present. For notifications, it will not be present.
          if (id > 0) {
             if (item->jq_value->tag != VAR_BAG)
@@ -5628,8 +5637,8 @@ channel_use_json_head(Channel* channel, ChannelFdKind part) {
    return ch_mode == CH_MODE_JSON || ch_mode == CH_MODE_LSP;
 }
 
-//Invoke a callback for "channel"/"part" if needed. This does not redraw but sets 
-//channel_need_redraw when redraw is needed. Return true when a message was handled, there might 
+//Invoke a callback for "channel"/"part" if needed. This does not redraw but sets
+//channel_need_redraw when redraw is needed. Return true when a message was handled, there might
 //be another one.
 private int
 may_invoke_callback(Channel* channel, ChannelFdKind part) {
@@ -5648,8 +5657,8 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
    for (cbitem = cbhead->cq_next; cbitem != NULL; cbitem = cbitem->cq_next) {
       if (cbitem->cq_seq_nr == 0)
           break;
-   } 
-   
+   }
+
    void (*nativeCallback)(Arr(Byte)) = NULL; //if non-null, overtakes non-native callbacks
    if (fdData->nativeCb != NULL) {
       nativeCallback = fdData->nativeCb;
@@ -5660,7 +5669,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
          callback = &fdData->ch_callback;
       ei (channel->ch_callback.name != NULL)
          callback = &channel->ch_callback;
-   } 
+   }
 
    Book* book = fdData->bookref.c;
    if (book && (!bookRefValid(&fdData->bookref) || bookNoMemfile(book))) {
@@ -5755,7 +5764,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
          for (p = buf; (nl == NULL || p < nl) && p < buf + node->len; ++p) {
             if (*p == ZERO)
                *p = NL;
-         } 
+         }
 
          if (nl == NULL) {
             //get the whole buffer, drop the NL
@@ -5790,10 +5799,10 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
 
       //Don't use a LSP server request message with the same sequence number
       //as the client request message as the response message.
-      if (ch_mode == CH_MODE_LSP && argv[1].tag == VAR_BAG 
+      if (ch_mode == CH_MODE_LSP && argv[1].tag == VAR_BAG
             && bagHasKey(argv[1].bag, tConst("method"))) {
          lsp_req_msg = true;
-      } 
+      }
 
       if (!lsp_req_msg) {
          for (cbitem = cbhead->cq_next; cbitem != NULL; cbitem = cbitem->cq_next) {
@@ -5858,7 +5867,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
 //TODO delete
 private int
 channel_can_write_to(Channel* channel) {
-   return channel 
+   return channel
       && (channel->fds[PART_SOCK].fd != INVALID_FD || channel->fds[PART_IN].fd != INVALID_FD);
 }
 
@@ -5920,7 +5929,7 @@ channel_status(Channel *channel, int req_part) {
             has_readahead = true;
             break;
          }
-      } 
+      }
    }
 
    if (has_readahead)
@@ -6014,7 +6023,7 @@ channel_close(Channel *channel, int invoke_close_cb) {
             if (channel->ch_close_cb.name == NULL)
                 ch_log(channel, "flushing %s buffers before closing", chanFdNames[part]);
             while (may_invoke_callback(channel, part))
-               {} 
+               {}
             --channel->refCount;
          }
       }
@@ -6044,7 +6053,7 @@ channel_close(Channel *channel, int invoke_close_cb) {
              //any remaining messages are useless now
              for (part = PART_SOCK; part < PART_IN; ++part)
                  drop_messages(channel, part);
-          } 
+          }
 
           --channel->refCount;
       }
@@ -6173,7 +6182,7 @@ cycle:
    PollFd fds[MAX_OPEN_CHANNELS + 1];
    fds[0].fd = fd;
    fds[0].events = POLLIN;
-   int nfd = fillIntake(1, fds); 
+   int nfd = fillIntake(1, fds);
    if (poll(fds, nfd, timeout) > 0) {
       if ((fds[0].revents & POLLIN) > 0) {
          return CW_READY;
@@ -6214,7 +6223,7 @@ channel_close_now(Channel *channel) {
    channel_close(channel, true);
 }
 
-//Read from channel "channel" for as long as there is something to read. "part" is PART_SOCK, 
+//Read from channel "channel" for as long as there is something to read. "part" is PART_SOCK,
 //PART_OUT or PART_ERR. The data is put in the read queue.  No callbacks are invoked here.
 private void
 channel_read(Channel *channel, ChannelFdKind part, char *func) {
@@ -6259,8 +6268,8 @@ channel_read(Channel *channel, ChannelFdKind part, char *func) {
    }
 }
 
-//Read from RAW or NL "channel"/"part".  Blocks until there is something to read or the timeout 
-//expires. When "raw" is true don't block waiting on a NL. Does not trigger timers or handle 
+//Read from RAW or NL "channel"/"part".  Blocks until there is something to read or the timeout
+//expires. When "raw" is true don't block waiting on a NL. Does not trigger timers or handle
 //messages. Return what was read in allocated memory. NULL in case of error or timeout.
 private CS
 channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, int *outlen){
@@ -6309,7 +6318,7 @@ channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, i
       for (CS p = buf; (nl == NULL || p < nl) && p < buf + node->len; ++p) {
          if (*p == ZERO)
             *p = NL;
-      } 
+      }
 
       if (!nl) {
          //must be a closed channel with missing NL
@@ -6386,7 +6395,7 @@ channel_read_json_block(
          if (channel_parse_messages())
             continue;
 
-         //channel_parse_messages() may fill the queue with new data to process.  Only loop when 
+         //channel_parse_messages() may fill the queue with new data to process.  Only loop when
          //the readahead changed, otherwise we would busy-loop.
          readahead_ptr = channel_readahead_pointer(channel, part);
          if (readahead_ptr != NULL && readahead_ptr != prev_readahead_ptr)
@@ -6446,10 +6455,10 @@ get_channel_arg(Var* tv, int check_open, int reading, ChannelFdKind part) {
       return NULL;
    }
    if (channel != NULL && reading)
-      has_readahead = 
+      has_readahead =
          channel_has_readahead(channel, part != PART_COUNT ? part : channel_part_read(channel));
 
-   if (check_open && 
+   if (check_open &&
          (channel == NULL || (!channel_is_open(channel) && !(reading && has_readahead)))
    ) {
       emsg(_(e_not_an_open_channel));
@@ -6622,7 +6631,7 @@ channel_send(
             }
             ch_log(channel, "Adding %d bytes to the write queue", len);
 
-            //Append the unwritten bytes of the argument to the write buffer. Limit entries to 
+            //Append the unwritten bytes of the argument to the write buffer. Limit entries to
             //4000 bytes.
             if (wq->prev && wq->prev->wq_ga.len + len < 4000) {
                WriteQueue *last = wq->prev;
@@ -6664,7 +6673,7 @@ channel_send(
    }
 }
 
-//Common for "ch_sendexpr()" and "ch_sendraw()". Return the channel if the caller should read the 
+//Common for "ch_sendexpr()" and "ch_sendraw()". Return the channel if the caller should read the
 //response. Sets "part_read" to the read fd. Otherwise returns NULL.
 private Channel*
 send_common(
@@ -6800,8 +6809,8 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
    }
    free_job_options(&opt);
    if (ch_mode == CH_MODE_LSP && !eval && callback_present) {
-      //if ch_sendexpr() is used to send a LSP message and a callback function is specified, then 
-      //return the generated identifier for the message. The user can use this to cancel the 
+      //if ch_sendexpr() is used to send a LSP message and a callback function is specified, then
+      //return the generated identifier for the message. The user can use this to cancel the
       //request (if needed).
       if (returnVar->bag)
          bagAddNumber(returnVar->bag, S"id", id);
@@ -6864,7 +6873,7 @@ checkPollResult(int ret_in, OUT Arr(PollFd) fds) {
       }
 
       ChannelFd* intake = &channel->fds[PART_IN];
-      int idx = intake->pollIdx; 
+      int idx = intake->pollIdx;
       if (ret > 0 && idx != INVALID_FD && (fds[idx].revents & POLLOUT) != 0) {
          channel_write_input(channel);
          --ret;
@@ -6874,7 +6883,7 @@ checkPollResult(int ret_in, OUT Arr(PollFd) fds) {
    return ret;
 }
 
-//Execute queued up commands. Invoked from the main loop when it's safe to execute received 
+//Execute queued up commands. Invoked from the main loop when it's safe to execute received
 //commands, and during a blocking wait for ch_evalexpr(). Return true when something was done.
 pub int
 channel_parse_messages(void) {
@@ -6927,14 +6936,14 @@ channel_parse_messages(void) {
       }
 
       if (channel->fds[part].fd != INVALID_FD || channel_has_readahead(channel, part)) {
-         //Increase the refcount, in case the handler causes the channel to be unreferenced or 
+         //Increase the refcount, in case the handler causes the channel to be unreferenced or
          //closed
          ++channel->refCount;
          r = may_invoke_callback(channel, part);
          if (r == OK)
             ret = true;
          if (channel_unref(channel) || (r == OK
-            //Limit the time we loop here to 100 msec, otherwise Eegl becomes unresponsive when 
+            //Limit the time we loop here to 100 msec, otherwise Eegl becomes unresponsive when
             //the callback takes more than a bit of time.
             && motElapsedMs(start_tv) < 100L
             )
@@ -6995,7 +7004,7 @@ set_ref_in_channel(int copyID) {
          tv.channel = channel;
          abort = abort || set_ref_in_item(&tv, copyID, NULL, NULL);
       }
-   } 
+   }
    return abort;
 }
 
@@ -7098,7 +7107,7 @@ f_ch_info(Arr(Var) argvars, Var* returnVar) {
    if (channel) {
       allocReturnDict(returnVar);
       channelInfoIntoDict(channel, OUT returnVar->bag);
-   } 
+   }
 }
 
 pub void
@@ -7147,7 +7156,7 @@ f_ch_setoptions(Arr(Var) argvars, Var*) {
    Channel* channel = get_channel_arg(&argvars[0], false, false, 0);
    if (!channel)
       return;
-      
+
    JobOptions opt;
    CLEAR_POINTER(&opt);
    if (get_job_options(&argvars[1], OUT &opt, JO_CB_ALL + JO_TIMEOUT_ALL + JO_MODE_ALL, 0) == OK)
@@ -7201,7 +7210,7 @@ build_argv_from_list(List *l, Byte*** argv, int *argc) {
       if (!s) {
          for (int i = 0; i < *argc; ++i) {
             EE_CLEAR((*argv)[i]);
-         } 
+         }
          (*argv)[0] = NULL;
          return FAIL;
       }
@@ -7260,7 +7269,7 @@ wait4pid(ProId child, waitstatus *status) {
 
    while (wait_pid != child) {
       //When compiled with Python threads are probably used, in which case wait() sometimes hangs
-      //for no obvious reason.  Use waitpid() instead and loop (like the GUI). Also needed for 
+      //for no obvious reason.  Use waitpid() instead and loop (like the GUI). Also needed for
       //other interfaces, they might call system().
       wait_pid = waitpid(child, status, WNOHANG);
       if (wait_pid == 0) {
@@ -7296,9 +7305,9 @@ writeFromCurBookToShell(int fromShell, int toShell) {
       else {
          CS s = firstOccurrence(lp + written, NL);
          len = write(
-            toShell, 
+            toShell,
             (char *)lp + written,
-            s ? (Unt)(s - (lp + written)) : lplen - written 
+            s ? (Unt)(s - (lp + written)) : lplen - written
          );
       }
       if (len == (int)(lplen - written)) {
@@ -7372,8 +7381,8 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
          close(pipeFromShell[1]);
       }
       goto skipIfError;
-   } 
-   
+   }
+
    if (pid == 0) {   //child
       reset_signals(); //handle signals normally
       UNBLOCK_SIGNALS(&curset);
@@ -7384,8 +7393,8 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
       }
 
       if ((opt & SHELL_SHOW_MSG) == 0 || (opt & SHELL_EXPAND) != 0) {
-         //Don't want to show any message from the shell. Can't just close stdout and stderr 
-         //though, because some systems will break if you try to write to them after that, so 
+         //Don't want to show any message from the shell. Can't just close stdout and stderr
+         //though, because some systems will break if you try to write to them after that, so
          //we must use dup() to replace them with something else -- webb
          //Connect stdin to /dev/null too, so ":n `cat`" doesn't hang while waiting for input.
          int fd = open("/dev/null", O_RDWR | O_EXTRA, 0);
@@ -7393,10 +7402,10 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
          fclose(stdout);
          fclose(stderr);
 
-         //If any of these open()'s and dup()'s fail, we just continue anyway. It's not fatal, 
-         //and on most systems it will make no difference at all. On a few it will cause the 
-         //execvp() to exit with a non-zero status even when the completion could be done, 
-         //which is nothing too serious. If the open() or dup() failed we'd just do the same 
+         //If any of these open()'s and dup()'s fail, we just continue anyway. It's not fatal,
+         //and on most systems it will make no difference at all. On a few it will cause the
+         //execvp() to exit with a non-zero status even when the completion could be done,
+         //which is nothing too serious. If the open() or dup() failed we'd just do the same
          //thing ourselves anyway -- webb
          if (fd >= 0) {
             (void)dup(fd); //To replace stdin  (fd 0)
@@ -7409,7 +7418,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
       } ei ((opt & (SHELL_READ|SHELL_WRITE)) != 0) {
          set_default_child_environment(false);
 
-         //stderr is only redirected when using the GUI, so that a program like gpg can still 
+         //stderr is only redirected when using the GUI, so that a program like gpg can still
          //access the terminal to get a passphrase using stderr.
          //set up stdin for the child
          close(pipeToShell[1]);
@@ -7424,7 +7433,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
          close(pipeFromShell[1]);
       }
 
-      //There is no type cast for the argv, because the type may be different on different 
+      //There is no type cast for the argv, because the type may be different on different
       //machines. This may cause a warning message with strict compilers, don't worry about it.
       //Call _exit() instead of exit() to avoid closing the connection
       //to the Wayland server (esp. with GTK, which uses atexit()).
@@ -7437,7 +7446,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
       catch_int_signal();
       UNBLOCK_SIGNALS(&curset);
       ++dontCheckJobEndedP;
-      
+
       //Pipe stdin/stdout to/from the external command.
 # define BUFLEN 100      //length for buffer, pseudo tty limit is 128
       Byte buffer[BUFLEN + 1];
@@ -7451,12 +7460,12 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
       int toShell = pipeToShell[1];
       int fromShell = pipeFromShell[0];
 
-      //Write to the child if there are typed characters. Read from the child if there are 
-      //characters available. Repeat the reading a few times if more characters are available. 
-      //Need to check for typed keys now and then, but not too often (delays when no chars are 
-      //available). This loop is quit if no characters can be read from the pty (waitForChar 
+      //Write to the child if there are typed characters. Read from the child if there are
+      //characters available. Repeat the reading a few times if more characters are available.
+      //Need to check for typed keys now and then, but not too often (delays when no chars are
+      //available). This loop is quit if no characters can be read from the pty (waitForChar
       //detected special condition), or there are no characters available and the child has exited.
-      //Only check if the child has exited when there is no more output. The child may exit 
+      //Only check if the child has exited when there is no more output. The child may exit
       //before all the output has been printed.
       //
       //Currently this busy loops! This can probably dead-lock when the write blocks!
@@ -7466,7 +7475,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
       stateG = MODE_EXTERNCMD;   //don't redraw at window resize
 
       //Fork a process that will write the lines to the external program.
-      if ((opt & SHELL_WRITE) != 0) { 
+      if ((opt & SHELL_WRITE) != 0) {
          if ((wpid = fork()) == -1) {
             msg_puts(_("\nCannot fork\n"));
          } ei (wpid == 0) { //child
@@ -7476,19 +7485,19 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
             close(toShell);
             toShell = -1;
          }
-      } 
+      }
 
       int unreadCnt = 0;
       Elapsed start_tv;
       timespec_get(OUT &start_tv, TIME_UTC);
       for (;;) {
-         //Check if keys have been typed, write them to the child if there are any. Don't do this 
-         //if we are expanding wild cards (would eat typeahead). Don't do this when filtering and 
-         //terminal is in cooked mode, the shell command will handle the I/O.  Avoids that a typed 
-         //password is echoed for ssh or gpg command. Don't get characters when the child has 
+         //Check if keys have been typed, write them to the child if there are any. Don't do this
+         //if we are expanding wild cards (would eat typeahead). Don't do this when filtering and
+         //terminal is in cooked mode, the shell command will handle the I/O.  Avoids that a typed
+         //password is echoed for ssh or gpg command. Don't get characters when the child has
          //already finished (wait_pid == 0). Don't read characters unless we didn't get output for a
          //while (unreadCnt > 4), avoids that ":r !ls" eats typeahead.
-         
+
          len = 0;
          if ((opt & SHELL_EXPAND) == 0
              && ((opt & (SHELL_READ|SHELL_WRITE|SHELL_COOKED))
@@ -7533,7 +7542,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
 
                typeAheadLen += len;
 
-               //Write the characters to the child, unless EOF has been typed for pipes. Write 
+               //Write the characters to the child, unless EOF has been typed for pipes. Write
                //one character at a time, to avoid losing too much typeahead.
                //When writing buffer lines, drop the typed characters (only check for CTRL-C).
                if ((opt & SHELL_WRITE) != 0)
@@ -7556,7 +7565,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
             gotInterruptG = false;
          }
 
-         //Check if the child has any characters to be printed. Read them and store them in 
+         //Check if the child has any characters to be printed. Read them and store them in
          //a polystring. Repeat this as long as there is something to do, avoid the 10ms wait
          //for mch_inchar(), or sending typeahead characters to the external process.
          //TODO: This should handle escape sequences, compatible to some terminal (vt52?).
@@ -7609,8 +7618,8 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
          if ((wait_pid == (ProId)-1 && errno == ECHILD)
              || (wait_pid == pid && WIFEXITED(status))
          ) {
-            //Don't break the loop yet, try reading more characters from "fromShell" first. 
-            //When using pipes there might still be something to read and then we'll break the 
+            //Don't break the loop yet, try reading more characters from "fromShell" first.
+            //When using pipes there might still be something to read and then we'll break the
             //loop at the "break" above.
             wait_pid = pid;
          } else
@@ -7628,7 +7637,7 @@ finished:
       close(fromShell);
 
       //Wait until our child has exited.
-      //Ignore wait() returning pids of other children and returning because of some signal 
+      //Ignore wait() returning pids of other children and returning because of some signal
       //like SIGWINCH. Don't wait if wait_pid was already set above, indicating the
       //child already exited.
       if (wait_pid != pid)
@@ -7665,8 +7674,8 @@ finished:
       } else
          msg_puts(_("\nCommand terminated\n"));
    }
-   
-skipIfError: 
+
+skipIfError:
 
    if (!did_termSetMode && tmode == TMODE_RAW)
       termSetMode(TMODE_RAW);
@@ -7732,7 +7741,7 @@ pub void
 chBreakcheck(Boole force) {
    if ((mch_cur_tmode == TMODE_RAW || force) && uiRealWaitForChar(read_cmd_fd, 0L, NULL)) {
       fill_input_buf(false);
-   } 
+   }
 }
 
 //Register a signal handler. Return the old handler for this signal
@@ -7777,7 +7786,7 @@ motSignalHandler(int sig, SigHandler func) { //:motSignalHandler
 
 pub void
 mch_early_init(void) {
-   //Setup an alternative stack for signals. Helps to catch signals when running out of stack 
+   //Setup an alternative stack for signals. Helps to catch signals when running out of stack
    //space. Use of sigaltstack() is preferred, it's more portable. Ignore any errors.
    signal_stack = alloc(get_signal_stack_size());
    init_signal_stack();
@@ -7820,7 +7829,7 @@ open_pty(int* pty_master_fd, int* pty_slave_fd, Byte** name1, Byte** name2) {
       return;
 
    //O_NOCTTY flag stands for "No Controlling Terminal" and is used inside the open() system call
-   //to prevent a terminal device from becoming the controlling terminal of the calling process. 
+   //to prevent a terminal device from becoming the controlling terminal of the calling process.
    *pty_slave_fd = open(tty_name, O_RDWR | O_NOCTTY | O_EXTRA, 0);
    if (*pty_slave_fd < 0) {
       close(*pty_master_fd);
@@ -7978,7 +7987,7 @@ pub void
 chJobSetStatus(Job* job, JobStatus newVal) {
    job->status = newVal;
 }
-    
+
 pub Arr(Byte)
 chJobGetTty(Job* job, Boole out) {
    if (out) {
@@ -7987,7 +7996,7 @@ chJobGetTty(Job* job, Boole out) {
       return job->ttyIn;
    }
 }
-    
+
 private void
 mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal) {
    ProId   pid;
@@ -8018,7 +8027,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal) {
             || !(use_file_for_out || use_null_for_out)
             || !(use_out_for_err || use_file_for_err || use_null_for_err))) {
       open_pty(&pty_master_fd, &pty_slave_fd, &job->ttyOut, &job->ttyIn);
-   } 
+   }
 
    //TODO: without the channel feature connect the child to /dev/null?
    //Open pipes for stdin, stdout, stderr.
@@ -8031,10 +8040,10 @@ mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal) {
          goto failed;
       }
    } ei (!use_null_for_in && (pty_master_fd < 0 || use_buffer_for_in) && pipe(fd_in) < 0) {
-      //When writing buffer lines to the input don't use the pty, so that the pipe can be closed 
+      //When writing buffer lines to the input don't use the pty, so that the pipe can be closed
       //when all lines were written.
       goto failed;
-   } 
+   }
 
    if (use_file_for_out) {
       CS fname = options->name[PART_OUT];
@@ -8061,7 +8070,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal) {
    ei (!use_out_for_err && !use_null_for_err
          && (pty_master_fd < 0 || (options->set & JO_ERR_CALLBACK)) && pipe(fd_err) < 0) {
       goto failed;
-   } 
+   }
 
    if (!use_null_for_in || !use_null_for_out || !use_null_for_err) {
       if (options->set & JO_CHANNEL) {
@@ -8129,7 +8138,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal) {
                eeSetenv(hi->hi_key, tv_get_string(item));
                --todo;
             }
-         } 
+         }
       }
 
       if (use_null_for_in || use_null_for_out || use_null_for_err) {
@@ -8324,7 +8333,7 @@ mch_job_status(Job* job) {
 return_dead:
    if (job->status < JOB_ENDED) {
       job->status = JOB_ENDED;
-   } 
+   }
    return S"dead";
 }
 
@@ -8887,7 +8896,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             break;
          --todo;
       }
-   } 
+   }
    if (todo > 0) {
       showErrFmtMsg(_(e_invalid_argument_str), hi->hi_key);
       return FAIL;
@@ -8902,8 +8911,8 @@ private void
 job_free_contents(Job* job) {
    ch_log(job->channel, "Freeing job");
    if (job->channel) {
-      //The link from the channel to the job doesn't count as a reference, thus don't decrement 
-      //the refcount of the job. The reference from the job to the channel does count the 
+      //The link from the channel to the job doesn't count as a reference, thus don't decrement
+      //the refcount of the job. The reference from the job to the channel does count the
       //reference, decrement it and NULL the reference.  We don't set job_killed, unreferencing the
       //job doesn't mean it stops running.
       job->channel->job = NULL;
@@ -9032,7 +9041,7 @@ job_cleanup(Job* job) {
       Var returnVar;
 
       //Invoke the exit callback. Make sure the refcount is > 0.
-      
+
       ch_log(job->channel, "Invoking exit callback %s", job->exitCb.name);
       incRefCount(job);
       argv[0].tag = VAR_JOB;
@@ -9069,7 +9078,7 @@ set_ref_in_job(int copyID) {
          tv.job = job;
          abort = abort || set_ref_in_item(&tv, copyID, NULL, NULL);
       }
-   } 
+   }
    return abort;
 }
 
@@ -9168,7 +9177,7 @@ job_stop_on_exit(void) {
    FOR_ALL_JOBS(job) {
       if (job->status == JOB_STARTED && job->jv_stoponexit != NULL)
           chSendSignalToJob(job, job->jv_stoponexit);
-   } 
+   }
 }
 
 //Return true when there is any job that has an exit callback and might exit,
@@ -9205,7 +9214,7 @@ job_check_ended(void) {
       Job* job = mch_detect_ended_job(firstJobS);
       if (!job)
          break;
-         
+
       did_end = true;
       job_cleanup(job); //may add "job" to jobs_to_free
    }
@@ -9243,13 +9252,13 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
       CLEAR_POINTER(&opt);
       opt.mode = CH_MODE_NL;
       if (get_job_options(&argvars[1], OUT &opt,
-             JO_MODE_ALL + JO_CB_ALL + JO_TIMEOUT_ALL + JO_STOPONEXIT + JO_EXIT_CB 
+             JO_MODE_ALL + JO_CB_ALL + JO_TIMEOUT_ALL + JO_STOPONEXIT + JO_EXIT_CB
                 + JO_OUT_IO + JO_BLOCK_WRITE,
              JO2_ENV + JO2_CWD
          ) == FAIL
       ) {
          goto theend;
-      } 
+      }
    }
 
    //Check that when io is "file" that there is a file name.
@@ -9262,7 +9271,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
          emsg(_(e_io_file_requires_name_to_be_set));
          goto theend;
       }
-   } 
+   }
 
    if ((opt.set & JO_IN_IO) && opt.ioMode[PART_IN] == JIO_BUFFER) {
       Book* book = NULL;
@@ -9303,7 +9312,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
       argv[argc] = NULL;
    } ei (argvars[0].tag == VAR_STRING) {
       //Command is a string.
-      
+
       emsg(_(e_invalid_argument));
    } ei (argvars[0].tag != VAR_LIST || !argvars[0].list || argvars[0].list->len < 1){
       emsg(_(e_invalid_argument));
@@ -9473,7 +9482,7 @@ prompt_text(void) {
 //Return true if the cursor is in the editable position of the prompt line.
 pub int
 prompt_curpos_editable(void) {
-   return curPor->cursor.lnum == curBook->mem.lineCount 
+   return curPor->cursor.lnum == curBook->mem.lineCount
       && curPor->cursor.col >= (int)STRLEN(prompt_text());
 }
 
@@ -9551,7 +9560,7 @@ get_job_arg(Var* tv) {
    Job* job = tv->job;
    if (!job)
       emsg(_(e_not_valid_job));
-      
+
    return job;
 }
 
@@ -9595,7 +9604,7 @@ job_info(Job* job, Bag* bag) {
    if (job->argv) {
       for (int i = 0; job->argv[i]; i++)
          list_append_string(l, (CS)job->argv[i], -1);
-   } 
+   }
 }
 
 private void
@@ -9619,11 +9628,11 @@ f_job_info(Var* argvars, Var* returnVar) {
       if (job) {
          allocReturnDict(returnVar);
          job_info(job, returnVar->bag);
-      } 
+      }
    } else {
       allocReturnList(returnVar);
       job_info_all(returnVar->list);
-   } 
+   }
 }
 
 pub void
@@ -9631,7 +9640,7 @@ f_job_setoptions(Arr(Var) argvars, Var*) {
    Job* job = get_job_arg(&argvars[0]);
    if (!job)
       return;
-      
+
    JobOptions   opt;
    CLEAR_POINTER(&opt);
    if (get_job_options(&argvars[1], OUT &opt, JO_STOPONEXIT + JO_EXIT_CB, 0) == OK)
@@ -9676,7 +9685,7 @@ job_to_string_buf(OUT CS builder, Var* varp) {
       eeSnprintf(builder, NUMBUFLEN, "no process");
       return;
    }
-   CS status = (CS)(job->status == JOB_FAILED 
+   CS status = (CS)(job->status == JOB_FAILED
       ? "fail"
       : (job->status >= JOB_ENDED ? "dead" : "run")
    );
@@ -9691,7 +9700,7 @@ pub Multistring
 chBuildArgv(Text cmd) {
    if (cmd.len == 0)
       return (Multistring){};
-      
+
    Multistring shellArgs;
    appendToMulti(tConst("bash"), OUT &shellArgs);
    appendToMulti(tConst("-c"), OUT &shellArgs);
@@ -9892,8 +9901,8 @@ init_users(void) {
    }
    CS user_env = mch_getenv(S"USER");
 
-   //The $USER environment variable may be a valid remote user name (NIS, LDAP) not already listed 
-   //by getpwent(), as getpwent() only lists local user names.  If $USER is not already listed, 
+   //The $USER environment variable may be a valid remote user name (NIS, LDAP) not already listed
+   //by getpwent(), as getpwent() only lists local user names.  If $USER is not already listed,
    //check whether it is a valid remote user name using getpwnam() and if it is, add it to
    //the list of user names.
 
@@ -10007,14 +10016,14 @@ ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname) {   //true: use full
       if (!s) {
          continue;
       }
-      
+
       Byte buf[MAXPATHL];
       if (fullname) {
          (void)eeFullFileName(s, buf, MAXPATHL, false);
          s = buf;
       }
-      if (fputs("$argadd ", fd) < 0 
-            || ses_put_fname(fd, s) == FAIL 
+      if (fputs("$argadd ", fd) < 0
+            || ses_put_fname(fd, s) == FAIL
             || put_eol(fd) == FAIL
       ){
          return FAIL;
@@ -10028,7 +10037,7 @@ private Boole
 portNeedsToBeSaved(Portal* po) {
    if (bt_terminal(po->book)) {
       return !term_is_finished(po->book) && term_should_restore(po->book);
-   } 
+   }
    if (!po->book->currFileName || bt_nofilename(po->book))
       //When 'buftype' is "nofile", can't restore the portal contents.
       return false;
@@ -10040,12 +10049,12 @@ private Boole
 ses_do_frame(Frame* fr) {
    if (fr->layout == FR_LEAF)
       return portNeedsToBeSaved(fr->port);
-      
+
    Frame   *frc;
    FOR_ALL_FRAMES(frc, fr->child) {
       if (ses_do_frame(frc))
           return true;
-   } 
+   }
    return false;
 }
 
@@ -10056,12 +10065,12 @@ ses_skipframe(Frame* fr) {
    FOR_ALL_FRAMES(frc, fr) {
       if (ses_do_frame(frc))
           return frc;
-   } 
+   }
    return null;
 }
 
 //Write commands to "fd" to recursively create portals for frame "fr", horizontally and vertically
-//split. After the commands the last portal in the frame is the current portal. Return FAIL when 
+//split. After the commands the last portal in the frame is the current portal. Return FAIL when
 //writing the commands to "fd" fails.
 private int
 recreatePortals(FILE* fd, Frame* fr) {
@@ -10081,7 +10090,7 @@ recreatePortals(FILE* fd, Frame* fr) {
             return FAIL;
          ++count;
       }
-   } 
+   }
 
    //Go back to the first window.
    if (count > 0 && (fprintf(fd, fr->layout == FR_COL
@@ -10332,7 +10341,7 @@ getVarFlavor(CS varname) {
       while (*(++p)) {
          if (ASCII_ISLOWER(*p))
             return VAR_FLAVOR_SESSION;
-      } 
+      }
       return VAR_FLAVOR_EEGLINFO;
    } else
       return VAR_FLAVOR_DEFAULT;
@@ -10436,7 +10445,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 
    //If there is an empty, unnamed book we will wipe it out later.
    //Remember the book number.
-   if (put_line(fd, S"if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''") 
+   if (put_line(fd, S"if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''")
          == FAIL
    )
       goto fail;
@@ -10461,24 +10470,24 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
    }
 
    //the global argument list
-   if (ses_arglist(fd, S"argglobal", &argListG.al_ga, false) 
+   if (ses_arglist(fd, S"argglobal", &argListG.al_ga, false)
          == FAIL
    )
       goto fail;
 
    //Note: after the restore we still check it worked!
-   if (fprintf(fd, "set lines=%ld columns=%ld" , visibleRowsG, visibleColsG) < 0 
+   if (fprintf(fd, "set lines=%ld columns=%ld" , visibleRowsG, visibleColsG) < 0
          || put_eol(fd) == FAIL)
       goto fail;
 
-   //"tabs" is in 'sessionoptions': Similar to recreatePortals() below, populate the tabs first 
+   //"tabs" is in 'sessionoptions': Similar to recreatePortals() below, populate the tabs first
    //so later local options won't be copied to the new tabs.
    FOR_ALL_TABS(tp) {
-      //Use `bufhidden=wipe` to remove empty "placeholder" books once they are not needed. 
+      //Use `bufhidden=wipe` to remove empty "placeholder" books once they are not needed.
       //This prevents creating extra books (see cause of patch 8.1.0829)
       if (tp->next != NULL && put_line(fd, S"tabnew +setlocal\\ bufhidden=wipe") == FAIL)
          goto fail;
-   } 
+   }
    if (firstTabG->next != NULL && put_line(fd, S"tabrewind") == FAIL)
        goto fail;
 
@@ -10592,7 +10601,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
       for (wp = tab_firstPor; wp != NULL; wp = wp->next) {
          if (!portNeedsToBeSaved(wp))
             continue;
-          if (put_view(fd, wp, tp, wp != edited_win, 
+          if (put_view(fd, wp, tp, wp != edited_win,
                          cur_arg_idx,
                          &terminal_bufs
           ) == FAIL)
@@ -10602,7 +10611,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
           next_arg_idx = wp->argListInd;
       }
 
-      //The argument index in the first tab is zero, need to set it in each portal. For further 
+      //The argument index in the first tab is zero, need to set it in each portal. For further
       //tabs it's the portal where we do "tabedit".
       cur_arg_idx = next_arg_idx;
 
@@ -10667,7 +10676,7 @@ c_mkrc(Invocation* invo) {
    //Use the short file name until ":lcd" is used.  We also don't use the
    //short file name when 'acd' is set, that is checked later.
    did_lcd = false;
-   
+
    CS fname;
    if (*invo->arg != ZERO)
       fname = invo->arg;
@@ -10817,7 +10826,7 @@ find_eeglinfo_parameter(int type) {
    return NULL;
 }
 
-//Find the parameter represented by the given character (eg ', :, ", or /), and return its 
+//Find the parameter represented by the given character (eg ', :, ", or /), and return its
 //associated value in the 'eeglinfo' string. Only works for number parameters, not for 'r' or 'n'.
 //If the parameter is not specified in the string or there is no following number, return -1.
 pub int
@@ -10828,9 +10837,9 @@ get_eeglinfo_parameter(int type) {
    return -1;
 }
 
-//Get the eeglinfo file name to use. If "file" is given and not empty, use it (has already been 
+//Get the eeglinfo file name to use. If "file" is given and not empty, use it (has already been
 //expanded by cmdline functions).
-//Otherwise use "-i file_name", value from 'eeglinfo' or the default, and expand environment 
+//Otherwise use "-i file_name", value from 'eeglinfo' or the default, and expand environment
 //variables. Return an allocated string.
 private CS
 eeglinfo_filename(CS file) {
@@ -10869,8 +10878,8 @@ eeglinfo_writestring(FILE* fd, CS p) {
       ++len;
    }
 
-   //If the string will be too long, write its length and put it in the next line. Take into 
-   //account that some room is needed for what comes before the string (e.g., variable name). 
+   //If the string will be too long, write its length and put it in the next line. Take into
+   //account that some room is needed for what comes before the string (e.g., variable name).
    //Add something to the length for the '<', NL and trailing ZERO.
    if (len > LSIZE / 2)
       fprintf(fd, "\026%d\n<", len + 3);
@@ -10886,7 +10895,7 @@ eeglinfo_writestring(FILE* fd, CS p) {
    putc('\n', fd);
 }
 
-//Write a string in quotes that barline_parse() can read back. Break the line in less than LSIZE 
+//Write a string in quotes that barline_parse() can read back. Break the line in less than LSIZE
 //pieces when needed. Return remaining characters in the line.
 private int
 barline_writestring(FILE *fd, CS s, int remaining_start) {
@@ -11037,7 +11046,7 @@ private Boole
 removable(CS name) {
    if (!p_eeglinfo)
       return false;
-      
+
    Byte part[51];
    Boole retval = false;
    Unt  n;
@@ -11072,7 +11081,7 @@ writeEeglInfoBookList(FILE* fp) {
    Portal* port;
    FOR_ALL_TAB_PORTALS(tp, port) {
       set_last_cursor(port);
-   } 
+   }
 
    FPUTS(_("\n# Book list:\n"), fp);
    Book* book;
@@ -11131,7 +11140,7 @@ prepare_eeglinfo_history(int asklen, int writing) {
       HistoryEntry *histentry = get_histentry(type);
 
       //Count the number of empty spaces in the history list.  Entries read from eeglinfo previously
-      //are also considered empty. If there are more spaces available than we request, then fill 
+      //are also considered empty. If there are more spaces available than we request, then fill
       //them up.
       int num;
       int i;
@@ -11231,8 +11240,8 @@ handle_eeglinfo_history(ArrayList* values, int writing) {
 
    Ulong len;
    CS p;
-   
-   //If lines were written by an older Eegl, we need to avoid getting duplicates. See if the 
+
+   //If lines were written by an older Eegl, we need to avoid getting duplicates. See if the
    //entry already exists.
    for (idx = 0; idx < eeglinfo_hisidx[type]; ++idx) {
       p = eeglinfo_history[type][idx].hisstr;
@@ -11345,7 +11354,7 @@ merge_history(int type) {
    for (i = 0; i < hislen; i++) {
       if (histentry[i].hisstr != NULL)
          tot_hist[len++] = &histentry[i];
-   } 
+   }
 
    //Sort the list on timestamp.
    qsort((void *)tot_hist, (Unt)len, sizeof(HistoryEntry *), sort_hist);
@@ -11502,14 +11511,14 @@ write_eeglinfo_history(FILE *fp, int merge) {
                   ++i;
                }
             }
-         } 
+         }
       }
       for (i = 0; i < eeglinfo_hisidx[type]; ++i) {
          if (eeglinfo_history[type] != NULL) {
             eeglFree(eeglinfo_history[type][i].hisstr);
             eeglinfo_history[type][i].hisstrlen = 0;
          }
-      } 
+      }
       EE_CLEAR(eeglinfo_history[type]);
       eeglinfo_hisidx[type] = 0;
    }
@@ -11993,7 +12002,7 @@ finish_eeglinfo_registers(void) {
             eeglFree(y_read_regs[i].y_array[j].c);
          eeglFree(y_read_regs[i].y_array);
       }
-   } 
+   }
    EE_CLEAR(y_read_regs);
 }
 
@@ -12164,7 +12173,7 @@ handle_eeglinfo_register(ArrayList *values, int force) {
    if (y_ptr->y_array) {
       for (i = 0; i < y_ptr->y_size; i++)
          eeglFree(y_ptr->y_array[i].c);
-   } 
+   }
    eeglFree(y_ptr->y_array);
 
    if (!y_read_regs) {
@@ -12610,7 +12619,7 @@ copy_eeglinfo_marks(
                if (fnamecmp(str, name_buf) == 0)
                   break;
             }
-         } 
+         }
 
          //Copy marks if the book has not been loaded.
          if (book == NULL || !book->haveReadEeglinfoMarks) {
@@ -12691,7 +12700,7 @@ copy_eeglinfo_marks(
                     //Using the line number for the last-used timestamp.
                case '*': curBook->lastUsed = pos.lnum; break;
 
-               default:  
+               default:
                   if ((i = line[1] - 'a') >= 0 && i < NMARKS)
                      curBook->namedMarks[i] = pos;
                }
@@ -12718,7 +12727,7 @@ copy_eeglinfo_marks(
           writeBookMarks(buflist_buf, fp_out);
           ++count;
       }
-   } 
+   }
 
    eeglFree(name_buf);
 }
@@ -13072,7 +13081,7 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
    Book* book;
    FOR_ALL_BOOKS(book) {
       fmarks_check_names(book);
-   } 
+   }
 
    return eof;
 }
@@ -13094,7 +13103,7 @@ do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags) {
    if (fp_in) {
       if (flags & EIF_WANT_INFO) {
          if (fp_out) {
-            //Registers and marks are read and kept separate from what this Eegl is using. 
+            //Registers and marks are read and kept separate from what this Eegl is using.
             //They are merged when writing.
             prepare_eeglinfo_registers();
             prepare_eeglinfo_marks();
@@ -13224,7 +13233,7 @@ write_eeglinfo(CS file, Boole forceit) {
       //existing eeglinfo file, which will be renamed once all writing is successful.
       if (fstat(fileno(fp_in), &st_old) < 0
          || S_ISDIR(st_old.st_mode)
-         //We check the owner of the file. It's not very nice to overwrite a user's eeglinfo file 
+         //We check the owner of the file. It's not very nice to overwrite a user's eeglinfo file
          //after a "su root", with a eeglinfo file that the user can't read.
          || (getuid() != ROOT_UID
              && !(st_old.st_uid == getuid()
@@ -13242,7 +13251,7 @@ write_eeglinfo(CS file, Boole forceit) {
           goto end;
       }
 
-      //Make tempname, find one that does not exist yet. Beware of a race condition: If someone 
+      //Make tempname, find one that does not exist yet. Beware of a race condition: If someone
       //logs out and all Eegl instances exit at the same time a temp file might be created between
       //stat() and open(). Use open() with O_EXCL to avoid that.
       for (;;) {
@@ -13252,21 +13261,21 @@ write_eeglinfo(CS file, Boole forceit) {
          if (!tempname)      //out of memory
             break;
 
-         //Try a series of names. Change one character, just before the extension. 
+         //Try a series of names. Change one character, just before the extension.
          CS wp = tempname + STRLEN(tempname) - 5;
          if (wp < fiGetShortFiName(tempname))       //empty file name?
             wp = fiGetShortFiName(tempname);
          for (;;) {
             //Check if tempfile already exists.  Never overwrite an existing file!
             if (stat((char *)tempname, &st_new) == 0) {
-               //Check if tempfile is same as original file. May happen when fiAppendFileExtension() gave the 
-               //same file back.  E.g.  silly link, or file name-length reached. 
+               //Check if tempfile is same as original file. May happen when fiAppendFileExtension() gave the
+               //same file back.  E.g.  silly link, or file name-length reached.
                if (st_new.st_dev == st_old.st_dev && st_new.st_ino == st_old.st_ino) {
                   EE_CLEAR(tempname);
                   break;
                }
             } else {
-               //Try creating the file exclusively. This may fail if another Eegl tries to do it 
+               //Try creating the file exclusively. This may fail if another Eegl tries to do it
                //at the same time.
 
                //Use open() to be able to use O_NOFOLLOW and set file protection:

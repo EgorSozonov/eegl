@@ -380,7 +380,7 @@ Note: In the future more global options can be made |global-local|.  Using
 ";setlocal" on a global option might work differently then.
 
                   *option-value-function*
-Some options (@completefunc, @findfunc, @imactivatefunc, @imstatusfunc,
+Some options (@complete.func, @findfunc, @imactivatefunc, @imstatusfunc,
 @@omnifunc, @operatorfunc, @quickfixtextfunc, @tagfunc and @thesaurusfunc)
 are set to a function name or a function reference or a lambda function.  When
 using a lambda it will be converted to the name, e.g. "<lambda>123".
@@ -650,7 +650,7 @@ When the @backupskip pattern matches, a backup is not made anyway. When @patchmo
 backup may be renamed to become the oldest version of a file.
 
 
-@@backupcopy             Book. Flags. Default = "auto"
+@@backup.copy            Book. Flags. Default = "auto"
 
 When writing a file and a backup is made, this option tells how it's
 done.  This is a comma-separated list of words.
@@ -706,7 +706,7 @@ as the original file, but the system may refuse to do this. In that case the "au
 again not rename the file.
 
 
-@@backupdir              Global. String. Default = ".,~/tmp,~/"
+@@backup.dir             Global. String. Default = ".,~/tmp,~/"
 
 List of directories for the backup file, separated with commas.
 - The backup file will be created in the first directory in the list
@@ -741,7 +741,7 @@ work properly. The use of |;set+=| and |;set-=| is preferred when adding or remo
 from the list.  This avoids problems when a future version uses another default.
 
 
-@@backupext        Global. String. Default = ".bak"
+@@backup.ext             Global. String. Default = ".bak"
 
 String which is appended to a file name to make the name of the backup file. The default is
 quite unusual, because this avoids accidentally overwriting existing files with a backup file.
@@ -756,7 +756,7 @@ If you like to keep a lot of backups, you could use a BufWritePre autocommand to
 Use @backupdir to put the backup in a different directory.
 
 
-@@backupskip             Global. String. Default = "/tmp/*,$TMPDIR/*,$TMP/*,$TEMP/*"
+@@backup.skip            Global. String. Default = "/tmp/*,$TMPDIR/*,$TMP/*,$TEMP/*"
 
 A list of file patterns.  When one of the patterns matches with the name of the file which is
 written, no backup file is created.  Both the specified file name and the full path name of the
@@ -867,7 +867,7 @@ Every wrapped line will continue visually indented at that column,  thus preserv
 blocks of text. Note: an additional indent may be added for the @showbreak setting. (default: off)
 
 
-@@booklisted             Book. Boolean. Default = on
+@@book.listed            Book. Boolean. Default = on
 
 When this option is set, the book shows up in the book list. If it is reset, it is not used for
 ";bnext", "ls", etc. This option is reset by Eegl for books that are only used to remember
@@ -875,7 +875,7 @@ a file name or marks. Eegl sets it when starting to edit a book. But not when mo
 with ";book".
 
 
-@@buftype                Book. Enumerated. Default = normal
+@@book.type              Book. Enumerated. Default = normal
 
 The value of this option specifies the type of a book:
      normal    common book
@@ -1122,7 +1122,7 @@ and the places to scan.  It is a comma-separated list of flags:
       |complete_check()| periodically to keep Eegl responsive. This
       is especially important for |ins-autocompletion|.
    F   equivalent to using "F{func}", where the function is taken from
-      the @completefunc option.
+      the @complete.func option.
    o   equivalent to using "F{func}", where the function is taken from
       the @omnifunc option.
 
@@ -1150,7 +1150,7 @@ Note: The match limit takes effect only during forward completion
 (CTRL-N) and is ignored during backward completion (CTRL-P).
 
 
-@@completefunc           Book. String. Default = off
+@@complete.func           Book. String. Default = off
 
 This option specifies a function to be used for Insert mode completion with CTRL-X CTRL-U.
 |i_CTRL-X_CTRL-U|
@@ -1159,7 +1159,7 @@ invoked and what it should return.  The value can be the name of a
 function, a |lambda| or a |Funcref|. See |option-value-function| for more information.
 
 
-@@completefuzzycollect   Global. String. Default = off
+@@complete.fuzzycollect   Global. String. Default = off
 
 A comma-separated list of strings to enable fuzzy collection for
 specific |ins-completion| modes, affecting how matches are gathered
@@ -1176,12 +1176,12 @@ matching.  This option can contain the following values:
 
    whole_line   whole lines         |i_CTRL-X_CTRL-L|
 
-When using the @completeopt "longest" option value, fuzzy collection
+When using the @complete.opt "longest" option value, fuzzy collection
 can identify the longest common string among the best fuzzy matches
 and insert it automatically.
 
 
-@@completeitemalign      Global. Flags. Default = "abbr,kind,menu"
+@@complete.itemalign      Global. Flags. Default = "abbr,kind,menu"
 
 A comma-separated list of strings that controls the alignment and
 display order of items in the popup menu during Insert mode
@@ -1190,7 +1190,7 @@ These values allow customizing how |complete-items| are shown in the
 popup menu.  Note: must always contain those three values in any order.
 
 
-@@completeopt            Book. Flags. Default = "menu,preview"
+@@complete.opt            Book. Flags. Default = "menu,preview"
 
 A comma-separated list of options for Insert mode completion
 |ins-completion|.  The supported values are:
@@ -1203,7 +1203,7 @@ A comma-separated list of options for Insert mode completion
        controls how completion candidates are reduced from the
        list of alternatives.  If you want to use |fuzzy-matching|
        to gather more alternatives for your candidate list,
-       see @completefuzzycollect.
+       see @complete.fuzzycollect.
 
    longest  Only insert the longest common text of the matches.  If
        the menu is displayed you can use CTRL-L to add more
@@ -1237,10 +1237,9 @@ A comma-separated list of options for Insert mode completion
        in their original order.
 
    popup    Show extra information about the currently selected
-       completion in a popup window.  Only works in combination
-       with "menu" or "menuone".  Overrides "preview".
-       See @completepopup for specifying properties.
-       {only works when compiled with the |+textprop| feature}
+          completion in a popup window. Only works in combination with "menu" or "menuone".
+          Overrides "preview". See @complete.popup for specifying properties.
+          {only works when compiled with the |+textprop| feature}
 
    popuphidden
        Just like "popup" but initially hide the popup.  Use a
@@ -1265,9 +1264,9 @@ Only "fuzzy", "popup", "popuphidden" and "preview" have an effect when
 This option does not apply to |cmdline-completion|. See @wildoptions for that.
 
 
-@@completepopup          Global. String. Default = off
+@@complete.popup          Global. String. Default = off
 
-When @completeopt contains "popup" then this option is used for the
+When @complete.opt contains "popup" then this option is used for the
 properties of the info popup when it is created.  If an info popup
 portal already exists, it is closed, and the option value will be
 applied when it is created again.
@@ -1284,50 +1283,50 @@ still activate confirmation for one command only (this is most useful in mapping
 |;confirm| command. Also see the |confirm()| function.
 
 
-@@cscopepathcomp         Global. Numeric. Default = 0
+@@cscope.pathcomp         Global. Numeric. Default = 0
 
 Determines how many components of the path to show in a list of tags. See |cscopepathcomp|.
 
 
-@@cscopeprog             Global. String. Default = "cscope"
+@@cscope.prog             Global. String. Default = "cscope"
 
 Specifies the command to execute cscope.  See |cscopeprg|.
 
 
-@@cscoperelative         Global. Boolean. Default = off
+@@cscope.relative         Global. Boolean. Default = off
 
 In the absence of a prefix (-P) for cscope. setting this option enables
 to use the basename of cscope.out path as the prefix. See |cscoperelative|.
 
 
-@@cscopetag              Global. Boolean. Default = off
+@@cscope.tag              Global. Boolean. Default = off
 
 Use cscope for tag commands.  See |cscope-options|.
 
 
-@@cscopetagorder         Global. Numeric. Default = 0
+@@cscope.tagorder         Global. Numeric. Default = 0
 
 Determines the order in which ";cstag" performs a search.  See |cscopetagorder|.
 
 
-@@cscopeverbose          Global. Boolean. Default = off
+@@cscope.verbose          Global. Boolean. Default = off
 
 Give messages when adding a cscope database.  See |cscopeverbose|.
 
 
-@@cursorInsert           Global. Enumerated. Default = bar
+@@cursor.insert           Global. Enumerated. Default = bar
 
 The cursor in Insert mode. Can be one of: bar, block, underscore
 
 
-@@cursorline             Portal. Boolean. Default = on
+@@cursor.line             Portal. Boolean. Default = on
 
 Highlight the text line of the cursor with CursorLine |hl-CursorLine|. Useful to easily spot the
 cursor.  Will make screen redrawing slower. When Visual mode is active, the hiliting isn't
 used to make it easier to see the selected text.
 
 
-@@cursorNormal           Global. Enumerated. Default = block
+@@cursor.normal           Global. Enumerated. Default = block
 
    The cursor in Normal mode. Can be one of: bar, block, underscore
 
@@ -1597,7 +1596,7 @@ To ignore all but some events, a "-" prefix can be used:
     ;set ei=all,-WinLeave
 
 
-@@eventignoreport        Portal. String. Default = off
+@@eventignore.port        Portal. String. Default = off
 
 Similar to @eventignore but applies to a particular window and its books, for which portal and
 book-related autocommands can be ignored indefinitely without affecting the global @eventignore.
@@ -1765,7 +1764,7 @@ Examples:
       *@fixendofline* *@fixeol* *@nofixendofline* *@nofixeol*
 
 
-@@foldenable             Portal. Boolean. Default = on
+@@fold.enable            Portal. Boolean. Default = on
 
 When off, all folds are open.  This option can be used to quickly switch between showing all
 text unfolded and viewing the text with folds (including manually opened or closed folds).  It
@@ -1773,21 +1772,21 @@ can be toggled with the |zi| command.  The @foldcolumn will remain blank when @f
 off. This option is set by commands that create a new fold or close a fold. See |folding|.
 
 
-@@foldignore             Portal. String. Default = "#"
+@@fold.ignore            Portal. String. Default = "#"
 
 Used only when @foldmethod is "indent".  Lines starting with characters in @foldignore will get
 their fold level from surrounding lines.  White space is skipped before checking for this
 character. The default "#" works well for C programs.  See |fold-indent|.
 
 
-@@foldlevel              Portal. Numeric. Default = 0
+@@fold.level             Portal. Numeric. Default = 0
 
 Sets the fold level: Folds with a higher level will be closed.
 Setting this option to zero will close all folds. Higher numbers will close fewer folds.
 This option is set by commands like |zm|, |zM| and |zR|. See |fold-foldlevel|.
 
 
-@@foldlevelstart         Global. Numeric. Default = -1
+@@fold.levelstart        Global. Numeric. Default = -1
 
 Sets @foldlevel when starting to edit another book in a portal. Useful to always start editing
 with all folds closed (value zero), some folds closed (one) or no folds closed (99). Starting to
@@ -1796,23 +1795,22 @@ before BufReadPre autocommands, to allow an autocmd to overrule the @foldlevel v
 specific files. When the value is negative, it is not used.
 
 
-@@foldmarker             Portal. String. Default = "{{{,}}}"
+@@fold.marker            Portal. String. Default = "{{{,}}}"
 
 The start and end marker used when @foldmethod is "marker". There must be one comma, which
 separates the start and end marker. The marker is a literal string (a regular expression would
 be too slow). See |fold-marker|.
 
 
-@@foldmethod             Portal. Enumerated. Default = "marker"
+@@fold.method            Portal. Enumerated. Default = "marker"
 
 The kind of folding used for the current portal. Possible values:
    |fold-indent|   indent   Lines with equal indent form a fold.
-   |fold-expr|     expr     @foldexpr gives the fold level of a line.
    |fold-marker|   marker   Markers are used to specify folds.
    |fold-diff|     diff     Fold text that is not changed.
 
 
-@@foldopen               Global. String.
+@@fold.open              Global. String.
                          Default = "block,hor,mark,percent,location,search,tag,undo"
 
 Specifies for which type of commands folds will be opened, if the
@@ -1844,7 +1842,7 @@ In insert mode the folds containing the cursor will always be open when text is 
 To close folds you can re-apply @foldlevel with the |zx| command or set the @foldclose to "all".
 
 
-@@foldtext               Portal. String. Default = "foldtext()"
+@@fold.text               Portal. String. Default = "foldtext()"
 
 An expression which is used to specify the text displayed for a closed fold. The context is set
 to the script where @foldexpr was set, script-local items can be accessed. See |fold-foldtext|
@@ -2724,7 +2722,7 @@ commands. Used for |CTRL-W_}| when no count is given.  Not used when @previewpop
 
 When not empty a popup window is used for commands that would open a
 preview window.  See |preview-popup|.
-Not used for the insert completion info, add "popup" to @completeopt for that.
+Not used for the insert completion info, add "popup" to @complete.opt for that.
 
 
 @@previewwindow          Portal. Boolean. Default = off
@@ -2741,10 +2739,9 @@ Insert mode completion.  When zero, as much space as available is used. |ins-com
 
 @@pummaxwidth            Global. Numeric. Default  = 0
 
-Determines the maximum width to use for the popup menu for completion.
-When zero, there is no maximum width limit, otherwise the popup menu
-will never be wider than this value. Truncated text will be indicated
-by "trunc" value of @fillchars option.
+Determines the maximum width to use for the popup menu for completion. When zero, there is no
+maximum width limit, otherwise the popup menu will never be wider than this value. Truncated
+text will be indicated by "trunc" value of @fillchars option.
 
 This option takes precedence over @pumwidth. |ins-completion-menu|.
 
@@ -2757,32 +2754,27 @@ completion.  |ins-completion-menu|.
 
 @@quickfixtextfunc       Global. String. Default = off
 
-This option specifies a function to be used to get the text to display
-in the location list portals.  This can be used to
-customize the information displayed in the quickfix or location window
-for each entry in the corresponding quickfix or location list.  See
-|quickfix-window-function| for an explanation of how to write the
-function and an example.  The value can be the name of a function, a
-|lambda| or a |Funcref|. See |option-value-function| for more information.
+This option specifies a function to be used to get the text to display in the location list
+portals. This can be used to customize the information displayed in the quickfix or location
+window for each entry in the corresponding quickfix or location list. See
+|quickfix-window-function| for an explanation of how to write the function and an example.  The
+value can be the name of a function, a |lambda| or a |Funcref|. See |option-value-function| for
+more information.
 
 
 @@redrawtime             Global. Numeric (milliseconds). Default = 2000
 
-The time in milliseconds for redrawing the display.  This applies to
-searching for patterns for @hlsearch, |;match| highlighting and syntax
-highlighting.
-When redrawing takes more than this many milliseconds no further
-matches will be highlighted.
-For syntax highlighting the time applies per window.  When over the
-limit syntax highlighting is disabled until |CTRL-L| is used.
+The time in milliseconds for redrawing the display.  This applies to searching for patterns for
+@hlsearch, |;match| highlighting and syntax highlighting. When redrawing takes more than this
+many milliseconds no further matches will be highlighted. For syntax highlighting the time
+applies per window.  When over the limit syntax highlighting is disabled until |CTRL-L| is used.
 This is used to avoid that Eegl hangs when using a very complicated pattern.
 
 
 @@rulerformat            Global. String. Default = off
 
-When this option is not empty, it determines the content of the ruler
-string, as displayed for the @ruler option.
-The format of this option is like that of @statusline.
+When this option is not empty, it determines the content of the ruler string, as displayed for
+the @ruler option. The format of this option is like that of @statusline.
 
 The default ruler width is 17 characters.  To make the ruler 15
 characters wide, put "%15(" at the start and "%)" at the end. Example:
@@ -2790,30 +2782,27 @@ characters wide, put "%15(" at the start and "%)" at the end. Example:
       ;set rulerformat=%15(%c%V\ %p%%%)
 
 
-@@scrolljump             Global. Numeric. Default = 1
+@@scroll.jump             Global. Numeric. Default = 1
 
-Minimal number of lines to scroll when the cursor gets off the
-screen (e.g., with "j").  Not used for scroll commands (e.g., CTRL-E,
-CTRL-D).  Useful if your terminal scrolls very slowly.
-When set to a negative number from -1 to -100 this is used as the
-percentage of the window height.  Thus -50 scrolls half the window height.
+Minimal number of lines to scroll when the cursor gets off the screen (e.g., with "j").  Not
+used for scroll commands (e.g., CTRL-E, CTRL-D).  Useful if your terminal scrolls very slowly.
+When set to a negative number from -1 to -100 this is used as the percentage of the window
+height.  Thus -50 scrolls half the window height.
 
 
-@@scrolloff              Portal. Numeric. Default = 3
+@@scroll.off              Portal. Numeric. Default = 3
 
-Minimal number of screen lines to keep above and below the cursor.
-This will make some context visible around where you are working.  If
-you set it to a very large value (999) the cursor line will always be
-in the middle of the window (except at the start or end of the file or
-when long lines wrap).
-After using the local value, go back the global value with:
+Minimal number of screen lines to keep above and below the cursor. This will make some context
+visible around where you are working.  If you set it to a very large value (999) the cursor line
+will always be in the middle of the window (except at the start or end of the file or when long
+lines wrap). After using the local value, go back the global value with:
 
    set scrolloff = global
 
 For scrolling horizontally see @sidescrolloff.
 
 
-@@scrollopt              Global. Flags. Default = "ver,jump"
+@@scroll.opt              Global. Flags. Default = "ver,jump"
 
 This is a comma-separated list of words that specifies how @scrollbind portals should behave.
 The following words are available:
@@ -2876,13 +2865,11 @@ displayed in a convenient location.
 
 @@showfulltag            Global. Boolean. Default = off
 
-When completing a word in insert mode (see |ins-completion|) from the
-tags file, show both the tag name and a tidied-up form of the search
-pattern (if there is one) as possible matches.  Thus, if you have
-matched a C function, you can see a template for what arguments are
-required (coding style permitting).
-Note that this doesn't work well together with having "longest" in
-@completeopt, because the completion from the search pattern may not match the typed text.
+When completing a word in insert mode (see |ins-completion|) from the tags file, show both the
+tag name and a tidied-up form of the search pattern (if there is one) as possible matches.
+Thus, if you have matched a C function, you can see a template for what arguments are required
+(coding style permitting). Note that this doesn't work well together with having "longest" in
+@complete.opt, because the completion from the search pattern may not match the typed text.
 
 
 @@showmode               Global. Boolean. Default = on
@@ -3423,7 +3410,7 @@ Possible values (comma-separated list):
                jumping to errors with |location| commands.
 
 
-@@tabclose               Global. Enumerated. Default = off
+@@tab.close               Global. Enumerated. Default = off
 
 This option controls the behavior when closing tabs (e.g., using
 |;tabclose|).  When empty, Eegl goes to the next (right) tab.
@@ -3433,7 +3420,7 @@ Possible values:
    uselast   If included, go to the previously used tab if possible.
 
 
-@@tabpanel               Global. String. Default = off
+@@tab.panel               Global. String. Default = off
 
 When non-empty, this option determines the content of the |tabpanel|.
 The option consists of printf style '%' items interspersed with
@@ -3464,7 +3451,7 @@ The option value can contain line breaks:
 
 
 
-@@tabpanelopt            Global. String. Default = off
+@@tab.panelopt            Global. String. Default = off
 
 Optional settings for the |tabpanel|,  It can consist of the following
 items. Items must be separated by a comma.
@@ -3494,7 +3481,7 @@ Examples:
    ;set tabpanelopt=columns:16
 
 
-@@tagbsearch             Global. Boolean. Default = on
+@@tag.bsearch             Global. Boolean. Default = on
 
 When searching for a tag (e.g., for the |;ta| command), Eegl can either
 use a binary search or a linear search in a tags file.  Binary
@@ -3547,7 +3534,7 @@ This option doesn't affect commands that find all matching tags (e.g.,
 command-line completion and ";help").
 
 
-@@tagcase                Book. Enumerated. Default = "followic"
+@@tag.case                Book. Enumerated. Default = "followic"
 
    This option specifies how case is handled when searching the tags file:
       followic   Follow the @ignorecase option
@@ -3557,7 +3544,7 @@ command-line completion and ";help").
       smart      Ignore case unless an upper case letter is used
 
 
-@@tagfunc                Book. String. Default = off
+@@tag.func                Book. String. Default = off
 
 This option specifies a function to be used to perform tag searches
 (including |taglist()|).
@@ -3565,11 +3552,6 @@ The function gets the tag pattern and should return a List of matching
 tags.  See |tag-function| for an explanation of how to write the
 function and an example.  The value can be the name of a function, a
 |lambda| or a |Funcref|. See |option-value-function| for more information.
-
-
-@@taglength              Global. Numeric. Default = 0
-
-If non-zero, tags are significant up to this number of characters.
 
 
 @@tags                   Book. String. Default = "./tags,tags"
@@ -3594,7 +3576,7 @@ file names from the list.  This avoids problems when a future version
 uses another default.
 
 
-@@tagstack               Global. Boolean. Default = on
+@@tag.stack               Global. Boolean. Default = on
 
 When on, the |tagstack| is used normally.  When off, a ";tag" or
 ";tselect" command with an argument will not push the tag onto the
@@ -3615,7 +3597,7 @@ For example:
 See |termcap|.
 
 
-@@termwinkey             Portal. String. Default = off
+@@termport.key             Portal. String. Default = off
 
 The key that starts a CTRL-W command in a terminal portal.  Other keys
 are sent to the job running in the portal.
@@ -3626,11 +3608,11 @@ The key can be specified as a single character, a |key-notation| (e.g.
    ;set twk=<C-L>
 <   The string must be one key stroke but can be multiple bytes.
 When not set CTRL-W is used, so that CTRL-W : gets you to the command
-line.  If @termwinkey is set to CTRL-L then CTRL-L : gets you to the
+line.  If @termport.key is set to CTRL-L then CTRL-L : gets you to the
 command line.
 
 
-@@termwinscroll          Global. Numeric. Default = 10000
+@@termport.scroll          Global. Numeric. Default = 10000
 
 Number of scrollback lines to keep.  When going over this limit the
 first 10% of the scrollback lines are deleted.  This is just to reduce
@@ -3639,7 +3621,7 @@ Also used as a limit for text sent to the terminal in one write,
 multiplied by the number of columns times 3 (average number of bytes per cell).
 
 
-@@termwinsize            Portal. String. Default = off.
+@@termport.size            Portal. String. Default = off.
 
 Size used when opening the |terminal| window.  Format: {rows}x{columns} or {rows}*{columns}.
 
@@ -3747,14 +3729,7 @@ tell so.  A useful setting would be
    (time out on mapping after three seconds, time out on key codes after a tenth of a second).
 
 
-@@ttyscroll              Global. Numeric. Default = 0
-
-Maximum number of lines to scroll the screen. If there are more lines to scroll the window is
-redrawn. For terminals where scrolling is very slow and redrawing is not slow this can be set
-to a small number, e.g., 3, to speed up displaying.
-
-
-@@undofile               Book. Boolean. Default = off
+@@undo.file               Book. Boolean. Default = off
 
 When on, Eegl automatically saves undo history to an undo file when writing a book to a file,
 and restores undo history from the same file on book read. The directory where the undo file is
@@ -3763,7 +3738,7 @@ The undo file is not read when @undoreload causes the book from before a reload 
 undo. When @undofile is turned off the undo file is NOT deleted.
 
 
-@@undolevels             Global. Numeric. Default = 100, 1000 for Unix, VMS and Win32)
+@@undo.levels             Global. Numeric. Default = 100, 1000 for Unix, VMS and Win32)
 
 Maximum number of changes that can be undone.  Since undo information is kept in memory, higher
 numbers will cause more memory to be used. Nevertheless, a single change can already use a large
@@ -3781,7 +3756,7 @@ The local value is set to -123456 when the global value is to be used.
 Also see |clear-undo|.
 
 
-@@undoreload             Global. Numeric. Default = 10000
+@@undo.reload             Global. Numeric. Default = 10000
 
 Save the whole book for undo when reloading it.  This applies to the
 ";e!" command and reloading for when the book changed outside of
@@ -3948,6 +3923,34 @@ will be read or written. This option can be set with the |-i| command line flag.
 command line flag sets it to "NONE".
 
 
+@@port.height              Portal. Numeric. Default = 1
+
+Minimal number of lines for the current portal. This is not a hard minimum, Eegl will use fewer
+lines if there is not enough room.  If the focus goes to a window that is smaller, its size is
+increased, at the cost of the height of other windows. Set @port.height to a small number for
+normal editing. Set it to 999 to make the current window fill most of the screen. Other windows
+will be only @winminheight high.  This has the drawback that ";all" will create only two
+windows.  To avoid "vim -o 1 2 3 4" to create only two windows, set the option after startup is
+done, using the |EeglEnter| event:
+
+   au EeglEnter * set port.height=999
+
+Minimum value is 1. The height is not adjusted after one of the commands that change the
+height of the current window. @port.height applies to the current window.  Use @winminheight to
+set the minimal height for other portals.
+
+
+@@port.width               Global. Numeric. Default = 20
+
+Minimal number of columns for the current window.  This is not a hard
+minimum, Eegl will use fewer columns if there is not enough room.  If
+the current window is smaller, its size is increased, at the cost of
+the width of other windows.  Set it to 999 to make the current window
+always fill the screen.  Set it to a small number for normal editing.
+The width is not adjusted after one of the commands to change the width of the current portal.
+@port.width applies to the current portal.
+
+
 @@whichwrap              Global. String. Default = "b,s"
 
 Allow specified keys that move the cursor left/right to move to the previous/next line when the
@@ -3983,7 +3986,7 @@ line (not an empty line) then it will not move to the next line.  This
 makes "dl", "cl", "yl" etc. work normally.
 
 
-@@wildchar               Global. Numeric.   Default: <Tab>
+@@wild.char              Global. Numeric. Default: <Tab>
 
 Character you have to type to start wildcard expansion in the command-line, as specified with
 @wildmode. More info here: |cmdline-completion|. The character is not recognized when used
@@ -4003,7 +4006,7 @@ CTRL-F):
 <C-V><Tab> or "\t". See also @wildoptions and |wildtrigger()|.
 
 
-@@wildcharm              Global. Numeric. Default = 0
+@@wild.charm             Global. Numeric. Default = 0
 
 @wildcharm works exactly like @wildchar, except that it is
 recognized when used inside a macro.  You can find "spare" command-line
@@ -4015,7 +4018,7 @@ automatically invoke completion mode, e.g.:
 Then after typing :ss you can use CTRL-P & CTRL-N.
 
 
-@@wildignore             Global. String. Default = off
+@@wild.ignore            Global. String. Default = off
 
 A list of file patterns.  A file that matches with one of these patterns is ignored when
 expanding |wildcards|, completing file or directory names, and influences the result of
@@ -4036,7 +4039,7 @@ Does not apply when the shell is used to expand wildcards, which
 happens when there are special characters.
 
 
-@@wildmenu               Global. Boolean. Default = on
+@@wild.menu              Global. Boolean. Default = on
 
 When @wildmenu is on, command-line completion operates in an enhanced mode.  On pressing
 @wildchar (usually <Tab>) to invoke completion, the possible matches are shown. When
@@ -4088,7 +4091,7 @@ of selecting a different match, use this: >
 The "WildMenu" highlighting is used for displaying the current match |hl-WildMenu|.
 
 
-@@wildmode               Global. String. Default = "full"
+@@wild.mode              Global. String. Default = "full"
 
 Completion mode used for the character specified with @wildchar. This option is a
 comma-separated list of up to four parts, corresponding to the first, second, third, and fourth
@@ -4148,7 +4151,7 @@ Second press: cycle full matches >
 More info here: |cmdline-completion|.
 
 
-@@wildoptions            Global. Flags. Default = "pum"
+@@wild.options           Global. Flags. Default = "pum"
 
 A list of words that change how |cmdline-completion| is done.
 
@@ -4183,7 +4186,7 @@ The following values are supported:
                d   #define
                f   function
 
-This option does not apply to |ins-completion|. See @completeopt for that.
+This option does not apply to |ins-completion|. See @complete.opt for that.
 
 
 @@portfixbuf             Portal. Boolean. Default = off
@@ -4194,46 +4197,17 @@ change the book with |;edit| will fail. Other commands which change a portal's b
 modifier, it can force switching books.
 
 
-@@portfixheight           Portal. Boolean. Default = off
+@@portfix.height         Portal. Boolean. Default = off
 
 Keep portal window height when windows are opened or closed and @equalalways is set. Also for
 |CTRL-W_=|.  Set by default for the |preview-window| and |quickfix-window|. The height may be
 changed anyway when running out of room.
 
 
-@@portfixwidth            Portal. Boolean. Default = off
+@@portfix.width          Portal. Boolean. Default = off
 
 Keep the portal width when portals are opened or closed and @equalalways is set. Also for
 |CTRL-W_=|. The width may be changed anyway when running out of room.
-
-
-@@winheight              Portal. Numeric. Default = 1
-
-Minimal number of lines for the current window.  This is not a hard minimum, Eegl will use fewer
-lines if there is not enough room.  If the focus goes to a window that is smaller, its size is
-increased, at the cost of the height of other windows. Set @winheight to a small number for
-normal editing. Set it to 999 to make the current window fill most of the screen. Other windows
-will be only @winminheight high.  This has the drawback that ";all" will create only two
-windows.  To avoid "vim -o 1 2 3 4" to create only two windows, set the option after startup is
-done, using the |EeglEnter| event:
-
-   au EeglEnter * set winheight=999
-
-Minimum value is 1. The height is not adjusted after one of the commands that change the
-height of the current window. @winheight applies to the current window.  Use @winminheight to
-set the minimal height for other portals.
-
-
-@@winwidth               Global. Numeric. Default = 20
-
-Minimal number of columns for the current window.  This is not a hard
-minimum, Eegl will use fewer columns if there is not enough room.  If
-the current window is smaller, its size is increased, at the cost of
-the width of other windows.  Set it to 999 to make the current window
-always fill the screen.  Set it to a small number for normal editing.
-The width is not adjusted after one of the commands to change the width of the current portal.
-@winwidth applies to the current portal.  Use @winminwidth to set
-the minimal width for other portals.
 
 
 @@wrap                   Portal. Boolean. Default = on

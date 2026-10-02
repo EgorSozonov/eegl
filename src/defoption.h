@@ -147,37 +147,37 @@ OPTION("autocompletedelay", p_acl, long, 0, 0, null, null)
 OPTION("autowrite", p_aw, Boole, false, 0, null, null)
 OPTION("autowriteall", p_awa, Boole, false, 0, null, null)
 OPTION("backup", p_bk, Boole, false,  0, null, null)
-OPTION("backupdir", p_bdir, CS, DFLT_BDIR, P_EXPAND_DIR|P_ONECOMMA|P_NODUP, null, null)
-OPTION("backupext", p_bex, CS, ".bak", P_NFNAME, null, null)
-OPTION("backupskip",  p_bsk, CS,  "/tmp/*,$TMPDIR/*,$TMP/*,$TEMP/*", P_ONECOMMA|P_NODUP,
+OPTION("backup.dir", p_bdir, CS, DFLT_BDIR, P_EXPAND_DIR|P_ONECOMMA|P_NODUP, null, null)
+OPTION("backup.ext", p_bex, CS, ".bak", P_NFNAME, null, null)
+OPTION("backup.skip",  p_bsk, CS,  "/tmp/*,$TMPDIR/*,$TMP/*,$TEMP/*", P_ONECOMMA|P_NODUP,
    null, null)
-OPTION("balloondelay", p_bdlay, long, 600, 0, null, null)
-OPTION("balloonevalterm", p_bevalterm, Boole, true, P_NO_MKRC, &did_set_balloonevalterm, null)
+OPTION("balloon.delay", p_bdlay, long, 600, 0, null, null)
+OPTION("balloon.evalterm", p_bevalterm, Boole, true, P_NO_MKRC, &did_set_balloonevalterm, null)
 OPTION("cdpath", p_cdpath, CS, ",,", P_EXPAND_DIR|P_EXPAND_3_BS|P_COMMA|P_NODUP,
       null, null)
 OPTION("commheight", commlineHeightG, long, 1, P_RALL, &setCommHeight, null)
 OPTION("commportheight", p_cwh, long, 7, 0, &setStrictlyPositive, null)
 OPTION("columns", visibleColsG, long, 100, P_NODEFAULT|P_NO_MKRC|P_RCLR, &setVisibleCols, null)
-OPTION("completefuzzycollect", p_cfc, CS, null, P_ONECOMMA|P_NODUP,
+OPTION("complete.fuzzy.collect", p_cfc, CS, null, P_ONECOMMA|P_NODUP,
    &setCompletefuzzycollect, &expandCompletefuzzycollect)
-OPTION("completeitemalign", p_cia, Unt, CPT_ABBR|CPT_KIND|CPT_MENU, P_ONECOMMA|P_NODUP,
+OPTION("complete.itemalign", p_cia, Unt, CPT_ABBR|CPT_KIND|CPT_MENU, P_ONECOMMA|P_NODUP,
    &did_set_completeitemalign, NULL)
-OPTION("completepopup", p_cpp, CS, null, P_COMMA|P_NODUP|P_COLON,
+OPTION("complete.popup", p_cpp, CS, null, P_COMMA|P_NODUP|P_COLON,
    &did_set_completepopup, &expand_set_popupoption)
 OPTION("confirm", p_confirm, Boole, false, 0, null, null)
-OPTION("cscopepathcomp", p_cspc, long, 0, 0, null, null)
-OPTION("cscopeprog", p_csprg, CS, "cscope", P_EXPAND, null, null)
-OPTION("cscoperelative", p_csre, Boole, false, 0, null, null)
-OPTION("cscopetag", p_cst, Boole, false, 0, null, null)
-OPTION("cscopetagorder", p_csto, long, 0, 0, null, null)
-OPTION("cscopeverbose", p_csverbose, Boole, false, 0, null, null)
-OPTION("cursorInsert", cursorInsertG, Byte, CURSOR_BAR, P_ONECOMMA|P_NODUP, &setCursorInsert, NULL)
-OPTION("cursorNormal", cursorNormalG, Byte, CURSOR_BLOCK, P_ONECOMMA|P_NODUP,
+OPTION("cscope.pathcomp", p_cspc, long, 0, 0, null, null)
+OPTION("cscope.prog", p_csprg, CS, "cscope", P_EXPAND, null, null)
+OPTION("cscope.relative", p_csre, Boole, false, 0, null, null)
+OPTION("cscope.tag", p_cst, Boole, false, 0, null, null)
+OPTION("cscope.tagorder", p_csto, long, 0, 0, null, null)
+OPTION("cscope.verbose", p_csverbose, Boole, false, 0, null, null)
+OPTION("cursor.insert", cursorInsertG, Byte, CURSOR_BAR, P_ONECOMMA|P_NODUP, &setCursorInsert, NULL)
+OPTION("cursor.normal", cursorNormalG, Byte, CURSOR_BLOCK, P_ONECOMMA|P_NODUP,
    &setCursorNormal, null)
 OPTION("debug", p_debug, CS, null, 0, &did_set_debug, &expand_set_debug)
 OPTION("delcombine", p_delcomb, Boole, false, 0, null, null)
-OPTION("diffexpr", p_dex, CS, null, P_CURSWANT, &setOptexpr, null)
-OPTION("diffopt",  p_dip, CS, "internal,filler,closeoff,inline:simple",
+OPTION("diff.expr", p_dex, CS, null, P_CURSWANT, &setOptexpr, null)
+OPTION("diff.opt",  p_dip, CS, "internal,filler,closeoff,inline:simple",
    P_REDRAW_PORT|P_ONECOMMA|P_COLON|P_NODUP, &setDiffopt, &expandDiffopt)
 OPTION("eadirection", p_ead, Byte, EAD_BOTH, 0, &setEadirection, &expandEadirection)
 OPTION("eeglinfo", p_eeglinfo, CS, "'100,<50,s10,h", P_ONECOMMA|P_NODUP,
@@ -188,13 +188,13 @@ OPTION("equalalways", p_ea, Boole, false, P_RALL, &did_set_equalalways, NULL)
 OPTION("errorfile", p_ef, CS, DFLT_ERRORFILE, P_EXPAND, null, null)
 OPTION("eventignore", p_ei, CS, null, P_ONECOMMA|P_NODUP,
       &did_set_eventignore, &expand_set_eventignore)
-OPTION("foldlevelstart", foldLevelStart, long, 0, P_CURSWANT, null, null)
-OPTION("foldopen", p_fdo, Unt,
+OPTION("fold.levelstart", foldLevelStart, long, 0, P_CURSWANT, null, null)
+OPTION("fold.open", p_fdo, Unt,
       FDO_BLOCK|FDO_HOR|FDO_MARK|FDO_PERCENT|FDO_LOCATION|FDO_SEARCH|FDO_TAG|FDO_UNDO,
       P_ONECOMMA|P_NODUP|P_CURSWANT, &setFoldopen, &expandFoldopen)
 OPTION("fsync", p_fs, Boole, false, 0, null, null)
-OPTION("helpheight", p_hh, long, 20, 0, &setHelpHeight, NULL)
-OPTION("helplang", p_hlg, CS, null, P_ONECOMMA, &did_set_helplang, NULL)
+OPTION("help.height", p_hh, long, 20, 0, &setHelpHeight, NULL)
+OPTION("help.lang", p_hlg, CS, null, P_ONECOMMA, &did_set_helplang, NULL)
 OPTION("history", p_hi, long, 200, 0, &setHistory, null)
 OPTION("hlsearch", p_hls, Boole, true, P_RALL|P_HLONLY, &did_set_hlsearch, NULL)
 OPTION("ignorecase", p_ic, Boole, true, 0, &did_set_ignorecase, null)
@@ -221,14 +221,14 @@ OPTION("mousetime", p_mouset, long, 100, 0, null, null)
 OPTION("operatorfunc", p_opfunc, CS, null, P_FUNC, &did_set_operatorfunc, null)
 OPTION("patchexpr", p_pex, CS, null, 0, &setOptexpr, null)
 OPTION("previewheight", p_pvh, long, 12, 0, null, null)
-OPTION("pumheight", p_ph, long, 0, 0, null, null)
-OPTION("pummaxwidth", p_pmw, long, 0, 0, null, null)
-OPTION("pumwidth", p_pw, long, 15, 0, null, null)
+OPTION("pum.height", p_ph, long, 0, 0, null, null)
+OPTION("pum.maxwidth", p_pmw, long, 0, 0, null, null)
+OPTION("pum.width", p_pw, long, 15, 0, null, null)
 OPTION("quickfixtextfunc", p_qftf, CS, null, P_FUNC, &setQuickfixtextfunc, NULL)
 OPTION("redrawtime", p_rdt, long, 2000, 0, null, null)
 OPTION("rulerformat", p_ruf, CS, null, P_RSTAT, &setRulerFormat, NULL)
-OPTION("scrolljump", p_sj, long, 1, 0, &setScrollJump, null)
-OPTION("scrollopt", p_sbo, Unt, SCR_VER|SCR_JUMP, P_ONECOMMA|P_NODUP,
+OPTION("scroll.jump", p_sj, long, 1, 0, &setScrollJump, null)
+OPTION("scroll.opt", p_sbo, Unt, SCR_VER|SCR_JUMP, P_ONECOMMA|P_NODUP,
    &setScrollopt, &expand_set_scrollopt)
 OPTION("showcmdloc", p_sloc, Byte, SHOW_COMM_LAST, P_RSTAT, &did_set_showcmdloc, &expand_set_showcmdloc)
 OPTION("showfulltag", p_sft, Boole, false, 0, null, null)
@@ -236,46 +236,46 @@ OPTION("showmode", p_smd, Boole, true, 0, null, null)
 OPTION("showtabpanel", p_stpl, Boole, true, P_RALL, &setShowTabpanel, NULL)
 OPTION("sidescroll", p_ss, long, 0, 0, &setNonNegative, null)
 OPTION("smartcase", p_scs, Boole, false, 0, null, null)
-OPTION("splitbelow", p_sb, Boole, false, 0, null, null)
-OPTION("splitright", p_spr, Boole, false, 0, null, null)
+OPTION("split.below", p_sb, Boole, false, 0, null, null)
+OPTION("split.right", p_spr, Boole, false, 0, null, null)
 OPTION("startofline", p_sol, Boole, false, 0, null, null)
 OPTION("swapsync", p_sws, Boole, false, 0, null, null)
 OPTION("switchbook", p_swb, Unt, 0, P_ONECOMMA|P_NODUP, &setSwitchbook, &expand_set_switchbook)
 OPTION("tabclose", p_tcl, Byte, 0, P_ONECOMMA|P_NODUP, &setTabClose, &expand_set_tabclose)
-OPTION("tabpanel",  p_tpl, CS, null, P_RALL, null, null)
-OPTION("tabpanelopt",p_tplo, CS, null, P_ONECOMMA|P_COLON|P_NODUP,
+OPTION("tab.panel",  p_tpl, CS, null, P_RALL, null, null)
+OPTION("tab.panelopt",p_tplo, CS, null, P_ONECOMMA|P_COLON|P_NODUP,
    &did_set_tabpanelopt, &expand_set_tabpanelopt)
-OPTION("tagbsearch", p_tbs, Boole, true, 0, null, null)
-OPTION("tagstack", p_tgst, Boole, false, 0, null, null)
+OPTION("tag.bsearch", p_tbs, Boole, true, 0, null, null)
+OPTION("tag.stack", p_tgst, Boole, false, 0, null, null)
 OPTION("term", termCodesG[KS_NAME], CS, null, P_EXPAND|P_NODEFAULT|P_NO_MKRC|P_RALL, &setTerm, null)
 OPTION("timeout", p_timeout, Boole, false, 0, null, null)
 OPTION("timeoutlen", p_tm, long, 0,  0, &setTimeoutLen, null)
 OPTION("ttimeout", p_ttimeout, Boole, false, 0, null, null)
 OPTION("ttimeoutlen", p_ttm, long, -1, 0, null, null)
-OPTION("undoreload", p_ur, long, 10000, 0, null, null)
+OPTION("undo.reload", p_ur, long, 10000, 0, null, null)
 OPTION("updatetime", p_ut, long, 2000, 0, &setNonNegative, null)
 OPTION("verbose", p_verbose, long, 0, 0, null, null)
 OPTION("verbosefile", p_vfile, CS, null, P_EXPAND, &did_set_verbosefile, NULL)
 OPTION("whichwrap", p_ww, CS, "b,s", P_ONECOMMA|P_FLAGLIST,
    &did_set_whichwrap, &expand_set_whichwrap)
-OPTION("wildchar", p_wc, long, (long)TAB, 0, &did_set_wildchar, NULL)
-OPTION("wildcharm", p_wcm, long, 0, 0, &did_set_wildchar, NULL)
-OPTION("wildignore", p_wig, CS, null, P_ONECOMMA|P_NODUP, null, null)
-OPTION("wildignorecase", p_wic, Boole, false, 0, null, null)
-OPTION("wildmenu", p_wmnu, Boole, false, 0, null, null)
-OPTION("wildmode", p_wim, CS, "full", P_ONECOMMA|P_NODUP|P_COLON,
+OPTION("wild.char", p_wc, long, (long)TAB, 0, &did_set_wildchar, NULL)
+OPTION("wild.charm", p_wcm, long, 0, 0, &did_set_wildchar, NULL)
+OPTION("wild.ignore", p_wig, CS, null, P_ONECOMMA|P_NODUP, null, null)
+OPTION("wild.ignorecase", p_wic, Boole, false, 0, null, null)
+OPTION("wild.menu", p_wmnu, Boole, false, 0, null, null)
+OPTION("wild.mode", p_wim, CS, "full", P_ONECOMMA|P_NODUP|P_COLON,
    &did_set_wildmode, &expand_set_wildmode)
-OPTION("wildoptions", p_wop, Unt, WILDOPT_PUM, P_ONECOMMA|P_NODUP,
+OPTION("wild.options", p_wop, Unt, WILDOPT_PUM, P_ONECOMMA|P_NODUP,
    &setWildoptions, &expandWildoptions)
-OPTION("winheight", p_wh, long, 0, 0, &setWinHeight, NULL)
-OPTION("winwidth", p_wiw, long, 20, 0, &did_set_winwidth, NULL)
+OPTION("port.height", p_wh, long, 0, 0, &setWinHeight, NULL)
+OPTION("port.width", p_wiw, long, 20, 0, &did_set_winwidth, NULL)
 OPTION("writedelay", p_wd, long, 0, 0, null, null)
 OPTION("listchars", p_lcs, CS, "eol:$", P_RALL|P_ONECOMMA|P_NODUP,
    &setListChars, &expand_set_chars_option)
 OPTION("fillchars", p_fcs, CS, "vert:|,fold: ,lastline: ",
    P_RALL|P_ONECOMMA|P_NODUP, &setFillChars, &expand_set_chars_option)
-OPTION("undolevels", p_ul, long, 128, 0, &did_set_undolevels, NULL)
-OPTION("termwinscroll", p_twsl, long, 10000, P_RBUF, &did_set_termwinscroll, null)
+OPTION("undo.levels", p_ul, long, 128, 0, &did_set_undolevels, NULL)
+OPTION("termport.scroll", p_twsl, long, 10000, P_RBUF, &did_set_termwinscroll, null)
 
 #undef TYPEBASED_CS
 #undef TYPEBASED_Boole
@@ -291,32 +291,32 @@ OPTION("termwinscroll", p_twsl, long, 10000, P_RBUF, &did_set_termwinscroll, nul
 
 OPTION("breakindent", breakIndent, Boole, false, 0, setBreakindent, null)
 OPTION("diff", diff, Boole, false, P_REDRAW_PORT, &did_set_diff, null)
-OPTION("eventignoreport", eventIgnorePort, CS, null, P_ONECOMMA|P_NODUP,
+OPTION("eventignore.port", eventIgnorePort, CS, null, P_ONECOMMA|P_NODUP,
    &did_set_eventignore, &expand_set_eventignore)
-OPTION("foldenable", foldEnable, Boole, false, P_REDRAW_PORT, null, null)
-OPTION("foldignore", foldIgnore, CS, "#", P_REDRAW_PORT, &did_set_foldignore, NULL)
-OPTION("foldlevel", foldLevel, long, 0, P_REDRAW_PORT, &did_set_foldlevel, NULL)
-OPTION("foldmethod", foldMethod, Byte, FOLD_MARKER, P_REDRAW_PORT,
+OPTION("fold.enable", foldEnable, Boole, false, P_REDRAW_PORT, null, null)
+OPTION("fold.ignore", foldIgnore, CS, "#", P_REDRAW_PORT, &did_set_foldignore, NULL)
+OPTION("fold.level", foldLevel, long, 0, P_REDRAW_PORT, &did_set_foldlevel, NULL)
+OPTION("fold.method", foldMethod, Byte, FOLD_MARKER, P_REDRAW_PORT,
       &setFoldMethod, &expand_set_foldmethod)
-OPTION("foldtext", foldText, CS, "foldtext()", P_REDRAW_PORT,
+OPTION("fold.text", foldText, CS, "foldtext()", P_REDRAW_PORT,
    &setOptexpr, null)
-OPTION("foldmarker", foldMarker, CS, "{{{,}}}",  P_REDRAW_PORT|P_ONECOMMA|P_NODUP,
+OPTION("fold.marker", foldMarker, CS, "{{{,}}}",  P_REDRAW_PORT|P_ONECOMMA|P_NODUP,
     &did_set_foldmarker, NULL)
 OPTION("list", list, Boole, false, P_REDRAW_PORT, null, null)
-OPTION("portfixbuf", portFixBuf, Boole, false, 0, null, null)
-OPTION("portfixheight", portFixHeight, Boole, false, P_RSTAT, null, null)
-OPTION("portfixwidth", portFixWidth, Boole, false, P_RSTAT, null, null)
+OPTION("portfix.buf", portFixBuf, Boole, false, 0, null, null)
+OPTION("portfix.height", portFixHeight, Boole, false, P_RSTAT, null, null)
+OPTION("portfix.width", portFixWidth, Boole, false, P_RSTAT, null, null)
 OPTION("smoothscroll", smoothScroll, Boole, false, P_REDRAW_PORT, &did_set_smoothscroll, NULL)
-OPTION("cursorline", cursorLine, Boole, true, P_REDRAW_PORT|P_HLONLY, null, null)
+OPTION("cursor.line", cursorLine, Boole, true, P_REDRAW_PORT|P_HLONLY, null, null)
 OPTION("statusline", statusLine, CS,
       "%n\\:%f%m\\ \\|%l\\:%c\\/%L\\L\\|\\ %{strftime('%H:%M')}",
       P_RSTAT, &did_set_statusline, NULL)
 OPTION("wrap", wrap, Boole, true, P_REDRAW_PORT, &did_set_wrap, NULL)
 OPTION("signcolumn", signColumn, Boole, false, P_RCLR, null, null)
 OPTION("sidescrolloff", sideScrollOff, long, 0, P_RBUF, &setSideScrollOff, null)
-OPTION("scrolloff", scrollOff, long, 3, P_RALL, &setScrollOff, null)
-OPTION("termwinkey", termWinKey, CS, null, P_REDRAW_PORT, &did_set_termwinkey, null)
-OPTION("termwinsize", termWinSize, CS, null, P_REDRAW_PORT, &did_set_termwinsize, null)
+OPTION("scroll.off", scrollOff, long, 3, P_RALL, &setScrollOff, null)
+OPTION("termport.key", termWinKey, CS, null, P_REDRAW_PORT, &did_set_termwinkey, null)
+OPTION("termport.size", termWinSize, CS, null, P_REDRAW_PORT, &did_set_termwinsize, null)
 
 #undef TYPEBASED_CS
 #undef TYPEBASED_Boole
@@ -331,12 +331,12 @@ OPTION("termwinsize", termWinSize, CS, null, P_REDRAW_PORT, &did_set_termwinsize
 #ifdef OPTIONS_LIST_BOOK
 
 OPTION("autoindent", autoIndent, Boole, false, 0, null, null)
-OPTION("backupcopy", backupCopy, Unt, BKC_AUTO, P_ONECOMMA|P_NODUP,
+OPTION("backup.copy", backupCopy, Unt, BKC_AUTO, P_ONECOMMA|P_NODUP,
     &setBackupCopy, &expand_set_backupcopy)
-OPTION("balloonexpr", balloonExpr, CS, null, 0, &setOptexpr, null)
+OPTION("balloon.expr", balloonExpr, CS, null, 0, &setOptexpr, null)
 OPTION("binary", binary, Boole, false, P_RSTAT, &optSetBinary, NULL)
-OPTION("booklisted", bookListed, Boole, false, 0, &setBookListed, NULL)
-OPTION("booktype", kind, Byte, BOOK_NORMAL, 0, &setBufType, &expand_set_buftype)
+OPTION("book.listed", bookListed, Boole, false, 0, &setBookListed, NULL)
+OPTION("book.type", kind, Byte, BOOK_NORMAL, 0, &setBufType, &expand_set_buftype)
 OPTION("cinwords", indentKeywords, CS, "if,else,while,do,for,switch",
       P_ONECOMMA|P_NODUP, null, null)
 OPTION("comments", comments, CS, "s1:/" "*,mb:*,ex:*" "/,://,b:#,:%,:XCOMM,n:>,fb:-",
@@ -361,10 +361,10 @@ OPTION("iskeyword", isKeyword, CS, "@,48-57,_,192-255", P_COMMA|P_NODUP,
       &did_set_iskeyword, NULL)
 OPTION("define", definer, CS, "^\\s*#\\s*define", 0, null, null)
 OPTION("include", includer, CS, "^\\s*#\\s*include", 0, null, null)
-OPTION("includeexpr", includeExpr, CS, null,  0, &setOptexpr, NULL)
+OPTION("include.expr", includeExpr, CS, null,  0, &setOptexpr, NULL)
 OPTION("indentexpr", indentExpr, CS, null, 0, &setOptexpr, null)
-OPTION("formatprog", formatProg, CS, null, P_EXPAND, null, null)
-OPTION("formatexpr", formatExpr, CS, null, 0, &setOptexpr, null)
+OPTION("format.prog", formatProg, CS, null, P_EXPAND, null, null)
+OPTION("format.expr", formatExpr, CS, null, 0, &setOptexpr, null)
 // Can use ":help" for @keywordprog
 OPTION("keywordprog", keywordProg, CS, "man -S", P_EXPAND, null, null)
 OPTION("matchpairs", matchPairs, CS, "(:),{S:},[:]", P_ONECOMMA|P_NODUP,
@@ -377,24 +377,24 @@ OPTION("suffixesadd", suffixesAdd, CS, ".java,.rust", P_ONECOMMA|P_NODUP,
       NULL, NULL)
 OPTION("textwidth", textWidth, long, 96, P_RBUF|P_HLONLY, &did_set_textwidth, NULL)
 OPTION("wrapmargin", wrapMargin, long, 0, 0, null, null)
-OPTION("grepformat", grepFormat, CS, "%f:%l:%m,%f:%l%m,%f  %l%m", P_ONECOMMA|P_NODUP,
+OPTION("grep.format", grepFormat, CS, "%f:%l:%m,%f:%l%m,%f  %l%m", P_ONECOMMA|P_NODUP,
       null, null)
 //Add an extra file name so that grep will always insert a file name in the match line
-OPTION("grepprog", grepProg, CS, "grep -n $* /dev/null", P_EXPAND, null, null)
+OPTION("grep.prog", grepProg, CS, "grep -n $* /dev/null", P_EXPAND, null, null)
 OPTION("path", path, CS, PREFIX "/include,.,", P_EXPAND_DIR|P_EXPAND_3_BS|P_COMMA|P_NODUP,
       null, null)
 OPTION("makeprog", makeProg, CS, "make", P_EXPAND, null, null)
 OPTION("errorformat", errorFormat, CS, DFLT_EFM, P_ONECOMMA|P_NODUP, null, null)
 OPTION("autoread", autoRead, Boole, true, 0, null, null)
 OPTION("tags", tags, CS, "./tags,tags", P_EXPAND|P_EXPAND_3_BS|P_ONECOMMA|P_NODUP, null, null)
-OPTION("tagcase", tagCase, Byte, TC_FOLLOWIC, 0, &setTagcase, &expand_set_tagcase)
+OPTION("tag.case", tagCase, Byte, TC_FOLLOWIC, 0, &setTagcase, &expand_set_tagcase)
 OPTION("dictionary", dictionary, CS, null, P_EXPAND|P_ONECOMMA|P_NODUP|P_NDNAME,
       NULL, NULL)
 OPTION("diffanchors", diffAnchors, CS, null, P_ONECOMMA, &did_set_diffanchors, NULL)
 OPTION("thesaurus", thesaurus, CS, null, P_EXPAND|P_ONECOMMA|P_NODUP|P_NDNAME, NULL, NULL)
-OPTION("thesaurusfunc", thesaurusFn, CallbackPtr, null, P_FUNC,
+OPTION("thesaurus.func", thesaurusFn, CallbackPtr, null, P_FUNC,
       &did_set_thesaurusfunc, null)
-OPTION("undofile", undoFile, Boole, false, 0, &did_set_undofile, null)
+OPTION("undo.file", undoFile, Boole, false, 0, &did_set_undofile, null)
 
 #undef TYPEBASED_CS
 #undef TYPEBASED_Boole

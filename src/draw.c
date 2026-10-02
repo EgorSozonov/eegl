@@ -99,6 +99,8 @@ typedef struct {
 
    //saved "extra" items for when state becomes DRAWING_TEXT (again)
    int saved_n_extra;
+
+   CS saved_p_extra;
    Decoration saved_extraDeco;
    int saved_toSkipBeforeDeco;
    Boole saved_extra_for_textprop;

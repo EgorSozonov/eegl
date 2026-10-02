@@ -501,8 +501,6 @@ private void f_swapinfo(Arr(Var) argvars, Var* returnVar);
 private void f_synID(Arr(Var) argvars, Var* returnVar);
 private void f_synstack(Arr(Var) argvars, Var* returnVar);
 private void f_tabpagebuflist(Arr(Var) argvars, Var* returnVar);
-private void f_tagfiles(Arr(Var), Var* returnVar);
-private void f_taglist(Arr(Var) argvars, Var* returnVar);
 private void f_type(Arr(Var) argvars, Var* returnVar);
 private void f_virtcol(Arr(Var) argvars, Var* returnVar);
 private void f_visualmode(Arr(Var) argvars, Var* returnVar);
@@ -558,7 +556,7 @@ checkIfNameReserved(CS name, int is_objm_access) {
 
 
 //}}}
-//{{{expression evaluation 
+//{{{expression evaluation
 
 //This specifies optional parameters for getLval(). Arguments may be NULL.
 
@@ -717,7 +715,7 @@ eval1_emsg(Byte **arg, Var* returnVar, Invocation* invo) {
 
    int ret = eval1(OUT arg, returnVar, &evalarg);
    if (ret == FAIL) {
-      //Report the invalid expression unless the expression evaluation has been cancelled due to 
+      //Report the invalid expression unless the expression evaluation has been cancelled due to
       //an aborting error, an interrupt, or an exception, or we already gave a more specific error.
       //Also check called_emsg for when using assert_fails().
       if (!aborting() && anyEmsgG == anyEmsgG_before && called_emsg == called_emsg_before)
@@ -755,7 +753,7 @@ partialEvalExp(Var* expr, Var* argv, int argc, Var* returnVar) {
    funcexe.fe_partial = partial;
    if (call_func(s, -1, returnVar, argc, argv, &funcexe) == FAIL)
       return FAIL;
-      
+
 
    return OK;
 }
@@ -903,7 +901,7 @@ clear_evalarg(EvalCtx* evalarg, Invocation* invo) {
 
    if (evalarg->eval_tofree || evalarg->eval_using_cmdline) {
       if (invo) {
-         //We may need to keep the original command line, e.g. for ":let" it has the variable 
+         //We may need to keep the original command line, e.g. for ":let" it has the variable
          //names. But we may also need the new one, "nextcmd" points into it. Keep both.
          eeglFree(invo->commlineToFree);
          invo->commlineToFree = *invo->commline;
@@ -956,7 +954,7 @@ skip_expr_concatenate(Byte** arg, Byte** start, Byte** end, EvalCtx* evalarg) {
    return res;
 }
 
-//Convert "tv" to a string. When "join_list" is true, convert a List into a sequence 
+//Convert "tv" to a string. When "join_list" is true, convert a List into a sequence
 //of lines. Return an allocated string (NULL when out of memory).
 pub CS
 typval2string(Var *tv, int join_list) {
@@ -1078,7 +1076,7 @@ evalExprInternal(CS arg, Invocation* invo, int use_simple_function) {
     return tv;
 }
 
-//Top-level evaluation function. Return an allocated Var with the result. Return NULL when there 
+//Top-level evaluation function. Return an allocated Var with the result. Return NULL when there
 //is an error.
 pub Var*
 eval_expr(CS arg, Invocation* invo) {
@@ -1216,7 +1214,7 @@ evalStringLiteral(Byte **arg, OUT Var* returnVar, Boole evaluate, Boole interpol
    return OK;
 }
 
-//Allocate a variable for a 'str''ing' constant. When "interpolate" is true reduce "{{" to "{" and 
+//Allocate a variable for a 'str''ing' constant. When "interpolate" is true reduce "{{" to "{" and
 //stop at a single "{". Return OK when a "returnVar" was set to the string.
 //Return FAIL on error, "returnVar" is not set.
 private int
@@ -1341,7 +1339,7 @@ eval_interp_string(Byte **arg, Var* returnVar, int evaluate) {
 //}}}
 //{{{function calls
 
-//"*arg" points to what can be a function name in the form of "import.Name" or "Funcref". 
+//"*arg" points to what can be a function name in the form of "import.Name" or "Funcref".
 //Return the name of the function. Set "tofree" to something that was allocated.
 //If "verbose" is false no errors are given. Return NULL for any failure.
 private CS
@@ -1376,7 +1374,7 @@ deref_function_name(
    if (*skipwhite(*arg) != ZERO) {
       if (verbose) {
          showErrFmtMsg(_(e_trailing_characters_str), *arg);
-      } 
+      }
       name = NULL;
    } ei (ref.tag == VAR_FUNC && ref.string != NULL) {
       name = ref.string;
@@ -1427,8 +1425,8 @@ callEeglFunction(
    funcexe.fe_lastline = curPor->cursor.lnum;
    funcexe.fe_evaluate = true;
 
-   //The name might be "import.Func" or "Funcref". We don't know, we need to ignore errors for an 
-   //undefined name. But we do want errors when an autoload script has errors.  Guess that when 
+   //The name might be "import.Func" or "Funcref". We don't know, we need to ignore errors for an
+   //undefined name. But we do want errors when an autoload script has errors.  Guess that when
    //there is a dot in the name showing errors is the right choice.
    ignore_errors = firstOccurrence(func, '.') == NULL;
    arg = func;
@@ -1449,7 +1447,7 @@ callEeglFunction(
    return ret;
 }
 
-//Call Vim script function "func" and return the result as a string. Uses "argv[0]" to 
+//Call Vim script function "func" and return the result as a string. Uses "argv[0]" to
 //"argv[argc - 1]" for the function arguments."argv[argc]" should have type VAR_UNKNOWN.
 //Return NULL when calling the function fails.
 pub void *
@@ -1463,7 +1461,7 @@ call_func_retstr(Byte* func, int argc, Var* argv) {
    return retval;
 }
 
-//Call Vimscript function "func" and return the result as a List. Use "argv" and "argc" as 
+//Call Vimscript function "func" and return the result as a List. Use "argv" and "argc" as
 //call_func_retstr(). Return NULL when there is something wrong.
 //Give an error when the returned value is not a list.
 pub void *
@@ -1532,15 +1530,15 @@ private FlagString glv_flag_strings[] = {
 };
 #endif
 
-//Fill in "lp" using "root". This is used in a special case when "getLval()" parses a bare word 
+//Fill in "lp" using "root". This is used in a special case when "getLval()" parses a bare word
 //when "lvalRootS" is not NULL.
 //
-//This is typically called with "lvalRootS" as "root". For a class, find the name from lp in the 
-//class from root, fill in Lval if found. For a complex type, list/dict use it as the 
+//This is typically called with "lvalRootS" as "root". For a class, find the name from lp in the
+//class from root, fill in Lval if found. For a complex type, list/dict use it as the
 //result; just put the root into var.
 
-//"lvalRootS" is a hack used during run-time/instr-execution to provide the starting point for 
-//"getLval()" to traverse a chain of indexes. In some cases getLval sees a bare name and uses 
+//"lvalRootS" is a hack used during run-time/instr-execution to provide the starting point for
+//"getLval()" to traverse a chain of indexes. In some cases getLval sees a bare name and uses
 //this function to populate the Lval.
 //
 //For setting up "lvalRootS" (currently only used with lockvar)
@@ -1567,7 +1565,7 @@ typedef enum {
    GLV_STOP
 } GlvStatus;
 
-//Get a Bag lval variable that can be assigned a value to: "name", "name[expr]", 
+//Get a Bag lval variable that can be assigned a value to: "name", "name[expr]",
 //"name[expr][expr]", "name.key", "name.key[expr]" etc.
 //"name" points to the start of the name. If "returnVar" is not NULL, it points to the value to be
 //assigned. "unlet" is true for ":unlet": slightly different behavior when something is
@@ -1578,7 +1576,7 @@ typedef enum {
 // GLV_READ_ONLY:   will not change the variable
 // GLV_NO_AUTOLOAD: do not use script autoloading
 //
-//The Bag is returned in 'lp'.  Return GLV_OK on success and GLV_FAIL on failure. 
+//The Bag is returned in 'lp'.  Return GLV_OK on success and GLV_FAIL on failure.
 //Return GLV_STOP to stop processing the characters following 'key_end'.
 private int
 get_lval_dict_item(
@@ -1612,7 +1610,7 @@ get_lval_dict_item(
 
    lp->ll_di = bagFind(lp->bag, (Text){.c = keyStr, .len = len});
 
-   //When assigning to a scope dictionary check that a function and variable name is valid 
+   //When assigning to a scope dictionary check that a function and variable name is valid
    //(only variable name unless it is l: or g: dictionary). Disallow overwriting a builtin function
    if (arg.returnVar && lp->bag->scope != 0) {
       int prec;
@@ -1753,7 +1751,7 @@ get_lval_list(
    return OK;
 }
 
-//Check whether dot (".") is allowed after the variable "name" with type "tag". Only Bag, Class 
+//Check whether dot (".") is allowed after the variable "name" with type "tag". Only Bag, Class
 //and Object types support a dot after the name. Return true if dot is allowed after the name.
 private int
 dot_allowed_after_type(Text name, VarTag tag, int quiet) {
@@ -1766,8 +1764,8 @@ dot_allowed_after_type(Text name, VarTag tag, int quiet) {
    return true;
 }
 
-//Check whether the variable "name" with type "tag" can be followed by an index. Only Bag, List, 
-//Blob, Object and Class types support indexing.  Return true if indexing is allowed after 
+//Check whether the variable "name" with type "tag" can be followed by an index. Only Bag, List,
+//Blob, Object and Class types support indexing.  Return true if indexing is allowed after
 //the name.
 private Boole
 index_allowed_after_type(Text name, VarTag tag, int quiet) {
@@ -1937,8 +1935,8 @@ done:
 
 //Get an lval: variable, Bag item or List item that can be assigned a value to: "name", "na{me}",
 //"name[expr]", "name[expr:expr]", "name[expr][expr]", "name.key", "name.key[expr]" etc.
-//Indexing only works if "name" is an existing List or Dictionary. "name" points to the start of 
-//the name. If "returnVar" is not NULL it points to the value to be assigned. "unlet" is true for 
+//Indexing only works if "name" is an existing List or Dictionary. "name" points to the start of
+//the name. If "returnVar" is not NULL it points to the value to be assigned. "unlet" is true for
 //":unlet": slightly different behavior when something is wrong; must end in space or cmd separator
 //
 //flags:
@@ -1946,7 +1944,7 @@ done:
 // GLV_READ_ONLY:   will not change the variable
 // GLV_NO_AUTOLOAD: do not use script autoloading
 //
-//Return a pointer to just after the name, including indexes. When an evaluation error occurs 
+//Return a pointer to just after the name, including indexes. When an evaluation error occurs
 //"retVal->name" is NULL; Return NULL for a parsing error. Still need to free items in "letVal"!
 pub CS
 getLval( OUT Lval* retVal, GetLval arg) { //flags for findNameEnd()
@@ -1977,11 +1975,11 @@ getLval( OUT Lval* retVal, GetLval arg) { //flags for findNameEnd()
    //Find the end of the name.
    Text expr;
    retVal->name = findNameEnd(arg.name, OUT &expr, arg.fneFlag);
-   
+
    CS tail = retVal->name.c + retVal->name.len;
    if (expr.len > 0) {
       //Don't expand the name when we already know there is an error.
-      if (arg.unlet && !SPACE_OR_TAB(*tail) && !endsComm(tail) 
+      if (arg.unlet && !SPACE_OR_TAB(*tail) && !endsComm(tail)
             && *tail != '[' && *tail != '.'
       ) {
          showErrFmtMsg(_(e_trailing_characters_str), tail);
@@ -1990,7 +1988,7 @@ getLval( OUT Lval* retVal, GetLval arg) { //flags for findNameEnd()
 
       retVal->expandedName = expandCurlyBraces(expr, arg.name);
       if (retVal->expandedName.len == 0) {
-         //Report an invalid expression in braces, unless the expression evaluation has been 
+         //Report an invalid expression in braces, unless the expression evaluation has been
          //cancelled due to an aborting error, an interrupt, or an exception.
          if (!aborting() && !quiet) {
             emsg_severe = true;
@@ -2020,7 +2018,7 @@ getLval( OUT Lval* retVal, GetLval arg) { //flags for findNameEnd()
       );
       if (!v && !quiet) {
          showErrFmtMsg(_(e_undefined_variable_str), retVal->name);
-      } 
+      }
       if (!v)
          return NULL;
       retVal->var = &v->c;
@@ -2102,7 +2100,7 @@ letImpl(
                      && tv_op(&tv, returnVar, op) == OK
             ) {
                setVarImpl(lval->name, 0, &tv, false, ASSIGN_NO_DECL | ASSIGN_COMPOUND_OP);
-            } 
+            }
             clearVar(&tv);
          }
       } else {
@@ -2365,7 +2363,7 @@ tv_op(Var *tv1, Var *tv2, CS op) {
 //{{{evaluation 2
 
 //eval1 = question marks: expr2 ? expr1 : expr1, expr2 ?? expr1
-//eval2 = logical OR: expr2 || expr2 || expr2 
+//eval2 = logical OR: expr2 || expr2 || expr2
 //eval3 = logical AND:  expr3 && expr3 && expr3
 //eval4 = comparisons: var1 == var2, var1 > var2 etc
 //eval5 = bitwise shifts: var1 << var2, var1 >> var2
@@ -2419,7 +2417,7 @@ set_context_for_expression(Expand   *xp, CS arg, CommIndex   id) {
             if ((c == 'l' || c == 'g') && xp->input.c[2] == ':') {
                xp->input.c += 2;
                xp->input.len -= 2;
-            } 
+            }
          }
       } ei (c == '$') {
          //environment variable
@@ -2509,11 +2507,11 @@ eval_func(
    Var    *basetv)   //"expr" for "expr->name(arg)"
 {
    int      evaluate = flags & EVAL_EVALUATE;
-   
+
    CS s = name.c;
    if (!evaluate)
       check_vars(name);
-      
+
    PartiallyApplied   *partial;
    int      ret = OK;
 
@@ -2549,7 +2547,7 @@ eval_func(
       returnVar->tag = VAR_FUNC;
    }
 
-   //Stop the expression evaluation when immediately aborting on error, or when an interrupt 
+   //Stop the expression evaluation when immediately aborting on error, or when an interrupt
    //occurred or an exception was thrown but not caught.
    if (evaluate && aborting()) {
       if (ret == OK)
@@ -2584,9 +2582,9 @@ skipwhite_and_linebreak(CS arg, EvalCtx *evalarg) {
    return skipwhite_and_nl(arg);
 }
 
-//The "eval" functions have an "evalarg" argument: When NULL or "evalarg->eval_flags" does not 
-//have EVAL_EVALUATE, then the argument is only parsed but not executed. The functions may return 
-//OK, but the returnVar will be of type VAR_UNKNOWN. The functions still return FAIL for a syntax 
+//The "eval" functions have an "evalarg" argument: When NULL or "evalarg->eval_flags" does not
+//have EVAL_EVALUATE, then the argument is only parsed but not executed. The functions may return
+//OK, but the returnVar will be of type VAR_UNKNOWN. The functions still return FAIL for a syntax
 //error.
 
 //Handle zero level expression. Call eval1() and handle error message and nextcmd.
@@ -2663,7 +2661,7 @@ eval0_retarg(
             showErrFmtMsg(_(e_trailing_characters_str), p);
          } else {
             showErrFmtMsg(_(e_invalid_expression_str), arg);
-         } 
+         }
       }
 
       return FAIL;
@@ -3217,10 +3215,10 @@ eval6(Byte **arg, Var* returnVar, EvalCtx *evalarg) {
       ) {
          Boole error = false;
 
-         //For "list + ...", an illegal use of the first operand as a number cannot be determined 
+         //For "list + ...", an illegal use of the first operand as a number cannot be determined
          //before evaluating the 2nd operand: if this is also a list, all is ok.
          //For "something . ...", "something - ..." or "non-list + ...", we know that the first
-         //operand needs to be a string or number without evaluating the 2nd operand. So check 
+         //operand needs to be a string or number without evaluating the 2nd operand. So check
          //before to avoid side effects after an error.
          if (op != '.')
             varGetNumberChk(returnVar, OUT &error);
@@ -3418,7 +3416,7 @@ eval_leader(Byte **arg) {
 pub int
 handle_predefined(CS s, int len, Var* returnVar) {
    switch (len) {
-   case 4: 
+   case 4:
       if (STRNCMP(s, "true", 4) == 0) {
           returnVar->tag = VAR_BOOL;
           returnVar->number = VVAL_TRUE;
@@ -3430,7 +3428,7 @@ handle_predefined(CS s, int len, Var* returnVar) {
           return OK;
       }
       break;
-   case 5: 
+   case 5:
       if (STRNCMP(s, "false", 5) == 0) {
           returnVar->tag = VAR_BOOL;
           returnVar->number = VVAL_FALSE;
@@ -3470,7 +3468,7 @@ handle_predefined(CS s, int len, Var* returnVar) {
       if (STRNCMP(s, "null_", 5) != 0)
           break;
       break;
-   case 11: 
+   case 11:
       if (STRNCMP(s, "null_string", 11) == 0) {
           returnVar->tag = VAR_STRING;
           returnVar->string = NULL;
@@ -3489,7 +3487,7 @@ handle_predefined(CS s, int len, Var* returnVar) {
           return OK;
       }
       break;
-   case 13: 
+   case 13:
       if (STRNCMP(s, "null_function", 13) == 0) {
           returnVar->tag = VAR_FUNC;
           returnVar->string = NULL;
@@ -3629,7 +3627,7 @@ eval_option(Byte** arg, Var* returnVar, Boole evaluate) {
           returnVar->tag = VAR_STRING;
           returnVar->string = optVal.string;
       }
-   } 
+   }
 
    *option_end = c;          //put back for error messages
    *arg = option_end;
@@ -3714,7 +3712,7 @@ eval9(
    case '7':
    case '8':
    case '9':
-   case '.': 
+   case '.':
       ret = eval_number(arg, returnVar, evaluate, want_string);
 
       //Apply prefixed "-" and "+" now.  Matters especially when "->" follows.
@@ -3735,7 +3733,7 @@ eval9(
    case '#':   ret = bagEvalLiteral(arg, returnVar, evalarg); break;
 
    //Lambda: {arg, arg -> expr} Dictionary: {'key': val, 'key': val}
-   case '{':   
+   case '{':
       ret = get_lambda_tv(arg, returnVar, evalarg);
       if (ret == NOTDONE)
           ret = bagEval(arg, returnVar, evalarg, false);
@@ -3745,7 +3743,7 @@ eval9(
    case '&':   ret = eval_option(arg, returnVar, evaluate); break;
 
    //Environment variable: $VAR. Interpolated string: $"string" or $'string'.
-   case '$':   
+   case '$':
       if ((*arg)[1] == '"' || (*arg)[1] == '\'')
          ret = eval_interp_string(arg, returnVar, evaluate);
       else
@@ -3778,7 +3776,7 @@ eval9(
    return ret;
 }
 
-//Apply the leading "!" and "-" before an eval9 expression to "returnVar". When "numeric_only" 
+//Apply the leading "!" and "-" before an eval9 expression to "returnVar". When "numeric_only"
 //is true only handle "+" and "-". Adjust "end_leaderp" until it is at "start_leader".
 private int
 eval9_leader(
@@ -3792,7 +3790,7 @@ eval9_leader(
    Long val = 0;
    double       f = 0.0;
    Boole error = false;
-   
+
    if (returnVar->tag == VAR_FLOAT)
       f = returnVar->floatt;
    else {
@@ -4232,7 +4230,7 @@ func_tv2string(Var* tv, Byte** tofree, int echo_style) {
          if (r == buf) {
             *tofree = copyStr(buf);
             r = *tofree;
-         } 
+         }
       }
    } else {
       CS s = (tv->string) ? make_ufunc_name_readable(tv->string, buf, MAX_FUNC_NAME_LEN) : null;
@@ -4323,8 +4321,8 @@ partial_tv2string(
    return r;
 }
 
-//Return a textual representation of a List in "tv". If the memory is allocated, "tofree" is set 
-//to it, otherwise NULL. When "copyID" is not zero replace recursive lists with "...". When 
+//Return a textual representation of a List in "tv". If the memory is allocated, "tofree" is set
+//to it, otherwise NULL. When "copyID" is not zero replace recursive lists with "...". When
 //"restore_copyID" is false, repeated items in lists are replaced with "...". May return NULL.
 private CS
 list_tv2string(
@@ -4357,9 +4355,9 @@ list_tv2string(
    return r;
 }
 
-//Return a textual representation of a Bag in "tv". If the memory is allocated "tofree" is set to 
+//Return a textual representation of a Bag in "tv". If the memory is allocated "tofree" is set to
 //it, otherwise NULL. When "copyID" is not zero replace recursive dicts with "...".
-//When "restore_copyID" is false, repeated items in the dictionary are replaced with "...". May 
+//When "restore_copyID" is false, repeated items in the dictionary are replaced with "...". May
 //return NULL.
 private CS
 dict_tv2string(
@@ -4392,7 +4390,7 @@ dict_tv2string(
    return r;
 }
 
-//Return a textual representation of a job or a channel in "tv". If the memory is allocated 
+//Return a textual representation of a job or a channel in "tv". If the memory is allocated
 //"tofree" is set to it, otherwise NULL. "numBuf" is used for a number.
 //When "composite_val" is false, put quotes around strings as "string()",
 //otherwise does not put quotes around strings. May return NULL.
@@ -4413,7 +4411,7 @@ jobchan_tv2string(
    } else {
       channel_to_string_buf(OUT numBuf, tv);
       r = numBuf;
-   } 
+   }
 
    if (composite_val) {
       *tofree = string_quote(r, false);
@@ -4423,10 +4421,10 @@ jobchan_tv2string(
    return r;
 }
 
-//Return a string with the string representation of a variable. If the memory is allocated 
+//Return a string with the string representation of a variable. If the memory is allocated
 //"tofree" is set to it, otherwise NULL. "numbuf" is used for a number.
-//When "copyID" is not zero replace recursive lists and dicts with "...". When both "echo_style" 
-//and "composite_val" are false, put quotes around strings as "string()", otherwise does not put 
+//When "copyID" is not zero replace recursive lists and dicts with "...". When both "echo_style"
+//and "composite_val" are false, put quotes around strings as "string()", otherwise does not put
 //quotes around strings, as ":echo" displays values.
 //When "restore_copyID" is false, repeated items in dictionaries and lists are replaced with "...".
 //May return NULL.
@@ -4445,7 +4443,7 @@ echo_string_core(
 
    if (recurse >= DICT_MAXNEST) {
       if (!did_echo_string_emsg) {
-          //Only give this message once for a recursive call to avoid flooding the user with 
+          //Only give this message once for a recursive call to avoid flooding the user with
           //errors. And stop iterating over lists and dicts and objects.
           did_echo_string_emsg = true;
           emsg(_(e_variable_nested_too_deep_for_displaying));
@@ -4486,7 +4484,7 @@ echo_string_core(
    case VAR_NUMBER:
    case VAR_UNKNOWN:
    case VAR_ANY:
-   case VAR_BOOL: 
+   case VAR_BOOL:
    case VAR_VOID:
       *tofree = NULL;
       r = tv_get_string_buf(tv, numbuf);
@@ -4524,8 +4522,8 @@ echo_string(
     return echo_string_core(tv, tofree, numbuf, copyID, true, false, false);
 }
 
-//Convert the specified byte index of line 'lnum' in book 'book' to a character index. Works only 
-//for loaded books. Return -1 on failure. The index of the first byte and the first character is 
+//Convert the specified byte index of line 'lnum' in book 'book' to a character index. Works only
+//for loaded books. Return -1 on failure. The index of the first byte and the first character is
 //zero.
 private int
 buf_byteidx_to_charidx(Book *book, int lnum, int byteidx) {
@@ -4786,7 +4784,7 @@ get_id_len(OUT CS* arg) {
    return len;
 }
 
-//Get the length of the name of a variable or function. Only the name is recognized, do not handle 
+//Get the length of the name of a variable or function. Only the name is recognized, do not handle
 //".key" or "[idx]". "arg" is advanced to the first non-white character after the name.
 //Return -1 if curly braces expansion failed. 0 if something else is wrong.
 //If the name contains 'magic' {}'s, expand them and return the
@@ -4837,7 +4835,7 @@ get_name_len(Byte** arg, Byte** alias, int evaluate, int verbose) {
 
 //Find the end of a variable or function name, taking care of magic braces. If "expr_start" is not
 //NULL then "expr_start" and "expr_end" are set to the start and end of the first curly braces item.
-//"flags" can have FNE_INCL_BR and FNE_CHECK_START. Return a pointer to just after the name. Equal 
+//"flags" can have FNE_INCL_BR and FNE_CHECK_START. Return a pointer to just after the name. Equal
 //to "arg" if there is no valid name.
 pub Text
 findNameEnd(Text const arg, OUT Text* expr, Unt flags) {
@@ -4850,22 +4848,22 @@ findNameEnd(Text const arg, OUT Text* expr, Unt flags) {
    }
 
    //Quick check for valid starting character.
-   if ((flags & FNE_CHECK_START) != 0 
-         && !isValidForScriptName1(arg.c[0]) 
+   if ((flags & FNE_CHECK_START) != 0
+         && !isValidForScriptName1(arg.c[0])
          && (arg.c[0] != '{' || !allow_curly)
    )
       return arg;
 
    CS p = arg.c;
    CS sentinel = arg.c + arg.len;
-   for (; 
+   for (;
         p < sentinel
           && (isValidForScriptName(*p)
             || (*p == '{' && allow_curly)
-            || ((flags & FNE_INCL_BR) != 0 
+            || ((flags & FNE_INCL_BR) != 0
                   && (*p == '[' || (*p == '.' && isValidForFirstCharDictKey(p[1]))))
             || mb_nest != 0
-            || br_nest != 0); 
+            || br_nest != 0);
         MB_PTR_ADV(p)
    ) {
       if (*p == '\'') {
@@ -4879,14 +4877,14 @@ findNameEnd(Text const arg, OUT Text* expr, Unt flags) {
          for (p = p + 1; p < sentinel && *p != '"'; MB_PTR_ADV(p)) {
             if (*p == '\\' && p[1] != ZERO)
                ++p;
-         } 
+         }
          if (p == sentinel)
             break;
       } ei (br_nest == 0 && mb_nest == 0 && *p == ':') {
          //"s:" is start of "s:var", but "n:" is not and can be used in
          //slice "[n:]". Also "xx:" is not a namespace. But {ns}: is.
          int len = (int)(p - arg.c);
-         if ((len == 1 && firstOccurrence(NAMESPACE_CHAR, arg.c[0]) == NULL) 
+         if ((len == 1 && firstOccurrence(NAMESPACE_CHAR, arg.c[0]) == NULL)
                || (len > 1 && p[-1] != '}')
          )
             break;
@@ -4920,7 +4918,7 @@ findNameEnd(Text const arg, OUT Text* expr, Unt flags) {
 //The two slice parameters' layout:   "foo{expre}ss{ion}bar"
 //                                    |  |     |         |
 //                           "outer"  |__|_____|_________|
-//                                       |     | 
+//                                       |     |
 //                          "braces"     |_____|
 //
 //Return a new allocated string, which the caller must free, unless there was nothing to expand.
@@ -4928,7 +4926,7 @@ private Text
 expandCurlyBraces(Text braces, Text outer) {
    if (braces.len == 0 || outer.len == 0)
       return outer;
-      
+
    Text retval = {};
    braces.c[0]   = ZERO;
    braces.c[braces.len] = ZERO;
@@ -5052,7 +5050,7 @@ handle_subscript(
 }
 
 //Make a copy of an item. Lists and Dictionaries are also copied.  A deep copy if "deep" is set.
-//"top" is true for the toplevel of copy(). For deepcopy() "copyID" is zero for a full copy or the 
+//"top" is true for the toplevel of copy(). For deepcopy() "copyID" is zero for a full copy or the
 //ID for when a reference to an already copied list/dict can be used. Return FAIL or OK.
 pub int
 item_copy(
@@ -5182,9 +5180,9 @@ echo_one(Var* returnVar, int with_space, int *atstart, int *needclr) {
             int i = utfCharLen(p);
             (void)msgOuttransLenDeco((Text){p, i}, echoDecoFlagsG);
             p += i - 1;
-         } 
+         }
       }
-   } 
+   }
    eeglFree(tofree);
 }
 
@@ -5384,7 +5382,7 @@ find_option_end(OUT CS* arg, OUT int *scope) {
    else {
       while (ASCII_ISALPHA(*p))
          ++p;
-   } 
+   }
    return p;
 }
 
@@ -5545,8 +5543,8 @@ eval_next_line(CS arg, EvalCtx* evalarg) {
       evalarg->eval_tofree = line;
    }
 
-   //Advanced to the next line, "arg" no longer points into the previous line. The caller assigns 
-   //the return value to "arg". If "arg" is NULL, then the return value is discarded. In that 
+   //Advanced to the next line, "arg" no longer points into the previous line. The caller assigns
+   //the return value to "arg". If "arg" is NULL, then the return value is discarded. In that
    //case, "arg" still points to the previous line. So don't reset "eval_using_cmdline".
    if (arg)
       evalarg->eval_using_cmdline = false;
@@ -5720,7 +5718,7 @@ is_scoped_variable(CS name) {
       && isValidForScriptName(name[2]);
 }
 
-//Evaluate one Vim expression {expr} in string "p" and append the resulting string to "gap". 
+//Evaluate one Vim expression {expr} in string "p" and append the resulting string to "gap".
 //"p" points to the opening "{". When "evaluate" is false only skip over the expression.
 //Return a pointer to the character after "}", NULL for an error.
 pub CS
@@ -5735,7 +5733,7 @@ eval_one_expr_in_str(CS p, ArrayList *gap, int evaluate) {
    }
    if (skip_expr(&block_end, NULL) == FAIL)
       return NULL;
-      
+
    block_end = skipwhite(block_end); //{
    if (*block_end != '}') {
       showErrFmtMsg(_(e_missing_close_curly_str), p);
@@ -5854,7 +5852,7 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
          cmd = skipwhite(cmd + 4);
 
          //Trim the indentation from all the lines in the here document. The amount of indentation
-         //trimmed is the same as the indentation of the first line after the :let command line. 
+         //trimmed is the same as the indentation of the first line after the :let command line.
          //To find the end marker the indent of the :let command line is trimmed.
          p = *invo->commline;
          while (SPACE_OR_TAB(*p)) {
@@ -5888,7 +5886,7 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
          return NULL;
       }
    } else {
-      //When getting lines for an embedded script, if the marker is missing, accept '.' as the 
+      //When getting lines for an embedded script, if the marker is missing, accept '.' as the
       //marker.
       if (script_get)
           marker = dot;
@@ -5956,8 +5954,8 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
          for (ti = 0; ti < text_indent_len; ++ti) {
             if (theline[ti] != text_indent[ti])
                break;
-         } 
-      } 
+         }
+      }
 
       str = theline + ti;
       int free_str = false;
@@ -5976,7 +5974,7 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
          break;
       if (free_str)
          eeglFree(str);
-    
+
    }
    if (!heredoc_in_string)
       eeglFree(theline);
@@ -6349,7 +6347,7 @@ list_arg_vars(Invocation* invo, CS arg, int* first) {
             emsg_severe = true;
             if (!anyEmsgG) {
                showErrFmtMsg(_(e_trailing_characters_str), arg);
-            } 
+            }
             break;
          }
       } else {
@@ -6633,7 +6631,7 @@ letOne(
       lval_flags |= (flags & ASSIGN_FOR_LOOP) ? GLV_FOR_LOOP : 0;
       if (op && *op != '=')
          lval_flags |= GLV_ASSIGN_WITH_OP;
-          
+
       //":let var = expr": Set internal variable.
       //":let {expr} = expr": Idem, name made with curly braces
       CS afterName = getLval(OUT &lv, (GetLval){
@@ -6679,7 +6677,7 @@ unletOrLock(
             showErrFmtMsg(_(e_invalid_argument_str), arg - 1);
             return;
          }
-         if (!error && !invo->skip 
+         if (!error && !invo->skip
                && callback(&lv, invo->id, arg, invo->forceit, deep) == FAIL
          )
             error = true;
@@ -6691,7 +6689,7 @@ unletOrLock(
                .flags = GLV_NO_DECL, .fneFlag = FNE_CHECK_START
             }
          );
-         
+
          if (lv.name.len == 0)
             error = true;       //error but continue parsing
          if (!nameEnd) { //parsing error
@@ -6931,7 +6929,7 @@ do_lock_var(
    return ret;
 }
 
-//Lock or unlock an item.  "deep" is nr of levels to go. When "check_refcount" is true do not 
+//Lock or unlock an item.  "deep" is nr of levels to go. When "check_refcount" is true do not
 //lock a list or dict with a reference count larger than 1.
 pub void
 item_lock(Var *tv, int deep, int lock, int check_refcount) {
@@ -7039,7 +7037,7 @@ del_menutrans_vars(void) {
    hash_unlock(&globvarht);
 }
 
-//Local string buffer for the next two functions to store a variable name with its prefix. 
+//Local string buffer for the next two functions to store a variable name with its prefix.
 //Allocated in cat_prefix_varname(), freed later in get_user_var_name().
 
 private CS varnamebuf = NULL;
@@ -7190,7 +7188,7 @@ eval_variable(
       if (!tv) {
          if (returnVar && (flags & EVAL_VAR_VERBOSE)) {
             showErrFmtMsg(_(e_undefined_variable_str), name);
-         } 
+         }
          ret = FAIL;
       } ei (returnVar) {
          Svar* sv = NULL;
@@ -7268,15 +7266,15 @@ check_vars(Text name) {
 
    CS varname;
    EeSet* ht = findVarHashTable(name, OUT &varname);
-   if ((ht == get_funccal_local_ht() || ht == get_funccal_args_ht()) && (findVar(name.c, true))){  
+   if ((ht == get_funccal_local_ht() || ht == get_funccal_args_ht()) && (findVar(name.c, true))){
       *eval_lavars_used = true;
    }
 
    name.c[name.len] = cc;
 }
 
-//Find variable "name" in the list of variables. Return a pointer to it if found, NULL if not 
-//found. Careful: "a:0" variables don't have a name. When "htp" is not NULL, set "htp" to the 
+//Find variable "name" in the list of variables. Return a pointer to it if found, NULL if not
+//found. Careful: "a:0" variables don't have a name. When "htp" is not NULL, set "htp" to the
 //EeSet used.
 private DictItem*
 findVarAndSetHtable(Text name, OUT EeSet** htp, Boole no_autoload) {
@@ -7299,7 +7297,7 @@ findVarAndSetHtable(Text name, OUT EeSet** htp, Boole no_autoload) {
 }
 
 
-//Find variable "name" in the list of variables. Return a pointer to it if found, NULL if not 
+//Find variable "name" in the list of variables. Return a pointer to it if found, NULL if not
 //found. Careful: "a:0" variables don't have a name.
 pub DictItem *
 findVar(CS name, Boole noAutoload) {
@@ -7331,7 +7329,7 @@ findVar_also_in_script(CS name, OUT EeSet** htp, Boole no_autoload) {
    return findVarAndSetHtable(mbText(name), OUT htp, no_autoload);
 }
 
-//Find variable "varname" in hashtab "ht" on level "level". When "varname" is empty, return 
+//Find variable "varname" in hashtab "ht" on level "level". When "varname" is empty, return
 //curPor/curtab/etc vars dictionary. Return NULL if not found.
 pub DictItem *
 findVar_in_ht(
@@ -7388,7 +7386,7 @@ lookup_scriptitem(Text name, int cmd) {
    EeSet* ht = get_script_local_ht();
    if (!ht)
       return FAIL;
-      
+
    Byte buf[30];
    Boole is_global = false;
    CS p;
@@ -7462,7 +7460,7 @@ findVarHashTable(Text name, OUT CS* varname) {
             return get_funccal_local_ht();
       }
       return NULL;
-   } else { 
+   } else {
       //The name must not start with a colon or #.
       if (name.c[0] == ':' || name.c[0] == AUTOLOAD_CHAR)
          return null;
@@ -7618,7 +7616,7 @@ set_var(Text name, Var* newValue, Boole copy){  //make copy of value in "tv"
    setVarImpl(name, 0, newValue, copy, ASSIGN_DECL);
 }
 
-//Set variable "name" to value in "tv_arg". When "sid" is non-zero, "name" is in the script with 
+//Set variable "name" to value in "tv_arg". When "sid" is non-zero, "name" is in the script with
 //this ID. If the variable already exists and "is_const" is false, the value is updated.
 //Otherwise the variable is created.
 private int
@@ -7775,7 +7773,7 @@ var_check_ro(int flags, Text name, Boole use_gettext) {
       if (name.len == 0)
          emsg(_(e_cannot_change_readonly_variable));
       else
-         showErrFmtMsg(_(e_cannot_change_readonly_variable_str), use_gettext 
+         showErrFmtMsg(_(e_cannot_change_readonly_variable_str), use_gettext
                ? _(name.c) : name.c);
       return true;
    }
@@ -7828,12 +7826,12 @@ value_check_lock(int lock, Text name, Boole use_gettext) {
 }
 
 //Check if a variable name is valid.  When "autoload" is true "#" is allowed.
-//If "len" is -1 use all of "varname", otherwise up to "varname[len]". Return false and give an 
+//If "len" is -1 use all of "varname", otherwise up to "varname[len]". Return false and give an
 //error if not.
 pub Boole
 valid_varname(Text varname, Boole autoload) {
    for (CS p = varname.c; p < varname.c + varname.len; ++p) {
-      if (!isValidForScriptName1(*p) 
+      if (!isValidForScriptName1(*p)
             && (p == varname.c || !EE_ISDIGIT(*p)) && !(autoload && *p == AUTOLOAD_CHAR)) {
          showErrFmtMsg(_(e_illegal_variable_name_str), varname.c);
          return false;
@@ -7853,7 +7851,7 @@ getVarFrom(
    Tab* t,       //can be NULL
    Portal* port,
    Book* book //Ignored if htname is not 'b'.
-) {     
+) {
    DictItem   *v;
    int      done = false;
    SwitchPort   switchPort;
@@ -7866,8 +7864,8 @@ getVarFrom(
    returnVar->string = NULL;
 
    if (varname && t && port && (level != VAR_BOOK || book)) {
-      //Set curPor to be our portal, temporarily.  Also set the tab, otherwise the portal is not 
-      //valid. Only do this when needed, autocommands get blocked. If we have a book reference 
+      //Set curPor to be our portal, temporarily.  Also set the tab, otherwise the portal is not
+      //valid. Only do this when needed, autocommands get blocked. If we have a book reference
       //avoid the switching, we're saving and restoring curBook directly.
       needSwitchPortal = !(t == curtab && port == curPor) && !doChangeCurBook;
       if (!needSwitchPortal || portSwitch(&switchPort, port, t, true) == OK) {
@@ -8040,7 +8038,7 @@ getRedirLval() {
    );
 }
 
-//Start recording command output to a variable. When "append" is true append to an existing 
+//Start recording command output to a variable. When "append" is true append to an existing
 //variable. Return OK if successfully completed the setup. FAIL otherwise.
 pub int
 var_redir_start(CS name, int append) {
@@ -8070,7 +8068,7 @@ var_redir_start(CS name, int append) {
          showErrFmtMsg(_(e_trailing_characters_str), redirNameEndS);
       } else {
          showErrFmtMsg(_(e_invalid_argument_str), name);
-      } 
+      }
       redirNameEndS = NULL;  //don't store a value, only cleanup
       var_redir_stop();
       return FAIL;
@@ -8314,8 +8312,8 @@ f_setbufvar(Var* argvars, Var*) {
 //}}}
 //{{{var callbacks
 
-//Get a callback from "arg".  It can be a Funcref or a function name. When "arg" is zero 
-//"res.name" is set to an empty string. If "res.name" is allocated then 
+//Get a callback from "arg".  It can be a Funcref or a function name. When "arg" is zero
+//"res.name" is set to an empty string. If "res.name" is allocated then
 //"res.needsFreeing" is set to true. "res.name" is set to NULL for an invalid argument.
 pub Callback
 get_callback(Var* arg) {
@@ -8411,7 +8409,7 @@ evFreeCallback(Callback* callback) {
       callback->cb_partial = NULL;
    } ei (callback->name) {
       func_unref(callback->name);
-   } 
+   }
    if (callback->needsFreeing) {
       eeglFree(callback->name);
       callback->needsFreeing = false;
@@ -9201,7 +9199,7 @@ pub int
 non_zero_arg(Var* argvars) {
    return ((argvars[0].tag == VAR_NUMBER && argvars[0].number != 0)
       || (argvars[0].tag == VAR_BOOL && argvars[0].number == VVAL_TRUE)
-      || (argvars[0].tag == VAR_STRING 
+      || (argvars[0].tag == VAR_STRING
             && argvars[0].string && *argvars[0].string != ZERO
          )
    );
@@ -9281,7 +9279,7 @@ base64_decode(CS base64, Blob* blob) {
          blob->c = mbResult;
       } else {
          ga_clear(&blob->c);
-      } 
+      }
    } else {
       showErrFmtMsg(_(e_invalid_argument_str), base64);
    }
@@ -9716,7 +9714,7 @@ f_environ(Var*, Var* returnVar) {
       if ((entry = (CS)environ[i]) == NULL)
          return;
       entry = copyStr(entry);
-      CS value; 
+      CS value;
       if ((value = firstOccurrence(entry, '=')) == NULL) {
          eeglFree(entry);
          continue;
@@ -10134,9 +10132,9 @@ f_feedkeys(Arr(Var) argvars, Var*) {
          lo("feedkeys(%s): %s", typed ? "typed" : "", keys);
 
          insertIntoTypebuf(
-               keys_esc, 
-               (remap ? REMAP_YES : REMAP_NONE), insert ? 0 : typeBufG.validLen, 
-               !typed, 
+               keys_esc,
+               (remap ? REMAP_YES : REMAP_NONE), insert ? 0 : typeBufG.validLen,
+               !typed,
                false
          );
          if (vgetcBusyG || timer_busy || input_busy)
@@ -10224,7 +10222,7 @@ common_function(Arr(Var) argvars, Var* returnVar, int is_funcref) {
                 || (is_funcref && trans_name == NULL)) {
       showErrFmtMsg(_(e_invalid_argument_str),
                  use_string ? tv_get_string(&argvars[0]) : s);
-   } 
+   }
    //Don't check an autoload name for existence here.
    ei (trans_name && (is_funcref
           ? find_func(trans_name, is_global) == NULL
@@ -10306,8 +10304,8 @@ common_function(Arr(Var) argvars, Var* returnVar, int is_funcref) {
                   CHECK_LIST_MATERIALIZE(list);
                   FOR_ALL_LIST_ITEMS(list, li) {
                      copy_tv(OUT pt->argv + i, &li->c);
-                     i++; 
-                  } 
+                     i++;
+                  }
                }
             }
 
@@ -10457,7 +10455,7 @@ f_get(Var* argvars, Var*  returnVar) {
             allocReturnList(returnVar);
             for (int i = 0; i < pt->argc; ++i) {
                list_append_tv(returnVar->list, &pt->argv[i]);
-            } 
+            }
          } ei (STRCMP(what, "arity") == 0) {
             int required = 0, optional = 0, varargs = false;
             CS name = partial_name(pt);
@@ -10519,7 +10517,7 @@ f_getcellpixels(Var*, Var* returnVar) {
 private void
 f_getchangelist(Var* argvars, Var* returnVar) {
    allocReturnList(returnVar);
-   
+
    Book* book = (argvars[0].tag == VAR_UNKNOWN) ? curBook : daGetBookFromArg(&argvars[0]);
    if (!book)
       return;
@@ -10541,7 +10539,7 @@ f_getchangelist(Var* argvars, Var* returnVar) {
       FOR_ALL_BOOK_PORTINFOS(book, poInfo) {
          if (poInfo->portal == curPor)
             break;
-      } 
+      }
       changelistindex = poInfo ? (Unt)poInfo->wi_changelistidx : book->changeListLen;
    }
    list_append_number(returnVar->list, (Long)changelistindex);
@@ -10585,9 +10583,9 @@ getpos_both(Arr(Var) argvars, Var* returnVar, int getcurpos, int charcol) {
       list_append_number(l, (Long)fnum);
    else
       list_append_number(l, (Long)0);
-      
+
    list_append_number(l, (fp) ? (Long)fp->lnum : (Long)0);
-   list_append_number(l, (fp) 
+   list_append_number(l, (fp)
        ? (Long)(fp->col == MAXCOL ? MAXCOL : fp->col + 1)
        : (Long)0);
    list_append_number(l, (fp) ? (Long)fp->coladd : (Long)0);
@@ -11119,7 +11117,7 @@ f_gettagstack(Arr(Var) argvars, Var* returnVar) {
 private void
 f_gettext(Arr(Var) argvars, Var* returnVar) {
 
-   if (check_for_nonempty_string_arg(argvars, 0) == FAIL 
+   if (check_for_nonempty_string_arg(argvars, 0) == FAIL
          || check_for_opt_string_arg(argvars, 1) == FAIL)
       return;
 
@@ -11275,7 +11273,7 @@ index_func_list(Arr(Var) argvars, Var* returnVar) {
          returnVar->number = idx;
          break;
       }
-   } 
+   }
 }
 
 private void
@@ -11421,7 +11419,7 @@ f_inputlist(Arr(Var) argvars, Var* returnVar) {
    }
 
    //Ask for choice.
-   
+
    int mouse_used;
    int selected = prompt_for_number(&mouse_used);
    if (mouse_used)
@@ -11506,7 +11504,7 @@ f_islocked(Arr(Var) argvars, Var* returnVar) {
          .flags = GLV_NO_AUTOLOAD | GLV_READ_ONLY | GLV_NO_DECL, .fneFlag = FNE_CHECK_START
       }
    );
-              
+
    lvalRootS = lval_root_save;
 
    if (end && lv.name.len > 0) {
@@ -11561,7 +11559,7 @@ f_last_buffer_nr(Arr(Var), Var* returnVar) {
    FOR_ALL_BOOKS(book) {
       if (n < book->fiNum)
           n = book->fiNum;
-   } 
+   }
 
    returnVar->number = n;
 }
@@ -11818,8 +11816,8 @@ theend:
    eeglFree(tofree);
 }
 
-//Return all the matches in string "str" for pattern "rmp". The matches are returned in the List 
-//"mlist". If "submatches" is true, then submatch information is also returned. "matchbuf" is 
+//Return all the matches in string "str" for pattern "rmp". The matches are returned in the List
+//"mlist". If "submatches" is true, then submatch information is also returned. "matchbuf" is
 //true when called for matchbufline().
 private int
 get_matches_in_str(
@@ -11864,7 +11862,7 @@ get_matches_in_str(
             if (rmp->endp[i] == NULL) {
                if (list_append_string(sml, (CS)"", 0) == FAIL)
                   return FAIL;
-            } ei (list_append_string(sml, rmp->startp[i], (int)(rmp->endp[i] - rmp->startp[i])) 
+            } ei (list_append_string(sml, rmp->startp[i], (int)(rmp->endp[i] - rmp->startp[i]))
                   == FAIL
             )
                 return FAIL;
@@ -12154,7 +12152,7 @@ f_ngettext(Arr(Var) argvars, Var* returnVar) {
    CS prev = NULL;
    if (argvars[3].tag == VAR_STRING && argvars[3].string && *(argvars[3].string) != ZERO) {
       returnVar->string = copyStr(
-         (CS)dngettext((const char *)argvars[3].string, 
+         (CS)dngettext((const char *)argvars[3].string,
          (const char *)argvars[0].string, (const char *)argvars[1].string, (int)argvars[2].number)
       );
 
@@ -12162,10 +12160,10 @@ f_ngettext(Arr(Var) argvars, Var* returnVar) {
          bind_textdomain_codeset((const char *)argvars[3].string, (char*)prev);
    } else {
       returnVar->string = copyStr(
-         (CS)NGETTEXT((const char *)argvars[0].string, 
+         (CS)NGETTEXT((const char *)argvars[0].string,
          (const char *)argvars[1].string, argvars[2].number)
       );
-   } 
+   }
 }
 
 private void
@@ -12187,7 +12185,7 @@ f_nr2char(Arr(Var) argvars, Var* returnVar) {
 //"or(expr, expr)" function
 private void
 f_or(Arr(Var) argvars, Var* returnVar) {
-   returnVar->number = 
+   returnVar->number =
       varGetNumberChk(argvars, NULL) | varGetNumberChk(argvars + 1, NULL);
 }
 
@@ -12201,7 +12199,7 @@ f_prevnonblank(Arr(Var) argvars, Var* returnVar) {
    else {
       while (lnum >= 1 && *skipwhite(ml_get(lnum)) == ZERO)
          --lnum;
-   } 
+   }
    returnVar->number = lnum;
 }
 
@@ -12529,11 +12527,11 @@ repeat_list(List *l, int n, Var* returnVar) {
       return;
 
    allocReturnList(returnVar);
-   
+
    while (n-- > 0) {
       if (list_extend(returnVar->list, l, NULL) == FAIL)
          break;
-   } 
+   }
 }
 
 //Repeat the blob "b" "n" times and set "returnVar" to the new blob.
@@ -12563,7 +12561,7 @@ repeat_blob(Var *blob_tv, int n, Var* returnVar) {
    for (i = 0; i < slen; ++i) {
       if (blob_get(blob, i) != 0)
           break;
-   } 
+   }
 
    if (i == slen)
       //No need to copy since all bytes are already zero
@@ -12571,7 +12569,7 @@ repeat_blob(Var *blob_tv, int n, Var* returnVar) {
 
    for (i = 0; i < n; ++i) {
       blob_set_range(returnVar->blob, (long)i * slen, ((long)i + 1) * slen - 1, blob_tv);
-   } 
+   }
 }
 
 //Repeat the string "str" "n" times and set "returnVar" to the new string.
@@ -12621,7 +12619,7 @@ f_repeat(Arr(Var) argvars, Var* returnVar) {
 #define SP_END      0x40       //leave cursor at end of match
 #define SP_COLUMN   0x80       //start at cursor column
 
-//Get flags for a search function. Return BACKWARD, FORWARD or zero 
+//Get flags for a search function. Return BACKWARD, FORWARD or zero
 //(for an error).
 private int
 get_search_arg(Var *varp, Unt *flagsp) {
@@ -12806,7 +12804,7 @@ f_searchdecl(Arr(Var) argvars, Var* returnVar) {
       thisblock = (int)varGetNumberChk(argvars + 2, OUT &error);
    }
    if (!error && name)
-      returnVar->number = 
+      returnVar->number =
          find_decl(name, (int)STRLEN(name), locally, thisblock, SEARCH_KEEP) == FAIL;
 }
 
@@ -12935,7 +12933,7 @@ do_searchpair(
    if (*mpat == ZERO) {
       STRCPY(pat3, pat2);
    } else
-      (void)eeSnprintf(pat3, pat3size, 
+      (void)eeSnprintf(pat3, pat3size,
             "\\m\\(%s\\m\\)\\|\\(%s\\m\\)\\|\\(%s\\m\\)", spat, epat, mpat
       );
    if (flags & SP_START)
@@ -12948,7 +12946,7 @@ do_searchpair(
       init_regexp_timeout(time_limit);
    Pos save_cursor = curPor->cursor;
    Pos pos = curPor->cursor;
-   
+
    Pos firstpos;
    CLEAR_POS(OUT &firstpos);
    Pos foundpos;
@@ -13061,7 +13059,7 @@ f_searchpos(Arr(Var) argvars, Var* returnVar) {
       list_append_number(returnVar->list, (Long)n);
 }
 
-//Set the cursor or mark position. If "charpos" is true, then use the column number as a character 
+//Set the cursor or mark position. If "charpos" is true, then use the column number as a character
 //offset. Otherwise use the column number as a byte offset.
 private void
 set_position(Arr(Var) argvars, Var* returnVar, int charpos) {
@@ -13123,7 +13121,7 @@ f_setcharsearch(Arr(Var) argvars, Var*) {
    DictItem* di = bagFind(d, tConst("forward"));
    if (di) {
       set_csearch_direction((int)tv_get_number(&di->c) ? FORWARD : BACKWARD);
-   } 
+   }
 
    di = bagFind(d, tConst("until"));
    if (di)
@@ -13420,7 +13418,7 @@ f_split(Arr(Var) argvars, Var* returnVar) {
    }
    if (typeerr)
       goto theend;
-      
+
    if (!pat || *pat == ZERO)
       pat = S"[\\x01- ]\\+";
 
@@ -13500,7 +13498,7 @@ f_substitute(Arr(Var) argvars, Var* returnVar) {
    CS pat = convertVarToString(&argvars[1], patbuf);
    CS flg = convertVarToString(&argvars[3], flagsbuf);
 
-   if (argvars[2].tag == VAR_FUNC || argvars[2].tag == VAR_PARTIAL) 
+   if (argvars[2].tag == VAR_FUNC || argvars[2].tag == VAR_PARTIAL)
       expr = &argvars[2];
    else
       sub = convertVarToString(&argvars[2], subbuf);
@@ -13590,36 +13588,6 @@ f_tabpagebuflist(Arr(Var) argvars, Var* returnVar) {
          if (list_append_number(returnVar->list, wp->book->fiNum) == FAIL)
             break;
    }
-}
-
-private void
-f_tagfiles(Arr(Var), Var* returnVar) {
-   allocReturnList(returnVar);
-   Byte fname[MAXPATHL];
-
-   for (int first = true; ; first = false) {
-      TagName tn;
-      if (get_tagfname(&tn, first, fname) == FAIL
-            || list_append_string(returnVar->list, fname, -1) == FAIL)
-         break;
-   } 
-   eeglFree(fname);
-}
-
-private void
-f_taglist(Arr(Var) argvars, Var* returnVar) {
-   Byte  *fname = NULL;
-
-   CS tag_pattern = tv_get_string(&argvars[0]);
-
-   returnVar->number = false;
-   if (*tag_pattern == ZERO)
-      return;
-
-   if (argvars[1].tag != VAR_UNKNOWN)
-      fname = tv_get_string(&argvars[1]);
-   allocReturnList(returnVar);
-   (void)get_tags(returnVar->list, tag_pattern, fname);
 }
 
 //"type(expr)" function
@@ -13780,20 +13748,20 @@ f_xor(Arr(Var) argvars, Var* returnVar) {
 # define THROW_ON_INTERRUPT_true
 #endif
 
-//When several errors appear in a row, setting "force_abort" is delayed until the failing command 
-//returned.  "cause_abort" is set to true meanwhile, in order to indicate that situation.  This 
-//is useful when "force_abort" was set during execution of a function call from an expression: 
+//When several errors appear in a row, setting "force_abort" is delayed until the failing command
+//returned.  "cause_abort" is set to true meanwhile, in order to indicate that situation.  This
+//is useful when "force_abort" was set during execution of a function call from an expression:
 //the aborting of the expression evaluation is done without producing any error messages, but all
-//error messages on parsing errors during the expression evaluation are given (even if a try 
+//error messages on parsing errors during the expression evaluation are given (even if a try
 //conditional is active).
 private int cause_abort = false;
 
-//Return true when immediately aborting on error, or when an interrupt occurred or an exception 
-//was thrown but not caught.  Use for ":{range}call" to check whether an aborted function that 
-//does not handle a range itself should be called again for the next line in the range. Also used 
-//for cancelling expression evaluation after a function call caused an immediate abort. Note that 
-//the first emsg() call temporarily resets "force_abort" until the throw point for error messages 
-//has been reached.  That is, during cancellation of an expression evaluation after an aborting 
+//Return true when immediately aborting on error, or when an interrupt occurred or an exception
+//was thrown but not caught.  Use for ":{range}call" to check whether an aborted function that
+//does not handle a range itself should be called again for the next line in the range. Also used
+//for cancelling expression evaluation after a function call caused an immediate abort. Note that
+//the first emsg() call temporarily resets "force_abort" until the throw point for error messages
+//has been reached.  That is, during cancellation of an expression evaluation after an aborting
 //function call or due to a parsing error, aborting() always returns the same value.
 //"gotInterruptG" is also set by calling interrupt().
 pub int
@@ -13801,9 +13769,9 @@ aborting(void) {
    return (anyEmsgG && force_abort) || gotInterruptG || did_throw;
 }
 
-//The value of "force_abort" is temporarily reset by the first emsg() call during an expression 
-//evaluation, and "cause_abort" is used instead.  It might be necessary to restore "force_abort" 
-//even before the throw point for the error message has been reached.  update_force_abort() 
+//The value of "force_abort" is temporarily reset by the first emsg() call during an expression
+//evaluation, and "cause_abort" is used instead.  It might be necessary to restore "force_abort"
+//even before the throw point for the error message has been reached.  update_force_abort()
 //should be called then.
 pub void
 update_force_abort(void) {
@@ -13811,16 +13779,16 @@ update_force_abort(void) {
       force_abort = true;
 }
 
-//Return true if a command with a subcommand resulting in "retcode" should abort the script 
-//processing. Can be used to suppress an autocommand after execution of a failing subcommand as 
+//Return true if a command with a subcommand resulting in "retcode" should abort the script
+//processing. Can be used to suppress an autocommand after execution of a failing subcommand as
 //long as the error message has not been displayed and actually caused the abortion.
 pub int
 should_abort(int retcode) {
    return ((retcode == FAIL && trylevel != 0 && !emsg_silent) || aborting());
 }
 
-//Return true if a function with the "abort" flag should not be considered ended on an error. 
-//This means that parsing commands is continued in order to find finally clauses to be executed, 
+//Return true if a function with the "abort" flag should not be considered ended on an error.
+//This means that parsing commands is continued in order to find finally clauses to be executed,
 //and that some errors in skipped commands are still reported.
 pub int
 aborted_in_try(void) {
@@ -13829,11 +13797,11 @@ aborted_in_try(void) {
    return force_abort;
 }
 
-//cause_errthrow(): Cause a throw of an error exception if appropriate. Return true if the error 
-//message should not be displayed by emsg(). Set "ignore", if the emsg() call should be ignored 
+//cause_errthrow(): Cause a throw of an error exception if appropriate. Return true if the error
+//message should not be displayed by emsg(). Set "ignore", if the emsg() call should be ignored
 //completely.
 //When several messages appear in the same command, the first is usually the most specific one and
-//used as the exception value.  The "severe" flag can be set to true, if a later but severer 
+//used as the exception value.  The "severe" flag can be set to true, if a later but severer
 //message should be used instead.
 pub int
 cause_errthrow(CS mesg, int severe, int* ignore) {
@@ -13859,16 +13827,16 @@ cause_errthrow(CS mesg, int severe, int* ignore) {
    }
 
    //If no try conditional is active and no exception is being thrown and there has not been an
-   //error in a try conditional or a throw so far, do nothing (for compatibility of non-EH 
-   //scripts). The message will then be displayed by emsg(). When ":silent!" was used and we are 
+   //error in a try conditional or a throw so far, do nothing (for compatibility of non-EH
+   //scripts). The message will then be displayed by emsg(). When ":silent!" was used and we are
    //not currently throwing an exception, do nothing.  The message text will
    //then be stored to v:errmsg by emsg() without displaying it.
    if (((trylevel == 0 && !cause_abort) || emsg_silent) && !did_throw)
       return false;
 
-   //Ignore an interrupt message when inside a try conditional or when an exception is being 
-   //thrown or when an error in a try conditional or throw has been detected previously. 
-   //This is important in order that an interrupt exception is catchable by the innermost try 
+   //Ignore an interrupt message when inside a try conditional or when an exception is being
+   //thrown or when an error in a try conditional or throw has been detected previously.
+   //This is important in order that an interrupt exception is catchable by the innermost try
    //conditional and not replaced by an interrupt message error exception.
    if (mesg == (CS)_(e_interrupted)) {
       *ignore = true;
@@ -13878,9 +13846,9 @@ cause_errthrow(CS mesg, int severe, int* ignore) {
    //Ensure that all commands in nested function calls and sourced files are aborted immediately
    cause_abort = true;
 
-   //When an exception is being thrown, some commands (like conditionals) are not skipped. Errors 
-   //in those commands may affect what of the subsequent commands are regarded part of catch and 
-   //finally clauses. Catching the exception would then cause execution of commands not intended 
+   //When an exception is being thrown, some commands (like conditionals) are not skipped. Errors
+   //in those commands may affect what of the subsequent commands are regarded part of catch and
+   //finally clauses. Catching the exception would then cause execution of commands not intended
    //by the user, who wouldn't even get aware of the problem. Therefore, discard the
    //exception currently being thrown to prevent it from being caught. Just
    //execute finally clauses and terminate.
@@ -13901,11 +13869,11 @@ cause_errthrow(CS mesg, int severe, int* ignore) {
    } else
 #endif
     {
-   //Prepare the throw of an error exception, so that everything will be aborted (except for 
-   //executing finally clauses), until the error exception is caught; if still uncaught at 
+   //Prepare the throw of an error exception, so that everything will be aborted (except for
+   //executing finally clauses), until the error exception is caught; if still uncaught at
    //the top level, the error message will be displayed and the script processing terminated
    //then.  -  This function has no access to the conditional stack. Thus, the actual throw is made
-   //after the failing command has returned.  -  Throw only the first of several errors in a row, 
+   //after the failing command has returned.  -  Throw only the first of several errors in a row,
    //except a severe error is following.
    if (msg_list) {
       plist = msg_list;
@@ -14020,8 +13988,8 @@ get_exception_string(void* value, ExceptionKind type, CS cmdname, int* should_fr
 }
 
 
-//Throw a new exception.  Return FAIL when out of memory or it was tried to throw an illegal user 
-//exception. "value" is the exception string for a user or interrupt exception, or points to a 
+//Throw a new exception.  Return FAIL when out of memory or it was tried to throw an illegal user
+//exception. "value" is the exception string for a user or interrupt exception, or points to a
 //message list in case of an error exception.
 pub int
 throw_exception(void *value, ExceptionKind type, CS commName) {
@@ -14104,7 +14072,7 @@ fail:
    return FAIL;
 }
 
-//Discard an exception.  "was_finished" is set when the exception has been caught and the catch 
+//Discard an exception.  "was_finished" is set when the exception has been caught and the catch
 //clause has been ended normally.
 private void
 discard_exception(Exception *excp, int was_finished) {
@@ -14208,12 +14176,12 @@ finish_exception(Exception *excp) {
       if (*caught_stack->throw_name != ZERO) {
          if (caught_stack->throw_lnum != 0) {
             eeSnprintf(
-               IObuff, IOSIZE, _("%s, line %ld"), caught_stack->throw_name, 
+               IObuff, IOSIZE, _("%s, line %ld"), caught_stack->throw_name,
                (long)caught_stack->throw_lnum
             );
          } else {
             eeSnprintf(IObuff, IOSIZE, "%s", caught_stack->throw_name);
-         } 
+         }
       }
    }
 
@@ -14262,9 +14230,9 @@ exception_state_clear(void) {
 #define RP_RESUME   1
 #define RP_DISCARD  2
 
-//Report information about something pending in a finally clause if required by the 'verbose' 
-//option or when debugging.  "action" tells whether something is made pending or something 
-//pending is resumed or discarded. "pending" tells what is pending. "value" specifies the return 
+//Report information about something pending in a finally clause if required by the 'verbose'
+//option or when debugging.  "action" tells whether something is made pending or something
+//pending is resumed or discarded. "pending" tells what is pending. "value" specifies the return
 //value for a pending ":return" or the exception value for a pending exception.
 private void
 report_pending(int action, int pending, void* value) {
@@ -14396,16 +14364,16 @@ c_eval(Invocation* invo) {
 
 //enter_cleanup() and leave_cleanup()
 //
-//Functions to be called before/after invoking a sequence of autocommands for cleanup for a 
+//Functions to be called before/after invoking a sequence of autocommands for cleanup for a
 //failed command.  (Failure means here that a call to emsg() has been made, an interrupt occurred,
 //or there is an uncaught exception from a previous autocommand execution of the same command.)
 //
 //Call enter_cleanup() with a pointer to a Cleanup and pass the same pointer to leave_cleanup().
 //The Cleanup structure stores the pending error/interrupt/exception state.
 
-//This function works a bit like ex_finally() except that there was not actually an extra try 
-//block around the part that failed and an error or interrupt has not (yet) been converted to 
-//an exception.  This function saves the error/interrupt/ exception state and prepares for the 
+//This function works a bit like ex_finally() except that there was not actually an extra try
+//block around the part that failed and an error or interrupt has not (yet) been converted to
+//an exception.  This function saves the error/interrupt/ exception state and prepares for the
 //call to doCommand() that is going to be made for the cleanup autocommand execution.
 pub void
 enter_cleanup(Cleanup *csp) {
@@ -14420,10 +14388,10 @@ enter_cleanup(Cleanup *csp) {
               | (did_throw    ? CSTP_THROW     : 0)
               | (need_rethrow ? CSTP_THROW     : 0);
 
-      //If we are currently throwing an exception (did_throw), save it as well. On an error not 
-      //yet converted to an exception, update "force_abort" and reset "cause_abort" (as 
+      //If we are currently throwing an exception (did_throw), save it as well. On an error not
+      //yet converted to an exception, update "force_abort" and reset "cause_abort" (as
       //do_errthrow() would do). This is needed for the doCommand() call that is going to be made
-      //for autocommand execution.  We need not save *msg_list because there is an extra instance 
+      //for autocommand execution.  We need not save *msg_list because there is an extra instance
       //for every call of doCommand(), anyway.
       if (did_throw || need_rethrow) {
          csp->exception = current_exception;
@@ -14465,8 +14433,8 @@ leave_cleanup(Cleanup *csp) {
    if (pending == CSTP_NONE)   //nothing to do
       return;
 
-   //If there was an aborting error, an interrupt, or an uncaught exception after the 
-   //corresponding call to enter_cleanup(), discard what has been made pending by it. Report this 
+   //If there was an aborting error, an interrupt, or an uncaught exception after the
+   //corresponding call to enter_cleanup(), discard what has been made pending by it. Report this
    //to the user if required by the 'verbose' option or when debugging.
    if (aborting() || need_rethrow) {
       if (pending & CSTP_THROW) //Cancel the pending exception (includes report).
@@ -14480,7 +14448,7 @@ leave_cleanup(Cleanup *csp) {
          free_global_msglist();
    }
 
-   //If there was no new error, interrupt, or throw between the calls to enter_cleanup() and 
+   //If there was no new error, interrupt, or throw between the calls to enter_cleanup() and
    //leave_cleanup(), restore the pending error/interrupt/exception state.
    else {
       //If there was an exception being thrown when enter_cleanup() was

@@ -14575,9 +14575,9 @@ pum_set_selected(int n, int repeat) {
                   S"swapfile", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
                );
                optChangeAndReportError(
-                  S"buflisted", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
+                  S"book.listed", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
                );
-               optChangeAndReportError(S"booktype", optStr("nofile"), OPT_LOCAL);
+               optChangeAndReportError(S"book.type", optStr("nofile"), OPT_LOCAL);
                optChangeAndReportError(
                   S"diff", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
                );

@@ -537,14 +537,13 @@ findUnchangedItemInCommaList(CS origVal, CS newVal, Unt newVallen, Ulong flags) 
 private void
 set_init_default_backupskip(void) {
    static CS names[4] = {S"", S"TMPDIR", S"TEMP", S"TMP"};
+
+   Option* o = findOption(S"backup.skip");
+
    ArrayList ga;
-
-   Option* o = findOption(S"backupskip");
-
    ga_init2(&ga, 1, 100);
    CS p;
-   for (int i = 0; i < (int)ARRAY_LENGTH(names); ++i) {
-      int mustfree = false;
+   for (Unt i = 0; i < (int)ARRAY_LENGTH(names); ++i) {
       int plen;
       if (*names[i] == ZERO) {
          p = S"/tmp";
@@ -556,26 +555,24 @@ set_init_default_backupskip(void) {
       if (p && *p != ZERO) {
          Byte* item;
          Unt itemsize;
-         int has_trailing_path_sep = false;
+         Boole hasTrailingSlash = false;
 
          if (plen == 0) {
             //the value was retrieved from the environment
             plen = (int)STRLEN(p);
             //does the value include a trailing path separator?
             if (after_pathsep(p, p + plen))
-               has_trailing_path_sep = true;
+               hasTrailingSlash = true;
          }
 
          //item size needs to be large enough to include "/*" and a trailing ZERO
          //note: the value (and therefore plen) may already include a path separator
-         itemsize = plen + (has_trailing_path_sep ? 0 : 1) + 2;
+         itemsize = plen + (hasTrailingSlash ? 0 : 1) + 2;
          item = alloc(itemsize);
          //add a preceding comma as a separator after the first item
          Unt itemseplen = (ga.len == 0) ? 0 : 1;
-         Unt itemlen;
-
-         itemlen = eeSnprintf(
-            item, itemsize, "%s%s*", p, (has_trailing_path_sep) ? S"" : S"/"
+         Unt itemlen = eeSnprintf(
+            item, itemsize, "%s%s*", p, hasTrailingSlash ? S"" : S"/"
          );
 
          if (findUnchangedItemInCommaList((CS)ga.c, item, itemlen, o->flags) == NULL
@@ -586,8 +583,6 @@ set_init_default_backupskip(void) {
          }
          eeglFree(item);
       }
-      if (mustfree)
-         eeglFree(p);
    }
    if (ga.c) {
       optSetStringDefault(S"backupskip", ga.c);
@@ -627,7 +622,8 @@ setDefault(Option* o, SetScope setScope){
    OptionRef ref = getRefInScope(o, setScope);
 
    if (o->defaultValue.tag == OPTION_STRING) {
-      //Use optChangeStringOptionDirect() for local options to handle freeing and allocating the value
+      //Use optChangeStringOptionDirect() for local options to handle freeing and allocating
+      //the value
       if ((o->flags & (P_BOOK|P_PORTAL)) != 0) {
          changeStringOptionDirectImpl(o, o->defaultValue.string, setScope, 0);
       } else {
@@ -710,7 +706,7 @@ set_helplang_default(CS lang) {
    if (langlen < 2)   //safety check
       return;
 
-   Option* o = findOption(S"helplang");
+   Option* o = findOption(S"help.lang");
    if (!o || (o->flags & P_WAS_SET) != 0)
       return;
 
@@ -1172,12 +1168,12 @@ parseAndSetImpl(Option* o, CS arg, SetScope setScope) {
 private CS
 tryFindOptionFromCommand(OUT Option** o, OUT CS* arg) {
    //find end of name
-   int len = 0;
-   while (ASCII_ISALNUM((*arg)[len]))
-      ++len;
-
-   if (len == 0)
+   if (!ASCII_ISALNUM((*arg)[0]))
       return e_invalid_argument;
+
+   Unt len = 1;
+   while (ASCII_ISALNUM((*arg)[len]) || (*arg)[len] == '.')
+      ++len;
 
    //remember character after option name
    Unt afterchar = (*arg)[len];   //character just after option name
@@ -3582,19 +3578,6 @@ private Option OPTIONS_BOOK[] = {
 //- if < 65536, then it's an index into OPTIONS_GLOBAL;
 //- if < 2*65536, then ind - 65536 = an index into OPTIONS_PORTAL;
 //- else ind - 2*65536 = an index into OPTIONS_BOOK.
-
-//}}}
-//{{{forward declarations
-
-private void optSetStringDefault_esc(CS name, CS val, Boole escape);
-private CS findUnchangedItemInCommaList(CS origVal, CS newVal, Unt newVallen, Ulong flags);
-private int find_key_option(CS arg_arg, Boole has_lt);
-private void printOptions(ToPrint which);
-private OptionRef getRefInScope(Option *p, SetScope setScope);
-
-private CS setStringImpl(
-   OUT Option* o, CS oldVal, CS newVal, SetScope setScope
-);
 
 //}}}
 //{{{other general functions

@@ -1390,7 +1390,7 @@ typedef int Socket;
 #define STATLINE_STATUSLINE  2
 #define STATLINE_RULERFORMAT 3
 
-//flags used for parsed @wildmode
+//flags used for parsed @wild.mode
 #define WIM_FULL        0x01
 #define WIM_LONGEST     0x02
 #define WIM_LIST        0x04
@@ -1400,7 +1400,7 @@ typedef int Socket;
 
 //The following are actual variables for the options
 
-EXTERN CS p_tsrfu;      //@thesaurusfunc
+EXTERN CS p_tsrfu;      //@thesaurus.func
 EXTERN Boole p_aw;      //@autowrite
 EXTERN Boole p_awa;     //@autowriteall
 EXTERN Boole p_bk;      //@backup
@@ -1409,22 +1409,22 @@ EXTERN Boole p_bk;      //@backup
 #define BKC_NO            0x004
 #define BKC_BREAKSYMLINK  0x008
 #define BKC_BREAKHARDLINK 0x010
-EXTERN CS p_bdir;       //@backupdir
-EXTERN CS p_bex;        //@backupext
+EXTERN CS p_bdir;       //@backup.dir
+EXTERN CS p_bex;        //@backup.ext
 EXTERN unsigned bo_flags;
-EXTERN CS p_bsk;        //@backupskip
-EXTERN long p_bdlay;    //@balloondelay
-EXTERN Boole p_bevalterm; //@balloonevalterm
-EXTERN CS p_bt;         //@booktype
+EXTERN CS p_bsk;        //@backup.skip
+EXTERN long p_bdlay;    //@balloon.delay
+EXTERN Boole p_bevalterm; //@balloon.evalterm
+EXTERN CS p_bt;         //@book.type
 EXTERN Boole p_delcomb; //@delcombine
 EXTERN long p_cwh;      //@cmdwinheight
 EXTERN long commlineHeightG;//@commheight
 EXTERN CS p_cpt;        //@complete
 EXTERN Boole p_confirm; //@confirm
-EXTERN CS p_cfc;        //@completefuzzycollect
-EXTERN unsigned cfc_flags; //flags from @completefuzzycollect
-EXTERN Unt p_cia;       //@completeitemalign
-EXTERN Unt cot_flags;   //flags from @completeopt
+EXTERN CS p_cfc;        //@complete.fuzzycollect
+EXTERN unsigned cfc_flags; //flags from @complete.fuzzycollect
+EXTERN Unt p_cia;       //@complete.itemalign
+EXTERN Unt cot_flags;   //flags from @complete.opt
 EXTERN Boole p_ac;      //@autocomplete
 EXTERN long p_acl;      //@autocompletedelay
 
@@ -1447,12 +1447,12 @@ EXTERN long p_acl;      //@autocompletedelay
 EXTERN long   p_ph;      //@pumheight
 EXTERN long   p_pw;      //@pumwidth
 EXTERN long   p_pmw;     //@pummaxwidth
-EXTERN CS p_csprg;  //@cscopeprg
-EXTERN Boole p_csre;     //@cscoperelative
-EXTERN Boole p_cst;      //@cscopetag
-EXTERN long   p_csto;    //@cscopetagorder
-EXTERN long   p_cspc;    //@cscopepathcomp
-EXTERN Boole p_csverbose;//@cscopeverbose
+EXTERN CS p_csprg;       //@cscope.prg
+EXTERN Boole p_csre;     //@cscope.relative
+EXTERN Boole p_cst;      //@cscope.tag
+EXTERN long   p_csto;    //@cscope.tagorder
+EXTERN long   p_cspc;    //@cscope.pathcomp
+EXTERN Boole p_csverbose;//@cscope.verbose
 EXTERN CS p_debug;  //@debug
 EXTERN CS p_dip;    //@diffopt
 EXTERN CS p_dex;    //@diffexpr
@@ -1465,8 +1465,8 @@ EXTERN Boole p_ea;       //@equalalways
 EXTERN CS globOpt;  //@errorfile
 EXTERN int   p_eof;      //@endoffile
 EXTERN CS p_ei;     //@eventignore
-EXTERN long foldLevelStart; //@foldlevelstart
-EXTERN Unt p_fdo;        //@foldopen
+EXTERN long foldLevelStart; //@fold.levelstart
+EXTERN Unt p_fdo;        //@fold.open
 //keep in sync with option.c:p_fdo_values
 #define FDO_ALL      0x001
 #define FDO_BLOCK    0x002
@@ -1481,9 +1481,9 @@ EXTERN Unt p_fdo;        //@foldopen
 #define FDO_JUMP     0x400
 EXTERN CS p_fp;     //@formatprg
 EXTERN Boole  p_fs;      //@fsync
-EXTERN CS p_cpp;    //@completepopup
-EXTERN Byte cursorNormalG;   //@cursorNormal
-EXTERN Byte cursorInsertG;   //@cursorInsert
+EXTERN CS p_cpp;    //@complete.popup
+EXTERN Byte cursorNormalG;   //@cursor.normal
+EXTERN Byte cursorInsertG;   //@cursor.insert
 EXTERN long   p_hh;      //@helpheight
 EXTERN CS p_hlg;    //@helplang
 EXTERN Boole   p_hls;     //@hlsearch
@@ -1552,11 +1552,11 @@ EXTERN long p_pvh;   //@previewheight
 EXTERN CS p_ruf;     //@rulerformat
 EXTERN CS p_qftf;    //@quickfixtextfunc
 #define runtimePath (CS)"~/.config/eegl/runtime/"
-EXTERN long p_sj;    //@scrolljump
+EXTERN long p_sj;    //@scroll.jump
 #define SCR_VER  1   //keep in sync with scrolloptValues
 #define SCR_HOR  2
 #define SCR_JUMP 3
-EXTERN Unt p_sbo;    //@scrollopt
+EXTERN Unt p_sbo;    //@scroll.opt
 
 EXTERN CS p_ef;      //@errorfile
 EXTERN Byte p_sloc;  //@showcmdloc
@@ -1585,18 +1585,17 @@ EXTERN Unt p_swb;    //@switchbuf
 
 EXTERN CS p_tpl;     //@tabpanel
 EXTERN Boole p_stpl; //@showtabpanel
-EXTERN CS p_tplo;    //@tabpanelopt
+EXTERN CS p_tplo;    //@tabpanel.opt
 
-EXTERN Byte p_tcl;    //@tabclose
-EXTERN Boole   p_tbs; //@tagbsearch
+EXTERN Byte p_tcl;    //@tab.close
+EXTERN Boole   p_tbs; //@tag.bsearch
 #define TC_FOLLOWIC    0x01
 #define TC_IGNORE      0x02
 #define TC_MATCH       0x04
 #define TC_FOLLOWSCS   0x08
 #define TC_SMART       0x10
-EXTERN Boole p_tgst;  //@tagstack
-EXTERN CS p_tenc;     //@termencoding
-EXTERN Long p_twsl;   //@termwinscroll
+EXTERN Boole p_tgst;  //@tag.stack
+EXTERN Long p_twsl;   //@termport.scroll
 EXTERN int p_tx;      //@textmode
 EXTERN Long p_tw;     //@textwidth
 EXTERN Boole p_timeout;//@timeout
@@ -1604,14 +1603,14 @@ EXTERN Long p_tm;     //@timeoutlen
 EXTERN Boole p_ttimeout; //@ttimeout
 EXTERN Long p_ttm;  //@ttimeoutlen
 EXTERN unsigned ttym_flags;
-EXTERN Long p_ul;   //@undolevels
-EXTERN Long p_ur;   //@undoreload
+EXTERN Long p_ul;   //@undo.levels
+EXTERN Long p_ur;   //@undo.reload
 EXTERN Long p_ut;   //@updatetime
 EXTERN CS p_eeglinfo; //@eeglinfo
 EXTERN CS p_eeglinfofile; //@eeglinfofile
 EXTERN long p_verbose;//@verbose
 EXTERN CS p_vfile;    //@verbosefile
-EXTERN Unt p_wop;     //@wildoptions
+EXTERN Unt p_wop;     //@wild.options
 
 //Sync with option.c:p_wop_values
 #define WILDOPT_EXACT   1
@@ -1619,15 +1618,15 @@ EXTERN Unt p_wop;     //@wildoptions
 #define WILDOPT_PUM     4
 #define WILDOPT_TAGFILE 8
 
-EXTERN CS p_wig;     //@wildignore
+EXTERN CS p_wig;     //@wild.ignore
 EXTERN CS p_ww;      //@whichwrap
-EXTERN long p_wc;    //@wildchar
-EXTERN long p_wcm;   //@wildcharm
-EXTERN Boole p_wic;  //@wildignorecase
-EXTERN CS p_wim;     //@wildmode
-EXTERN Boole p_wmnu; //@wildmenu
-EXTERN long p_wh;    //@winheight
-EXTERN long p_wiw;   //@winwidth
+EXTERN long p_wc;    //@wild.char
+EXTERN long p_wcm;   //@wild.charm
+EXTERN Boole p_wic;  //@wild.ignorecase
+EXTERN CS p_wim;     //@wild.mode
+EXTERN Boole p_wmnu; //@wild.menu
+EXTERN long p_wh;    //@port.height
+EXTERN long p_wiw;   //@port.width
 EXTERN long p_wtm;   //@wltimeoutlen
 EXTERN int p_wa;     //@writeany
 EXTERN long p_wd;    //@writedelay
@@ -1795,7 +1794,6 @@ typedef struct {
       Callback** callback;
    };
 } OptionRef;
-
 
 //}}}
 //{{{scripts
@@ -2565,17 +2563,6 @@ typedef struct {
    Byte      *save_inputbuf;
 } TypeaheadSave;
 
-//Structure used for the command line history.
-typedef struct HistoryEntry {
-   int      hisnum;      //identifying number
-   int      eeglinfo;   //when true hisstr comes from eeglinfo
-   Byte   *hisstr;   //actual entry, separator char after the ZERO
-   Unt   hisstrlen;   //length of hisstr (excluding the ZERO)
-   Tyme   time_set;   //when it was typed, zero if unknown
-} HistoryEntry;
-
-#define CONV_NONE      0
-
 //Structure used for mappings and abbreviations.
 typedef struct mapblock MapBlock;
 struct mapblock {
@@ -2594,7 +2581,6 @@ struct mapblock {
    char expr;      //<expr> used, m_str is an expression
    ScriptPos scriptCtx;   //SCTX where map was defined
 };
-
 
 //Used for hiliting in the status line
 typedef struct {
@@ -2632,12 +2618,12 @@ typedef struct {
 
 //Hash set for arbitrary on-heap data
 typedef struct EeSet {
-   Ulong   mask;   //mask used for hash value (nr of items in array is "ht_mask" + 1)
-   Ulong   count;   //number of items present
-   Ulong   occupied;   //number of items used + removed
-   int     changes;   //incremented when adding or removing an item
-   int     ht_locked;   //counter for hash_lock()
-   Unt     flags;   //HTFLAGS_ values
+   Ulong mask;   //mask used for hash value (nr of items in array is "ht_mask" + 1)
+   Ulong count;   //number of items present
+   Ulong occupied;   //number of items used + removed
+   int changes;   //incremented when adding or removing an item
+   int ht_locked;   //counter for hash_lock()
+   Unt flags;   //HTFLAGS_ values
    EeSetItem* array;   //points to the array, allocated when it's not "ht_smallarray"
    EeSetItem smallArray[HT_INIT_SIZE];   //initial array
 } EeSet;
@@ -4111,23 +4097,23 @@ typedef struct {
 
 //Struct to save values in before executing autocommands for a book that is not current.
 typedef struct {
-   int use_autoCommPort_idx;  //index in aucmd_win[] if >= 0
+   int use_autoCommPort_idx; //index in aucmd_win[] if >= 0
    int save_curPor_id;       //ID of saved curPor
-   int new_curPor_id;       //ID of new curPor
-   int save_prevPor_id;    //ID of saved prevPor
-   BookRef   newCurBook;       //new curBook
-   CS localdir;       //saved value of tp_localdir
-   CS globaldir;       //saved value of globaldir
-   int save_VIsual_active; //saved VIsual_active
-   int save_State;       //saved State
-   int save_prompt_insert; //saved b_prompt_insert
+   int new_curPor_id;        //ID of new curPor
+   int save_prevPor_id;      //ID of saved prevPor
+   BookRef newCurBook;       //new curBook
+   CS localdir;              //saved value of tp_localdir
+   CS globaldir;             //saved value of globaldir
+   int save_VIsual_active;   //saved VIsual_active
+   int save_State;           //saved State
+   int save_prompt_insert;   //saved b_prompt_insert
 } AutocommSave;
 
 //Used for popup menu items.
 typedef struct {
    CS pum_text;      //main menu text
    CS pum_kind;      //extra kind text (may be truncated)
-   CS pum_extra;      //extra menu text (may be truncated)
+   CS pum_extra;     //extra menu text (may be truncated)
    CS pum_info;      //extra info
    int pum_cpt_source_idx;   //index of completion source in 'cpt'
    Decoration abbreviationDeco;   //hilite decoration for abbr
@@ -4136,14 +4122,7 @@ typedef struct {
 
 declStruct(FileSearchCtx);
 
-//Structure used for get_tagfname().
-typedef struct {
-   CS tn_tags;   //value of @tags when starting
-   CS tn_np;      //current position in tn_tags
-   int tn_did_filefind_init;
-   int tn_hf_idx;
-   FileSearchCtx* searchCtx;
-} TagName;
+declStruct(HistoryEntry);
 
 //types for expressions.
 typedef enum {

@@ -18,17 +18,13 @@ int find_tags(
    OUT ExpandMatch* matches
 );
 void free_tag_stuff(void);
-int get_tagfname(
-   TagName   *tnp,   //holds status info
-   int      first,   //true when first file name is wanted
-   OUT CS buf)   //pointer to buffer of MAXPATHL chars
-;
-void tagname_free(TagName *tnp);
 void tagstack_clear_entry(Taggy* item);
 int expand_tags(Boole expandTagNames, CS pat, OUT ExpandMatch* matches);
 int get_tags(List* list, CS pat, CS buf_fname);
 void get_tagstack(Portal* wp, Bag* retBag);
 int set_tagstack(Portal *wp, Bag *d, Unt action);
+void f_tagfiles(Arr(Var), Var* returnVar);
+void f_taglist(Arr(Var) argvars, Var* returnVar);
 CS get_cscope_name(Expand*, int idx);
 void set_context_in_cscope_cmd(Expand* xp, CS arg, CommIndex id);
 void c_cscope(Invocation* invo);

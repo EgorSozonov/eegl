@@ -267,7 +267,7 @@ private int initial_cursor_blink = false;
 //}}}
 //{{{terminfo: The builtin terminfo entries.
 
-//Reset all text attributes (like colors, boldness, or background shades) back to the terminal's 
+//Reset all text attributes (like colors, boldness, or background shades) back to the terminal's
 //default settings.
 //private CS resetDecorationsCode = S"\033[0m";
 
@@ -327,16 +327,16 @@ isEeglXterm(CS name) {
 
 //Data
 
-//To make sense of the stored data, you need to know that there is a fixed number of 
-//bool/num/string capabilities each, and that they have a fixed order. So if a terminfo file 
-//wanted to set the third num capability to 4 and leave the first/second num capabilities 
+//To make sense of the stored data, you need to know that there is a fixed number of
+//bool/num/string capabilities each, and that they have a fixed order. So if a terminfo file
+//wanted to set the third num capability to 4 and leave the first/second num capabilities
 //unspecified, it would fill its num section with { -1, -1, 4 }.
 
 //The name section
 
 //The name section contains a (NUL-terminated) string with one or more parts separated by | (pipe).
-//The first part is the primary name of the terminal; the last part is a human-readable 
-//description. The middle parts should be other names for the terminal. All parts except for the 
+//The first part is the primary name of the terminal; the last part is a human-readable
+//description. The middle parts should be other names for the terminal. All parts except for the
 //last should contain lowercase letters only.
 
 //The bool section
@@ -380,8 +380,8 @@ isEeglXterm(CS name) {
 //EXT_STRING_COUNT The number of entries in the extended string section.
 //EXT_OFFSET_COUNT The number of entries in the string table.
 //NB: The ncurses code for writing terminfo files calculates this as
-//EXT_BOOL_COUNT + EXT_NUM_COUNT + EXT_STRING_COUNT + EXT_STRING_COUNT (one entry for each 
-//capability name plus one entry for each string value). The ncurses code for reading terminfo 
+//EXT_BOOL_COUNT + EXT_NUM_COUNT + EXT_STRING_COUNT + EXT_STRING_COUNT (one entry for each
+//capability name plus one entry for each string value). The ncurses code for reading terminfo
 //files ignores this field.
 
 //EXT_TABLE_SIZE The size (in bytes) of the extended string table.
@@ -404,14 +404,14 @@ isEeglXterm(CS name) {
 //offsets from the beginning of the extended string table.
 
 //The extended string section 2: Electric boogaloo
-//The extended string section 2 consists of 
+//The extended string section 2 consists of
 //EXT_BOOL_COUNT + EXT_NUM_COUNT + EXT_STRING_COUNT ints that are offsets from the middle
 //(see below) of the extended string table.
 
 //The extended string table
 
-//The extended string table consists of EXT_TABLE_SIZE bytes. The first half of the extended 
-//string table stores the data for extended string capabilities. The second half of the string 
+//The extended string table consists of EXT_TABLE_SIZE bytes. The first half of the extended
+//string table stores the data for extended string capabilities. The second half of the string
 //table stores the names of all extended capabilities.
 
 //The start of the second half (what I call the "middle") must be computed
@@ -436,7 +436,7 @@ isEeglXterm(CS name) {
 //  char *ext_alloc;
 //};
 //
-//private Short 
+//private Short
 //get_ushort16(char *p) {
 //  unsigned char *q = (unsigned char *)p;
 //  return q[0] + q[1] * 256;
@@ -448,7 +448,7 @@ isEeglXterm(CS name) {
 //  return n <= MAX15BITS ? n : 0xFFFF;
 //}
 //
-//private Unt 
+//private Unt
 //get_uint32(char *p) {
 //  unsigned char *q = (const unsigned char *)p;
 //  return q[0] + q[1] * 256u + q[2] * 256u * 256u + q[3] * 256u * 256u * 256u;
@@ -625,7 +625,7 @@ isEeglXterm(CS name) {
 //           + extboollen % 2
 //           + extnumlen * numsize
 //           + extstrslen * 2
-//           + extalllen * 2 
+//           + extalllen * 2
 //           + exttablsz,
 //           EFAULT,
 //           t
@@ -826,18 +826,18 @@ get_term_entries(OUT int* height, OUT int* width) {
       Unt dest; //index in termCodesG[]
    } entryNames[] = { SMAP1((CS),
       "ce", KS_CE,  "al", KS_AL,  "AL", KS_CAL, "dl", KS_DL,  "DL", KS_CDL,  "cs", KS_CS,
-      "cl", KS_CL,  "cd", KS_CD,  "vi", KS_VI,  "ve", KS_VE,  "me", KS_ME, 
+      "cl", KS_CL,  "cd", KS_CD,  "vi", KS_VI,  "ve", KS_VE,  "me", KS_ME,
       "mr", KS_MR,  "md", KS_MD,  "se", KS_SE,  "so", KS_SO,  "ZH", KS_CZH,  "ZR", KS_CZR
       ), SMAP1((CS),
       "ue", KS_UE,  "us", KS_US,  "Ce", KS_UCE, "Cs", KS_UCS, "Us", KS_USS, "ds", KS_DS,
       "cm", KS_CM,  "sr", KS_SR,  "RI", KS_CRI,
-      "ks", KS_KS,  "ke", KS_KE,  "ti", KS_TI,  "te", KS_TE 
+      "ks", KS_KS,  "ke", KS_KE,  "ti", KS_TI,  "te", KS_TE
       ), SMAP1((CS),
       "TI", KS_CTI, "RK", KS_CRK, "TE", KS_CTE, "Sb", KS_CSB, "Sf", KS_CSF,
-      "AB", KS_CAB, "AF", KS_CAF, "AU", KS_CAU, "le", KS_LE,  "nd", KS_ND,  "op", KS_OP,  
+      "AB", KS_CAB, "AF", KS_CAF, "AU", KS_CAU, "le", KS_LE,  "nd", KS_ND,  "op", KS_OP,
       "XM", KS_CXM, "vs", KS_VS,  "VS", KS_CVS
       ), SMAP1((CS),
-      "SC", KS_CSC, "EC", KS_CEC, "ts", KS_TS,  "fs", KS_FS,  "WP", KS_CWP, "WS", KS_CWS, 
+      "SC", KS_CSC, "EC", KS_CEC, "ts", KS_TS,  "fs", KS_FS,  "WP", KS_CWP, "WS", KS_CWS,
       "u7", KS_U7,  "BE", KS_CBE, "BD", KS_CBD, "CF", KS_CF
       )
    };
@@ -869,7 +869,7 @@ get_term_entries(OUT int* height, OUT int* width) {
       termCodesG[KS_DA] = S"y";
    if (termCodesG[KS_UT] == S"" && tgetflag("ut") > 0)
       termCodesG[KS_UT] = S"y";
-      
+
    //get key codes
    for (Unt i = 0; i < ARRAY_LENGTH(key_names); ++i) {
       if (find_termcode(key_names[i]) == NULL) {
@@ -909,7 +909,7 @@ set_termname(CS termName) {
 
    //Use external terminfo
    Byte tbuf[TBUFSZ];
-   
+
    //If the external terminfo does not have a matching entry, try the builtin ones.
    if ((errorMsg = invoke_tgetent(tbuf, termName)) == NULL) {
       if (!termcap_cleared) {
@@ -1129,7 +1129,7 @@ add_termcap_entry(CS name, int force) {
    return FAIL;
 }
 
-//Set the terminal name and initialize the terminal options. If "name" is NULL or empty, get the 
+//Set the terminal name and initialize the terminal options. If "name" is NULL or empty, get the
 //terminal name from the environment. If that fails, use the default terminal name.
 pub void
 termInitTerminfo(CS name) {
@@ -1149,7 +1149,6 @@ termInitTerminfo(CS name) {
 
    //Set the default terminal name.
    optSetStringDefault(S"term", termName);
-   optSetStringDefault(S"ttytype", termName);
 
    //Avoid using "term" here, because the next mch_getenv() may overwrite it.
    set_termname(termName);
@@ -1754,8 +1753,8 @@ termSetMode(TermInputMode tmode) {
       return;
 
    //When returning after calling a shell cur_tmode is TMODE_UNKNOWN, set the terminal to raw mode,
-   //even though we think it already is, because the shell program may have reset the terminal 
-   //mode. When we think the terminal is normal, don't try to set it to normal again, because that 
+   //even though we think it already is, because the shell program may have reset the terminal
+   //mode. When we think the terminal is normal, don't try to set it to normal again, because that
    //causes problems (logout!) on some machines.
    if (tmode != cur_tmode) {
       //May need to check for termCodesG[KS_CRV] response and recognizedTermcodesP, it
@@ -1841,8 +1840,8 @@ termStopTerminfo(void) {
    //Output t_te before t_TE, t_te may switch between main and alternate
    //screen and following codes may work on the active screen only.
    //
-   //When using the Kitty keyboard protocol the main and alternate screen use a separate state. 
-   //If we are (or were) using the Kitty keyboard protocol and t_te is not empty (possibly 
+   //When using the Kitty keyboard protocol the main and alternate screen use a separate state.
+   //If we are (or were) using the Kitty keyboard protocol and t_te is not empty (possibly
    //switching screens) then output t_TE both before and after outputting t_te.
    if (termCodesG[KS_TE] != S"")
       out_str_t_TE();      //probably disables the kitty keyboard protocol
@@ -2469,7 +2468,7 @@ putKeyModifiersIntoTypeBuf(
    new_slen += add_key_to_buf(key, OUT string + new_slen);
 
    Text newText = (Text){string, new_slen};
-   
+
    if (putStr(offset, csi_len, newText, OUT buffer, bufLen) == FAIL)
       return -1;
    return new_slen - csi_len + offset;
@@ -2863,7 +2862,7 @@ handleXKeys(Unt key) {
 //Check from typeBufG.c[typeBufG.currPos] to typeBufG.c[typeBufG.currPos + "max_offset"].
 //Return 0 for no match, -1 for partial match, > 0 for full match.
 //Return KEYLEN_REMOVED when a key code was deleted.
-//With a match, the match is removed, the replacement code is inserted into typeBufG.c[] and 
+//With a match, the match is removed, the replacement code is inserted into typeBufG.c[] and
 //the number of characters in typeBufG.c[] is returned.
 //When "buffer" is not empty, it is used instead of typeBufG.c[].
 //"bufLen" is then the length of the string in buffer[] and is updated for inserts and deletes.
@@ -2929,7 +2928,7 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
 
       {
       int  mouseIndexFound = -1;
-      
+
       Unt idx;
       for (idx = 0; idx < recognizedLen; ++idx) {
          TermCode recoTc = recognizedTermcodesP[idx];
@@ -2943,8 +2942,8 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
             if (len < slen)    //got a partial sequence
                return -1;      //need to get more chars
 
-            //When found a keypad key, check if there is another key that matches and use that 
-            //one. This makes <Home> to be found instead of <kHome> when they produce the same 
+            //When found a keypad key, check if there is another key that matches and use that
+            //one. This makes <Home> to be found instead of <kHome> when they produce the same
             //key code.
             if (recoTc.name[0] == 'K' && EE_ISDIGIT(recoTc.name[1])) {
                for (j = idx + 1; j < recognizedLen; ++j) {
@@ -3020,7 +3019,7 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
                   //no match for "<Esc>[@" with "<Esc>[1;"
                   continue;
                else {
-                  //Skip over the digits, the final char must follow. URXVT can use a negative 
+                  //Skip over the digits, the final char must follow. URXVT can use a negative
                   //value, thus also accept '-'.
                   int j;
                   for (j = slen - 2; j < len && (SAFE_isdigit(readPos[j])
@@ -3152,7 +3151,7 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
          string[new_slen++] = keyName[1];
       }
       Text newText = (Text){string, new_slen};
-      
+
       if (putStr(offset, slen, newText, OUT buffer, OUT bufLen) == FAIL)
          return -1;
       return retval == 0 ? (len + new_slen - slen + offset) : retval;
@@ -3567,17 +3566,17 @@ get_key_name(int i) {
 }
 
 
-//Replace any terminal code strings in from[] with the equivalent internal Eegl representation. 
+//Replace any terminal code strings in from[] with the equivalent internal Eegl representation.
 //This is used for the "from" and "to" part of a mapping, and the "to" part of a menu command.
-//Any strings like "<C-UP>" are also replaced. K_SPECIAL by itself is replaced by K_SPECIAL 
+//Any strings like "<C-UP>" are also replaced. K_SPECIAL by itself is replaced by K_SPECIAL
 //KS_SPECIAL KE_FILLER.
 //
-//The replacement is done in result[] and finally copied into allocated memory. If this all works 
-//well *bufP is set to the allocated memory and a pointer to it is returned. If something fails 
+//The replacement is done in result[] and finally copied into allocated memory. If this all works
+//well *bufP is set to the allocated memory and a pointer to it is returned. If something fails
 //*bufP is set to NULL and from is returned.
 //
 //CTRL-V characters are removed.  When "flags" has REPTERM_FROM_PART, a trailing CTRL-V is included,
-//otherwise it is removed (for ":map xx ^V", maps xx to nothing).  When 'cpoptions' does not 
+//otherwise it is removed (for ":map xx ^V", maps xx to nothing).  When 'cpoptions' does not
 //contain 'B', a backslash can be used instead of a CTRL-V.
 //
 //Flags:
@@ -3769,7 +3768,7 @@ private Unt
 find_term_bykeys(CS src) {
    int slen = (int)STRLEN(src);
    for (Unt i = 0; i < recognizedLen; ++i) {
-      if (slen == recognizedTermcodesP[i].len 
+      if (slen == recognizedTermcodesP[i].len
             && STRNCMP(recognizedTermcodesP[i].code, src, (Unt)slen) == 0
       )
           return i;
@@ -3832,9 +3831,9 @@ show_termcodes(Unt flags) {
       for (Unt i = 0; i < recognizedLen; i++) {
          len = show_one_termcode(recognizedTermcodesP[i].name, recognizedTermcodesP[i].code, false);
          if ((flags & OPT_ONECOLUMN) ||
-                (len <= INC3 - GAP 
+                (len <= INC3 - GAP
                  ? run == 1
-                 : (len <= INC2 - GAP 
+                 : (len <= INC2 - GAP
                     ? run == 2
                     : run == 3))
          )
@@ -4050,7 +4049,7 @@ show_one_termcode(CS name, CS code, int printit) {
    do
       IObuff[len++] = ' ';
    while (len < 17);
-   
+
    IObuff[len] = ZERO;
    if (!code)
      len += 4;
@@ -4142,8 +4141,8 @@ got_code_from_term(CS code, int len) {
             str[j++] = c;
          str[j] = ZERO;
          i = find_term_bykeys(str);
-         if (i != UNT 
-               && name[0] == recognizedTermcodesP[i].name[0] 
+         if (i != UNT
+               && name[0] == recognizedTermcodesP[i].name[0]
                && name[1] == recognizedTermcodesP[i].name[1]
          ) {
             //Existing entry with the same name and code - skip.
@@ -4184,8 +4183,8 @@ handleUnansweredRequests(void) {
       if (c == ZERO)       //nothing available
          break;
 
-      //If a response is recognized it's replaced with K_IGNORE, must read it from the input 
-      //stream. If there is no K_IGNORE we can't do anything, break here (there might be some 
+      //If a response is recognized it's replaced with K_IGNORE, must read it from the input
+      //stream. If there is no K_IGNORE we can't do anything, break here (there might be some
       //responses further on, but we don't want to throw away any typed chars).
       if (c != K_SPECIAL && c != K_IGNORE)
          break;
@@ -4566,7 +4565,7 @@ termFindSpecialKey_in_table(int c) {
    for (int i = 0; i < (int)ARRAY_LENGTH(keyNamesTable); i++) {
       if (c == keyNamesTable[i].key && !keyNamesTable[i].is_alt)
           return keyNamesTable[i].enabled ? i : -1;
-   } 
+   }
 
    return -1;
 }

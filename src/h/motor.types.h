@@ -44,8 +44,8 @@ typedef struct {
    ReadChunk head;   //header for circular raw read queue
    JsonQ ch_json_head;   //header for circular json read queue
    ArrayList ch_block_ids;   //list of IDs that channel_read_json_block() is waiting for
-   //When ch_wait_len is non-zero use deadline to wait for incomplete message to be complete. 
-   //The value is the length of the incomplete message when the deadline was set.  If it gets 
+   //When ch_wait_len is non-zero use deadline to wait for incomplete message to be complete.
+   //The value is the length of the incomplete message when the deadline was set.  If it gets
    //longer (something was received) the deadline is reset.
    Unt ch_wait_len;
    TimeSpec deadline;
@@ -78,8 +78,8 @@ struct Channel {
    Boole ch_to_be_closed; //bitset of readable fds to be closed.
             //When all readable fds have been closed, set to (1 << PART_COUNT).
    Boole ch_to_be_freed; //When TRUE, channel must be freed when it's safe to invoke callbacks
-   int error;   //When TRUE an error was reported.  Avoids giving pages full of error 
-                //messages when the other side has exited, only mention the first error 
+   int error;   //When TRUE an error was reported.  Avoids giving pages full of error
+                //messages when the other side has exited, only mention the first error
                 //until the connection works again.
 
    Callback ch_callback;   //call when any msg is not handled
@@ -88,7 +88,7 @@ struct Channel {
    int ch_keep_open;   //do not close on read error
    int ch_nonblock;
 
-   Job* job;   //Job that uses this channel; this does not count as a reference to avoid a 
+   Job* job;   //Job that uses this channel; this does not count as a reference to avoid a
                   //circular reference, the job refers to the channel.
    int ch_job_killed;   //TRUE when there was a job and it was killed or we know it died.
    int ch_anonymous_pipe;  //ConPTY
@@ -97,4 +97,11 @@ struct Channel {
    Unt refCount;   //reference count
    int copyId;
 };
+typedef struct HistoryEntry {
+   int      hisnum;      //identifying number
+   int      eeglinfo;   //when true hisstr comes from eeglinfo
+   Byte   *hisstr;   //actual entry, separator char after the ZERO
+   Unt   hisstrlen;   //length of hisstr (excluding the ZERO)
+   Tyme   time_set;   //when it was typed, zero if unknown
+} HistoryEntry;
 #define MAX_OPEN_CHANNELS 16
