@@ -169,6 +169,7 @@
 [-] p_cb (clipboard)
 [-] p_sn (short, MSDOS-style file names)
 [-] p_sta (smarttab), p_ts (tab stop), p_sts (softtabstop)
+[-] @breakindentopt (fixed at "column" setting, it's in @breakindent now)
 [-] @autoshelldir (p_asd, actively harmful)
 [-] window title & icon
 [-] restricted, check_restricted()

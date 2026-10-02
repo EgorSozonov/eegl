@@ -382,7 +382,7 @@ private Unt addMatchToList(
 );
 private int ins_compl_equal(InsertCompletion *match, CS str, int len);
 private void ins_compl_insert_bytes(CS p, int len);
-private Boole ins_compl_has_multiple(void);
+private Boole isCompletionSingleLine(void);
 private void ins_compl_longest_match(InsertCompletion* match);
 private void ins_compl_add_matches(OUT ExpandMatch* matches, int icase);
 private int ins_compl_make_cyclic(void);
@@ -1293,10 +1293,10 @@ current_block(
    //Put this position in start_pos. Ignore quotes here.
    if ((pos = findmatch(NULL, what)) != NULL) {
       while (count-- > 0) {
-          if ((pos = findmatch(NULL, what)) == NULL)
-         break;
-          curPor->cursor = *pos;
-          start_pos = *pos;   //the findmatch for end_pos will overwrite *pos
+         if ((pos = findmatch(NULL, what)) == NULL)
+            break;
+         curPor->cursor = *pos;
+         start_pos = *pos;   //the findmatch for end_pos will overwrite *pos
       }
    } else {
       while (count-- > 0) {
@@ -1308,7 +1308,7 @@ current_block(
    }
 
    //Search for matching ')', '}', etc. Put this position in curPor->cursor.
-   if (pos == NULL || (end_pos = findmatch(NULL, other)) == NULL) {
+   if (!pos || (end_pos = findmatch(NULL, other)) == NULL) {
       curPor->cursor = old_pos;
       return FAIL;
    }
@@ -5051,11 +5051,10 @@ nv_search(ActionArg* aArg) {
       return;
    }
 
-    //When using 'incsearch' the cursor may be moved to set a different search
-    //start position.
-    aArg->searchbuf = getCommline(aArg->cmdchar, aArg->count1, 0, 0);
+   //When using 'incsearch' the cursor may be moved to set a different search start position.
+   aArg->searchbuf = getCommline(aArg->cmdchar, aArg->count1, 0, 0);
 
-   if (aArg->searchbuf == NULL) {
+   if (!aArg->searchbuf) {
       clearop(oper);
       return;
    }
@@ -5146,8 +5145,8 @@ nv_bracket_block(ActionArg* aArg, Pos* old_pos) {
    }
    for ( ; n > 0; --n) {
       if ((pos = findmatchlimit(aArg->oper, findc,
-            (aArg->cmdchar == '[') ? FM_BACKWARD : FM_FORWARD, 0)) == NULL)
-      {
+            (aArg->cmdchar == '[') ? FM_BACKWARD : FM_FORWARD, 0)) == NULL
+      ) {
          if (new_pos.lnum == 0) {  //nothing found
             if (aArg->nchar != 'm' && aArg->nchar != 'M')
                clearopbeep(aArg->oper);
@@ -5182,7 +5181,7 @@ nv_bracket_block(ActionArg* aArg, Pos* old_pos) {
          for (;;) {
             if ((findc == '{' ? dec_cursor() : inc_cursor()) < 0) {
                //if not found anything, that's an error
-               if (pos == NULL)
+               if (!pos)
                   clearopbeep(aArg->oper);
                n = 0;
                break;
@@ -5203,8 +5202,10 @@ nv_bracket_block(ActionArg* aArg, Pos* old_pos) {
                }
                //found start/end of other method: go to match
                ei ((pos = findmatchlimit(
-                           aArg->oper, findc, (aArg->cmdchar == '[') ? FM_BACKWARD : FM_FORWARD, 0)
-                          ) == NULL)
+                           aArg->oper, findc,
+                           (aArg->cmdchar == '[') ? FM_BACKWARD : FM_FORWARD, 0)
+                          ) == NULL
+               )
                   n = 0;
                else
                   curPor->cursor = *pos;
@@ -5325,11 +5326,11 @@ nv_brackets(ActionArg* aArg) {
       for (n = aArg->count1; n > 0; --n) {
          prev_pos = *pos;
          pos = getnextmark(pos, aArg->cmdchar == '[' ? BACKWARD : FORWARD, aArg->nchar == '\'');
-         if (pos == NULL)
+         if (!pos)
             break;
       }
-      if (pos == NULL)
-          pos = &prev_pos;
+      if (!pos)
+         pos = &prev_pos;
       nv_cursormark(aArg, aArg->nchar == '\'', pos);
    }
    //[ or ] followed by a middle mouse click: put selected text with
@@ -10919,11 +10920,11 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
       len = col - scol;
       mp = curBook->firstAbbr;
       mp2 = first_abbr;
-      if (mp == NULL) {
+      if (!mp) {
          mp = mp2;
          mp2 = NULL;
       }
-      for ( ; mp; mp->next == NULL ? (mp = mp2, mp2 = NULL) : (mp = mp->next)) {
+      for ( ; mp; mp->next ? (mp = mp->next) : (mp = mp2, mp2 = NULL)) {
           int      qlen = mp->keylen;
           CS q = mp->lhs;
           int      match;
@@ -11046,7 +11047,7 @@ eval_map_expr(MapBlock* mp, int) { //ZERO or typed character for abbreviation
 
    eeglFree(expr);
 
-   if (p == NULL)
+   if (!p)
       return NULL;
    //Escape CSI in the result to be able to use the string as typeahead.
    CS res = copyStr_escape_csi(p);
@@ -11266,7 +11267,7 @@ put_escstr(FILE* fd, CS strstart, int what) {
                //Modifiers can be applied too to multi-byte characters.
                p = mb_unescape(&str);
 
-               if (p == NULL) {
+               if (!p) {
                   c = *str;
                } else {
                   //retrieve codepoint (character number) from unescaped string
@@ -11381,7 +11382,7 @@ check_map_keycodes(void) {
                }
           }
       }
-      if (bp == NULL)
+      if (!bp)
          break;
    }
    ESTACK_CHECK_NOW;
@@ -11696,7 +11697,7 @@ f_mapset(Arr(Var) argvars, Var*) {
        bag = argvars[0].bag;
        which = bagGetString(bag, tConst("mode"), false);
        is_abbr = bagGetBool(bag, tConst("abbr"), false);
-       if (which == NULL || is_abbr < 0) {
+       if (!which || is_abbr < 0) {
           emsg(_(e_entries_missing_in_mapset_dict_argument));
           return;
        }
@@ -12811,7 +12812,7 @@ edit(Unt commChar, int startln, long count){
       case NL:
          //In a quickfix window a <CR> jumps to the error under the cursor.
          if (isLocationListBook(curBook) && c == ENTER) {
-            if (curPor->locationStackRef == NULL)    //quickfix window
+            if (!curPor->locationStackRef)    //quickfix window
                executeCommLine(S".mc");
             else                //location list portal
                executeCommLine(S".ll");
@@ -13565,7 +13566,7 @@ stop_insert(
    //Don't do it when "restart_edit" was set and nothing was inserted,
    //otherwise CTRL-O w and then <Left> will clear "lastInsertP".
    Text inserted = get_inserted();
-   int added = inserted.c == NULL ? 0 : (int)inserted.len - new_insert_skip;
+   int added = inserted.c ? (int)inserted.len - new_insert_skip : 0;
    if (did_restart_edit == 0 || added > 0) {
       eeglFree(lastInsertP.c);
       lastInsertP = inserted;             //structure copy
@@ -13781,7 +13782,7 @@ oneleft(void) {
       int width = 1;
       for (;;) {
          coladvance(v - width);
-         //getviscol() is slow, skip it when 'showbreak' is empty,
+         //getviscol() is slow, skip it when @showbreak' is empty,
          //'breakindent' is not set and there are no multi-byte characters
          if (getviscol() < v)
             break;
@@ -13921,7 +13922,7 @@ stuff_inserted(
    Byte last = ' ';
 
    Text insert = get_last_insert();//text to be inserted
-   if (insert.c == NULL) {
+   if (!insert.c) {
       emsg(_(e_no_inserted_text_yet));
       return FAIL;
    }
@@ -14610,7 +14611,7 @@ whBracketedPaste(PasteMode mode, int drop) {
 
    for (;;) {
       //When the end is not defined read everything there is.
-      if (end == NULL && vpeekc() == ZERO)
+      if (!end && vpeekc() == ZERO)
           break;
       do
           c = vgetc();
@@ -15317,43 +15318,6 @@ private int cpt_sources_index = -1;  //Index of the current completion source be
 private Arr(PopupItem) displayedCompletionsS = NULL;
 private int displayedCompletionsSsize;
 
-private Unt addMatchToList(
-   CS str, int len, CS fname, CS* cptext, Var *user_data, Unt cdir, Unt flags,
-   Boole adup, Arr(Decoration) userDecos, int score
-);
-private void ins_compl_longest_match(InsertCompletion *match);
-private void ins_compl_del_pum(void);
-private void filterFromFiles(
-   ExpandMatch files, int thesaurus, Unt flags, RegMatch *regmatch, CS buf, OUT Unt *dir
-);
-private void ins_compl_free(void);
-private int  ins_compl_need_restart(void);
-private void ins_compl_new_leader(void);
-private int  get_compl_len(void);
-private void ins_compl_restart(void);
-private void ins_compl_set_original_text(CS str, Unt len);
-private void ins_compl_fixRedoBufForLeader(CS ptr_arg);
-private void ins_compl_add_list(List *list);
-private void ins_compl_add_dict(Bag *bag);
-private int get_userdefined_compl_info(ColNr curs_col, Callback *cb, int *startcol);
-private void get_cfn_completion_matches(Callback *cb);
-private Callback *get_callback_if_cfn(CS p);
-private Unt setup_cpt_sources(void);
-private Boole is_cfn_refresh_always(void);
-private void cpt_sources_clear(void);
-private void cpt_compl_refresh(void);
-private Unt  ins_compl_key2dir(Unt c);
-private Boole ins_compl_pum_key(Unt c);
-private int  ins_compl_key2count(Unt c);
-private void show_pum(int prev_cursorRow, int prev_leftCol);
-private unsigned  quote_meta(CS dest, CS str, int len);
-private Boole ins_compl_has_multiple(void);
-private void ins_compl_expand_multiple(CS str);
-private void ins_compl_longest_insert(CS prefix);
-private void ins_compl_make_linear(void);
-private int ins_compl_make_cyclic(void);
-
-
 //CTRL-X pressed in Insert mode.
 pub void
 ins_ctrl_x(void) {
@@ -15927,18 +15891,18 @@ pub Decoration
 getDecorationIfColumnIsWithinCompletion(LineNr lnum, int col) {
    if (curBook->o.completeOpt & COT_FUZZY)
       return (Decoration){.hiId = SHORT};
-   Decoration deco = decosByHiliteName((CS)"ComplMatchIns");
+   Decoration deco = decosByHiliteName(S"ComplMatchIns");
    if (deco.hiId == SHORT)
       return (Decoration){.hiId = SHORT};
 
    int start_col = compl_col + (int)ins_compl_leader_len();
-   if (!ins_compl_has_multiple())
+   if (isCompletionSingleLine())
       return (col >= start_col && col < compl_ins_end_col) ? deco : (Decoration){.hiId = SHORT};
 
    //Multiple lines
-   if ((lnum == compl_lnum && col >= start_col && col < MAXCOL) ||
-         (lnum > compl_lnum && lnum < curPor->cursor.lnum) ||
-         (lnum == curPor->cursor.lnum && col <= compl_ins_end_col)
+   if (  (lnum == compl_lnum && col >= start_col && col < MAXCOL)
+      || (lnum > compl_lnum && lnum < curPor->cursor.lnum)
+      || (lnum == curPor->cursor.lnum && col <= compl_ins_end_col)
    )
       return deco;
 
@@ -15948,18 +15912,18 @@ getDecorationIfColumnIsWithinCompletion(LineNr lnum, int col) {
 //Return true if the current completion string contains newline characters,
 //indicating it's a multi-line completion.
 private Boole
-ins_compl_has_multiple(void) {
-   return firstOccurrence(compl_shown_match->cp_str.c, '\n') != NULL;
+isCompletionSingleLine(void) {
+   return firstOccurrence(compl_shown_match->cp_str.c, '\n') == NULL;
 }
 
 //Return true if the given line number falls within the range of a multi-line completion, i.e.
 //between the starting line (compl_lnum) and current cursor line. Always return false for
 //single-line completions.
-pub int
+pub Boole
 ins_compl_lnum_in_range(LineNr lnum) {
-   if (!ins_compl_has_multiple())
-      return false;
-   return lnum >= compl_lnum && lnum <= curPor->cursor.lnum;
+   return (isCompletionSingleLine())
+      ? false
+      : lnum >= compl_lnum && lnum <= curPor->cursor.lnum;
 }
 
 //Reduce the longest common string for match "match".
@@ -15968,10 +15932,10 @@ ins_compl_longest_match(InsertCompletion* match) {
    int c1, c2;
    int had_match;
 
-   if (compl_leader.c == NULL) {
+   if (!compl_leader.c) {
       //First match, use it as a whole.
       compl_leader.c = copySubstr(match->cp_str.c, match->cp_str.len);
-      if (compl_leader.c == NULL)
+      if (!compl_leader.c)
          return;
 
       compl_leader.len = match->cp_str.len;
@@ -16038,7 +16002,7 @@ ins_compl_make_cyclic(void) {
    InsertCompletion *match;
    int count = 0;
 
-   if (compl_first_match == NULL)
+   if (!compl_first_match)
       return 0;
 
    //Find the end of the list.
@@ -16057,7 +16021,7 @@ ins_compl_make_cyclic(void) {
 //Whether there currently is a shown match.
 private int
 ins_compl_has_shown_match(void) {
-   return compl_shown_match == NULL || compl_shown_match != compl_shown_match->next;
+   return !compl_shown_match || compl_shown_match != compl_shown_match->next;
 }
 
 //Whether the shown match is long enough.
@@ -16108,7 +16072,7 @@ pum_enough_matches(void) {
    //one (ignoring the original text).
    InsertCompletion* compl = compl_first_match;
    do {
-      if (compl == NULL || (!match_at_original_text(compl) && ++i == 2))
+      if (!compl || (!match_at_original_text(compl) && ++i == 2))
           break;
       compl = compl->next;
    } while (!is_first_match(compl));
@@ -16328,7 +16292,7 @@ ins_compl_build_pum(void) {
 
    if (is_cpt_completion) {
       match_count = ALLOC_CLEAR_MULT(int, cpt_sources_count);
-      if (match_count == NULL)
+      if (!match_count)
          return -1;
    }
 
@@ -16346,7 +16310,7 @@ ins_compl_build_pum(void) {
       leader = get_leader_for_startcol(compl, true);
 
       if (!match_at_original_text(compl)
-         && (leader->c == NULL || ins_compl_equal(compl, leader->c, (int)leader->len)
+         && (!leader->c || ins_compl_equal(compl, leader->c, (int)leader->len)
              || (fuzzy_filter && compl->cp_score != FUZZY_SCORE_NONE))
       ) {
          //Limit number of items from each source if max_items is set.
@@ -16362,7 +16326,7 @@ ins_compl_build_pum(void) {
          if (!match_limit_exceeded) {
             ++displayedCompletionsSsize;
             compl->cp_in_match_array = true;
-            if (match_head == NULL)
+            if (!match_head)
                match_head = compl;
             else
                match_tail->nextMatch = compl;
@@ -16461,7 +16425,7 @@ ins_compl_show_pum(void) {
    //Update the screen later, before drawing the popup menu over it.
    pum_callUpdateScreen();
 
-   if (displayedCompletionsS == NULL)
+   if (!displayedCompletionsS)
       //Need to build the popup menu list.
       cur = ins_compl_build_pum();
    else {
@@ -16554,7 +16518,7 @@ ins_compl_dictionaries(
       eeglFree(ptr);
     } else {
       regmatch.regprog = compileRegexp(pat, RE_MAGIC);
-      if (regmatch.regprog == NULL)
+      if (!regmatch.regprog)
          goto theend;
    }
 
@@ -16747,7 +16711,7 @@ ins_compl_free(void) {
    EE_CLEAR_STRING(compl_pattern);
    EE_CLEAR_STRING(compl_leader);
 
-   if (compl_first_match == NULL)
+   if (!compl_first_match)
       return;
 
    ins_compl_del_pum();
@@ -16880,13 +16844,13 @@ ins_compl_bs(void) {
    EE_CLEAR_STRING(compl_leader);
    compl_leader.len = (Unt)((p - line) - compl_col);
    compl_leader.c = copySubstr(line + compl_col, compl_leader.len);
-   if (compl_leader.c == NULL) {
+   if (!compl_leader.c) {
       compl_leader.len = 0;
       return K_BS;
    }
 
    ins_compl_new_leader();
-   if (compl_shown_match != NULL)
+   if (compl_shown_match)
       //Make sure current match is not a hidden item.
       compl_curr_match = compl_shown_match;
    return ZERO;
@@ -16960,7 +16924,7 @@ ins_compl_new_leader(void) {
       show_pum(save_cursorRow, save_leftCol);
 
    //Don't let Enter select the original text when there is no popup menu.
-   if (displayedCompletionsS == NULL)
+   if (!displayedCompletionsS)
       compl_enter_selects = false;
    ei (ins_compl_has_preinsert() && compl_leader.len > 0)
       ins_compl_insert(true);
@@ -17067,13 +17031,13 @@ ins_compl_addfrommatch(void) {
       p = NULL;
       Unt plen = 0;
       for (cp = compl_shown_match->next; cp && !is_first_match(cp); cp = cp->next) {
-         if (compl_leader.c == NULL || ins_compl_equal(cp, compl_leader.c, (int)compl_leader.len)) {
+         if (!compl_leader.c || ins_compl_equal(cp, compl_leader.c, (int)compl_leader.len)) {
             p = cp->cp_str.c;
             plen = cp->cp_str.len;
             break;
          }
       }
-      if (p == NULL || (int)plen <= len)
+      if (!p || (int)plen <= len)
           return;
     }
     p += len;
@@ -17760,7 +17724,7 @@ set_completion(ColNr startcol, List *list) {
                      (Unt)compl_length);
    if (p_ic)
       flags |= CP_ICASE;
-   if (compl_orig_text.c == NULL) {
+   if (!compl_orig_text.c) {
       compl_orig_text.len = 0;
       return;
    }
@@ -17895,7 +17859,7 @@ f_complete_match(Arr(Var) argvars, Var* returnVar) {
       if (regmatch.regprog) {
          if (eeRegexec_nl(&regmatch, before_cursor, (ColNr)0)) {
             CS trig = copySubstr(regmatch.startp[0], regmatch.endp[0] - regmatch.startp[0]);
-            if (trig == NULL) {
+            if (!trig) {
                eeglFree(before_cursor);
                eeRegFree(regmatch.regprog);
                return;
@@ -18209,7 +18173,7 @@ process_next_cpt_value(
          insertCompletionType = 0;
       } else {  //unloaded buffer, scan like dictionary
          st->found_all = true;
-         if (st->scannedBook->currFileName == NULL) {
+         if (!st->scannedBook->currFileName) {
             status = INS_COMPL_CPT_CONT;
             goto done;
          }
@@ -18435,12 +18399,12 @@ get_next_filename_completion(void) {
 
    if (in_fuzzy_collect) {
       last_sep = lastOccurrence(leader, '/');
-      if (last_sep == NULL) {
+      if (!last_sep) {
          //No path separator or separator is the last character,
          //fuzzy match the whole leader
          EE_CLEAR_STRING(compl_pattern);
          compl_pattern.c = copySubstr((CS)"*", 1);
-         if (compl_pattern.c == NULL)
+         if (!compl_pattern.c)
             return;
          compl_pattern.len = 1;
       } ei (*(last_sep + 1) == '\0')
@@ -18766,7 +18730,7 @@ get_register_completion(void) {
          continue;
 
       reg_ptr = get_register(regname, false);
-      if (reg_ptr == NULL)
+      if (!reg_ptr)
          continue;
 
       reg = (YankReg *)reg_ptr;
@@ -19013,7 +18977,7 @@ ins_compl_get_exp(Pos* ini) {
       //Make a copy of 'complete', in case the buffer is wiped out.
       st.e_cpt_copy = copyStr((compl_cont_status & CONT_LOCAL) ? S"." : curBook->o.complete);
       strip_caret_numbers_in_place(st.e_cpt_copy);
-      st.e_cpt = st.e_cpt_copy == NULL ? (CS)"" : st.e_cpt_copy;
+      st.e_cpt = st.e_cpt_copy ? st.e_cpt_copy : S"";
 
       //In large buffers, timeout may miss nearby matches — search above cursor
 #define LOOKBACK_LINE_COUNT   1000
@@ -19076,9 +19040,9 @@ ins_compl_get_exp(Pos* ini) {
       //get the next set of completion matches
       found_new_match = get_next_completion_match(type, &st, &start_pos);
 
-      //If complete() was called then compl_pattern has been reset.  The
+      //If complete() was called then compl_pattern has been reset. The
       //following won't work then, bail out.
-      if (compl_pattern.c == NULL)
+      if (!compl_pattern.c)
          break;
 
       if (may_advance_cpt_idx) {
@@ -19136,7 +19100,7 @@ ins_compl_get_exp(Pos* ini) {
       //just been made cyclic then we have to move compl_curr_match to the
       //next or previous entry (if any) -- Acevedo
       compl_curr_match = compl_dir_forward() ? compl_old_match->next : compl_old_match->prev;
-      if (compl_curr_match == NULL)
+      if (!compl_curr_match)
           compl_curr_match = compl_old_match;
    }
    may_trigger_modechanged();
@@ -19167,7 +19131,7 @@ ins_compl_update_shown_match(void) {
    //backward, find the last match.
    if (compl_shows_dir_backward()
        && !ins_compl_equal(compl_shown_match, leader->c, (int)leader->len)
-       && (compl_shown_match->next == NULL || is_first_match(compl_shown_match->next))
+       && (!compl_shown_match->next || is_first_match(compl_shown_match->next))
    ) {
       while (!ins_compl_equal(compl_shown_match, leader->c, (int)leader->len)
             && compl_shown_match->prev != NULL
@@ -19477,7 +19441,7 @@ ins_compl_next(
 
    //When user complete function return -1 for findstart which is next
    //time of 'always', compl_shown_match become NULL.
-   if (compl_shown_match == NULL)
+   if (!compl_shown_match)
       return -1;
 
    if (compl_leader.c
@@ -19559,7 +19523,7 @@ ins_compl_next(
 //& halve the timeout
 private void
 check_elapsed_time(void) {
-   if (cpt_sources_array == NULL || cpt_sources_index < 0)
+   if (!cpt_sources_array || cpt_sources_index < 0)
       return;
 
    Elapsed* start_tv = &cpt_sources_array[cpt_sources_index].matchCollectionStart;
@@ -19689,16 +19653,15 @@ get_normal_compl_info(CS line, int startcol, ColNr curs_col) {
           compl_length = curs_col - startcol;
       }
       if (p_ic) {
-          compl_pattern.c = str_foldcase(line + compl_col,
-             compl_length, NULL, 0);
-         if (compl_pattern.c == NULL) {
+          compl_pattern.c = str_foldcase(line + compl_col, compl_length, NULL, 0);
+         if (!compl_pattern.c) {
             compl_pattern.len = 0;
             return FAIL;
          }
          compl_pattern.len = STRLEN(compl_pattern.c);
       } else {
          compl_pattern.c = copySubstr(line + compl_col, (Unt)compl_length);
-         if (compl_pattern.c == NULL) {
+         if (!compl_pattern.c) {
             compl_pattern.len = 0;
             return FAIL;
          }
@@ -19727,7 +19690,7 @@ get_normal_compl_info(CS line, int startcol, ColNr curs_col) {
 
       //Match any word of at least two chars
       compl_pattern.c = copySubstr((CS)"\\<\\k\\k", len);
-      if (compl_pattern.c == NULL) {
+      if (!compl_pattern.c) {
          compl_pattern.len = 0;
          return FAIL;
       }
@@ -19789,14 +19752,14 @@ get_wholeline_compl_info(CS line, ColNr curs_col) {
       compl_length = 0;
    if (p_ic) {
       compl_pattern.c = str_foldcase(line + compl_col, compl_length, NULL, 0);
-      if (compl_pattern.c == NULL) {
+      if (!compl_pattern.c) {
          compl_pattern.len = 0;
          return FAIL;
       }
       compl_pattern.len = STRLEN(compl_pattern.c);
    } else {
       compl_pattern.c = copySubstr(line + compl_col, (Unt)compl_length);
-      if (compl_pattern.c == NULL) {
+      if (!compl_pattern.c) {
          compl_pattern.len = 0;
          return FAIL;
       }
@@ -19874,7 +19837,7 @@ set_compl_globals(int startcol, ColNr curs_col, int is_cpt_compl) {
       int   len = curs_col - startcol;
 
       compl_pattern.c = copySubstr(line + startcol, (Unt)len);
-      if (compl_pattern.c == NULL) {
+      if (!compl_pattern.c) {
          compl_pattern.len = 0;
          return FAIL;
       }
@@ -20156,7 +20119,7 @@ ins_compl_show_statusmsg(void) {
       editSubmodeHiG = HLF_E;
    }
 
-   if (editSubmodeExtraMsgG == NULL) {
+   if (!editSubmodeExtraMsgG) {
       if (match_at_original_text(compl_curr_match)) {
          editSubmodeExtraMsgG = (CS)_("Back at original");
          editSubmodeHiG = HLF_W;
@@ -20429,7 +20392,7 @@ is_cfn_refresh_always(void) {
 //Make the completion list acyclic.
 private void
 ins_compl_make_linear(void) {
-   if (compl_first_match == NULL || !compl_first_match->prev)
+   if (!compl_first_match || !compl_first_match->prev)
       return;
    InsertCompletion* m = compl_first_match->prev;
    m->next = NULL;
@@ -20722,7 +20685,7 @@ internal_format(
    int no_leader = false;
    int doComments = (flags & INSCHAR_DO_COM);
    int safe_tw = trim_to_int(8 * (Long)textwidth);
-   int has_bri = curPor->o.breakIndent;
+   Long breakIndentSaved = curPor->o.breakIndent;
 
    //make sure win_lbr_chartabsize() counts correctly
    curPor->o.breakIndent = false;
@@ -21017,7 +20980,7 @@ internal_format(
    if (save_char != ZERO)      //put back space after cursor
       pchar_cursor(save_char);
 
-   curPor->o.breakIndent = has_bri;
+   curPor->o.breakIndent = breakIndentSaved;
    if (!format_only && haveto_redraw) {
       update_topline();
       drawCurBookLater(UPD_VALID);

@@ -26,7 +26,7 @@ int ml_line_alloced(void);
 int ml_append(
    LineNr lnum, //append after this line (can be 0)
    CS newContent, //text of the new line
-   ColNr len, //number of bytes to copy, or if 0 - will be replaced by strlen(newContent), 
+   ColNr len, //number of bytes to copy, or if 0 - will be replaced by strlen(newContent),
    int   newfile //flag, see above
 );
 int ml_append_flags(

@@ -394,7 +394,6 @@ int get_indent_lnum(LineNr lnum);
 int get_indent_buf(Book* book, LineNr lnum);
 Boole doSetIndent(int size, Unt flags);
 int get_number_indent(LineNr lnum);
-int getBreakindentForPort(Portal* po, CS line);
 int inindent(int extra);
 void op_reindent(Operator *oper, int (*how)(void));
 int preprocs_left(void);

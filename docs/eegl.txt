@@ -3,8 +3,8 @@
    [[[Free keys]]]
 
 Q in normal
-gh, gH g-Ctrl-H in Normal; Ctrl-G in Visual 
-R, gR in Normal mode; Insert in Insert mode. 
+gh, gH g-Ctrl-H in Normal; Ctrl-G in Visual
+R, gR in Normal mode; Insert in Insert mode.
 r, gr in Visual mode
 
 
@@ -54,7 +54,7 @@ term.c:out_flush() // Write to terminal
 // vgetorpeek -> input:ingestChar -> ui.ui_inchar -> os_unix.mch_inchar -> ui.inchar_loop
 
 // !! the rawest of input
-term.c check_term_codes 
+term.c check_term_codes
 
 // ui_inchar - still raw bytes. inchar() does something?
 
@@ -131,7 +131,7 @@ location.c:vimgrepProcessFiles
 // making lists of files from search patterns
 fileio.c:unix_expandpath
 
-// autocmd types defined 
+// autocmd types defined
 script.c:autoEvents
 
 // evaluation: logical "or" (||)
@@ -147,7 +147,7 @@ normal.c:nv_put_opt()
 // deleting text
 ops.c:op_delete
 
-//Ctrl-F in command mode (i.e. after ":") - edit history of commands as a buffer and run them 
+//Ctrl-F in command mode (i.e. after ":") - edit history of commands as a buffer and run them
 //with <Enter>
 script.c:openCommPort
 
@@ -203,6 +203,9 @@ memory.c:memGetLine()
 //Change cursor appearance on mode change
 term.c:term_cursor_mode
 
+//Draw cursor
+draw.c:windgoto => term_cursor_right()
+
 //save a book
 bookWrite()
 
@@ -223,13 +226,13 @@ d<space> - delete all the spaces until another character.
 A command-line option to open the program only if the file exists.
 Just like there are text objects to select or copy text, there should be to replace text.
    As in, "ri(" = "replace insides of parens with what's in the register"
-A command to get the highlight group under the cursor 
+A command to get the highlight group under the cursor
 A command to generate a UUID (v7 by default, v4 if passed an argument)
 If we start searching and find something but add another letter and now there are not matches, do
-   not jump back to the beginning. Stay at the last match there was. This should be an option. 
-Simple command to redirect other command's output to the current buffer. (redir?) 
+   not jump back to the beginning. Stay at the last match there was. This should be an option.
+Simple command to redirect other command's output to the current buffer. (redir?)
 Unmodifiable flag on the portal too. For immutable views into data, like JSON pretty viewers
-When selected in linewise mode, "a," to add a comma to every line, `s"` to surround every line 
+When selected in linewise mode, "a," to add a comma to every line, `s"` to surround every line
    with quotes
 For commands that open a temp portal like `:reg`, `:ls`, make exclamation variants that append
    lines after cursor instead
@@ -244,7 +247,7 @@ make depend
 
  * +clientserver	Remote control via the remote_send() function
  *			and the --remote argument
- 
+
  * +persistent_undo	'undofile', 'undodir' options, :wundo and :rundo, and
  * implementation.
  */

@@ -9,7 +9,7 @@ CFLAGS ?=  $(INTERNAL_CFLAGS) -Wall -Wextra -Wfatal-errors -O0 \
 # The release flags
 RELEASE_CFLAGS = $(INTERNAL_CFLAGS) -O2
 
-LDFLAGS ?= -L/usr/lib -Wl,-z,relro,-z,now 
+LDFLAGS ?= -L/usr/lib -Wl,-z,relro,-z,now
 
 LIBS	= -lm -ltinfo
 
@@ -41,15 +41,12 @@ DEPEND_FLAGS_FILTER = | sed 's+-I */+-isystem /+g'
 
 OBJDIR ?= ../.b/eegl
 
-CROSS_COMPILING = 
-COMPILEDBY	= 
+CROSS_COMPILING =
+COMPILEDBY	=
 
 INSTALLVIMDIFF	= installvimdiff
 INSTALL_LANGS	= install-languages
 INSTALL_TOOL_LANGS	= install-tool-languages
-
-### Line break character as octal number for "tr"
-NL		= "\\012"
 
 ### Top directory for everything
 PREFIX ?= /usr
@@ -113,11 +110,11 @@ APP = eegl
 #
 # 3. "make"  {{{1
 # 4. "make test"  {{{1
-# This is optional.  This will run Eegl scripts on a number of test files, and compare the 
-# produced output with the expected output. If all is well, you will get the "ALL DONE" message 
+# This is optional.  This will run Eegl scripts on a number of test files, and compare the
+# produced output with the expected output. If all is well, you will get the "ALL DONE" message
 # in the end. If a test fails, you get "TEST FAILURE".  See below (search for "/^test").
 # 5. "make install"  {{{1
-# If the new Eegl seems to be working OK you can install it and the documentation in the 
+# If the new Eegl seems to be working OK you can install it and the documentation in the
 # appropriate location. The default is
 #	"/usr/local".  Change "prefix" below to change the location.
 #	Note that any existing executable is removed or overwritten.  If you
@@ -139,45 +136,23 @@ APP = eegl
 #	If you install Eegl, not to install for real but to prepare a package
 #	or RPM, set DESTDIR to the root of the tree.
 #
-# 6. Use Eegl until a new version comes out.  {{{1
-#
-# 7. "make uninstall_runtime"  {{{1
-#	Will remove the runtime files for the current version.	This is safe
-#	to use while another version is being used, only version-specific
-#	files will be deleted.
-#	To remove the runtime files of another version:
-#		make uninstall_runtime VIMRTDIR=/vim54
-#	If you want to delete all installed files, use:
-#		make uninstall
-#	Note that this will delete files that have the same name for any
-#	version, thus you might need to do a "make install" soon after this.
-#	Be careful not to remove a version of Eegl that is still being used!
-#	To find out which files and directories will be deleted, use:
-#		make -n uninstall
-# }}}
 
 # Argument for running ctags.
 TAGS_FILES = *.c *.h
-
-
-#{{{what used to be auto/config.mk
 
 
 INDICES_FLAGS	= --std=c17 -Wfatal-errors -g3 -O0 -Wno-cpp -Werror=return-type
 
 DEPEND_FLAGS_FILTER = | sed 's;-I */;-isystem /;g'
 
-
 ### Line break character as octal number for "tr"
 NL		= "\\012"
-
 
 
 # Make sure that "make first" will run "make all" once configure has done its
 # work.  This is needed when using the Makefile in the top directory.
 first: all
 
-#}}}
 
 # Include the configuration choices first, so we can override everything
 # below. As shipped, this file contains a target that causes to run
@@ -280,7 +255,6 @@ first: all
 #C_FLAGS = -g -Wall -Wextra -Wshadow -Wmissing-prototypes -Wunreachable-code -Wno-cast-function-type -Wno-deprecated-declarations -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
 #C_FLAGS = -g -Wall -Wextra -Wshadow -Wmissing-prototypes -Wunreachable-code -Wno-deprecated-declarations -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
 # Add -Wpedantic to find // comments and other C99 constructs.
-# Better disable Perl and Python to avoid a lot of warnings.
 #C_FLAGS = -g -Wall -Wextra -Wshadow -Wmissing-prototypes -Wpedantic -Wunreachable-code -Wunused-result -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
 #C_FLAGS = -g -O2 -Wall -Wextra -Wshadow -Wmissing-prototypes -Wpedantic -Wunreachable-code -Wno-cast-function-type -Wunused-result -Wno-deprecated-declarations -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
 
@@ -338,7 +312,7 @@ LINT_OPTIONS = -beprxzF
 # PROFILE_FLAGS=-g -O0 --coverage -DWE_ARE_PROFILING -DUSE_GCOV_FLUSH
 
 
-#Uncomment the next lines to compile Eegl on GCC with the address sanitizer (asan) and with the 
+#Uncomment the next lines to compile Eegl on GCC with the address sanitizer (asan) and with the
 #undefined sanitizer.
 #You should also use -DEXITFREE to avoid false reports.
 #May make Eegl twice as slow.  Errors are reported on stderr.
@@ -687,7 +661,7 @@ BASIC_SRC_NO_DIR = \
    window.c
 
 BASIC_SRC = $(addprefix src/, $(BASIC_SRC_NO_DIR))
-
+BASIC_HEADERS:=$(addprefix src/h/, $(BASIC_SRC_NO_DIR:.c=.h))
 
 SRC =	$(BASIC_SRC)
 
@@ -709,7 +683,7 @@ RUN_UNITTESTS = run_json_test run_kword_test run_memfile_test run_message_test
 ALL_LOCAL_SRC = $(BASIC_SRC) $(UNITTEST_SRC)
 ALL_SRC = $(ALL_LOCAL_SRC)
 
-# Which files to check with lint.  Select one of these three lines. 
+# Which files to check with lint.  Select one of these three lines.
 LINT_SRC = $(ALL_SRC)
 
 OBJ_COMMON = \
@@ -793,7 +767,7 @@ MUSL_STUFF:=-static-pie -nostdinc -I/usr/lib/musl/include \
 
 
 
-# Run the script to generate the Command lookup table and the normal/visual mode command lookup 
+# Run the script to generate the Command lookup table and the normal/visual mode command lookup
 # tables. This only needs to be run when command has been added or changed.
 # If this fails because you don't have Eegl yet, first build and install Eegl without changes.
 indices: src/commands.h src/actions.h
@@ -808,11 +782,13 @@ $(BETTERC): ##Better C: codegen for headers & generics
 / $(CC) --std=c23 -Wall  -o $(OBJDIR)/betterc $(MUSL_STUFF) \
    dev/betterc.c
 
-better: $(BETTERC)
-/ for f in src/*.c; do $(BETTERC) -d h "$$f"; done
+#better: $(BETTERC)
+#/ for f in src/*.c; do $(BETTERC) -d h "$$f"; done
 
-src/h/%.h: src/%.c $(BETTERC)
+$(BASIC_HEADERS): src/h/%.h : src/%.c
 / $(OBJDIR)/betterc -d h $<
+
+better: $(BASIC_HEADERS)
 
 # The normal command to compile a .c file to its .o file.
 # Without or with ALL_FLAGS.
@@ -1599,7 +1575,7 @@ $(OBJDIR)/message_test.o: src/message_test.c src/main.c src/eegl.h \
  src/commands.h src/message.c
 $(OBJDIR)/window.o: src/window.c src/eegl.h src/commands.h
 $(OBJDIR)/main.o: main.c src/eegl.h
- 
+
 #}}}
 
 package: ##Create a package for Arch Linux by building a specific version

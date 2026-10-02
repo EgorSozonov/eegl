@@ -271,7 +271,7 @@ Unt ins_compl_add_infercase(
    int score
 );
 Decoration getDecorationIfColumnIsWithinCompletion(LineNr lnum, int col);
-int ins_compl_lnum_in_range(LineNr lnum);
+Boole ins_compl_lnum_in_range(LineNr lnum);
 void ins_compl_show_pum(void);
 CS ins_compl_leader(void);
 int ins_compl_active(void);

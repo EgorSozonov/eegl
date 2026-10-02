@@ -1873,8 +1873,8 @@ typedef struct foldinfo {
 } FoldInfo;
 
 typedef struct filemark {
-   Pos   mark;      //cursor position
-   int      fnum;      //file number
+   Pos mark;    //cursor position
+   int fnum;    //file number
 } FileMark;
 
 //Xtended file mark: also has a file name
@@ -3812,13 +3812,6 @@ typedef struct {
    Pos cursor_corr;   //corrected cursor position
 } PosSave;
 
-typedef struct {
-   int min;       //minimum width for breakindent
-   int shift;       //additional shift for breakindent
-   int list;      //additional indent for lists
-   int vcol;       //indent for specific column
-} BreakIndent;
-
 //Data about popup kind of portals
 typedef struct {
    int flags;      //POPF_ values
@@ -4020,7 +4013,6 @@ struct Portal { //:Portal
    //They are local because they influence the layout of the portal or depend on the portal layout.
    PortalOptions o;
 
-   BreakIndent breakIndent;
    long scbindPos;
    DictItem wVar;          //variable for "w:" Dictionary
    Bag* internalVars;     //internal variables, local to portal

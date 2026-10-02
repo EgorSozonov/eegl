@@ -289,8 +289,7 @@ OPTION("termwinscroll", p_twsl, long, 10000, P_RBUF, &did_set_termwinscroll, nul
 
 #ifdef OPTIONS_LIST_PORTAL
 
-OPTION("breakindent", breakIndent, Boole, false, 0, null, null)
-OPTION("breakindentopt", breakIndentOpt, CS, null, 0, setBreakindentOpt, expandBreakindentOpt)
+OPTION("breakindent", breakIndent, Boole, false, 0, setBreakindent, null)
 OPTION("diff", diff, Boole, false, P_REDRAW_PORT, &did_set_diff, null)
 OPTION("eventignoreport", eventIgnorePort, CS, null, P_ONECOMMA|P_NODUP,
    &did_set_eventignore, &expand_set_eventignore)
@@ -313,7 +312,7 @@ OPTION("statusline", statusLine, CS,
       "%n\\:%f%m\\ \\|%l\\:%c\\/%L\\L\\|\\ %{strftime('%H:%M')}",
       P_RSTAT, &did_set_statusline, NULL)
 OPTION("wrap", wrap, Boole, true, P_REDRAW_PORT, &did_set_wrap, NULL)
-OPTION("signcolumn", signColumn, Boole, true, P_RCLR, null, null)
+OPTION("signcolumn", signColumn, Boole, false, P_RCLR, null, null)
 OPTION("sidescrolloff", sideScrollOff, long, 0, P_RBUF, &setSideScrollOff, null)
 OPTION("scrolloff", scrollOff, long, 3, P_RALL, &setScrollOff, null)
 OPTION("termwinkey", termWinKey, CS, null, P_REDRAW_PORT, &did_set_termwinkey, null)
