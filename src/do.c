@@ -89,6 +89,49 @@ typedef struct {
 
 #define TABSIZE_MAX 16
 
+//flags for check_changed()
+pub
+#define CCGD_AW       1   //do autowrite if book was changed
+#define CCGD_MULTWIN  2   //check also when several wins for the buf
+#define CCGD_FORCEIT  4   //! used
+#define CCGD_ALLBOOKS 8   //may write all books
+#define CCGD_EXCMD   16   //may suggest using !
+
+struct UndoHeader {
+   //The following have a pointer and a number. The number is used when
+   //reading the undo file in u_read_undo()
+   union {
+      UndoHeader* ptr;   //pointer to next undo header in list
+      long seq;
+   } next;
+   union {
+      UndoHeader* ptr;   //pointer to previous header in list
+      long seq;
+   } prev;
+   union {
+      UndoHeader* ptr;   //pointer to next header for alt. redo
+      long seq;
+   } altNext;
+   union {
+      UndoHeader* ptr;   //pointer to previous header for alt. redo
+      long seq;
+   } altPrev;
+   long   uh_seq;      //sequence number, higher == newer undo
+   int      uh_walk;   //used by undo_time()
+   UndoEntry* uh_entry;   //pointer to first entry
+   UndoEntry* uh_getbot_entry; //pointer to where ue_bot must be set
+   Pos   uh_cursor;   //cursor position before saving
+   long   uh_cursor_vcol;
+   Unt flags;   //see below
+   Pos   uh_namedm[NMARKS];   //marks before undo/after redo
+   VisualInfo uh_visual;   //Visual areas before undo/after redo
+   Tyme   uh_time;   //timestamp when the change was made
+   long   uh_save_nr;   //set when the file was saved after the changes in this block
+#ifdef U_DEBUG
+   int      uh_magic;   //magic number to check allocation
+#endif
+};
+
 //}}}
 //{{{@@forward decls
 private int linelen(OUT int* has_tab);
@@ -182,8 +225,8 @@ private void u_check(int newhead_may_be_NULL);
 private int u_inssub(LineNr lnum);
 private int u_save_line(UndoLine *ul, LineNr lnum);
 private Boole has_prop_w_flags(LineNr lnum, int flags);
-private void corruption_error(char *mesg, CS file_name);
-private void u_free_uhp(UndoHeader *uhp);
+private void corruption_error(char* mesg, CS file_name);
+private void u_free_uhp(UndoHeader* uhp);
 private int writeToUndoFile(BufInfo* bi, Arr(Byte) ptr, Unt len);
 private int undo_write_bytes(BufInfo* bi, Ulong nr, int len);
 private void put_header_ptr(BufInfo *bi, UndoHeader *uhp);
@@ -211,11 +254,7 @@ private void u_undo_end(
 private void u_unch_branch(UndoHeader* uhp);
 private UndoEntry * u_get_headentry(void);
 private void u_getbot(void);
-private void u_freeheader(
-   Book* book,
-   UndoHeader* uhp,
-   UndoHeader** uhpp)   //if not NULL reset when freeing this header
-;
+private void u_freeheader(Book* book, UndoHeader* uhp, OUT UndoHeader** uhpp) ;
 private void freeBranch(
    Book* book,
    UndoHeader* uhp,
@@ -329,7 +368,7 @@ do_ascii(Invocation*){
       return;
    }
 
-   IObuff[0] = ZERO;
+   ioBuffG[0] = ZERO;
    if (c < 0x80) {
       if (c == NL)       //ZERO is stored as NL
          c = ZERO;
@@ -346,22 +385,22 @@ do_ascii(Invocation*){
          buf2[0] = ZERO;
       }
       eeSnprintf(
-         IObuff, IOSIZE, _("<%s>%s%s  %d,  Hex %02x"), transchar(c), buf1, buf2, cval, cval
+         ioBuffG, IOSIZE, _("<%s>%s%s  %d,  Hex %02x"), transchar(c), buf1, buf2, cval, cval
       );
       c = cc[ci++];
    }
 
    //Repeat for combining characters.
    while (c >= 0x100) {
-      len = (int)STRLEN(IObuff);
+      len = (int)STRLEN(ioBuffG);
       //This assumes every multi-byte char is printable...
       if (len > 0)
-         IObuff[len++] = ' ';
-      IObuff[len++] = '<';
+         ioBuffG[len++] = ' ';
+      ioBuffG[len++] = '<';
       if (utf_iscomposing(c))
-         IObuff[len++] = ' '; //draw composing char on top of a space
-      len += mb_char2bytes(c, IObuff + len);
-          eeSnprintf(IObuff + len, IOSIZE - len,
+         ioBuffG[len++] = ' '; //draw composing char on top of a space
+      len += mb_char2bytes(c, ioBuffG + len);
+          eeSnprintf(ioBuffG + len, IOSIZE - len,
              c < 0x10000 ? _("> %d, Hex %04x")
                     : _("> %d, Hex %08x"),
                     c, c);
@@ -370,7 +409,7 @@ do_ascii(Invocation*){
       c = cc[ci++];
    }
 
-   msg(IObuff);
+   msg(ioBuffG);
 }
 
 //";left", ";center" and ";right": align text.
@@ -1538,8 +1577,7 @@ do_shell(CS cmd, Unt flags) {   //may be SHELL_DOOUT when output is redirected
       if (!keep_termcap)   //if keep_termcap is true didn't stop termcap
          starttermcap();   //start termcap if not done by wait_return()
    }
-
-   display_errors();
+   fflush(stderr);
 
    applyAutocomms(EVENT_SHELLCMDPOST, NULL, NULL, false, curBook);
 }
@@ -4981,7 +5019,7 @@ doOneCommand(
    Boole did_append_cmd = false;
    if (invo.id == COUNT_COMMANDS) {
       if (!invo.skip) {
-         STRCPY(IObuff, _(e_not_an_editor_command));
+         STRCPY(ioBuffG, _(e_not_an_editor_command));
          if (!sourcing) {
             //If the modifier was parsed OK the error must be in the following command
             if (after_modifier)
@@ -4990,7 +5028,7 @@ doOneCommand(
                append_command(*commline);
             did_append_cmd = true;
          }
-         errorMsg = IObuff;
+         errorMsg = ioBuffG;
          anySyntaxEmsgS = true;
       }
       goto doend;
@@ -5368,9 +5406,9 @@ doend:
 
    if (errorMsg && *errorMsg != ZERO && !anyEmsgG) {
       if ((sourcing || !keyWasTypedG) && !did_append_cmd) {
-          if (errorMsg != IObuff) {
-             STRCPY(IObuff, errorMsg);
-             errorMsg = IObuff;
+          if (errorMsg != ioBuffG) {
+             STRCPY(ioBuffG, errorMsg);
+             errorMsg = ioBuffG;
           }
           append_command(*commline);
       }
@@ -5964,28 +6002,28 @@ theend:
    return ret;
 }
 
-//Append "cmd" to the error message in IObuff.
+//Append "cmd" to the error message in ioBuffG.
 //Take care of limiting the length and handling 0xa0, which would be invisible otherwise.
 private void
 append_command(CS cmd) {
-   Unt  len = STRLEN(IObuff);
+   Unt  len = STRLEN(ioBuffG);
    CS s = cmd;
    CS d;
 
    if (len > IOSIZE - 100) {
       //Not enough space, truncate and put in "...".
-      d = IObuff + IOSIZE - 100;
-      d -= mb_head_off(IObuff, d);
+      d = ioBuffG + IOSIZE - 100;
+      d -= mb_head_off(ioBuffG, d);
       STRCPY(d, "...");
    }
-   STRCAT(IObuff, ": ");
-   d = IObuff + STRLEN(IObuff);
-   while (*s != ZERO && d - IObuff + 5 < IOSIZE) {
+   STRCAT(ioBuffG, ": ");
+   d = ioBuffG + STRLEN(ioBuffG);
+   while (*s != ZERO && d - ioBuffG + 5 < IOSIZE) {
       if (s[0] == 0xc2 && s[1] == 0xa0) {
          s += 2;
          STRCPY(d, "<a0>");
          d += 4;
-      } ei (d - IObuff + utfCharLen(s) + 1 >= IOSIZE)
+      } ei (d - ioBuffG + utfCharLen(s) + 1 >= IOSIZE)
          break;
       else
          MB_COPY_CHAR(s, d);
@@ -8441,8 +8479,8 @@ c_tabs(Invocation*) {
    msg_scroll = true;
    for (Tab* t = firstTabG; t && !gotInterruptG; t = t->next) {
       msg_putchar('\n');
-      eeSnprintf(IObuff, IOSIZE, _("Tab %d"), tabcount++);
-      msgOuttransDeco(IObuff, getDecoFlags(HLF_T));
+      eeSnprintf(ioBuffG, IOSIZE, _("Tab %d"), tabcount++);
+      msgOuttransDeco(ioBuffG, getDecoFlags(HLF_T));
       termOutFlush();       //output one line at a time
       ui_breakcheck();
 
@@ -8457,12 +8495,12 @@ c_tabs(Invocation*) {
          msg_putchar(bookWasChanged(po->book) ? '+' : ' ');
          msg_putchar(' ');
          if (bookSpName(po->book) != NULL)
-            copySubstrToAllocation(OUT IObuff, (Text){bookSpName(po->book), IOSIZE - 1});
+            copySubstrToAllocation(OUT ioBuffG, (Text){bookSpName(po->book), IOSIZE - 1});
          ei (po->book->kind == BOOK_HELP) {
-            strPrintShortName(po->book->currFileName, IObuff, IOSIZE);
+            strPrintShortName(po->book->currFileName, ioBuffG, IOSIZE);
          } else
-            home_replace(po->book->currFileName, IObuff, IOSIZE, true);
-         msg_outtrans(IObuff);
+            home_replace(po->book->currFileName, ioBuffG, IOSIZE, true);
+         msg_outtrans(ioBuffG);
          termOutFlush();       //output one line at a time
          ui_breakcheck();
       }
@@ -10950,6 +10988,10 @@ has_prop_w_flags(LineNr lnum, int flags) {
    return false;
 }
 
+//values for UndoHeader.flags
+#define UH_CHANGED  0x01   //wasModified flag before undo/after redo
+#define UH_EMPTYBUF 0x02   //book was empty
+
 //Common code for various ways to save text before a change.
 //"top" is the line above the first changed line.
 //"bot" is the line below the last changed line.
@@ -11089,7 +11131,7 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
          uhp->uh_cursor_vcol = -1;
 
       //save changed and book empty flag for undo
-      uhp->uh_flags = (curBook->wasModified ? UH_CHANGED : 0) +
+      uhp->flags = (curBook->wasModified ? UH_CHANGED : 0) +
                 ((curBook->mem.flags & ML_EMPTY) ? UH_EMPTYBUF : 0);
 
       //save named marks and Visual marks for undo
@@ -11250,12 +11292,12 @@ u_compute_hash(OUT Byte hash[UNDO_HASH_SIZE]) {
 }
 
 private void
-corruption_error(char *mesg, CS file_name) {
+corruption_error(char* mesg, CS file_name) {
    showErrFmtMsg(_(e_corrupted_undo_file_str_str), mesg, file_name);
 }
 
 private void
-u_free_uhp(UndoHeader *uhp) {
+u_free_uhp(UndoHeader* uhp) {
    UndoEntry* uep = uhp->uh_entry;
    while (uep) {
       UndoEntry* nuep = uep->ue_next;
@@ -11287,8 +11329,8 @@ undo_write_bytes(BufInfo* bi, Ulong nr, int len) {
    return writeToUndoFile(bi, buf, (Unt)len);
 }
 
-//Write the pointer to an undo header.  Instead of writing the pointer itself
-//we use the sequence number of the header.  This is converted back to
+//Write the pointer to an undo header. Instead of writing the pointer itself
+//we use the sequence number of the header. This is converted back to
 //pointers when reading.
 private void
 put_header_ptr(BufInfo *bi, UndoHeader *uhp) {
@@ -11409,7 +11451,7 @@ serialize_uhp(BufInfo* bi, UndoHeader* uhp) {
    undo_write_bytes(bi, uhp->uh_seq, 4);
    serialize_pos(bi, uhp->uh_cursor);
    undo_write_bytes(bi, (Ulong)uhp->uh_cursor_vcol, 4);
-   undo_write_bytes(bi, (Ulong)uhp->uh_flags, 2);
+   undo_write_bytes(bi, (Ulong)uhp->flags, 2);
    //Assume NMARKS will stay the same.
    for (int i = 0; i < NMARKS; ++i)
       serialize_pos(bi, uhp->uh_namedm[i]);
@@ -11457,7 +11499,7 @@ unserialize_uhp(BufInfo* bi, CS file_name) {
    }
    deserializePos(bi, &uhp->uh_cursor);
    uhp->uh_cursor_vcol = undo_read_4c(bi);
-   uhp->uh_flags = undo_read_2c(bi);
+   uhp->flags = undo_read_2c(bi);
    for (i = 0; i < NMARKS; ++i)
       deserializePos(bi, &uhp->uh_namedm[i]);
    unserialize_visualinfo(bi, &uhp->uh_visual);
@@ -12493,7 +12535,7 @@ u_undoredo(Boole undo) {
 #ifdef U_DEBUG
    u_check(false);
 #endif
-   old_flags = curhead->uh_flags;
+   old_flags = curhead->flags;
    new_flags = (curBook->wasModified ? UH_CHANGED : 0) +
          ((curBook->mem.flags & ML_EMPTY) ? UH_EMPTYBUF : 0);
    setpcmark();
@@ -12635,7 +12677,7 @@ u_undoredo(Boole undo) {
    check_cursor_lnum();
 
    curhead->uh_entry = newlist;
-   curhead->uh_flags = new_flags;
+   curhead->flags = new_flags;
    if ((old_flags & UH_EMPTYBUF) && CURBOOK_EMPTY())
       curBook->mem.flags |= ML_EMPTY;
    if (old_flags & UH_CHANGED)
@@ -12812,20 +12854,20 @@ c_undolist(Invocation*) {
       if (uhp->prev.ptr == NULL && uhp->uh_walk != nomark && uhp->uh_walk != mark) {
          if (ga_grow(&ga, 1) == FAIL)
             break;
-         len = eeSnprintf(IObuff, IOSIZE, "%6ld %7d  ", uhp->uh_seq, changes);
-         add_time(IObuff + len, IOSIZE - len, uhp->uh_time);
+         len = eeSnprintf(ioBuffG, IOSIZE, "%6ld %7d  ", uhp->uh_seq, changes);
+         add_time(ioBuffG + len, IOSIZE - len, uhp->uh_time);
 
          //we have to call STRLEN() here because add_time() does not report
          //the number of characters added.
-         len += (int)STRLEN(IObuff + len);
+         len += (int)STRLEN(ioBuffG + len);
          if (uhp->uh_save_nr > 0) {
             int n = (len >= 33) ? 0 : 33 - len;
 
             len += eeSnprintf(
-                  IObuff + len, IOSIZE - len, "%*.*s  %3ld", n, n, " ", uhp->uh_save_nr
+                  ioBuffG + len, IOSIZE - len, "%*.*s  %3ld", n, n, " ", uhp->uh_save_nr
             );
          }
-         ((Byte **)(ga.c))[ga.len++] = copySubstr(IObuff, len);
+         ((Byte **)(ga.c))[ga.len++] = copySubstr(ioBuffG, len);
       }
 
       uhp->uh_walk = mark;
@@ -12957,17 +12999,17 @@ u_update_save_nr(Book* book) {
 
 private void
 u_unch_branch(UndoHeader* uhp) {
-   for (UndoHeader* uh = uhp; uh != NULL; uh = uh->prev.ptr) {
-      uh->uh_flags |= UH_CHANGED;
-      if (uh->altNext.ptr != NULL)
-          u_unch_branch(uh->altNext.ptr);       //recursive
+   for (UndoHeader* uh = uhp; uh; uh = uh->prev.ptr) {
+      uh->flags |= UH_CHANGED;
+      if (uh->altNext.ptr)
+         u_unch_branch(uh->altNext.ptr);       //recursive
    }
 }
 
 //Get pointer to last added entry. If it's not valid, give an error message and return NULL.
 private UndoEntry *
 u_get_headentry(void) {
-   if (curBook->undo.newHead == NULL || curBook->undo.newHead->uh_entry == NULL) {
+   if (!curBook->undo.newHead || curBook->undo.newHead->uh_entry == NULL) {
       internalErrMsg(e_undo_list_corrupt);
       return NULL;
    }
@@ -13002,28 +13044,25 @@ u_getbot(void) {
 
 //Free one header "uhp" and its entry list and adjust the pointers.
 private void
-u_freeheader(
-   Book* book,
-   UndoHeader* uhp,
-   UndoHeader** uhpp)   //if not NULL reset when freeing this header
-{
+u_freeheader(Book* book, UndoHeader* uhp, OUT UndoHeader** uhpp)  {
+                                          //if not NULL, reset when freeing this header
    UndoHeader* uhap;
 
    //When there is an alternate redo list free that branch completely,
    //because we can never go there.
-   if (uhp->altNext.ptr != NULL)
+   if (uhp->altNext.ptr)
       freeBranch(book, uhp->altNext.ptr, uhpp);
 
-   if (uhp->altPrev.ptr != NULL)
+   if (uhp->altPrev.ptr)
       uhp->altPrev.ptr->altNext.ptr = NULL;
 
    //Update the links in the list to remove the header.
-   if (uhp->next.ptr == NULL)
+   if (!uhp->next.ptr)
       book->undo.oldHead = uhp->prev.ptr;
    else
       uhp->next.ptr->prev.ptr = uhp->prev.ptr;
 
-   if (uhp->prev.ptr == NULL)
+   if (!uhp->prev.ptr)
       book->undo.newHead = uhp->next.ptr;
    else {
       for (uhap = uhp->prev.ptr; uhap != NULL; uhap = uhap->altNext.ptr)
@@ -15206,10 +15245,10 @@ op_shift(Operator *oper, int curs_top, int amount) {
    CS op = (oper->opTy == OP_RSHIFT) ? S">" : S"<";
    CS msg_line_single = NGETTEXT("%ld line %sed %d time", "%ld line %sed %d times", amount);
    CS msg_line_plural = NGETTEXT("%ld lines %sed %d time", "%ld lines %sed %d times", amount);
-   eeSnprintf(IObuff, IOSIZE,
+   eeSnprintf(ioBuffG, IOSIZE,
       NGETTEXT(msg_line_single, msg_line_plural, oper->line_count),
       oper->line_count, op, amount);
-   msgAndKeep(IObuff, 0, true);
+   msgAndKeep(ioBuffG, 0, true);
 
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
       //Set "'[" and "']" marks.
@@ -17628,7 +17667,7 @@ cursor_pos_info(Bag* dict) {
 
             if (char_count_cursor == byte_count_cursor && char_count == byte_count)
                eeSnprintf(
-                   IObuff, IOSIZE,
+                   ioBuffG, IOSIZE,
                    _("Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Bytes"),
                    buf1, line_count_selected,
                    (long)curBook->mem.lineCount,
@@ -17639,7 +17678,7 @@ cursor_pos_info(Bag* dict) {
                );
             else
                eeSnprintf(
-                   IObuff, IOSIZE,
+                   ioBuffG, IOSIZE,
                    _("Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Chars; %ld of %ld Bytes"),
                    buf1, line_count_selected,
                    (long)curBook->mem.lineCount,
@@ -17658,7 +17697,7 @@ cursor_pos_info(Bag* dict) {
 
             if (char_count_cursor == byte_count_cursor && char_count == byte_count)
                eeSnprintf(
-                  IObuff, IOSIZE,
+                  ioBuffG, IOSIZE,
                   _("Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"),
                   buf1, buf2,
                   (long)curPor->cursor.lnum,
@@ -17668,7 +17707,7 @@ cursor_pos_info(Bag* dict) {
                );
             else
                eeSnprintf(
-                  IObuff, IOSIZE,
+                  ioBuffG, IOSIZE,
                   _("Col %s of %s; Line %ld of %ld; Word %ld of %ld; Char %ld of %ld; "
                      "Byte %ld of %ld"
                   ),
@@ -17683,7 +17722,7 @@ cursor_pos_info(Bag* dict) {
       }
 
       if (!dict) {
-          msg(IObuff);
+          msg(ioBuffG);
       }
    }
    if (dict) {

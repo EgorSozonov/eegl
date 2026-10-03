@@ -912,7 +912,7 @@ private void update_cursor(Terminal *term, int redraw);
 private int sendMouse(VTerm *vterm, int button, int pressed);
 private int handleMouseEvent(VTerm *vterm, Unt key);
 private int term_convert_key(Terminal *term, Unt c, int modmask, CS buf);
-private int term_job_running_check(Terminal* term, int check_job_status);
+private Boole term_job_running_check(Terminal* term, Boole check_job_status);
 private void add_scrollback_line_to_buffer(Terminal *term, CS text, Unt len);
 private int equal_celattr(CellDeco *a, CellDeco *b);
 private int add_empty_scrollback(Terminal *term, CellDeco *fillDeco, int lnum);
@@ -930,9 +930,9 @@ private void ui_cursor_shape_forced(Boole forced);
 private void may_output_cursor_props(void);
 private void may_set_cursor_props(Terminal *term);
 private void prepare_restoreCursor_props(void);
-private int term_use_loop_check(int check_job_status);
+private int term_use_loop_check(Boole check_job_status);
 private Unt raw_c_to_ctrl(Unt c);
-private int ctrl_to_raw_c(int c);
+private int ctrl_to_raw_c(Unt c);
 private void may_toggle_cursor(Terminal *term);
 private void set_dirty_snapshot(Terminal* term);
 private int handle_damage(VTermRect rect, void *user);
@@ -999,6 +999,7 @@ private int ui_wait_for_chars_or_timer(
 );
 private int waitForCharOrMouse(Long msec, OUT int *interrupted, Boole ignore_input);
 private int mch_char_avail(void);
+private void trash_input_buf(void);
 private void fillRowsWithTwoCharsWithTailingArea(
    int tplmode,
    int row_start,
@@ -6874,7 +6875,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
 
       //Make sure we don't get stuck on sending keys to the job, it leads to
       //a deadlock if the job is waiting for Eegl to read.
-      channel_set_nonblock(chJobGetChannel(term->job), PART_IN);
+      channel_set_nonblock(motJobGetChannel(term->job), PART_IN);
 
       if (curBookSaved) {
          --curBook->countPortals;
@@ -7226,8 +7227,8 @@ private ChannelFdKind
 get_tty_part(Terminal* term) {
    ChannelFdKind parts[3] = {PART_IN, PART_OUT, PART_ERR};
 
-   for (int i = 0; i < 3; ++i) {
-      int fd = chJobGetChannel(term->job)->fds[parts[i]].fd;
+   for (Unt i = 0; i < 3; ++i) {
+      int fd = motJobGetFd(term->job, parts[i]);
 
       if (mch_isatty(fd))
          return parts[i];
@@ -7243,7 +7244,7 @@ term_forward_output(Terminal *term) {
    Unt curlen = vterm_output_read(vterm, buf, KEY_BUF_LEN);
 
    if (curlen > 0)
-      channel_send(chJobGetChannel(term->job), get_tty_part(term), buf, (int)curlen, NULL);
+      channel_send(motJobGetChannel(term->job), get_tty_part(term), buf, (int)curlen, NULL);
 }
 
 //Write job output "msg[len]" to the vterm.
@@ -7327,7 +7328,7 @@ write_to_term(Book *book, CS msg, Channel* channel) {
       //Don't use drawUpdateScreen() when editing the command line, it gets
       //cleared.
       //TODO: only update once in a while.
-      ch_log(chJobGetChannel(term->job), "updating screen");
+      ch_log(motJobGetChannel(term->job), "updating screen");
       if (book == curBook && (stateG & MODE_COMMLINE) == 0) {
          drawUpdateScreen(UPD_VALID_NO_UPDATE);
          if (needRedrawTabpanelG)
@@ -7572,13 +7573,13 @@ term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
    return (int)vterm_output_read(vterm, buf, KEY_BUF_LEN);
 }
 
-//Return true if the job for "term" is still running. If "check_job_status" is true update the
+//Return true if the job for "term" is still running. If "check_job_status" is true, update the
 //job status. NOTE: "term" may be freed by callbacks.
-private int
-term_job_running_check(Terminal* term, int check_job_status) {
+private Boole
+term_job_running_check(Terminal* term, Boole check_job_status) {
    //Also consider the job finished when the channel is closed, to avoid a
    //race condition when updating the title.
-   if (!term || !term->job || !channel_is_open(chJobGetChannel(term->job)))
+   if (!term || !term->job || !channel_is_open(motJobGetChannel(term->job)))
       return false;
 
    Job* job = term->job;
@@ -7587,13 +7588,13 @@ term_job_running_check(Terminal* term, int check_job_status) {
    //the book and terminate "term".  However, "job" will not be freed yet.
    if (check_job_status)
       job_status(job);
-   return (chJobGetStatus(job) == JOB_STARTED
-          || (chJobGetChannel(job) && chJobGetChannel(job)->ch_keep_open));
+   return chJobGetStatus(job) == JOB_STARTED
+          || (motJobGetChannel(job) && motJobIsKeepOpen(job));
 }
 
 //Return true if the job for "term" is still running.
-pub int
-term_job_running(Terminal *term) {
+pub Boole
+term_job_running(Terminal* term) {
    return term_job_running_check(term, false);
 }
 
@@ -7610,8 +7611,8 @@ term_none_open(Terminal *term) {
    //race condition when updating the title.
    return term
       && term->job
-      && channel_is_open(chJobGetChannel(term->job))
-      && chJobGetChannel(term->job)->ch_keep_open;
+      && channel_is_open(motJobGetChannel(term->job))
+      && motJobIsKeepOpen(term->job);
 }
 
 //Used to confirm whether we would like to kill a terminal. Return OK when the user confirms to
@@ -7741,7 +7742,7 @@ update_snapshot(Terminal* term) {
    CellDeco* p;
 
    ch_log(
-      term->job ? chJobGetChannel(term->job) : null, "Adding terminal portal snapshot to buffer"
+      term->job ? motJobGetChannel(term->job) : null, "Adding terminal portal snapshot to buffer"
    );
 
    //First remove the lines that were appended before, they might be outdated.
@@ -8124,7 +8125,7 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
    len = term_convert_key(term, c, modmask, msg);
    if (len > 0)
       //TODO: if FAIL is returned, stop?
-      channel_send(chJobGetChannel(term->job), get_tty_part(term), (CS)msg, (int)len, NULL);
+      channel_send(motJobGetChannel(term->job), get_tty_part(term), (CS)msg, (int)len, NULL);
 
    return OK;
 }
@@ -8160,9 +8161,9 @@ term_paste_register(Unt prev_c) {
    ListItem* item;
    FOR_ALL_LIST_ITEMS(l, item) {
       CS s = tv_get_string(&item->c);
-      channel_send(chJobGetChannel(curBook->term->job), PART_IN, s, (int)STRLEN(s), NULL);
+      channel_send(motJobGetChannel(curBook->term->job), PART_IN, s, (int)STRLEN(s), NULL);
       if (item->next || type == MLINE)
-         channel_send(chJobGetChannel(curBook->term->job), PART_IN, S"\r", 1, NULL);
+         channel_send(motJobGetChannel(curBook->term->job), PART_IN, S"\r", 1, NULL);
    }
    list_free(l);
 }
@@ -8219,9 +8220,9 @@ prepare_restoreCursor_props(void) {
 }
 
 //Return true if the current portal contains a terminal and we are sending keys to the job.
-//If "check_job_status" is true update the job status.
+//If "check_job_status" is true, update the job status.
 private int
-term_use_loop_check(int check_job_status) {
+term_use_loop_check(Boole check_job_status) {
    Terminal *term = curBook->term;
 
    return term && !term->isNormalMode && term->vterm
@@ -8281,7 +8282,7 @@ raw_c_to_ctrl(Unt c) {
 //When modify_other_keys is set then do the reverse of raw_c_to_ctrl().
 //Also when the Kitty keyboard protocol is used. May set "modMaskG".
 private int
-ctrl_to_raw_c(int c) {
+ctrl_to_raw_c(Unt c) {
    if (c < 0x20 && vterm_using_key_protocol()) {
       modMaskG |= MOD_MASK_CTRL;
       return c + '@';
@@ -8289,22 +8290,21 @@ ctrl_to_raw_c(int c) {
    return c;
 }
 
-//Wait for input and send it to the job.
-//When "blocking" is true wait for a character to be typed.  Otherwise return when there is no more
-//typahead. Return when the start of a CTRL-W command is typed or anything else that should be
-//handled as a Normal mode command. Returns OK if a typed character is to be handled in Normal
-//mode, FAIL if the terminal was closed.
+//Wait for input and send it to the job. When "blocking" is true wait for a character to be
+//typed. Otherwise return when there is no more typahead. Return when the start of a CTRL-W
+//command is typed or anything else that should be handled as a Normal mode command. Returns OK
+//if a typed character is to be handled in Normal mode, FAIL if the terminal was closed.
 pub int
 terminal_loop(int blocking) {
    Unt c;
    Unt raw_c;
    Unt termwinkey = 0;
    int ret;
-   int tty_fd = chJobGetChannel(curBook->term->job)->fds[get_tty_part(curBook->term)].fd;
+   int tty_fd = motJobGetFd(curBook->term->job, get_tty_part(curBook->term));
    Boole restoreCursor = false;
 
-   //Remember the terminal we are sending keys to.  However, the terminal might be closed while
-   //waiting for a character, e.g. typing "exit" in a shell and ++close was used.  Therefore use
+   //Remember the terminal we are sending keys to. However, the terminal might be closed while
+   //waiting for a character, e.g. typing "exit" in a shell and ++close was used. Therefore use
    //curBook->term instead of a stored reference.
    in_terminal_loop = curBook->term;
 
@@ -8468,20 +8468,20 @@ set_dirty_snapshot(Terminal* term) {
 
 private int
 handle_damage(VTermRect rect, void *user) {
-    Terminal *term = (Terminal *)user;
+   Terminal *term = (Terminal *)user;
 
-    term->dirtyRowStart = MIN(term->dirtyRowStart, (int)rect.start_row);
-    term->dirtyRowEnd = MAX(term->dirtyRowEnd, (int)rect.end_row);
-    set_dirty_snapshot(term);
-    drawBookLater(term->book, UPD_SOME_VALID);
-    return 1;
+   term->dirtyRowStart = MIN(term->dirtyRowStart, (int)rect.start_row);
+   term->dirtyRowEnd = MAX(term->dirtyRowEnd, (int)rect.end_row);
+   set_dirty_snapshot(term);
+   drawBookLater(term->book, UPD_SOME_VALID);
+   return 1;
 }
 
 private void
 term_scroll_up(Terminal* term, int start_row, int count) {
-   Portal       *po = NULL;
-   int          did_curPor = false;
-   VTermColor       fg, bg;
+   Portal* po = NULL;
+   int did_curPor = false;
+   VTermColor fg, bg;
    VTermDeco cellAttr;
 
    CLEAR_FIELD(cellAttr);
@@ -8549,20 +8549,19 @@ handle_settermprop(VTermProp prop, VTermValue* value, void* user) {
 
    switch (prop) {
    case VTERM_PROP_TITLE:
-       if (disable_vterm_title_for_testing)
-      break;
-       strval = copySubstr((CS)value->string.str,
-                         value->string.len);
+      if (disable_vterm_title_for_testing)
+         break;
+      strval = copySubstr((CS)value->string.str, value->string.len);
       if (strval == NULL)
          break;
       eeglFree(term->title);
-      //a blank title isn't useful, make it empty, so that "running" is
-      //displayed
+      //a blank title isn't useful, make it empty, so that "running" is displayed
       if (*skipwhite(strval) == ZERO)
          term->title = NULL;
       //Same as blank
-      ei (term->tl_arg0_cmd != NULL
-          && STRNCMP(term->tl_arg0_cmd, strval, (int)STRLEN(term->tl_arg0_cmd)) == 0)
+      ei (term->tl_arg0_cmd
+          && STRNCMP(term->tl_arg0_cmd, strval, (int)STRLEN(term->tl_arg0_cmd)) == 0
+      )
          term->title = NULL;
          //Empty corrupted data of winpty
       ei (STRNCMP("  - ", strval, 4) == 0)
@@ -8900,9 +8899,9 @@ may_close_term_popup(void) {
 //Called when a channel is going to be closed, before invoking the close callback.
 pub void
 term_channel_closing(Channel* ch) {
-   for (Terminal* term = fstTermP; term != NULL; term = term->next) {
-      if (term->job == ch->job && !term->isChannelClosed)
-          term->isChannelClosing = true;
+   for (Terminal* term = fstTermP; term; term = term->next) {
+      if (term->job == motChannelGetJob(ch) && !term->isChannelClosed)
+         term->isChannelClosing = true;
    }
 }
 
@@ -8915,7 +8914,7 @@ term_channel_closed(Channel* ch) {
 
    for (term = fstTermP; term != NULL; term = next_term) {
       next_term = term->next;
-      if (term->job == ch->job && !term->isChannelClosed) {
+      if (term->job == motChannelGetJob(ch) && !term->isChannelClosed) {
          term->isChannelClosed = true;
          did_one = true;
 
@@ -9043,7 +9042,7 @@ termUpdatePortal(Portal* po) {
    if (term->rows != newrows || term->cols != newcols) {
       term->vterm_size_changed = true;
       vterm_set_size(vterm, newrows, newcols);
-      ch_log(chJobGetChannel(term->job), "Resizing terminal to %d lines", newrows);
+      ch_log(motJobGetChannel(term->job), "Resizing terminal to %d lines", newrows);
       term_report_winsize(term, newrows, newcols);
 
       //Updating the terminal size will cause the snapshot to be cleared.
@@ -9278,7 +9277,7 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
    Terminal* term = (Terminal *)user;
    JsReader reader;
    Var   tv;
-   Channel* channel = term->job ? chJobGetChannel(term->job) : null;
+   Channel* channel = term->job ? motJobGetChannel(term->job) : null;
    ArrayList* gap = &term->oscBuilder;
 
    //We recognize only OSC 5 1 ; {command}
@@ -9373,7 +9372,7 @@ parse_csi(
 
    Byte buf[100];
    len = eeSnprintf(buf, 100, "\x1b[3;%d;%dt", x, y);
-   channel_send(chJobGetChannel(term->job), get_tty_part(term), buf, len, NULL);
+   channel_send(motJobGetChannel(term->job), get_tty_part(term), buf, len, NULL);
    return 1;
 }
 
@@ -10595,12 +10594,12 @@ f_term_wait(Arr(Var) argvars, Var*) {
       lo("term_wait(): no job to wait for");
       return;
    }
-   if (!chJobGetChannel(book->term->job))
+   if (!motJobGetChannel(book->term->job))
       //channel is closed, nothing to do
       return;
 
    //Get the job status, this will detect a job that finished.
-   if (!chJobGetChannel(book->term->job)->ch_keep_open
+   if (!motJobIsKeepOpen(book->term->job)
        && STRCMP(job_status(book->term->job), "dead") == 0
    ){
       //The job is dead, keep reading channel I/O until the channel is
@@ -10640,7 +10639,7 @@ pub void
 term_send_eof(Channel* ch) {
    Terminal* term;
    FOR_ALL_TERMS(term) {
-      if (term->job == ch->job) {
+      if (term->job == motChannelGetJob(ch)) {
          if (term->tl_eof_chars != NULL) {
             channel_send(ch, PART_IN, term->tl_eof_chars, (int)STRLEN(term->tl_eof_chars), NULL);
             channel_send(ch, PART_IN, (CS)"\r", 1, NULL);
@@ -10670,7 +10669,7 @@ initSubtermAndJob(
    if (term->job)
       incRefCount(term->job);
 
-   return term->job && chJobGetChannel(term->job) && chJobGetStatus(term->job) != JOB_FAILED
+   return term->job && motJobGetChannel(term->job) && chJobGetStatus(term->job) != JOB_FAILED
       ? OK : FAIL;
 }
 
@@ -10700,14 +10699,14 @@ term_free_vterm(Terminal* term) {
 private void
 term_report_winsize(Terminal* term, int rows, int cols) {
    //Use an ioctl() to report the new portal size to the job.
-   if (!term->job || !chJobGetChannel(term->job))
+   if (!term->job || !motJobGetChannel(term->job))
       return;
 
    int fd = -1;
-   int part;
+   Unt part;
 
    for (part = PART_OUT; part < PART_COUNT; ++part) {
-      fd = chJobGetChannel(term->job)->fds[part].fd;
+      fd = motJobGetFd(term->job, part);
       if (mch_isatty(fd))
          break;
    }
@@ -10735,7 +10734,7 @@ prepare_to_exit(void) {
    termOutFlush();
 }
 
-//Preserve files and exit. When called IObuff must contain a message.
+//Preserve files and exit. When called ioBuffG must contain a message.
 //NOTE: This may be called from deathtrap() in a signal handler, so avoid unsafe
 //functions, such as allocating memory.
 pub void
@@ -10746,7 +10745,7 @@ preserve_exit(void) {
    //recursively when free() was invoked with a bad pointer.
    really_exiting = true;
 
-   out_str(IObuff);
+   out_str(ioBuffG);
    screen_start();          //don't know where cursor is now
    termOutFlush();
 
@@ -11403,11 +11402,21 @@ add_to_input_buf_csi(CS str, int len) {
    }
 }
 
-//Remove everything from the input buffer.  Called when ^C is found.
-pub void
+//Remove everything from the input buffer. Called when ^C is found.
+private void
 trash_input_buf(void) {
    inbufcount = 0;
 }
+
+pub void
+f_test_feedinput(Arr(Var) argvars, Var*) {
+   CS val = convertVarToStringSingleUse(&argvars[0]);
+   if (val) {
+      trash_input_buf();
+      add_to_input_buf_csi(val, (int)STRLEN(val));
+   }
+}
+
 
 //Read as much data from the input buffer as possible up to maxlen, and store it in buf.
 pub int
@@ -11519,7 +11528,7 @@ pub void
 read_error_exit(void) {
    if (silentModeG)   //Normal way to exit for "ex -s"
    exitEegl(0);
-    STRCPY(IObuff, _("Eegl: Error reading input, exiting...\n"));
+    STRCPY(ioBuffG, _("Eegl: Error reading input, exiting...\n"));
     preserve_exit();
 }
 
@@ -12074,7 +12083,6 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
 private void
 drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    Byte buf[IOSIZE];
-   Decoration currDeco;
 
    //Temporarily reset @diff, we don't want a side effect from moving the cursor away & back
    Boole diffSaved = tapa->currPort->o.diff;
@@ -12084,16 +12092,15 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    //might change the option value and free the memory.
    CS p = copyStr(tapa->user_defined);
 
-   Arr(StatusLineHilite) labels;
    bookRenderStatusLine(tapa->currPort, buf, sizeof(buf),
       p, STATLINE_TABPANEL, opt_scope,
-      TPL_FILLCHAR, tapa->col_end - tapa->col_start, OUT &labels
+      TPL_FILLCHAR, tapa->col_end - tapa->col_start
    );
 
    eeglFree(p);
    tapa->currPort->o.diff = diffSaved;
 
-   currDeco = getFullDecoration(0);
+   Decoration currDeco = getFullDecoration(0);
    p = buf;
    drawTextLen_for_tabpanel(tplmode, p, (int)STRLEN(p), currDeco, tapa);
 

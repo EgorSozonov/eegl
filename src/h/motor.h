@@ -83,14 +83,8 @@ void channel_clear(Channel* channel);
 void channel_free_all(void);
 int channel_in_blocking_wait(void);
 Channel * get_channel_arg(Var* tv, int check_open, int reading, ChannelFdKind part);
-void channel_set_nonblock(Channel *channel, ChannelFdKind part);
-int channel_send(
-   Channel* channel,
-   ChannelFdKind part,
-   CS buf_arg,
-   int len_arg,
-   char* fun
-);
+void channel_set_nonblock(Channel* channel, ChannelFdKind part);
+int channel_send(Channel* channel, ChannelFdKind part, CS buf_arg, int len_arg, char* fun);
 int channel_parse_messages(void);
 int channel_any_readahead(void);
 void f_ch_canread(Var* argvars, Var* returnVar);
@@ -123,7 +117,10 @@ int mch_get_uname(uid_t uid, CS s, int len);
 void mch_get_host_name(CS s, int len);
 int chJobGetCopyId(Job* job);
 void chJobSetCopyId(Job* job, int newVal);
-Channel* chJobGetChannel(Job* job);
+Channel* motJobGetChannel(Job* job);
+Job* motChannelGetJob(Channel* ch);
+int motJobGetFd(Job* job, Unt part);
+Boole motJobIsKeepOpen(Job* job);
 Callback chJobGetExitCb(Job* job);
 JobStatus chJobGetStatus(Job* job);
 void chJobSetStatus(Job* job, JobStatus newVal);
@@ -138,7 +135,7 @@ Job * job_alloc(void);
 void job_set_options(Job* job, JobOptions* opt);
 void job_stop_on_exit(void);
 int has_pending_job(void);
-int job_check_ended(void);
+Boole job_check_ended(void);
 Job* startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** term_job);
 CS job_status(Job* job);
 int job_stop(Job* job, Arr(Var) argvars, CS type);

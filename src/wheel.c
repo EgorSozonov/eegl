@@ -15567,7 +15567,7 @@ ins_compl_infercase_gettext(
    int was_letter = false;
    ArrayList   gap;
 
-   IObuff[0] = ZERO;
+   ioBuffG[0] = ZERO;
 
    //Allocate wide character array for the completion and fill it.
    Arr(int) wideChars = ALLOC_MULT(int, char_len);
@@ -15618,7 +15618,7 @@ ins_compl_infercase_gettext(
    }
 
    //Generate encoding specific output from wide character array.
-   p = IObuff;
+   p = ioBuffG;
    i = 0;
    ga_init2(&gap, 1, 500);
    while (i < char_len) {
@@ -15630,17 +15630,17 @@ ins_compl_infercase_gettext(
          p = (CS)gap.c + gap.len;
          gap.len += (*mb_char2bytes)(wideChars[i], p);
          i++;
-      } ei ((p - IObuff) + 6 >= IOSIZE) {
+      } ei ((p - ioBuffG) + 6 >= IOSIZE) {
          //Multi-byte characters can occupy up to five bytes more than ASCII characters, and we
-         //also need one byte for ZERO, so when getting to six bytes from the edge of IObuff
+         //also need one byte for ZERO, so when getting to six bytes from the edge of ioBuffG
          //switch to using a growarray. Add the character in the next round.
          if (ga_grow(&gap, IOSIZE) == FAIL) {
             eeglFree(wideChars);
             return (CS)"[failed]";
          }
          *p = ZERO;
-         STRCPY(gap.c, IObuff);
-         gap.len = (int)(p - IObuff);
+         STRCPY(gap.c, ioBuffG);
+         gap.len = (int)(p - ioBuffG);
       } else
          p += (*mb_char2bytes)(wideChars[i], p);
       i++;
@@ -15653,7 +15653,7 @@ ins_compl_infercase_gettext(
    }
 
    *p = ZERO;
-   return IObuff;
+   return ioBuffG;
 }
 
 //This is like addMatchToList(), but if 'ic' and 'inf' are set, then the case of the originally
@@ -16640,8 +16640,8 @@ filterFromFiles(
       fp = FOPEN(files.c[i], "r");  //open dictionary file
       if (flags != DICT_EXACT && !compl_autocomplete) {
          msg_hist_off = true;   //reset in msgTruncDeco()
-         eeSnprintf(IObuff, IOSIZE, _("Scanning dictionary: %s"), files.c[i]);
-         (void)msgTruncDeco(IObuff, getDecoFlags(HLF_R));
+         eeSnprintf(ioBuffG, IOSIZE, _("Scanning dictionary: %s"), files.c[i]);
+         (void)msgTruncDeco(ioBuffG, getDecoFlags(HLF_R));
       }
 
       if (!fp)
@@ -18182,13 +18182,13 @@ process_next_cpt_value(
       }
       if (!compl_autocomplete) {
          msg_hist_off = true;   //reset in msgTruncDeco()
-         eeSnprintf(IObuff, IOSIZE, _("Scanning: %s"),
+         eeSnprintf(ioBuffG, IOSIZE, _("Scanning: %s"),
              st->scannedBook->currFileName == NULL
             ? bookSpName(st->scannedBook)
             : st->scannedBook->shortFileName == NULL
                 ? st->scannedBook->currFileName
                 : st->scannedBook->shortFileName);
-         (void)msgTruncDeco(IObuff, getDecoFlags(HLF_R));
+         (void)msgTruncDeco(ioBuffG, getDecoFlags(HLF_R));
       }
    } ei (*st->e_cpt == ZERO)
       status = INS_COMPL_CPT_END;
@@ -18218,15 +18218,15 @@ process_next_cpt_value(
             insertCompletionType = CTRL_X_TAGS;
             if (!compl_autocomplete) {
                 msg_hist_off = true;   //reset in msgTruncDeco()
-                eeSnprintf(IObuff, IOSIZE, _("Scanning tags."));
-                (void)msgTruncDeco(IObuff, getDecoFlags(HLF_R));
+                eeSnprintf(ioBuffG, IOSIZE, _("Scanning tags."));
+                (void)msgTruncDeco(ioBuffG, getDecoFlags(HLF_R));
             }
          } else
             insertCompletionType = UNT;
       }
 
       //in any case e_cpt is advanced to the next entry
-      (void)strCutPathFromListOfPaths(OUT &st->e_cpt, OUT IObuff, IOSIZE, S",");
+      (void)strCutPathFromListOfPaths(OUT &st->e_cpt, OUT ioBuffG, IOSIZE, S",");
       *advance_cpt_idx = may_advance_cpt_index(st->e_cpt);
 
       st->found_all = true;
@@ -18533,7 +18533,7 @@ ins_compl_get_next_word_or_line(
             //Try next line, if any. the new word will be "join" as if the normal command "J" was
             //used. IOSIZE is always greater than compl_length, so the next STRNCPY always
             //works -- Acevedo
-            STRNCPY(IObuff, ptr, len);
+            STRNCPY(ioBuffG, ptr, len);
             ptr = memGetLine(scannedBook, cur_match_pos->lnum + 1, false);
             tmp_ptr = ptr = skipwhite(ptr);
             //Find start of next word.
@@ -18541,20 +18541,20 @@ ins_compl_get_next_word_or_line(
             //Find end of next word.
             tmp_ptr = find_word_end(tmp_ptr);
             if (tmp_ptr > ptr) {
-               if (*ptr != ')' && IObuff[len - 1] != TAB) {
-                  if (IObuff[len - 1] != ' ')
-                     IObuff[len++] = ' ';
+               if (*ptr != ')' && ioBuffG[len - 1] != TAB) {
+                  if (ioBuffG[len - 1] != ' ')
+                     ioBuffG[len++] = ' ';
                   //IObuf =~ "\k.* ", thus len >= 2
                }
                //copy as much as possible of the new word
                if (tmp_ptr - ptr >= IOSIZE - len)
                   tmp_ptr = ptr + IOSIZE - len - 1;
-               STRNCPY(IObuff + len, ptr, tmp_ptr - ptr);
+               STRNCPY(ioBuffG + len, ptr, tmp_ptr - ptr);
                len += (int)(tmp_ptr - ptr);
                *cont_s_ipos = true;
             }
-            IObuff[len] = ZERO;
-            ptr = IObuff;
+            ioBuffG[len] = ZERO;
+            ptr = ioBuffG;
          }
          if (len == compl_length)
             return NULL;
@@ -19006,7 +19006,7 @@ prepare_cpt_compl_funcs(void) {
       } else
          cpt_sources_array[idx].startCol = -3;
 
-      (void)strCutPathFromListOfPaths(OUT &p, OUT IObuff, IOSIZE, S","); //Advance p
+      (void)strCutPathFromListOfPaths(OUT &p, OUT ioBuffG, IOSIZE, S","); //Advance p
       idx++;
    }
 
@@ -19382,8 +19382,8 @@ ins_compl_show_filename(void) {
       }
    }
    msg_hist_off = true;
-   eeSnprintf( IObuff, IOSIZE, "%s %s%s", lead, s > compl_shown_match->fName ? "<" : "", s);
-   msg(IObuff);
+   eeSnprintf( ioBuffG, IOSIZE, "%s %s%s", lead, s > compl_shown_match->fName ? "<" : "", s);
+   msg(ioBuffG);
    msg_hist_off = false;
    redrawCommlineG = false;       //don't overwrite!
 }
@@ -20073,7 +20073,7 @@ ins_compl_continue_search(CS line) {
          compl_col = compl_startpos.col;
       }
       compl_length = curPor->cursor.col - (int)compl_col;
-      //IObuff is used to add a "word from the next line" would we
+      //ioBuffG is used to add a "word from the next line" would we
       //have enough space?  just being paranoid
 #define   MIN_SPACE 75
       if (compl_length > (IOSIZE - MIN_SPACE)) {
@@ -20609,7 +20609,7 @@ cpt_compl_refresh(void) {
          }
       }
 
-      (void)strCutPathFromListOfPaths(OUT &p, OUT IObuff, IOSIZE, S","); //Advance p
+      (void)strCutPathFromListOfPaths(OUT &p, OUT ioBuffG, IOSIZE, S","); //Advance p
       if (may_advance_cpt_index(p))
          (void)advance_cpt_sources_index_safe();
    }

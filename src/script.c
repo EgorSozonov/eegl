@@ -1493,8 +1493,8 @@ initCurBookForSourcing(OUT SourceCookie* sp, Invocation* invo) {
    if (curBook->fullFileName)
       fname = copyStr(curBook->fullFileName);
    else {
-      eeSnprintf(IObuff, IOSIZE, ":source buffer=%d", curBook->fiNum);
-      fname = copyStr(IObuff);
+      eeSnprintf(ioBuffG, IOSIZE, ":source buffer=%d", curBook->fiNum);
+      fname = copyStr(ioBuffG);
    }
 
    ga_init2(&sp->buflines, sizeof(CS), 100);
@@ -1724,8 +1724,8 @@ scriptRunFileInternal(CS fname, OUT int* ret_sid, Invocation* invo, Boole clearv
       verbose_leave();
    }
    if (time_fd) {
-      eeSnprintf(IObuff, IOSIZE, "sourcing %s", fname);
-      time_msg(IObuff, &tv_start);
+      eeSnprintf(ioBuffG, IOSIZE, "sourcing %s", fname);
+      time_msg(ioBuffG, &tv_start);
       time_pop(&tv_rel);
    }
 
@@ -1803,14 +1803,14 @@ c_scriptnames(Invocation* invo) {
             eeSnprintf(sourced_buf, 20, "->%d", si->sn_sourced_sid);
          else
             sourced_buf[0] = ZERO;
-         eeSnprintf(IObuff, IOSIZE, "%3d%s%s: %s",
+         eeSnprintf(ioBuffG, IOSIZE, "%3d%s%s: %s",
              i,
              sourced_buf,
              si->sn_state == SN_STATE_NOT_LOADED ? " A" : "",
              nameBuffG);
-         if (!message_filtered(IObuff)) {
+         if (!message_filtered(ioBuffG)) {
             msg_putchar('\n');
-            msg_outtrans(IObuff);
+            msg_outtrans(ioBuffG);
             termOutFlush();       //output one line at a time
             ui_breakcheck();
          }
@@ -7505,8 +7505,8 @@ c_history(Invocation* invo) {
    }
 
    for (; !gotInterruptG && histype1 <= histype2; ++histype1) {
-      eeSnprintf(IObuff, IOSIZE, "\n      #  %s history", historyNames[histype1]);
-      msg_puts_title(IObuff);
+      eeSnprintf(ioBuffG, IOSIZE, "\n      #  %s history", historyNames[histype1]);
+      msg_puts_title(ioBuffG);
       idx = hisidx[histype1];
       hist = history[histype1];
       j = hisidx1;
@@ -7526,13 +7526,13 @@ c_history(Invocation* invo) {
                int  len;
 
                msg_putchar('\n');
-               len = eeSnprintf(IObuff, IOSIZE,
+               len = eeSnprintf(ioBuffG, IOSIZE,
                   "%c%6d  ", i == idx ? '>' : ' ', hist[i].hisnum);
                if (eeglStrSize(hist[i].hisstr) > (int)visibleColsG - 10)
-                  trunc_string(hist[i].hisstr, IObuff + len, (int)visibleColsG - 10, IOSIZE - (int)len);
+                  trunc_string(hist[i].hisstr, ioBuffG + len, (int)visibleColsG - 10, IOSIZE - (int)len);
                else
-                  STRCPY(IObuff + len, hist[i].hisstr);
-               msg_outtrans(IObuff);
+                  STRCPY(ioBuffG + len, hist[i].hisstr);
+               msg_outtrans(ioBuffG);
                termOutFlush();
             }
             if (i == idx)
@@ -9356,9 +9356,9 @@ getCommandWorker(
       if (IS_SPECIAL(c) || modMaskG != 0)
          put_on_cmdline(get_special_key_name(c, modMaskG), -1, true);
       else {
-         j = mb_char2bytes(c, IObuff);
-         IObuff[j] = ZERO;   //exclude composing chars
-         put_on_cmdline(IObuff, j, true);
+         j = mb_char2bytes(c, ioBuffG);
+         ioBuffG[j] = ZERO;   //exclude composing chars
+         put_on_cmdline(ioBuffG, j, true);
       }
       goto commlineChanged;
 
@@ -11383,33 +11383,33 @@ uc_list(CS name, Unt name_len) {
 
          //Arguments
          switch ((int)(a & (EXTRA|NOSPC_IN_EXTRA|NEEDARG))) {
-         case 0:            IObuff[len++] = '0'; break;
-         case (EXTRA):      IObuff[len++] = '*'; break;
-         case (EXTRA|NOSPC_IN_EXTRA):   IObuff[len++] = '?'; break;
-         case (EXTRA|NEEDARG):   IObuff[len++] = '+'; break;
-         case (EXTRA|NOSPC_IN_EXTRA|NEEDARG): IObuff[len++] = '1'; break;
+         case 0:            ioBuffG[len++] = '0'; break;
+         case (EXTRA):      ioBuffG[len++] = '*'; break;
+         case (EXTRA|NOSPC_IN_EXTRA):   ioBuffG[len++] = '?'; break;
+         case (EXTRA|NEEDARG):   ioBuffG[len++] = '+'; break;
+         case (EXTRA|NOSPC_IN_EXTRA|NEEDARG): ioBuffG[len++] = '1'; break;
          }
 
          do {
-            IObuff[len++] = ' ';
+            ioBuffG[len++] = ' ';
          } while (len < 5 - over);
 
          //Address / Range
          if (a & (RANGE|COUNT)) {
             if (a & COUNT) {
                //-count=N
-               len += eeSnprintf(IObuff + len, IOSIZE - len, "%ldc", comm->uc_def);
+               len += eeSnprintf(ioBuffG + len, IOSIZE - len, "%ldc", comm->uc_def);
             } ei (a & DFLALL)
-               IObuff[len++] = '%';
+               ioBuffG[len++] = '%';
             ei (comm->uc_def >= 0) {
                //-range=N
-               len += eeSnprintf(IObuff + len, IOSIZE - len, "%ld", comm->uc_def);
+               len += eeSnprintf(ioBuffG + len, IOSIZE - len, "%ld", comm->uc_def);
             } else
-               IObuff[len++] = '.';
+               ioBuffG[len++] = '.';
           }
 
           do {
-            IObuff[len++] = ' ';
+            ioBuffG[len++] = ' ';
          } while (len < 8 - over);
 
          //Address Type
@@ -11417,38 +11417,38 @@ uc_list(CS name, Unt name_len) {
             if (addr_type_complete_tab[j].key != ADDR_LINES
                   && addr_type_complete_tab[j].key == comm->uc_addr_type
             ){
-               STRCPY(IObuff + len, addr_type_complete_tab[j].shortname);
+               STRCPY(ioBuffG + len, addr_type_complete_tab[j].shortname);
                len += (int)addr_type_complete_tab[j].shortnamelen;
                break;
             }
          }
 
          do {
-            IObuff[len++] = ' ';
+            ioBuffG[len++] = ' ';
          } while (len < 13 - over);
 
          //Completion
          entry = get_commandtype(comm->uc_compl);
          if (entry != NULL) {
-         STRCPY(IObuff + len, entry->value.c);
+         STRCPY(ioBuffG + len, entry->value.c);
          len += (int)entry->value.len;
          if (p_verbose > 0 && comm->uc_compl_arg != NULL) {
              Unt uc_compl_arglen = STRLEN(comm->uc_compl_arg);
 
              if (uc_compl_arglen < 200) {
-            IObuff[len++] = ',';
-            STRCPY(IObuff + len, comm->uc_compl_arg);
+            ioBuffG[len++] = ',';
+            STRCPY(ioBuffG + len, comm->uc_compl_arg);
             len += (int)uc_compl_arglen;
              }
          }
          }
 
          do {
-            IObuff[len++] = ' ';
+            ioBuffG[len++] = ' ';
          } while (len < 25 - over);
 
-         IObuff[len] = ZERO;
-         msg_outtrans(IObuff);
+         ioBuffG[len] = ZERO;
+         msg_outtrans(ioBuffG);
 
          msg_outtrans_special(comm->uc_rep, false, name_len == 0 ? visibleColsG - 47 : 0);
          if (p_verbose > 0)
@@ -11477,9 +11477,9 @@ uc_fun_cmd(void) {
    int      i;
 
    for (i = 0; fcmd[i]; ++i)
-      IObuff[i] = fcmd[i] - 0x40;
-   IObuff[i] = ZERO;
-   return IObuff;
+      ioBuffG[i] = fcmd[i] - 0x40;
+   ioBuffG[i] = ZERO;
+   return ioBuffG;
 }
 
 //Parse address type argument
@@ -15492,15 +15492,15 @@ get_user_func_name(Expand *xp, int idx) {
       if (fp->uf_namelen + 4 >= IOSIZE)
          return fp->uf_name;   //prevents overflow
 
-      len = cat_func_name(IObuff, IOSIZE, fp);
+      len = cat_func_name(ioBuffG, IOSIZE, fp);
       if (xp->context != EXPAND_USER_FUNC && xp->context != EXPAND_DISASSEMBLE) {
-         STRCPY(IObuff + len, "(");
+         STRCPY(ioBuffG + len, "(");
          if (!has_varargs(fp) && fp->args.len == 0) {
             ++len;
-            STRCPY(IObuff + len, ")");
+            STRCPY(ioBuffG + len, ")");
          }
       }
-      return IObuff;
+      return ioBuffG;
     }
     return NULL;
 }
@@ -15962,7 +15962,7 @@ get_return_cmd(void* returnVar) {
    CS tofree = NULL;
    Byte numbuf[NUMBUFLEN];
    Unt slen = 0;
-   Unt IObufflen;
+   Unt ioBuffGlen;
 
    if (returnVar)
       s = echo_string((Var *)returnVar, &tofree, numbuf, 0);
@@ -15971,15 +15971,15 @@ get_return_cmd(void* returnVar) {
    else
       slen = STRLEN(s);
 
-   STRCPY(IObuff, ":return ");
-   STRNCPY(IObuff + 8, s, IOSIZE - 8);
-   IObufflen = 8 + slen;
-   if (IObufflen >= IOSIZE) {
-      STRCPY(IObuff + IOSIZE - 4, "...");
-      IObufflen = IOSIZE - 1;
+   STRCPY(ioBuffG, ":return ");
+   STRNCPY(ioBuffG + 8, s, IOSIZE - 8);
+   ioBuffGlen = 8 + slen;
+   if (ioBuffGlen >= IOSIZE) {
+      STRCPY(ioBuffG + IOSIZE - 4, "...");
+      ioBuffGlen = IOSIZE - 1;
    }
    eeglFree(tofree);
-   return copySubstr(IObuff, IObufflen);
+   return copySubstr(ioBuffG, ioBuffGlen);
 }
 
 //Return true if the currently active function should be ended, because a
@@ -18901,8 +18901,8 @@ autocommAddOrDelete(Arr(Var) argvars, Var* returnVar, Boole delete) {
          if (bnum == -1)
             continue;
 
-         eeSnprintf(IObuff, IOSIZE, "<buffer=%d>", (int)bnum);
-         pat = IObuff;
+         eeSnprintf(ioBuffG, IOSIZE, "<buffer=%d>", (int)bnum);
+         pat = ioBuffG;
       } else {
          di = bagFind(event_dict, tConst("pattern"));
          if (di) {

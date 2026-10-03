@@ -62,6 +62,18 @@ typedef enum {
    MATCH_POS       //matchstrpos()
 } MatchTypeSpec;
 
+//A list of error messages that can be converted to an exception.  "throw_msg"
+//is only set in the first element of the list.  Usually, it points to the
+//original message stored in that element, but sometimes it points to a later
+//message in the list.  See cause_errthrow().
+struct MsgList {
+   MsgList* next;      //next of several messages in a row
+   CS msg;      //original message, allocated
+   CS throw_msg;   //msg to throw: usually original one
+   CS sfile;      //value from estack_sfile(), allocated
+   Long slnum;      //line number for "sfile"
+};
+
 //}}}
 //{{{@@forward declarations
 private int compareNames(const void *s1, const void *s2);
@@ -4940,10 +4952,10 @@ expandCurlyBraces(Text braces, Text outer) {
 pub int
 handle_subscript(
    OUT CS* arg,
-   Var   *returnVar,
-   EvalCtx   *evalarg,
-   int      verbose)   //give error messages
-{
+   Var* returnVar,
+   EvalCtx* evalarg,
+   Boole verbose   //give error messages
+){
    int      evaluate = evalarg && (evalarg->eval_flags & EVAL_EVALUATE);
    int      ret = OK;
    Bag   *selfdict = NULL;
@@ -8935,11 +8947,11 @@ get_function_name(Expand *xp, int idx) {
       //Skip if the function doesn't have an implementation (feature not implemented).
       if (globalFunctions[intidx].f_func == NULL)
           return (CS)"";
-      STRCPY(IObuff, globalFunctions[intidx].f_name);
-      STRCAT(IObuff, "(");
+      STRCPY(ioBuffG, globalFunctions[intidx].f_name);
+      STRCAT(ioBuffG, "(");
       if (globalFunctions[intidx].f_max_argc == 0)
-          STRCAT(IObuff, ")");
-      return IObuff;
+          STRCAT(ioBuffG, ")");
+      return ioBuffG;
    }
 
    return NULL;
@@ -10282,9 +10294,9 @@ common_function(Arr(Var) argvars, Var* returnVar, int is_funcref) {
             func_ref(name);
          } else {
             //generic function
-            STRCPY(IObuff, name);
-            STRCAT(IObuff, start_bracket);
-            returnVar->string = copyStr(IObuff);
+            STRCPY(ioBuffG, name);
+            STRCAT(ioBuffG, start_bracket);
+            returnVar->string = copyStr(ioBuffG);
             eeglFree(name);
          }
       }

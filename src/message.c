@@ -919,7 +919,7 @@ pub int eeSnprintf0(CS str, Unt str_m, const char *fmt, ...);
 
 pub int
 smsg0(char const* s, ...) {
-   if (!IObuff) {
+   if (!ioBuffG) {
       //Very early in initialisation and already something wrong, just
       //give the raw message so the user at least gets a hint.
       return msg((CS)s);
@@ -928,14 +928,14 @@ smsg0(char const* s, ...) {
    va_list arglist;
 
    va_start(arglist, s);
-   VSNPRINTF(IObuff, IOSIZE, s, arglist);
+   VSNPRINTF(ioBuffG, IOSIZE, s, arglist);
    va_end(arglist);
-   return msg(IObuff);
+   return msg(ioBuffG);
 }
 
 pub int
 smsgDeco0(char flags, const char *s, ...) {
-   if (!IObuff) {
+   if (!ioBuffG) {
       //Very early in initialisation and already something wrong, just
       //give the raw message so the user at least gets a hint.
       return msgDeco((CS)s, flags);
@@ -944,14 +944,14 @@ smsgDeco0(char flags, const char *s, ...) {
    va_list arglist;
 
    va_start(arglist, s);
-   VSNPRINTF(IObuff, IOSIZE, s, arglist);
+   VSNPRINTF(ioBuffG, IOSIZE, s, arglist);
    va_end(arglist);
-   return msgDeco(IObuff, flags);
+   return msgDeco(ioBuffG, flags);
 }
 
 pub int
 smsgDecoKeep0(char flags, const char *s, ...) {
-   if (!IObuff) {
+   if (!ioBuffG) {
       //Very early in initialisation and already something wrong, just
       //give the raw message so the user at least gets a hint.
       return msgAndKeep((CS)s, flags, true);
@@ -960,9 +960,9 @@ smsgDecoKeep0(char flags, const char *s, ...) {
    va_list arglist;
 
    va_start(arglist, s);
-   VSNPRINTF(IObuff, IOSIZE, s, arglist);
+   VSNPRINTF(ioBuffG, IOSIZE, s, arglist);
    va_end(arglist);
-   return msgAndKeep(IObuff, flags, true);
+   return msgAndKeep(ioBuffG, flags, true);
 }
 
 //Remember the last sourcing name/lnum used in an error message, so that it
@@ -1258,7 +1258,7 @@ emsg(CS s) {
 
 //Print error message "s" with format string and variable arguments.
 //"s" should already be translated.
-//Note: caller must not use "IObuff" for "s"!
+//Note: caller must not use "ioBuffG" for "s"!
 //Return true if wait_return() not called.
 pub int
 showErrFmtMsg0(char const* s, ...) {
@@ -1266,7 +1266,7 @@ showErrFmtMsg0(char const* s, ...) {
    if (emsg_not_now())
       return true;
 
-   if (!IObuff)
+   if (!ioBuffG)
       //Very early in initialisation and already something wrong, just
       //give the raw message so the user at least gets a hint.
       return emsgImpl((CS)s);
@@ -1274,9 +1274,9 @@ showErrFmtMsg0(char const* s, ...) {
    va_list ap;
 
    va_start(ap, s);
-   VSNPRINTF(IObuff, IOSIZE, s, ap);
+   VSNPRINTF(ioBuffG, IOSIZE, s, ap);
    va_end(ap);
-   return emsgImpl(IObuff);
+   return emsgImpl(ioBuffG);
 }
 
 //Same as emsg(...), but abort on error when ABORT_ON_INTERNAL_ERROR is defined. It is used for
@@ -1301,7 +1301,7 @@ internalErrMsg(CS s) {
 //Same as showErrFmtMsg(...) but abort on error when ABORT_ON_INTERNAL_ERROR is
 //defined. It is used for internal errors only, so that they can be
 //detected when fuzzing Eegl.
-//Note: caller must not pass 'IObuff' as 1st argument.
+//Note: caller must not pass 'ioBuffG' as 1st argument.
 pub void
 internalErrFmtMsg0(const char *s, ...) {
    if (emsg_not_now())
@@ -1311,7 +1311,7 @@ internalErrFmtMsg0(const char *s, ...) {
    //translated, it almost never shows.
    emsgImpl(_(e_internal_error_please_report_a_bug));
 
-   if (IObuff == NULL) {
+   if (ioBuffG == NULL) {
       //Very early in initialisation and already something wrong, just
       //give the raw message so the user at least gets a hint.
       emsgImpl((CS)s);
@@ -1319,9 +1319,9 @@ internalErrFmtMsg0(const char *s, ...) {
       va_list ap;
 
       va_start(ap, s);
-      VSNPRINTF(IObuff, IOSIZE, s, ap);
+      VSNPRINTF(ioBuffG, IOSIZE, s, ap);
       va_end(ap);
-      emsgImpl(IObuff);
+      emsgImpl(ioBuffG);
    }
 # ifdef ABORT_ON_INTERNAL_ERROR
     msg_putchar('\n');  //avoid overwriting the error message
@@ -1831,7 +1831,7 @@ do_dialog(
    Byte* message,
    Byte* buttons,
    int dfltbutton,
-   Byte*,   //IObuff for inputdialog(), NULL otherwise
+   Byte*,   //ioBuffG for inputdialog(), NULL otherwise
    int ex_cmd       //when true pressing : accepts default and starts a Command
 ){
    int retval = 0;
@@ -2842,13 +2842,13 @@ give_warning_with_source(Byte *message, int hl, int with_source) {
 
 pub void
 give_warning2(Byte *message, Byte *a1, int hl) {
-   if (IObuff == NULL) {
+   if (ioBuffG == NULL) {
       //Very early in initialisation and already something wrong, just give
       //the raw message so the user at least gets a hint.
       give_warning(message, hl);
    } else {
-      eeSnprintf(IObuff, IOSIZE, (char *)message, a1);
-      give_warning(IObuff, hl);
+      eeSnprintf(ioBuffG, IOSIZE, (char *)message, a1);
+      give_warning(ioBuffG, hl);
    }
 }
 

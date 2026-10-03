@@ -2117,12 +2117,10 @@ parse_queued_messages(void) {
          continue;
       free_unused_terminals();
 
-#ifdef SIGUSR1
       if (got_sigusr1) {
           applyAutocomms(EVENT_SIGUSR1, NULL, NULL, false, curBook);
           got_sigusr1 = false;
       }
-#endif
       break;
    }
 
@@ -3218,7 +3216,7 @@ may_add_last_used_map_to_redobuff(void) {
    int buflen;
    int sid = -1;
 
-   if (last_used_map != NULL)
+   if (last_used_map)
       { sid = last_used_map->scriptCtx.sid; }
    if (sid < 0)
       { sid = last_used_sid; }
@@ -3970,19 +3968,19 @@ show_utf8(void) {
       if (clen == 0) {
          //start of (composing) character, get its length
          if (i > 0) {
-            STRCPY(IObuff + rlen, "+ ");
+            STRCPY(ioBuffG + rlen, "+ ");
             rlen += 2;
          }
          clen = utf_ptr2len(line + i);
       }
-      SPRINTF(IObuff + rlen, "%02x ", (line[i] == NL) ? ZERO : line[i]);  //ZERO is stored as NL
+      SPRINTF(ioBuffG + rlen, "%02x ", (line[i] == NL) ? ZERO : line[i]);  //ZERO is stored as NL
       --clen;
-      rlen += (int)STRLEN(IObuff + rlen);
+      rlen += (int)STRLEN(ioBuffG + rlen);
       if (rlen > IOSIZE - 20)
          break;
    }
 
-   msg(IObuff);
+   msg(ioBuffG);
 }
 
 //Translate any special characters in buf[bufsize] in-place.

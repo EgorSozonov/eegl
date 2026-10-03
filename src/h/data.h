@@ -321,7 +321,6 @@ void f_assert_report(Arr(Var) argvars, Var* returnVar);
 void f_assert_true(Arr(Var) argvars, Var* returnVar);
 void f_test_alloc_fail(Arr(Var) argvars, Var*);
 void f_test_autochdir(Arr(Var), Var*);
-void f_test_feedinput(Arr(Var) argvars, Var*);
 void f_test_getvalue(Arr(Var) argvars, Var* returnVar);
 void f_test_override(Arr(Var) argvars, Var*);
 void f_test_refcount(Arr(Var) argvars, Var* returnVar);

@@ -24,21 +24,13 @@ pub
 #include "h/input.types.h"
 #include "h/input.h"
 #include "h/do.h"
-#include "h/draw.types.h"
-#include "h/draw.h"
 #include "h/eval.h"
-#include "h/location.types.h"
-#include "h/location.h"
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/portal.h"
 #include "h/script.h"
 #include "h/strings.h"
-#include "h/tag.h"
-#include "h/ui.h"
-#include "h/wheel.types.h"
-#include "h/wheel.h"
 
 #include <ctype.h> //for isalnum()
 #include <sys/resource.h>
@@ -6558,15 +6550,15 @@ assert_equalfile(Arr(Var) argvars) {
    char   line1[200];
    char   line2[200];
    int      lineidx = 0;
-   IObuff[0] = ZERO;
+   ioBuffG[0] = ZERO;
    FILE* fd1 = fopen((char *)fname1, READBIN);
    if (fd1 == NULL) {
-      eeSnprintf(IObuff, IOSIZE, (char *)e_cant_read_file_str, fname1);
+      eeSnprintf(ioBuffG, IOSIZE, (char *)e_cant_read_file_str, fname1);
    } else {
       FILE* fd2 = fopen((char *)fname2, READBIN);
       if (fd2 == NULL) {
          fclose(fd1);
-         eeSnprintf(IObuff, IOSIZE, (char *)e_cant_read_file_str, fname2);
+         eeSnprintf(ioBuffG, IOSIZE, (char *)e_cant_read_file_str, fname2);
       } else {
          int       c1, c2;
          long    count = 0;
@@ -6577,17 +6569,17 @@ assert_equalfile(Arr(Var) argvars) {
             c2 = fgetc(fd2);
             if (c1 == EOF) {
                if (c2 != EOF)
-                  STRCPY(IObuff, "first file is shorter");
+                  STRCPY(ioBuffG, "first file is shorter");
                break;
             } ei (c2 == EOF) {
-               STRCPY(IObuff, "second file is shorter");
+               STRCPY(ioBuffG, "second file is shorter");
                break;
             } else {
                line1[lineidx] = c1;
                line2[lineidx] = c2;
                ++lineidx;
                if (c1 != c2) {
-                  eeSnprintf(IObuff, IOSIZE, "difference at byte %ld, line %ld", count, linecount);
+                  eeSnprintf(ioBuffG, IOSIZE, "difference at byte %ld, line %ld", count, linecount);
                   break;
                }
             }
@@ -6606,7 +6598,7 @@ assert_equalfile(Arr(Var) argvars) {
       }
     }
 
-   if (IObuff[0] != ZERO) {
+   if (ioBuffG[0] != ZERO) {
       ArrayList   ga;
       prepare_assert_error(&ga);
       if (argvars[2].tag != VAR_UNKNOWN) {
@@ -6617,7 +6609,7 @@ assert_equalfile(Arr(Var) argvars) {
           eeglFree(tofree);
           ga_concat(&ga, (CS)": ");
       }
-      ga_concat(&ga, IObuff);
+      ga_concat(&ga, ioBuffG);
       if (lineidx > 0) {
          line1[lineidx] = ZERO;
          line2[lineidx] = ZERO;
@@ -6892,15 +6884,6 @@ f_test_alloc_fail(Arr(Var) argvars, Var*) {
 
 pub void
 f_test_autochdir(Arr(Var), Var*) {
-}
-
-pub void
-f_test_feedinput(Arr(Var) argvars, Var*) {
-   CS val = convertVarToStringSingleUse(&argvars[0]);
-   if (val) {
-      trash_input_buf();
-      add_to_input_buf_csi(val, (int)STRLEN(val));
-   }
 }
 
 //"test_getvalue({name})" function
@@ -11154,8 +11137,8 @@ json_encode_lsp_msg(Var* val) {
    ArrayList lspga;
    ga_init2(&lspga, 1, 4000);
    //Header according to LSP specification.
-   eeSnprintf(IObuff, IOSIZE, (CS)"Content-Length: %u\r\n\r\n", ga.len - 1);
-   ga_concat(&lspga, IObuff);
+   eeSnprintf(ioBuffG, IOSIZE, (CS)"Content-Length: %u\r\n\r\n", ga.len - 1);
+   ga_concat(&lspga, ioBuffG);
    ga_concat_len(&lspga, ga.c, ga.len);
    ga_clear(&ga);
    return lspga.c;
@@ -12431,7 +12414,7 @@ free_all_mem(void) {
 
    clear_hl_tables();
 
-   eeglFree(IObuff);
+   eeglFree(ioBuffG);
    eeglFree(nameBuffG);
    check_quickfix_busy();
    free_resub_eval_result();

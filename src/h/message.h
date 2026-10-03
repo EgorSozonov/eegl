@@ -70,7 +70,7 @@ int do_dialog(
    Byte* message,
    Byte* buttons,
    int dfltbutton,
-   Byte*,   //IObuff for inputdialog(), NULL otherwise
+   Byte*,   //ioBuffG for inputdialog(), NULL otherwise
    int ex_cmd       //when true pressing : accepts default and starts a Command
 );
 int eeDialog_yesno(

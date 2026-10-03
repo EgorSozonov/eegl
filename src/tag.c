@@ -829,21 +829,21 @@ do_tag(
             && !skip_msg
          ) {
             //Give an indication of the number of matching tags
-            SPRINTF(IObuff, _("tag %d of %d%s"),
+            SPRINTF(ioBuffG, _("tag %d of %d%s"),
                   cur_match + 1,
                   matches.len,
                   maxMatchCount != MAXCOL ? _(" or more") : S""
             );
             if (ic)
-               STRCAT(IObuff, _("  Using tag with different case!"));
+               STRCAT(ioBuffG, _("  Using tag with different case!"));
             if ((matches.len > prev_num_matches || new_tag) && matches.len > 1) {
                if (ic)
-                  msgDeco(IObuff, getDecoFlags(HLF_W));
+                  msgDeco(ioBuffG, getDecoFlags(HLF_W));
                else
-                  msg(IObuff);
+                  msg(ioBuffG);
                msg_scroll = true;   //don't overwrite this message
             } else
-               give_warning(IObuff, ic);
+               give_warning(ioBuffG, ic);
             if (ic && !msg_scrolled && msg_silent == 0) {
                termOutFlush();
                ui_delay(1007L, true);
@@ -851,7 +851,7 @@ do_tag(
          }
 
          //Let the SwapExists event know what tag we are jumping to.
-         eeSnprintf(IObuff, IOSIZE, ":ta %s\r", name);
+         eeSnprintf(ioBuffG, IOSIZE, ":ta %s\r", name);
 
          //Jump to the desired match.
          Unt i = jumpto_tag(matches.c[cur_match], forceit, type != DT_CSCOPE);
@@ -927,12 +927,12 @@ print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches) {
              (g_do_tagpreview != 0 && i == ptag_entry.cur_match)
              || (use_tagstack && i == tagstack[tagstackidx].cur_match))
       )
-         *IObuff = '>';
+         *ioBuffG = '>';
       else
-         *IObuff = ' ';
-      eeSnprintf(IObuff + 1, IOSIZE - 1,
+         *ioBuffG = ' ';
+      eeSnprintf(ioBuffG + 1, IOSIZE - 1,
          "%2d %s ", i + 1, mt_names[matches.c[i][0] & MT_MASK]);
-      msg_puts(IObuff);
+      msg_puts(ioBuffG);
       if (tagp.tagkind)
          msgTranslatedSlice((Text){tagp.tagkind, (int)(tagp.tagkind_end - tagp.tagkind)});
       msg_advance(13);
@@ -1153,8 +1153,8 @@ add_llist_tags(CS tag, ExpandMatch matches) {
          bagAddString(bag, S"pattern", cmd);
     }
 
-   eeSnprintf(IObuff, IOSIZE, "ltag %s", tag);
-   setLocationList(getLocationStack(LOC_LIST_TAGS), list, LL_ACTION_NEW, IObuff, NULL);
+   eeSnprintf(ioBuffG, IOSIZE, "ltag %s", tag);
+   setLocationList(getLocationStack(LOC_LIST_TAGS), list, LL_ACTION_NEW, ioBuffG, NULL);
    list_free(list);
    eeglFree(cmd);
 
@@ -1194,10 +1194,10 @@ do_tags(Invocation*) {
 
          msg_putchar('\n');
          eeSnprintf(
-            IObuff, IOSIZE, "%c%2d %2d %-15s " FMT_UNT "  ", i == tagstackidx ? '>' : ' ',
+            ioBuffG, IOSIZE, "%c%2d %2d %-15s " FMT_UNT "  ", i == tagstackidx ? '>' : ' ',
             i + 1, tagstack[i].cur_match + 1, tagstack[i].tagname, tagstack[i].fmark.mark.lnum
          );
-         msg_outtrans(IObuff);
+         msg_outtrans(ioBuffG);
          msgOuttransDeco(name, tagstack[i].fmark.fnum == curBook->fiNum ? getDecoFlags(HLF_D) : 0);
          eeglFree(name);
       }

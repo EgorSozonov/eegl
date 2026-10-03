@@ -4150,7 +4150,7 @@ theend:
 }
 
 
-//Parse 'arg' for option settings. 'arg' may be IObuff, but only when no errors can be present and
+//Parse 'arg' for option settings. 'arg' may be ioBuffG, but only when no errors can be present and
 //option does not need to be expanded with expandEnvVarsInStringOption(). "optFlags":
 //0 for ":set"
 //OPT_GLOBAL     for ":setglobal"
@@ -4170,18 +4170,18 @@ c_set(Invocation* invo) {
    CS errmsg = parseAndSet(setScope, OUT &arg);
 
    if (errmsg) {
-      int i = eeSnprintf(IObuff, IOSIZE, "%s", (CS)_(errmsg)) + 2;
+      int i = eeSnprintf(ioBuffG, IOSIZE, "%s", (CS)_(errmsg)) + 2;
       if (i + (arg - startarg) < IOSIZE) {
          //append the argument with the error
-         STRCPY(IObuff + i - 2, ": ");
-         MEMMOVE(IObuff + i, startarg, (arg - startarg));
-         IObuff[i + (arg - startarg)] = ZERO;
+         STRCPY(ioBuffG + i - 2, ": ");
+         MEMMOVE(ioBuffG + i, startarg, (arg - startarg));
+         ioBuffG[i + (arg - startarg)] = ZERO;
       }
       //make sure all characters are printable
-      trans_characters(IObuff, IOSIZE);
+      trans_characters(ioBuffG, IOSIZE);
 
       ++no_wait_return;      //wait_return() done later
-      emsg(IObuff);   //show error highlighted
+      emsg(ioBuffG);   //show error highlighted
       --no_wait_return;
 
       return;
@@ -4569,8 +4569,8 @@ get_eventignore_name(Expand *xp, int idx) {
    if (!name)
       return NULL;
 
-   SPRINTF(IObuff, "%s%s", subtract ? "-" : "", name);
-   return IObuff;
+   SPRINTF(ioBuffG, "%s%s", subtract ? "-" : "", name);
+   return ioBuffG;
 }
 
 //When the @spelllang option is set, source the spell/LANG.vim file in @runtimepath

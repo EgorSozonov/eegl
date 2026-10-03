@@ -69,6 +69,9 @@ typedef struct {
             //this line (copy of "end" of prev. line)
 } FoldLine;
 
+#define EVAL_OFFSET_X 15 //displacement of balloon topleft corner from pointer
+#define EVAL_OFFSET_Y 10
+
 //}}}
 //{{{@@forward declarations
 private Portal * horizNeighbor(Tab* t, Portal* po, Boole left, long count);
@@ -12834,7 +12837,7 @@ private void
 popup_update_mask(Portal* po, int width, int height) {
    ListItem* lio;
    ListItem* li;
-   int      row, col;
+   int row, col;
 
    if (po->pup.mask == NULL || width == 0 || height == 0) {
       EE_CLEAR(po->pup.maskCells);
@@ -12846,7 +12849,7 @@ popup_update_mask(Portal* po, int width, int height) {
 
    eeglFree(po->pup.maskCells);
    po->pup.maskCells = allocZeroed((Unt)width * height);
-   if (po->pup.maskCells == NULL)
+   if (!po->pup.maskCells)
       return;
    Arr(Byte) cells = po->pup.maskCells;
 
@@ -12900,33 +12903,33 @@ popupMaskGed(Portal* po, int width, int height, int screencol, int screenline) {
 //Set flags in popupTransparencyG[] for portal "po" to "val".
 private void
 update_popupTransparencyG(Portal* po, int val) {
-   if (po->pup.mask == NULL)
+   if (!po->pup.mask)
       return;
 
-   int      width = popup_width(po);
-   int      height = popup_height(po);
-   ListItem   *lio, *li;
-   int      cols, cole;
-   int      lines, linee;
-   int      col, line;
+   int width = popup_width(po);
+   int height = popup_height(po);
+   ListItem *lio, *li;
+   int cols, cole;
+   int lines, linee;
+   int col, line;
 
    FOR_ALL_LIST_ITEMS(po->pup.mask, lio) {
       li = lio->c.list->first;
       cols = tv_get_number(&li->c);
       if (cols < 0)
-          cols = width + cols + 1;
+         cols = width + cols + 1;
       li = li->next;
       cole = tv_get_number(&li->c);
       if (cole < 0)
-          cole = width + cole + 1;
+         cole = width + cole + 1;
       li = li->next;
       lines = tv_get_number(&li->c);
       if (lines < 0)
-          lines = height + lines + 1;
+         lines = height + lines + 1;
       li = li->next;
       linee = tv_get_number(&li->c);
       if (linee < 0)
-          linee = height + linee + 1;
+         linee = height + linee + 1;
 
       --cols;
       cols -= po->pup.leftOff;
@@ -12935,7 +12938,7 @@ update_popupTransparencyG(Portal* po, int val) {
       cole -= po->pup.leftOff;
       --lines;
       if (lines < 0)
-          lines = 0;
+         lines = 0;
       for (line = lines; line < linee && line + po->windowRow < screenLinesRowsG; ++line) {
          for (col = cols; col < cole && col + po->windowCol < screenLinesColsG; ++col) {
             popupTransparencyG[(line + po->windowRow) * screenLinesColsG + col + po->windowCol]
@@ -12984,13 +12987,13 @@ popup_need_position_adjust(Portal* po) {
 }
 
 //Update "popupMaskG" if needed. Also recompute the popup size and positions.
-//Also update "popup_visible" and "popup_uses_mouse_move". Also marks portal lines for redrawing.
+//Also update "popup_visible" and "popup_uses_mouse_move". Also mark portal lines for redrawing
 pub void
 may_update_popup_mask(int type) {
    Portal   *po;
    Arr(Short) mask;
-   int      line, col;
-   int      redraw_all_popups = false;
+   int line, col;
+   int redraw_all_popups = false;
    Boole redrawingAllPortals;
 
    //Need to recompute when switching tabs. Also recompute when the type is UPD_CLEAR or
@@ -13141,12 +13144,12 @@ may_update_popup_position(void) {
       adjustPosition(curPor);
 }
 
-//Return a string of "len" spaces in IObuff.
+//Return a string of "len" spaces in ioBuffG.
 private CS
 get_spaces(int len) {
-    memset(IObuff, ' ', (Unt)len);
-    IObuff[len] = ZERO;
-   return IObuff;
+    memset(ioBuffG, ' ', (Unt)len);
+    ioBuffG[len] = ZERO;
+   return ioBuffG;
 }
 
 //Update popup portals.  They are drawn on top of normal portals.
@@ -15222,5 +15225,4 @@ general_beval_cb(BalloonEval* beval, int) {
 }
 
 //}}}
-
 //}}}

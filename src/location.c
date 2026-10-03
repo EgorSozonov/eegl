@@ -1377,7 +1377,7 @@ nextStringLine(LocationState *state) {
       if (state->linebuf == NULL)
          return QF_NOMEM;
    } else {
-      state->linebuf = IObuff;
+      state->linebuf = ioBuffG;
       state->linelen = len;
    }
    copySubstrToAllocation(state->linebuf, (Text){inputString, state->linelen});
@@ -1409,7 +1409,7 @@ nextListLine(LocationState* state) {
       if (state->linebuf == NULL)
          return QF_NOMEM;
    } else {
-      state->linebuf = IObuff;
+      state->linebuf = ioBuffG;
       state->linelen = len;
    }
 
@@ -1436,7 +1436,7 @@ nextBufLine(LocationState *state) {
       if (state->linebuf == NULL)
          return QF_NOMEM;
    } else {
-      state->linebuf = IObuff;
+      state->linebuf = ioBuffG;
       state->linelen = len;
    }
    copySubstrToAllocation(state->linebuf, (Text){p_buf, state->linelen});
@@ -1447,14 +1447,14 @@ nextBufLine(LocationState *state) {
 //Get the next string when source = file.
 private int
 nextFileLine(LocationState *state) {
-   if (fgets((char *)IObuff, IOSIZE, state->source.File.c) == NULL)
+   if (fgets((char *)ioBuffG, IOSIZE, state->source.File.c) == NULL)
       return QF_END_OF_INPUT;
 
    Boole discard = false;
-   state->linelen = (int)STRLEN(IObuff);
-   if (state->linelen == IOSIZE - 1 && !(IObuff[state->linelen - 1] == '\n')) {
+   state->linelen = (int)STRLEN(ioBuffG);
+   if (state->linelen == IOSIZE - 1 && !(ioBuffG[state->linelen - 1] == '\n')) {
 
-      //The current line exceeds IObuff, continue reading using
+      //The current line exceeds ioBuffG, continue reading using
       //growbuf until EOL or LINE_MAXLEN bytes is read.
       if (state->growbuf == NULL) {
          state->growbufsiz = 2 * (IOSIZE - 1);
@@ -1464,7 +1464,7 @@ nextFileLine(LocationState *state) {
       }
 
       //Copy the read part of the line, excluding null-terminator
-      memcpy(state->growbuf, IObuff, IOSIZE - 1);
+      memcpy(state->growbuf, ioBuffG, IOSIZE - 1);
       int growbuflen = state->linelen;
 
       for (;;) {
@@ -1494,9 +1494,9 @@ nextFileLine(LocationState *state) {
       while (discard) {
          //The current line is longer than LINE_MAXLEN, continue
          //reading but discard everything until EOL or EOF is reached.
-         if (fgets((char *)IObuff, IOSIZE, state->source.File.c) == NULL
-                || (int)STRLEN(IObuff) < IOSIZE - 1
-                || IObuff[IOSIZE - 2] == '\n') {
+         if (fgets((char *)ioBuffG, IOSIZE, state->source.File.c) == NULL
+                || (int)STRLEN(ioBuffG) < IOSIZE - 1
+                || ioBuffG[IOSIZE - 2] == '\n') {
             break;
          }
       }
@@ -1504,7 +1504,7 @@ nextFileLine(LocationState *state) {
       state->linebuf = state->growbuf;
       state->linelen = growbuflen;
    } else
-      state->linebuf = IObuff;
+      state->linebuf = ioBuffG;
 
     return QF_OK;
 }
@@ -1896,7 +1896,7 @@ parse_file_pfx(
         ll->currFName = popDir(&ll->fileStack);
       *fields->namebuf = ZERO;
       if (tail && *tail) {
-          STRMOVE(IObuff, skipwhite(tail));
+          STRMOVE(ioBuffG, skipwhite(tail));
           ll->qf_multiscan = true;
           return QF_MULTISCAN;
       }
@@ -3452,12 +3452,12 @@ printMsg(
    //Update the screen before showing the message, unless the screen scrolled up.
    if (!msg_scrolled)
       update_topline_redraw();
-   eeSnprintf(IObuff, IOSIZE, _("(%d of %d)%s%s: "), currentIdx,
+   eeSnprintf(ioBuffG, IOSIZE, _("(%d of %d)%s%s: "), currentIdx,
        getCurrent(stack)->count,
        curr->isCleared ? _(" (line deleted)") : S"",
        createMsg(curr->kind, curr->errNum));
    //Add the message, skipping leading whitespace and newlines.
-   ga_concat(gap, IObuff);
+   ga_concat(gap, ioBuffG);
    formatText(gap, skipwhite(curr->text));
    ga_append(gap, ZERO);
 
@@ -3686,7 +3686,7 @@ displayListEntry(LocLine* lline, int ind, int cursel) {
 
    CS fname = NULL;
    if (lline->moduleName != NULL && *lline->moduleName != ZERO)
-      eeSnprintf(IObuff, IOSIZE, "%2d %s", ind, lline->moduleName);
+      eeSnprintf(ioBuffG, IOSIZE, "%2d %s", ind, lline->moduleName);
    else {
       if (lline->fNum != 0 && (book = bookFindFileByBookNr(lline->fNum)) != NULL) {
          if (lline->fName == NULL)
@@ -3697,9 +3697,9 @@ displayListEntry(LocLine* lline, int ind, int cursel) {
             fname = fiGetShortFiName(fname);
       }
       if (fname == NULL)
-         sprintf((char *)IObuff, "%2d", ind);
+         sprintf((char *)ioBuffG, "%2d", ind);
       else
-         eeSnprintf(IObuff, IOSIZE, "%2d %s", ind, fname);
+         eeSnprintf(ioBuffG, IOSIZE, "%2d %s", ind, fname);
    }
 
    //Support for filtering entries using :filter /pat/ clist Match against the module name, file
@@ -3717,7 +3717,7 @@ displayListEntry(LocLine* lline, int ind, int cursel) {
       return;
 
    msg_putchar('\n');
-   msgOuttransDeco(IObuff, cursel ? getDecoFlags(HLF_QFL) : fileDeco.flags);
+   msgOuttransDeco(ioBuffG, cursel ? getDecoFlags(HLF_QFL) : fileDeco.flags);
 
    if (lline->lNum != 0)
       msgPutsDeco(S":", separatorDeco.flags);
@@ -3835,7 +3835,7 @@ formatText(ArrayList *gap, CS text) {
 //of a location entry to the grow array "gap".
 private void
 addRangeInformationToArrayList(ArrayList* gap, LocLine* lline) {
-   CS builder = IObuff;
+   CS builder = ioBuffG;
    int bufsize = IOSIZE;
 
    eeSnprintf(builder, bufsize, FMT_UNT, lline->lNum);
@@ -7276,8 +7276,8 @@ c_lbook(Invocation* invo) {
    CS title = copyCommandTitle(*invo->commline);
 
    if (book->shortFileName) {
-      eeSnprintf(IObuff, IOSIZE, "%s (%s)", title, book->shortFileName);
-      title = IObuff;
+      eeSnprintf(ioBuffG, IOSIZE, "%s (%s)", title, book->shortFileName);
+      title = ioBuffG;
    }
 
    incrementLlBusyness();
@@ -7407,8 +7407,8 @@ searchInFile(
       return;
 
    long lnum = 1;
-   while (!eeFgets(IObuff, IOSIZE, fd) && !gotInterruptG) {
-      CS line = IObuff;
+   while (!eeFgets(ioBuffG, IOSIZE, fd) && !gotInterruptG) {
+      CS line = ioBuffG;
       if (eeRegexec(OUT p_regmatch, line, (ColNr)0)) {
          int   l = (int)STRLEN(line);
 
@@ -7437,12 +7437,12 @@ searchInFile(
             ) == QF_FAIL
          ) {
             gotInterruptG = true;
-            if (line != IObuff)
+            if (line != ioBuffG)
                eeglFree(line);
             break;
          }
       }
-      if (line != IObuff)
+      if (line != ioBuffG)
          eeglFree(line);
       ++lnum;
       line_breakcheck();
@@ -8043,8 +8043,8 @@ fname2fnum(FileMarkExt* fm) {
       copySubstrToAllocation(nameBuffG, (Text){fm->fname, MAXPATHL - 1});
 
    //Try to shorten the file name.
-   mch_dirname(IObuff, IOSIZE);
-   CS p = shorten_fname(nameBuffG, IObuff);
+   mch_dirname(ioBuffG, IOSIZE);
+   CS p = shorten_fname(nameBuffG, ioBuffG);
 
    //bookNew() will call fmarks_check_names()
    (void)bookNew(nameBuffG, p, (LineNr)1, 0);
@@ -8246,8 +8246,8 @@ show_one_mark(
          }
          msg_putchar('\n');
          if (!gotInterruptG) {
-            sprintf((char *)IObuff, " %c " FMT_UNT " %4d ", c, p->lnum, p->col);
-            msg_outtrans(IObuff);
+            sprintf((char *)ioBuffG, " %c " FMT_UNT " %4d ", c, p->lnum, p->col);
+            msg_outtrans(ioBuffG);
             if (name) {
                msgOuttransDeco(name, current ? getDecoFlags(HLF_D) : 0);
             }
@@ -8358,14 +8358,14 @@ c_jumps(Invocation*) {
             break;
          }
          sprintf(
-            (char *)IObuff, "%c %2d " FMT_UNT " %4d ",
+            (char *)ioBuffG, "%c %2d " FMT_UNT " %4d ",
             i == curPor->jumpListInd ? '>' : ' ',
             i > curPor->jumpListInd ? i - curPor->jumpListInd
                        : curPor->jumpListInd - i,
             curPor->jumpList[i].fmark.mark.lnum,
             curPor->jumpList[i].fmark.mark.col
          );
-         msg_outtrans(IObuff);
+         msg_outtrans(ioBuffG);
          msgOuttransDeco(
             name, curPor->jumpList[i].fmark.fnum == curBook->fiNum ? getDecoFlags(HLF_D) : 0
          );
@@ -8398,13 +8398,13 @@ c_changes(Invocation*) {
          msg_putchar('\n');
          if (gotInterruptG)
             break;
-         sprintf((char *)IObuff, "%c %3d %5ld %4d ",
+         sprintf((char *)ioBuffG, "%c %3d %5ld %4d ",
              i == (Unt)curPor->changeListInd ? '>' : ' ',
              i > (Unt)curPor->changeListInd ? i - curPor->changeListInd
                      : curPor->changeListInd - i,
              (long)curBook->changeList[i].lnum,
              curBook->changeList[i].col);
-         msg_outtrans(IObuff);
+         msg_outtrans(ioBuffG);
          name = mark_line(&curBook->changeList[i], 17);
          if (!name)
             break;
@@ -13563,8 +13563,8 @@ find_pattern_in_path(
                files[depth].matched = false;
                if (action == ACTION_EXPAND && !silent) {
                   msg_hist_off = true;   //reset in msgTruncDeco()
-                  eeSnprintf(IObuff, IOSIZE, _("Scanning included file: %s"), new_fname);
-                  msgTruncDeco(IObuff, getDecoFlags(HLF_R));
+                  eeSnprintf(ioBuffG, IOSIZE, _("Scanning included file: %s"), new_fname);
+                  msgTruncDeco(ioBuffG, getDecoFlags(HLF_R));
                } ei (p_verbose >= 5) {
                   verbose_enter();
                   smsg(_("Searching included file %s"), (char *)new_fname);
@@ -13661,7 +13661,7 @@ find_pattern_in_path(
 
             if (compl_status_adding() && i == ins_compl_len()) {
                //IOSIZE > compl_length, so the STRNCPY works
-               STRNCPY(IObuff, aux, i);
+               STRNCPY(ioBuffG, aux, i);
 
                //Get the next line: when "depth" < 0  from the current buffer, otherwise from the
                //included file. Jump to exit_matched when past the last line.
@@ -13678,20 +13678,20 @@ find_pattern_in_path(
                p = findWordStart(p);
                p = find_word_end(p);
                if (p > aux) {
-                  if (*aux != ')' && IObuff[i-1] != TAB) {
-                      if (IObuff[i-1] != ' ')
-                         IObuff[i++] = ' ';
+                  if (*aux != ')' && ioBuffG[i-1] != TAB) {
+                      if (ioBuffG[i-1] != ' ')
+                         ioBuffG[i++] = ' ';
                       //IObuf =~ "\(\k\|\i\).* ", thus i >= 2
                   }
                   //copy as much as possible of the new word
                   if (p - aux >= IOSIZE - i)
                      p = aux + IOSIZE - i - 1;
-                  STRNCPY(IObuff + i, aux, p - aux);
+                  STRNCPY(ioBuffG + i, aux, p - aux);
                   i += (int)(p - aux);
                   cont_s_ipos = true;
                }
-               IObuff[i] = ZERO;
-               aux = IObuff;
+               ioBuffG[i] = ZERO;
+               aux = ioBuffG;
 
                if (i == ins_compl_len())
                   goto exit_matched;
@@ -13901,11 +13901,11 @@ show_pat_in_path(
           *(p + 1) = ZERO;
       }
       if (action == ACTION_SHOW_ALL) {
-          SPRINTF(IObuff, "%3ld: ", count);   //show match nr
-          msg_puts(IObuff);
-          SPRINTF(IObuff, FMT_UNT, *lnum);   //show line nr
+          SPRINTF(ioBuffG, "%3ld: ", count);   //show match nr
+          msg_puts(ioBuffG);
+          SPRINTF(ioBuffG, FMT_UNT, *lnum);   //show line nr
                      //Highlight line numbers
-          msgPutsDeco(IObuff, getDecoFlags(HLF_N));
+          msgPutsDeco(ioBuffG, getDecoFlags(HLF_N));
           msg_puts(S" ");
       }
       msg_prt_line(line, false);
@@ -15332,7 +15332,7 @@ find_help_tags(
                ">=?", ">?", "is?", "isnot?"};
    int flags;
 
-   d = IObuff;          //assume IObuff is long enough!
+   d = ioBuffG;          //assume ioBuffG is long enough!
    d[0] = ZERO;
 
    if (STRNICMP(arg, "expr-", 5) == 0) {
@@ -15398,7 +15398,7 @@ find_help_tags(
             //the tags for these commands.
             //Replace "*" with ".*" and "?" with "." to match command line completion.
             //Insert a backslash before '~', '$' and '.' to avoid their special meaning.
-            if (d - IObuff > IOSIZE - 10)   //getting too long!?
+            if (d - ioBuffG > IOSIZE - 10)   //getting too long!?
                break;
 
             switch (*s) {
@@ -15424,7 +15424,7 @@ find_help_tags(
             if (*s < ' ' || (*s == '^' && s[1] && (ASCII_ISALPHA(s[1])
                   || firstOccurrence((CS)"?@[\\]^", s[1]) != NULL))
             ){
-               if (d > IObuff && d[-1] != '_' && d[-1] != '\\')
+               if (d > ioBuffG && d[-1] != '_' && d[-1] != '\\')
                   *d++ = '_';      //prepend a '_' to make x_CTRL-x
                STRCPY(d, "CTRL-");
                d += 5;
@@ -15469,18 +15469,18 @@ find_help_tags(
          }
          *d = ZERO;
 
-         if (*IObuff == '`') {
-            if (d > IObuff + 2 && d[-1] == '`') {
+         if (*ioBuffG == '`') {
+            if (d > ioBuffG + 2 && d[-1] == '`') {
                //remove the backticks from `command`
-               MEMMOVE(IObuff, IObuff + 1, STRLEN(IObuff));
+               MEMMOVE(ioBuffG, ioBuffG + 1, STRLEN(ioBuffG));
                d[-2] = ZERO;
-            } ei (d > IObuff + 3 && d[-2] == '`' && d[-1] == ',') {
+            } ei (d > ioBuffG + 3 && d[-2] == '`' && d[-1] == ',') {
                //remove the backticks and comma from `command`,
-               MEMMOVE(IObuff, IObuff + 1, STRLEN(IObuff));
+               MEMMOVE(ioBuffG, ioBuffG + 1, STRLEN(ioBuffG));
                d[-3] = ZERO;
-            } ei (d > IObuff + 4 && d[-3] == '`' && d[-2] == '\\' && d[-1] == '.') {
+            } ei (d > ioBuffG + 4 && d[-3] == '`' && d[-2] == '\\' && d[-1] == '.') {
                //remove the backticks and dot from `command`\.
-               MEMMOVE(IObuff, IObuff + 1, STRLEN(IObuff));
+               MEMMOVE(ioBuffG, ioBuffG + 1, STRLEN(ioBuffG));
                d[-4] = ZERO;
             }
          }
@@ -15491,7 +15491,7 @@ find_help_tags(
    flags = TAG_HELP | TAG_REGEXP | TAG_NAMES | TAG_VERBOSE | TAG_NO_TAGFUNC;
    if (keep_lang)
       flags |= TAG_KEEP_LANG;
-   if (find_tags(IObuff, flags, (int)MAXCOL, NULL, OUT matches) == OK
+   if (find_tags(ioBuffG, flags, (int)MAXCOL, NULL, OUT matches) == OK
        && matches->len > 0) {
       //Sort the matches found on the heuristic number that is after the tag name.
       qsort((void *)matches->c, (Unt)matches->len, sizeof(CS), helpCompare);
@@ -15685,12 +15685,12 @@ searchFixHelpBook(void) {
                   continue;
                fd = FOPEN(files.c[fi], "r");
                if (fd) {
-                  eeFgets(IObuff, IOSIZE, fd);
-                  if (IObuff[0] == '*' && (s = firstOccurrence(IObuff + 1, '*')) != NULL) {
+                  eeFgets(ioBuffG, IOSIZE, fd);
+                  if (ioBuffG[0] == '*' && (s = firstOccurrence(ioBuffG + 1, '*')) != NULL) {
                      int   this_utf = MAYBE;
 
                      //Change tag definition to a reference and remove <CR>/<NL>.
-                     IObuff[0] = '|';
+                     ioBuffG[0] = '|';
                      *s = '|';
                      while (*s != ZERO) {
                         if (*s == '\r' || *s == '\n')
@@ -15709,9 +15709,9 @@ searchFixHelpBook(void) {
                         ++s;
                      }
 
-                     cp = IObuff;
+                     cp = ioBuffG;
                      ml_append(lnum, cp, (ColNr)0, false);
-                     if (cp != IObuff)
+                     if (cp != ioBuffG)
                         eeglFree(cp);
                      ++lnum;
                   }
@@ -15810,11 +15810,11 @@ generateHelpTagsForDir(
 
       in_example = false;
       firstline = true;
-      while (!eeFgets(IObuff, IOSIZE, fd) && !gotInterruptG) {
+      while (!eeFgets(ioBuffG, IOSIZE, fd) && !gotInterruptG) {
          if (firstline) {
             //Detect utf-8 file by a non-ASCII char in the first line.
             this_utf8 = MAYBE;
-            for (s = IObuff; *s != ZERO; ++s) {
+            for (s = ioBuffG; *s != ZERO; ++s) {
                if (*s >= 0x80) {
                   this_utf8 = true;
                   int l = utf_ptr2len(s);
@@ -15839,11 +15839,11 @@ generateHelpTagsForDir(
          }
          if (in_example) {
             //skip over example; a non-white in the first column ends it
-            if (firstOccurrence((CS)" \t\n\r", IObuff[0]))
+            if (firstOccurrence((CS)" \t\n\r", ioBuffG[0]))
                continue;
             in_example = false;
          }
-         p1 = firstOccurrence(IObuff, '*');   //find first '*'
+         p1 = firstOccurrence(ioBuffG, '*');   //find first '*'
          while (p1 != NULL) {
             //TODO Use eeStrbyte() instead of firstOccurrence() so that when
             //'encoding' is dbcs it still works, don't find '*' in the second byte.
@@ -15858,7 +15858,7 @@ generateHelpTagsForDir(
                //characters, there is white space before it and is
                //followed by a white character or end-of-line.
                if (s == p2
-                   && (p1 == IObuff || p1[-1] == ' ' || p1[-1] == '\t')
+                   && (p1 == ioBuffG || p1[-1] == ' ' || p1[-1] == '\t')
                    && (firstOccurrence((CS)" \t\n\r", s[1]) != NULL
                   || s[1] == '\0')
                ) {
@@ -15879,9 +15879,9 @@ generateHelpTagsForDir(
             }
             p1 = p2;
          }
-         len = (int)STRLEN(IObuff);
-         if ((len == 2 && STRCMP(&IObuff[len - 2], ">\n") == 0)
-                || (len >= 3 && STRCMP(&IObuff[len - 3], " >\n") == 0))
+         len = (int)STRLEN(ioBuffG);
+         if ((len == 2 && STRCMP(&ioBuffG[len - 2], ">\n") == 0)
+                || (len >= 3 && STRCMP(&ioBuffG[len - 3], " >\n") == 0))
             in_example = true;
          line_breakcheck();
       }

@@ -259,8 +259,7 @@ int bookRenderStatusLine(
    Byte oname,      //one of STATLINE_* constants
    int opt_scope,   //scope for "oname"
    Unt fillchar,
-   int maxwidth,
-   OUT Arr(StatusLineHilite)* labels   //return: tab numbers (can be NULL)
+   int maxwidth
 );
 int get_rel_pos(Portal* po, CS buf, int buflen);
 void fname_expand(CS* fullFName, CS* sfname);

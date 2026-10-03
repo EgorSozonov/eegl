@@ -21,6 +21,7 @@
 #include "h/data.types.h"
 #include "h/data.h"
 #include "h/diff.h"
+#include "h/do.types.h"
 #include "h/do.h"
 #include "h/draw.types.h"
 #include "h/draw.h"
@@ -249,6 +250,11 @@ typedef struct {
    int mayDrop;   //whether after this change, the prop may be removed
 } AdjustRes;
 
+pub
+#define PT_FLAG_INS_START_INCL 1 //insert at start included in property
+#define PT_FLAG_INS_END_INCL   2 //insert at end included in property
+#define PT_FLAG_COMBINE        4 //combine with syntax highlight
+#define PT_FLAG_OVERRIDE       8 //override any highlight
 
 //}}}
 //{{{@@forward declarations
@@ -1644,7 +1650,7 @@ theend:
 //
 //Return a pointer to a (read-only copy of a) line in the current book.
 //
-//On failure an error message is given and IObuff is returned (to avoid
+//On failure an error message is given and ioBuffG is returned (to avoid
 //having to check for error everywhere).
 pub CS
 ml_get(LineNr lnum) {
@@ -7905,12 +7911,12 @@ do_bufdel(
 
       if (deleted == 0) {
          if (command == DOBOOK_UNLOAD)
-            STRCPY(IObuff, _(e_no_buffers_were_unloaded));
+            STRCPY(ioBuffG, _(e_no_buffers_were_unloaded));
          ei (command == DOBOOK_DEL)
-            STRCPY(IObuff, _(e_no_buffers_were_deleted));
+            STRCPY(ioBuffG, _(e_no_buffers_were_deleted));
          else
-            STRCPY(IObuff, _(e_no_buffers_were_wiped_out));
-         errormsg = IObuff;
+            STRCPY(ioBuffG, _(e_no_buffers_were_wiped_out));
+         errormsg = ioBuffG;
       } else {
          if (command == DOBOOK_UNLOAD)
             smsg(NGETTEXT("%d book unloaded", "%d books unloaded", deleted), deleted);
@@ -9001,7 +9007,7 @@ bookListFiles(Invocation* invo) {
          ro_char = !book->o.modifiable ? '-' : '=';
 
       msg_putchar('\n');
-      len = (int)eeSnprintfSafelen(IObuff, IOSIZE - 20, "%3d%c%c%c%c%c \"%s\"",
+      len = (int)eeSnprintfSafelen(ioBuffG, IOSIZE - 20, "%3d%c%c%c%c%c \"%s\"",
          book->fiNum,
          book->o.bookListed ? ' ' : 'u',
          book == curBook ? '%' : (curPor->altFnum == book->fiNum ? '#' : ' '),
@@ -9012,16 +9018,16 @@ bookListFiles(Invocation* invo) {
       );
 
       //put "line 999" in column 40 or after the file name
-      i = 40 - eeglStrSize(IObuff);
+      i = 40 - eeglStrSize(ioBuffG);
       do
-         IObuff[len++] = ' ';
+         ioBuffG[len++] = ' ';
       while (--i > 0 && len < IOSIZE - 18);
       if (firstOccurrence(invo->arg, 't') && book->lastUsed)
-         add_time(IObuff + len, (Unt)(IOSIZE - len), book->lastUsed);
+         add_time(ioBuffG + len, (Unt)(IOSIZE - len), book->lastUsed);
       else
-         eeSnprintf(IObuff + len, (Unt)(IOSIZE - len),
+         eeSnprintf(ioBuffG + len, (Unt)(IOSIZE - len),
              _("line %ld"), book == curBook ? curPor->cursor.lnum : (long)findLnum(book));
-      msg_outtrans(IObuff);
+      msg_outtrans(ioBuffG);
       termOutFlush();       //output one line at a time
       ui_breakcheck();
    }
@@ -9322,7 +9328,6 @@ typedef struct {
 private Unt countStatusItems = 20; //Initial value, grows as needed.
 private Arr(StatusItem) statusItemsP = NULL;
 private int* stlGroupItemP = NULL;
-private StatusLineHilite* stl_tabtab = NULL;
 private int* stlSeparatorLocationsP = NULL;
 
 //Build a string from the status line items in "fmt". Return length of string in screen cells.
@@ -9342,10 +9347,8 @@ bookRenderStatusLine(
    Byte oname,      //one of STATLINE_* constants
    int opt_scope,   //scope for "oname"
    Unt fillchar,
-   int maxwidth,
-   OUT Arr(StatusLineHilite)* labels   //return: tab numbers (can be NULL)
+   int maxwidth
 ){
-   CS p;
    CS s;
    int save_VIsual_active;
    long l;
@@ -9363,11 +9366,10 @@ bookRenderStatusLine(
 #define TMPLEN 70
    Byte buf_tmp[TMPLEN];
    CS usefmt = fmt;
-   StatusLineHilite *sp;
    int save_redraw_not_allowed = redraw_not_allowed;
    int save_keyWasTypedG = keyWasTypedG;
    //TODO: find out why using called_emsg_before makes tests fail, does it matter?
-   //int   called_emsg_before = called_emsg;
+   //int called_emsg_before = called_emsg;
    int anyEmsgSaved = anyEmsgG;
 
    //When inside drawUpdateScreen() we do not want redrawing a statusline,
@@ -9378,10 +9380,6 @@ bookRenderStatusLine(
    if (!statusItemsP) {
       statusItemsP = ALLOC_MULT(StatusItem, countStatusItems);
       stlGroupItemP = ALLOC_MULT(int, countStatusItems);
-
-      //Allocate one more, because the last element is used to indicate the end of the list
-      stl_tabtab = ALLOC_MULT(StatusLineHilite, countStatusItems + 1);
-
       stlSeparatorLocationsP = ALLOC_MULT(int, countStatusItems);
    }
 
@@ -9394,7 +9392,7 @@ bookRenderStatusLine(
       set_var(tConst("g:statusline_winid"), &tv, false);
 
       usefmt = eval_to_string_safe(fmt + 2, false);
-      if (usefmt == NULL)
+      if (!usefmt)
          usefmt = fmt;
 
       unletImpl(S"g:statusline_winid", true);
@@ -9411,9 +9409,9 @@ bookRenderStatusLine(
       po->cursor.lnum = lnum;
    }
 
-   //Get line & check if empty (cursorpos will show "0-1").  Note that
+   //Get line & check if empty (cursorpos will show "0-1"). Note that
    //p will become invalid when getting another book line.
-   p = memGetLine(po->book, lnum, false);
+   CS p = memGetLine(po->book, lnum, false);
    Boole empty_line = (*p == ZERO);
 
    //Get the byte value now, in case we need it below. This is more efficient
@@ -9437,17 +9435,13 @@ bookRenderStatusLine(
    prevchar_isitem = false;
    for (s = usefmt; *s != ZERO; ) {
       if (curitem == (int)countStatusItems) {
-         Unt   newLen = countStatusItems * 3 / 2;
+         Unt newLen = countStatusItems * 3 / 2;
 
          StatusItem* new_items = eeRealloc(statusItemsP, sizeof(StatusItem) * newLen);
          statusItemsP = new_items;
 
-         int *new_groupitem = eeRealloc(stlGroupItemP, sizeof(int) * newLen);
+         int* new_groupitem = eeRealloc(stlGroupItemP, sizeof(int) * newLen);
          stlGroupItemP = new_groupitem;
-
-         Arr(StatusLineHilite) new_hlrec =
-            eeRealloc(stl_tabtab, sizeof(StatusLineHilite) * (newLen + 1));
-         stl_tabtab = new_hlrec;
 
          int* new_separator_locs = eeRealloc(stlSeparatorLocationsP, sizeof(int) * newLen);
          stlSeparatorLocationsP = new_separator_locs;
@@ -9833,8 +9827,9 @@ bookRenderStatusLine(
       case STL_OFFSET:
          l = ml_find_line_or_offset(po->book, po->cursor.lnum, NULL);
          num = (po->book->mem.flags & ML_EMPTY) || l < 0
-                ? 0L : l + 1 + ((stateG & MODE_INSERT) == 0 && empty_line
-               ? 0 : (int)po->cursor.col);
+                ? 0L : (l + 1 + ((stateG & MODE_INSERT) == 0 && empty_line
+                              ? 0 : (int)po->cursor.col)
+                       );
          break;
 
       case STL_BYTEVAL_X:
@@ -10117,21 +10112,6 @@ bookRenderStatusLine(
 
           width = maxwidth;
       }
-   }
-
-   //Store the info about tab labels.
-   if (labels) {
-      *labels = stl_tabtab;
-      sp = stl_tabtab;
-      for (l = 0; l < itemcnt; l++) {
-         if (statusItemsP[l].StatusTag == TabPage) {
-            sp->start = statusItemsP[l].start;
-            sp->hiId = statusItemsP[l].minWidth;
-            sp++;
-         }
-      }
-      sp->start = NULL;
-      sp->hiId = 0;
    }
 
    //A user function may reset vars, restore them
@@ -12049,12 +12029,12 @@ bookWrite(
             //the ones from the original file.
             //First find a file name that doesn't exist yet (use some
             //arbitrary numbers).
-            STRCPY(IObuff, fname);
+            STRCPY(ioBuffG, fname);
             fd = -1;
             for (i = 4913; ; i += 123) {
-               sprintf((char *)fiGetShortFiName(IObuff), "%d", i);
-               if (lstat((char *)IObuff, &st) < 0) {
-                  fd = open((char *)IObuff, O_CREAT|O_WRONLY|O_EXCL|O_NOFOLLOW, perm);
+               sprintf((char *)fiGetShortFiName(ioBuffG), "%d", i);
+               if (lstat((char *)ioBuffG, &st) < 0) {
+                  fd = open((char *)ioBuffG, O_CREAT|O_WRONLY|O_EXCL|O_NOFOLLOW, perm);
                   if (fd < 0 && errno == EEXIST)
                       //If the same file name is created by another
                       //process between lstat() and open(), find another
@@ -12067,7 +12047,7 @@ bookWrite(
                 backup_copy = true;
             } else {
                (void)fchown(fd, stOld.st_uid, stOld.st_gid);
-               if (stat((char *)IObuff, &st) < 0
+               if (stat((char *)ioBuffG, &st) < 0
                    || st.st_uid != stOld.st_uid
                    || st.st_gid != stOld.st_gid
                    || (long)st.st_mode != perm
@@ -12076,7 +12056,7 @@ bookWrite(
                }
                //Close the file before removing it
                close(fd);
-               mch_remove(IObuff);
+               mch_remove(ioBuffG);
             }
          }
       }
@@ -12262,18 +12242,18 @@ endOfName:
          CS backupDirRemainder = p_bdir;
          while (*backupDirRemainder) {
             //Isolate one directory name and make the backup file name.
-            (void)strCutPathFromListOfPaths(&backupDirRemainder, IObuff, IOSIZE, S",");
+            (void)strCutPathFromListOfPaths(&backupDirRemainder, ioBuffG, IOSIZE, S",");
 
-            p = IObuff + STRLEN(IObuff);
-            if (after_pathsep(IObuff, p) && p[-1] == p[-2]) {
+            p = ioBuffG + STRLEN(ioBuffG);
+            if (after_pathsep(ioBuffG, p) && p[-1] == p[-2]) {
                //path ends with '//', use full path
-               if ((p = memMakePercentSwapName(IObuff, p, fname)) != NULL) {
+               if ((p = memMakePercentSwapName(ioBuffG, p, fname)) != NULL) {
                   backup = fiAppendFileExtension(p, backup_ext, false);
                   eeglFree(p);
                }
             }
             if (!backup) {
-               CS rootname = determineBackupFilename(fname, IObuff);
+               CS rootname = determineBackupFilename(fname, ioBuffG);
                if (rootname) {
                   backup = fiAppendFileExtension(rootname, backup_ext, false);
                   eeglFree(rootname);
@@ -12615,13 +12595,13 @@ endOfName:
    --no_wait_return;  //may wait for return now
 
    if (!filtering) {
-      msg_add_fname(book, fname);   //put fname in IObuff with quotes
+      msg_add_fname(book, fname);   //put fname in ioBuffG with quotes
       c = false;
       if (device) {
-         STRCAT(IObuff, _("[Device]"));
+         STRCAT(ioBuffG, _("[Device]"));
          c = true;
       } ei (newfile) {
-         STRCAT(IObuff, new_file_message());
+         STRCAT(ioBuffG, new_file_message());
          c = true;
       }
       if (no_eol) {
@@ -12630,11 +12610,11 @@ endOfName:
       }
       msg_add_lines(c, (long)lnum, nchars);   //add line/char count
       if (append)
-         STRCAT(IObuff, _(" appended"));
+         STRCAT(ioBuffG, _(" appended"));
       else
-         STRCAT(IObuff, _(" written"));
+         STRCAT(ioBuffG, _(" written"));
 
-      set_keep_msg(msgTruncDeco(IObuff, 0), 0);
+      set_keep_msg(msgTruncDeco(ioBuffG, 0), 0);
    }
 
    //When written everything correctly: reset 'modified'.  Unless not
@@ -12681,17 +12661,17 @@ nofail:
       int numlen = errnum ? (int)STRLEN(errnum) : 0;
 
       flags = getDecoFlags(HLF_E);   //set highlight for error messages
-      msg_add_fname(book, fname);      //put file name in IObuff with quotes
-      if (STRLEN(IObuff) + STRLEN(errmsg) + numlen >= IOSIZE)
-          IObuff[IOSIZE - STRLEN(errmsg) - numlen - 1] = ZERO;
+      msg_add_fname(book, fname);      //put file name in ioBuffG with quotes
+      if (STRLEN(ioBuffG) + STRLEN(errmsg) + numlen >= IOSIZE)
+          ioBuffG[IOSIZE - STRLEN(errmsg) - numlen - 1] = ZERO;
       //If the error message has the form "is ...", put the error number in
       //front of the file name.
       if (errnum) {
-          STRMOVE(IObuff + numlen, IObuff);
-          MEMMOVE(IObuff, errnum, (Unt)numlen);
+          STRMOVE(ioBuffG + numlen, ioBuffG);
+          MEMMOVE(ioBuffG, errnum, (Unt)numlen);
       }
-      STRCAT(IObuff, errmsg);
-      emsg(IObuff);
+      STRCAT(ioBuffG, errmsg);
+      emsg(ioBuffG);
       if (errmsg_allocated)
          eeglFree(errmsg);
 

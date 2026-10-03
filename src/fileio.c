@@ -241,8 +241,8 @@ init_homedir(void) {
       //Change to the directory and get the actual path. This resolves links. Don't do it when 
       //we can't return.
       if (mch_dirname(nameBuffG, MAXPATHL) == OK && mch_chdir(nameBuffG) == 0) {
-         if (!mch_chdir(var) && mch_dirname(IObuff, IOSIZE) == OK)
-            var = IObuff;
+         if (!mch_chdir(var) && mch_dirname(ioBuffG, IOSIZE) == OK)
+            var = ioBuffG;
          if (mch_chdir(nameBuffG) != 0)
             emsg(_(e_cannot_go_back_to_previous_directory));
       }
@@ -5091,18 +5091,18 @@ filemess(Book* book, CS name, CS s, int attr){
 
    if (msg_silent != 0)
       return;
-   msg_add_fname(book, name);       //put file name in IObuff with quotes
+   msg_add_fname(book, name);       //put file name in ioBuffG with quotes
 
    //If it's extremely long, truncate it.
-   Unt len = STRLEN(IObuff);
+   Unt len = STRLEN(ioBuffG);
    if (len > IOSIZE - 100) {
       len = IOSIZE - 100;
-      IObuff[len] = ZERO;
+      ioBuffG[len] = ZERO;
    }
 
    //Avoid an over-long translation to cause trouble.
    if (*s != ZERO)
-      STRNCPY(IObuff + len, s, 99);
+      STRNCPY(ioBuffG + len, s, 99);
 
    //For the first message may have to start a new line. For further ones overwrite the previous 
    //one, reset msg_scroll before calling filemess().
@@ -5117,7 +5117,7 @@ filemess(Book* book, CS name, CS s, int attr){
    msg_scroll = msg_scroll_save;
    msg_scrolled_ign = true;
    //may truncate the message to avoid a hit-return prompt
-   msgOuttransDeco(msg_may_trunc(IObuff), attr);
+   msgOuttransDeco(msg_may_trunc(ioBuffG), attr);
    msg_clr_eos();
    termOutFlush();
    msg_scrolled_ign = false;
@@ -5812,20 +5812,20 @@ failed:
    }
 
    if (!filtering && !(flags & READ_DUMMY)) {
-      msg_add_fname(curBook, sfname);   //fname in IObuff with quotes
+      msg_add_fname(curBook, sfname);   //fname in ioBuffG with quotes
       c = false;
 
-      int buflen = (int)STRLEN(IObuff);
+      int buflen = (int)STRLEN(ioBuffG);
       if (S_ISFIFO(perm)) {            //fifo
-         buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[fifo]"));
+         buflen += eeSnprintf(ioBuffG + buflen, IOSIZE - buflen, _("[fifo]"));
          c = true;
       }
       if (S_ISSOCK(perm)) {            //or socket
-         buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[socket]"));
+         buflen += eeSnprintf(ioBuffG + buflen, IOSIZE - buflen, _("[socket]"));
          c = true;
       }
       if (!curBook->o.modifiable) {
-         buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, "[-]");
+         buflen += eeSnprintf(ioBuffG + buflen, IOSIZE - buflen, "[-]");
          c = true;
       }
       if (read_no_eol_lnum) {
@@ -5833,15 +5833,15 @@ failed:
          c = true;
       }
       if (split) {
-         buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[long lines split]"));
+         buflen += eeSnprintf(ioBuffG + buflen, IOSIZE - buflen, _("[long lines split]"));
          c = true;
       }
       if (illegal_byte > 0) {
-         eeSnprintf(IObuff + buflen, IOSIZE - buflen,
+         eeSnprintf(ioBuffG + buflen, IOSIZE - buflen,
             _("[ILLEGAL BYTE in line %ld]"), (long)illegal_byte);
          c = true;
       } ei (error) {
-         eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[READ ERRORS]"));
+         eeSnprintf(ioBuffG + buflen, IOSIZE - buflen, _("[READ ERRORS]"));
          c = true;
       }
       msg_add_lines(c, (long)linecnt, filesize);
@@ -5851,7 +5851,7 @@ failed:
       {
       if (msgColG > 0)
          msg_putchar('\r');  //overwrite previous message
-      p = (CS)msgTruncDeco(IObuff, 0);
+      p = (CS)msgTruncDeco(ioBuffG, 0);
       }
       if (read_stdin || read_buffer || restart_edit != 0
           || (msg_scrolled != 0 && !need_wait_return))
@@ -6111,34 +6111,34 @@ set_rw_fname(CS fname, CS sfname){
    return OK;
 }
 
-//Put file name into IObuff with quotes.
+//Put file name into ioBuffG with quotes.
 pub void
 msg_add_fname(Book* book, CS fname){
    if (!fname)
       fname = S"-stdin-";
    if (book && book->kind == BOOK_HELP) {
-      strPrintShortName(fname, IObuff + 1, IOSIZE - 4);
+      strPrintShortName(fname, ioBuffG + 1, IOSIZE - 4);
    } else {
-      home_replace(fname, IObuff + 1, IOSIZE - 4, true);
+      home_replace(fname, ioBuffG + 1, IOSIZE - 4, true);
    }
-   IObuff[0] = '"';
-   STRCAT(IObuff, "\" ");
+   ioBuffG[0] = '"';
+   STRCAT(ioBuffG, "\" ");
 }
 
-//Append line and character count to IObuff.
+//Append line and character count to ioBuffG.
 pub void
 msg_add_lines(int insert_space, long lnum, FileOffset nchars) {
-   int  len = (int)STRLEN(IObuff);
+   int  len = (int)STRLEN(ioBuffG);
    eeSnprintf(
-      IObuff + len, IOSIZE - (Unt)len, _("%s%ldLines, %ldB"), insert_space ? " " : "", 
+      ioBuffG + len, IOSIZE - (Unt)len, _("%s%ldLines, %ldB"), insert_space ? " " : "", 
       lnum, (Long)nchars
    );
 }
 
-//Append message for missing line separator to IObuff.
+//Append message for missing line separator to ioBuffG.
 pub void
 msg_add_eol(void){
-   STRCAT(IObuff, _("[Incomplete last line]"));
+   STRCAT(ioBuffG, _("[Incomplete last line]"));
 }
 
 pub int

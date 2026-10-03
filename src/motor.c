@@ -169,8 +169,14 @@ struct Job {
 #define FOR_ALL_JOBS(job) \
     for ((job) = firstJobS; (job) != NULL; (job) = (job)->next)
 
+struct WriteQueue {
+   ArrayList   wq_ga;
+   WriteQueue* next;
+   WriteQueue* prev;
+};
+
+
 //The per-fd info for a channel.
-pub
 typedef struct {
    int fd;       //socket/stdin/stdout/stderr, -1 if not used
 
@@ -204,7 +210,6 @@ typedef struct {
    LineNr ch_buf_bot;   //last line to send
 } ChannelFd;
 
-pub
 struct Channel {
    Unt refCount;   //reference count
    Channel* next;
@@ -226,7 +231,7 @@ struct Channel {
    Callback ch_callback;   //call when any msg is not handled
    Callback ch_close_cb;   //call when channel is closed
    int ch_drop_never;
-   int ch_keep_open;   //do not close on read error
+   int keepOpen;   //do not close on read error
    int ch_nonblock;
 
    Job* job;   //Job that uses this channel; this does not count as a reference to avoid a
@@ -242,7 +247,7 @@ typedef enum {
    CW_READY,
    CW_NOT_READY,
    CW_ERROR
-} channel_wait_result;
+} WaitResult;
 
 typedef struct sockaddr_un SockAddrUn;
 typedef struct sockaddr SockAddr;
@@ -256,6 +261,7 @@ typedef struct HistoryEntry {
    Unt   hisstrlen;   //length of hisstr (excluding the ZERO)
    Tyme   time_set;   //when it was typed, zero if unknown
 } HistoryEntry;
+
 
 //}}}
 #include "h/motor.h"
@@ -374,9 +380,9 @@ private void remove_from_writeque(WriteQueue *wq, WriteQueue *entry);
 private void channel_clear_one(Channel *channel, ChannelFdKind part);
 private int is_channel_write_remaining(ChannelFd* intake);
 private int fillIntake(int nfd_in, Arr(PollFd) fds);
-private channel_wait_result channel_wait(Channel* channel, Socket fd, int timeout);
+private WaitResult channel_wait(Channel* channel, Socket fd, int timeout);
 private void ch_close_part_on_error(Channel *channel, ChannelFdKind part, int is_err, char *func);
-private void channel_close_now(Channel *channel);
+private void channel_close_now(Channel* channel);
 private void channel_read(Channel *channel, ChannelFdKind part, char *func);
 private CS channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, int *outlen);
 private int channel_read_json_block(
@@ -828,8 +834,8 @@ libMain(void) {
    if (paramsP.edit_type == EDIT_QF) {
       if (paramsP.use_ef)
          optChangeStringOptionDirect(S"errorfile", paramsP.use_ef, 0, SID_CARG);
-      eeSnprintf(IObuff, IOSIZE, "cfile %s", p_ef);
-      if (llInitFromFile(NULL, p_ef, curBook->o.errorFormat, true, IObuff) < 0) {
+      eeSnprintf(ioBuffG, IOSIZE, "cfile %s", p_ef);
+      if (llInitFromFile(NULL, p_ef, curBook->o.errorFormat, true, ioBuffG) < 0) {
          out_char('\n');
          mch_exit(3);
       }
@@ -913,8 +919,8 @@ libMain(void) {
    if (paramsP.tagname != NULL) {
       swap_exists_did_quit = false;
 
-      eeSnprintf(IObuff, IOSIZE, "ta %s", paramsP.tagname);
-      executeCommLine(IObuff);
+      eeSnprintf(ioBuffG, IOSIZE, "ta %s", paramsP.tagname);
+      executeCommLine(ioBuffG);
       TIME_MSG("jumping to tag");
 
       //If the user doesn't want to edit the file then we quit here.
@@ -986,7 +992,7 @@ init0(void) {
    evalInitGlobals();   //init global variables
 
    //Allocate space for the generic buffers (needed for optInit0() and emsg()).
-   IObuff = alloc(IOSIZE);
+   ioBuffG = alloc(IOSIZE);
    nameBuffG = alloc(MAXPATHL);
    TIME_MSG("Allocated generic buffers");
 }
@@ -1058,7 +1064,7 @@ initUi(void) {
 
 pub int
 appMain(int argc, char** argv) {
-   //Do any system-specific initialisations.  These can NOT use IObuff or nameBuffG.
+   //Do any system-specific initialisations.  These can NOT use ioBuffG or nameBuffG.
    //Thus emsg2() cannot be called!
    mch_early_init();
 
@@ -2612,7 +2618,7 @@ deathtrap(int sigarg) {
    }
 
    //No translation, it may call malloc().
-   sprintf((char *)IObuff, "Eegl: Caught deadly signal %s\r\n", signalInfos[i].name);
+   sprintf((char *)ioBuffG, "Eegl: Caught deadly signal %s\r\n", signalInfos[i].name);
 
    //Preserve files and exit. This sets the really_exiting flag to prevent calling free().
    preserve_exit();
@@ -6101,9 +6107,9 @@ fillIntake(int nfd_in, Arr(PollFd) fds) {
 pub
 #define MAX_OPEN_CHANNELS 16
 
-//Check for reading from "fd" with "timeout" msec. Return CW_READY when there is something to read.
-//CW_NOT_READY when there is nothing to read. CW_ERROR when there is an error.
-private channel_wait_result
+//Check for reading from "fd" with "timeout" msec. Return CW_READY when there is something to
+//read. CW_NOT_READY when there is nothing to read. CW_ERROR when there is an error.
+private WaitResult
 channel_wait(Channel* channel, Socket fd, int timeout) {
    if (timeout > 0)
       ch_log(channel, "Waiting for up to %d msec", timeout);
@@ -6148,7 +6154,7 @@ ch_close_part_on_error(Channel *channel, ChannelFdKind part, int is_err, char *f
 }
 
 private void
-channel_close_now(Channel *channel) {
+channel_close_now(Channel* channel) {
    ch_log(channel, "Closing channel because all readable fds are closed");
    channel_close(channel, true);
 }
@@ -6193,7 +6199,7 @@ channel_read(Channel *channel, ChannelFdKind part, char *func) {
 
    //Reading a disconnection (readlen == 0), or an error.
    if (readlen <= 0) {
-      if (!channel->ch_keep_open)
+      if (!channel->keepOpen)
          ch_close_part_on_error(channel, part, (len < 0), func);
    }
 }
@@ -6237,7 +6243,7 @@ channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, i
       channel_read(channel, part, "channel_read_block");
    }
 
-    //We have a complete message now.
+   //We have a complete message now.
    if (mode == CH_MODE_RAW || outlen != NULL) {
       msg = channel_get_all(channel, part, outlen);
    } else {
@@ -6288,12 +6294,12 @@ channel_read_json_block(
    int id,
    Var** returnVar
 ) {
-   int      more;
-   Socket   fd;
-   int      timeout;
-   ChannelFd   *chanpart = &channel->fds[part];
-   ChannelMode   mode = channel->fds[part].ch_mode;
-   int      retval = FAIL;
+   int more;
+   Socket fd;
+   int timeout;
+   ChannelFd* chanpart = &channel->fds[part];
+   ChannelMode mode = channel->fds[part].ch_mode;
+   int retval = FAIL;
 
    ch_log(channel, "Blocking read JSON for id %d", id);
    ++channel_blocking_wait;
@@ -6365,10 +6371,9 @@ channel_read_json_block(
    return retval;
 }
 
-//Get the channel from the argument.
-//Returns NULL if the handle is invalid.
-//When "check_open" is true check that the channel can be used.
-//When "reading" is true "check_open" considers typeahead useful.
+//Get the channel from the argument. Return NULL if the handle is invalid.
+//When "check_open" is true, check that the channel can be used.
+//When "reading" is true, "check_open" considers typeahead useful.
 //"part" is used to check typeahead, when PART_COUNT use the default part.
 pub Channel *
 get_channel_arg(Var* tv, int check_open, int reading, ChannelFdKind part) {
@@ -6384,12 +6389,12 @@ get_channel_arg(Var* tv, int check_open, int reading, ChannelFdKind part) {
       showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(tv));
       return NULL;
    }
-   if (channel != NULL && reading)
+   if (channel && reading)
       has_readahead =
          channel_has_readahead(channel, part != PART_COUNT ? part : channel_part_read(channel));
 
    if (check_open &&
-         (channel == NULL || (!channel_is_open(channel) && !(reading && has_readahead)))
+         (!channel || (!channel_is_open(channel) && !(reading && has_readahead)))
    ) {
       emsg(_(e_not_an_open_channel));
       return NULL;
@@ -6423,7 +6428,7 @@ commonChannelRead(Var* argvars, Var* returnVar, int raw, int blob) {
       part = channel_part_read(channel);
    int mode = channel_get_mode(channel, part);
    int timeout = channel_get_timeout(channel, part);
-   if (opt.set & JO_TIMEOUT)
+   if ((opt.set & JO_TIMEOUT) != 0)
       timeout = opt.jo_timeout;
 
    if (blob) {
@@ -6462,7 +6467,7 @@ theend:
 
 //Set "channel"/"part" to non-blocking. Only works for sockets and pipes.
 pub void
-channel_set_nonblock(Channel *channel, ChannelFdKind part) {
+channel_set_nonblock(Channel* channel, ChannelFdKind part) {
    ChannelFd* fds = &channel->fds[part];
 
    if (fds->fd == INVALID_FD)
@@ -6476,13 +6481,7 @@ channel_set_nonblock(Channel *channel, ChannelFdKind part) {
 //Write "buf" (ZERO terminated string) to "channel"/"part".
 //When "fun" is not NULL an error message might be given. Return FAIL or OK.
 pub int
-channel_send(
-   Channel* channel,
-   ChannelFdKind part,
-   CS buf_arg,
-   int len_arg,
-   char* fun
-) {
+channel_send(Channel* channel, ChannelFdKind part, CS buf_arg, int len_arg, char* fun) {
    int res;
    ChannelFd* fds = &channel->fds[part];
    int did_use_queue = false;
@@ -6695,14 +6694,13 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
          else
             di->c.number = id;
       } else {
-         //When sending an expression, if the message has an 'id' item,
-         //then use it.
+         //When sending an expression, if the message has an 'id' item, then use it.
          id = 0;
          if (di)
             id = di->c.number;
       }
       if (!bagHasKey(d, tConst("jsonrpc")))
-         bagAddString(d, (CS)"jsonrpc", (CS)"2.0");
+         bagAddString(d, S"jsonrpc", S"2.0");
       text = json_encode_lsp_msg(&argvars[1]);
    } else {
       id = ++channel->lastMsgId;
@@ -6752,7 +6750,6 @@ private void
 ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
    Byte buf[NUMBUFLEN];
    int len;
-   Channel* channel;
    ChannelFdKind part_read;
    JobOptions opt;
    int timeout;
@@ -6769,7 +6766,7 @@ ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
       text = tv_get_string_buf(&argvars[1], buf);
       len = (int)STRLEN(text);
    }
-   channel = send_common(argvars, text, len, 0, eval, &opt,
+   Channel* channel = send_common(argvars, text, len, 0, eval, &opt,
                eval ? "ch_evalraw" : "ch_sendraw", &part_read);
    if (channel && eval) {
       if ((opt.set & JO_TIMEOUT) != 0)
@@ -6796,7 +6793,7 @@ checkPollResult(int ret_in, OUT Arr(PollFd) fds) {
          if (ret > 0 && idx != -1 && (fds[idx].revents & POLLIN) != 0) {
             channel_read(channel, part, "checkPollResult");
             --ret;
-         } ei (channel->fds[part].fd != INVALID_FD && channel->ch_keep_open) {
+         } ei (channel->fds[part].fd != INVALID_FD && channel->keepOpen) {
             //polling a keep-open channel
             channel_read(channel, part, "channel_select_check_keep_open");
          }
@@ -7639,7 +7636,7 @@ mch_create_pty_channel(Job* job, JobOptions* options) {
    if (job->ttyOut != NULL)
       ch_log(channel, "using pty %s on fd %d", job->ttyOut, pty_master_fd);
    job->channel = channel;  //refcount was set by add_channel()
-   channel->ch_keep_open = true;
+   channel->keepOpen = true;
 
    //Only set the pty_master_fd for stdout, do not duplicate it for stderr,
    //it only needs to be read once.
@@ -7768,7 +7765,7 @@ motChannelPollSetup(int nfd_in, OUT Arr(PollFd) fds_in, OUT int* towait) {
          ChannelFd* ch_part = &channel->fds[part];
 
          if (ch_part->fd != INVALID_FD) {
-            if (channel->ch_keep_open) {
+            if (channel->keepOpen) {
                //For unknown reason poll() returns immediately for a
                //keep-open channel. Instead of adding it to the fds, add
                //a short timeout and check, like polling.
@@ -7800,7 +7797,7 @@ motPollCheck(int ret_in, Arr(PollFd) fds) {
          if (ret > 0 && idx != -1 && (fds[idx].revents & POLLIN) != 0) {
             channel_read(channel, part, "motPollCheck");
             --ret;
-         } else if (channel->fds[part].fd != INVALID_FD && channel->ch_keep_open) {
+         } else if (channel->fds[part].fd != INVALID_FD && channel->keepOpen) {
             //polling a keep-open channel
             channel_read(channel, part, "channel_poll_check_keep_open");
          }
@@ -7882,8 +7879,23 @@ chJobSetCopyId(Job* job, int newVal) {
 }
 
 pub Channel*
-chJobGetChannel(Job* job) {
+motJobGetChannel(Job* job) {
    return job->channel;
+}
+
+pub Job*
+motChannelGetJob(Channel* ch) {
+   return ch->job;
+}
+
+pub int
+motJobGetFd(Job* job, Unt part) {
+   return job->channel->fds[part].fd;
+}
+
+pub Boole
+motJobIsKeepOpen(Job* job) {
+   return job->channel->keepOpen;
 }
 
 pub Callback
@@ -9068,9 +9080,9 @@ has_pending_job(void) {
 #define MAX_CHECK_ENDED 8
 
 //Called once in a while: check if any jobs that seem useful have ended. true if a job did end.
-pub int
+pub Boole
 job_check_ended(void) {
-   int did_end = false;
+   Boole did_end = false;
 
    //be quick if there are no jobs to check
    if (!firstJobS)
@@ -11565,11 +11577,11 @@ no_eeglinfo(void) {
 //Count the number of errors.   When there are more than 10, return true.
 private int
 eeglinfo_error(CS errnum, CS message, Byte *line) {
-   eeSnprintf(IObuff, IOSIZE, _("%seeglinfo: %s in line: "), errnum, message);
-   STRNCAT(IObuff, line, IOSIZE - STRLEN(IObuff) - 1);
-   if (IObuff[STRLEN(IObuff) - 1] == '\n')
-      IObuff[STRLEN(IObuff) - 1] = ZERO;
-   emsg(IObuff);
+   eeSnprintf(ioBuffG, IOSIZE, _("%seeglinfo: %s in line: "), errnum, message);
+   STRNCAT(ioBuffG, line, IOSIZE - STRLEN(ioBuffG) - 1);
+   if (ioBuffG[STRLEN(ioBuffG) - 1] == '\n')
+      ioBuffG[STRLEN(ioBuffG) - 1] = ZERO;
+   emsg(ioBuffG);
    if (++eeglinfo_errcnt >= 10) {
       emsg(_(e_eeglinfo_too_many_errors_skipping_rest_of_file));
       return true;
@@ -12209,9 +12221,9 @@ write_one_mark(FILE* fp_out, int c, Pos* pos) {
 
 private void
 writeBookMarks(Book* book, FILE* fp_out) {
-   home_replace(book->fullFileName, IObuff, IOSIZE, true);
+   home_replace(book->fullFileName, ioBuffG, IOSIZE, true);
    fprintf(fp_out, "\n> ");
-   eeglinfo_writestring(fp_out, IObuff);
+   eeglinfo_writestring(fp_out, ioBuffG);
 
    //Write the last used timestamp as the lnum of the non-existing mark '*'.
    //Older Eegls will ignore it and/or copy it.

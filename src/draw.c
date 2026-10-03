@@ -7,6 +7,7 @@
 #include "eegl.h"
 #include "h/data.types.h"
 #include "h/data.h"
+#include "h/book.types.h"
 #include "h/book.h"
 #include "h/input.types.h"
 #include "h/input.h"
@@ -837,10 +838,9 @@ statusLineOrRuler(Portal* po, Boole draw_ruler) {
    stl = copyStr(stl);
 
    startDrawingHilite(deco.hiId);
-   Arr(StatusLineHilite) labels;
    int width = bookRenderStatusLine(
       tgtPo, OUT buf, sizeof(buf), stl ? stl : S"", oname, opt_scope,
-      fillchar, maxwidth, OUT &labels
+      fillchar, maxwidth
    );
    eeglFree(stl);
    tgtPo->o.diff = diffSaved;

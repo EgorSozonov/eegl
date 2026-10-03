@@ -91,10 +91,10 @@ int get_name_len(Byte** arg, Byte** alias, int evaluate, int verbose);
 Text findNameEnd(Text const arg, OUT Text* expr, Unt flags);
 int handle_subscript(
    OUT CS* arg,
-   Var   *returnVar,
-   EvalCtx   *evalarg,
-   int      verbose)   //give error messages
-;
+   Var* returnVar,
+   EvalCtx* evalarg,
+   Boole verbose   //give error messages
+);
 int evCopyItem(Var* from, Var* to, int deep, int top, Unt copyID);
 int mch_get_random(OUT CS buf, int len);
 void echo_one(Var* returnVar, int with_space, int *atstart, int *needclr);

@@ -4023,41 +4023,41 @@ get_special_key_code(CS name) {
    return 0;
 }
 
-//Show one termcode entry. Output goes into IObuff[]
+//Show one termcode entry. Output goes into ioBuffG[]
 pub int
 show_one_termcode(CS name, CS code, int printit) {
    int len;
    if (name[0] > '~') {
-      IObuff[0] = ' ';
-      IObuff[1] = ' ';
-      IObuff[2] = ' ';
-      IObuff[3] = ' ';
+      ioBuffG[0] = ' ';
+      ioBuffG[1] = ' ';
+      ioBuffG[2] = ' ';
+      ioBuffG[3] = ' ';
    } else {
-      IObuff[0] = 'z';
-      IObuff[1] = 'z';
-      IObuff[2] = name[0];
-      IObuff[3] = name[1];
+      ioBuffG[0] = 'z';
+      ioBuffG[1] = 'z';
+      ioBuffG[2] = name[0];
+      ioBuffG[3] = name[1];
    }
-   IObuff[4] = ' ';
+   ioBuffG[4] = ' ';
 
    CS p = get_special_key_name(TERMCAP2KEY(name[0], name[1]), 0);
    if (p[1] == 'z')
-      IObuff[5] = ZERO;
+      ioBuffG[5] = ZERO;
    else
-      STRCPY(IObuff + 5, p);
-   len = (int)STRLEN(IObuff);
+      STRCPY(ioBuffG + 5, p);
+   len = (int)STRLEN(ioBuffG);
    do
-      IObuff[len++] = ' ';
+      ioBuffG[len++] = ' ';
    while (len < 17);
 
-   IObuff[len] = ZERO;
+   ioBuffG[len] = ZERO;
    if (!code)
      len += 4;
    else
      len += eeglStrSize(code);
 
    if (printit) {
-      msg_puts(IObuff);
+      msg_puts(ioBuffG);
       if (!code)
          msg_puts((CS)"NULL");
       else

@@ -4,6 +4,8 @@ bin/*
 *.swn
 *.swo
 
+*.tar
+
 a.txt
 
 *.o

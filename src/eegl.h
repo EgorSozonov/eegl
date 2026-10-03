@@ -517,8 +517,6 @@ typedef struct tm Tm;
 //}}}
 
 
-//================ end of the header file puzzle ===============
-
 //The _() stuff is for using gettext().  It is a no-op when libintl.h is not
 //found or the +multilang feature is disabled.
 //Use NGETTEXT(single, multi, number) to get plural behavior:
@@ -528,6 +526,8 @@ typedef struct tm Tm;
 #define _(x) (CS)gettext((char *)(x))
 #define NGETTEXT(x, xs, n) (CS)ngettext((char*)(x), (char*)(xs), (n))
 #define N_(x) (CS)x
+
+//{{{enums
 
 //Flags for w_valid.
 //These are set when something in a window structure becomes invalid, except
@@ -988,13 +988,6 @@ typedef struct tm Tm;
 #define WSP_NEWLOC     0x100 //don't copy location list
 #define WSP_FORCE_ROOM 0x200 //ignore "not enough room" errors
 
-//flags for check_changed()
-#define CCGD_AW       1   //do autowrite if book was changed
-#define CCGD_MULTWIN  2   //check also when several wins for the buf
-#define CCGD_FORCEIT  4   //! used
-#define CCGD_ALLBOOKS 8   //may write all books
-#define CCGD_EXCMD   16   //may suggest using !
-
 //"flags" values for option-setting functions.
 //When OPT_GLOBAL and OPT_LOCAL are both missing, set both local and global values, get local value
 #define OPT_GLOBAL    0x02 //use global value
@@ -1223,6 +1216,8 @@ typedef enum {
 
 #define O_EXTRA    0
 
+//}}}
+
 //Allocate memory for one type and cast the returned pointer to have the
 //compiler check the types.
 #define ALLOC_ONE(type)  (type *)alloc(sizeof(type))
@@ -1245,10 +1240,6 @@ typedef enum {
 
 #define OUT_STR(s)          out_str((Byte *)(s))
 #define OUT_STR_NF(s)       out_str_nf((Byte *)(s))
-
-#define GUI_FUNCTION(f)       termgui_##f
-# define GUI_MCH_GET_RGB      GUI_FUNCTION(mch_get_rgb)
-# define GUI_MCH_GET_COLOR    GUI_FUNCTION(mch_get_color)
 
 //Prefer using emsgf(), because perror() may send the output to the wrong
 //destination and mess up the screen.
@@ -1309,7 +1300,6 @@ typedef int Socket;
 //book-local options is used there.
 
 //{{{:::options and default values
-
 
 //Formatting options for p_fo @formatoptions
 #define FO_WRAP         't'
@@ -1976,45 +1966,6 @@ struct UndoEntry {
 #endif
 };
 
-struct UndoHeader {
-   //The following have a pointer and a number. The number is used when
-   //reading the undo file in u_read_undo()
-   union {
-      UndoHeader* ptr;   //pointer to next undo header in list
-      long seq;
-   } next;
-   union {
-      UndoHeader* ptr;   //pointer to previous header in list
-      long seq;
-   } prev;
-   union {
-      UndoHeader* ptr;   //pointer to next header for alt. redo
-      long seq;
-   } altNext;
-   union {
-      UndoHeader* ptr;   //pointer to previous header for alt. redo
-      long seq;
-   } altPrev;
-   long   uh_seq;      //sequence number, higher == newer undo
-   int      uh_walk;   //used by undo_time()
-   UndoEntry* uh_entry;   //pointer to first entry
-   UndoEntry* uh_getbot_entry; //pointer to where ue_bot must be set
-   Pos   uh_cursor;   //cursor position before saving
-   long   uh_cursor_vcol;
-   int      uh_flags;   //see below
-   Pos   uh_namedm[NMARKS];   //marks before undo/after redo
-   VisualInfo uh_visual;   //Visual areas before undo/after redo
-   Tyme   uh_time;   //timestamp when the change was made
-   long   uh_save_nr;   //set when the file was saved after the changes in this block
-#ifdef U_DEBUG
-   int      uh_magic;   //magic number to check allocation
-#endif
-};
-
-//values for uh_flags
-#define UH_CHANGED  0x01   //wasModified flag before undo/after redo
-#define UH_EMPTYBUF 0x02   //book was empty
-
 //structures used in undo.c
 #define ALIGN_LONG   //longword alignment and use filler byte
 #define ALIGN_SIZE (sizeof(long))
@@ -2407,11 +2358,6 @@ typedef struct PropType {
    Byte name[1]; //property type name, actually longer
 } PropType;
 
-#define PT_FLAG_INS_START_INCL   1   //insert at start included in property
-#define PT_FLAG_INS_END_INCL   2   //insert at end included in property
-#define PT_FLAG_COMBINE      4   //combine with syntax highlight
-#define PT_FLAG_OVERRIDE   8   //override any highlight
-
 declStruct(SignEntry);
 
 //Sign hiliting. Used by the screen refresh routines.
@@ -2453,19 +2399,19 @@ typedef struct ArgFileEntry {
 #define WARGCOUNT(wp)   (wp->argList->al_ga.len)
 
 //There is no CSF_IF, the lack of CSF_WHILE, CSF_FOR and CSF_TRY means ":if" was used.
-# define CSF_TRUE   0x0001   //condition was true
-# define CSF_ACTIVE   0x0002   //current state is active
-# define CSF_ELSE   0x0004   //":else" has been passed
+# define CSF_TRUE    0x0001   //condition was true
+# define CSF_ACTIVE  0x0002   //current state is active
+# define CSF_ELSE    0x0004   //":else" has been passed
 # define CSF_WHILE   0x0008   //is a ":while"
-# define CSF_FOR   0x0010   //is a ":for"
+# define CSF_FOR     0x0010   //is a ":for"
 # define CSF_BLOCK   0x0020   //is a "{" block
 
-# define CSF_TRY   0x0100   //is a ":try"
-# define CSF_FINALLY   0x0200   //":finally" has been passed
-# define CSF_CATCH   0x0400   //":catch" has been seen
+# define CSF_TRY      0x0100   //is a ":try"
+# define CSF_FINALLY  0x0200   //":finally" has been passed
+# define CSF_CATCH    0x0400   //":catch" has been seen
 # define CSF_THROWN   0x0800   //exception thrown to this try conditional
 # define CSF_CAUGHT   0x1000  //exception caught by this try conditional
-# define CSF_FINISHED   0x2000  //CSF_CAUGHT was handled by finish_exception()
+# define CSF_FINISHED 0x2000  //CSF_CAUGHT was handled by finish_exception()
 # define CSF_SILENT   0x4000   //"emsg_silent" reset by ":try"
 //Note that CSF_ELSE is only used when CSF_TRY and CSF_WHILE are unset
 //(an ":if"), and CSF_SILENT is only used when CSF_TRY is set.
@@ -2483,23 +2429,12 @@ typedef struct ArgFileEntry {
 # define CSTP_FINISH   32   //":finish" is pending
 
 //Flags for the cs_lflags item in CondStack.
-# define CSL_HAD_LOOP    1   //just found ":while" or ":for"
-# define CSL_HAD_ENDLOOP 2   //just found ":endwhile" or ":endfor"
-# define CSL_HAD_CONT    4   //just found ":continue"
-# define CSL_HAD_FINA    8   //just found ":finally"
+#define CSL_HAD_LOOP    1   //just found ":while" or ":for"
+#define CSL_HAD_ENDLOOP 2   //just found ":endwhile" or ":endfor"
+#define CSL_HAD_CONT    4   //just found ":continue"
+#define CSL_HAD_FINA    8   //just found ":finally"
 
-//A list of error messages that can be converted to an exception.  "throw_msg"
-//is only set in the first element of the list.  Usually, it points to the
-//original message stored in that element, but sometimes it points to a later
-//message in the list.  See cause_errthrow().
-typedef struct MsgList MsgList;
-struct MsgList {
-   MsgList   *next;      //next of several messages in a row
-   CS msg;      //original message, allocated
-   CS throw_msg;   //msg to throw: usually original one
-   CS sfile;      //value from estack_sfile(), allocated
-   Long slnum;      //line number for "sfile"
-};
+declStruct(MsgList);
 
 //Structure to save the error/interrupt/exception state between calls to
 //enter_cleanup() and leave_cleanup().  Must be allocated as an automatic
@@ -2552,12 +2487,6 @@ struct mapblock {
    char expr;      //<expr> used, m_str is an expression
    ScriptPos scriptCtx;   //SCTX where map was defined
 };
-
-//Used for hiliting in the status line
-typedef struct {
-   CS start;
-   Short hiId;      //0: no HL, 1-9: User HL, < 0 for syn ID
-} StatusLineHilite;
 
 //}}}
 //{{{hash tables
@@ -3106,17 +3035,11 @@ struct ReadChunk {
    ReadChunk* prev;
 };
 
-struct WriteQueue {
-   ArrayList   wq_ga;
-   WriteQueue* next;
-   WriteQueue* prev;
-};
-
 struct JsonQ {
-   Var   *jq_value;
-   JsonQ   *jq_next;
-   JsonQ   *jq_prev;
-   int      jq_no_callback; //true when no callback was found
+   Var* jq_value;
+   JsonQ* jq_next;
+   JsonQ* jq_prev;
+   int jq_no_callback; //true when no callback was found
 };
 
 struct CbNode {
@@ -3689,10 +3612,10 @@ struct Tab {        //:Tab
    Portal* lastPor;    //last portal in this tab
    Portal* firstPopupPort; //first popup portal in this Tab
    NULLABLE Portal* previewPortal; //the preview portal in this Tab
-   long old_Rows;    //Rows when tab was left
-   long old_Columns; //Columns when tab was left, -1 when calling shell_new_columns() postponed
+   Long old_Rows;    //Rows when tab was left
+   Long old_Columns; //Columns when tab was left, -1 when calling shell_new_columns() postponed
    int old_coloff;  //Column offset when tab was left
-   long  ch_used;       //value of @commheight when frame size was set
+   Long ch_used;       //value of @commheight when frame size was set
    CS localdir;   //absolute path of local directory or NULL
    CS prevdir;   //previous directory
 
@@ -3713,21 +3636,21 @@ struct Tab {        //:Tab
 //is actually in the book.  When wl_valid is false, the entries can only be used to count the
 //number of displayed lines used. wl_lnum and wl_lastlnum are invalid too.
 typedef struct w_line {
-   LineNr   bookLnum;   //book line number for logical line
-   Short   height;   //height in screen lines
-   Boole   isValid;   //whether values are valid for text in book
-   Boole   isFolded;   //whether this is a range of folded lines
-   LineNr   lastBookLnum;   //last book line number for logical line
+   LineNr bookLnum;   //book line number for logical line
+   Short height;   //height in screen lines
+   Boole isValid;   //whether values are valid for text in book
+   Boole isFolded;   //whether this is a range of folded lines
+   LineNr lastBookLnum;   //last book line number for logical line
 } PortLine;
 
 //Portals are kept in a tree of frames. Each frame has a column (FR_COL)
 //or row (FR_ROW) layout or is a leaf, which has a portal.
 struct Frame { //:Frame
-   char   layout;   //FR_LEAF, FR_COL or FR_ROW
-   Unt      width;
-   Unt      newWidth;   //new width used in win_equal_rec()
-   Unt      height;
-   Unt      newHeight;   //new height used in win_equal_rec()
+   char layout;   //FR_LEAF, FR_COL or FR_ROW
+   Unt width;
+   Unt newWidth;   //new width used in win_equal_rec()
+   Unt height;
+   Unt newHeight;   //new height used in win_equal_rec()
    Frame* parent;   //containing frame or NULL
    Frame* next;   //frame right or below in same parent, NULL for last
    Frame* prev;   //frame left or above in same parent, NULL for first
@@ -3771,10 +3694,10 @@ typedef struct {
 typedef struct {
    int flags;      //POPF_ values
    int handled;    //POPUP_HANDLE[0-9] flags
-   Arr(Byte)    title;
+   CS title;
    PopupPosition   pos;
-   int      fixed;      //do not shift popup to fit on screen
-   int      propType;  //when not zero: textprop type ID
+   int fixed;      //do not shift popup to fit on screen
+   int propType;  //when not zero: textprop type ID
    Portal* propPort;  //portal to search for textprop
    int propId;    //when not zero: textprop ID
    int zIndex;
@@ -4090,7 +4013,6 @@ typedef struct {
 } PopupItem;
 
 declStruct(FileSearchCtx);
-
 declStruct(HistoryEntry);
 
 //types for expressions.
@@ -4341,36 +4263,16 @@ typedef struct {
 } CellSize;
 
 //}}}
-//{{{spelling
-
-declStruct(SpellLang);
-declStruct(SpellTab);
-
-//Values for "what" argument of spell_add_word()
-#define SPELL_ADD_GOOD   0
-#define SPELL_ADD_BAD   1
-#define SPELL_ADD_RARE   2
-
-//}}}
 //{{{balloons
 
-typedef enum {
-   ShS_NEUTRAL,         //nothing showing or pending
-   ShS_PENDING,         //data requested from debugger
-   ShS_UPDATE_PENDING,         //switching information displayed
-   ShS_SHOWING            //the balloon is being displayed
-} BeState;
-
 typedef struct BalloonEvalStruct {
-   int         ts;      //tab size for this book
-   Byte      *msg;      //allocated: current text
+   int ts;      //tab size for this book
+   Byte* msg;   //allocated: current text
 } BalloonEval;
 
-#define EVAL_OFFSET_X 15 //displacement of balloon topleft corner from pointer
-#define EVAL_OFFSET_Y 10
-
 //}}}
 //}}}
+//{{{allocations
 
 //enumeration of alloc IDs.
 //Used by test_alloc_fail() to test memory allocation failures.
@@ -4412,10 +4314,7 @@ typedef enum {
    aid_last
 } AllocId;
 
-//Values for "do_profiling".
-#define PROF_NONE   0 //profiling not started
-#define PROF_YES    1 //profiling busy
-#define PROF_PAUSED 2 //profiling paused
+//}}}
 
 #define MOUSE_X1  0x300 //Mouse-button X1 (6th)
 #define MOUSE_X2  0x400 //Mouse-button X2
@@ -4604,11 +4503,6 @@ typedef enum {
 //}}}
 //{{{prototypes: include the (automatically generated) function prototypes
 
-//Machine-dependent routines. avoid errors in function prototypes
-//#define Display int
-//#define Widget int
-//#define XImage int
-
 //These prototypes cannot be produced automatically.
 int smsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
 #define smsg(a, ...) smsg0((char const*)(a), ##__VA_ARGS__)
@@ -4647,7 +4541,6 @@ void ch_error(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 //}}}
 
 #define mch_errmsg(str)   fprintf(stderr, "%s", (str))
-#define display_errors()   fflush(stderr)
 #define mch_msg(str)      printf("%s", (str))
 
 //{{{:::globals: global variables and messages
@@ -4699,6 +4592,7 @@ EXTERN CS projectDirG INIT(= null);   //project directory if started in project 
 //Array with size Rows x Columns containing zindex of popups.
 EXTERN Arr(Short) popupMaskG INIT(= NULL);
 EXTERN Arr(Short) popupMaskNextG INIT(= NULL);
+
 //Array with flags for transparent cells of current popup.
 EXTERN Arr(Byte) popupTransparencyG INIT(= NULL);
 
@@ -4839,7 +4733,7 @@ EXTERN Boole force_abort INIT(= false);
 //when the "emsg_severe" flag was set when the emsg() call was made.
 EXTERN MsgList **msg_list INIT(= NULL);
 
-EXTERN Boole   did_source_packages INIT(= false);
+EXTERN Boole did_source_packages INIT(= false);
 
 //Magic number used for EeSetItem "hi_key" value indicating a deleted item. Only the address is used
 EXTERN Byte hash_removed;
@@ -4869,7 +4763,6 @@ EXTERN int no_check_timestamps INIT(= 0);   //Don't check timestamps
 
 EXTERN Arr(Decoration) decorationsG; //The text decorations table used for drawing. See hilite.c
 EXTERN int countDecosG; //length of decorationsG
-
 
 //When true skip calling terminal_loop() once.  Used when typing ':' at the more prompt
 EXTERN Boole skip_term_loop INIT(= false);
@@ -4914,7 +4807,6 @@ EXTERN Boole redraw_not_allowed INIT(= false);
 //using invalid portals or books.
 EXTERN Boole dont_parse_messages INIT(= false);
 
-
 //All regular portals are linked in a list. "firstpor" points to the first entry, "lastpor" to the
 //last entry (can be the same as firstwin) and "curpor" to the currently active portal.
 //When switching tabs these swapped with the pointers in "Tab".
@@ -4956,7 +4848,7 @@ EXTERN Boole ignore_text_props INIT(= false);
 EXTERN Boole pum_will_redraw INIT(= false);
 
 //The portal layout is kept in a tree of frames. topframe points to the root of the tree.
-EXTERN Frame   *topframeG;   //root of the portal frame tree
+EXTERN Frame* topframeG;   //root of the portal frame tree
 
 //Tabs are alternative topframes.  "firstTabG" points to the first
 //one in the list, "curtab" is the current one. "lastUsedTabG" is the last used one.
@@ -4980,14 +4872,14 @@ EXTERN int arg_had_last INIT(= false); //accessed last file in argListG
 EXTERN int rulerWidthG;      //@rulerformat: width of ruler when non-zero
 EXTERN int shownCommandColG; //column for shown command
 
-//When starting or exiting some things are done differently (e.g. screen updating).
-EXTERN int   starting INIT(= NO_SCREEN);
+//When starting or exiting, some things are done differently (e.g. screen updating).
+EXTERN int starting INIT(= NO_SCREEN);
             //first NO_SCREEN, then NO_BUFFERS and then set to 0 when starting up finished
 EXTERN Boole isExitingG INIT(= false); //true when planning to exit Eegl. Might
                                        //still keep on running if there is a changed book.
 EXTERN Boole really_exiting INIT(= false);
             //true when we are sure to exit, e.g., after a deadly signal
-EXTERN int   v_dying INIT(= 0); //internal value of v:dying
+EXTERN int v_dying INIT(= 0); //internal value of v:dying
 EXTERN Boole stdout_isatty INIT(= true);   //is stdout a terminal?
 
 #if defined(EXITFREE)
@@ -5024,12 +4916,12 @@ EXTERN Boole isRedoVisualBusy INIT(= false); //true when redoing Visual
 
 //The Visual area is remembered for reselection.
 EXTERN int   resel_VIsual_mode INIT(= ZERO);   //'v', 'V', or Ctrl-V
-EXTERN LineNr   resel_VIsual_line_count;   //number of lines
+EXTERN LineNr  resel_VIsual_line_count;   //number of lines
 EXTERN ColNr   resel_VIsual_vcol;      //nr of cols or end col
 
 //When pasting text with the middle mouse button in visual mode with
 //restart_edit set, remember where it started so we can set Insstart.
-EXTERN Pos   where_paste_started;
+EXTERN Pos where_paste_started;
 
 //This flag is used to make auto-indent work right on lines where only a <RETURN> or <ESC> is
 //typed. It is set when an auto-indent is done, and reset when any other editing is done on the
@@ -5078,7 +4970,7 @@ EXTERN Pos   insertStartG;      //This is where the latest insert/append mode st
 //This is where the latest insert/append mode started. In contrast to
 //Insstart, this won't be reset by certain keys and is needed for
 //op_insert(), to detect correctly where inserting by the user started.
-EXTERN Pos   insertStartOrigG;
+EXTERN Pos insertStartOrigG;
 
 //These flags are set based upon 'fileencoding'.
 //The characters are internally stored as UTF-8 (to avoid trouble with ZERO)
@@ -5109,9 +5001,8 @@ EXTERN Boole debug_mode INIT(= false);
 
 EXTERN Operator* currOperatorG INIT(= NULL);
 EXTERN Boole finish_op INIT(= false);//true while an operator is pending
-EXTERN long opcount INIT(= 0);   //count for pending operator
+EXTERN Long opcount INIT(= 0);   //count for pending operator
 EXTERN int motion_force INIT(= 0); //motion force for pending operator
-
 
 EXTERN int ex_no_reprint INIT(= false); //no need to print after z or p
 
@@ -5161,12 +5052,12 @@ EXTERN Boole no_abbr INIT(= true);   //true when no abbreviations loaded
 EXTERN int mapped_ctrl_c INIT(= false); //modes where CTRL-C is mapped
 EXTERN int ctrl_c_interrupts INIT(= true);   //CTRL-C sets gotInterruptG
 
-EXTERN CommandModifier   commModifierG;         //Command modifiers
-EXTERN int   stickyCommandModifiersG INIT(= 0); //used by :execute
+EXTERN CommandModifier commModifierG;         //Command modifiers
+EXTERN int stickyCommandModifiersG INIT(= 0); //used by :execute
 
-EXTERN int   msg_silent INIT(= 0);   //don't print messages
-EXTERN int   emsg_silent INIT(= 0);   //don't print error messages
-EXTERN int   emsg_silent_def INIT(= 0);  //value of emsg_silent when a :def
+EXTERN int msg_silent INIT(= 0);   //don't print messages
+EXTERN int emsg_silent INIT(= 0);   //don't print error messages
+EXTERN int emsg_silent_def INIT(= 0);  //value of emsg_silent when a :def
                    //function is called
 EXTERN int   emsg_noredir INIT(= 0);   //don't redirect error messages
 EXTERN Boole   cmd_silent INIT(= false); //don't echo the command line
@@ -5178,13 +5069,12 @@ EXTERN Text swapDirG; //Directory for swap files
 EXTERN int   swap_exists_action INIT(= SEA_NONE); //For dialog when swap file already exists.
 EXTERN Boole   swap_exists_did_quit INIT(= false); //Selected "quit" at the dialog.
 
-EXTERN CS IObuff;      //sprintf's are done in this buffer, size is IOSIZE
+EXTERN CS ioBuffG;      //sprintf's are done in this buffer, size is IOSIZE
 EXTERN CS nameBuffG;      //file names are expanded in this array, size is MAXPATHL
 EXTERN Byte msg_buf[MSG_BUF_LEN];   //small buffer for messages
 
-
 //When non-zero, postpone redrawing.
-EXTERN int   isRedrawingDisabledG INIT(= 0);
+EXTERN int isRedrawingDisabledG INIT(= 0);
 
 EXTERN Boole recoveryModeG INIT(= false); //Set to true for "-r" option
 
@@ -5196,14 +5086,14 @@ EXTERN Typeahead typeBufG
           ;
 //Flag used to indicate that vgetorpeek() returned a char like Esc when the
 //:normal argument was exhausted.
-EXTERN int   typebuf_was_empty INIT(= false);
+EXTERN int typebuf_was_empty INIT(= false);
 
-EXTERN int   ex_normal_busy INIT(= 0);   //recursiveness of ex_normal()
-EXTERN int   in_feedkeys INIT(= 0);       //ex_normal_busy set in feedkeys()
-EXTERN int   ex_normal_lock INIT(= 0);   //forbid use of ex_normal()
+EXTERN int ex_normal_busy INIT(= 0);   //recursiveness of ex_normal()
+EXTERN int in_feedkeys INIT(= 0);       //ex_normal_busy set in feedkeys()
+EXTERN int ex_normal_lock INIT(= 0);   //forbid use of ex_normal()
 
-EXTERN int   ignore_script INIT(= false);  //ignore script input
-EXTERN int   stop_insert_mode;   //for ":stopinsert" and 'insertmode'
+EXTERN int ignore_script INIT(= false);  //ignore script input
+EXTERN int stop_insert_mode;   //for ":stopinsert" and 'insertmode'
 
 EXTERN Boole keyWasTypedG;      //true if user typed current char
 EXTERN Boole keyWasStuffedG;      //true if current char from stuffbuf
@@ -5222,7 +5112,7 @@ EXTERN Boole need_highlight_changed INIT(= true);
 EXTERN FILE* scriptin[NSCRIPT];       //streams to read script from
 EXTERN int curscript INIT(= 0);       //index in scriptin[]
 EXTERN FILE* scriptout  INIT(= NULL);   //stream to write script to
-EXTERN int  read_cmd_fd INIT(= 0);       //fd to read commands from
+EXTERN int read_cmd_fd INIT(= 0);       //fd to read commands from
 
 //Set to true when an interrupt signal occurred.
 //Volatile because it is used in signal handler catch_sigint().
@@ -5278,11 +5168,11 @@ EXTERN int g_tag_at_cursor INIT(= false); //whether the tag command comes
                    //from the command line (0) or was invoked as a normal command (1)
 
 
-EXTERN Byte   *escape_chars INIT(= (Byte *)" \t\\\"|"); //need backslash in cmd line
+EXTERN Byte* escape_chars INIT(= (Byte *)" \t\\\"|"); //need backslash in cmd line
 
 EXTERN int concatenateBackslashesG INIT(= true);
 
-EXTERN int   keep_help_flag INIT(= false); //doing :ta from help file
+EXTERN int keep_help_flag INIT(= false); //doing :ta from help file
 
 EXTERN int  redir_off INIT(= false);   //no redirection for a moment
 EXTERN FILE *redir_fd INIT(= NULL);   //message redirection file
@@ -5290,9 +5180,9 @@ EXTERN int  redir_reg INIT(= 0);   //message redirection register
 EXTERN int  redir_vname INIT(= 0);   //message redirection variable
 EXTERN int  redir_execute INIT(= 0);   //execute() redirection
 
-EXTERN Byte   langmap_mapchar[256];   //mapping for language keys
+EXTERN Byte langmap_mapchar[256];   //mapping for language keys
 
-EXTERN int  wild_menu_showing INIT(= 0);
+EXTERN int wild_menu_showing INIT(= 0);
 #define WM_SHOWN     1      //wildmenu showing
 #define WM_SCROLLED  2      //wildmenu showing with scroll
 
@@ -5324,24 +5214,24 @@ EXTERN Byte no_lines_msg[]   INIT(= "--No lines in book--");
 //When ":global" is used to number of substitutions and changed lines is
 //accumulated until it's finished.
 //Also used for ":spellrepall".
-EXTERN long   sub_nsubs;   //total number of substitutions
-EXTERN LineNr   sub_nlines;   //total number of lines changed
+EXTERN Long sub_nsubs;   //total number of substitutions
+EXTERN LineNr sub_nlines;   //total number of lines changed
 
-EXTERN BalloonEval   *balloonEval INIT(= NULL);
-EXTERN int      balloonEvalForTerm INIT(= false);
+EXTERN BalloonEval* balloonEval INIT(= NULL);
+EXTERN int balloonEvalForTerm INIT(= false);
 
-EXTERN int   typebuf_was_filled INIT(= false); //received text from client or from feedkeys()
+EXTERN int typebuf_was_filled INIT(= false); //received text from client or from feedkeys()
 
 EXTERN CS serverName INIT(= NULL);   //name of the server
 
-EXTERN int   term_is_xterm INIT(= false);   //xterm-like 'term'
+EXTERN int term_is_xterm INIT(= false);   //xterm-like 'term'
 
 //Set to true when an operator is being executed with virtual editing, MAYBE
 //when no operator is being executed, false otherwise.
-EXTERN int   virtual_op INIT(= MAYBE);
+EXTERN int virtual_op INIT(= MAYBE);
 
 //Display tick, incremented for each call to update_screen()
-EXTERN DisplayTick   display_tick INIT(= 0);
+EXTERN DisplayTick display_tick INIT(= 0);
 
 //Line in which spell checking wasn't hilited because it touched the
 //cursor position in Insert mode.
@@ -5459,243 +5349,156 @@ EXTERN int did_warn_clipboard INIT(= false);
 EXTERN Byte e_interrupted[]
    INIT(= "Interrupted");
 
-
-
 EXTERN Byte e_backslash_should_be_followed_by[]
    INIT(= "E10: \\ should be followed by /, ? or &");
 EXTERN Byte e_invalid_in_commline_portal[]
    INIT(= "E11: Invalid in command-line portal; :q<CR> closes the portal");
 EXTERN Byte e_command_not_allowed_from_vimrc_in_current_dir_or_tag_search[]
    INIT(= "E12: Command not allowed from vimrc in current dir or tag search");
-EXTERN Byte e_file_exists[]
-   INIT(= "E13: File exists (add ! to override)");
-EXTERN Byte e_invalid_expression_str[]
-   INIT(= "E15: Invalid expression: \"%s\"");
-EXTERN Byte e_invalid_range[]
-   INIT(= "E16: Invalid range");
-EXTERN Byte e_str_is_directory[]
-   INIT(= "E17: \"%s\" is a directory");
-EXTERN Byte e_unexpected_characters_in_let[]
-   INIT(= "E18: Unexpected characters in :let");
+EXTERN Byte e_file_exists[] INIT(= "E13: File exists (add ! to override)");
+EXTERN Byte e_invalid_expression_str[] INIT(= "E15: Invalid expression: \"%s\"");
+EXTERN Byte e_invalid_range[] INIT(= "E16: Invalid range");
+EXTERN Byte e_str_is_directory[] INIT(= "E17: \"%s\" is a directory");
+EXTERN Byte e_unexpected_characters_in_let[] INIT(= "E18: Unexpected characters in :let");
 EXTERN Byte e_unexpected_characters_in_assignment[]
    INIT(= "E18: Unexpected characters in assignment");
-EXTERN Byte e_mark_has_invalid_line_number[]
-   INIT(= "E19: Mark has invalid line number");
-EXTERN Byte e_mark_not_set[]
-   INIT(= "E20: Mark not set");
+EXTERN Byte e_mark_has_invalid_line_number[] INIT(= "E19: Mark has invalid line number");
+EXTERN Byte e_mark_not_set[] INIT(= "E20: Mark not set");
 EXTERN Byte e_cannot_make_changes_modifiable_is_off[]
    INIT(= "E21: Cannot make changes, 'modifiable' is off");
-EXTERN Byte e_scripts_nested_too_deep[]
-   INIT(= "E22: Scripts nested too deep");
-EXTERN Byte e_no_alternate_file[]
-   INIT(= "E23: No alternate file");
-EXTERN Byte e_no_such_abbreviation[]
-   INIT(= "E24: No such abbreviation");
+EXTERN Byte e_scripts_nested_too_deep[] INIT(= "E22: Scripts nested too deep");
+EXTERN Byte e_no_alternate_file[] INIT(= "E23: No alternate file");
+EXTERN Byte e_no_such_abbreviation[] INIT(= "E24: No such abbreviation");
 EXTERN Byte e_no_such_highlight_group_name_str[]
    INIT(= "E28: No such highlight group name: %s");
-EXTERN Byte e_no_inserted_text_yet[]
-   INIT(= "E29: No inserted text yet");
-EXTERN Byte e_no_previous_command_line[]
-   INIT(= "E30: No previous command line");
-EXTERN Byte e_no_such_mapping[]
-   INIT(= "E31: No such mapping");
-EXTERN Byte e_no_file_name[]
-   INIT(= "E32: No file name");
+EXTERN Byte e_no_inserted_text_yet[] INIT(= "E29: No inserted text yet");
+EXTERN Byte e_no_previous_command_line[] INIT(= "E30: No previous command line");
+EXTERN Byte e_no_such_mapping[] INIT(= "E31: No such mapping");
+EXTERN Byte e_no_file_name[] INIT(= "E32: No file name");
 EXTERN Byte e_no_previous_substitute_regular_expression[]
    INIT(= "E33: No previous substitute regular expression");
-EXTERN Byte e_no_previous_command[]
-   INIT(= "E34: No previous command");
-EXTERN Byte e_no_previous_regular_expression[]
-   INIT(= "E35: No previous regular expression");
-EXTERN Byte e_not_enough_room[]
-   INIT(= "E36: Not enough room");
-EXTERN Byte e_no_write_since_last_change[]
-   INIT(= "E37: No write since last change");
+EXTERN Byte e_no_previous_command[] INIT(= "E34: No previous command");
+EXTERN Byte e_no_previous_regular_expression[] INIT(= "E35: No previous regular expression");
+EXTERN Byte e_not_enough_room[] INIT(= "E36: Not enough room");
+EXTERN Byte e_no_write_since_last_change[] INIT(= "E37: No write since last change");
 EXTERN Byte e_no_write_since_last_change_add_bang_to_override[]
    INIT(= "E37: No write since last change (add ! to override)");
-EXTERN Byte e_null_argument[]
-   INIT(= "E38: Null argument");
-EXTERN Byte e_number_expected[]
-   INIT(= "E39: Number expected");
-EXTERN Byte e_cant_open_errorfile_str[]
-   INIT(= "E40: Can't open errorfile %s");
-EXTERN Byte e_out_of_memory[]
-   INIT(= "E41: Out of memory!");
-EXTERN Byte e_no_entries_in_location_list[]
-   INIT(= "E42: No entries in this location list");
-EXTERN Byte e_damaged_match_string[]
-   INIT(= "E43: Damaged match string");
-EXTERN Byte e_corrupted_regexp_program[]
-   INIT(= "E44: Corrupted regexp program");
+EXTERN Byte e_null_argument[] INIT(= "E38: Null argument");
+EXTERN Byte e_number_expected[] INIT(= "E39: Number expected");
+EXTERN Byte e_cant_open_errorfile_str[] INIT(= "E40: Can't open errorfile %s");
+EXTERN Byte e_out_of_memory[] INIT(= "E41: Out of memory!");
+EXTERN Byte e_no_entries_in_location_list[] INIT(= "E42: No entries in this location list");
+EXTERN Byte e_damaged_match_string[] INIT(= "E43: Damaged match string");
+EXTERN Byte e_corrupted_regexp_program[] INIT(= "E44: Corrupted regexp program");
 EXTERN Byte e_readonly_option_is_set_add_bang_to_override[]
    INIT(= "E45: book is not modifiable");
-EXTERN Byte e_cannot_change_readonly_variable[]
-   INIT(= "E46: Cannot change read-only variable");
+EXTERN Byte e_cannot_change_readonly_variable[] INIT(= "E46: Cannot change read-only variable");
 EXTERN Byte e_cannot_change_readonly_variable_str[]
    INIT(= "E46: Cannot change read-only variable \"%s\"");
-EXTERN Byte e_error_while_reading_errorfile[]
-   INIT(= "E47: Error while reading errorfile");
-EXTERN Byte e_invalid_scroll_size[]
-   INIT(= "E49: Invalid scroll size");
-EXTERN Byte e_too_many_z[]
-   INIT(= "E50: Too many \\z(");
-EXTERN Byte e_too_many_str_open[]
-   INIT(= "E51: Too many %s(");
-EXTERN Byte e_unmatched_z[]
-   INIT(= "E52: Unmatched \\z(");
-EXTERN Byte e_unmatched_str_percent_open[]
-   INIT(= "E53: Unmatched %s%%(");
-EXTERN Byte e_unmatched_str_open[]
-   INIT(= "E54: Unmatched %s(");
-EXTERN Byte e_unmatched_str_close[]
-   INIT(= "E55: Unmatched %s)");
-EXTERN Byte e_invalid_character_after_str_at[]
-   INIT(= "E59: Invalid character after %s@");
-EXTERN Byte e_too_many_complex_str_curly[]
-   INIT(= "E60: Too many complex %s{...}s");
-EXTERN Byte e_nested_str[]
-   INIT(= "E61: Nested %s*");
-EXTERN Byte e_nested_str_chr[]
-   INIT(= "E62: Nested %s%c");
-EXTERN Byte e_invalid_use_of_underscore[]
-   INIT(= "E63: Invalid use of \\_");
-EXTERN Byte e_str_chr_follows_nothing[]
-   INIT(= "E64: %s%c follows nothing");
-EXTERN Byte e_illegal_back_reference[]
-   INIT(= "E65: Illegal back reference");
-EXTERN Byte e_z_not_allowed_here[]
-   INIT(= "E66: \\z( not allowed here");
-EXTERN Byte e_z1_z9_not_allowed_here[]
-   INIT(= "E67: \\z1 - \\z9 not allowed here");
-EXTERN Byte e_invalid_character_after_bsl_z[]
-   INIT(= "E68: Invalid character after \\z");
-EXTERN Byte e_missing_sb_after_str[]
-   INIT(= "E69: Missing ] after %s%%[");
-EXTERN Byte e_empty_str_brackets[]
-   INIT(= "E70: Empty %s%%[]");
-EXTERN Byte e_invalid_character_after_str[]
-   INIT(= "E71: Invalid character after %s%%");
-EXTERN Byte e_close_error_on_swap_file[]
-   INIT(= "E72: Close error on swap file");
-EXTERN Byte e_tag_stack_empty[]
-   INIT(= "E73: Tag stack empty");
-EXTERN Byte e_command_too_complex[]
-   INIT(= "E74: Command too complex");
-EXTERN Byte e_name_too_long[]
-   INIT(= "E75: Name too long");
-EXTERN Byte e_too_many_brackets[]
-   INIT(= "E76: Too many [");
-EXTERN Byte e_too_many_file_names[]
-   INIT(= "E77: Too many file names");
-EXTERN Byte e_unknown_mark[]
-   INIT(= "E78: Unknown mark");
-EXTERN Byte e_cannot_expand_wildcards[]
-   INIT(= "E79: Cannot expand wildcards");
-EXTERN Byte e_error_while_writing[]
-   INIT(= "E80: Error while writing");
+EXTERN Byte e_error_while_reading_errorfile[] INIT(= "E47: Error while reading errorfile");
+EXTERN Byte e_invalid_scroll_size[] INIT(= "E49: Invalid scroll size");
+EXTERN Byte e_too_many_z[] INIT(= "E50: Too many \\z(");
+EXTERN Byte e_too_many_str_open[] INIT(= "E51: Too many %s(");
+EXTERN Byte e_unmatched_z[] INIT(= "E52: Unmatched \\z(");
+EXTERN Byte e_unmatched_str_percent_open[] INIT(= "E53: Unmatched %s%%(");
+EXTERN Byte e_unmatched_str_open[] INIT(= "E54: Unmatched %s(");
+EXTERN Byte e_unmatched_str_close[] INIT(= "E55: Unmatched %s)");
+EXTERN Byte e_invalid_character_after_str_at[] INIT(= "E59: Invalid character after %s@");
+EXTERN Byte e_too_many_complex_str_curly[] INIT(= "E60: Too many complex %s{...}s");
+EXTERN Byte e_nested_str[] INIT(= "E61: Nested %s*");
+EXTERN Byte e_nested_str_chr[] INIT(= "E62: Nested %s%c");
+EXTERN Byte e_invalid_use_of_underscore[] INIT(= "E63: Invalid use of \\_");
+EXTERN Byte e_str_chr_follows_nothing[] INIT(= "E64: %s%c follows nothing");
+EXTERN Byte e_illegal_back_reference[] INIT(= "E65: Illegal back reference");
+EXTERN Byte e_z_not_allowed_here[] INIT(= "E66: \\z( not allowed here");
+EXTERN Byte e_z1_z9_not_allowed_here[] INIT(= "E67: \\z1 - \\z9 not allowed here");
+EXTERN Byte e_invalid_character_after_bsl_z[] INIT(= "E68: Invalid character after \\z");
+EXTERN Byte e_missing_sb_after_str[] INIT(= "E69: Missing ] after %s%%[");
+EXTERN Byte e_empty_str_brackets[] INIT(= "E70: Empty %s%%[]");
+EXTERN Byte e_invalid_character_after_str[] INIT(= "E71: Invalid character after %s%%");
+EXTERN Byte e_close_error_on_swap_file[] INIT(= "E72: Close error on swap file");
+EXTERN Byte e_tag_stack_empty[] INIT(= "E73: Tag stack empty");
+EXTERN Byte e_command_too_complex[] INIT(= "E74: Command too complex");
+EXTERN Byte e_name_too_long[] INIT(= "E75: Name too long");
+EXTERN Byte e_too_many_brackets[] INIT(= "E76: Too many [");
+EXTERN Byte e_too_many_file_names[] INIT(= "E77: Too many file names");
+EXTERN Byte e_unknown_mark[] INIT(= "E78: Unknown mark");
+EXTERN Byte e_cannot_expand_wildcards[] INIT(= "E79: Cannot expand wildcards");
+EXTERN Byte e_error_while_writing[] INIT(= "E80: Error while writing");
 EXTERN Byte e_using_sid_not_in_script_context[]
    INIT(= "E81: Using <SID> not in a script context");
 EXTERN Byte e_cannot_allocate_any_buffer_exiting[]
    INIT(= "E82: Cannot allocate any book, exiting...");
 EXTERN Byte e_cannot_allocate_book_using_other_one[]
    INIT(= "E83: Cannot allocate book, using other one...");
-EXTERN Byte e_no_modified_buffer_found[]
-   INIT(= "E84: No modified book found");
-EXTERN Byte e_there_is_no_listed_buffer[]
-   INIT(= "E85: There is no listed book");
-EXTERN Byte e_book_nr_does_not_exist[]
-   INIT(= "E86: Book %ld does not exist");
-EXTERN Byte e_cannot_go_beyond_last_buffer[]
-   INIT(= "E87: Cannot go beyond last book");
-EXTERN Byte e_cannot_go_before_first_buffer[]
-   INIT(= "E88: Cannot go before first book");
+EXTERN Byte e_no_modified_buffer_found[] INIT(= "E84: No modified book found");
+EXTERN Byte e_there_is_no_listed_buffer[] INIT(= "E85: There is no listed book");
+EXTERN Byte e_book_nr_does_not_exist[] INIT(= "E86: Book %ld does not exist");
+EXTERN Byte e_cannot_go_beyond_last_buffer[] INIT(= "E87: Cannot go beyond last book");
+EXTERN Byte e_cannot_go_before_first_buffer[] INIT(= "E88: Cannot go before first book");
 EXTERN Byte e_no_write_since_last_change_for_buffer_nr_add_bang_to_override[]
    INIT(= "E89: No write since last change for book %d (add ! to override)");
-EXTERN Byte e_cannot_unload_last_buffer[]
-   INIT(= "E90: Cannot unload last book");
-EXTERN Byte e_book_nr_not_found[]
-   INIT(= "E92: Book %d not found");
-EXTERN Byte e_more_than_one_match_for_str[]
-   INIT(= "E93: More than one match for %s");
-EXTERN Byte e_no_matching_buffer_for_str[]
-   INIT(= "E94: No matching book for %s");
+EXTERN Byte e_cannot_unload_last_buffer[] INIT(= "E90: Cannot unload last book");
+EXTERN Byte e_book_nr_not_found[] INIT(= "E92: Book %d not found");
+EXTERN Byte e_more_than_one_match_for_str[] INIT(= "E93: More than one match for %s");
+EXTERN Byte e_no_matching_buffer_for_str[] INIT(= "E94: No matching book for %s");
 EXTERN Byte e_buffer_with_this_name_already_exists[]
    INIT(= "E95: Book with this name already exists");
 EXTERN Byte e_cannot_diff_more_than_nr_buffers[]
    INIT(= "E96: Cannot diff more than %d books");
-EXTERN Byte e_cannot_create_diffs[]
-   INIT(= "E97: Cannot create diffs");
-EXTERN Byte e_cannot_read_diff_output[]
-   INIT(= "E98: Cannot read diff output");
+EXTERN Byte e_cannot_create_diffs[] INIT(= "E97: Cannot create diffs");
+EXTERN Byte e_cannot_read_diff_output[] INIT(= "E98: Cannot read diff output");
 EXTERN Byte e_current_buffer_is_not_in_diff_mode[]
    INIT(= "E99: Current book is not in diff mode");
 EXTERN Byte e_no_other_buffer_in_diff_mode[]
    INIT(= "E100: No other book in diff mode");
 EXTERN Byte e_more_than_two_buffers_in_diff_mode_dont_know_which_one_to_use[]
    INIT(= "E101: More than 2 books in diff mode, don't know which one to use");
-EXTERN Byte e_cant_find_book_str[]
-   INIT(= "E102: Can't find book \"%s\"");
+EXTERN Byte e_cant_find_book_str[] INIT(= "E102: Can't find book \"%s\"");
 EXTERN Byte e_buffer_str_is_not_in_diff_mode[]
    INIT(= "E103: Book \"%s\" is not in diff mode");
 EXTERN Byte e_using_loadkeymap_not_in_sourced_file[]
    INIT(= "E105: Using :loadkeymap not in a sourced file");
 EXTERN Byte e_unsupported_diff_output_format_str[]
    INIT(= "E106: Unsupported diff output format: %s");
-EXTERN Byte e_missing_parenthesis_str[]
-   INIT(= "E107: Missing parentheses: %s");
-EXTERN Byte e_no_such_variable_str[]
-   INIT(= "E108: No such variable: \"%s\"");
-EXTERN Byte e_missing_colon_after_questionmark[]
-   INIT(= "E109: Missing ':' after '?'");
-EXTERN Byte e_missing_closing_paren[]
-   INIT(= "E110: Missing ')'");
-EXTERN Byte e_missing_closing_square_brace[]
-   INIT(= "E111: Missing ']'");
-EXTERN Byte e_option_name_missing_str[]
-   INIT(= "E112: Option name missing: %s");
-EXTERN Byte e_unknown_option_str[]
-   INIT(= "E113: Unknown option: %s");
-EXTERN Byte e_missing_double_quote_str[]
-   INIT(= "E114: Missing double quote: %s");
+EXTERN Byte e_missing_parenthesis_str[] INIT(= "E107: Missing parentheses: %s");
+EXTERN Byte e_no_such_variable_str[] INIT(= "E108: No such variable: \"%s\"");
+EXTERN Byte e_missing_colon_after_questionmark[] INIT(= "E109: Missing ':' after '?'");
+EXTERN Byte e_missing_closing_paren[] INIT(= "E110: Missing ')'");
+EXTERN Byte e_missing_closing_square_brace[] INIT(= "E111: Missing ']'");
+EXTERN Byte e_option_name_missing_str[] INIT(= "E112: Option name missing: %s");
+EXTERN Byte e_unknown_option_str[] INIT(= "E113: Unknown option: %s");
+EXTERN Byte e_missing_double_quote_str[] INIT(= "E114: Missing double quote: %s");
 EXTERN Byte e_missing_single_quote_str[]
    INIT(= "E115: Missing single quote: %s");
 EXTERN Byte e_invalid_arguments_for_function_str[]
    INIT(= "E116: Invalid arguments for function %s");
-EXTERN Byte e_unknown_function_str[]
-   INIT(= "E117: Unknown function: %s");
+EXTERN Byte e_unknown_function_str[] INIT(= "E117: Unknown function: %s");
 EXTERN Byte e_too_many_arguments_for_function_str[]
    INIT(= "E118: Too many arguments for function: %s");
 EXTERN Byte e_not_enough_arguments_for_function_str[]
    INIT(= "E119: Not enough arguments for function: %s");
 EXTERN Byte e_using_sid_not_in_script_context_str[]
    INIT(= "E120: Using <SID> not in a script context: %s");
-EXTERN Byte e_undefined_variable_str[]
-   INIT(= "E121: Undefined variable: %s");
-EXTERN Byte e_undefined_variable_char_str[]
-   INIT(= "E121: Undefined variable: %c:%s");
+EXTERN Byte e_undefined_variable_str[] INIT(= "E121: Undefined variable: %s");
+EXTERN Byte e_undefined_variable_char_str[] INIT(= "E121: Undefined variable: %c:%s");
 EXTERN Byte e_function_str_already_exists_add_bang_to_replace[]
    INIT(= "E122: Function %s already exists, add ! to replace it");
-EXTERN Byte e_undefined_function_str[]
-   INIT(= "E123: Undefined function: %s");
-EXTERN Byte e_missing_paren_str[]
-   INIT(= "E124: Missing '(': %s");
-EXTERN Byte e_illegal_argument_str[]
-   INIT(= "E125: Illegal argument: %s");
-EXTERN Byte e_missing_endfunction[]
-   INIT(= "E126: Missing :endfunction");
+EXTERN Byte e_undefined_function_str[] INIT(= "E123: Undefined function: %s");
+EXTERN Byte e_missing_paren_str[] INIT(= "E124: Missing '(': %s");
+EXTERN Byte e_illegal_argument_str[] INIT(= "E125: Illegal argument: %s");
+EXTERN Byte e_missing_endfunction[] INIT(= "E126: Missing :endfunction");
 EXTERN Byte e_cannot_redefine_function_str_it_is_in_use[]
    INIT(= "E127: Cannot redefine function %s: It is in use");
 EXTERN Byte e_function_name_must_start_with_capital_or_s_str[]
    INIT(= "E128: Function name must start with a capital or \"s:\": %s");
-EXTERN Byte e_function_name_required[]
-   INIT(= "E129: Function name required");
+EXTERN Byte e_function_name_required[] INIT(= "E129: Function name required");
 //E130 unused
 EXTERN Byte e_cannot_delete_function_str_it_is_in_use[]
    INIT(= "E131: Cannot delete function %s: It is in use");
 EXTERN Byte e_function_call_depth_is_higher_than_maxfuncdepth[]
    INIT(= "E132: Function call depth is higher than 'maxfuncdepth'");
-EXTERN Byte e_return_not_inside_function[]
-   INIT(= "E133: :return not inside a function");
+EXTERN Byte e_return_not_inside_function[] INIT(= "E133: :return not inside a function");
 EXTERN Byte e_cannot_move_range_of_lines_into_itself[]
    INIT(= "E134: Cannot move a range of lines into itself");
 EXTERN Byte e_filter_autocommands_must_not_change_current_buffer[]
@@ -5704,108 +5507,75 @@ EXTERN Byte e_eeglinfo_too_many_errors_skipping_rest_of_file[]
    INIT(= "E136: eeglinfo: Too many errors, skipping rest of file");
 EXTERN Byte e_eeglinfo_file_is_not_writable_str[]
    INIT(= "E137: Eeglinfo file is not writable: %s");
-EXTERN Byte e_cant_write_eeglinfo_file_str[]
-   INIT(= "E138: Can't write eeglinfo file %s!");
-EXTERN Byte e_file_is_loaded_in_another_buffer[]
-   INIT(= "E139: File is loaded in another book");
-EXTERN Byte e_use_bang_to_write_partial_buffer[]
-   INIT(= "E140: Use ! to write partial book");
-EXTERN Byte e_no_file_name_for_buffer_nr[]
-   INIT(= "E141: No file name for buffer %ld");
+EXTERN Byte e_cant_write_eeglinfo_file_str[] INIT(= "E138: Can't write eeglinfo file %s!");
+EXTERN Byte e_file_is_loaded_in_another_buffer[] INIT(= "E139: File is loaded in another book");
+EXTERN Byte e_use_bang_to_write_partial_buffer[] INIT(= "E140: Use ! to write partial book");
+EXTERN Byte e_no_file_name_for_buffer_nr[] INIT(= "E141: No file name for buffer %ld");
 EXTERN Byte e_file_not_written_writing_is_disabled_by_write_option[]
    INIT(= "E142: File not written: Writing is disabled by @modifiable option or -R or -M arg");
 EXTERN Byte e_autocommands_unexpectedly_deleted_new_buffer_str[]
    INIT(= "E143: Autocommands unexpectedly deleted new buffer %s");
-EXTERN Byte e_non_numeric_argument_to_z[]
-   INIT(= "E144: Non-numeric argument to :z");
+EXTERN Byte e_non_numeric_argument_to_z[] INIT(= "E144: Non-numeric argument to :z");
 EXTERN Byte e_regular_expressions_cant_be_delimited_by_letters[]
    INIT(= "E146: Regular expressions can't be delimited by letters");
 EXTERN Byte e_cannot_do_global_recursive_with_range[]
    INIT(= "E147: Cannot do :global recursive with a range");
 EXTERN Byte e_regular_expression_missing_from_global[]
    INIT(= "E148: Regular expression missing from :global");
-EXTERN Byte e_sorry_no_help_for_str[]
-   INIT(= "E149: Sorry, no help for %s");
-EXTERN Byte e_not_a_directory_str[]
-   INIT(= "E150: Not a directory: %s");
-EXTERN Byte e_no_match_str_1[]
-   INIT(= "E151: No match: %s");
-EXTERN Byte e_cannot_open_str_for_writing_1[]
-   INIT(= "E152: Cannot open %s for writing");
+EXTERN Byte e_sorry_no_help_for_str[] INIT(= "E149: Sorry, no help for %s");
+EXTERN Byte e_not_a_directory_str[] INIT(= "E150: Not a directory: %s");
+EXTERN Byte e_no_match_str_1[] INIT(= "E151: No match: %s");
+EXTERN Byte e_cannot_open_str_for_writing_1[] INIT(= "E152: Cannot open %s for writing");
 EXTERN Byte e_unable_to_open_str_for_reading[]
    INIT(= "E153: Unable to open %s for reading");
 EXTERN Byte e_duplicate_tag_str_in_file_str_str[]
    INIT(= "E154: Duplicate tag \"%s\" in file %s/%s");
-EXTERN Byte e_unknown_sign_str[]
-   INIT(= "E155: Unknown sign: %s");
-EXTERN Byte e_missing_sign_name[]
-   INIT(= "E156: Missing sign name");
-EXTERN Byte e_invalid_sign_id_nr[]
-   INIT(= "E157: Invalid sign ID: %d");
-EXTERN Byte e_invalid_buffer_name_str[]
-   INIT(= "E158: Invalid buffer name: %s");
-EXTERN Byte e_missing_sign_number[]
-   INIT(= "E159: Missing sign number");
-EXTERN Byte e_unknown_sign_command_str[]
-   INIT(= "E160: Unknown sign command: %s");
-EXTERN Byte e_breakpoint_not_found_str[]
-   INIT(= "E161: Breakpoint not found: %s");
+EXTERN Byte e_unknown_sign_str[] INIT(= "E155: Unknown sign: %s");
+EXTERN Byte e_missing_sign_name[] INIT(= "E156: Missing sign name");
+EXTERN Byte e_invalid_sign_id_nr[] INIT(= "E157: Invalid sign ID: %d");
+EXTERN Byte e_invalid_buffer_name_str[] INIT(= "E158: Invalid buffer name: %s");
+EXTERN Byte e_missing_sign_number[] INIT(= "E159: Missing sign number");
+EXTERN Byte e_unknown_sign_command_str[] INIT(= "E160: Unknown sign command: %s");
+EXTERN Byte e_breakpoint_not_found_str[] INIT(= "E161: Breakpoint not found: %s");
 EXTERN Byte e_no_write_since_last_change_for_buffer_str[]
    INIT(= "E162: No write since last change for buffer \"%s\"");
-EXTERN Byte e_there_is_only_one_file_to_edit[]
-   INIT(= "E163: There is only one file to edit");
-EXTERN Byte e_cannot_go_before_first_file[]
-   INIT(= "E164: Cannot go before first file");
-EXTERN Byte e_cannot_go_beyond_last_file[]
-   INIT(= "E165: Cannot go beyond last file");
+EXTERN Byte e_there_is_only_one_file_to_edit[] INIT(= "E163: There is only one file to edit");
+EXTERN Byte e_cannot_go_before_first_file[] INIT(= "E164: Cannot go before first file");
+EXTERN Byte e_cannot_go_beyond_last_file[] INIT(= "E165: Cannot go beyond last file");
 EXTERN Byte e_cant_open_linked_file_for_writing[]
    INIT(= "E166: Can't open linked file for writing");
 EXTERN Byte e_finish_used_outside_of_sourced_file[]
    INIT(= "E168: :finish used outside of a sourced file");
-EXTERN Byte e_command_too_recursive[]
-   INIT(= "E169: Command too recursive");
-EXTERN Byte e_missing_endwhile[]
-   INIT(= "E170: Missing :endwhile");
-EXTERN Byte e_missing_endfor[]
-   INIT(= "E170: Missing :endfor");
-EXTERN Byte e_missing_endif[]
-   INIT(= "E171: Missing :endif");
-EXTERN Byte e_missing_marker[]
-   INIT(= "E172: Missing marker");
+EXTERN Byte e_command_too_recursive[] INIT(= "E169: Command too recursive");
+EXTERN Byte e_missing_endwhile[] INIT(= "E170: Missing :endwhile");
+EXTERN Byte e_missing_endfor[] INIT(= "E170: Missing :endfor");
+EXTERN Byte e_missing_endif[] INIT(= "E171: Missing :endif");
+EXTERN Byte e_missing_marker[] INIT(= "E172: Missing marker");
 
 PLURAL_MSG(e_nr_more_file_to_edit, "E173: %d more file to edit",
       e_nr_more_files_to_edit, "E173: %d more files to edit")
 
 EXTERN Byte e_command_already_exists_add_bang_to_replace_it_str[]
    INIT(= "E174: Command already exists: add ! to replace it: %s");
-EXTERN Byte e_no_attribute_specified[]
-   INIT(= "E175: No attribute specified");
-EXTERN Byte e_invalid_number_of_arguments[]
-   INIT(= "E176: Invalid number of arguments");
+EXTERN Byte e_no_attribute_specified[] INIT(= "E175: No attribute specified");
+EXTERN Byte e_invalid_number_of_arguments[] INIT(= "E176: Invalid number of arguments");
 EXTERN Byte e_count_cannot_be_specified_twice[]
    INIT(= "E177: Count cannot be specified twice");
 EXTERN Byte e_invalid_default_value_for_count[]
    INIT(= "E178: Invalid default value for count");
-EXTERN Byte e_argument_required_for_str[]
-   INIT(= "E179: Argument required for %s");
-EXTERN Byte e_invalid_complete_value_str[]
-   INIT(= "E180: Invalid complete value: %s");
-EXTERN Byte e_invalid_address_type_value_str[]
-   INIT(= "E180: Invalid address type value: %s");
-EXTERN Byte e_invalidDecorationStr[]
-   INIT(= "E181: Invalid decoration: %s");
+EXTERN Byte e_argument_required_for_str[] INIT(= "E179: Argument required for %s");
+EXTERN Byte e_invalid_complete_value_str[] INIT(= "E180: Invalid complete value: %s");
+EXTERN Byte e_invalid_address_type_value_str[] INIT(= "E180: Invalid address type value: %s");
+EXTERN Byte e_invalidDecorationStr[] INIT(= "E181: Invalid decoration: %s");
 EXTERN Byte e_invalid_command_name[]
    INIT(= "E182: Invalid command name");
 EXTERN Byte e_user_defined_commands_must_start_with_an_uppercase_letter[]
    INIT(= "E183: User defined commands must start with an uppercase letter");
 EXTERN Byte e_no_such_user_defined_command_str[]
    INIT(= "E184: No such user-defined command: %s");
-EXTERN Byte e_cannot_find_color_scheme_str[]
-   INIT(= "E185: Cannot find color scheme '%s'");
-EXTERN Byte e_no_previous_directory[]
-   INIT(= "E186: No previous directory");
-EXTERN Byte e_directory_unknown[]
-   INIT(= "E187: Directory unknown");
+EXTERN Byte e_cannot_find_color_scheme_str[] INIT(= "E185: Cannot find color scheme '%s'");
+EXTERN Byte e_no_previous_directory[] INIT(= "E186: No previous directory");
+EXTERN Byte e_directory_unknown[] INIT(= "E187: Directory unknown");
 EXTERN Byte e_obtaining_window_position_not_implemented_for_this_platform[]
    INIT(= "E188: Obtaining window position not implemented for this platform");
 EXTERN Byte e_str_exists_add_bang_to_override[]
@@ -5816,25 +5586,20 @@ EXTERN Byte e_argument_must_be_letter_or_forward_backward_quote[]
    INIT(= "E191: Argument must be a letter or forward/backward quote");
 EXTERN Byte e_recursive_use_of_normal_too_deep[]
    INIT(= "E192: Recursive use of :normal too deep");
-EXTERN Byte e_str_not_inside_function[]
-   INIT(= "E193: %s not inside a function");
+EXTERN Byte e_str_not_inside_function[] INIT(= "E193: %s not inside a function");
 EXTERN Byte e_no_alternate_file_name_to_substitute_for_hash[]
    INIT(= "E194: No alternate file name to substitute for '#'");
 EXTERN Byte e_cannot_open_eeglinfo_file_for_reading[]
    INIT(= "E195: Cannot open eeglinfo file for reading");
-EXTERN Byte e_no_digraphs_version[]
-   INIT(= "E196: No digraphs in this version");
-EXTERN Byte e_cannot_set_language_to_str[]
-   INIT(= "E197: Cannot set language to \"%s\"");
-//E198 unused
+EXTERN Byte e_no_digraphs_version[] INIT(= "E196: No digraphs in this version");
+EXTERN Byte e_cannot_set_language_to_str[] INIT(= "E197: Cannot set language to \"%s\"");
 EXTERN Byte e_active_window_or_buffer_changed_or_deleted[]
    INIT(= "E199: Active portal or book changed or deleted");
 EXTERN Byte e_readpre_autocommands_made_file_unreadable[]
    INIT(= "E200: *ReadPre autocommands made the file unreadable");
 EXTERN Byte e_readpre_autocommands_must_not_change_current_buffer[]
    INIT(= "E201: *ReadPre autocommands must not change current buffer");
-EXTERN Byte e_conversion_mad_file_unreadable[]
-   INIT(= "E202: Conversion made file unreadable!");
+EXTERN Byte e_conversion_mad_file_unreadable[] INIT(= "E202: Conversion made file unreadable!");
 EXTERN Byte e_autocommands_deleted_or_unloaded_buffer_to_be_written[]
    INIT(= "E203: Autocommands deleted or unloaded buffer to be written");
 EXTERN Byte e_autocommands_changed_number_of_lines_in_unexpected_way[]
@@ -5843,42 +5608,29 @@ EXTERN Byte e_patchmode_cant_save_original_file[]
    INIT(= "E205: Patchmode: can't save original file");
 EXTERN Byte e_patchmode_cant_touch_empty_original_file[]
    INIT(= "E206: Patchmode: can't touch empty original file");
-EXTERN Byte e_cant_delete_backup_file[]
-   INIT(= "E207: Can't delete backup file");
-EXTERN Byte e_error_writing_to_str[]
-   INIT(= "E208: Error writing to \"%s\"");
-EXTERN Byte e_error_closing_str[]
-   INIT(= "E209: Error closing \"%s\"");
-EXTERN Byte e_error_reading_str[]
-   INIT(= "E210: Error reading \"%s\"");
-EXTERN Byte e_file_str_no_longer_available[]
-   INIT(= "E211: File \"%s\" no longer available");
-EXTERN Byte e_cant_open_file_for_writing[]
-   INIT(= "E212: Can't open file for writing");
+EXTERN Byte e_cant_delete_backup_file[] INIT(= "E207: Can't delete backup file");
+EXTERN Byte e_error_writing_to_str[] INIT(= "E208: Error writing to \"%s\"");
+EXTERN Byte e_error_closing_str[] INIT(= "E209: Error closing \"%s\"");
+EXTERN Byte e_error_reading_str[] INIT(= "E210: Error reading \"%s\"");
+EXTERN Byte e_file_str_no_longer_available[] INIT(= "E211: File \"%s\" no longer available");
+EXTERN Byte e_cant_open_file_for_writing[] INIT(= "E212: Can't open file for writing");
 EXTERN Byte e_cannot_convert_add_bang_to_write_without_conversion[]
    INIT(= "E213: Cannot convert (add ! to write without conversion)");
 EXTERN Byte e_cant_find_temp_file_for_writing[]
    INIT(= "E214: Can't find temp file for writing");
-EXTERN Byte e_illegal_character_after_star_str[]
-   INIT(= "E215: Illegal character after *: %s");
-EXTERN Byte e_no_such_event_str[]
-   INIT(= "E216: No such event: %s");
-EXTERN Byte e_no_such_group_or_event_str[]
-   INIT(= "E216: No such group or event: %s");
+EXTERN Byte e_illegal_character_after_star_str[] INIT(= "E215: Illegal character after *: %s");
+EXTERN Byte e_no_such_event_str[] INIT(= "E216: No such event: %s");
+EXTERN Byte e_no_such_group_or_event_str[] INIT(= "E216: No such group or event: %s");
 EXTERN Byte e_cant_execute_autocommands_for_all_events[]
    INIT(= "E217: Can't execute autocommands for ALL events");
-EXTERN Byte e_autocommand_nesting_too_deep[]
-   INIT(= "E218: Autocommand nesting too deep");
-EXTERN Byte e_missing_open_curly[]
-   INIT(= "E219: Missing {.");
-EXTERN Byte e_missing_close_curly[]
-   INIT(= "E220: Missing }.");
+EXTERN Byte e_autocommand_nesting_too_deep[] INIT(= "E218: Autocommand nesting too deep");
+EXTERN Byte e_missing_open_curly[] INIT(= "E219: Missing {.");
+EXTERN Byte e_missing_close_curly[] INIT(= "E220: Missing }.");
 EXTERN Byte e_marker_cannot_start_with_lower_case_letter[]
    INIT(= "E221: Marker cannot start with lower case letter");
 EXTERN Byte e_add_to_internal_buffer_that_was_already_read_from[]
    INIT(= "E222: Add to internal buffer that was already read from");
-EXTERN Byte e_recursive_mapping[]
-   INIT(= "E223: Recursive mapping");
+EXTERN Byte e_recursive_mapping[] INIT(= "E223: Recursive mapping");
 EXTERN Byte e_global_abbreviation_already_exists_for_str[]
    INIT(= "E224: Global abbreviation already exists for %s");
 EXTERN Byte e_global_mapping_already_exists_for_str[]
@@ -5887,13 +5639,9 @@ EXTERN Byte e_abbreviation_already_exists_for_str[]
    INIT(= "E226: Abbreviation already exists for %s");
 EXTERN Byte e_mapping_already_exists_for_str[]
    INIT(= "E227: Mapping already exists for %s");
-EXTERN Byte e_makemap_illegal_mode[]
-   INIT(= "E228: makemap: Illegal mode");
-
-EXTERN Byte e_invalid_sign_text_str[]
-   INIT(= "E239: Invalid sign text: %s");
-EXTERN Byte e_unable_to_send_to_str[]
-   INIT(= "E241: Unable to send to %s");
+EXTERN Byte e_makemap_illegal_mode[] INIT(= "E228: makemap: Illegal mode");
+EXTERN Byte e_invalid_sign_text_str[] INIT(= "E239: Invalid sign text: %s");
+EXTERN Byte e_unable_to_send_to_str[] INIT(= "E241: Unable to send to %s");
 EXTERN Byte e_cant_split_portal_while_closing_another[]
    INIT(= "E242: Can't split a portal while closing another");
 EXTERN Byte e_filechangedshell_autocommand_deleted_buffer[]
@@ -5906,9 +5654,7 @@ EXTERN Byte e_portal_layout_changed_unexpectedly[]
    INIT(= "E249: Portal layout changed unexpectedly");
 EXTERN Byte e_eegl_instance_registry_property_is_badly_formed_deleted[]
    INIT(= "E251: EEGL instance registry property is badly formed.  Deleted!");
-EXTERN Byte e_cannot_allocate_color_str[]
-   INIT(= "E254: Cannot allocate color %s");
-//E256 unused
+EXTERN Byte e_cannot_allocate_color_str[] INIT(= "E254: Cannot allocate color %s");
 EXTERN Byte e_cstag_tag_not_founc[]
    INIT(= "E257: cstag: Tag not found");
 EXTERN Byte e_unable_to_send_to_client[]
@@ -5927,29 +5673,17 @@ EXTERN Byte e_cannot_add_text_property_to_unloaded_buffer[]
    INIT(= "E275: Cannot add text property to unloaded buffer");
 EXTERN Byte e_cannot_use_function_as_method_str[]
    INIT(= "E276: Cannot use function as a method: %s");
-EXTERN Byte e_unable_to_read_server_reply[]
-   INIT(= "E277: Unable to read a server reply");
-//E278 unused
-//E281 unused
-EXTERN Byte e_cannot_read_from_str_2[]
-   INIT(= "E282: Cannot read from \"%s\"");
-EXTERN Byte e_no_marks_matching_str[]
-   INIT(= "E283: No marks matching \"%s\"");
-EXTERN Byte e_list_or_number_required[]
-   INIT(= "E290: List or number required");
-//E291 unused
+EXTERN Byte e_unable_to_read_server_reply[] INIT(= "E277: Unable to read a server reply");
+EXTERN Byte e_cannot_read_from_str_2[] INIT(= "E282: Cannot read from \"%s\"");
+EXTERN Byte e_no_marks_matching_str[] INIT(= "E283: No marks matching \"%s\"");
+EXTERN Byte e_list_or_number_required[] INIT(= "E290: List or number required");
 EXTERN Byte e_invalid_count_for_del_bytes_nr[]
    INIT(= "E292: Invalid count for del_bytes(): %ld");
-EXTERN Byte e_block_was_not_locked[]
-   INIT(= "E293: Block was not locked");
-EXTERN Byte e_seek_error_in_swap_file_read[]
-   INIT(= "E294: Seek error in swap file read");
-EXTERN Byte e_read_error_in_swap_file[]
-   INIT(= "E295: Read error in swap file");
-EXTERN Byte e_seek_error_in_swap_file_write[]
-   INIT(= "E296: Seek error in swap file write");
-EXTERN Byte e_write_error_in_swap_file[]
-   INIT(= "E297: Write error in swap file");
+EXTERN Byte e_block_was_not_locked[] INIT(= "E293: Block was not locked");
+EXTERN Byte e_seek_error_in_swap_file_read[] INIT(= "E294: Seek error in swap file read");
+EXTERN Byte e_read_error_in_swap_file[] INIT(= "E295: Read error in swap file");
+EXTERN Byte e_seek_error_in_swap_file_write[] INIT(= "E296: Seek error in swap file write");
+EXTERN Byte e_write_error_in_swap_file[] INIT(= "E297: Write error in swap file");
 EXTERN Byte e_didnt_get_block_nr_zero[]
    INIT(= "E298: Didn't get block nr 0?");
 EXTERN Byte e_didnt_get_block_nr_one[]
@@ -7905,14 +7639,11 @@ EXTERN Byte e_cannot_lock_class_variable_str[]
    INIT(= "E1392: Cannot (un)lock class variable \"%s\" in class \"%s\"");
 EXTERN Byte e_type_name_must_start_with_uppercase_letter_str[]
    INIT(= "E1394: Type name must start with an uppercase letter: %s");
-EXTERN Byte e_using_null_class[]
-   INIT(= "E1395: Using a null class");
+EXTERN Byte e_using_null_class[] INIT(= "E1395: Using a null class");
 EXTERN Byte e_typealias_already_exists_for_str[]
    INIT(= "E1396: Type alias \"%s\" already exists");
-EXTERN Byte e_missing_typealias_name[]
-   INIT(= "E1397: Missing type alias name");
-EXTERN Byte e_missing_typealias_type[]
-   INIT(= "E1398: Missing type alias type");
+EXTERN Byte e_missing_typealias_name[] INIT(= "E1397: Missing type alias name");
+EXTERN Byte e_missing_typealias_type[] INIT(= "E1398: Missing type alias type");
 EXTERN Byte e_type_can_only_be_used_in_script[]
    INIT(= "E1399: Type can only be used in a script");
 EXTERN Byte e_using_typealias_as_value_str[]
@@ -7945,18 +7676,14 @@ EXTERN Byte e_invalid_enum_value_declaration_str[]
    INIT(= "E1418: Invalid enum value declaration: %s");
 EXTERN Byte e_not_valid_command_in_enum_str[]
    INIT(= "E1419: Not a valid command in an Enum: %s");
-EXTERN Byte e_missing_endenum[]
-   INIT(= "E1420: Missing :endenum");
-EXTERN Byte e_using_enum_as_value_str[]
-   INIT(= "E1421: Enum \"%s\" cannot be used as a value");
+EXTERN Byte e_missing_endenum[] INIT(= "E1420: Missing :endenum");
+EXTERN Byte e_using_enum_as_value_str[] INIT(= "E1421: Enum \"%s\" cannot be used as a value");
 EXTERN Byte e_enum_value_str_not_found_in_enum_str[]
    INIT(= "E1422: Enum value \"%s\" not found in enum \"%s\"");
 EXTERN Byte e_enumvalue_str_cannot_be_modified[]
    INIT(= "E1423: Enum value \"%s.%s\" cannot be modified");
-EXTERN Byte e_using_enum_str_as_number[]
-   INIT(= "E1424: Using an Enum \"%s\" as a Number");
-EXTERN Byte e_using_enum_str_as_string[]
-   INIT(= "E1425: Using an Enum \"%s\" as a String");
+EXTERN Byte e_using_enum_str_as_number[] INIT(= "E1424: Using an Enum \"%s\" as a Number");
+EXTERN Byte e_using_enum_str_as_string[] INIT(= "E1425: Using an Enum \"%s\" as a String");
 EXTERN Byte e_enum_str_ordinal_cannot_be_modified[]
    INIT(= "E1426: Enum \"%s\" ordinal value cannot be modified");
 EXTERN Byte e_enum_str_name_cannot_be_modified[]
@@ -7991,16 +7718,14 @@ EXTERN Byte e_positional_arg_num_type_inconsistent_str_str[]
    INIT(= "E1504: Positional argument %d type used inconsistently: %s/%s");
 EXTERN Byte e_invalid_format_specifier_str[]
    INIT(= "E1505: Invalid format specifier: %s");
-EXTERN Byte e_xattr_erange[]
-   INIT(= "E1506: Book too small to copy xattr value or key");
+EXTERN Byte e_xattr_erange[] INIT(= "E1506: Book too small to copy xattr value or key");
 EXTERN Byte e_aptypes_is_null_nr_str[]
    INIT(= "E1507: Internal error: ap_types or ap_types[idx] is NULL: %d: %s");
 EXTERN Byte e_xattr_e2big[]
    INIT(= "E1508: Size of the extended attribute value is larger than the maximum size allowed");
 EXTERN Byte e_xattr_other[]
    INIT(= "E1509: Error occurred when reading or writing extended attribute");
-EXTERN Byte e_val_too_large[]
-   INIT(= "E1510: Value too large: %s");
+EXTERN Byte e_val_too_large[] INIT(= "E1510: Value too large: %s");
 EXTERN Byte e_wrong_number_of_characters_for_field_str[]
    INIT(= "E1511: Wrong number of characters for field \"%s\"");
 EXTERN Byte e_wrong_character_width_for_field_str[]
@@ -8023,12 +7748,9 @@ EXTERN Byte e_list_or_tuple_or_dict_required_for_argument_nr[]
    INIT(= "E1530: List or Dictionary required for argument %d");
 EXTERN Byte e_argument_of_str_must_be_list_tuple_dictionary_or_blob[]
    INIT(= "E1531: Argument of %s must be a List, Dictionary or Blob");
-EXTERN Byte e_tuple_is_immutable[]
-   INIT(= "E1532: Cannot modify a tuple");
-EXTERN Byte e_cannot_slice_tuple[]
-   INIT(= "E1533: Cannot slice a tuple");
-EXTERN Byte e_list_or_tuple_required[]
-   INIT(= "E1535: List required");
+EXTERN Byte e_tuple_is_immutable[] INIT(= "E1532: Cannot modify a tuple");
+EXTERN Byte e_cannot_slice_tuple[] INIT(= "E1533: Cannot slice a tuple");
+EXTERN Byte e_list_or_tuple_required[] INIT(= "E1535: List required");
 EXTERN Byte e_unicode_val_too_large[]
    INIT(= "E1541: Value too large, max Unicode codepoint is U+10FFFF");
 EXTERN Byte e_cannot_have_negative_or_zero_number_of_quickfix[]
