@@ -323,9 +323,8 @@ private Timer * find_timer(long id);
 private void stop_all_timers(void);
 private void add_timer_info(OUT Var* returnVar, Timer *timer);
 private void add_timer_info_all(OUT Var* returnVar);
-private void time_diff(TimeSpec* then, TimeSpec* now);
+private void printTimeDiff(TimeSpec* then, TimeSpec* now);
 private double profile_float(ProfTime *tm);
-private void set_flag(union sigval);
 private void set_flag(union sigval);
 private void channel_free_contents(Channel* channel);
 private void channel_free_channel(Channel* channel);
@@ -3459,7 +3458,7 @@ time_push(OUT TimeSpec* rel, OUT TimeSpec* start) {
    rel->tv_nsec = prevTimeP.tv_nsec - rel->tv_nsec;
    rel->tv_sec = prevTimeP.tv_sec - rel->tv_sec;
    if (rel->tv_nsec < 0) {
-      rel->tv_nsec += 1000000000;
+      rel->tv_nsec += 1000'000'000;
       --rel->tv_sec;
    }
    *start = prevTimeP;
@@ -3478,12 +3477,23 @@ time_pop(TimeSpec* tp) {
    }
 }
 
+//Return the duration from t1 to t2 in milliseconds.
+//Not public because there's a special header for this file, motor.time.h!
+Long
+motTimeDiffMs(TimeSpec* t0, TimeSpec* t1) {
+   //This handles wrapping of tv_usec correctly without any special case.
+   //Example of 2 pairs (tv_sec, tv_usec) with a duration of 5 ms:
+   //     t1 = (1, 998000) t2 = (2, 3000) gives:
+   //     (2 - 1) * 1000 + (3000 - 998000) / 1000 -> 5 ms.
+   return (t1->tv_sec - t0->tv_sec) * 1000 + (t1->tv_nsec - t0->tv_nsec) / 1000000;
+}
+
 private void
-time_diff(TimeSpec* then, TimeSpec* now) {
-   long usec = now->tv_nsec - then->tv_nsec;
-   long msec = (now->tv_sec - then->tv_sec) * 1000L + usec / 1000L;
+printTimeDiff(TimeSpec* then, TimeSpec* now) {
+   Long usec = now->tv_nsec - then->tv_nsec;
+   Long millisec = (now->tv_sec - then->tv_sec) * 1000L + usec / 1000L;
    usec = usec % 1000L;
-   fprintf(time_fd, "%03ld.%03ld", msec, usec >= 0 ? usec : usec + 1000L);
+   fprintf(time_fd, "%03ld.%03ld", millisec, usec >= 0 ? usec : usec + 1000L);
 }
 
 //Not public because there's a special header for this file, motor.time.h!
@@ -3505,13 +3515,13 @@ time_msg(CS mesg, TimeSpec* tv_start){
 
    TimeSpec now;
    timespec_get(OUT &now, TIME_UTC);
-   time_diff(&start, &now);
+   printTimeDiff(&start, &now);
    if (tv_start) {
       fprintf(time_fd, "  ");
-      time_diff(tv_start, &now);
+      printTimeDiff(tv_start, &now);
    }
    fprintf(time_fd, "  ");
-   time_diff(&prevTimeP, &now);
+   printTimeDiff(&prevTimeP, &now);
    prevTimeP = now;
    fprintf(time_fd, ": %s\n", mesg);
 }
@@ -3521,7 +3531,7 @@ Long
 motElapsedMs(TimeSpec since) {
    TimeSpec now;
    timespec_get(OUT &now, TIME_UTC);
-   return (now.tv_nsec - since.tv_nsec)/1000000;
+   return (now.tv_sec - since.tv_sec)*1000 + (now.tv_nsec - since.tv_nsec)/1000000;
 }
 
 //Read 8 bytes from "fd" and turn them into a Tyme, MSB first. Returns -1 when encountering EOF.
@@ -3672,17 +3682,6 @@ profile_msg(ProfTime *tm){
    return buf;
 }
 
-# ifdef ELAPSED_TIMEVAL
-//Return time in msec since "start".
-pub Long
-elapsed(TimeSpec* start) {
-   TimeSpec now;
-   timespec_get(OUT &now, TIME_UTC);
-   return (now.tv_sec - start->tv_sec) * 1000L + (now.tv_usec - start->tv_usec) / 1000L;
-}
-# endif
-
-# if defined(PROF_NSEC)
 //Implement timeout with timer_create() and timer_settime().
 private volatile SigAtomic timeout_flag = false;
 private timer_t timer_id;
@@ -3762,119 +3761,10 @@ delete_timer(void) {
    timer_created = false;
 }
 
-# else //PROF_NSEC
-
-//Implement timeout with setitimer()
-private SignalAction      prev_sigaction;
-private volatile SigAtomic   timeout_flag        = false;
-private int         timer_active        = false;
-private int         timer_handler_active = false;
-private volatile SigAtomic   alarm_pending        = false;
-
-//Handle SIGALRM for a timeout.
-private void
-set_flag(union sigval) {
-   if (alarm_pending)
-      alarm_pending = false;
-   else
-      timeout_flag = true;
-}
-
-//Stop any active timeout.
-pub void
-stop_timeout(void) {
-   static struct itimerval disarm = {{0, 0}, {0, 0}};
-   int             ret;
-
-   if (timer_active) {
-      timer_active = false;
-      ret = setitimer(ITIMER_REAL, &disarm, NULL);
-      if (ret < 0)
-         //Should only get here as a result of coding errors.
-         showErrFmtMsg(_(e_could_not_clear_timeout_str), strerror(errno));
-   }
-
-   if (timer_handler_active) {
-      timer_handler_active = false;
-      ret = sigaction(SIGALRM, &prev_sigaction, NULL);
-      if (ret < 0)
-         //Should only get here as a result of coding errors.
-         showErrFmtMsg(_(e_could_not_reset_handler_for_timeout_str), strerror(errno));
-   }
-   timeout_flag = false;
-}
-
-//Start the timeout timer.
-//
-//The return value is a pointer to a flag that is initialised to false. If the timeout expires, the
-//flag is set to true. This will only return pointers to static memory; i.e. any pointer returned
-//by this function may always be safely dereferenced.
-//
-//This function is not expected to fail, but if it does it will still return a valid flag pointer;
-//the flag will remain stuck as false.
-pub volatile SigAtomic*
-start_timeout(long msec) {
-   struct itimerval   interval = {
-       {0, 0},                //Do not repeat.
-       {msec / 1000, (msec % 1000) * 1000}};   //Timeout interval
-   SignalAction handle_alarm;
-   int ret;
-   SignalSet sigs;
-   SignalSet saved_sigs;
-
-   //This is really the caller's responsibility, but let's make sure the
-   //previous timer has been stopped.
-   stop_timeout();
-
-   //There is a small chance that SIGALRM is pending and so the handler must
-   //ignore it on the first call.
-   alarm_pending = false;
-   ret = sigemptyset(&sigs);
-   ret = ret == 0 ? sigaddset(&sigs, SIGALRM) : ret;
-   ret = ret == 0 ? sigprocmask(SIG_BLOCK, &sigs, &saved_sigs) : ret;
-   timeout_flag = false;
-   ret = ret == 0 ? sigpending(&sigs) : ret;
-   if (ret == 0) {
-      alarm_pending = sigismember(&sigs, SIGALRM);
-      ret = sigprocmask(SIG_SETMASK, &saved_sigs, NULL);
-   }
-   if (unlikely(ret != 0 || alarm_pending < 0)) {
-      //Just catching coding errors. Write an error message, but carry on.
-      showErrFmtMsg(_(e_could_not_check_for_pending_sigalrm_str), strerror(errno));
-      alarm_pending = false;
-   }
-
-   //Set up the alarm handler first.
-   ret = sigemptyset(&handle_alarm.sa_mask);
-   handle_alarm.sa_handler = set_flag;
-
-   handle_alarm.sa_flags = 0;
-   ret = ret == 0 ?  sigaction(SIGALRM, &handle_alarm, &prev_sigaction) : ret;
-   if (ret < 0) {
-      //Should only get here as a result of coding errors.
-      showErrFmtMsg(_(e_could_not_set_handler_for_timeout_str), strerror(errno));
-      return &timeout_flag;
-   }
-   timer_handler_active = true;
-
-   //Set up the interval timer once the alarm handler is in place.
-   ret = setitimer(ITIMER_REAL, &interval, NULL);
-   if (ret < 0) {
-      //Should only get here as a result of coding errors.
-      showErrFmtMsg(_(e_could_not_set_timeout_str), strerror(errno));
-      stop_timeout();
-      return &timeout_flag;
-   }
-
-   timer_active = true;
-   return &timeout_flag;
-}
-# endif //PROF_NSEC
 
 
 //}}}
 //{{{auxiliary
-
 
 //Allocate a new channel. The refcount is set to 1.
 //The channel isn't actually used until it is opened.
@@ -4092,11 +3982,10 @@ channel_connect(Channel* channel, SockAddr* server_addr, int server_addrlen, int
       {
          int so_error = 0;
          socklen_t so_error_len = sizeof(so_error);
-         TimeSpec start_tv;
-         TimeSpec end_tv;
+         TimeSpec start;
          PollFd pollFd = (PollFd){.fd = sd, .events = POLLIN|POLLOUT, .revents = 0};
 
-         timespec_get(OUT &start_tv, TIME_UTC);
+         timespec_get(OUT &start, TIME_UTC);
          ch_log(channel, "Waiting for connection (waiting %d msec)...", waitnowMs);
 
          ret = poll(&pollFd, 1, waitnowMs);
@@ -4136,9 +4025,7 @@ channel_connect(Channel* channel, SockAddr* server_addr, int server_addrlen, int
             //Did not detect an error, connection is established.
             break;
 
-         timespec_get(OUT &end_tv, TIME_UTC);
-         elapsed_msec = (end_tv.tv_sec - start_tv.tv_sec) * 1000
-                + (end_tv.tv_nsec - start_tv.tv_nsec) / 1000000;
+         elapsed_msec = motElapsedMs(start);
       }
 
       if (*waittime > 1 && elapsed_msec < *waittime) {
@@ -5124,9 +5011,9 @@ channel_parse_json(Channel* channel, ChannelFdKind part) {
          reader.js_used = 0;
          chanpart->ch_wait_len = buflen;
          timespec_get(OUT &chanpart->deadline, TIME_UTC);
-         chanpart->deadline.tv_nsec += 100 * 1000000;
-         if (chanpart->deadline.tv_nsec > 1000 * 1000000) {
-           chanpart->deadline.tv_nsec -= 1000 * 1000000;
+         chanpart->deadline.tv_nsec += 100 * 1000000; //100 ms
+         if (chanpart->deadline.tv_nsec > 1000000000) {
+           chanpart->deadline.tv_nsec -= 1000000000;
            ++chanpart->deadline.tv_sec;
          }
       } else {
@@ -6331,18 +6218,14 @@ channel_read_json_block(
          //Wait for up to the timeout. If there was an incomplete message use the deadline for that
          int timeout = timeout_arg;
          if (chanpart->ch_wait_len > 0) { {
-             TimeSpec now;
-             timespec_get(&now, TIME_UTC);
-             timeout = (chanpart->deadline.tv_sec - now.tv_sec) * 1000
-                        + (chanpart->deadline.tv_nsec - now.tv_nsec) / 1000000
-                        + 1;
+            timeout = motElapsedMs(chanpart->deadline) + 1;
          }
          if (timeout < 0) {
-             //Something went wrong, channel_parse_json() didn't discard message.  Cancel waiting.
-             chanpart->ch_wait_len = 0;
-             timeout = timeout_arg;
+            //Something went wrong, channel_parse_json() didn't discard message.  Cancel waiting.
+            chanpart->ch_wait_len = 0;
+            timeout = timeout_arg;
          } ei (timeout > timeout_arg)
-             timeout = timeout_arg;
+            timeout = timeout_arg;
          }
          fd = chanpart->fd;
          if (fd == INVALID_FD || channel_wait(channel, fd, timeout) != CW_READY) {
@@ -6810,14 +6693,14 @@ channel_parse_messages(void) {
    int r;
    ChannelFdKind part = PART_SOCK;
    static int recursive = 0;
-   Elapsed start_tv;
 
    //The code below may invoke callbacks, which might call us back.
    //In a recursive call channels will not be closed.
    ++recursive;
    ++safe_to_invoke_callback;
 
-   timespec_get(OUT &start_tv, TIME_UTC);
+   Elapsed start;
+   timespec_get(OUT &start, TIME_UTC);
 
    //Only do this message when another message was given, otherwise we get lots of them.
    if ((did_repeated_msg & REPEATED_MSG_LOOKING) == 0) {
@@ -6863,7 +6746,7 @@ channel_parse_messages(void) {
          if (channel_unref(channel) || (r == OK
             //Limit the time we loop here to 100 msec, otherwise Eegl becomes unresponsive when
             //the callback takes more than a bit of time.
-            && motElapsedMs(start_tv) < 100L
+            && motElapsedMs(start) < 100L
             )
          )
             //channel was freed or something was done, start over
@@ -7389,8 +7272,8 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
       }
 
       int unreadCnt = 0;
-      Elapsed start_tv;
-      timespec_get(OUT &start_tv, TIME_UTC);
+      Elapsed start;
+      timespec_get(OUT &start, TIME_UTC);
       for (;;) {
          //Check if keys have been typed, write them to the child if there are any. Don't do this
          //if we are expanding wild cards (would eat typeahead). Don't do this when filtering and
@@ -7409,7 +7292,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
             if (typeAheadLen == 0) {
                //Get extra characters when we don't have any. Reset the counter and timer.
                unreadCnt = 0;
-               timespec_get(OUT &start_tv, TIME_UTC);
+               timespec_get(OUT &start, TIME_UTC);
                len = ui_inchar(ta_buf, BUFLEN, 10L, 0);
             }
             if (typeAheadLen > 0 || len > 0) {
@@ -7494,7 +7377,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
                break;
 
             if (wait_pid == 0) {
-               Long msec = motElapsedMs(start_tv);
+               Long msec = motElapsedMs(start);
 
                //Avoid that we keep looping here without checking for a CTRL-C for a long time.
                //Don't break out too often to avoid losing typeahead.

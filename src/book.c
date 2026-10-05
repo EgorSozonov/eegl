@@ -6075,7 +6075,7 @@ bookInitCharsForKeywordsSizeArg(
    CS ptr
 ) {
    CLEAR_POINTER(cts);
-   cts->cts_win = po;
+   cts->port = po;
    cts->cts_vcol = col;
    cts->cts_line = line;
    cts->cts_ptr = ptr;
@@ -6160,7 +6160,7 @@ lbr_chartabsize_adv(CharTableSize *cts) {
 //Warning: "*headp" may not be set if it's 0, init to 0 before calling.
 pub int
 win_lbr_chartabsize(CharTableSize* cts, int* headp){
-   Portal* po = cts->cts_win;
+   Portal* po = cts->port;
    CS line = cts->cts_line; //start of the line
    CS s = cts->cts_ptr;
    ColNr vcol = cts->cts_vcol;
@@ -6376,10 +6376,10 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
 //Like win_lbr_chartabsize(), except that we know 'linebreak' is off, 'wrap'
 //is on and there are no properties that insert text.  This means we need to
 //check for a double-byte character that doesn't fit at the end of the screen line.
-//Only uses "cts_win", "cts_ptr" and "cts_vcol" from "cts".
+//Only uses "port", "cts_ptr" and "cts_vcol" from "cts".
 private int
 win_nolbr_chartabsize(CharTableSize* cts, int* headp){
-   Portal* po = cts->cts_win;
+   Portal* po = cts->port;
    CS s = cts->cts_ptr;
    ColNr col = cts->cts_vcol;
    int n;

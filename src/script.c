@@ -37,7 +37,6 @@
 
 #include <ctype.h> //for isalpha()
 #include <sys/file.h> //for open
-#include <time.h> //for timespec_get
 #include <libintl.h> //for gettext()
 #include <string.h> //for strcmp()
 #include <stddef.h> //for offsetof

@@ -23,6 +23,7 @@
 #include "h/location.h"
 #include "h/message.h"
 #include "h/motor.types.h"
+#include "h/motor.time.h"
 #include "h/motor.h"
 #include "h/option.h"
 #include "h/portal.h"
@@ -9012,12 +9013,11 @@ c_sleep(Invocation* invo) {
 pub void
 doSleep(Long msec, Boole hide_cursor) {
    Long done = 0;
-   Long wait_now;
-   Elapsed start_tv;
 
    //Remember at what time we started, so that we know how much longer we
    //should wait after waiting for a bit.
-   timespec_get(OUT &start_tv, TIME_UTC);
+   TimeSpec start;
+   timespec_get(OUT &start, TIME_UTC);
 
    if (hide_cursor)
       cursor_sleep();
@@ -9026,13 +9026,11 @@ doSleep(Long msec, Boole hide_cursor) {
 
    termOutFlush();
    while (!gotInterruptG && done < msec) {
-      wait_now = msec - done > 1000L ? 1000L : msec - done;
-      {
-         Long due_time = check_due_timer();
+      Long wait_now = msec - done > 1000L ? 1000L : msec - done;
+      Long due_time = check_due_timer();
 
-         if (due_time > 0 && due_time < wait_now)
-            wait_now = due_time;
-      }
+      if (due_time > 0 && due_time < wait_now)
+         wait_now = due_time;
       if (has_any_channel() && wait_now > 20L)
          wait_now = 20L;
       ui_delay(wait_now, true);
@@ -9045,8 +9043,7 @@ doSleep(Long msec, Boole hide_cursor) {
       //when the GUI is in use. This may occur when running a test case.
       parse_queued_messages();
 
-      //actual time passed
-      timespec_get(OUT &start_tv, TIME_UTC);
+      done += motElapsedMs(start);
    }
 
    //If CTRL-C was typed to interrupt the sleep, drop the CTRL-C from the

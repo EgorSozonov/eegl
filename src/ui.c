@@ -46,6 +46,7 @@
 #include "h/location.h"
 #include "h/message.h"
 #include "h/motor.types.h"
+#include "h/motor.time.h"
 #include "h/motor.h"
 #include "h/option.h"
 #include "h/portal.h"
@@ -10834,8 +10835,7 @@ uiRealWaitForChar(int fd, Long msec, OUT Boole* interrupted) {
       //We're going to loop around again, find out for how long
       if (msec > 0) {
          //Compute remaining wait time.
-         timespec_get(OUT &start, TIME_UTC);
-         msec = start_msec - (start.tv_nsec/1000000);
+         msec = start_msec - motElapsedMs(start);
          if (msec <= 0)
             break;   //waited long enough
       }
@@ -11038,7 +11038,6 @@ inchar_loop(
    WaitFn wait_func,
    int (*resize_func)(int check_only)
 ){
-   int len;
    Boole interrupted = false;
    int did_call_wait_func = false;
    int did_start_blocking = false;
@@ -11070,8 +11069,7 @@ inchar_loop(
          else
             //going to block after p_ut
             wait_time = p_ut;
-         timespec_get(OUT &start, TIME_UTC);
-         elapsed_time = start.tv_nsec/1000000;
+         elapsed_time = motElapsedMs(start);
          wait_time -= elapsed_time;
 
          //If the waiting time is now zero or less, we timed out. However, loop at least once to
@@ -11131,7 +11129,7 @@ inchar_loop(
             return input_available();
          }
 
-         len = read_from_input_buf(buf, (long)maxlen);
+         int len = read_from_input_buf(buf, (long)maxlen);
          if (len > 0) { //here we get raw keyboard input
             return len;
          }
@@ -11165,8 +11163,7 @@ ui_wait_for_chars_or_timer(
    OUT Boole* interrupted,
    int ignore_input
 ){
-   int due_time;
-   long remaining = wtime;
+   Long remaining = wtime;
    int changeCnt = typeBufG.changeCnt;
    int brief_wait = false;
 
@@ -11177,7 +11174,7 @@ ui_wait_for_chars_or_timer(
    while (wtime < 0 || remaining > 0) {
       //Trigger timers and then get the time in wtime until the next one is due. Wait up to that
       //time.
-      due_time = check_due_timer();
+      int due_time = check_due_timer();
       if (typeBufG.changeCnt != changeCnt) {
          //timer may have used feedkeys()
          return FAIL;
@@ -11334,12 +11331,12 @@ private int inbufcount = 0;       //number of chars in inbuf[]
 
 pub int
 eeIsInputBufFull(void) {
-   return (inbufcount >= INBUFLEN);
+   return inbufcount >= INBUFLEN;
 }
 
 pub int
 eeIsInputBufEmpty(void) {
-   return (inbufcount == 0);
+   return inbufcount == 0;
 }
 
 //Return the current contents of the input buffer and make it empty.

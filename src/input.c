@@ -18,6 +18,7 @@
 #include "h/location.h"
 #include "h/message.h"
 #include "h/motor.types.h"
+#include "h/motor.time.h"
 #include "h/motor.h"
 #include "h/portal.h"
 #include "h/script.h"
@@ -189,7 +190,6 @@ private Unt vGetOrPeek(Boole advance);
 private int ingestChar(CS buf, int maxlen, long wait_time);
 private int fixInputBuffer(OUT CS buf, int len);
 private CS getCommandNameCb(Unt, void*, int, GetlineAlgo);
-private Long time_diff_ms(TimeSpec* t0, TimeSpec* t1);
 private int get_mouse_class(CS p);
 private void find_start_of_word(Pos*pos);
 private void find_end_of_word(Pos* pos);
@@ -4115,16 +4115,6 @@ private long mouse_vert_step = 3;
 
 private int do_mousescroll_horiz(Ulong leftcol);
 
-//Return the duration from t1 to t2 in milliseconds.
-private Long
-time_diff_ms(TimeSpec* t0, TimeSpec* t1) {
-   //This handles wrapping of tv_usec correctly without any special case.
-   //Example of 2 pairs (tv_sec, tv_usec) with a duration of 5 ms:
-   //     t1 = (1, 998000) t2 = (2, 3000) gives:
-   //     (2 - 1) * 1000 + (3000 - 998000) / 1000 -> 5 ms.
-   return (t1->tv_sec - t0->tv_sec) * 1000 + (t1->tv_nsec - t0->tv_nsec) / 1000000;
-}
-
 //Get class of a character for selection: same class means same word.
 //0: blank
 //1: punctuation groups
@@ -5518,9 +5508,9 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
    static Unt orig_mouse_code = 0x0;
    static int orig_mouse_col = 0;
    static int orig_mouse_row = 0;
-   static TimeSpec orig_mouse_time = {0, 0};
+   static TimeSpec origClick = {0, 0};
    //time of previous mouse click
-   TimeSpec mouse_time; //time of current mouse click
+   TimeSpec click; //time of current mouse click
    Long timediff;       //elapsed time in msec
 
    is_click = is_drag = is_release = release_is_ambiguous = false;
@@ -5540,16 +5530,15 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
       current_button = held_button;
    } else {
       if (wheel_code == 0) {
-         {
          //Compute the time elapsed since the previous mouse click.
-         timespec_get(OUT &mouse_time, TIME_UTC);
-         if (orig_mouse_time.tv_sec == 0) {
-            //Avoid computing the difference between mouse_time and orig_mouse_time for the first
+         timespec_get(OUT &click, TIME_UTC);
+         if (origClick.tv_sec == 0) {
+            //Avoid computing the difference between click and origClick for the first
             //click, as the difference would be huge and would cause multiplication overflow.
             timediff = p_mouset;
          } else
-            timediff = time_diff_ms(&orig_mouse_time, &mouse_time);
-         orig_mouse_time = mouse_time;
+            timediff = motTimeDiffMs(&origClick, &click);
+         origClick = click;
          if (mouse_code == orig_mouse_code
              && timediff < p_mouset
              && orig_num_clicks != 4
@@ -5565,7 +5554,6 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
          orig_mouse_col = mouseColG;
          orig_mouse_row = mouseRowG;
          set_mouse_topline(curPor);
-         }
          is_click = true;
       }
       orig_mouse_code = mouse_code;
@@ -5575,11 +5563,11 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
 
    //Translate the actual mouse event into a pseudo mouse event.
    //First work out what modifiers are to be used.
-   if (orig_mouse_code & MOUSE_SHIFT)
+   if ((orig_mouse_code & MOUSE_SHIFT) != 0)
       *modifiers |= MOD_MASK_SHIFT;
-   if (orig_mouse_code & MOUSE_CTRL)
+   if ((orig_mouse_code & MOUSE_CTRL) != 0)
       *modifiers |= MOD_MASK_CTRL;
-   if (orig_mouse_code & MOUSE_ALT)
+   if ((orig_mouse_code & MOUSE_ALT) != 0)
       *modifiers |= MOD_MASK_ALT;
    if (orig_num_clicks == 2)
       *modifiers |= MOD_MASK_2CLICK;
@@ -5597,11 +5585,11 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
       if (wheel_code & MOUSE_ALT)
           *modifiers |= MOD_MASK_ALT;
 
-      if (wheel_code & 1 && wheel_code & 2)
+      if ((wheel_code & 1) != 0 && (wheel_code & 2) != 0)
           key_name[1] = (int)KE_MOUSELEFT;
-      ei (wheel_code & 2)
+      ei ((wheel_code & 2) != 0)
           key_name[1] = (int)KE_MOUSERIGHT;
-      ei (wheel_code & 1)
+      ei ((wheel_code & 1) != 0)
           key_name[1] = (int)KE_MOUSEUP;
       else
           key_name[1] = (int)KE_MOUSEDOWN;

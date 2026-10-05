@@ -1267,7 +1267,6 @@ typedef unsigned short DisplayTick;   //display tick type
 #define MB_MAXBYTES   21
 
 //Use tv_fsec for fraction of second (micro or nano) of ProfTime
-#define PROF_NSEC 1
 typedef struct timespec ProfTime;
 #define PROF_GET_TIME(tm) clock_gettime(CLOCK_MONOTONIC, tm)
 #define tv_fsec tv_nsec
@@ -3553,11 +3552,11 @@ typedef struct {
    ColNr dc_end[DB_COUNT];   //1 past byte offset of end of range in line
    int dc_start_lnum_off[DB_COUNT];   //starting line offset
    int dc_end_lnum_off[DB_COUNT];   //end line offset
-}DifflineChange;
+} DifflineChange;
 
 //Describes a single line's list of inline changes. Use diff_change_parse() to parse this.
 typedef struct {
-   DifflineChange *changes;
+   Arr(DifflineChange) changes;
    int num_changes;
    int bufidx;
    int lineoff;
@@ -4178,7 +4177,7 @@ typedef struct {
 
 //Argument for lbr_chartabsize().
 typedef struct {
-   Portal* cts_win;
+   Portal* port;
    Byte* cts_line;      //start of the line
    Byte* cts_ptr;      //current position in line
    int cts_bri_size;      //cached size of 'breakindent', or -1 if not computed yet
@@ -7404,14 +7403,6 @@ EXTERN Byte e_could_not_clear_timeout_str[]
    INIT(= "E1285: Could not clear timeout: %s");
 EXTERN Byte e_could_not_set_timeout_str[]
    INIT(= "E1286: Could not set timeout: %s");
-#ifndef PROF_NSEC
-EXTERN Byte e_could_not_set_handler_for_timeout_str[]
-   INIT(= "E1287: Could not set handler for timeout: %s");
-EXTERN Byte e_could_not_reset_handler_for_timeout_str[]
-   INIT(= "E1288: Could not reset handler for timeout: %s");
-EXTERN Byte e_could_not_check_for_pending_sigalrm_str[]
-   INIT(= "E1289: Could not check for pending SIGALRM: %s");
-#endif
 EXTERN Byte e_substitute_nesting_too_deep[]
    INIT(= "E1290: substitute nesting too deep");
 EXTERN Byte e_cmdline_window_already_open[]
