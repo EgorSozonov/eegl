@@ -124,6 +124,7 @@ typedef struct {
    long bufferLen;    //length of the currently built part of the text line
    int changeIndex;
    Short searchHiId;
+   Boole didLine;
    Boole inMultispace;//in multiple consecutive spaces
    int multispacePos; //position in lcs-multispace string
 } DrawCtx;
@@ -265,11 +266,13 @@ private void finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m);
 private void drawLineOnScreen_start(OUT DrawCtx* m, int save_extra);
 private void drawLineOnScreen_continue(DrawCtx* m);
 private void applyCursorlineHilite(DrawCtx* m);
-private Boole drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, Unt currSymb);
+private Boole drawLineSub(
+      DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, Unt currSymb
+);
 private void drawDiff(DrawCtx* m, Subcontext* c, Portal* port);
 private PropType* drawTextProps(
    DrawCtx* m, Subcontext* c, OUT SubSubcontext* sc,
-   Boole inLineBreak, PropType* textPropType, Boole didLine,
+   Boole inLineBreak, PropType* textPropType,
    OUT Decoration* syntaxDeco, OUT Decoration* textPropDeco,
    OUT Decoration* textPropDeco_comb,
    Portal* port, OUT Unt* loopJump
@@ -278,13 +281,13 @@ private Unt getNextCharFromExtra(DrawCtx* m, OUT SubSubcontext* sc, Portal* port
       Short searchDecoSaved, Decoration areaDecoSaved, OUT Boole* inLineBreak
 );
 private Unt getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* sc,
-      PropType* textPropType, Decoration textPropDeco, OUT Boole* didLine
+      PropType* textPropType, Decoration textPropDeco
 );
 private void drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port);
 private int drawLineOnScreen(
    Portal* port,
    LineNr lnum,
-   int startrow,
+   int startScreenRow,
    int endrow,
    int drawingOnlyNumberCol
 );
@@ -584,11 +587,6 @@ drawFlushLine(
    while (col < endcol) {
       redrawThis = redrawNext;
       redrawNext = force || charNeedsRedraw(offFrom + 1, offTo + 1, endcol - col - 1);
-
-      //lo("www redrawNext %d from %d to %d, colDiff %d char from %d to %d", redrawNext,
-      //      offFrom + 1, offTo + 1, endcol - col - 1,
-      //      screenTextP[offFrom + 1], screenTextP[offTo + 1]
-      //);
 
       if (redrawThis && !skipForPopup(row, col + coloff)) {
          //Actual text drawing
@@ -3130,8 +3128,8 @@ pub int
 drawUpdateScreen(Unt type_arg) {
    Unt type = type_arg;
    Portal* po;
-   static int   did_intro = false;
-   int no_update = false;
+   static Boole did_intro = false;
+   Boole no_update = false;
    int save_pum_will_redraw = pum_will_redraw;
 
    //Don't do anything if the screen structures are (not yet) valid.
@@ -3722,7 +3720,7 @@ drawPortal(Portal* po, UpdatePortalInfo u) {
    LineNr lnum = po->topLine;   //first line shown in portal
    static Boole recursive = false;   //being called recursively
 
-   Boole didline = false; //if true, we finished the last line
+   Boole finishedLastLine = false;
    //Update all the portal rows.
    int idx = 0;      //first entry in lines[].height
    int row = 0;
@@ -3738,10 +3736,10 @@ drawPortal(Portal* po, UpdatePortalInfo u) {
    LineNr syntax_last_parsed = 0;      //last parsed text line
    int j;
    for (;;) {
-      //stop updating when reached the end of the  portal (check for _past_
+      //stop updating when reached the end of the portal (check for _past_
       //the end of the portal is at the end of the loop)
       if (row == (int)po->height) {
-         didline = true;
+         finishedLastLine = true;
          break;
       }
 
@@ -4015,7 +4013,7 @@ drawPortal(Portal* po, UpdatePortalInfo u) {
    //line we were working on, then the line didn't fit.
    po->emptyRowCount = 0;
    po->fillerRowCount = 0;
-   if (!u.eof && !didline) {
+   if (!u.eof && !finishedLastLine) {
       if (lnum == po->topLine) {
          //Single line that does not fit! Don't overwrite it, it can be edited.
          po->bottomLine = lnum + 1;
@@ -4646,95 +4644,12 @@ updatePortal(Portal* po, OUT Boole* didUpdateOnePortal) {
       gotInterruptG = save_gotInterrupt;
 }
 
-//Redraw as soon as possible. When the command line is not scrolled, redraw right away and restore
-//what was on the command line. Return a code indicating what happened.
-pub int
-redraw_asap(int type) {
-   int cols = screenLinesColsG;
-   int ret = 0;
-   Unt* screenlineUC = NULL;   //copy from screenLinesUCG[]
-   Arr(Unt) screenlineC;   //copy from screenLinesCG[][]
-
-   redraw_later(type);
-   if (msg_scrolled
-          || (stateG != MODE_NORMAL && stateG != MODE_NORMAL_BUSY)
-          || isExitingG)
-      return ret;
-
-   //Allocate space to save the text displayed in the command line area.
-   int rows = screenLinesRowsG - commlineRowG;
-   Arr(Byte) screenline = LALLOC_MULT(Byte, rows * cols); //copy from screenTextP[]
-   Arr(Unt) screenDecosP = LALLOC_MULT(Unt, rows * cols); //copy from screenDecosP[]
-   if (!screenline)
-      ret = 2;
-   screenlineUC = LALLOC_MULT(Unt, rows * cols);
-   screenlineC = LALLOC_MULT(Unt, MAX_COMBINED_SYMBOLS * rows * cols);
-
-   if (ret != 2) {
-      //Save the text displayed in the command line area.
-      for (int r = 0; r < rows; ++r) {
-         MEMMOVE(
-            screenline + r * cols,
-            screenTextP + lineStartsP[commlineRowG + r],
-            (Unt)cols * sizeof(Byte)
-         );
-         MEMMOVE(
-            screenDecosP + r * cols,
-            screenDecosP + lineStartsP[commlineRowG + r],
-            (Unt)cols * sizeof(Unt)
-         );
-         MEMMOVE(
-            screenlineUC + r * cols,
-            screenLinesUCG + lineStartsP[commlineRowG + r],
-            (Unt)cols * sizeof(Unt)
-         );
-         MEMMOVE(
-             screenlineC + MAX_COMBINED_SYMBOLS * r * cols,
-             screenLinesCG + MAX_COMBINED_SYMBOLS * lineStartsP[commlineRowG + r],
-             MAX_COMBINED_SYMBOLS * (Unt)cols * sizeof(Unt)
-         );
-      }
-
-      drawUpdateScreen(0);
-      ret = 3;
-
-      if (mustRedrawG == 0) {
-         int off = (int)(currScreenLineS - screenTextP);
-
-         //Restore the text displayed in the command line area.
-         for (int r = 0; r < rows; ++r) {
-            MEMMOVE(currScreenLineS, screenline + r * cols, (Unt)cols * sizeof(Byte));
-            MEMMOVE(screenDecosP + off, screenDecosP + r * cols, (Unt)cols * sizeof(Unt));
-            MEMMOVE(screenLinesUCG + off, screenlineUC + r * cols, (Unt)cols * sizeof(Unt));
-            MEMMOVE(
-               screenLinesCG + MAX_COMBINED_SYMBOLS * off,
-               screenlineC + MAX_COMBINED_SYMBOLS * r * cols,
-               MAX_COMBINED_SYMBOLS * (Unt)cols * sizeof(Unt)
-            );
-            drawFlushLine(commlineRowG + r, 0, cols, cols, -1, 0);
-         }
-         ret = 4;
-      }
-   }
-
-   eeglFree(screenline);
-   eeglFree(screenDecosP);
-   eeglFree(screenlineUC);
-   eeglFree(screenlineC);
-
-   //Show the intro message when appropriate.
-   maybe_intro_message();
-   setcursor();
-   return ret;
-}
-
-//Invoked after an asynchronous callback is called.
-//If an echo command was used the cursor needs to be put back where
-//it belongs. If hiliting was changed a redraw is needed.
-//If "call_drawUpdateScreen" is false don't call drawUpdateScreen() when at the command line.
-//If "redraw_message" is true.
+//Invoked after an asynchronous callback is called. If an echo command was used the cursor needs
+//to be put back where it belongs. If hiliting was changed a redraw is needed. If
+//"call_drawUpdateScreen" is false don't call drawUpdateScreen() when at the command line. If
+//"redraw_message" is true.
 pub void
-redraw_after_callback(int call_drawUpdateScreen, int do_message) {
+redraw_after_callback(Boole call_drawUpdateScreen, Boole do_message) {
    ++redrawingForCallbackS;
 
    if (   stateG == MODE_HITRETURN || stateG == MODE_ASKMORE
@@ -4789,9 +4704,9 @@ redrawPortLater(Portal* po, Unt type) {
    if (!isExitingG && !redraw_not_allowed && po->redrawType < type) {
       po->redrawType = type;
       if (type >= UPD_NOT_VALID)
-          po->validLines = 0;
+         po->validLines = 0;
       if (mustRedrawG < type)   //mustRedrawG is the maximum of all portals
-          mustRedrawG = type;
+         mustRedrawG = type;
    }
 }
 
@@ -4840,7 +4755,7 @@ drawBookLater(Book* book, int type) {
    Portal* po;
    FOR_ALL_PORTALS(po) {
       if (po->book == book)
-          redrawPortLater(po, type);
+         redrawPortLater(po, type);
    }
    //terminal in popup portal is not in list of portals
    if (curPor->book == book)
@@ -4861,7 +4776,7 @@ drawBookAndStatusLater(Book* book, int type) {
    if (wild_menu_showing != 0)
       //Don't redraw while the command line completion is displayed, it would disappear.
       return;
-   Portal   *po;
+   Portal* po;
    FOR_ALL_PORTALS(po) {
       if (po->book == book) {
          redrawPortLater(po, type);
@@ -4980,7 +4895,6 @@ useCursorLineHilite(Portal* po, LineNr lnum) {
 //Otherwise the sign is going to be displayed in the sign column.
 private void
 drawSign(int nrcol, Portal* po, DrawCtx* m) {
-   lo("yyy drawSign");
    //Draw two cells with the sign value or blank.
    m->c_extra = ' ';
    m->c_final = ZERO;
@@ -5318,12 +5232,12 @@ smoothFlushScreenLine(Portal* po, DrawCtx* m, Boole clear_end) {
 //right of the portal.
 private void
 finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m) {
-   long v = (po->o.wrap) ? (m->startrow == 0 ? po->skipCol : 0) : po->leftCol;
+   Long v = (po->o.wrap) ? (m->startrow == 0 ? po->skipCol : 0) : po->leftCol;
    int wcol = m->col;
    //check if line ends before left margin
    if (m->vcol < v + wcol - normalPortalColumnOffset(po))
       m->vcol = v + wcol - normalPortalColumnOffset(po);
-#  define VCOL_HLC (m->vcol - m->virtualOffset)
+#define VCOL_HLC (m->vcol - m->virtualOffset)
 
    if (m->lineDeco.hiId != SHORT || m->portalDeco.flags != 0) {
       int rightmost_vcol = 0;
@@ -5408,7 +5322,9 @@ applyCursorlineHilite(DrawCtx* m) {
 
 //Return false if need to break from the loop in drawLineLoop
 private Boole
-drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, Unt currSymb) {
+drawLineSub(
+      DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, Unt currSymb
+) {
    int charsWithOverrulingUnder = 0;       //chars with overruling special deco
    Decoration charDecoSavedForOverruling;
 
@@ -5426,7 +5342,7 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, Unt curr
    }
 
    //At end of the text line or just after the last character.
-   if ((currSymb == ZERO || sc->didLineDeco == 1) && m->eol_hl_off == 0) {
+   if ((m->didLine || sc->didLineDeco == 1) && m->eol_hl_off == 0) {
       //flag to indicate whether prevcol equals startcol of search_hl or one of the matches
       int prevcol_hl_flag = get_prevcol_hl_flag(
              port, &screenSearchP, (long)(m->ptr - m->line) - (currSymb == ZERO)
@@ -5479,7 +5395,7 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, Unt curr
    }
 
    //At end of the text line.
-   if (currSymb == ZERO) {
+   if (m->didLine) {
       if (sc->textPropFollows) {
          //Put the pointer back to the ZERO.
          m->ptr--;
@@ -5580,7 +5496,7 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, Unt curr
       --m->toSkipBeforeDeco;
 
    //At end of screen line and there is more to come: Display the line
-   //so far.  If there is no more to display it is caught above.
+   //so far. If there is no more to display it is caught above.
    if ((m->col >= (int)port->width)
          && (m->state != DRAWING_TEXT
           || *m->ptr != ZERO
@@ -5715,7 +5631,7 @@ drawDiff(DrawCtx* m, Subcontext* c, Portal* port) {
 private PropType*
 drawTextProps(
    DrawCtx* m, Subcontext* c, OUT SubSubcontext* sc,
-   Boole inLineBreak, PropType* textPropType, Boole didLine,
+   Boole inLineBreak, PropType* textPropType,
    OUT Decoration* syntaxDeco, OUT Decoration* textPropDeco,
    OUT Decoration* textPropDeco_comb,
    Portal* port, OUT Unt* loopJump
@@ -5827,7 +5743,7 @@ drawTextProps(
                  && ((port->o.list && sc->listCharEndOfLine != UNT
                        && (t->flags & TEXT_PROP_ALIGN_ABOVE) == 0)
                        || (m->ptr == m->line
-                              && !didLine
+                              && !m->didLine
                               && (t->flags & TEXT_PROP_ALIGN_BELOW))
                     )
             ) {
@@ -6054,7 +5970,7 @@ getNextCharFromExtra(DrawCtx* m, OUT SubSubcontext* sc, Portal* port,
 
 private Unt
 getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* sc,
-      PropType* textPropType, Decoration textPropDeco, OUT Boole* didLine
+      PropType* textPropType, Decoration textPropDeco
 ) {
    Unt currSymb;
    CS prev_ptr = m->ptr;
@@ -6063,7 +5979,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
    currSymb = *m->ptr;
    if (currSymb == ZERO) {
       //text is finished, may display a "below" virtual text
-      *didLine = true;
+      m->didLine = true;
       //no more cells to skip
       m->cellsToSkip = 0;
       if (term_shobuffer(port->book)
@@ -6132,7 +6048,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
       m->ptr += multibLength - 1;
 
    //If a double-width char doesn't fit at the left side display
-   //a '<' in the first column.  Don't do this for unprintable characters.
+   //a '<' in the first column. Don't do this for unprintable characters.
    if (m->cellsToSkip > 0 && multibLength > 1 && m->countExtraBytes == 0) {
       m->countExtraBytes = 1;
       m->c_extra = MB_FILLER_CHAR;
@@ -6349,9 +6265,6 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
 //Main loop for drawing real text to screen
 private void
 drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
-
-   lo("yyy drawLineLoop %d", m->off);
-
    SubSubcontext sc;
    sc.multiByte = 0;      //decoded multi-byte character
    sc.textPropFlags = 0;
@@ -6377,7 +6290,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
    PropType* textPropType = NULL;
    Decoration textPropDeco = EMPTY_DECO;
    Short searchDecoSaved = SHORT; //searchHiId to be used when countExtraBytes goes to zero
-   Boole didLine = false;  //set to true when line text done
+   m->didLine = false;  //set to true when line text done
    sc.numDecoCells = 0;
    sc.didLineDeco = 0;
    Boole onLastCol = false;
@@ -6456,7 +6369,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
          if (c->textProps) {
             Unt loopJump = 0;
             textPropType = drawTextProps(
-                  m, c, &sc, inLineBreak, textPropType, didLine,
+                  m, c, &sc, inLineBreak, textPropType,
                   OUT &syntaxDeco, OUT &textPropDeco, OUT &textPropDeco_comb, port,
                   OUT &loopJump
             );
@@ -6607,11 +6520,8 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                m, OUT &sc, port, searchDecoSaved, areaDecoSaved, OUT &inLineBreak
            )
          : getNextCharFromMain(
-               m, c, port, OUT &sc, textPropType, textPropDeco, OUT &didLine
+               m, c, port, OUT &sc, textPropType, textPropDeco
            );
-
-      lo("yyy subbing %d currSymb from extraBytes %d state %d", currSymb, m->countExtraBytes,
-            m->state);
 
       if (!drawLineSub(m, port, c, &sc, currSymb)) {
          break;
@@ -6621,16 +6531,16 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
 
 //{{{upper
 
-//Display line "lnum" of portal "po" on the screen. Start at row "startrow", stop at "endrow".
-//When only updating the number column, "drawingOnlyNumberCol" is set to the height of
+//Render line "lnum" of portal "po" and send it to the screen. Start at row "startrow", stop at
+//"endrow". When only updating the number column, "drawingOnlyNumberCol" is set to the height of
 //the line, otherwise it is set to 0.
 //
-//Return the number of last row the line occupies.
+//Return the number of last screen row the line occupies.
 private int
 drawLineOnScreen(
    Portal* port,
    LineNr lnum,
-   int startrow,
+   int startScreenRow,
    int endrow,
    int drawingOnlyNumberCol
 ){
@@ -6670,15 +6580,15 @@ drawLineOnScreen(
    c.right_curline_col = 0;
    Subcontext sc = (Subcontext) {.trailcol = 0, .leadcol = 0};
 
-   if (startrow > endrow)      //past the end already!
-      return startrow;
+   if (startScreenRow > endrow)      //past the end already!
+      return startScreenRow;
 
    CLEAR_FIELD(m);
 
    m.lnum = lnum;
-   m.startrow = startrow;
+   m.startrow = startScreenRow;
    m.endRow = endrow;
-   m.row = startrow;
+   m.row = startScreenRow;
    m.screen_row = m.row + port->windowRow;
    m.fromcol = -10;
    m.tocol = MAXCOL;
@@ -6863,7 +6773,7 @@ drawLineOnScreen(
 
    //When skipCol is non-zero and there is virtual text above the actual
    //text, then this much of the virtual text is skipped.
-   int skipcol_in_textPropAbove = 0;
+   int skippedVirtualLen = 0;
 
    if (PORTAL_IS_POPUP(port))
       m.flushFlags |= SLF_POPUP;
@@ -6892,9 +6802,9 @@ drawLineOnScreen(
       int text_width = port->width - normalPortalColumnOffset(port);
       for (int i = c.textPropCount - 1; i >= 0; --i) {
          if (c.textProps[i].flags & TEXT_PROP_ALIGN_ABOVE) {
-            if (lnum == port->topLine && port->skipCol - skipcol_in_textPropAbove >= text_width){
+            if (lnum == port->topLine && port->skipCol - skippedVirtualLen >= text_width){
                //This virtual text above is skipped, remove it from the array
-               skipcol_in_textPropAbove += text_width;
+               skippedVirtualLen += text_width;
                for (int j = i + 1; j < c.textPropCount; ++j)
                   c.textProps[j - 1] = sc.textProps[j];
                ++i;
@@ -6921,7 +6831,7 @@ drawLineOnScreen(
    //'nowrap' or 'wrap' and a single line that doesn't fit: Advance to the
    //first character to be displayed.
    if (port->o.wrap)
-      m.bufferLen = startrow == 0 ? port->skipCol - skipcol_in_textPropAbove : 0;
+      m.bufferLen = startScreenRow == 0 ? port->skipCol - skippedVirtualLen : 0;
    else
       m.bufferLen = port->leftCol;
    if (m.bufferLen > 0 && drawingOnlyNumberCol == 0) {
@@ -6997,7 +6907,7 @@ drawLineOnScreen(
    }
 
    if (drawingOnlyNumberCol == 0) {
-      m.bufferLen = (long)(m.ptr - m.line);
+      m.bufferLen = (Long)(m.ptr - m.line);
       c.areaHiliting = c.areaHiliting || searchPrepareHiliteLine(
          port, lnum, (ColNr)m.bufferLen, &m.line, &screenSearchP, OUT &m.searchHiId
       );
@@ -7014,7 +6924,6 @@ drawLineOnScreen(
       //Do not show the cursor line in the text when Visual mode is active,
       //because it's not clear what is selected then.
       if (!(port == curPor && VIsual_active)) {
-         //apply CursorLine hilite
          applyCursorlineHilite(&m);
          c.areaHiliting = true;
       }

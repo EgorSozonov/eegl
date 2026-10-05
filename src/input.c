@@ -2251,10 +2251,10 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
          nolmaplen = 0;
       }
 
-      fin.foundMapping = getBufMappingTableList(localState, typebufChar);
+      fin.foundMapping = whGetBufMappingTableList(localState, typebufChar);
       MapBlock* foundMapping1 = getMappingTableList(localState, typebufChar);
 
-      if (fin.foundMapping == NULL) { //There are no buffer-local mappings
+      if (!fin.foundMapping) { //There are no buffer-local mappings
          fin.foundMapping = foundMapping1;
          foundMapping1 = NULL;
       }
@@ -2488,11 +2488,12 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
    }//}}}
    //{{{ full match
 
-
    if (fin.keylen >= 0 && fin.keylen <= typeBufG.validLen) {
       //write chars to script file(s)
       if (fin.keylen > typeBufG.mappedLen) {
-         gotchars(typeBufG.c + typeBufG.currPos + typeBufG.mappedLen, fin.keylen - typeBufG.mappedLen);
+         gotchars(
+            typeBufG.c + typeBufG.currPos + typeBufG.mappedLen, fin.keylen - typeBufG.mappedLen
+         );
       }
 
       cmd_silent = (typeBufG.silentCnt > 0);
@@ -2512,17 +2513,15 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
          return mrFail;
       }
 
-      //Copy the values from *mp that are used, because evaluating the
-      //expression may invoke a function that redefines the mapping, thereby
-      //making *mp invalid.
+      //Copy the values from *mp that are used, because evaluating the expression may invoke a
+      //function that redefines the mapping, thereby making *mp invalid.
       int isExpr = fin.foundMapping->expr;
       int isNoremap = fin.foundMapping->noremap;
       int isSilent = fin.foundMapping->silent;
       Arr(Byte) keys = NULL;  //only saved when needed
-
       Arr(Byte) altKeys = NULL;  //only saved when needed
       Arr(Byte) mapRhs;
-      int altKeylen = fin.foundMapping->alt != NULL ? fin.foundMapping->alt->keylen : 0;
+      int altKeylen = fin.foundMapping->alt ? fin.foundMapping->alt->keylen : 0;
 
       //{{{ Handle ":map <expr>": evaluate the {rhs} as an expression.  Also
       //save and restore the command line for "normal :".

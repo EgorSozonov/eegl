@@ -61,7 +61,7 @@ void f_term_wait(Arr(Var) argvars, Var*);
 void term_send_eof(Channel* ch);
 Job* term_getjob(Terminal* term);
 void preserve_exit(void);
-int uiRealWaitForChar(int fd, Long msec, OUT int* interrupted);
+int uiRealWaitForChar(int fd, Long msec, OUT Boole* interrupted);
 int mch_input_isatty(void);
 void ui_write(CS s, int len, int console);
 void ui_inBytendo(CS s, int len);
@@ -71,17 +71,9 @@ int ui_inchar(
    long wtime,       //don't use "time", MIPS cannot handle it
    int changeCnt
 );
-int inchar_loop(
-   OUT CS buf,
-   int maxlen,
-   long wtime,       //don't use "time", MIPS cannot handle it
-   int changeCnt,
-   int (*wait_func)(long wtime, int *interrupted, Boole ignore_input),
-   int (*resize_func)(int check_only)
-);
-int waitForChar(long msec, OUT int* interrupted, Boole ignore_input);
+Boole waitForChar(long msec, OUT Boole* interrupted, Boole ignore_input);
 int ui_char_avail(void);
-void ui_delay(long msec_arg, int ignoreinput);
+void ui_delay(Long msec_arg, Boole ignoreinput);
 int ui_get_shellsize(void);
 void ui_set_shellsize(int);
 int uiGetPortPos(int* x, int* y, Long timeout);

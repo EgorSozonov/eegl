@@ -9628,7 +9628,7 @@ f_empty(Var* argvars, Var* returnVar) {
       break;
 
    case VAR_JOB:
-      n = !argvars[0].job || chJobGetStatus(argvars[0].job) != JOB_STARTED;
+      n = !argvars[0].job || motJobGetStatus(argvars[0].job) != JOB_STARTED;
       break;
    case VAR_CHANNEL:
       n = argvars[0].channel == NULL || !channel_is_open(argvars[0].channel);

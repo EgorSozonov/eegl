@@ -181,6 +181,19 @@ typedef struct {
    FileSearchCtx* searchCtx;
 } TagName;
 
+//flags for find_tags().
+pub
+#define TAG_HELP         1   //only search for help tags
+#define TAG_NAMES        2   //only return name of tag
+#define TAG_REGEXP       4   //use tag pattern as regexp
+#define TAG_NOIC         8   //don't always ignore case
+#define TAG_CSCOPE      16   //cscope tag
+#define TAG_VERBOSE     32   //message verbosity
+#define TAG_INS_COMP    64   //Currently doing insert completion
+#define TAG_KEEP_LANG  128   //keep current language
+#define TAG_NO_TAGFUNC 256   //do not use 'tagfunc'
+#define TAG_MANY       300   //When finding many tags (for completion), find up to this many tags
+
 //}}}
 
 private char* mt_names[MT_COUNT/2] = {"FSC", "F C", "F  ", "FS ", " SC", "  C", "   ", " S "};
@@ -4770,7 +4783,6 @@ cs_pathcomponents(CS path) {
 private void
 cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
    int bufsize = 0; //Track available bufsize
-   CS fname, lno, extra;
    int i, idx, num;
    CS globalcntx = S"GLOBAL";
    CS cntxformat = S" <<%s>>";
@@ -4819,22 +4831,22 @@ cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
          eeglFree(matchesbuf);
          continue;
       }
-      //Text extraTk = tokenizeSeparator(OUT &p, '\t');
+      Text extraTk = tokenizeSeparator(OUT &p, '\t');
 
-      lno[sndTk.len - 2] = ZERO;  //ignore ;" at the end
+      thirdTk.c[thirdTk.len - 2] = ZERO;  //ignore ;" at the end
 
       //hopefully 'num' (num of matches) will be less than 10^16
-      newsize = (int)(STRLEN(csfmt_str) + 16 + STRLEN(lno));
+      newsize = (int)(STRLEN(csfmt_str) + 16 + thirdTk.len);
       if (bufsize < newsize) {
          buf = eeRealloc(buf, newsize);
          bufsize = newsize;
       }
       if (buf) {
          //csfmt_str = "%4d %6s  ";
-         (void)SPRINTF(buf, csfmt_str, num, lno);
+         (void)SPRINTF(buf, csfmt_str, num, thirdTk.c);
          msgPutsDeco(buf, getDecoFlags(HLF_CM));
       }
-      outputShortenedToALine(mbText((CS)cs_pathcomponents(fname)), getDecoFlags(HLF_CM));
+      outputShortenedToALine(mbText((CS)cs_pathcomponents(sndTk.c)), getDecoFlags(HLF_CM));
 
       //compute the required space for the context
       if (cntxts[idx] != NULL)
@@ -4857,9 +4869,9 @@ cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
          outputShortenedToALine(text(buf), 0);
          msg_putchar('\n');
       }
-      if (extra) {
+      if (extraTk.len > 0) {
           msg_advance(13);
-          outputShortenedToALine(text((CS)extra), 0);
+          outputShortenedToALine(text((CS)extraTk.c), 0);
       }
 
       eeglFree(matchesbuf);

@@ -50,9 +50,9 @@ typedef struct sigaction SignalAction;
 
 #define SYNTAX_FNAME   "$EEGLRUNTIME/ftype/%s.vim"
 
-#define DFLT_BDIR    "$HOME/.local/state/eegl"    //default for 'backupdir'
+#define DFLT_BDIR    "$HOME/.local/state/eegl"    //default for @backupdir
 
-#define DFLT_DIR     ".,~/tmp,/var/tmp,/tmp" //default for 'directory'
+#define DFLT_DIR     ".,~/tmp,/var/tmp,/tmp" //default for @directory
 
 #define DFLT_ERRORFILE      "errors.err"
 
@@ -104,18 +104,15 @@ typedef unsigned char Byte;
 #define PRINTF_HEX_ULONG      "0x%lx"
 #define PRINTF_DECIMAL_ULONG  SCANF_DECIMAL_ULONG
 
-//We use 64-bit file functions here, if available.  E.g. ftello() returns
+//We use 64-bit file functions here, if available. E.g. ftello() returns
 //off_t instead of long, which helps if long is 32 bit and off_t is 64 bit.
 //We assume that when fseeko() is available then ftello() is too.
 typedef off_t FileOffset;
 
 //The characters and attributes cached for the screen.
-typedef Byte Byte;
 #define MAX_TYPENR 65535
 
-
 typedef struct tm Tm;
-
 
 //{{{version
 
@@ -123,15 +120,15 @@ typedef struct tm Tm;
 //The patchlevel is in included_patches[], in version.c.
 
 //Trick to turn a number into a string.
-#define EE_TOSTR_(a)  #a
-#define EE_TOSTR(a)   EE_TOSTR_(a)
+#define EE_TOSTR_(a) #a
+#define EE_TOSTR(a)  EE_TOSTR_(a)
 
 //Values that change for a new release.
 #define EEGL_VERSION_MAJOR      0
 #define EEGL_VERSION_MINOR      9
 #define EEGL_VERSION_BUILD      285
-#define EEGL_VERSION_BUILD_BCD      0x11d
-#define EEGL_VERSION_DATE_ONLY      "2025 Oct 15"
+#define EEGL_VERSION_BUILD_BCD  0x11d
+#define EEGL_VERSION_DATE_ONLY  "2025 Oct 15"
 
 //Values based on the above
 #define EEGL_VERSION_MAJOR_STR  EE_TOSTR(EEGL_VERSION_MAJOR)
@@ -141,7 +138,7 @@ typedef struct tm Tm;
 #define EEGL_VERSION_BUILD_STR  EE_TOSTR(EEGL_VERSION_BUILD)
 #define EEGL_VERSION_PATCHLEVEL 0
 
-#define EEGL_VERSION_PATCHLEVEL_STR   EE_TOSTR(LEADZERO(EEGL_VERSION_PATCHLEVEL))
+#define EEGL_VERSION_PATCHLEVEL_STR EE_TOSTR(LEADZERO(EEGL_VERSION_PATCHLEVEL))
 
 //EEGL_VERSION_NODOT is used for the runtime directory name.
 //EEGL_VERSION_SHORT is copied into the swap file (max. length is 6 chars).
@@ -516,7 +513,6 @@ typedef struct tm Tm;
 
 //}}}
 
-
 //The _() stuff is for using gettext().  It is a no-op when libintl.h is not
 //found or the +multilang feature is disabled.
 //Use NGETTEXT(single, multi, number) to get plural behavior:
@@ -554,21 +550,21 @@ typedef struct tm Tm;
 #define VALID_TOPLINE    0x80   //w_topline is valid (for cursor position)
 
 //flags used in w_popup_handled
-#define POPUP_HANDLED_1 0x01    //used by mouse_find_win()
-#define POPUP_HANDLED_2 0x02    //used by popup_do_filter()
-#define POPUP_HANDLED_3 0x04    //used by popup_check_cursor_pos()
-#define POPUP_HANDLED_4 0x08    //used by may_update_popup_mask()
-#define POPUP_HANDLED_5 0x10    //used by update_popups()
+#define POPUP_HANDLED_1  0x01   //used by mouse_find_win()
+#define POPUP_HANDLED_2  0x02   //used by popup_do_filter()
+#define POPUP_HANDLED_3  0x04   //used by popup_check_cursor_pos()
+#define POPUP_HANDLED_4  0x08   //used by may_update_popup_mask()
+#define POPUP_HANDLED_5  0x10   //used by update_popups()
 
 //Terminal hiliting decoration flags
-#define DECO_NONE         0
-#define DECO_INVERSE      1
-#define DECO_BOLD         2
-#define DECO_ITALIC       4
-#define DECO_UNDERLINE    8
-#define DECO_UNDERCURL   16
-#define DECO_UNDERDASH   32
-#define DECO_ALTERED_BG  64
+#define DECO_NONE        0
+#define DECO_INVERSE     1
+#define DECO_BOLD        2
+#define DECO_ITALIC      4
+#define DECO_UNDERLINE   8
+#define DECO_UNDERCURL  16
+#define DECO_UNDERDASH  32
+#define DECO_ALTERED_BG 64
 
 //special attribute addition: Put message in history
 #define MSG_HIST     64
@@ -608,7 +604,7 @@ typedef struct tm Tm;
 
 //flags for books
 #define BF_RECOVERED   0x01 //book has been recovered
-#define BF_CHECK_RO    0x02 //need to check readonly when loading file into book (set by ":e",
+#define BF_CHECK_RO    0x02 //need to check readonly when loading file into book (set by ";e",
                             //may be reset by ";book")
 #define BF_NEVERLOADED 0x04 //file has never been loaded into book,
                             //many variables still need to be set
@@ -929,7 +925,7 @@ typedef struct tm Tm;
 #define PUT_LINE_FORWARD 32   //put linewise register below Visual sel.
 #define PUT_BLOCK_INNER  64   //in block mode, do not add trailing spaces
 
-//flags for set_indent()
+//flags for doSetIndent()
 #define SIN_CHANGED  1   //call changed_bytes() when line changed
 #define SIN_INSERT   2   //insert indent before existing text
 #define SIN_UNDO     4   //save line for undo before changing it
@@ -947,19 +943,6 @@ typedef struct tm Tm;
 #define DT_CSCOPE 10   //cscope find command (like tjump)
 #define DT_LTAG   11   //tag using location list
 #define DT_FREE   99   //free cached matches
-
-//flags for find_tags().
-#define TAG_HELP         1   //only search for help tags
-#define TAG_NAMES        2   //only return name of tag
-#define TAG_REGEXP       4   //use tag pattern as regexp
-#define TAG_NOIC         8   //don't always ignore case
-#define TAG_CSCOPE      16   //cscope tag
-#define TAG_VERBOSE     32   //message verbosity
-#define TAG_INS_COMP    64   //Currently doing insert completion
-#define TAG_KEEP_LANG  128   //keep current language
-#define TAG_NO_TAGFUNC 256   //do not use 'tagfunc'
-
-#define TAG_MANY       300   //When finding many tags (for completion), find up to this many tags
 
 //Types of dialogs passed to do_dialog().
 #define EE_GENERIC   0
@@ -1610,22 +1593,16 @@ EXTERN Unt p_wop;     //@wild.options
 
 EXTERN CS p_wig;     //@wild.ignore
 EXTERN CS p_ww;      //@whichwrap
-EXTERN long p_wc;    //@wild.char
-EXTERN long p_wcm;   //@wild.charm
+EXTERN Long p_wc;    //@wild.char
+EXTERN Long p_wcm;   //@wild.charm
 EXTERN Boole p_wic;  //@wild.ignorecase
 EXTERN CS p_wim;     //@wild.mode
 EXTERN Boole p_wmnu; //@wild.menu
-EXTERN long p_wh;    //@port.height
-EXTERN long p_wiw;   //@port.width
-EXTERN long p_wtm;   //@wltimeoutlen
-EXTERN int p_wa;     //@writeany
-EXTERN long p_wd;    //@writedelay
+EXTERN Long p_wh;    //@port.height
+EXTERN Long p_wiw;   //@port.width
+EXTERN Long p_wtm;   //@wltimeoutlen
+EXTERN Long p_wd;    //@writedelay
 
-
-//Value for b_p_ul indicating the global value must be used.
-#define NO_LOCAL_UNDOLEVEL (-123456)
-
-#define ERR_BUFLEN 80
 
 //}}}
 
@@ -3482,7 +3459,7 @@ struct Book { //:Book
    MapBlock* firstAbbr;
 
    //User commands local to the book.
-   ArrayList   userCommands;
+   ArrayList userCommands;
    //start and end of an operator, also used for '[ and ']
    Pos opStart;
    Pos opStartOrig;  //used for juggle.c:op_insert
@@ -7142,24 +7119,17 @@ EXTERN Byte e_assert_fails_fifth_argument[]
    INIT(= "E1116: \"assert_fails()\" fifth argument must be a string");
 EXTERN Byte e_cannot_use_bang_with_nested_def_str[]
    INIT(= "E1117: Cannot use ! with nested %s");
-EXTERN Byte e_cannot_change_locked_list[]
-   INIT(= "E1118: Cannot change locked list");
-EXTERN Byte e_cannot_change_locked_list_item[]
-   INIT(= "E1119: Cannot change locked list item");
-EXTERN Byte e_cannot_change_dict[]
-   INIT(= "E1120: Cannot change dict");
-EXTERN Byte e_cannot_change_dict_item[]
-   INIT(= "E1121: Cannot change dict item");
-EXTERN Byte e_variable_is_locked_str[]
-   INIT(= "E1122: Variable is locked: %s");
+EXTERN Byte e_cannot_change_locked_list[] INIT(= "E1118: Cannot change locked list");
+EXTERN Byte e_cannot_change_locked_list_item[] INIT(= "E1119: Cannot change locked list item");
+EXTERN Byte e_cannot_change_dict[] INIT(= "E1120: Cannot change dict");
+EXTERN Byte e_cannot_change_dict_item[] INIT(= "E1121: Cannot change dict item");
+EXTERN Byte e_variable_is_locked_str[] INIT(= "E1122: Variable is locked: %s");
 EXTERN Byte e_missing_comma_before_argument_str[]
    INIT(= "E1123: Missing comma before argument: %s");
 EXTERN Byte e_str_cannot_be_used_in_vim_script[]
    INIT(= "E1124: \"%s\" cannot be used in Vim script");
-EXTERN Byte e_final_requires_a_value[]
-   INIT(= "E1125: Final requires a value");
-EXTERN Byte e_missing_name_after_dot[]
-   INIT(= "E1127: Missing name after dot");
+EXTERN Byte e_final_requires_a_value[] INIT(= "E1125: Final requires a value");
+EXTERN Byte e_missing_name_after_dot[] INIT(= "E1127: Missing name after dot");
 EXTERN Byte e_endblock_without_block[] //{
    INIT(= "E1128: } without {"); //}
 EXTERN Byte e_throw_with_empty_string[]

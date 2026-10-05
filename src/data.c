@@ -28,7 +28,6 @@ pub
 #include "h/message.h"
 #include "h/motor.types.h"
 #include "h/motor.h"
-#include "h/portal.h"
 #include "h/script.h"
 #include "h/strings.h"
 
@@ -43,7 +42,6 @@ pub
 int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 int lstat(const char* restrict, struct stat* restrict);
-
 
 //{{{types
 
@@ -12499,7 +12497,7 @@ get_copyID(void) { //:get_copyID
 }
 
 pub Boole
-set_checkForCircularRefs(OUT EeSet* set, Unt copyId, ListStack** listStack) {
+set_checkForCircularRefs(OUT EeSet*, Unt , ListStack** ) {
    //TODO
    return true;
 

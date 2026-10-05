@@ -155,9 +155,9 @@ private int check_overwrite(
    Invocation* invo,
    Book* book,
    CS fname,       //file name to be used (can differ from book->fullFName)
-   CS fullFName,    //full path version of fname
-   Boole other)       //writing under other name
-;
+   CS fullFName,   //full path version of fname
+   Boole other     //writing under other name
+);
 private Boole isWritingForbidden(void);
 private Boole check_readonly(OUT Boole* forceit, Book* book);
 private int check_regexp_delim(int c);
@@ -1783,7 +1783,7 @@ check_writable(CS fname) {
    return OK;
 }
 
-//Check if it is allowed to overwrite a file.  If flags has BF_NOTEDITED, BF_NEW or BF_READERR,
+//Check if it is allowed to overwrite a file. If flags has BF_NOTEDITED, BF_NEW or BF_READERR,
 //check for overwriting current file. May set invo->forceit if a dialog says it's OK to overwrite.
 //Return OK if it's OK, FAIL if it is not.
 private int
@@ -1791,19 +1791,19 @@ check_overwrite(
    Invocation* invo,
    Book* book,
    CS fname,       //file name to be used (can differ from book->fullFName)
-   CS fullFName,    //full path version of fname
-   Boole other)       //writing under other name
-{
+   CS fullFName,   //full path version of fname
+   Boole other     //writing under other name
+){
    //Write to another file or flags set or not writing the whole file: overwriting only allowed
    //with '!'. If "other" is false and bt_nofilename(book) is true, this must be
    //writing an "acwrite" book to the same file as its fullFileName, and bookWrite() will only
    //allow writing with BufWriteCmd autocommands, so there is no need for an overwrite check.
-   if (       (other
-      || (!bt_nofilename(book)
-          && ((book->flags & BF_NOTEDITED)
-         || (book->flags & BF_NEW)
-         || (book->flags & BF_READERR))))
-       && !p_wa
+   if ((other
+         || (!bt_nofilename(book)
+             && ((book->flags & BF_NOTEDITED)
+                  || (book->flags & BF_NEW)
+                  || (book->flags & BF_READERR)))
+       )
        && eeFexists(fullFName)
    ) {
       if (!invo->forceit && !invo->append) {
@@ -1908,7 +1908,6 @@ do_write(Invocation* invo) {
       if ((invo->line1 != 1 || invo->line2 != curBook->mem.lineCount)
             && !invo->forceit
             && !invo->append
-            && !p_wa
       ){
          if (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) {
             if (eeDialog_yesno(EE_QUESTION, NULL, (CS)_("Write partial file?"), 2) != EE_YES)

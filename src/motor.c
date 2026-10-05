@@ -348,7 +348,7 @@ private CS channel_get_all(Channel *channel, ChannelFdKind part, int *outlen);
 private int saveMsg(Channel* channel, ChannelFdKind part, CS msg, int len, int prepend, CS logLead);
 private int channel_fill(JsReader* reader);
 private int channel_process_lsp_http_hdr(JsReader* reader);
-private int channel_parse_json(Channel* channel, ChannelFdKind part);
+private Boole channel_parse_json(Channel* channel, ChannelFdKind part);
 private void remove_cb_node(CbNode* head, CbNode* node);
 private void remove_json_node(JsonQ* head, JsonQ* node);
 private void channel_add_block_id(ChannelFd* chanpart, int id);
@@ -3447,34 +3447,34 @@ f_timer_stopall(Arr(Var), OUT Var*) {
    stop_all_timers();
 }
 
-private TimeSpec prev_timeval;
+private TimeSpec prevTimeP;
 
 //Save the previous time before doing something that could nest.
 //set "*tv_rel" to the time elapsed so far.
 //Not public because there's a special header for this file, motor.time.h!
 void
-time_push(TimeSpec* tv_rel, TimeSpec* tv_start) {
-   *tv_rel = prev_timeval;
-   timespec_get(&prev_timeval, TIME_UTC);
-   tv_rel->tv_nsec = prev_timeval.tv_nsec - tv_rel->tv_nsec;
-   tv_rel->tv_sec = prev_timeval.tv_sec - tv_rel->tv_sec;
-   if (tv_rel->tv_nsec < 0) {
-      tv_rel->tv_nsec += 1000000;
-      --tv_rel->tv_sec;
+time_push(OUT TimeSpec* rel, OUT TimeSpec* start) {
+   *rel = prevTimeP;
+   timespec_get(&prevTimeP, TIME_UTC);
+   rel->tv_nsec = prevTimeP.tv_nsec - rel->tv_nsec;
+   rel->tv_sec = prevTimeP.tv_sec - rel->tv_sec;
+   if (rel->tv_nsec < 0) {
+      rel->tv_nsec += 1000000000;
+      --rel->tv_sec;
    }
-   *tv_start = prev_timeval;
+   *start = prevTimeP;
 }
 
 //Compute the previous time after doing something that could nest.
-//Subtract "*tp" from prev_timeval;
+//Subtract "*tp" from prevTimeP;
 //Not public because there's a special header for this file, motor.time.h!
 void
 time_pop(TimeSpec* tp) {
-   prev_timeval.tv_nsec -= tp->tv_nsec;
-   prev_timeval.tv_sec -= tp->tv_sec;
-   if (prev_timeval.tv_nsec < 0) {
-      prev_timeval.tv_nsec += 1000000;
-      --prev_timeval.tv_sec;
+   prevTimeP.tv_nsec -= tp->tv_nsec;
+   prevTimeP.tv_sec -= tp->tv_sec;
+   if (prevTimeP.tv_nsec < 0) {
+      prevTimeP.tv_nsec += 1000000;
+      --prevTimeP.tv_sec;
    }
 }
 
@@ -3497,7 +3497,7 @@ time_msg(CS mesg, TimeSpec* tv_start){
 
    if (STRSTR(mesg, S"STARTING") != NULL) {
       timespec_get(OUT &start, TIME_UTC);
-      prev_timeval = start;
+      prevTimeP = start;
       fprintf(time_fd, "\n\ntimes in msec\n");
       fprintf(time_fd, " clock   self+sourced   self:  sourced script\n");
       fprintf(time_fd, " clock   elapsed:              other lines\n\n");
@@ -3511,8 +3511,8 @@ time_msg(CS mesg, TimeSpec* tv_start){
       time_diff(tv_start, &now);
    }
    fprintf(time_fd, "  ");
-   time_diff(&prev_timeval, &now);
-   prev_timeval = now;
+   time_diff(&prevTimeP, &now);
+   prevTimeP = now;
    fprintf(time_fd, ": %s\n", mesg);
 }
 
@@ -4010,7 +4010,7 @@ channel_unref(Channel* channel) {
 //"flags": MCH_DELAY_IGNOREINPUT - don't read input
 //     MCH_DELAY_SETTMODE - use termSetMode() even for short delays
 pub void
-mch_delay(long msec, int flags) {
+mch_delay(Long msec, Unt flags) {
    TermInputMode old_tmode;
    int call_termSetMode;
 
@@ -4026,12 +4026,7 @@ mch_delay(long msec, int flags) {
           termSetMode(TMODE_SLEEP);
       }
 
-      //Everybody sleeps in a different way...
-      //Prefer nanosleep(), some versions of usleep() can only sleep up to one second.
-      TimeSpec ts;
-
-      ts.tv_sec = msec / 1000;
-      ts.tv_nsec = (msec % 1000) * 1000000;
+      TimeSpec ts = {.tv_sec = msec / 1000, .tv_nsec = (msec % 1000) * 1000000};
       (void)nanosleep(&ts, NULL);
 
       if (call_termSetMode)
@@ -5036,7 +5031,7 @@ channel_process_lsp_http_hdr(JsReader* reader) {
 
    hdr_len = p - reader->js_buf;
 
-    //if the entire payload is not received, wait for more data to arrive
+   //if the entire payload is not received, wait for more data to arrive
    if (jsbuf_len < hdr_len + payload_len)
       return MAYBE;
 
@@ -5049,13 +5044,13 @@ channel_process_lsp_http_hdr(JsReader* reader) {
 
 //Use the read buffer of "channel"/"part" and parse a JSON message that is
 //complete.  The messages are added to the queue. Return true if there is more to read.
-private int
+private Boole
 channel_parse_json(Channel* channel, ChannelFdKind part) {
-   Var   listtv;
-   ChannelFd   *chanpart = &channel->fds[part];
-   JsonQ   *head = &chanpart->ch_json_head;
-   int      status = OK;
-   int      ret;
+   Var listtv;
+   ChannelFd* chanpart = &channel->fds[part];
+   JsonQ* head = &chanpart->ch_json_head;
+   int status = OK;
+   int ret;
 
    if (channel_peek(channel, part) == NULL)
       return false;
@@ -5093,12 +5088,12 @@ channel_parse_json(Channel* channel, ChannelFdKind part) {
          clearVar(&listtv);
       } else {
          JsonQ* item = ALLOC_ONE(JsonQ);
-         if (item == NULL)
+         if (!item)
             clearVar(&listtv);
          else {
             item->jq_no_callback = false;
             item->jq_value = allocVar();
-            if (item->jq_value == NULL) {
+            if (!item->jq_value) {
                eeglFree(item);
                clearVar(&listtv);
             } else {
@@ -5135,16 +5130,13 @@ channel_parse_json(Channel* channel, ChannelFdKind part) {
            ++chanpart->deadline.tv_sec;
          }
       } else {
-         int timeout;
-         {
-         TimeSpec now_tv;
+         TimeSpec now;
+         timespec_get(OUT &now, TIME_UTC);
 
-         timespec_get(OUT &now_tv, TIME_UTC);
-         timeout = now_tv.tv_sec > chanpart->deadline.tv_sec
-               || (now_tv.tv_sec == chanpart->deadline.tv_sec
-               && now_tv.tv_nsec > chanpart->deadline.tv_nsec);
-         }
-         if (timeout) {
+         if (now.tv_sec > chanpart->deadline.tv_sec
+               || (now.tv_sec == chanpart->deadline.tv_sec
+                  && now.tv_nsec > chanpart->deadline.tv_nsec)
+         ) {
             status = FAIL;
             chanpart->ch_wait_len = 0;
             ch_log(channel, "timed out");
@@ -6284,7 +6276,7 @@ channel_in_blocking_wait(void) {
 
 //Read one JSON message with ID "id" from "channel"/"part" and store the result in "returnVar".
 //When "id" is -1 accept any message;
-//Blocks until the message is received or the timeout is reached.
+//Block until the message is received or the timeout is reached.
 //In corner cases this can be called recursively, that is why ch_block_ids is * a list.
 private int
 channel_read_json_block(
@@ -6294,9 +6286,8 @@ channel_read_json_block(
    int id,
    Var** returnVar
 ) {
-   int more;
+   Boole more;
    Socket fd;
-   int timeout;
    ChannelFd* chanpart = &channel->fds[part];
    ChannelMode mode = channel->fds[part].ch_mode;
    int retval = FAIL;
@@ -6338,12 +6329,12 @@ channel_read_json_block(
             continue;
 
          //Wait for up to the timeout. If there was an incomplete message use the deadline for that
-         timeout = timeout_arg;
+         int timeout = timeout_arg;
          if (chanpart->ch_wait_len > 0) { {
-             TimeSpec now_tv;
-             timespec_get(&now_tv, TIME_UTC);
-             timeout = (chanpart->deadline.tv_sec - now_tv.tv_sec) * 1000
-                        + (chanpart->deadline.tv_nsec - now_tv.tv_nsec) / 1000
+             TimeSpec now;
+             timespec_get(&now, TIME_UTC);
+             timeout = (chanpart->deadline.tv_sec - now.tv_sec) * 1000
+                        + (chanpart->deadline.tv_nsec - now.tv_nsec) / 1000000
                         + 1;
          }
          if (timeout < 0) {
@@ -7648,7 +7639,7 @@ mch_create_pty_channel(Job* job, JobOptions* options) {
 //Check for CTRL-C typed by reading all available characters.
 //In cooked mode we should get SIGINT, no need to check.
 pub void
-chBreakcheck(Boole force) {
+motBreakCheck(Boole force) {
    if ((mch_cur_tmode == TMODE_RAW || force) && uiRealWaitForChar(read_cmd_fd, 0L, NULL)) {
       fill_input_buf(false);
    }
@@ -7868,16 +7859,6 @@ set_default_child_environment(Boole is_terminal) {
 //}}}
 //{{{job runnin' and controllin'
 
-pub int
-chJobGetCopyId(Job* job) {
-   return job->copyId;
-}
-
-pub void
-chJobSetCopyId(Job* job, int newVal) {
-   job->copyId = newVal;
-}
-
 pub Channel*
 motJobGetChannel(Job* job) {
    return job->channel;
@@ -7898,23 +7879,18 @@ motJobIsKeepOpen(Job* job) {
    return job->channel->keepOpen;
 }
 
-pub Callback
-chJobGetExitCb(Job* job) {
-   return job->exitCb;
-}
-
 pub JobStatus
-chJobGetStatus(Job* job) {
+motJobGetStatus(Job* job) {
    return job->status;
 }
 
 pub void
-chJobSetStatus(Job* job, JobStatus newVal) {
+motJobSetStatus(Job* job, JobStatus newVal) {
    job->status = newVal;
 }
 
 pub Arr(Byte)
-chJobGetTty(Job* job, Boole out) {
+motJobGetTty(Job* job, Boole out) {
    if (out) {
       return job->ttyOut;
    } else {

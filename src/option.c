@@ -1707,6 +1707,8 @@ parseEnumValue(CS newVal, Arr(CS) validValues) {
    return 255;
 }
 
+#define ERR_BUFLEN 80
+
 //Check validity of options with the @statusline format.
 //Return an untranslated error message or NULL.
 private CS

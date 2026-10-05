@@ -278,7 +278,7 @@
 [-] Vimvars
 [ ] s: variables
 [ ] need_highlight_changed?
-[ ] p_writeany
+[-] p_wa (@writeany)
 [ ] forceit?
 [-] keymodel (p_km)
 [ ] alloc_type?

@@ -160,14 +160,14 @@ void cursor_correct(void);
 int pagescroll(int dir, long count, int half);
 void do_check_cursorbind(void);
 MapBlock* getMappingTableList(int state, int c);
-MapBlock * getBufMappingTableList(int state, int c);
+MapBlock * whGetBufMappingTableList(int state, Unt c);
 int isMappingTableValid(void);
 int do_map(int maptype, CS arg, Unt mode, int abbrev);
 void mapClearAllMappingsInMode(
    Book* book,      //book for local mappings
-   int      modeClearFrom,      //mode in which to delete
-   Boole      localOnly,      //true for buffer-local mappings
-   Boole      abbr      //true for abbreviations
+   int modeClearFrom,      //mode in which to delete
+   Boole localOnly,      //true for buffer-local mappings
+   Boole abbr      //true for abbreviations
 );
 int mode_str2flags(CS modechars);
 int map_to_exists(CS str, CS modechars, int abbr);

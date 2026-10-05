@@ -69,7 +69,7 @@ int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 #include <poll.h> //for poll
 
-# define XT_TRACE_DELAY   50   //delay for xterm tracing
+#define XT_TRACE_DELAY   50   //delay for xterm tracing
 
 //{{{vTerm (abstraction over a terminal)
 //{{{types
@@ -308,6 +308,9 @@ typedef struct {
    Unt col_start;
    Unt col_end;
 } Tabpanel;
+
+
+typedef Boole (*WaitFn)(Long wtime, OUT Boole* interrupted, Boole ignore_input);
 
 //}}}
 //{{{includes
@@ -897,7 +900,7 @@ private CS cursor_color_get(CS color);
 private Boole parse_termwinsize(Portal *po, OUT Unt* rows, OUT Unt* cols);
 private void set_term_and_win_size(Terminal *term, JobOptions *opt);
 private void setup_job_options(JobOptions *opt, int rows, int cols);
-private int mch_check_messages(void);
+private Boole mch_check_messages(void);
 private void term_flush_messages(void);
 private void closeFailedTerminalBook(Book* book, Book* old_curBook);
 private Book* startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags);
@@ -991,14 +994,22 @@ private int mch_inchar(
    long wtime,       //don't use "time", MIPS cannot handle it
    int changeCnt
 );
+private int inchar_loop(
+   OUT CS buf,
+   int maxlen,
+   Long wtime,       //don't use "time", MIPS cannot handle it
+   int changeCnt,
+   WaitFn wait_func,
+   int (*resize_func)(int check_only)
+);
 private int ui_wait_for_chars_or_timer(
-   long wtime,
-   int (*wait_func)(long wtime, int *interrupted, Boole ignore_input),
-   int *interrupted,
+   Long wtime,
+   WaitFn wait_func,
+   OUT Boole* interrupted,
    int ignore_input
 );
-private int waitForCharOrMouse(Long msec, OUT int *interrupted, Boole ignore_input);
-private int mch_char_avail(void);
+private Boole waitForCharOrMouse(Long msec, OUT Boole* interrupted, Boole ignore_input);
+private Boole mch_char_avail(void);
 private void trash_input_buf(void);
 private void fillRowsWithTwoCharsWithTailingArea(
    int tplmode,
@@ -6614,7 +6625,7 @@ setup_job_options(JobOptions *opt, int rows, int cols) {
 }
 
 //Check for any pending input or messages.
-private int
+private Boole
 mch_check_messages(void) {
    return waitForChar(0L, NULL, true);
 }
@@ -7181,7 +7192,7 @@ free_terminal(Book* book) {
    }
 
    if (term->job) {
-      JobStatus status = chJobGetStatus(term->job);
+      JobStatus status = motJobGetStatus(term->job);
       if (status != JOB_ENDED && status != JOB_FINISHED && status != JOB_FAILED)
          job_stop(term->job, NULL, S"kill");
       job_unref(term->job);
@@ -7325,8 +7336,7 @@ write_to_term(Book *book, CS msg, Channel* channel) {
    //In Terminal-Normal mode we are displaying the book, not the terminal
    //contents, thus no screen update is needed.
    if (!term->isNormalMode) {
-      //Don't use drawUpdateScreen() when editing the command line, it gets
-      //cleared.
+      //Don't use drawUpdateScreen() when editing the command line, it gets cleared.
       //TODO: only update once in a while.
       ch_log(motJobGetChannel(term->job), "updating screen");
       if (book == curBook && (stateG & MODE_COMMLINE) == 0) {
@@ -7588,7 +7598,7 @@ term_job_running_check(Terminal* term, Boole check_job_status) {
    //the book and terminate "term".  However, "job" will not be freed yet.
    if (check_job_status)
       job_status(job);
-   return chJobGetStatus(job) == JOB_STARTED
+   return motJobGetStatus(job) == JOB_STARTED
           || (motJobGetChannel(job) && motJobIsKeepOpen(job));
 }
 
@@ -7659,7 +7669,7 @@ term_try_stop_job(Book* book) {
       //Call job_status() to update jv_status. It may cause the job to be
       //cleaned up but it won't be freed.
       job_status(job);
-      if (chJobGetStatus(job) >= JOB_ENDED)
+      if (motJobGetStatus(job) >= JOB_ENDED)
          return OK;
 
       ui_delay(10L, true);
@@ -10383,11 +10393,11 @@ f_term_gettty(Arr(Var) argvars, Var* returnVar) {
    switch (num) {
    case 0:
       if (book->term->job)
-         p = chJobGetTty(book->term->job, true);
+         p = motJobGetTty(book->term->job, true);
       break;
    case 1:
       if (book->term->job)
-         p = chJobGetTty(book->term->job, false);
+         p = motJobGetTty(book->term->job, false);
       break;
    default:
       showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&argvars[1]));
@@ -10669,7 +10679,7 @@ initSubtermAndJob(
    if (term->job)
       incRefCount(term->job);
 
-   return term->job && motJobGetChannel(term->job) && chJobGetStatus(term->job) != JOB_FAILED
+   return term->job && motJobGetChannel(term->job) && motJobGetStatus(term->job) != JOB_FAILED
       ? OK : FAIL;
 }
 
@@ -10682,7 +10692,7 @@ create_pty_only(Terminal* term, JobOptions* opt) {
    incRefCount(term->job);
 
    //behave like the job is already finished
-   chJobSetStatus(term->job, JOB_FINISHED);
+   motJobSetStatus(term->job, JOB_FINISHED);
 
    return mch_create_pty_channel(term->job, opt);
 }
@@ -10776,13 +10786,13 @@ preserve_exit(void) {
 //"interrupted" (if not NULL) is set to true when no character is available
 //but something else needs to be done.
 pub int
-uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
+uiRealWaitForChar(int fd, Long msec, OUT Boole* interrupted) {
    static Boole busy = false;
 
    //Remember at what time we started, so that we know how much longer we
    //should wait after being interrupted.
    Long start_msec = msec;
-   Elapsed start;
+   TimeSpec start;
    if (msec > 0)
       timespec_get(OUT &start, TIME_UTC);
 
@@ -10818,8 +10828,6 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
       if (ret >= 0)
           motPollCheck(ret, fds);
 
-
-
       if (finished || msec == 0)
          break;
 
@@ -10836,12 +10844,11 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
    return result;
 }
 
-
 //Write s[len] to the screen (stdout).
 private void
 mch_write(CS s, int len) {
    (void)write(1, (char *)s, len);
-   if (p_wd)      //Unix is too fast, slow down a bit more
+   if (p_wd > 0)      //Unix is too fast, slow down a bit more
       uiRealWaitForChar(read_cmd_fd, p_wd, null);
 }
 
@@ -11022,17 +11029,17 @@ ui_inchar(
 //If "wtime" == 0 do not wait for characters.
 //If "wtime" == n wait a short time for characters.
 //If "wtime" == -1 wait forever for characters.
-pub int
+private int
 inchar_loop(
    OUT CS buf,
    int maxlen,
-   long wtime,       //don't use "time", MIPS cannot handle it
+   Long wtime,       //don't use "time", MIPS cannot handle it
    int changeCnt,
-   int (*wait_func)(long wtime, int *interrupted, Boole ignore_input),
+   WaitFn wait_func,
    int (*resize_func)(int check_only)
 ){
    int len;
-   int interrupted = false;
+   Boole interrupted = false;
    int did_call_wait_func = false;
    int did_start_blocking = false;
    Long wait_time;
@@ -11153,9 +11160,9 @@ inchar_loop(
 //Return OK when something was read. Return FAIL when it timed out or was interrupted.
 private int
 ui_wait_for_chars_or_timer(
-   long wtime,
-   int (*wait_func)(long wtime, int *interrupted, Boole ignore_input),
-   int *interrupted,
+   Long wtime,
+   WaitFn wait_func,
+   OUT Boole* interrupted,
    int ignore_input
 ){
    int due_time;
@@ -11185,7 +11192,7 @@ ui_wait_for_chars_or_timer(
       }
       if (wait_func(due_time, interrupted, ignore_input))
          return OK;
-      if ((interrupted != NULL && *interrupted) || brief_wait)
+      if ((interrupted && *interrupted) || brief_wait)
          //Nothing available, but need to return so that side effects get
          //handled, such as handling a message on a channel.
          return FAIL;
@@ -11199,17 +11206,15 @@ ui_wait_for_chars_or_timer(
 //for "ignore_input" see WaitForCharOr().
 //"interrupted" (if not NULL) is set to true when no character is available
 //but something else needs to be done.
-private int
-waitForCharOrMouse(Long msec, OUT int *interrupted, Boole ignore_input) {
+private Boole
+waitForCharOrMouse(Long msec, OUT Boole* interrupted, Boole ignore_input) {
    if (!ignore_input && input_available())       //something in inbuf[]
       return 1;
 
    int avail = uiRealWaitForChar(read_cmd_fd, msec, OUT interrupted);
+   if (avail == 0 && !ignore_input && input_available())
+      return 1;
 
-   if (!avail) {
-      if (!ignore_input && input_available())
-         return 1;
-   }
    return avail;
 }
 
@@ -11221,13 +11226,13 @@ waitForCharOrMouse(Long msec, OUT int *interrupted, Boole ignore_input) {
 //but something else needs to be done.
 //Return true when a character is available.
 //When a GUI is being used, this will never get called -- webb
-pub int
-waitForChar(long msec, OUT int* interrupted, Boole ignore_input) {
+pub Boole
+waitForChar(long msec, OUT Boole* interrupted, Boole ignore_input) {
    return ui_wait_for_chars_or_timer(msec, waitForCharOrMouse, interrupted, ignore_input) == OK;
 }
 
-//Return non-zero if a character is available.
-private int
+//Return true if a character is available.
+private Boole
 mch_char_avail(void) {
    return waitForChar(0L, NULL, false);
 }
@@ -11241,8 +11246,8 @@ ui_char_avail(void) {
 //Delay for the given number of milliseconds. If ignoreinput is false then we
 //cancel the delay if a key is hit.
 pub void
-ui_delay(long msec_arg, int ignoreinput) {
-   long msec = msec_arg;
+ui_delay(Long msec_arg, Boole ignoreinput) {
+   Long msec = msec_arg;
 
    if (ui_delay_for_testing > 0)
       msec = ui_delay_for_testing;
@@ -11283,7 +11288,7 @@ ui_breakcheck(void) {
 //This is useful to read input on channels.
 pub void
 ui_breakcheck_force(Boole force) {
-   static int recursive = false;
+   static Boole recursive = false;
    int save_updating_screen = updating_screen;
 
    //We could be called recursively if stderr is redirected, calling
@@ -11296,7 +11301,7 @@ ui_breakcheck_force(Boole force) {
    //We do not want gui_resize_shell() to redraw the screen here.
    ++updating_screen;
 
-   chBreakcheck(force);
+   motBreakCheck(force);
 
    if (save_updating_screen)
       updating_screen = true;
@@ -11361,7 +11366,7 @@ set_input_buf(CS p, Boole overwrite) {
    if (!gap)
       return;
 
-   if (gap->c != NULL) {
+   if (gap->c) {
       if (overwrite || inbufcount + gap->len >= INBUFLEN) {
          MEMMOVE(inbuf, gap->c, gap->len);
          inbufcount = gap->len;
@@ -11417,7 +11422,6 @@ f_test_feedinput(Arr(Var) argvars, Var*) {
    }
 }
 
-
 //Read as much data from the input buffer as possible up to maxlen, and store it in buf.
 pub int
 read_from_input_buf(CS buf, long maxlen) {
@@ -11439,7 +11443,7 @@ fill_input_buf(Boole exit_on_error) {
    static int   did_read_something = false;
    static CS rest = NULL;       //unconverted rest of previous read
    static int   restlen = 0;
-   int      unconverted;
+   int unconverted;
 
    if (eeIsInputBufFull())
       return;

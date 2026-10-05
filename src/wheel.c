@@ -30,16 +30,17 @@
 #include "h/regexp.h"
 #include "h/script.h"
 #include "h/strings.h"
+#include "h/tag.types.h"
 #include "h/tag.h"
 #include "h/term.h"
 #include "h/ui.h"
 #include "h/wheel.h"
 #include "h/window.h"
 
-#include <ctype.h> //for isupper()
-#include <time.h>  //for timespec_get()
+#include <ctype.h>   //for isupper()
+#include <time.h>    //for timespec_get()
 #include <libintl.h> //for gettext()
-#include <string.h> //for strcmp()
+#include <string.h>  //for strcmp()
 
 private int VIsual_mode_orig = ZERO;      //saved Visual mode
 
@@ -3433,7 +3434,9 @@ find_decl(
 
    //Put "\V" before the pattern to avoid that the special meaning of "."
    //and "~" causes trouble.
-   Unt patlen = eeSnprintf(pat, len + 7, eeIsWordPtr(ptr) ? "\\V\\<%.*s\\>" : "\\V%.*s", len, ptr);
+   Unt patlen = eeSnprintf(
+         pat, len + 7, eeIsWordPtr(ptr) ? "\\V\\<%.*s\\>" : "\\V%.*s", len, ptr
+   );
 
    old_pos = curPor->cursor;
    save_p_scs = p_scs;
@@ -7252,8 +7255,8 @@ vVisualOperators(ActionArg* aArg) {
 //'O': same, but in block mode exchange left and right corners.
 private void
 v_swap_corners(int cmdchar) {
-   Pos   old_cursor;
-   ColNr   left, right;
+   Pos old_cursor;
+   ColNr left, right;
 
    if (cmdchar == 'O' && VIsual_mode == Ctrl_V) {
       old_cursor = curPor->cursor;
@@ -7266,7 +7269,8 @@ v_swap_corners(int cmdchar) {
       curPor->cursWant = right;
       coladvance(curPor->cursWant);
       if (curPor->cursor.col == old_cursor.col
-            && (!virtual_active() || curPor->cursor.coladd == old_cursor.coladd)) {
+            && (!virtual_active() || curPor->cursor.coladd == old_cursor.coladd)
+      ) {
          curPor->cursor.lnum = VIsual.lnum;
          coladvance(right);
          VIsual = curPor->cursor;
@@ -9718,7 +9722,7 @@ getMappingTableList(int state, int c) {
 
 //Get the book-local hashed map list for "state" and first character "c".
 pub MapBlock *
-getBufMappingTableList(int state, int c) {
+whGetBufMappingTableList(int state, Unt c) {
    return curBook->localMappings[MAP_HASH(state, c)];
 }
 
@@ -10240,7 +10244,8 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
 
       //Check if a new local mapping wasn't yet defined globally.
       if (
-         unique && map_table == curBook->localMappings && haskey && hasarg && maptype != MAPTYPE_UNMAP
+         unique && map_table == curBook->localMappings && haskey && hasarg
+         && maptype != MAPTYPE_UNMAP
       ) {
           //need to loop over all global hash lists
           for (int hash = 0; hash < 256 && !gotInterruptG; ++hash) {
@@ -10258,9 +10263,13 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
                    && STRNCMP(foundMapping->lhs, keys, (Unt)len) == 0
                 ) {
                   if (abbrev)
-                     showErrFmtMsg((e_global_abbreviation_already_exists_for_str), foundMapping->lhs);
+                     showErrFmtMsg(
+                           (e_global_abbreviation_already_exists_for_str), foundMapping->lhs
+                     );
                   else
-                     showErrFmtMsg(_(e_global_mapping_already_exists_for_str), foundMapping->lhs);
+                     showErrFmtMsg(
+                           _(e_global_mapping_already_exists_for_str), foundMapping->lhs
+                     );
                   retval = 5;
                   goto theend;
                 }
@@ -10504,19 +10513,19 @@ isMapLocked(void) {
 pub void
 mapClearAllMappingsInMode(
    Book* book,      //book for local mappings
-   int      modeClearFrom,      //mode in which to delete
-   Boole      localOnly,      //true for buffer-local mappings
-   Boole      abbr      //true for abbreviations
+   int modeClearFrom,      //mode in which to delete
+   Boole localOnly,      //true for buffer-local mappings
+   Boole abbr      //true for abbreviations
 ){
    MapBlock** mpp;
-   int      hash;
-   int      newHash;
+   Unt newHash;
 
    if (isMapLocked())
       return;
 
    validateMappingTable();
 
+   Unt hash;
    for (hash = 0; hash < 256; ++hash) {
       if (abbr) {
          if (hash > 0)   //there is only one abbrlist
@@ -10593,15 +10602,14 @@ map_to_exists(CS str, CS modechars, int abbr) {
 //Also checks mappings local to the current book.
 pub Boole
 map_to_exists_mode(CS rhs, int mode, int abbr) {
-   MapBlock   *mp;
-   int      hash;
    Boole isExpandBook = false;
 
    validateMappingTable();
 
    //Do it twice: once for global maps and once for local maps.
    for (;;) {
-      for (hash = 0; hash < 256; ++hash) {
+      for (Unt hash = 0; hash < 256; ++hash) {
+         MapBlock* mp;
          if (abbr) {
             if (hash > 0)      //there is only one abbr list
                break;
@@ -10750,7 +10758,7 @@ expandMappings(
    RegMatch* regmatch,
    OUT ExpandMatch* matches
 ) {
-   MapBlock   *mp;
+   MapBlock* mp;
    int hash;
    CS p;
    int i;
@@ -15281,7 +15289,7 @@ private Book* compl_curr_buf = NULL;  //buf where completion is active
 //Autocomplete uses a decaying timeout: starting from COMPL_INITIAL_TIMEOUT_MS, if the current
 //source exceeds its timeout, it is interrupted and the next begins with half the time. A small
 //minimum timeout ensures every source gets at least a brief chance.
-private int compl_autocomplete = false;       //whether autocompletion is active
+private Boole isAutocomplActiveP = false;       //whether autocompletion is active
 private int insertCompletionTimeOutMs = COMPL_INITIAL_TIMEOUT_MS;
 private Boole insertCompletionTimeExpiredP = false; //time budget exceeded for current source
 private int compl_from_nonkeyword = false;    //completion started from non-keyword
@@ -15525,7 +15533,7 @@ is_first_match(InsertCompletion *match) {
 //whether to abandon complete mode when the menu is visible.
 private int
 ins_compl_accept_char(int c) {
-   if (compl_autocomplete && compl_from_nonkeyword)
+   if (isAutocomplActiveP && compl_from_nonkeyword)
       return false;
 
    if (ctrl_x_mode & CTRL_X_WANT_IDENT)
@@ -15725,7 +15733,7 @@ cfc_has_mode(void) {
 private int
 is_nearest_active(void) {
    Unt flags = curBook->o.completeOpt;
-   return (compl_autocomplete || (flags & COT_NEAREST)) && !(flags & COT_FUZZY);
+   return (isAutocomplActiveP || (flags & COT_NEAREST)) && !(flags & COT_FUZZY);
 }
 
 //Add a match to the list of matches. The arguments are:
@@ -16067,7 +16075,7 @@ ins_compl_del_pum(void) {
 private int
 pum_wanted(void) {
    //@completeopt must contain "menu" or "menuone"
-   if ((curBook->o.completeOpt & COT_ANY_MENU) == 0 && !compl_autocomplete)
+   if ((curBook->o.completeOpt & COT_ANY_MENU) == 0 && !isAutocomplActiveP)
       return false;
    return true;
 }
@@ -16087,7 +16095,7 @@ pum_enough_matches(void) {
       compl = compl->next;
    } while (!is_first_match(compl));
 
-   if ((curBook->o.completeOpt & COT_MENUONE) || compl_autocomplete)
+   if ((curBook->o.completeOpt & COT_MENUONE) || isAutocomplActiveP)
       return (i >= 1);
    return (i >= 2);
 }
@@ -16276,7 +16284,7 @@ ins_compl_build_pum(void) {
    int i = 0;
    int cur = -1;
    Unt cur_cot_flags = curBook->o.completeOpt;
-   int compl_no_select = (cur_cot_flags & COT_NOSELECT) != 0 || compl_autocomplete;
+   Boole compl_no_select = (cur_cot_flags & COT_NOSELECT) != 0 || isAutocomplActiveP;
    int fuzzy_filter = (cur_cot_flags & COT_FUZZY) != 0;
    InsertCompletion   *match_head = NULL;
    InsertCompletion   *match_tail = NULL;
@@ -16638,7 +16646,7 @@ filterFromFiles(
 
    for (Unt i = 0; i < files.len && !gotInterruptG && !ins_compl_interrupted(); i++) {
       fp = FOPEN(files.c[i], "r");  //open dictionary file
-      if (flags != DICT_EXACT && !compl_autocomplete) {
+      if (flags != DICT_EXACT && !isAutocomplActiveP) {
          msg_hist_off = true;   //reset in msgTruncDeco()
          eeSnprintf(ioBuffG, IOSIZE, _("Scanning dictionary: %s"), files.c[i]);
          (void)msgTruncDeco(ioBuffG, getDecoFlags(HLF_R));
@@ -16755,7 +16763,7 @@ ins_compl_clear(void){
    EE_CLEAR_STRING(compl_orig_text);
    compl_enter_selects = false;
    cpt_sources_clear();
-   compl_autocomplete = false;
+   isAutocomplActiveP = false;
    compl_from_nonkeyword = false;
    complCountBestS = 0;
 }
@@ -16814,7 +16822,7 @@ private int
 ins_compl_has_preinsert(void) {
    Unt cur_cot_flags = curBook->o.completeOpt;
    return (cur_cot_flags & (COT_PREINSERT | COT_FUZZY | COT_MENUONE))
-      == (COT_PREINSERT | COT_MENUONE) && !compl_autocomplete;
+      == (COT_PREINSERT | COT_MENUONE) && !isAutocomplActiveP;
 }
 
 //Return true if the pre-insert effect is valid and the cursor is within the `compl_ins_end_col`
@@ -16907,7 +16915,7 @@ ins_compl_new_leader(void) {
       save_leftCol = curPor->leftCol;
       compl_restarting = true;
       if (p_ac)
-         compl_autocomplete = true;
+         isAutocomplActiveP = true;
       if (insertModeCompletion(Ctrl_N, false) == FAIL)
          compl_cont_status = 0;
       compl_restarting = false;
@@ -17000,7 +17008,7 @@ ins_compl_restart(void) {
    compl_cont_status = 0;
    compl_cont_mode = 0;
    cpt_sources_clear();
-   compl_autocomplete = false;
+   isAutocomplActiveP = false;
    compl_from_nonkeyword = false;
    complCountBestS = 0;
 }
@@ -17258,7 +17266,7 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
       editSubmodeMsgG = NULL;
       showmode();
    }
-   compl_autocomplete = false;
+   isAutocomplActiveP = false;
    compl_from_nonkeyword = false;
    compl_best_matches = 0;
 
@@ -18133,8 +18141,8 @@ process_next_cpt_value(
    OUT int* advance_cpt_idx
 ){
    Unt insertCompletionType = UNT;
-   int status = INS_COMPL_CPT_OK;
-   int skip_source = compl_autocomplete && compl_from_nonkeyword;
+   Unt status = INS_COMPL_CPT_OK;
+   Boole skip_source = isAutocomplActiveP && compl_from_nonkeyword;
 
    st->found_all = false;
    *advance_cpt_idx = false;
@@ -18160,11 +18168,11 @@ process_next_cpt_value(
       //wrap and come back there a second time.
       st->set_match_pos = true;
    } ei (!skip_source && !insertCompletionTimeExpiredP
-       && firstOccurrence((CS)"buwU", *st->e_cpt) != NULL
+       && firstOccurrence(S"buwU", *st->e_cpt) != NULL
        && (st->scannedBook = ins_compl_next_buf(st->scannedBook, *st->e_cpt)) != curBook
    ) {
       //Scan a buffer, but not the current one.
-      if (st->scannedBook->mem.mfile != NULL) {  //loaded buffer
+      if (st->scannedBook->mem.mfile) {  //loaded buffer
          compl_started = true;
          st->first_match_pos.col = st->last_match_pos.col = 0;
          st->first_match_pos.lnum = st->scannedBook->mem.lineCount + 1;
@@ -18180,14 +18188,16 @@ process_next_cpt_value(
          st->dict = st->scannedBook->currFileName;
          st->dict_f = DICT_EXACT;
       }
-      if (!compl_autocomplete) {
+      if (!isAutocomplActiveP) {
          msg_hist_off = true;   //reset in msgTruncDeco()
-         eeSnprintf(ioBuffG, IOSIZE, _("Scanning: %s"),
-             st->scannedBook->currFileName == NULL
-            ? bookSpName(st->scannedBook)
-            : st->scannedBook->shortFileName == NULL
-                ? st->scannedBook->currFileName
-                : st->scannedBook->shortFileName);
+         eeSnprintf(
+            ioBuffG, IOSIZE, _("Scanning: %s"),
+            st->scannedBook->currFileName
+               ? (st->scannedBook->shortFileName
+                   ? st->scannedBook->shortFileName
+                   : st->scannedBook->currFileName)
+               : bookSpName(st->scannedBook)
+         );
          (void)msgTruncDeco(ioBuffG, getDecoFlags(HLF_R));
       }
    } ei (*st->e_cpt == ZERO)
@@ -18216,7 +18226,7 @@ process_next_cpt_value(
             insertCompletionType = CTRL_X_PATH_DEFINES;
          ei (*st->e_cpt == ']' || *st->e_cpt == 't') {
             insertCompletionType = CTRL_X_TAGS;
-            if (!compl_autocomplete) {
+            if (!isAutocomplActiveP) {
                 msg_hist_off = true;   //reset in msgTruncDeco()
                 eeSnprintf(ioBuffG, IOSIZE, _("Scanning tags."));
                 (void)msgTruncDeco(ioBuffG, getDecoFlags(HLF_R));
@@ -18247,7 +18257,7 @@ get_next_include_file_completion(Unt insertCompletionType) {
       (int)compl_pattern.len, false, false,
       (insertCompletionType == CTRL_X_PATH_DEFINES && !(compl_cont_status & CONT_SOL))
        ? FIND_DEFINE : FIND_ANY,
-      1L, ACTION_EXPAND, (LineNr)1, (LineNr)MAXLNUM, false, compl_autocomplete
+      1L, ACTION_EXPAND, (LineNr)1, (LineNr)MAXLNUM, false, isAutocomplActiveP
    );
 }
 
@@ -18306,15 +18316,11 @@ ins_compl_longest_insert(CS prefix) {
 //stored in compl_best_matches, and insert it as the longest.
 private void
 fuzzy_longest_match(void) {
-   int i = 0;
    int j = 0;
    CS match_str = NULL;
    CS prefix_ptr = NULL;
    CS match_ptr = NULL;
-   CS leader = NULL;
-   Unt leader_len = 0;
-   InsertCompletion   *compl = NULL;
-   int more_candidates = false;
+   Boole more_candidates = false;
 
    if (complCountBestS == 0)
       return;
@@ -18323,28 +18329,28 @@ fuzzy_longest_match(void) {
    if (nn_compl && nn_compl != compl_first_match)
       more_candidates = true;
 
-   compl = ctrl_x_mode_whole_line() ? compl_first_match : compl_first_match->next;
+   InsertCompletion* compl =
+      ctrl_x_mode_whole_line() ? compl_first_match : compl_first_match->next;
    if (complCountBestS == 1) {
       //no more candidates insert the match str
       if (!more_candidates) {
-          ins_compl_longest_insert(compl->cp_str.c);
-          complCountBestS = 0;
+         ins_compl_longest_insert(compl->cp_str.c);
+         complCountBestS = 0;
       }
       complCountBestS = 0;
       return;
    }
 
-   compl_best_matches = (InsertCompletion **)alloc(complCountBestS * sizeof(InsertCompletion *));
-   while (compl != NULL && i < complCountBestS) {
+   compl_best_matches = (InsertCompletion**)alloc(complCountBestS * sizeof(InsertCompletion *));
+   for (int i = 0; compl && i < complCountBestS; i++) {
       compl_best_matches[i] = compl;
       compl = compl->next;
-      i++;
    }
 
    CS prefix = compl_best_matches[0]->cp_str.c;
    int prefix_len = (int)compl_best_matches[0]->cp_str.len;
 
-   for (i = 1; i < complCountBestS; i++) {
+   for (int i = 1; i < complCountBestS; i++) {
       match_str = compl_best_matches[i]->cp_str.c;
       prefix_ptr = prefix;
       match_ptr = match_str;
@@ -18363,8 +18369,8 @@ fuzzy_longest_match(void) {
          prefix_len = j;
    }
 
-   leader = ins_compl_leader();
-   leader_len = ins_compl_leader_len();
+   CS leader = ins_compl_leader();
+   Unt leader_len = ins_compl_leader_len();
 
    //skip non-consecutive prefixes
    if (leader_len > 0 && STRNCMP(prefix, leader, leader_len) != 0)
@@ -18530,8 +18536,8 @@ ins_compl_get_next_word_or_line(
 
       if (compl_status_adding() && len == compl_length) {
          if (cur_match_pos->lnum < scannedBook->mem.lineCount) {
-            //Try next line, if any. the new word will be "join" as if the normal command "J" was
-            //used. IOSIZE is always greater than compl_length, so the next STRNCPY always
+            //Try next line, if any. the new word will be "join" as if the normal command "J"
+            //was used. IOSIZE is always greater than compl_length, so the next STRNCPY always
             //works -- Acevedo
             STRNCPY(ioBuffG, ptr, len);
             ptr = memGetLine(scannedBook, cur_match_pos->lnum + 1, false);
@@ -18574,11 +18580,10 @@ ins_compl_get_next_word_or_line(
 private Unt
 get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
    Unt found_new_match = FAIL;
-   int looped_around = false;
    CS ptr = NULL;
    int len = 0;
-   int inFuzzyCollect = (cfc_has_mode() && compl_length > 0)
-      || ((curBook->o.completeOpt & COT_FUZZY) && compl_autocomplete);
+   Boole inFuzzyCollect = (cfc_has_mode() && compl_length > 0)
+      || ((curBook->o.completeOpt & COT_FUZZY) && isAutocomplActiveP);
    CS leader = ins_compl_leader();
    int score = FUZZY_SCORE_NONE;
    Boole inCurBook = st->scannedBook == curBook;
@@ -18595,7 +18600,7 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
       wrapSearchG = false;
    ei (*st->e_cpt == '.')
       wrapSearchG = true;
-   looped_around = false;
+   Boole looped_around = false;
    for (;;) {
       int   cont_s_ipos = false;
       ++msg_silent;  //Don't want messages for wrapscan.
@@ -18773,8 +18778,8 @@ search_for_fuzzy_match(
    return found_new_match;
 }
 
-//Return the callback function associated with "p" if it refers to a user-defined function in the
-//'complete' option. The "idx" parameter is used for indexing callback entries.
+//Return the callback function associated with "p" if it refers to a user-defined function in
+//the 'complete' option. The "idx" parameter is used for indexing callback entries.
 private Callback *
 get_callback_if_cfn(CS p) {
    if (*p == 'o')
@@ -18782,10 +18787,10 @@ get_callback_if_cfn(CS p) {
 
    if (*p == 'F') {
       if (*++p != ',' && *p != ZERO) {
-          //Custom completion function 'F{func}' case
-          return curBook->o.completeFn->name != NULL ? curBook->o.completeFn : NULL;
+         //Custom completion function 'F{func}' case
+         return curBook->o.completeFn->name != NULL ? curBook->o.completeFn : NULL;
       } else
-          return curBook->o.completeFn; //@completefunc
+         return curBook->o.completeFn; //@completefunc
    }
 
    return NULL;
@@ -18892,7 +18897,8 @@ get_register_completion(void) {
    }
 }
 
-//get the next set of completion matches for "type". true if a new match is found. otherwise false
+//get the next set of completion matches for "type". true if a new match is found. otherwise
+//false
 private Unt
 get_next_completion_match(int type, InsertionCompletionNext *st, Pos *ini) {
    Unt found_new_match = FAIL;
@@ -18925,18 +18931,18 @@ get_next_completion_match(int type, InsertionCompletionNext *st, Pos *ini) {
        break;
 
    case CTRL_X_FUNCTION:
-       if (ctrl_x_mode_normal())  //Invoked by a func in 'cpt' option
-      get_cfn_completion_matches(st->func_cb);
-       else
-      expand_by_function(type, compl_pattern.c, NULL);
-       break;
+      if (ctrl_x_mode_normal())  //Invoked by a func in 'cpt' option
+         get_cfn_completion_matches(st->func_cb);
+      else
+         expand_by_function(type, compl_pattern.c, NULL);
+      break;
    case CTRL_X_OMNI:
-       expand_by_function(type, compl_pattern.c, NULL);
-       break;
+      expand_by_function(type, compl_pattern.c, NULL);
+      break;
 
    case CTRL_X_REGISTER:
-       get_register_completion();
-       break;
+      get_register_completion();
+      break;
 
    default:   //normal ^P/^N and ^X^L
       found_new_match = get_next_default_completion(st, ini);
@@ -19018,8 +19024,8 @@ prepare_cpt_compl_funcs(void) {
 //Start the timer for the current completion source.
 private void
 compl_source_start_timer(int source_idx) {
-   if (compl_autocomplete && cpt_sources_array) {
-      timespec_get(&cpt_sources_array[source_idx].matchCollectionStart, TIME_UTC);
+   if (isAutocomplActiveP && cpt_sources_array) {
+      timespec_get(OUT &cpt_sources_array[source_idx].matchCollectionStart, TIME_UTC);
       insertCompletionTimeExpiredP = false;
    }
 }
@@ -19054,9 +19060,10 @@ ins_compl_get_exp(Pos* ini) {
 
    if (!compl_started) {
       Book* book;
-
-      FOR_ALL_BOOKS(book)
+      FOR_ALL_BOOKS(book) {
          book->scanned = 0;
+      }
+
       if (!st_cleared) {
          CLEAR_FIELD(st);
          st_cleared = true;
@@ -19071,9 +19078,9 @@ ins_compl_get_exp(Pos* ini) {
 
       //In large buffers, timeout may miss nearby matches — search above cursor
 #define LOOKBACK_LINE_COUNT   1000
-      if (compl_autocomplete && is_nearest_active()) {
-          start_pos.lnum = MAX(1, start_pos.lnum - LOOKBACK_LINE_COUNT);
-          start_pos.col = 0;
+      if (isAutocomplActiveP && is_nearest_active()) {
+         start_pos.lnum = MAX(1, start_pos.lnum - LOOKBACK_LINE_COUNT);
+         start_pos.col = 0;
       }
       st.last_match_pos = st.first_match_pos = start_pos;
    } ei (st.scannedBook != curBook && !bookIsValid(st.scannedBook))
@@ -19087,7 +19094,7 @@ ins_compl_get_exp(Pos* ini) {
        && !(compl_cont_status & CONT_LOCAL)
    ){
       cpt_sources_index = 0;
-      if (compl_autocomplete) {
+      if (isAutocomplActiveP) {
          compl_source_start_timer(0);
          insertCompletionTimeOutMs = COMPL_INITIAL_TIMEOUT_MS;
       }
@@ -19119,7 +19126,7 @@ ins_compl_get_exp(Pos* ini) {
          }
       }
 
-      if (compl_autocomplete && type == CTRL_X_FUNCTION)
+      if (isAutocomplActiveP && type == CTRL_X_FUNCTION)
          //LSP servers may sporadically take >1s to respond (e.g., while loading modules), but
          //other sources might already have matches. To show results quickly use a short timeout
          //for keyword completion. Allow longer timeout for non-keyword completion
@@ -19162,8 +19169,8 @@ ins_compl_get_exp(Pos* ini) {
       }
 
       //Reset the timeout after collecting matches from function source
-      if (compl_autocomplete && type == CTRL_X_FUNCTION)
-          insertCompletionTimeOutMs = COMPL_INITIAL_TIMEOUT_MS;
+      if (isAutocomplActiveP && type == CTRL_X_FUNCTION)
+         insertCompletionTimeOutMs = COMPL_INITIAL_TIMEOUT_MS;
 
       //For `^P` completion, reset `compl_curr_match` to the head to avoid
       //mixing matches from different sources.
@@ -19422,7 +19429,7 @@ find_next_completion_match(
    Boole  found_end = false;
    InsertCompletion   *found_compl = NULL;
    Unt cur_cot_flags = curBook->o.completeOpt;
-   int compl_no_select = (cur_cot_flags & COT_NOSELECT) != 0 || compl_autocomplete;
+   int compl_no_select = (cur_cot_flags & COT_NOSELECT) != 0 || isAutocomplActiveP;
    int compl_fuzzy_match = (cur_cot_flags & COT_FUZZY) != 0;
    Text* leader;
 
@@ -19525,7 +19532,7 @@ ins_compl_next(
    int started = compl_started;
    Book* orig_curbuf = curBook;
    Unt cur_cot_flags = curBook->o.completeOpt;
-   int compl_no_insert = (cur_cot_flags & COT_NOINSERT) != 0 || compl_autocomplete;
+   int compl_no_insert = (cur_cot_flags & COT_NOINSERT) != 0 || isAutocomplActiveP;
    int compl_fuzzy_match = (cur_cot_flags & COT_FUZZY) != 0;
    int compl_preinsert = ins_compl_has_preinsert();
 
@@ -19616,10 +19623,11 @@ check_elapsed_time(void) {
    if (!cpt_sources_array || cpt_sources_index < 0)
       return;
 
-   Elapsed* start_tv = &cpt_sources_array[cpt_sources_index].matchCollectionStart;
+   Elapsed* start = &cpt_sources_array[cpt_sources_index].matchCollectionStart;
    TimeSpec now;
    timespec_get(OUT &now, TIME_UTC);
-   long elapsed_ms = (now.tv_nsec - start_tv->tv_nsec)/1000000;
+   Long elapsed_ms = (now.tv_sec - start->tv_sec)*1000
+      + (now.tv_nsec - start->tv_nsec)/1000000;
 
    if (elapsed_ms > insertCompletionTimeOutMs) {
       insertCompletionTimeExpiredP = true;
@@ -19634,7 +19642,7 @@ check_elapsed_time(void) {
 //"in_compl_func" is true when called from complete_check(), don't set compl_curr_match.
 pub void
 ins_compl_check_keys(int frequency, Boole in_compl_func) {
-   static int   count = 0;
+   static int count = 0;
    //Don't check when reading keys from a script, :normal or feedkeys().
    //That would break the test scripts.  But do check for keys when called from complete_check()
    if (!in_compl_func && (using_script() || ex_normal_busy))
@@ -19669,10 +19677,10 @@ ins_compl_check_keys(int frequency, Boole in_compl_func) {
             vungetc(c);
          }
       }
-   } ei (compl_autocomplete)
+   } ei (isAutocomplActiveP)
       check_elapsed_time();
 
-   if (compl_pending != 0 && !gotInterruptG && !(cot_flags & COT_NOINSERT) && !compl_autocomplete) {
+   if (compl_pending != 0 && !gotInterruptG && !(cot_flags & COT_NOINSERT) && !isAutocomplActiveP) {
       //Insert the first match immediately and advance compl_shown_match,
       //before finding other matches.
       int todo = compl_pending > 0 ? compl_pending : -compl_pending;
@@ -20157,7 +20165,7 @@ ins_compl_start(void) {
       compl_startpos.col = compl_col;
    }
 
-   if (!compl_autocomplete) {
+   if (!isAutocomplActiveP) {
       if (compl_cont_status & CONT_LOCAL)
          editSubmodeMsgG = (CS)_(ctrl_x_msgs[CTRL_X_LOCAL_MSG]);
       else
@@ -20187,7 +20195,7 @@ ins_compl_start(void) {
 
    //showmode might reset the internal line pointers, so it must be called before
    //line = ml_get(), or when this address is no longer needed.  -- Acevedo.
-   if (!compl_autocomplete) {
+   if (!isAutocomplActiveP) {
       editSubmodeExtraMsgG = (CS)_("-- Searching...");
       editSubmodeHiG = 0;
       showmode();
@@ -20274,7 +20282,7 @@ insertModeCompletion(Unt c, Boole enable_pum) {
    } ei (doInsertMatch && stop_arrow() == FAIL)
       return FAIL;
 
-   if (compl_autocomplete && p_acl > 0)
+   if (isAutocomplActiveP && p_acl > 0)
       timespec_get(OUT &matchCollectionStart, TIME_UTC);
    compl_curr_win = curPor;
    compl_curr_buf = curPor->book;
@@ -20320,11 +20328,11 @@ insertModeCompletion(Unt c, Boole enable_pum) {
    else
       compl_cont_status &= ~CONT_S_IPOS;
 
-   if (!compl_autocomplete)
+   if (!isAutocomplActiveP)
       ins_compl_show_statusmsg();
 
    //Wait for the autocompletion delay to expire
-   if (compl_autocomplete && p_acl > 0 && !no_matches_found
+   if (isAutocomplActiveP && p_acl > 0 && !no_matches_found
        && motElapsedMs(matchCollectionStart) < p_acl
    ) {
       cursor_on();
@@ -20354,7 +20362,7 @@ insertModeCompletion(Unt c, Boole enable_pum) {
 private Boole
 ins_compl_setup_autocompl(Unt c) {
    if (bookIsCharPrintable(c)) {
-      compl_autocomplete = true;
+      isAutocomplActiveP = true;
       return true;
    }
    return false;

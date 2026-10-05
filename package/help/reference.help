@@ -4200,7 +4200,7 @@ modifier, it can force switching books.
 @@portfix.height         Portal. Boolean. Default = off
 
 Keep portal window height when windows are opened or closed and @equalalways is set. Also for
-|CTRL-W_=|.  Set by default for the |preview-window| and |quickfix-window|. The height may be
+|CTRL-W_=|. Set by default for the |preview-window| and |quickfix-window|. The height may be
 changed anyway when running out of room.
 
 
@@ -4229,22 +4229,17 @@ This option can't be set @diff is on.
 
 @@wrapmargin             Book. Numeric. Default = 0
 
-Number of characters from the right portal border where wrapping
-starts.  When typing text beyond this limit, an <EOL> will be inserted
-and inserting continues on the next line.
-Options that add a margin, such as @number and @foldcolumn, cause
-the text width to be further reduced.  This is Vi compatible.
-When @textwidth is non-zero, this option is not used.
-This option is set to 0 when @paste is set and restored when @paste is reset.
-See also @formatoptions and |ins-textwidth|.
-
+Number of characters from the right portal border where wrapping starts. When typing text
+beyond this limit, an <EOL> will be inserted and inserting continues on the next line. Options
+that add a margin, such as @number and @foldcolumn, cause the text width to be further reduced.
+When @textwidth is non-zero, this option is not used. This option is set to 0 when @paste is set
+and restored when @paste is reset. See also @formatoptions and |ins-textwidth|.
 
 
 @@writedelay             Global. Numeric (milliseconds). Default = 0
 
-The number of milliseconds to wait for each character sent to the
-screen.  When non-zero, characters are sent to the terminal one by
-one.  For debugging purposes.
+The number of milliseconds to wait for each character sent to the screen. When non-zero,
+characters are sent to the terminal one by one. For debugging purposes.
 
 }}}
 

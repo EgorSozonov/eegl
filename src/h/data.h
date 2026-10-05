@@ -477,5 +477,5 @@ void eeglFreeString(CS x);
 void mch_free_mem(void);
 CS toFullFileName(Text fileName, DirName* dn);
 Int get_copyID(void);
-Boole set_checkForCircularRefs(OUT EeSet* set, Unt copyId, ListStack** listStack);
+Boole set_checkForCircularRefs(OUT EeSet*, Unt , ListStack** );
 Boole list_checkForCircularRefs(OUT List* , Unt , ListStack** );

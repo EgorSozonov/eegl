@@ -27,6 +27,7 @@
 #include "h/regexp.h"
 #include "h/script.h"
 #include "h/strings.h"
+#include "h/tag.types.h"
 #include "h/tag.h"
 #include "h/term.h"
 #include "h/ui.h"
