@@ -8,8 +8,6 @@
 #include "h/data.types.h"
 #include "h/data.h"
 #include "h/book.h"
-#include "h/input.types.h"
-#include "h/input.h"
 #include "h/diff.h"
 #include "h/do.types.h"
 #include "h/do.h"
@@ -19,6 +17,8 @@
 #include "h/fileio.h"
 #include "h/hilite.types.h"
 #include "h/hilite.h"
+#include "h/input.types.h"
+#include "h/input.h"
 #include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
@@ -7980,8 +7980,8 @@ validate_cursor_col(void) {
 //fold column and sign column (these don't move when scrolling horizontally).
 pub int
 normalPortalColumnOffset(Portal *po) {
-    return number_width(po) + 1 + (po != commPortPortG ? 0 : 1) + (po->o.signColumn ? 1 : 0);
-                         //^ for the line number column
+    return COL_PROLOGUE_WIDTH + 1 + (po != commPortPortG ? 0 : 1) + (po->o.signColumn ? 1 : 0);
+         //^ for the line number column
 }
 
 //Compute curPor->cursorCol and curPor->virtCol.

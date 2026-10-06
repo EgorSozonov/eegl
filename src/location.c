@@ -216,6 +216,8 @@ typedef struct searchstat {
    int last_maxcount;  //the max count of the last search
 } SearchFileStat;
 
+#define QF_WINHEIGHT   10  //default height for location portal
+
 //}}}
 #include "h/location.h"
 //{{{@@forward declarations

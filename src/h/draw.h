@@ -84,7 +84,6 @@ void clearmode(void);
 Unt statusLineNextChar(OUT Decoration* deco, Portal* po);
 int redrawing(void);
 void computeColumnsForRulerAndCommand(void);
-Unt number_width(Portal* po);
 int screen_screencol(void);
 int screen_screenrow(void);
 CS set_chars_option(CS newVal, Boole is_listchars, OUT ErrBuilder* errb);

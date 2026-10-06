@@ -74,6 +74,10 @@ struct MsgList {
    Long slnum;      //line number for "sfile"
 };
 
+//maximum length of a function name, including SID and NUL
+pub
+#define MAX_FUNC_NAME_LEN   200
+
 //}}}
 //{{{@@forward declarations
 private int compareNames(const void *s1, const void *s2);

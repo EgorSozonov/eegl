@@ -330,6 +330,15 @@ pub
 )(a, b)
 
 //}}}
+
+//set by alloc_fail(): ID
+private AllocId  alloc_fail_id = aid_none;
+//set by alloc_fail(), when zero alloc() returns NULL
+private int alloc_fail_countdown = -1;
+//set by alloc_fail(), number of times alloc() returns NULL
+private int alloc_fail_repeat = 0;
+
+
 //{{{vimscript list
 
 //List heads for garbage collection.
@@ -3026,6 +3035,8 @@ addExpandMatch(CS m, OUT ExpandMatch* t) {
 
 //}}}
 //{{{Scripting variables (the tagged data accessible from scripts)
+
+
 //{{{Variables
 
 //Return true if "type" is NULL, any or unknown.

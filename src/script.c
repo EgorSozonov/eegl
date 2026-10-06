@@ -10,6 +10,7 @@
 #include "h/book.h"
 #include "h/input.types.h"
 #include "h/input.h"
+#include "h/eval.types.h"
 #include "h/eval.h"
 #include "h/do.h"
 #include "h/draw.types.h"
@@ -119,6 +120,10 @@ typedef struct ucmd {
 
 pub declStruct(AutoPat);
 pub declStruct(AutoComm);
+
+#define PATH_ESC_CHARS ((Byte *)" \t\n*?[{`$\\%#'\"|!<")
+#define SHELL_ESC_CHARS ((Byte *)" \t\n*?[{`$\\%#'\"|!<>();&")
+#define BUFFER_ESC_CHARS ((Byte *)" \t\n*?[`$\\%#'\"|!<")
 
 //}}}
 //{{{@@forward declarations

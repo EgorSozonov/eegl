@@ -1,3 +1,3 @@
 #! /usr/bin/bash
-tar -c dev/betterc.c src/*.c src/*.h makefile -f eegl-$(date +"%Y%m%d").tar
+tar -c dev/betterc.c dev/indexGenerator.c src/*.c src/*.h makefile -f eegl.tar
 

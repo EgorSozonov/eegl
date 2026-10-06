@@ -1,3 +1,4 @@
+#define MAXMAPLEN 50
 typedef enum {
    FLUSH_MINIMAL,
    FLUSH_TYPEAHEAD,   //flush current typebuf contents

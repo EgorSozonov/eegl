@@ -182,6 +182,9 @@ typedef struct {
    int skippedCells;  //nr of skipped cells for virtual text to be added to m.vcol later
 } SubSubcontext;
 
+//2 for the relative line number, another one for padding (also reused for signs)
+pub
+#define COL_PROLOGUE_WIDTH 3
 
 //}}}
 //{{{@@forward declarations
@@ -249,7 +252,7 @@ private void drawPortal(Portal* po, UpdatePortalInfo u);
 private void updatePortal(Portal* po, OUT Boole* didUpdateOnePortal);
 private void overlayDeco(OUT Decoration* baseDeco, OverlayDeco overlayingDeco);
 private int useCursorLineHilite(Portal* po, LineNr lnum);
-private void drawSign(int nrcol, Portal* po, DrawCtx* m);
+private void drawSignOrPad(Portal* po, DrawCtx* m);
 private void drawLineNumber(OUT DrawCtx* m, Decoration numDeco, Portal* po);
 private void breakIndent(Portal* po, DrawCtx* m);
 private void showbreakAndFiller(Portal* po, DrawCtx* m);
@@ -445,7 +448,7 @@ drawVoidAtPortalEnd(
          );
       //draw the number column
       n = fillRowsWithCharsWithColumnOffset(
-         po, ' ', ' ', n, number_width(po) + 1, row, endrow, getFullDecoration(HLF_N)
+         po, ' ', ' ', n, COL_PROLOGUE_WIDTH + 1, row, endrow, getFullDecoration(HLF_N)
       );
    }
 
@@ -2824,14 +2827,6 @@ computeColumnsForRulerAndCommand(void) {
       rulerColP = 1;
 }
 
-//Return the width of the relativenumber column.
-//Caller may need to check if 'number' or 'relativenumber' is set.
-//Otherwise it depends on 'numberwidth' and the line count.
-pub Unt
-number_width(Portal* po) {
-   return po->o.signColumn ? 3 : 2;
-}
-
 //Return the current cursor column. This is the actual position on the screen. First column is 0.
 pub int
 screen_screencol(void) {
@@ -3615,7 +3610,7 @@ drawFoldedLine(Portal* po, Long foldCount, FoldInfo* foldinfo, LineNr lnum, int 
    //3. Add the relative line number column
    int len = po->width - col;
    if (len > 0) {
-      int w = number_width(po);
+      int w = COL_PROLOGUE_WIDTH;
       char* fmt = "%*ld ";
 
       if (len > w + 1)
@@ -4194,7 +4189,7 @@ updatePortal(Portal* po, OUT Boole* didUpdateOnePortal) {
          po->skipCol = w - add;
    }
 
-   int i = number_width(po);
+   int i = COL_PROLOGUE_WIDTH;
    //Set modTop to the first line that needs displaying because of
    //changes. Set modBot to the first line after the changes.
    LineNr modTop = po->redrawTop;
@@ -4894,47 +4889,16 @@ useCursorLineHilite(Portal* po, LineNr lnum) {
 //If "nrcol" is true, the sign is going to be displayed in the number column.
 //Otherwise the sign is going to be displayed in the sign column.
 private void
-drawSign(int nrcol, Portal* po, DrawCtx* m) {
+drawSignOrPad(Portal* po, DrawCtx* m) {
    //Draw two cells with the sign value or blank.
    m->c_extra = ' ';
    m->c_final = ZERO;
-   if (nrcol)
-      m->countExtraBytes = number_width(po) + 1;
-   else {
-      if (useCursorLineHilite(po, m->lnum))
-         m->charDeco = getFullDecoration(HLF_CLS);
-      else
-         m->charDeco = getFullDecoration(HLF_SC);
-      m->countExtraBytes = 2;
-   }
-
-   if (m->row == m->startrow + m->filler_lines && m->filler_todo <= 0) {
-      int text_sign = (m->signHilites.text) ? m->signHilites.typeNr : 0;
-      if (text_sign == 0)
-         return;
-
-      m->extraBytes = m->signHilites.text;
-      if (m->extraBytes != 0) {
-         if (nrcol) {
-            int width = number_width(po) - 2;
-
-            memset(m->extra, ' ', width);
-            m->countExtraBytes = width;
-            m->countExtraBytes += eeSnprintf(
-                  m->extra + width, sizeof(m->extra) - width, "%s ", m->extraBytes
-            );
-            m->extraBytes = m->extra;
-         } else
-            m->countExtraBytes = (int)STRLEN(m->extraBytes);
-
-         m->c_extra = ZERO;
-         m->c_final = ZERO;
-      }
-
-      m->charDeco.hiId = (useCursorLineHilite(po, m->lnum)
-            && m->signHilites.cursorLineHiId < SHORT)
-         ? m->signHilites.cursorLineHiId : m->signHilites.textHiId;
-   }
+   if (useCursorLineHilite(po, m->lnum))
+      m->charDeco = getFullDecoration(HLF_CLS);
+   else
+      m->charDeco = getFullDecoration(HLF_SC);
+   m->countExtraBytes = 2;
+   //TODO implement signs
 }
 
 //Draw the relative line number and, if present, the sign. Draw to m->extra
@@ -6319,8 +6283,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
          if (m->state == DRAWING_NR && m->countExtraBytes == 0) {
             //Show the sign column when desired.
             m->state = DRAWING_SIGN;
-            if (port->o.signColumn)
-               drawSign(false, port, m);
+            drawSignOrPad(port, m);
          }
 
          //When only displaying the (relative) line number and that's done, stop here.

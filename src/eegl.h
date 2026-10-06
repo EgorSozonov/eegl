@@ -90,14 +90,8 @@ typedef struct sigaction SignalAction;
 #define FMT_UNT "%" PRIu32
 #define FMT_INT "%" PRId32
 
-#define PATH_ESC_CHARS ((Byte *)" \t\n*?[{`$\\%#'\"|!<")
-#define SHELL_ESC_CHARS ((Byte *)" \t\n*?[{`$\\%#'\"|!<>();&")
-#define BUFFER_ESC_CHARS ((Byte *)" \t\n*?[`$\\%#'\"|!<")
-
 //length of a buffer to store a number in ASCII (64 bits binary + NUL)
 #define NUMBUFLEN 65
-
-typedef unsigned char Byte;
 
 #define SCANF_HEX_ULONG       "%lx"
 #define SCANF_DECIMAL_ULONG   "%lu"
@@ -550,7 +544,7 @@ typedef struct tm Tm;
 #define VALID_TOPLINE    0x80   //w_topline is valid (for cursor position)
 
 //flags used in w_popup_handled
-#define POPUP_HANDLED_1  0x01   //used by mouse_find_win()
+#define POPUP_HANDLED_1  0x01   //used by mouseFindPortal()
 #define POPUP_HANDLED_2  0x02   //used by popup_do_filter()
 #define POPUP_HANDLED_3  0x04   //used by popup_check_cursor_pos()
 #define POPUP_HANDLED_4  0x08   //used by may_update_popup_mask()
@@ -1169,9 +1163,8 @@ typedef enum {
 #define MIN_COLUMNS    12  //minimal columns for screen
 #define MIN_LINES       2  //minimal lines for screen
 #define MIN_COMMHEIGHT  1  //minimal height for command line
-#define STATUS_HEIGHT   1  //height of a status line under a window
+#define STATUS_HEIGHT   1  //height of a status line under a portal
 #define VISIBLE_HEIGHT(wp) ((wp)->height)
-#define QF_WINHEIGHT   10  //default height for quickfix window
 
 //Buffer sizes
 
@@ -1183,12 +1176,6 @@ typedef enum {
 
 #define MSG_BUF_LEN 480   //length of buffer for small messages
 #define MSG_BUF_CLEN (MSG_BUF_LEN / 6) //cell length (worst case: utf-8 takes 6 bytes for one cell)
-
-//Maximum length of key sequence to be mapped.
-#define MAXMAPLEN   50
-
-//maximum length of a function name, including SID and NUL
-#define MAX_FUNC_NAME_LEN   200
 
 //Size in bytes of the hash used in the undo file.
 #define UNDO_HASH_SIZE 32
@@ -5223,13 +5210,6 @@ EXTERN char line_msg[]       INIT(= " line ");
 
 EXTERN FILE* time_fd INIT(= NULL);  //where to write startup timing
 
-//set by alloc_fail(): ID
-EXTERN AllocId  alloc_fail_id INIT(= aid_none);
-//set by alloc_fail(), when zero alloc() returns NULL
-EXTERN int alloc_fail_countdown INIT(= -1);
-//set by alloc_fail(), number of times alloc() returns NULL
-EXTERN int alloc_fail_repeat INIT(= 0);
-
 //flags set by test_override()
 EXTERN int  disable_char_avail_for_testing INIT(= false);
 EXTERN int  disable_redraw_for_testing INIT(= false);
@@ -7129,71 +7109,55 @@ EXTERN Byte e_str_cannot_be_used_in_vim_script[]
    INIT(= "E1124: \"%s\" cannot be used in Vim script");
 EXTERN Byte e_final_requires_a_value[] INIT(= "E1125: Final requires a value");
 EXTERN Byte e_missing_name_after_dot[] INIT(= "E1127: Missing name after dot");
-EXTERN Byte e_endblock_without_block[] //{
-   INIT(= "E1128: } without {"); //}
-EXTERN Byte e_throw_with_empty_string[]
-   INIT(= "E1129: Throw with empty string");
-EXTERN Byte e_cannot_add_to_null_list[]
-   INIT(= "E1130: Cannot add to null list");
-EXTERN Byte e_cannot_add_to_null_blob[]
-   INIT(= "E1131: Cannot add to null blob");
-EXTERN Byte e_missing_function_argument[]
-   INIT(= "E1132: Missing function argument");
-EXTERN Byte e_cannot_extend_null_dict[]
-   INIT(= "E1133: Cannot extend a null dict");
-EXTERN Byte e_cannot_extend_null_list[]
-   INIT(= "E1134: Cannot extend a null list");
+EXTERN Byte e_endblock_without_block[] INIT(= "E1128: } without {");
+EXTERN Byte e_throw_with_empty_string[] INIT(= "E1129: Throw with empty string");
+EXTERN Byte e_cannot_add_to_null_list[] INIT(= "E1130: Cannot add to null list");
+EXTERN Byte e_cannot_add_to_null_blob[] INIT(= "E1131: Cannot add to null blob");
+EXTERN Byte e_missing_function_argument[] INIT(= "E1132: Missing function argument");
+EXTERN Byte e_cannot_extend_null_dict[] INIT(= "E1133: Cannot extend a null dict");
+EXTERN Byte e_cannot_extend_null_list[] INIT(= "E1134: Cannot extend a null list");
 EXTERN Byte e_using_string_as_bool_str[]
    INIT(= "E1135: Using a String as a Boole: \"%s\"");
 EXTERN Byte e_cmd_mapping_must_end_with_cr_before_second_cmd[]
    INIT(= "E1136: <Cmd> mapping must end with <CR> before second <Cmd>");
 //E1137 unused
-EXTERN Byte e_using_bool_as_number[]
-   INIT(= "E1138: Using a Boole as a Number");
+EXTERN Byte e_using_bool_as_number[] INIT(= "E1138: Using a Boole as a Number");
 EXTERN Byte e_missing_matching_bracket_after_dict_key[]
    INIT(= "E1139: Missing matching bracket after dict key");
 EXTERN Byte e_for_argument_must_be_sequence_of_lists_or_tuples[]
    INIT(= "E1140: :for argument must be a sequence of lists");
-EXTERN Byte e_indexable_type_required[]
-   INIT(= "E1141: Indexable type required");
+EXTERN Byte e_indexable_type_required[] INIT(= "E1141: Indexable type required");
 EXTERN Byte e_calling_test_garbagecollect_now_while_v_testing_is_not_set[]
    INIT(= "E1142: Calling test_garbagecollect_now() while v:testing is not set");
-EXTERN Byte e_empty_expression_str[]
-   INIT(= "E1143: Empty expression: \"%s\"");
+EXTERN Byte e_empty_expression_str[] INIT(= "E1143: Empty expression: \"%s\"");
 EXTERN Byte e_command_str_not_followed_by_white_space_str[]
    INIT(= "E1144: Command \"%s\" is not followed by white space: %s");
 EXTERN Byte e_missing_heredoc_end_marker_str[]
    INIT(= "E1145: Missing heredoc end marker: %s");
 EXTERN Byte e_command_not_recognized_str[]
    INIT(= "E1146: Command not recognized: %s");
-EXTERN Byte e_list_not_set[]
-   INIT(= "E1147: List not set");
-EXTERN Byte e_cannot_index_str[]
-   INIT(= "E1148: Cannot index a %s");
+EXTERN Byte e_list_not_set[] INIT(= "E1147: List not set");
+EXTERN Byte e_cannot_index_str[] INIT(= "E1148: Cannot index a %s");
 EXTERN Byte e_script_variable_invalid_after_reload_in_function_str[]
    INIT(= "E1149: Script variable is invalid after reload in function %s");
 EXTERN Byte e_script_variable_type_changed[]
    INIT(= "E1150: Script variable type changed");
 EXTERN Byte e_mismatched_endfunction[]
    INIT(= "E1151: Mismatched endfunction");
-EXTERN Byte e_mismatched_enddef[]
-   INIT(= "E1152: Mismatched enddef");
+EXTERN Byte e_mismatched_enddef[] INIT(= "E1152: Mismatched enddef");
 EXTERN Byte e_invalid_operation_for_str[]
    INIT(= "E1153: Invalid operation for %s");
-EXTERN Byte e_divide_by_zero[]
-   INIT(= "E1154: Divide by zero");
+EXTERN Byte e_divide_by_zero[] INIT(= "E1154: Divide by zero");
 EXTERN Byte e_cannot_define_autocommands_for_all_events[]
    INIT(= "E1155: Cannot define autocommands for ALL events");
 EXTERN Byte e_cannot_change_arglist_recursively[]
    INIT(= "E1156: Cannot change the argument list recursively");
-EXTERN Byte e_missing_return_type[]
-   INIT(= "E1157: Missing return type");
+EXTERN Byte e_missing_return_type[] INIT(= "E1157: Missing return type");
 EXTERN Byte e_cannot_split_portal_when_closing_book[]
    INIT(= "E1159: Cannot split a portal when closing the book");
 EXTERN Byte e_cannot_use_default_for_variable_arguments[]
    INIT(= "E1160: Cannot use a default for variable arguments");
-EXTERN Byte e_cannot_json_encode_str[]
-   INIT(= "E1161: Cannot json encode a %s");
+EXTERN Byte e_cannot_json_encode_str[] INIT(= "E1161: Cannot json encode a %s");
 EXTERN Byte e_register_name_must_be_one_char_str[]
    INIT(= "E1162: Register name must be one character: %s");
 EXTERN Byte e_variable_nr_type_mismatch_expected_str_but_got_str[]
@@ -7212,8 +7176,7 @@ EXTERN Byte e_expression_too_recursive_str[]
    INIT(= "E1169: Expression too recursive: %s");
 EXTERN Byte e_cannot_use_hash_curly_to_start_comment[]
    INIT(= "E1170: Cannot use #{ to start a comment");
-EXTERN Byte e_missing_end_block[]
-   INIT(= "E1171: Missing } after inline function");
+EXTERN Byte e_missing_end_block[] INIT(= "E1171: Missing } after inline function");
 EXTERN Byte e_cannot_use_default_values_in_lambda[]
    INIT(= "E1172: Cannot use default values in a lambda");
 EXTERN Byte e_text_found_after_str_str[]
@@ -7236,10 +7199,8 @@ EXTERN Byte e_cannot_use_underscore_here[]
    INIT(= "E1181: Cannot use an underscore here");
 EXTERN Byte e_cannot_use_range_with_assignment_operator_str[]
    INIT(= "E1183: Cannot use a range with an assignment operator: %s");
-EXTERN Byte e_blob_not_set[]
-   INIT(= "E1184: Blob not set");
-EXTERN Byte e_missing_redir_end[]
-   INIT(= "E1185: Missing :redir END");
+EXTERN Byte e_blob_not_set[] INIT(= "E1184: Blob not set");
+EXTERN Byte e_missing_redir_end[] INIT(= "E1185: Missing :redir END");
 EXTERN Byte e_expression_does_not_result_in_value_str[]
    INIT(= "E1186: Expression does not result in a value: %s");
 EXTERN Byte e_failed_to_source_defaults[]
@@ -7248,14 +7209,11 @@ EXTERN Byte e_cannot_open_terminal_from_command_line_window[]
    INIT(= "E1188: Cannot open a terminal from the command line window");
 EXTERN Byte e_cannot_use_legacy_with_command_str[]
    INIT(= "E1189: Cannot use :legacy with this command: %s");
-
 PLURAL_MSG(e_one_argument_too_few, "E1190: One argument too few",
       e_nr_arguments_too_few, "E1190: %d arguments too few")
-
 EXTERN Byte e_call_to_function_that_failed_to_compile_str[]
    INIT(= "E1191: Call to function that failed to compile: %s");
-EXTERN Byte e_empty_function_name[]
-   INIT(= "E1192: Empty function name");
+EXTERN Byte e_empty_function_name[] INIT(= "E1192: Empty function name");
 EXTERN Byte e_no_white_space_allowed_after_str_str[]
    INIT(= "E1202: No white space allowed after '%s': %s");
 EXTERN Byte e_dot_not_allowed_after_str_str[]
@@ -7369,8 +7327,7 @@ EXTERN Byte e_cannot_import_same_script_twice_str[]
    INIT(= "E1262: Cannot import the same script twice: %s");
 EXTERN Byte e_autoload_import_cannot_use_absolute_or_relative_path[]
    INIT(= "E1264: Autoload import cannot use absolute or relative path: %s");
-EXTERN Byte e_cannot_use_partial_here[]
-   INIT(= "E1265: Cannot use a partial here");
+EXTERN Byte e_cannot_use_partial_here[] INIT(= "E1265: Cannot use a partial here");
 EXTERN Byte e_function_name_must_start_with_capital_str[]
    INIT(= "E1267: Function name must start with a capital: %s");
 EXTERN Byte e_compiling_closure_without_context_str[]
@@ -7387,24 +7344,18 @@ EXTERN Byte e_illegal_map_mode_string_str[]
    INIT(= "E1276: Illegal map mode string: '%s'");
 EXTERN Byte e_stray_closing_curly_str[] //{
    INIT(= "E1278: Stray '}' without a matching '{': %s");
-EXTERN Byte e_missing_close_curly_str[]
-   INIT(= "E1279: Missing '}': %s");
-EXTERN Byte e_illegal_character_in_word[]
-   INIT(= "E1280: Illegal character in word");
+EXTERN Byte e_missing_close_curly_str[] INIT(= "E1279: Missing '}': %s");
+EXTERN Byte e_illegal_character_in_word[] INIT(= "E1280: Illegal character in word");
 EXTERN Byte e_atom_engine_must_be_at_start_of_pattern[]
    INIT(= "E1281: Atom '\\%%#=%c' must be at the start of the pattern");
-EXTERN Byte e_bitshift_ops_must_be_number[]
-   INIT(= "E1282: Bitshift operands must be numbers");
+EXTERN Byte e_bitshift_ops_must_be_number[] INIT(= "E1282: Bitshift operands must be numbers");
 EXTERN Byte e_bitshift_ops_must_be_positive[]
    INIT(= "E1283: Bitshift amount must be a positive number");
 EXTERN Byte e_argument_1_list_item_nr_dictionary_required[]
    INIT(= "E1284: Argument 1, list item %d: Dictionary required");
-EXTERN Byte e_could_not_clear_timeout_str[]
-   INIT(= "E1285: Could not clear timeout: %s");
-EXTERN Byte e_could_not_set_timeout_str[]
-   INIT(= "E1286: Could not set timeout: %s");
-EXTERN Byte e_substitute_nesting_too_deep[]
-   INIT(= "E1290: substitute nesting too deep");
+EXTERN Byte e_could_not_clear_timeout_str[] INIT(= "E1285: Could not clear timeout: %s");
+EXTERN Byte e_could_not_set_timeout_str[] INIT(= "E1286: Could not set timeout: %s");
+EXTERN Byte e_substitute_nesting_too_deep[] INIT(= "E1290: substitute nesting too deep");
 EXTERN Byte e_cmdline_window_already_open[]
    INIT(= "E1292: Command-line window is already open");
 EXTERN Byte e_cannot_use_negative_id_after_adding_textprop_with_text[]
@@ -7425,16 +7376,14 @@ EXTERN Byte e_cannot_use_partial_with_dictionary_for_defer[]
    INIT(= "E1300: Cannot use a partial with dictionary for :defer");
 EXTERN Byte e_repeatable_type_required_for_argument_nr[]
    INIT(= "E1301: String, Number, List or Blob required for argument %d");
-EXTERN Byte e_script_variable_was_deleted[]
-   INIT(= "E1302: Script variable was deleted");
+EXTERN Byte e_script_variable_was_deleted[] INIT(= "E1302: Script variable was deleted");
 EXTERN Byte e_custom_list_completion_function_does_not_return_list_but_str[]
    INIT(= "E1303: Custom list completion function does not return a List but a %s");
 EXTERN Byte e_cannot_use_type_with_this_variable_str[]
    INIT(= "E1304: Cannot use type with this variable: %s");
 EXTERN Byte e_cannot_use_length_endcol_and_endlnum_with_text[]
    INIT(= "E1305: Cannot use \"length\", \"end_col\" and \"end_lnum\" with \"text\"");
-EXTERN Byte e_loop_nesting_too_deep[]
-   INIT(= "E1306: Loop nesting too deep");
+EXTERN Byte e_loop_nesting_too_deep[] INIT(= "E1306: Loop nesting too deep");
 EXTERN Byte e_argument_nr_trying_to_modify_const_str[]
    INIT(= "E1307: Argument %d: Trying to modify a const %s");
 EXTERN Byte e_cannot_resize_portal_in_another_tab[]
@@ -7458,20 +7407,15 @@ EXTERN Byte e_invalid_object_variable_declaration_str[]
 EXTERN Byte e_not_valid_command_in_class_str[]
    INIT(= "E1318: Not a valid command in a class: %s");
 //E1319 unused
-EXTERN Byte e_using_object_as_number[]
-   INIT(= "E1320: Using an Object as a Number");
-//E1321 unused
-EXTERN Byte e_using_object_as_float[]
-   INIT(= "E1322: Using an Object as a Float");
-//E1323 unused
+EXTERN Byte e_using_object_as_number[] INIT(= "E1320: Using an Object as a Number");
+EXTERN Byte e_using_object_as_float[] INIT(= "E1322: Using an Object as a Float");
 EXTERN Byte e_using_object_as_string[]
    INIT(= "E1324: Using an Object as a String");
 EXTERN Byte e_method_not_found_on_class_str_str[]
    INIT(= "E1325: Method \"%s\" not found in class \"%s\"");
 EXTERN Byte e_variable_not_found_on_object_str_str[]
    INIT(= "E1326: Variable \"%s\" not found in object \"%s\"");
-EXTERN Byte e_object_required_found_str[]
-   INIT(= "E1327: Object required, found %s");
+EXTERN Byte e_object_required_found_str[] INIT(= "E1327: Object required, found %s");
 EXTERN Byte e_constructor_default_value_must_be_vnone_str[]
    INIT(= "E1328: Constructor default value must be v:none: %s");
 EXTERN Byte e_invalid_class_variable_declaration_str[]
@@ -7484,14 +7428,12 @@ EXTERN Byte e_public_variable_name_cannot_start_with_underscore_str[]
    INIT(= "E1332: public variable name cannot start with underscore: %s");
 EXTERN Byte e_cannot_access_protected_variable_str[]
    INIT(= "E1333: Cannot access protected variable \"%s\" in class \"%s\"");
-//E1334 unused
 EXTERN Byte e_variable_is_not_writable_str[]
    INIT(= "E1335: Variable \"%s\" in class \"%s\" is not writable");
 EXTERN Byte e_internal_error_shortmess_too_long[]
    INIT(= "E1336: Internal error: shortmess too long");
 EXTERN Byte e_class_variable_str_not_found_in_class_str[]
    INIT(= "E1337: Class variable \"%s\" not found in class \"%s\"");
-//E1338 unused
 EXTERN Byte e_cannot_add_textprop_with_text_after_using_textprop_with_negative_id[]
    INIT(= "E1339: Cannot add a textprop with text after using a textprop with a negative id");
 EXTERN Byte e_argument_already_declared_in_class_str[]
@@ -7504,10 +7446,8 @@ EXTERN Byte e_cannot_initialize_variable_in_interface[]
    INIT(= "E1344: Cannot initialize a variable in an interface");
 EXTERN Byte e_not_valid_command_in_interface_str[]
    INIT(= "E1345: Not a valid command in an interface: %s");
-EXTERN Byte e_interface_name_not_found_str[]
-   INIT(= "E1346: Interface name not found: %s");
-EXTERN Byte e_not_valid_interface_str[]
-   INIT(= "E1347: Not a valid interface: %s");
+EXTERN Byte e_interface_name_not_found_str[] INIT(= "E1346: Interface name not found: %s");
+EXTERN Byte e_not_valid_interface_str[] INIT(= "E1347: Not a valid interface: %s");
 EXTERN Byte e_variable_str_of_interface_str_not_implemented[]
    INIT(= "E1348: Variable \"%s\" of interface \"%s\" is not implemented");
 EXTERN Byte e_method_str_of_interface_str_not_implemented[]
@@ -7516,14 +7456,10 @@ EXTERN Byte e_duplicate_implements[]
    INIT(= "E1350: Duplicate \"implements\"");
 EXTERN Byte e_duplicate_interface_after_implements_str[]
    INIT(= "E1351: Duplicate interface after \"implements\": %s");
-EXTERN Byte e_duplicate_extends[]
-   INIT(= "E1352: Duplicate \"extends\"");
-EXTERN Byte e_class_name_not_found_str[]
-   INIT(= "E1353: Class name not found: %s");
-EXTERN Byte e_cannot_extend_str[]
-   INIT(= "E1354: Cannot extend %s");
-EXTERN Byte e_duplicate_function_str[]
-   INIT(= "E1355: Duplicate function: %s");
+EXTERN Byte e_duplicate_extends[] INIT(= "E1352: Duplicate \"extends\"");
+EXTERN Byte e_class_name_not_found_str[] INIT(= "E1353: Class name not found: %s");
+EXTERN Byte e_cannot_extend_str[] INIT(= "E1354: Cannot extend %s");
+EXTERN Byte e_duplicate_function_str[] INIT(= "E1355: Duplicate function: %s");
 EXTERN Byte e_super_must_be_followed_by_dot[]
    INIT(= "E1356: \"super\" must be followed by a dot");
 EXTERN Byte e_using_super_not_in_class_method[]
@@ -7532,14 +7468,11 @@ EXTERN Byte e_using_super_not_in_child_class[]
    INIT(= "E1358: Using \"super\" not in a child class");
 EXTERN Byte e_cannot_define_new_method_in_abstract_class[]
    INIT(= "E1359: Cannot define a \"new\" method in an abstract class");
-EXTERN Byte e_using_null_object[]
-   INIT(= "E1360: Using a null object");
+EXTERN Byte e_using_null_object[] INIT(= "E1360: Using a null object");
 EXTERN Byte e_cannot_use_color_none_did_you_mean_none[]
    INIT(= "E1361: Cannot use color \"none\", did you mean \"NONE\"?");
-EXTERN Byte e_cannot_use_non_null_object[]
-   INIT(= "E1362: Cannot use a non-null object");
-EXTERN Byte e_incomplete_type[]
-   INIT(= "E1363: Incomplete type");
+EXTERN Byte e_cannot_use_non_null_object[] INIT(= "E1362: Cannot use a non-null object");
+EXTERN Byte e_incomplete_type[] INIT(= "E1363: Incomplete type");
 EXTERN Byte e_warning_pointer_block_corrupted[]
    INIT(= "E1364: Warning: Pointer block corrupted");
 EXTERN Byte e_cannot_use_a_return_type_with_new_method[]
@@ -7550,8 +7483,7 @@ EXTERN Byte e_variable_str_of_interface_str_has_different_access[]
    INIT(= "E1367: Access level of variable \"%s\" of interface \"%s\" is different");
 EXTERN Byte e_static_must_be_followed_by_var_def_final_or_const[]
    INIT(= "E1368: Static must be followed by \"var\" or \"def\" or \"final\" or \"const\"");
-EXTERN Byte e_duplicate_variable_str[]
-   INIT(= "E1369: Duplicate variable: %s");
+EXTERN Byte e_duplicate_variable_str[] INIT(= "E1369: Duplicate variable: %s");
 EXTERN Byte e_cannot_define_new_method_as_static[]
    INIT(= "E1370: Cannot define a \"new\" method as static");
 EXTERN Byte e_abstract_must_be_followed_by_def[]
@@ -7590,8 +7522,7 @@ EXTERN Byte e_public_variable_not_supported_in_interface[]
    INIT(= "E1387: public variable not supported in an interface");
 EXTERN Byte e_public_keyword_not_supported_for_method[]
    INIT(= "E1388: public keyword not supported for a method");
-EXTERN Byte e_missing_name_after_implements[]
-   INIT(= "E1389: Missing name after implements");
+EXTERN Byte e_missing_name_after_implements[] INIT(= "E1389: Missing name after implements");
 EXTERN Byte e_cannot_use_an_object_variable_except_with_the_new_method_str[]
    INIT(= "E1390: Cannot use an object variable \"this.%s\" except with the \"new\" method");
 EXTERN Byte e_cannot_lock_object_variable_str[]
@@ -7629,8 +7560,7 @@ EXTERN Byte e_builtin_class_method_not_supported[]
    INIT(= "E1413: Builtin class method not supported");
 EXTERN Byte e_enum_name_must_start_with_uppercase_letter_str[]
    INIT(= "E1415: Enum name must start with an uppercase letter: %s");
-EXTERN Byte e_enum_cannot_extend_class[]
-   INIT(= "E1416: Enum cannot extend a class or enum");
+EXTERN Byte e_enum_cannot_extend_class[] INIT(= "E1416: Enum cannot extend a class or enum");
 EXTERN Byte e_abstract_cannot_be_used_in_enum[]
    INIT(= "E1417: Abstract cannot be used in an Enum");
 EXTERN Byte e_invalid_enum_value_declaration_str[]
@@ -7649,8 +7579,7 @@ EXTERN Byte e_enum_str_ordinal_cannot_be_modified[]
    INIT(= "E1426: Enum \"%s\" ordinal value cannot be modified");
 EXTERN Byte e_enum_str_name_cannot_be_modified[]
    INIT(= "E1427: Enum \"%s\" name cannot be modified");
-EXTERN Byte e_duplicate_enum_str[]
-   INIT(= "E1428: Duplicate enum value: %s");
+EXTERN Byte e_duplicate_enum_str[] INIT(= "E1428: Duplicate enum value: %s");
 EXTERN Byte e_class_can_only_be_used_in_script[]
    INIT(= "E1429: Class can only be used in a script");
 EXTERN Byte e_uninitialized_object_var_reference[]
@@ -7683,7 +7612,8 @@ EXTERN Byte e_xattr_erange[] INIT(= "E1506: Book too small to copy xattr value o
 EXTERN Byte e_aptypes_is_null_nr_str[]
    INIT(= "E1507: Internal error: ap_types or ap_types[idx] is NULL: %d: %s");
 EXTERN Byte e_xattr_e2big[]
-   INIT(= "E1508: Size of the extended attribute value is larger than the maximum size allowed");
+   INIT(= "E1508: Size of the extended attribute value is larger than the maximum size allowed"
+      );
 EXTERN Byte e_xattr_other[]
    INIT(= "E1509: Error occurred when reading or writing extended attribute");
 EXTERN Byte e_val_too_large[] INIT(= "E1510: Value too large: %s");
@@ -7768,8 +7698,7 @@ EXTERN Byte e_flags_required_after_equal[]
    INIT(= "E1572: Flags required after =");
 EXTERN Byte e_setter_required_for_enum_or_flag_option[]
    INIT(= "E1573: Enumeration, flags and callback options require a setter function!");
-EXTERN Byte e_options_are_frozen[]
-   INIT(= "E1574: Options are frozen and cannot be changed!");
+EXTERN Byte e_options_are_frozen[] INIT(= "E1574: Options are frozen and cannot be changed!");
 EXTERN Byte e_symlink_dereference_error[]
    INIT(= "E1575: Symlink derefence error");
 EXTERN Byte e_symlink_dereference_buffer_overflow[]

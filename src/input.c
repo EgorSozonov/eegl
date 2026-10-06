@@ -56,6 +56,10 @@ private TextHeader redobuff = {{NULL, 0, {ZERO}}, NULL, 0, 0, false};
 private TextHeader old_redobuff = {{NULL, 0, {ZERO}}, NULL, 0, 0, false};
 private TextHeader recordbuff = {{NULL, 0, {ZERO}}, NULL, 0, 0, false};
 
+pub
+//Maximum length of key sequence to be mapped.
+#define MAXMAPLEN 50
+
 private int TYPEAHEAD_CHAR = 0;      //typeahead char that's not flushed
 private Byte typedchars[MAXMAPLEN + 1] = { ZERO };  //typed chars before map
 private int typedchars_pos = 0;
@@ -144,7 +148,6 @@ pub typedef enum {
 #define MOUSE_MIDDLE  0x01
 #define MOUSE_RIGHT   0x02
 #define MOUSE_RELEASE 0x03
-
 
 //}}}
 #include "h/input.h"

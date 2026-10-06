@@ -1665,7 +1665,7 @@ do_fixdel(Invocation*) {
 private void
 print_line_no_prefix(LineNr lnum, int list) {
    Byte numbuf[30];
-   eeSnprintf(numbuf, sizeof(numbuf), "%*ld ", number_width(curPor), (long)lnum);
+   eeSnprintf(numbuf, sizeof(numbuf), "%*ld ", COL_PROLOGUE_WIDTH, (long)lnum);
    msgPutsDeco(numbuf, getDecoFlags(HLF_N));   //Highlight line nrs
    msg_prt_line(ml_get(lnum), list);
 }

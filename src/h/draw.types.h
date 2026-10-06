@@ -1,3 +1,4 @@
+#define COL_PROLOGUE_WIDTH 3
 #define UPD_VALID_NO_UPDATE 5  //no new changes, keep the command line if possible
 #define UPD_VALID          10  //book not changed, or changes marked with b_mod_*
 #define UPD_INVERTED       20  //redisplay inverted part that changed

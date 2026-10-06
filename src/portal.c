@@ -11056,7 +11056,7 @@ adjustPosition(Portal* po) {
       maxwidth = po->pup.maxWidth;
    }
 
-   margin_width = number_width(po) + 1; //for the line number column
+   margin_width = COL_PROLOGUE_WIDTH + 1; //for the line number column
    if (po->o.signColumn)
       margin_width++;
    if (margin_width >= maxwidth)
