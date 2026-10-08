@@ -1046,7 +1046,7 @@ ml_recover(Boole checkext) {
 
    recoveryModeG = true;
    Boole called_from_main = (curBook->mem.mfile == NULL);
-   char deco = getDecoFlags(HLF_E);
+   char deco = getDecoFlags(HILITE_ErrorMsg);
 
    //If the file name ends in ".swp", we assume this is the swap file.
    //Otherwise a search is done to find the swap file(s).
@@ -5816,7 +5816,9 @@ transchar_buf(Unt c) {
       c = K_SECOND(c);
    }
 
-   if ((!chartab_initialized && ((c >= ' ' && c <= '~'))) || (c < 256 && bookIsCharPrintable_strict(c))) {
+   if ((!chartab_initialized
+            && ((c >= ' ' && c <= '~'))) || (c < 256 && bookIsCharPrintable_strict(c))
+   ) {
       //printable character
       translateScratch[i] = c;
       translateScratch[i + 1] = ZERO;
@@ -7509,25 +7511,25 @@ handle_swap_exists(BookRef *oldCurBook) {
 //Make the current book empty. Used when it is wiped out and it's the last book.
 private int
 emptyCurBook(int portCloseOthers, Boole forceit, Unt action) {
-   int retval;
-   Book* book = curBook;
-   BookRef bookRef;
-
    if (action == DOBOOK_UNLOAD) {
       emsg(_(e_cannot_unload_last_buffer));
       return FAIL;
    }
 
+   Book* book = curBook;
+   BookRef bookRef;
    bookStoreInRef(OUT &bookRef, book);
    if (portCloseOthers)
       //Close any other portals into this book, then make it empty.
       closePortalsInto(book, true);
 
    setpcmark();
-   retval = startEditingFile(0, NULL, NULL, NULL, ECMD_ONE, forceit ? ECMD_FORCEIT : 0, curPor);
+   int retval = bookStartEditingFile(
+         0, NULL, NULL, NULL, ECMD_ONE, forceit ? ECMD_FORCEIT : 0, curPor
+   );
 
-   //startEditingFile() may create a new book, then we have to delete the old one. But
-   //startEditingFile() may have done that already, check if the book still exists.
+   //bookStartEditingFile() may create a new book, then we have to delete the old one. But
+   //bookStartEditingFile() may have done that already, check if the book still exists.
    if (book != curBook && bookRefValid(&bookRef) && book->countPortals == 0)
       bookClose(NULL, book, action, false, false);
    if (!portCloseOthers)
@@ -8082,9 +8084,6 @@ enterBook(Book* book){
    //when autocmds didn't change it
    if (curPor->topLine == 1 && !curPor->wasTopLineSet)
       scroll_cursor_halfway(false, false);   //redisplay at correct position
-
-   //Change directories when the 'acd' option is set.
-   DO_AUTOCHDIR;
 
    curBook->lastUsed = eeTime();
    redraw_later(UPD_NOT_VALID);
@@ -9054,7 +9053,7 @@ bookGetFnameByFileId(int fnum, OUT CS* fname, OUT LineNr* lnum){
 //The file name with the full path is also remembered, for when :cd is used.
 //Return FAIL for failure (file name already in use by other book) OK otherwise.
 pub int
-setfname(Book* book, CS ffname_arg, CS sfname_arg, Boole message) {   //give message when book already exists
+setfname(Book* book, CS ffname_arg, CS sfname_arg, Boole message) {
    CS fullFName = ffname_arg;
    CS sfname = sfname_arg;
    Book* obook = NULL;
@@ -9163,7 +9162,7 @@ bookHandleNameChange(Book* book) {
 
 //set alternate file name for current portal
 //
-//Used by do_one_cmd(), do_write() and startEditingFile(). Return the book.
+//Used by do_one_cmd(), do_write() and bookStartEditingFile(). Return the book.
 pub Book *
 setaltfname(CS fullFName, CS sfname, LineNr lnum){
    //Create a book.  'buflisted' is not set if it's a new book
@@ -10620,7 +10619,7 @@ listInColumns(Arr(CS) items, int size, int current, Boole useHilite) {
          if (idx == (Unt)current)
             msg_putchar('[');
          if (useHilite && items[idx][0] == '-')
-            msgPutsDeco(items[idx], getDecoFlags(HLF_W));
+            msgPutsDeco(items[idx], getDecoFlags(HILITE_WarningMsg));
          else
             msg_puts(items[idx]);
          if (idx == (Unt)current)
@@ -10717,7 +10716,7 @@ drawGetTranslatedBookName(Book* book) {
 //
 //return FAIL for failure, OK otherwise
 pub int
-startEditingFile(
+bookStartEditingFile(
    int fnum,
    CS fullFName,
    CS sfname,
@@ -10725,7 +10724,7 @@ startEditingFile(
    LineNr newlnum,
    Unt flags,
    Portal* oldPort
-) {
+) {//:bookStartEditingFile
    if (portErrorIfTermPopup())
       return FAIL;
 
@@ -10746,7 +10745,7 @@ startEditingFile(
    CS command = NULL;
    Unt readfile_flags = 0;
    int did_inc_redrawing_disabled = false;
-   long* so_ptr = &curPor->o.scrollOff;
+   Long* so_ptr = &curPor->o.scrollOff;
 
    Unt modifiable = flags & ECMD_MODIFIABLE;
 
@@ -10767,12 +10766,12 @@ startEditingFile(
       if ((flags & (ECMD_ADDBUF | ECMD_ALTBUF)) && (fullFName == NULL || *fullFName == ZERO))
          goto theend;
 
-      if (fullFName == NULL)
+      if (!fullFName)
          sameFile = false; //there is no file name
-      ei (*fullFName == ZERO && curBook->fullFileName == NULL)
+      ei (fullFName[0] == ZERO && !curBook->fullFileName)
          sameFile = true;
       else {
-         if (*fullFName == ZERO)  {        //re-edit with same file name
+         if (fullFName[0] == ZERO)  {        //re-edit with same file name
             fullFName = curBook->fullFileName;
             sfname = curBook->currFileName;
          }
@@ -10816,7 +10815,7 @@ startEditingFile(
    if (!sameFile) {
       int prev_alt_fnum = curPor->altFnum;
 
-      if (!(flags & (ECMD_ADDBUF | ECMD_ALTBUF))) {
+      if ((flags & (ECMD_ADDBUF | ECMD_ALTBUF)) == 0) {
          if ((commModifierG.cmod_flags & CMOD_KEEPALT) == 0)
             curPor->altFnum = curBook->fiNum;
          if (oldPort)
@@ -10865,7 +10864,7 @@ startEditingFile(
       //result in more portal displaying it; abort
       if (book->lockedSplit) {
          //portal was split, but not editing the new book, reset countPortals again
-         if (oldPort == NULL && curPor->book != NULL && curPor->book->countPortals > 1)
+         if (!oldPort && curPor->book && curPor->book->countPortals > 1)
             --curPor->book->countPortals;
          emsg(_(e_cannot_switch_to_a_closing_buffer));
          goto theend;
@@ -10874,7 +10873,7 @@ startEditingFile(
          //reusing the book, keep the old alternate file
          curPor->altFnum = prev_alt_fnum;
 
-      if (book->mem.mfile == NULL) {    //no memfile yet
+      if (!book->mem.mfile) {    //no memfile yet
          oldbuf = false;
       } else {              //existing memfile
          oldbuf = true;
@@ -10911,12 +10910,12 @@ startEditingFile(
          commPortTypeG = 0;
          commPortPortG = NULL;
 
-         //Be careful: The autocommands may delete any buffer and change the current buffer.
-         //- If the buffer we are going to edit is deleted, give up.
-         //- If the current buffer is deleted, prefer to load the new buffer when loading a
-         // buffer is required. This avoids loading another buffer which then must be closed again.
-         //- If we ended up in the new buffer already, need to skip a few things, set auto_buf.
-         if (book->currFileName != NULL)
+         //Be careful: The autocommands may delete any book and change the current book. - If
+         //the buffer we are going to edit is deleted, give up. - If the current buffer is
+         //deleted, prefer to load the new buffer when loading a buffer is required. This avoids
+         //loading another buffer which then must be closed again. - If we ended up in the new
+         //buffer already, need to skip a few things, set auto_buf.
+         if (book->currFileName)
             new_name = copyStr(book->currFileName);
          save_auNewCurBuf = auNewCurBookG;
          bookStoreInRef(OUT &auNewCurBookG, book);
@@ -10951,10 +10950,11 @@ startEditingFile(
             if (curBook == curBookSaved.c)
                optsCopyToBook(book, BCO_ENTER);
 
-            //Close the link to the current buffer. This will set oldPort->buffer to NULL.
+            //Close the link to the current book. This will set oldPort->book to NULL.
             u_sync(false);
-            did_decrement = bookClose(oldPort, curBook,
-                (flags & ECMD_HIDE) ? 0 : DOBOOK_UNLOAD, false, false);
+            did_decrement = bookClose(
+                  oldPort, curBook, (flags & ECMD_HIDE) ? 0 : DOBOOK_UNLOAD, false, false
+            );
 
             //Autocommands may have closed the portal.
             if (portalIsValid(the_curPor))
@@ -10962,7 +10962,7 @@ startEditingFile(
             --book->locked;
 
             //autocmds may abort script processing
-            if (aborting() && curPor->book != NULL) {
+            if (aborting() && curPor->book) {
                eeglFree(new_name);
                auNewCurBookG = save_auNewCurBuf;
                goto theend;
@@ -10974,7 +10974,7 @@ startEditingFile(
                auNewCurBookG = save_auNewCurBuf;
                goto theend;
             }
-            if (book == curBook) {    //already in new buffer
+            if (book == curBook) {    //already in new book
                //bookClose() has decremented the portal count,
                //increment it again here and restore buffer.
                if (did_decrement && bookIsValid(was_curbuf))
@@ -10991,7 +10991,7 @@ startEditingFile(
                ++curBook->countPortals;
 
                //Set 'binary' when forced.
-               if (!oldbuf && invo != NULL) {
+               if (!oldbuf && invo) {
                   set_file_options(invo);
                }
             }
@@ -11019,31 +11019,31 @@ startEditingFile(
    did_inc_redrawing_disabled = true;
 
    book = curBook;
-   if ((flags & ECMD_SET_HELP) || keep_help_flag) {
+   if ((flags & ECMD_SET_HELP) != 0 || keep_help_flag) {
       prepare_help_buffer();
    } else {
-      //Don't make a buffer listed if it's a help buffer.  Useful when
+      //Don't make a book listed if it's a help book. Useful when
       //using CTRL-O to go back to a help file.
       if (curBook->kind != BOOK_HELP)
          bookSetBooklisted(true);
    }
 
-   //If autocommands change buffers under our fingers, forget about editing the file.
+   //If autocommands change books under our fingers, forget about editing the file.
    if (book != curBook)
       goto theend;
    if (aborting())       //autocmds may abort script processing
       goto theend;
 
    //Since we are starting to edit a file, consider the filetype to be
-   //unset.  Helps for when an autocommand changes files and expects syntax
-   //highlighting to work in the other file.
+   //unset. Helps for when an autocommand changes files and expects syntax
+   //hiliting to work in the other file.
    curBook->didFiletype = false;
 
    //sameFile   oldbuf
-   //true    false      re-edit same file, buffer is re-used
-   //true    true       re-edit same file, nothing changes
-   //false   false      start editing new file, new buffer
-   //false   true       start editing in existing buffer (nothing to do)
+   //true      false      re-edit same file, buffer is re-used
+   //true       true      re-edit same file, nothing changes
+   //false     false      start editing new file, new buffer
+   //false      true      start editing in existing buffer (nothing to do)
    if (sameFile && !oldbuf) {    //re-use the buffer
       set_last_cursor(curPor);   //may set lastCursor
       if (newlnum == ECMD_LAST || newlnum == ECMD_LASTL) {
@@ -11057,10 +11057,11 @@ startEditingFile(
          new_name = NULL;
       bookStoreInRef(OUT &bookRef, book);
 
-      //If the buffer was used before, store the current contents so that
-      //the reload can be undone.  Do not do this if the (empty) buffer is
-      //being re-used for another file.
-      if (!(curBook->flags & BF_NEVERLOADED) && (p_ur < 0 || curBook->mem.lineCount <= p_ur)) {
+      //If the book was used before, store the current contents so that the reload can be
+      //undone. Do not do this if the (empty) book is being re-used for another file.
+      if ((curBook->flags & BF_NEVERLOADED) == 0
+            && (p_ur < 0 || curBook->mem.lineCount <= p_ur)
+      ) {
          //Sync first so that this is a separate undo-able action.
          u_sync(false);
          if (u_savecommon(0, curBook->mem.lineCount + 1, 0, true) == FAIL) {
@@ -11075,7 +11076,7 @@ startEditingFile(
       } else
          bookFreeAll(curBook, 0);   //free all things for buffer
 
-      //If autocommands deleted the buffer we were going to re-edit, give
+      //If autocommands deleted the book we were going to re-edit, give
       //up and jump to the end.
       if (!bookRefValid(&bookRef)) {
          deleteMsg(new_name);   //frees new_name
@@ -11083,9 +11084,9 @@ startEditingFile(
       }
       eeglFree(new_name);
 
-      //If autocommands change buffers under our fingers, forget about
-      //re-editing the file.  Should do the buf_clear_file(), but perhaps
-      //the autocommands changed the buffer...
+      //If autocommands change books under our fingers, forget about
+      //re-editing the file. Should do the buf_clear_file(), but perhaps
+      //the autocommands changed the book...
       if (book != curBook)
          goto theend;
       if (aborting())       //autocmds may abort script processing
@@ -11095,7 +11096,7 @@ startEditingFile(
       curBook->opEnd.lnum = 0;
     }
 
-   //If we got here we are sure to start editing Assume success now
+   //If we got here we are sure to start editing. Assume success now
    retval = OK;
 
    //If the file name was changed, reset the not-edit flag so that ":write" works.
@@ -11120,9 +11121,6 @@ startEditingFile(
                foldUpdateAll(port);
          }
       }
-
-      //Change directories when the 'acd' option is set.
-      DO_AUTOCHDIR;
 
       //Careful: bookOpenFromInvo() and applyAutocomms() may change the current buffer and portal
       orig_pos = curPor->cursor;
@@ -11453,9 +11451,9 @@ bookCheckTimestamp(Book* book){
          } else {
             if (!autocmd_busy) {
                msg_start();
-               msgPutsDeco(tbuf, getDecoFlags(HLF_E) + MSG_HIST);
+               msgPutsDeco(tbuf, getDecoFlags(HILITE_ErrorMsg) + MSG_HIST);
                if (*mesg2 != ZERO)
-                  msgPutsDeco(mesg2, getDecoFlags(HLF_W) + MSG_HIST);
+                  msgPutsDeco(mesg2, getDecoFlags(HILITE_WarningMsg) + MSG_HIST);
                msg_clr_eos();
                (void)msg_end();
                if (emsg_silent == 0 && !in_assert_fails) {
@@ -11587,7 +11585,7 @@ check_mtime(Book* book, FileStat *st) {
       msg_silent = 0;          //must give this prompt
       //don't use emsg() here, don't want to flush the books
       msgDeco(_("WARNING: The file has been changed since reading it!!!"),
-                            getDecoFlags(HLF_E)
+                            getDecoFlags(HILITE_ErrorMsg)
       );
       if (ask_yesno((CS)_("Do you really want to write to it"), true) == 'n')
          return FAIL;
@@ -12025,10 +12023,9 @@ bookWrite(
           ) {
              backup_copy = true;
           } else {
-            //Check if we can create a file and set the owner/group to
-            //the ones from the original file.
-            //First find a file name that doesn't exist yet (use some
-            //arbitrary numbers).
+            //Check if we can create a file and set the owner/group to the ones from the
+            //original file. First find a file name that doesn't exist yet (use some arbitrary
+            //numbers).
             STRCPY(ioBuffG, fname);
             fd = -1;
             for (i = 4913; ; i += 123) {
@@ -12660,7 +12657,7 @@ nofail:
    if (errmsg) {
       int numlen = errnum ? (int)STRLEN(errnum) : 0;
 
-      flags = getDecoFlags(HLF_E);   //set highlight for error messages
+      flags = getDecoFlags(HILITE_ErrorMsg);   //set highlight for error messages
       msg_add_fname(book, fname);      //put file name in ioBuffG with quotes
       if (STRLEN(ioBuffG) + STRLEN(errmsg) + numlen >= IOSIZE)
           ioBuffG[IOSIZE - STRLEN(errmsg) - numlen - 1] = ZERO;
@@ -12803,7 +12800,6 @@ alist_new(void) {
       alist_init(curPor->argList);
    }
 }
-
 
 //Set the argument list for the current portal.
 //Takes over the allocated files[] and the allocated fnames in it.
@@ -13140,11 +13136,9 @@ check_arg_idx(Portal* port) {
    }
 }
 
-//":args", ":arglocal" and ":argglobal".
+//";args", ";arglocal" and ";argglobal".
 pub void
 c_args(Invocation* invo) {
-   int      i;
-
    if (invo->id != C_args) {
       if (check_arglist_locked() == FAIL)
          return;
@@ -13175,22 +13169,22 @@ c_args(Invocation* invo) {
       //required and no wait_return().
       gotoCommline(true);
 
-      for (i = 0; i < ARGCOUNT; ++i)
-         items[i] = alist_name(&ARGLIST[i]);
+      for (Unt i = 0; i < (Unt)ARGCOUNT; ++i)
+         items[i] = alist_name(ARGLIST + i);
       listInColumns(items, ARGCOUNT, curPor->argListInd, false);
       eeglFree(items);
 
       return;
    }
 
-   //":argslocal": make a local copy of the global argument list.
+   //";argslocal": make a local copy of the global argument list.
    if (invo->id == C_arglocal) {
-      ArrayList   *gap = &curPor->argList->al_ga;
+      ArrayList* gap = &curPor->argList->al_ga;
 
       if (GA_GROW_FAILS(gap, GARGCOUNT))
          return;
 
-      for (i = 0; i < GARGCOUNT; ++i) {
+      for (int i = 0; i < GARGCOUNT; ++i) {
          if (GARGLIST[i].fname != NULL) {
             AARGLIST(curPor->argList)[gap->len].fname =
                 copyStr(GARGLIST[i].fname);
@@ -13202,7 +13196,7 @@ c_args(Invocation* invo) {
    }
 }
 
-//":previous", ":sprevious", ":Next" and ":sNext".
+//";previous", ":sprevious", ":Next" and ":sNext".
 pub void
 c_previous(Invocation* invo){
    //If past the last one already, go to the last one.
@@ -13212,13 +13206,13 @@ c_previous(Invocation* invo){
       do_argfile(invo, curPor->argListInd - (int)invo->line2);
 }
 
-//":rewind", ":first", ":sfirst" and ":srewind".
+//";rewind", ":first", ":sfirst" and ":srewind".
 pub void
 c_rewind(Invocation* invo){
    do_argfile(invo, 0);
 }
 
-//":last" and ":slast".
+//";last" and ";slast".
 pub void
 c_last(Invocation* invo){
    do_argfile(invo, ARGCOUNT - 1);
@@ -13288,7 +13282,7 @@ do_argfile(Invocation* invo, int argn){
 
    //Edit the file; always use the last known line number.
    //When it fails (e.g. Abort for already edited file) restore the argument index.
-   if (startEditingFile(0, alist_name(&ARGLIST[curPor->argListInd]), NULL,
+   if (bookStartEditingFile(0, alist_name(&ARGLIST[curPor->argListInd]), NULL,
          invo, ECMD_LAST,
          (ECMD_HIDE) + (invo->forceit ? ECMD_FORCEIT : 0), curPor) == FAIL
    )
@@ -13591,7 +13585,7 @@ openPortalsIntoFiles(ArgAllState *aall, int count) {
             aall->new_curPor = curPor;
             aall->new_curtab = curtab;
          }
-         (void)startEditingFile(
+         (void)bookStartEditingFile(
             0, alist_name(&AARGLIST(aall->alist)[i]), NULL, NULL, ECMD_ONE, ECMD_HIDE + ECMD_OLDBUF,
             curPor
          );

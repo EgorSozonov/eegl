@@ -275,6 +275,7 @@
 [-] @ttyscroll (p_ttyscroll, obsolete)
 [-] @lazyredraw (superfluous)
 [-] @loadplugins
+[-] @wrapmargin (superfluous, there's @textwidth instead)
 [-] Vimvars
 [ ] s: variables
 [ ] need_highlight_changed?

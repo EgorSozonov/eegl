@@ -387,8 +387,6 @@ typedef struct tm Tm;
 #define MB_CHAR2LEN(c)       (mb_char2len(c))
 #define MB_CHAR2BYTES(c, b) do { (b) += mb_char2bytes((c), (b)); } while (0)
 
-#define DO_AUTOCHDIR do { } while (0)
-
 #define PLINES_NOFILL(x) plines_nofill(x)
 #define PLINES_WIN_NOFILL(w, l, h) plines_win_nofill((w), (l), (h))
 

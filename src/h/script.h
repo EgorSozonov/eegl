@@ -60,7 +60,7 @@ CS scrGetSourceLine(
 );
 int sourcing_a_script(Invocation* invo);
 CS get_autoload_prefix(ScriptItem *si);
-CS autoload_name(Byte *name);
+CS autoload_name(CS name);
 int scriautoload(CS name, int reload);
 TypeSpec * alloc_type(TypeSpec *type);
 void free_type(TypeSpec *type);
@@ -180,17 +180,10 @@ int parse_pattern_and_range(
 void cmdline_init(void);
 CS getCommline(
    Unt firstc,
-   long count,   //only used for incremental search
+   Long count,   //only used for incremental search
    int indent,   //indent for inside conditionals
    GetlineAlgo
 );
-Arr(Byte) getcmdline_prompt(
-   Unt      firstc,
-   CS prompt,   //command line prompt
-   char      deco,      //decorations for prompt
-   int      context,   //type of expansion
-   CS completionFn)   //user-defined expansion argument
-;
 int check_opt_wim(void);
 int text_locked(void);
 void text_locked_msg(void);
@@ -199,7 +192,7 @@ int text_or_buf_locked(void);
 int curBookLocked(void);
 int allbuf_locked(void);
 CS scrGetTypedCommand(
-   Unt  c,      //normally ';', NUL for ":append"
+   Unt c,      //normally ';', ZERO for ";append"
    void*,
    int indent,      //indent for inside conditionals
    GetlineAlgo options
@@ -208,9 +201,9 @@ int cmdline_overstrike(void);
 int cmdline_at_end(void);
 ColNr cmdline_getvcol_cursor(void);
 int reallocateCommBuf(int len);
-void putcmdline(int c, int shift);
-void unputcmdline(void);
-int put_on_cmdline(Byte *str, int len, int redraw);
+void scrPutCharOnCommline(Unt c, int shift);
+void scrUndoPutCharOnCommline(void);
+int scrPutOnCommline(CS str, int len, int redraw);
 void cmdline_paste_str(CS s, int literally);
 void redrawCommline(void);
 void redrawCommlineEx(int do_compute_cmdrow);

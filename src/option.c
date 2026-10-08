@@ -1795,13 +1795,12 @@ optSetBinary(OptionChange* cha) {
    //copied when @binary is set and restored when @binary is reset.
    if (newVal) {
       curBook->o.textWidth = 0;   //no automatic line wrap
-      curBook->o.wrapMargin = 0;  //no automatic line wrap
       curBook->o.expandTab = 0;   //no expandtab
    }
    //Remember where the dependent option were reset
-   CS options[] = {S "textwidth", S"wrapmargin", S"expandtab"};
+   CS options[] = {S "textwidth", S"expandtab"};
 
-   for (Unt i = 0; i < 3; ++i) {
+   for (Unt i = 0; i < 2; ++i) {
       setScriptPos(findOption(options[i]), SET_LOCAL, scriptPosG);
    }
 
@@ -2015,7 +2014,7 @@ did_set_termwinscroll(OptionChange* cha) {
 
 private CS
 did_set_textwidth(OptionChange* cha) {
-   if (cha->newVal.num < 0) {
+   if (cha->newVal.num < 1) {
       return e_argument_must_be_positive;
    }
    updateNumRef(cha);

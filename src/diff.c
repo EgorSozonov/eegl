@@ -3109,7 +3109,7 @@ diff_set_topline(Portal* fromPort, Portal* toPort){
 
    //When topLine changes need to recompute bottomLine and cursor position
    invalidate_botline_win(toPort);
-   changed_line_abv_curs_win(toPort);
+   changed_line_abv_curs_po(toPort);
 
    check_topfill(toPort, false);
    (void)getFoldsPortal(toPort, toPort->topLine, OUT &toPort->topLine, NULL, true, NULL);
@@ -4693,16 +4693,16 @@ f_diff_hlID(Var* argvars, Var* returnVar) {
             change_start = MAXCOL;
             change_end = -1;
             if (diff_find_change(curPor, lnum, &diffline))
-               hlID = HLF_ADD;   //added line
+               hlID = HILITE_DiffTextAdd;
             else {
-               hlID = HLF_CHD;   //changed line
+               hlID = HILITE_DiffText;
                if (diffline.num_changes > 0 && cache_results) {
                   change_start = diffline.changes[0].dc_start[diffline.bufidx];
                   change_end = diffline.changes[0].dc_end[diffline.bufidx];
                }
             }
          } else
-            hlID = HLF_ADD;   //added line
+            hlID = HILITE_DiffTextAdd;
       } else
          hlID = 0; //NORMAL hilite group
 
@@ -4714,21 +4714,21 @@ f_diff_hlID(Var* argvars, Var* returnVar) {
       }
    }
 
-   if (hlID == HLF_CHD || hlID == HLF_TXD) {
+   if (hlID == HILITE_DiffText || hlID == HILITE_DiffChangedTextInChanged) {
       col = tv_get_number(&argvars[1]) - 1; //ignore type error in {col}
       if (cache_results) {
          if (col >= change_start && col < change_end)
-            hlID = HLF_TXD;         //changed text
+            hlID = HILITE_DiffChangedTextInChanged;         //changed text
          else
-            hlID = HLF_CHD;         //changed line
+            hlID = HILITE_DiffText;         //changed line
       } else {
-         hlID = HLF_CHD;
+         hlID = HILITE_DiffText;
          for (int i = 0; i < diffline.num_changes; i++) {
             int added = diff_change_parse(
                   &diffline, &diffline.changes[i], &change_start, &change_end
             );
             if (col >= change_start && col < change_end) {
-               hlID = added ? HLF_TXA : HLF_TXD;
+               hlID = added ? HILITE_DiffAddedTextInChanged : HILITE_DiffChangedTextInChanged;
                break;
             }
             if (col < change_start)

@@ -2859,7 +2859,7 @@ vGetOrPeek(Boole advance) {
                if (((stateG & MODE_INSERT) != 0)
                      && (stateG & MODE_COMMLINE) == 0 && advance && mustRedrawG != 0
                      && !need_wait_return
-                     ) {
+               ) {
                   drawUpdateScreen(0);
                   setcursor(); //put cursor back where it belongs
                }
@@ -2871,39 +2871,45 @@ vGetOrPeek(Boole advance) {
                if (typeBufG.validLen > 0 && advance) {
                    if (((stateG & (MODE_NORMAL | MODE_INSERT)) || stateG == MODE_LANGMAP)
                       && stateG != MODE_HITRETURN
-                   ) {
-                      //this looks nice when typing a dead character map
-                      if (stateG & MODE_INSERT
-                           && bookPtr2Cells(typeBufG.c + typeBufG.currPos + typeBufG.validLen - 1) == 1
-                      ) {
-                         edit_putchar(typeBufG.c[typeBufG.currPos + typeBufG.validLen - 1], false);
-                         setcursor(); //put cursor back where it belongs
-                         showing_partial = true;
-                      }
-                      //need to use the col and row from above here
-                      old_wcol = curPor->cursorCol;
-                      old_wrow = curPor->cursorRow;
-                      curPor->cursorCol = necursorCol;
-                      curPor->cursorRow = necursorRow;
-                      push_showcmd();
-                      if (typeBufG.validLen > SHOWCMD_COLS)
-                          showcmd_idx = typeBufG.validLen - SHOWCMD_COLS;
-                      while (showcmd_idx < typeBufG.validLen) {
-                          addByteToShowcmd(typeBufG.c[typeBufG.currPos + showcmd_idx++]);
-                      }
-                      curPor->cursorCol = old_wcol;
-                      curPor->cursorRow = old_wrow;
-                   }
+                  ) {
+                     //this looks nice when typing a dead character map
+                     if (stateG & MODE_INSERT
+                          && bookPtr2Cells(typeBufG.c + typeBufG.currPos + typeBufG.validLen - 1)
+                             == 1
+                     ) {
+                        edit_putchar(
+                              typeBufG.c[typeBufG.currPos + typeBufG.validLen - 1], false
+                        );
+                        setcursor(); //put cursor back where it belongs
+                        showing_partial = true;
+                     }
+                     //need to use the col and row from above here
+                     old_wcol = curPor->cursorCol;
+                     old_wrow = curPor->cursorRow;
+                     curPor->cursorCol = necursorCol;
+                     curPor->cursorRow = necursorRow;
+                     push_showcmd();
+                     if (typeBufG.validLen > SHOWCMD_COLS)
+                        showcmd_idx = typeBufG.validLen - SHOWCMD_COLS;
+                     while (showcmd_idx < typeBufG.validLen) {
+                        addByteToShowcmd(typeBufG.c[typeBufG.currPos + showcmd_idx++]);
+                     }
+                     curPor->cursorCol = old_wcol;
+                     curPor->cursorRow = old_wrow;
+                  }
 
-                   //This looks nice when typing a dead character map.
-                   //There is no actual command line for get_number().
-                   if ((stateG & MODE_COMMLINE)
-                         && getCommlineInfo()->commBuf != NULL
-                         && bookPtr2Cells(typeBufG.c + typeBufG.currPos + typeBufG.validLen - 1) == 1
-                   ) {
-                      putcmdline(typeBufG.c[typeBufG.currPos + typeBufG.validLen - 1], false);
-                      showing_partial = true;
-                   }
+                  //This looks nice when typing a dead character map.
+                  //There is no actual command line for get_number().
+                  if ((stateG & MODE_COMMLINE) != 0
+                      && getCommlineInfo()->commBuf
+                      && bookPtr2Cells(typeBufG.c + typeBufG.currPos + typeBufG.validLen - 1)
+                         == 1
+                  ) {
+                     scrPutCharOnCommline(
+                            typeBufG.c[typeBufG.currPos + typeBufG.validLen - 1], false
+                     );
+                     showing_partial = true;
+                  }
                }
 
                //get a character: 3. from the user - get it
@@ -2939,7 +2945,7 @@ vGetOrPeek(Boole advance) {
                    if (stateG & MODE_INSERT)
                       edit_unputchar();
                    if ((stateG & MODE_COMMLINE) && getCommlineInfo()->commBuf != NULL)
-                      unputcmdline();
+                      scrUndoPutCharOnCommline();
                    else
                       setcursor(); //put cursor back where it belongs
                }
@@ -3396,7 +3402,7 @@ format_lines(LineNr   line_count, int avoid_fex) { //don't use 'formatexpr'
    int old_State = stateG;
 
    //length of a line to force formatting: 3 * 'tw'
-   int max_len = comp_textwidth(true) * 3;
+   int max_len = curBook->o.textWidth * 3;
 
    //check for 'q', '2', 'n' and 'w' in 'formatoptions'
    Boole doComments = has_format_option(FO_Q_COMS); //format comments?

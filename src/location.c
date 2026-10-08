@@ -3218,13 +3218,13 @@ private void
 gotoPortalIntoLlFile(Portal* usePort, int fNum) {
    Portal* port = usePort;
    if (!port) {
-      //Find the window showing the selected file in the current tab.
+      //Find the portal showing the selected file in the current tab.
       FOR_ALL_PORTALS(port) {
          if (port->book->fiNum == fNum)
             break;
       }
       if (!port) {
-         //Find a previous usable window
+         //Find a previous usable portal
          port = curPor;
          do {
             if (bt_normal(port->book))
@@ -3232,7 +3232,7 @@ gotoPortalIntoLlFile(Portal* usePort, int fNum) {
             if (port->prev == NULL)
                port = lastPor;   //wrap around the top
             else
-               port = port->prev; //go to previous window
+               port = port->prev;
          } while (port != curPor);
       }
   }
@@ -3253,11 +3253,11 @@ gotoPortalIntoQflFile(int fNum) {
       if (!port->prev)
          port = lastPor;   //wrap around the top
       else
-         port = port->prev;   //go to previous window
+         port = port->prev;
 
       if (isLocListPortalDOW(port)) {
          //Didn't find it, go to the portal before the location portal, unless 'switchbook'
-         //contains 'uselast': in this case we try to jump to the previously used window first.
+         //contains 'uselast': in this case we try to jump to the previously used portal first.
          if ((p_swb & SWB_USELAST) != 0 && portalIsValid(prevPor) && !prevPor->o.portFixBuf)
             port = prevPor;
          ei (altPort)
@@ -3286,7 +3286,7 @@ jumpToUsablePortal(int fNum, int newPort, int* openedPortal) {
    int usablePort = false;
 
    //If opening a new portal, then don't use the location list referred by
-   //the current portal. Otherwise two windows will refer to the same location list.
+   //the current portal. Otherwise two portals will refer to the same location list.
    LocationStack* llRef = newPort ? null : curPor->locationStackRef;
 
    if (llRef) {
@@ -3340,9 +3340,9 @@ jumpAndEditBook(
    int idSave = ll->id;
 
    if (curr->kind == 1) {
-      //Open help file (startEditingFile() will set kind == BOOK_HELP, readfile() will
+      //Open help file (bookStartEditingFile() will set kind == BOOK_HELP, readfile() will
       //set readonly flag).
-      retval = startEditingFile(curr->fNum, NULL, NULL, NULL, (LineNr)1,
+      retval = bookStartEditingFile(curr->fNum, NULL, NULL, NULL, (LineNr)1,
          ECMD_HIDE + ECMD_SET_HELP, prevPortId == curPor->id ? curPor : NULL
       );
    } else {
@@ -3358,18 +3358,18 @@ jumpAndEditBook(
          if (portalIsValid(prevPor) && !prevPor->o.portFixBuf
                && !isLocationListBook(prevPor->book)
          ) {
-            //'portfixbuf' is set; attempt to change to a window without it
+            //@portfixbuf is set; attempt to change to a portal without it
             //that isn't a location list portal.
             gotoPortal(prevPor);
          }
          if (curPor->o.portFixBuf) {
-            //Split the window, which will be 'noportfixbuf', and set curPor to that
+            //Split the portal, which will be @portfixbuf == false, and set curPor to that
             if (splitPortal(0, 0) == OK)
                *openedPortal = true;
 
             if (curPor->o.portFixBuf) {
-               //Autocommands set 'portfixbuf' or sent us to another window
-               //with it set, or we failed to split the window. Give up,
+               //Autocommands set 'portfixbuf' or sent us to another portal
+               //with it set, or we failed to split the portal. Give up,
                //but don't return immediately, as they may have messed with the list.
                emsg(_(e_portfixbuf_cannot_go_to_buffer));
                retval = FAIL;
@@ -3720,7 +3720,9 @@ displayListEntry(LocLine* lline, int ind, int cursel) {
       return;
 
    msg_putchar('\n');
-   msgOuttransDeco(ioBuffG, cursel ? getDecoFlags(HLF_QFL) : fileDeco.flags);
+   msgOuttransDeco(
+         ioBuffG, cursel ? getDecoFlags(HILITE_LocationPortalSelected) : fileDeco.flags
+   );
 
    if (lline->lNum != 0)
       msgPutsDeco(S":", separatorDeco.flags);
@@ -3797,13 +3799,13 @@ c_list(Invocation* invo) {
    //that this depends on syntax items defined in the qf.vim syntax file
    fileDeco = decosByHiliteName(S"qfFileName");
    if (fileDeco.flags == 0)
-      fileDeco = getFullDecoration(HLF_D);
+      fileDeco = getFullDecoration(HILITE_Directories);
    separatorDeco = decosByHiliteName(S"qfSeparator");
    if (separatorDeco.flags == 0)
-      separatorDeco = getFullDecoration(HLF_D);
+      separatorDeco = getFullDecoration(HILITE_Directories);
    lineDeco = decosByHiliteName(S"qfLineNr");
    if (lineDeco.flags == 0)
-      lineDeco = getFullDecoration(HLF_N);
+      lineDeco = getFullDecoration(HILITE_LineNr);
 
    if (ll->noValidEntries)
       all = true;
@@ -4123,8 +4125,9 @@ llViewLocation(int split) {
    executeCommLine((CS)(IS_LL_PORTAL(curPor) ? ".ll" : ".mc"));
 }
 
-//":mwindow": open the location portal if we have errors to display, close it if not. TODO delete
-//":lwindow": open the location list portal if we have locations to display, close it if not.
+//";mwindow": open the location portal if we have errors to display, close it if not.
+//TODO delete
+//";lwindow": open the location list portal if we have locations to display, close it if not.
 pub void
 c_cPortal(Invocation* invo) {
    LocationStack* stack;
@@ -4148,7 +4151,7 @@ c_cPortal(Invocation* invo) {
       c_lOpen(invo);
 }
 
-//":lclose": close the window showing the location list
+//";lclose": close the portal showing the location list
 pub void
 c_lClose(Invocation* invo) {
    LocationStack   *stack;
@@ -4169,7 +4172,7 @@ setTitleVar(LocationList* ll) {
 }
 
 //Go to a location list portal (if present).
-//Return OK if the window is found, FAIL otherwise.
+//Return OK if the portal is found, FAIL otherwise.
 private int
 gotoLocationPortal(LocationStack* stack, int resize, int sz, int vertsplit) {
    Portal* port = findPortalIntoLocList(stack);
@@ -4241,12 +4244,12 @@ openNewPortal(LocationStack* stack, int height) {
       oldPort = NULL;  //don't store info when in another portal
    if (llBook != NULL) {
       //Use the existing location buffer
-      if (startEditingFile(llBook->fiNum, NULL, NULL, NULL, ECMD_ONE,
+      if (bookStartEditingFile(llBook->fiNum, NULL, NULL, NULL, ECMD_ONE,
              ECMD_HIDE + ECMD_OLDBUF + ECMD_NOWINENTER, oldPort) == FAIL)
          return FAIL;
    } else {
       //Create a new location buffer
-      if (startEditingFile(0, NULL, NULL, NULL, ECMD_ONE, ECMD_HIDE + ECMD_NOWINENTER,
+      if (bookStartEditingFile(0, NULL, NULL, NULL, ECMD_ONE, ECMD_HIDE + ECMD_NOWINENTER,
                                oldPort) == FAIL)
          return FAIL;
 
@@ -4270,7 +4273,7 @@ openNewPortal(LocationStack* stack, int height) {
    return OK;
 }
 
-//":lopen": open a window that shows the location list.
+//";lopen": open a portal that shows the location list.
 pub void
 c_lOpen(Invocation* invo) {
    LocationStack* stack;
@@ -4290,8 +4293,11 @@ c_lOpen(Invocation* invo) {
    reset_VIsual_and_resel();         //stop Visual mode
 
    //Find an existing location portal, or open a new one.
-   if (commModifierG.cmod_tab == 0)
-      status = gotoLocationPortal(stack, invo->addr_count != 0, height, commModifierG.cmod_split & WSP_VERT);
+   if (commModifierG.cmod_tab == 0) {
+      status = gotoLocationPortal(
+            stack, invo->addr_count != 0, height, commModifierG.cmod_split & WSP_VERT
+      );
+   }
    if (status == FAIL) {
       if (openNewPortal(stack, height) == FAIL) {
          decrementLlBusyness();
@@ -8252,7 +8258,7 @@ show_one_mark(
             sprintf((char *)ioBuffG, " %c " FMT_UNT " %4d ", c, p->lnum, p->col);
             msg_outtrans(ioBuffG);
             if (name) {
-               msgOuttransDeco(name, current ? getDecoFlags(HLF_D) : 0);
+               msgOuttransDeco(name, current ? getDecoFlags(HILITE_Directories) : 0);
             }
          }
          termOutFlush();          //show one line at a time
@@ -8370,7 +8376,7 @@ c_jumps(Invocation*) {
          );
          msg_outtrans(ioBuffG);
          msgOuttransDeco(
-            name, curPor->jumpList[i].fmark.fnum == curBook->fiNum ? getDecoFlags(HLF_D) : 0
+            name, curPor->jumpList[i].fmark.fnum == curBook->fiNum ? getDecoFlags(HILITE_Directories) : 0
          );
          eeglFree(name);
          ui_breakcheck();
@@ -8411,7 +8417,7 @@ c_changes(Invocation*) {
          name = mark_line(&curBook->changeList[i], 17);
          if (!name)
             break;
-         msgOuttransDeco(name, getDecoFlags(HLF_D));
+         msgOuttransDeco(name, getDecoFlags(HILITE_Directories));
          eeglFree(name);
          ui_breakcheck();
       }
@@ -9043,11 +9049,11 @@ insert_sign(
       next->prev = newsign;
 
    if (!prev) {
-      //When adding first sign need to redraw the windows to create the column for signs.
-      if (!book->signList) {
-         drawBookLater(book, UPD_NOT_VALID);
-         changed_line_abv_curs();
-      }
+      //When adding first sign need to redraw the portals to create the column for signs.
+      //if (!book->signList) {
+      //   drawBookLater(book, UPD_NOT_VALID);
+      //   changed_line_abv_curs();
+      //}
 
       //first sign in signlist
       book->signList = newsign;
@@ -9415,12 +9421,12 @@ findsign_id(Book* book, //book whose sign we are searching for
 //Delete signs in group 'group' in book. If 'group' is '*', then delete all the signs.
 pub void
 llDeleteSigns(Book* book, CS group) {
-    //When deleting the last sign need to redraw the windows to remove the
+    //When deleting the last sign need to redraw the portals to remove the
     //sign column. Not when curPor is NULL (this means we're exiting).
-    if (book->signList && curPor) {
-        drawBookLater(book, UPD_NOT_VALID);
-        changed_line_abv_curs();
-    }
+    //if (book->signList && curPor) {
+    //    drawBookLater(book, UPD_NOT_VALID);
+    //    changed_line_abv_curs();
+    //}
 
     //pointer to pointer to current sign
     SignEntry **lastp = &book->signList;
@@ -9457,7 +9463,7 @@ sign_list_placed(Book* rbook, CS sign_group) {
    while (book && !gotInterruptG) {
      if (book->signList != NULL) {
          eeSnprintf(lbuf, MSG_BUF_LEN, _("Signs for %s:"), book->currFileName);
-         msgPutsDeco(lbuf, getDecoFlags(HLF_D));
+         msgPutsDeco(lbuf, getDecoFlags(HILITE_Directories));
          msg_putchar('\n');
       }
 
@@ -9659,10 +9665,10 @@ sign_define_by_name(
          sp_prev->next = sp;
    } else {
        Portal *wp = NULL;
-       //Signs may already exist, a redraw is needed in windows with a
+       //Signs may already exist, a redraw is needed in portals with a
        //non-empty sign list.
        FOR_ALL_PORTALS(wp) {
-          if (wp->book->signList != NULL)
+          if (wp->book->signList)
               drawBookLater(wp->book, UPD_NOT_VALID);
        }
    }
@@ -13487,7 +13493,7 @@ find_pattern_in_path(
                   msg_puts(S"  ");
                if (new_fname) {
                   //using "new_fname" is more reliable, e.g., when @includeexpr is set.
-                  msgOuttransDeco(new_fname, getDecoFlags(HLF_D));
+                  msgOuttransDeco(new_fname, getDecoFlags(HILITE_Directories));
                } else {
                   //Isolate the file name. Include the surrounding "" or <> if present.
                   if (inc_opt != NULL && strstr((char *)inc_opt, "\\zs") != NULL) {
@@ -13519,7 +13525,7 @@ find_pattern_in_path(
                   }
                   save_char = p[i];
                   p[i] = ZERO;
-                  msgOuttransDeco(p, getDecoFlags(HLF_D));
+                  msgOuttransDeco(p, getDecoFlags(HILITE_Directories));
                   p[i] = save_char;
                }
 
@@ -13567,7 +13573,7 @@ find_pattern_in_path(
                if (action == ACTION_EXPAND && !silent) {
                   msg_hist_off = true;   //reset in msgTruncDeco()
                   eeSnprintf(ioBuffG, IOSIZE, _("Scanning included file: %s"), new_fname);
-                  msgTruncDeco(ioBuffG, getDecoFlags(HLF_R));
+                  msgTruncDeco(ioBuffG, getDecoFlags(HILITE_YesNoQuestions));
                } ei (p_verbose >= 5) {
                   verbose_enter();
                   smsg(_("Searching included file %s"), (char *)new_fname);
@@ -13907,8 +13913,7 @@ show_pat_in_path(
           SPRINTF(ioBuffG, "%3ld: ", count);   //show match nr
           msg_puts(ioBuffG);
           SPRINTF(ioBuffG, FMT_UNT, *lnum);   //show line nr
-                     //Highlight line numbers
-          msgPutsDeco(ioBuffG, getDecoFlags(HLF_N));
+          msgPutsDeco(ioBuffG, getDecoFlags(HILITE_LineNr));
           msg_puts(S" ");
       }
       msg_prt_line(line, false);
@@ -15150,10 +15155,10 @@ c_help(Invocation* invo) {
          if (curPor->height < p_hh)
             portSetHeight((int)p_hh, curPor);
 
-         //Open help file (startEditingFile() will set kind = BOOK_HELP, readfile() will
+         //Open help file (bookStartEditingFile() will set kind = BOOK_HELP, readfile() will
          //set readonly flag). Set the alternate file to the previously edited file.
          alt_fnum = curBook->fiNum;
-         (void)startEditingFile(0, NULL, NULL, NULL, ECMD_LASTL,
+         (void)bookStartEditingFile(0, NULL, NULL, NULL, ECMD_LASTL,
               ECMD_HIDE + ECMD_SET_HELP,
               NULL);  //buffer is still open, don't store info
          if ((commModifierG.cmod_flags & CMOD_KEEPALT) == 0)

@@ -367,7 +367,7 @@ msg_home_replace(Byte *fname) {
 
 pub void
 msg_home_replace_hl(Byte *fname) {
-   homeReplaceDeco(fname, getDecoFlags(HLF_D));
+   homeReplaceDeco(fname, getDecoFlags(HILITE_Directories));
 }
 
 private void
@@ -422,7 +422,7 @@ msgOuttransLenDeco(Text slice, char flags) {
    gotInterruptG = false;
 
    if (flags == 0)
-      flags = getDecoFlags(HLF_MSG);
+      flags = getDecoFlags(HILITE_MessageArea);
 
    //if MSG_HIST flag set, add message to history
    if (flags & MSG_HIST) {
@@ -459,7 +459,7 @@ msgOuttransLenDeco(Text slice, char flags) {
             if (str > plain_start)
                printWithDecoAndMaxLen(plain_start, (int)(str - plain_start), flags);
             plain_start = str + mb_l;
-            msgPutsDeco(transchar_buf(c), flags == 0 ? getDecoFlags(HLF_8) : flags);
+            msgPutsDeco(transchar_buf(c), flags == 0 ? getDecoFlags(HILITE_MetaSpecialKeys) : flags);
             retval += bookChar2Cells(c);
          }
          len -= mb_l - 1;
@@ -472,7 +472,7 @@ msgOuttransLenDeco(Text slice, char flags) {
             if (str > plain_start)
                printWithDecoAndMaxLen(plain_start, (int)(str - plain_start), flags);
             plain_start = str + 1;
-            msgPutsDeco(s, flags == 0 ? getDecoFlags(HLF_8) : flags);
+            msgPutsDeco(s, flags == 0 ? getDecoFlags(HILITE_MetaSpecialKeys) : flags);
             retval += (int)STRLEN(s);
          } else
             ++retval;
@@ -529,7 +529,7 @@ msg_outtrans_special(
    CS text;
    int len;
 
-   Byte flags = getDecoFlags(HLF_8);
+   Byte flags = getDecoFlags(HILITE_MetaSpecialKeys);
    while (*str != ZERO) {
       //Leading and trailing spaces need to be displayed in <> form.
       if ((str == strstart || str[1] == ZERO) && *str == ' ') {
@@ -714,18 +714,18 @@ msg_prt_line(CS s, int list) {
                c = (n_extra == 0 && listCharsG.tab3) ? listCharsG.tab3 : listCharsG.tab1;
                c_extra = listCharsG.tab2;
                c_final = listCharsG.tab3;
-               flags = getDecoFlags(HLF_8);
+               flags = getDecoFlags(HILITE_MetaSpecialKeys);
             }
          } ei (c == 160 && list && listCharsG.nbsp != ZERO) {
             c = listCharsG.nbsp;
-            flags = getDecoFlags(HLF_8);
+            flags = getDecoFlags(HILITE_MetaSpecialKeys);
          } ei (c == ZERO && list && listCharsG.eol != ZERO) {
             p_extra = S"";
             c_extra = ZERO;
             c_final = ZERO;
             n_extra = 1;
             c = listCharsG.eol;
-            flags = getDecoFlags(HLF_AT);
+            flags = getDecoFlags(HILITE_None);
             --s;
          } ei (c != ZERO && (n = byte2cells(c)) > 1) {
             n_extra = n - 1;
@@ -735,11 +735,11 @@ msg_prt_line(CS s, int list) {
             c = *p_extra++;
             //Use special coloring to be able to distinguish <hex> from
             //the same in plain text.
-            flags = getDecoFlags(HLF_8);
+            flags = getDecoFlags(HILITE_MetaSpecialKeys);
          } ei (c == ' ') {
             if (trail && s > trail) {
                c = listCharsG.trail;
-               flags = getDecoFlags(HLF_8);
+               flags = getDecoFlags(HILITE_MetaSpecialKeys);
             }
          }
       }
@@ -760,7 +760,7 @@ drawText_mbyte(CS s, int l, char flags) {
    int cw = mb_ptr2cells(s);
    if (cw > 1 && ( msgColG == visibleColsG - 1)) {
       //Doesn't fit, print a highlighted '>' to fill it up.
-      msg_screen_putchar('>', getDecoFlags(HLF_AT));
+      msg_screen_putchar('>', getDecoFlags(HILITE_None));
       return s;
    }
 
@@ -1104,7 +1104,7 @@ msg_source(char flags) {
    }
    p = get_emsg_lnum();
    if (p) {
-      msgDeco(p, getDecoFlags(HLF_N));
+      msgDeco(p, getDecoFlags(HILITE_LineNr));
       eeglFree(p);
       last_sourcing_lnum = SOURCING_LNUM;  //only once for each line
    }
@@ -1226,7 +1226,7 @@ emsgImpl(CS s) {
    if (!inEchoPortalG)
       emsg_on_display = true;       //remember there is an error message
 
-   flags = getDecoFlags(HLF_E);       //set highlight mode for error messages
+   flags = getDecoFlags(HILITE_ErrorMsg);       //set highlight mode for error messages
    if (msg_scrolled != 0)
       need_wait_return = true;    //needed in case emsg() is called after
                 //wait_return() has reset need_wait_return and a redraw is expected because
@@ -1531,7 +1531,7 @@ c_messages(Invocation *invo) {
              //Translator: Please replace the name and email address
              //with the appropriate text for your translation.
              _("Messages maintainer: The Eegl Project"),
-             getDecoFlags(HLF_T));
+             getDecoFlags(HILITE_OutputOfAutocmd));
    }
 
    //Display what was not skipped.
@@ -1754,7 +1754,9 @@ hit_return_msg(void) {
    if (gotInterruptG)
       msg_puts(_("Interrupt: "));
 
-   msgPutsDeco(_("Press ENTER or type command to continue"), getDecoFlags(HLF_R));
+   msgPutsDeco(
+         _("Press ENTER or type command to continue"), getDecoFlags(HILITE_YesNoQuestions)
+   );
    if (!msg_use_printf())
       msg_clr_eos();
    p_more = save_p_more;
@@ -1914,7 +1916,7 @@ display_confirm_msg(void) {
    //avoid that 'q' at the more prompt truncates the message here
    ++confirm_msg_used;
    if (confirm_msg)
-      msgPutsDeco(confirm_msg, getDecoFlags(HLF_M));
+      msgPutsDeco(confirm_msg, getDecoFlags(HILITE_MoreMsg));
    --confirm_msg_used;
 }
 
@@ -1987,7 +1989,7 @@ do_more_prompt(int typedChar) {
    MsgChunk   *mp;
    int      i;
 
-   Decoration msgDeco = getFullDecoration(HLF_MSG);
+   Decoration msgDeco = getFullDecoration(HILITE_MessageArea);
 
    //We get called recursively when a timer callback outputs a message. In that case don't show
    //another prompt. Also when at the hit-Enter prompt and nothing was typed.
@@ -2193,7 +2195,7 @@ msg_puts(CS s) {
 
 pub void
 msg_puts_title(CS s) {
-   msgPutsDeco(s, getDecoFlags(HLF_T));
+   msgPutsDeco(s, getDecoFlags(HILITE_OutputOfAutocmd));
 }
 
 //Show a message in such a way that it always fits in the line. Cut out a part in the middle and
@@ -2205,7 +2207,7 @@ outputShortenedToALine(Text slice, char flags) {
    if (room >= 20 && slice.len > (Unt)room) {
       slen = (room - 3) / 2;
       msgOuttransLenDeco(slice, flags);
-      msgPutsDeco((CS)"...", getDecoFlags(HLF_8));
+      msgPutsDeco((CS)"...", getDecoFlags(HILITE_MetaSpecialKeys));
    }
    msgOuttransLenDeco((Text){.c = slice.c + slice.len - slen, .len = slen}, flags);
 }
@@ -2229,7 +2231,7 @@ printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags) {
       return;
 
    if (flags == 0)
-      flags = getDecoFlags(HLF_MSG);
+      flags = getDecoFlags(HILITE_MessageArea);
 
    //if MSG_HIST flag set, add message to history
    if ((flags & MSG_HIST) && maxlen < 0) {
@@ -2554,7 +2556,7 @@ private void
 msg_moremsg(int full) {
    Byte   *s = (CS)_("-- More --");
 
-   char flags = getDecoFlags(HLF_M);
+   char flags = getDecoFlags(HILITE_MoreMsg);
    drawText(s, (int)visibleRowsG - 1, 0, flags);
    if (full) {
       drawText((CS)
@@ -2626,7 +2628,7 @@ msg_clr_eos_force(void) {
             out_str(termCodesG[KS_CE]);   //clear to end of line
       }
    } else {
-      Decoration msgDeco = getFullDecoration(HLF_MSG);
+      Decoration msgDeco = getFullDecoration(HILITE_MessageArea);
 
       fillRowsWithTwoChars(msgRowG, msgRowG + 1, msgColG, (int)visibleColsG, ' ', ' ', msgDeco);
       fillRowsWithTwoChars(
@@ -2817,7 +2819,7 @@ give_warning_with_source(Byte *message, int hl, int with_source) {
 
    EE_CLEAR(msgAfterRedrawG);
    if (hl)
-      decoAfterRedrawG = getDecoFlags(HLF_W);
+      decoAfterRedrawG = getDecoFlags(HILITE_WarningMsg);
    else
       decoAfterRedrawG = 0;
 
@@ -2825,9 +2827,9 @@ give_warning_with_source(Byte *message, int hl, int with_source) {
       //Do what msg() does, but with a column offset if the warning should
       //be after the mode message.
       msg_start();
-      msg_source(getDecoFlags(HLF_W));
+      msg_source(getDecoFlags(HILITE_WarningMsg));
       msg_puts(S" ");
-      msgPutsDeco(message, getDecoFlags(HLF_W) | MSG_HIST);
+      msgPutsDeco(message, getDecoFlags(HILITE_WarningMsg) | MSG_HIST);
       msg_clr_eos();
       (void)msg_end();
    } ei (msgDeco(message, decoAfterRedrawG) && msg_scrolled == 0)
@@ -3136,19 +3138,18 @@ sb_text_end_cmdline(void) {
 //When "all" is false keep the last line. Called when redrawing the screen.
 pub void
 clear_sb_text(int all) {
-   MsgChunk   *mp;
-   MsgChunk   **lastp;
+   MsgChunk** lastp;
 
    if (all)
       lastp = &lastChunkS;
    else {
-      if (lastChunkS == NULL)
+      if (!lastChunkS)
          return;
       lastp = &moveToStartOfScreenLine(lastChunkS)->sb_prev;
    }
 
    while (*lastp) {
-      mp = (*lastp)->sb_prev;
+      MsgChunk* mp = (*lastp)->sb_prev;
       eeglFree(*lastp);
       *lastp = mp;
    }
@@ -3157,12 +3158,10 @@ clear_sb_text(int all) {
 //"g<" command.
 pub void
 show_sb_text(void) {
-   MsgChunk   *mp;
-
    //Only show something if there is more than one line, otherwise it looks
    //weird, typing a command without output results in one line.
-   mp = moveToStartOfScreenLine(lastChunkS);
-   if (mp == NULL || mp->sb_prev == NULL) {
+   MsgChunk* mp = moveToStartOfScreenLine(lastChunkS);
+   if (!mp || !mp->sb_prev) {
    } else {
       do_more_prompt('G');
       wait_return(false);
@@ -3172,7 +3171,7 @@ show_sb_text(void) {
 //Move to the start of screen line in already displayed text.
 private MsgChunk *
 moveToStartOfScreenLine(MsgChunk *mps) {
-   MsgChunk *mp = mps;
+   MsgChunk* mp = mps;
 
    while (mp && mp->sb_prev && !mp->sb_prev->sb_eol)
       mp = mp->sb_prev;
@@ -3204,11 +3203,12 @@ disp_sb_line(int row, MsgChunk* smp, int clear_to_eol) {
       //color and t_ut isn't set) clear until the last column here.
       if (clear_to_eol)
          fillRowsWithTwoChars(
-            row, row + 1, msgColG, (int)visibleColsG, ' ', ' ', getFullDecoration(HLF_MSG)
+            row, row + 1, msgColG, (int)visibleColsG, ' ', ' ',
+            getFullDecoration(HILITE_MessageArea)
          );
 
-      if (mp->sb_eol || mp->sb_next == NULL)
-          break;
+      if (mp->sb_eol || !mp->sb_next)
+         break;
    }
    return mp->sb_next;
 }

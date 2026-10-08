@@ -376,7 +376,6 @@ OPTION("smartindent", smartIndent, Boole, true, 0, null, null)
 OPTION("suffixesadd", suffixesAdd, CS, ".java,.rust", P_ONECOMMA|P_NODUP,
       NULL, NULL)
 OPTION("textwidth", textWidth, long, 96, P_RBUF|P_HLONLY, &did_set_textwidth, NULL)
-OPTION("wrapmargin", wrapMargin, long, 0, 0, null, null)
 OPTION("grep.format", grepFormat, CS, "%f:%l:%m,%f:%l%m,%f  %l%m", P_ONECOMMA|P_NODUP,
       null, null)
 //Add an extra file name so that grep will always insert a file name in the match line

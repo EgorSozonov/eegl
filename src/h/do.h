@@ -168,7 +168,7 @@ void c_resize(Invocation* invo);
 void c_find(Invocation* invo);
 void c_open(Invocation* invo);
 void c_edit(Invocation* invo);
-void do_exedit(Invocation* invo, Portal* old_curPor);
+void do_exedit(Invocation* invo, NULLABLE Portal* old_curPor);
 void c_syncbind(Invocation*);
 void c_read(Invocation* invo);
 void free_cd_dir(void);
@@ -302,7 +302,7 @@ void doChangedLinesBook(
    Book* book,
    LineNr lnum,       //first line with change
    LineNr lnume,       //line below last changed line
-   long xtra       //number of extra lines (negative when deleting)
+   Long xtra       //number of extra lines (negative when deleting)
 );
 void doChangedLines(
    LineNr lnum,    //first line with change
@@ -318,7 +318,7 @@ void replaceChar(Unt c);
 void opInsertCharBytes(CS targetLine, int charlen, Boole replace);
 void ins_str(CS s, Unt slen);
 int del_char(Boole fixpos);
-int del_chars(long count, Boole fixpos);
+int del_chars(Long count, Boole fixpos);
 int del_bytes(Long count, Boole fixpos_arg, int use_delcombine);
 int doInsertLine(Byte dir);
 int get_leader_len(CS line, Byte** flags, int backward, int include_space);

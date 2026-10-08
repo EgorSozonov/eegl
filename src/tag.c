@@ -851,7 +851,7 @@ do_tag(
                STRCAT(ioBuffG, _("  Using tag with different case!"));
             if ((matches.len > prev_num_matches || new_tag) && matches.len > 1) {
                if (ic)
-                  msgDeco(ioBuffG, getDecoFlags(HLF_W));
+                  msgDeco(ioBuffG, getDecoFlags(HILITE_WarningMsg));
                else
                   msg(ioBuffG);
                msg_scroll = true;   //don't overwrite this message
@@ -929,10 +929,10 @@ print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches) {
    if (msgColG == 0)
       msg_didout = false;   //overwrite previous message
    msg_start();
-   msgPutsDeco(_("  # pri kind tag"), getDecoFlags(HLF_T));
+   msgPutsDeco(_("  # pri kind tag"), getDecoFlags(HILITE_OutputOfAutocmd));
    msg_clr_eos();
    taglen_advance(taglen);
-   msgPutsDeco(_("file\n"), getDecoFlags(HLF_T));
+   msgPutsDeco(_("file\n"), getDecoFlags(HILITE_OutputOfAutocmd));
 
    for (Unt i = 0; i < matches.len && !gotInterruptG; ++i) {
       parse_match(matches.c[i], OUT &tagp);
@@ -950,7 +950,7 @@ print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches) {
          msgTranslatedSlice((Text){tagp.tagkind, (int)(tagp.tagkind_end - tagp.tagkind)});
       msg_advance(13);
       msgOuttransLenDeco(
-         (Text){tagp.tagname, (int)(tagp.tagname_end - tagp.tagname)}, getDecoFlags(HLF_T)
+         (Text){tagp.tagname, (int)(tagp.tagname_end - tagp.tagname)}, getDecoFlags(HILITE_OutputOfAutocmd)
       );
       msg_putchar(' ');
       taglen_advance(taglen);
@@ -958,7 +958,7 @@ print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches) {
       //Find out the actual file name. If it is long, truncate it and put "..." in the middle
       CS p = tag_full_fname(&tagp);
       if (p) {
-         outputShortenedToALine(text(p), getDecoFlags(HLF_D));
+         outputShortenedToALine(text(p), getDecoFlags(HILITE_Directories));
          eeglFree(p);
       }
       if (msgColG > 0)
@@ -986,7 +986,7 @@ print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches) {
                continue;
             }
             //print all other extra fields
-            attr = getDecoFlags(HLF_CM);
+            attr = getDecoFlags(HILITE_ModeName);
             while (*p && *p != '\r' && *p != '\n') {
                if (msgColG + bookPtr2Cells(p) >= visibleColsG) {
                   msg_putchar('\n');
@@ -1211,7 +1211,7 @@ do_tags(Invocation*) {
             i + 1, tagstack[i].cur_match + 1, tagstack[i].tagname, tagstack[i].fmark.mark.lnum
          );
          msg_outtrans(ioBuffG);
-         msgOuttransDeco(name, tagstack[i].fmark.fnum == curBook->fiNum ? getDecoFlags(HLF_D) : 0);
+         msgOuttransDeco(name, tagstack[i].fmark.fnum == curBook->fiNum ? getDecoFlags(HILITE_Directories) : 0);
          eeglFree(name);
       }
       termOutFlush();          //show one line at a time
@@ -3919,7 +3919,10 @@ staterr:
 
       if (p_csverbose) {
          msg_clr_eos();
-         (void)smsgDeco(getDecoFlags(HLF_R), _("Added cscope database %s"), csinfo[i].fname);
+         (void)smsgDeco(
+               getDecoFlags(HILITE_YesNoQuestions), _("Added cscope database %s"),
+               csinfo[i].fname
+         );
       }
    }
 
@@ -4480,7 +4483,10 @@ cs_kill_execute(int i,  Text cname) {
                 //cscope table index  // cscope database name
    if (p_csverbose) {
       msg_clr_eos();
-      (void)smsgDeco(getDecoFlags(HLF_R) | MSG_HIST, _("cscope connection %s closed"), cname.c);
+      (void)smsgDeco(
+            getDecoFlags(HILITE_YesNoQuestions) | MSG_HIST,
+            _("cscope connection %s closed"), cname.c
+      );
    }
    cs_release_csp(i, true);
 }
@@ -4806,13 +4812,13 @@ cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
    CS buf = alloc(newsize);
    bufsize = newsize;
    (void)SPRINTF(buf, cstag_msg, ptag);
-   msgPutsDeco(buf, getDecoFlags(HLF_T));
+   msgPutsDeco(buf, getDecoFlags(HILITE_OutputOfAutocmd));
 
    eeglFree(matchesbuf);
 
-   msgPutsDeco(_("\n   #   line"), getDecoFlags(HLF_T));    //STRLEN is 7
+   msgPutsDeco(_("\n   #   line"), getDecoFlags(HILITE_OutputOfAutocmd));    //STRLEN is 7
    msg_advance(msgColG + 2);
-   msgPutsDeco(_("filename / context / line\n"), getDecoFlags(HLF_T));
+   msgPutsDeco(_("filename / context / line\n"), getDecoFlags(HILITE_OutputOfAutocmd));
 
    num = 1;
    for (i = 0; i < num_matches; i++) {
@@ -4844,9 +4850,11 @@ cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
       if (buf) {
          //csfmt_str = "%4d %6s  ";
          (void)SPRINTF(buf, csfmt_str, num, thirdTk.c);
-         msgPutsDeco(buf, getDecoFlags(HLF_CM));
+         msgPutsDeco(buf, getDecoFlags(HILITE_ModeName));
       }
-      outputShortenedToALine(mbText((CS)cs_pathcomponents(sndTk.c)), getDecoFlags(HLF_CM));
+      outputShortenedToALine(
+            mbText((CS)cs_pathcomponents(sndTk.c)), getDecoFlags(HILITE_ModeName)
+      );
 
       //compute the required space for the context
       if (cntxts[idx] != NULL)
@@ -5073,7 +5081,7 @@ cs_reset(Invocation*, CS) {
             //don't use smsgDeco() because we want to display the
             //connection number in the same line as "Added cscope database..."
             SPRINTF(buf, " (#%d)", i);
-            msgPutsDeco(buf, getDecoFlags(HLF_R));
+            msgPutsDeco(buf, getDecoFlags(HILITE_YesNoQuestions));
          }
       }
       eeglFree(dblist[i]);
@@ -5085,7 +5093,7 @@ cs_reset(Invocation*, CS) {
    eeglFree(fllist);
 
    if (p_csverbose)
-      msgDeco(_("All cscope databases reset"), getDecoFlags(HLF_R) | MSG_HIST);
+      msgDeco(_("All cscope databases reset"), getDecoFlags(HILITE_YesNoQuestions) | MSG_HIST);
    return CSCOPE_SUCCESS;
 }
 
@@ -5142,7 +5150,7 @@ cs_show(Invocation*, CS) {
    else {
       msgPutsDeco(
          _(" # pid    database name                       prepend path\n"),
-         getDecoFlags(HLF_T));
+         getDecoFlags(HILITE_OutputOfAutocmd));
       for (int i = 0; i < csinfo_size; i++) {
          if (!csinfo[i].fname)
             continue;

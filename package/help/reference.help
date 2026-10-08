@@ -847,7 +847,6 @@ use the |-b| Eegl argument.  When this option is switched on a few
 options will be changed (also when it already was on):
 
    @textwidth  will be set to 0
-   @wrapmargin will be set to 0
    @expandtab  will be off
 
 NOTE: When you start editing a(nother) file while the @binary option is on, settings from
@@ -2449,9 +2448,8 @@ usual in Normal mode.  To get this cursor position while displaying Tabs with sp
 
    ;set list lcs=tab:\ \
 
-Note that list mode will also affect formatting (set with @textwidth
-or @wrapmargin) when @cpoptions includes @L.  See @listchars for
-changing the way tabs are displayed.
+Note that list mode will also affect formatting (set with @textwidth) when @cpoptions includes
+@L. See @listchars for changing the way tabs are displayed.
 
 
 @@listchars              Global. String.  Default = "eol:$"
@@ -3647,12 +3645,10 @@ adjusted to that size, if possible.
 
 @@textwidth              Book. Numeric. Default = 0
 
-Maximum width of text that is being inserted.  A longer line will be
-broken after white space to get this width.  A zero value disables this.
-@textwidth is set to 0 when the @paste option is set and restored when @paste is reset.
-When @textwidth is zero, @wrapmargin may be used.  See also
-@formatoptions and |ins-textwidth|.
-When @formatexpr is set it will be used to break the line.
+Maximum width of text that is being inserted. A longer line will be broken after white space to
+get this width. A zero value disables this. @textwidth is set to 0 when the @paste option is set
+and restored when @paste is reset. See also @formatoptions and |ins-textwidth|. When @formatexpr
+is set it will be used to break the line.
 
 
 @@thesaurus              Book. String. Default = off
@@ -4213,27 +4209,17 @@ Keep the portal width when portals are opened or closed and @equalalways is set.
 @@wrap                   Portal. Boolean. Default = on
 
 This option changes how text is displayed. It doesn't change the text in the book, see
-@textwidth for that. When on, lines longer than the width of the window will wrap and displaying continues on
-the next line.  When off lines will not wrap and only part of long lines will be displayed.  When
-the cursor is moved to a part that is not shown, the screen will scroll horizontally.
-The line will be broken in the middle of a word if necessary.  See @linebreak to get the break at
-a word boundary.
-To make scrolling horizontally a bit more useful, try this:
+@textwidth for that. When on, lines longer than the width of the window will wrap and displaying
+continues on the next line.  When off lines will not wrap and only part of long lines will be
+displayed.  When the cursor is moved to a part that is not shown, the screen will scroll
+horizontally. The line will be broken in the middle of a word if necessary.  See @linebreak to
+get the break at a word boundary. To make scrolling horizontally a bit more useful, try this:
 
    ;set sidescroll=5
    ;set listchars+=precedes:<,extends:>
 
    See @sidescroll, @listchars and |wrap-off|.
 This option can't be set @diff is on.
-
-
-@@wrapmargin             Book. Numeric. Default = 0
-
-Number of characters from the right portal border where wrapping starts. When typing text
-beyond this limit, an <EOL> will be inserted and inserting continues on the next line. Options
-that add a margin, such as @number and @foldcolumn, cause the text width to be further reduced.
-When @textwidth is non-zero, this option is not used. This option is set to 0 when @paste is set
-and restored when @paste is reset. See also @formatoptions and |ins-textwidth|.
 
 
 @@writedelay             Global. Numeric (milliseconds). Default = 0

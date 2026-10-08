@@ -2730,7 +2730,7 @@ pub void
 check_visual_highlight(void) {
    static Boole did_check = false;
    if (fullScreenG) {
-      if (!did_check && getDecoFlags(HLF_V) == 0)
+      if (!did_check && getDecoFlags(HILITE_VisualMode) == 0)
          msg(_("Warning: terminal cannot highlight"));
       did_check = true;
    }
@@ -4367,9 +4367,11 @@ nv_zet(ActionArg* aArg) {
 //Handle a ";" action (start of a command)
 private void
 nv_semicolon(OUT ActionArg* aArg) {
-   Boole isCmdkey = aArg->cmdchar == K_COMMAND || aArg->cmdchar == K_SCRIPT_COMMAND;
+   Boole isCommKey = aArg->cmdchar == K_COMMAND || aArg->cmdchar == K_SCRIPT_COMMAND;
 
-   if (VIsual_active && !isCmdkey) {
+   lo("xxx comm char is %d", aArg->cmdchar);
+
+   if (VIsual_active && !isCommKey) {
       nv_operator(aArg);
       return;
    }
@@ -4378,8 +4380,8 @@ nv_semicolon(OUT ActionArg* aArg) {
       //Using ";" as a movement is characterwise exclusive.
       aArg->oper->motion_type = MCHAR;
       aArg->oper->inclusive = false;
-   } ei (aArg->count0 && !isCmdkey) {
-      //translate "count:" into ";.,.+(count - 1)"
+   } ei (aArg->count0 && !isCommKey) {
+      //translate "count;" into ";.,.+(count - 1)"
       stuffcharReadbuff('.');
       if (aArg->count0 > 1) {
          stuffReadbuff(S",.+");
@@ -4394,7 +4396,7 @@ nv_semicolon(OUT ActionArg* aArg) {
    //get a command line and execute it
    Unt flags = aArg->oper->opTy != OP_NOP ? DOCMD_KEEPLINE : 0;
 
-   int commResult = isCmdkey
+   int commResult = isCommKey
       ? do_cmdkey_command(aArg->cmdchar, flags)
       : doCommand(NULL, scrGetTypedCommand, NULL, flags);
 
@@ -5012,7 +5014,7 @@ nv_gotofile(ActionArg* aArg) {
 
    if (ptr) {
       setpcmark();
-      if (startEditingFile(0, ptr, NULL, NULL, ECMD_LAST, ECMD_HIDE, curPor) == OK
+      if (bookStartEditingFile(0, ptr, NULL, NULL, ECMD_LAST, ECMD_HIDE, curPor) == OK
          && aArg->nchar == 'F' && lnum >= 0
       ) {
          curPor->cursor.lnum = lnum;
@@ -7774,12 +7776,13 @@ changed_cline_bef_curs_win(Portal *po) {
 pub void
 changed_line_abv_curs(void) {
     curPor->cacheState &=
-       ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW |VALID_CHEIGHT|VALID_TOPLINE);
+       ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW|VALID_CHEIGHT|VALID_TOPLINE);
 }
 
 pub void
-changed_line_abv_curs_win(Portal *po) {
-    po->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW|VALID_CHEIGHT|VALID_TOPLINE);
+changed_line_abv_curs_po(Portal *po) {
+    po->cacheState &=
+       ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW|VALID_CHEIGHT|VALID_TOPLINE);
 }
 
 //Display of line has changed for "book", invalidate cursor position and bottomLine.
@@ -9831,9 +9834,9 @@ showMap(MapBlock* mp, int local) {      //true for book-local map
    } while (len < 12);
 
    if (mp->noremap == REMAP_NONE)
-      msgPutsDeco((CS)"*", getDecoFlags(HLF_8));
+      msgPutsDeco((CS)"*", getDecoFlags(HILITE_MetaSpecialKeys));
    ei (mp->noremap == REMAP_SCRIPT)
-      msgPutsDeco((CS)"&", getDecoFlags(HLF_8));
+      msgPutsDeco((CS)"&", getDecoFlags(HILITE_MetaSpecialKeys));
    else
       msg_putchar(' ');
 
@@ -9846,7 +9849,7 @@ showMap(MapBlock* mp, int local) {      //true for book-local map
    //Use false below if we only want things like <Up> to show up as such on
    //the rhs, and not M-x etc, true gets both -- webb
    if (*mp->rhs == ZERO)
-      msgPutsDeco((CS)"<Nop>", getDecoFlags(HLF_8));
+      msgPutsDeco((CS)"<Nop>", getDecoFlags(HILITE_MetaSpecialKeys));
    else
       msg_outtrans_special(mp->rhs, false, 0);
    if (p_verbose > 0)
@@ -13099,7 +13102,7 @@ edit_putchar(int c, Boole needDoHilite) {
 
    update_topline();   //just in case topLine isn't valid
    validate_cursor();
-   char decoFl = needDoHilite ? getDecoFlags(HLF_8) : 0;
+   char decoFl = needDoHilite ? getDecoFlags(HILITE_MetaSpecialKeys) : 0;
    pc_row = curPor->windowRow + curPor->cursorRow;
    pc_col = curPor->windowCol;
    pc_status = PC_STATUS_UNSET;
@@ -13319,9 +13322,9 @@ insertchar0(
    int second_indent      //indent for second line if >= 0
 ){
    CS p;
-   int force_format = flags & INSCHAR_FORMAT;
+   Boole force_format = (flags & INSCHAR_FORMAT) != 0;
 
-   int textwidth = comp_textwidth(force_format);
+   Unt textwidth = curBook->o.textWidth;
    int fo_ins_blank = has_format_option(FO_INS_BLANK);
 
    //Try to break the line in two or more pieces when:
@@ -13337,15 +13340,14 @@ insertchar0(
    //        before the insert.
    //     - 'formatoptions' doesn't have 'b' or a blank was inserted at or
    //       before 'textwidth'
-   if (textwidth > 0
-       && (force_format
-            || (!SPACE_OR_TAB(c)
-                && (curPor->cursor.lnum != insertStartG.lnum
-                  || ((!has_format_option(FO_INS_LONG) || insertStartG_textlen <= (ColNr)textwidth)
-                      && (!fo_ins_blank || insertStartG_blank_vcol <= (ColNr)textwidth)
-                     ))
-               )
-          )
+   if ((force_format
+         || (!SPACE_OR_TAB(c)
+             && (curPor->cursor.lnum != insertStartG.lnum
+               || ((!has_format_option(FO_INS_LONG) || insertStartG_textlen <= (ColNr)textwidth)
+                   && (!fo_ins_blank || insertStartG_blank_vcol <= (ColNr)textwidth)
+                  ))
+            )
+       )
    ) {
       //Format with @formatexpr when it's set.  Use internal formatting
       //when @formatexpr isn't set or it returns non-zero.
@@ -14650,7 +14652,7 @@ whBracketedPaste(PasteMode mode, int drop) {
       if (!drop) {
          switch (mode) {
          case PASTE_CMDLINE:
-            put_on_cmdline(buf, idx, true);
+            scrPutOnCommline(buf, idx, true);
             break;
 
          case PASTE_INSERT:
@@ -15452,7 +15454,7 @@ has_compl_option(int dict_opt) {
       ctrl_x_mode = CTRL_X_NORMAL;
       editSubmodeMsgG = NULL;
       msgDeco(dict_opt ? _("'dictionary' option is empty")
-              : _("'thesaurus' option is empty"), getDecoFlags(HLF_E));
+              : _("'thesaurus' option is empty"), getDecoFlags(HILITE_ErrorMsg));
       if (emsg_silent == 0 && !in_assert_fails)    {
          setcursor();
          termOutFlush();
@@ -16649,7 +16651,7 @@ filterFromFiles(
       if (flags != DICT_EXACT && !isAutocomplActiveP) {
          msg_hist_off = true;   //reset in msgTruncDeco()
          eeSnprintf(ioBuffG, IOSIZE, _("Scanning dictionary: %s"), files.c[i]);
-         (void)msgTruncDeco(ioBuffG, getDecoFlags(HLF_R));
+         (void)msgTruncDeco(ioBuffG, getDecoFlags(HILITE_YesNoQuestions));
       }
 
       if (!fp)
@@ -18198,7 +18200,7 @@ process_next_cpt_value(
                    : st->scannedBook->currFileName)
                : bookSpName(st->scannedBook)
          );
-         (void)msgTruncDeco(ioBuffG, getDecoFlags(HLF_R));
+         (void)msgTruncDeco(ioBuffG, getDecoFlags(HILITE_YesNoQuestions));
       }
    } ei (*st->e_cpt == ZERO)
       status = INS_COMPL_CPT_END;
@@ -18229,7 +18231,7 @@ process_next_cpt_value(
             if (!isAutocomplActiveP) {
                 msg_hist_off = true;   //reset in msgTruncDeco()
                 eeSnprintf(ioBuffG, IOSIZE, _("Scanning tags."));
-                (void)msgTruncDeco(ioBuffG, getDecoFlags(HLF_R));
+                (void)msgTruncDeco(ioBuffG, getDecoFlags(HILITE_YesNoQuestions));
             }
          } else
             insertCompletionType = UNT;
@@ -20214,13 +20216,13 @@ ins_compl_show_statusmsg(void) {
       editSubmodeExtraMsgG = compl_status_adding() && compl_length > 1
                ? _("Hit end of paragraph")
                : _("Pattern not found");
-      editSubmodeHiG = HLF_E;
+      editSubmodeHiG = HILITE_ErrorMsg;
    }
 
    if (!editSubmodeExtraMsgG) {
       if (match_at_original_text(compl_curr_match)) {
          editSubmodeExtraMsgG = (CS)_("Back at original");
-         editSubmodeHiG = HLF_W;
+         editSubmodeHiG = HILITE_WarningMsg;
       } ei (compl_cont_status & CONT_S_IPOS) {
          editSubmodeExtraMsgG = (CS)_("Word from other line");
          editSubmodeHiG = 0;
@@ -20248,7 +20250,7 @@ ins_compl_show_statusmsg(void) {
                   match_ref, sizeof(match_ref), _("match %d"), compl_curr_match->cp_number
                );
             editSubmodeExtraMsgG = match_ref;
-            editSubmodeHiG = HLF_R;
+            editSubmodeHiG = HILITE_YesNoQuestions;
          }
       }
    }
@@ -21250,35 +21252,6 @@ checkAutoFormat(int end_insert){      //true when ending Insert mode
          did_add_space = false;
       }
    }
-}
-
-//Find out textwidth to be used for formatting:
-//if 'textwidth' option is set, use it
-//ei 'wrapmargin' option is set, use curPor->width - 'wrapmargin'
-//if invalid value, use 0.
-//Set default to window width (maximum 79) for "gq" operator.
-pub int
-comp_textwidth(int ff) {  //force formatting (for "gq" command)
-   int textwidth = curBook->o.textWidth;
-   if (textwidth == 0 && curBook->o.wrapMargin) {
-      //The width is the portal width minus 'wrapmargin' minus all the
-      //things that add to the margin.
-      textwidth = curPor->width - curBook->o.wrapMargin;
-      if (curBook == commPortBookG)
-         textwidth--;
-      if (curPor->o.signColumn)
-         textwidth--;
-      //for relativeNumber
-      textwidth -= 8;
-   }
-   if (textwidth < 0)
-      textwidth = 0;
-   if (ff && textwidth == 0) {
-      textwidth = curPor->width - 1;
-      if (textwidth > 79)
-          textwidth = 79;
-   }
-   return textwidth;
 }
 
 //}}}

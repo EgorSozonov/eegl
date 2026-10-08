@@ -96,7 +96,7 @@ typedef struct {
 typedef struct {
    Pos search_start;   //where 'incsearch' starts searching
    Pos save_cursor;
-   int winid;      //window where this state is valid
+   int portId;      //portal where this state is valid
    ViewState init_viewstate;
    ViewState old_viewstate;
    Pos match_start;
@@ -383,9 +383,16 @@ private int cmdline_browse_history(
 private void init_ccline(int firstc, int indent);
 private Arr(Byte) getCommandWorker(
    Unt firstc,
-   long count,   //only used for incremental search
+   Long count,   //only used for incremental search
    int indent,   //indent for inside conditionals
    Boole clear_ccline
+);
+private Arr(Byte) getcmdline_prompt(
+   Unt firstc,
+   CS prompt,   //command line prompt
+   char deco,      //decorations for prompt
+   int context,   //type of expansion
+   CS completionFn   //user-defined expansion argument
 );
 private int commlineCharsize(int idx);
 private void set_cmdspos(void);
@@ -394,7 +401,7 @@ private void correct_cmdspos(int idx, int cells);
 private void deallocCommBuf(void);
 private void allocateCommBuf(int len);
 private void draw_cmdline(int start, int len);
-private void saveCommline(CommlineInfo *ccp);
+private void saveCommline(CommlineInfo* ccp);
 private void restoreCommline(CommlineInfo *ccp);
 private int cmdline_paste(
     int regname,
@@ -406,10 +413,10 @@ private int ccheck_abbr(int c);
 private CommlineInfo * get_ccline_ptr(void);
 private int getCommlineType(void);
 private CS get_cmdline_str(void);
-private Byte * get_cmdline_completion_pattern(void);
+private Byte* get_cmdline_completion_pattern(void);
 private CS get_cmdline_completion(void);
 private int set_cmdline_str(Byte *str, int pos);
-private int setCommlinePos(int      pos);
+private int setCommlinePos(int pos);
 private Unt openCommPort(void);
 private Kv * get_commandtype(int expand);
 private void uc_list(CS name, Unt name_len);
@@ -1822,7 +1829,7 @@ c_scriptnames(Invocation* invo) {
    }
 }
 
-//Get a pointer to a script name. Used for ":verbose set". Message appended to "Last set from "
+//Get a pointer to a script name. Used for ";verbose set". Message appended to "Last set from "
 pub CS
 get_scriptname(ScriptId id) {
    switch (id) {
@@ -2206,7 +2213,7 @@ get_autoload_prefix(ScriptItem *si) {
 //Return the autoload script name for a function or variable name. Return NULL when out of memory.
 //Caller must make sure that "name" contains AUTOLOAD_CHAR.
 pub CS
-autoload_name(Byte *name) {
+autoload_name(CS name) {
    Byte   *p, *q = NULL;
 
    //Get the script file name: replace '#' with '/', append ".vim".
@@ -3757,7 +3764,7 @@ redrawPortalStatusLine_matches(
       drawText(builder, row, 0, deco.flags);
       if (selstart != NULL && highlight) {
          *selend = ZERO;
-         drawText(selstart, row, selstart_col, getDecoFlags(HLF_WM));
+         drawText(selstart, row, selstart_col, getDecoFlags(HILITE_WildcardMenu));
       }
 
       fillRowsWithTwoChars(row, row + 1, clen, (int)visibleColsG, fillchar, fillchar, deco);
@@ -4099,12 +4106,12 @@ showmatches_oneline(
    int lastlen = 999;
    for (Unt j = linenr; j < matches->len; j += lines) {
       if (xp->context == EXPAND_TAGS_LISTFILES) {
-         msgOuttransDeco(matches->c[j], getDecoFlags(HLF_D));
+         msgOuttransDeco(matches->c[j], getDecoFlags(HILITE_Directories));
          p = matches->c[j] + STRLEN(matches->c[j]) + 1;
          msg_advance(maxlen + 1);
          msg_puts(p);
          msg_advance(maxlen + 3);
-         outputShortenedToALine(text(p + 2), getDecoFlags(HLF_D));
+         outputShortenedToALine(text(p + 2), getDecoFlags(HILITE_Directories));
          break;
       }
       for (i = maxlen - lastlen; --i >= 0; )
@@ -4229,13 +4236,13 @@ showmatches(Expand *xp, int wildmenu, int noselect){
          lines = (matches.len + columns - 1) / columns;
       }
 
-      attr = getDecoFlags(HLF_D);   //find out highlighting for directories
+      attr = getDecoFlags(HILITE_Directories);   //find out highlighting for directories
 
       if (xp->context == EXPAND_TAGS_LISTFILES) {
-          msgPutsDeco(_("tagname"), getDecoFlags(HLF_T));
+          msgPutsDeco(_("tagname"), getDecoFlags(HILITE_OutputOfAutocmd));
           msg_clr_eos();
           msg_advance(maxlen - 3);
-          msgPutsDeco(_(" kind file\n"), getDecoFlags(HLF_T));
+          msgPutsDeco(_(" kind file\n"), getDecoFlags(HILITE_OutputOfAutocmd));
       }
 
       //list the files line by line
@@ -4420,15 +4427,15 @@ addstar(Text fname, Unt context) {  //EXPAND_FILES etc.
 //EXPAND_UNSUCCESSFUL       Used sometimes when there is something illegal on
 //           the command line, like an unknown command.
 //EXPAND_NOTHING       Unrecognised context for completion, use char like
-//           a normal char, rather than for completion.   eg :s/^I/
+//           a normal char, rather than for completion.   eg ;s/^I/
 //EXPAND_COMMANDS       Cursor is still touching the command, so complete it.
-//EXPAND_BUFFERS   Complete file names for :buf and :sbuf commands.
+//EXPAND_BUFFERS   Complete file names for ;buf and ;sbuf commands.
 //EXPAND_FILES     After command with XFILE set, or after setting
-//                 with P_EXPAND set.   eg :e ^I, :w>>^I
+//                 with P_EXPAND set.   eg ;e ^I, :w>>^I
 //EXPAND_DIRECTORIES       In some cases this is used instead of the latter when we know only
-//   directories are of interest. E.g.  :set dir=^I  and  :cd ^I
-//EXPAND_SHELLCMD       After ":!comm", ":r !comm"  or ":w !comm".
-//EXPAND_OPTION       Complete variable names.  eg :set d^I
+//   directories are of interest. E.g.  ;set dir=^I  and  :cd ^I
+//EXPAND_SHELLCMD       After ";!comm", ";r !comm"  or ";w !comm".
+//EXPAND_OPTION       Complete variable names. eg ;set d^I
 //EXPAND_TAGS          Complete tags from the files in p_tags.  eg :ta a^I
 //EXPAND_TAGS_LISTFILES   As above, but list filenames on ^D, after :tselect
 //EXPAND_HELP          Complete tags from the file 'helpfile'/tags
@@ -4459,8 +4466,8 @@ set_expand_context(Expand *xp){
       return;
    }
 
-   //Only handle ':', '>', or '=' command-lines, or expression input
-   if (ccline->cmdfirstc != ':'
+   //Only handle ';', '>', or '=' command-lines, or expression input
+   if (ccline->cmdfirstc != ';'
        && ccline->cmdfirstc != '>' && ccline->cmdfirstc != '='
        && !ccline->input_fn
    ) {
@@ -6131,7 +6138,7 @@ expandShellCommand(
          seplen = 0;
       } else {
          e = firstOccurrence(s, ':');
-         if (e == NULL)
+         if (!e)
             e = s + STRLEN(s);
 
          pathlen = (Unt)(e - s);
@@ -6457,7 +6464,7 @@ wildmenu_process_key_filenames(CommlineInfo *cclp, Unt key, Expand *xp){
          j = 0;
       if (j > 0) {
          cmdline_del(cclp, j);
-         put_on_cmdline(upseg + 1, 3, false);
+         scrPutOnCommline(upseg + 1, 3, false);
       } ei (cclp->cmdpos > i)
          cmdline_del(cclp, i);
 
@@ -6963,7 +6970,7 @@ get_hisnum(int hist_type) {
 //Translate a history character to the associated type number.
 pub int
 hist_char2type(int c) {
-   if (c == ':')
+   if (c == ';')
       return HIST_CMD;
    if (c == '=')
       return HIST_EXPR;
@@ -7562,7 +7569,7 @@ c_history(Invocation* invo) {
 private CommlineInfo commInfo;
 
 private int new_cmdpos;   //position set by setCommlinePos()
-private int extra_char = ZERO;  //extra character to display when redrawing the command line
+private Unt extraCharP = ZERO;  //extra character to display when redrawing the command line
 private int extra_char_shift;
 
 private CS getCommandWorker(Unt firstc, long count, int indent, Boole clear_ccline);
@@ -7657,7 +7664,7 @@ restore_viewstate(ViewState *vs) {
 
 private void
 init_incsearch_state(IncSearch *is_state) {
-   is_state->winid = curPor->id;
+   is_state->portId = curPor->id;
    is_state->match_start = curPor->cursor;
    is_state->did_incsearch = false;
    is_state->incsearch_postponed = false;
@@ -8319,7 +8326,7 @@ commline_wildchar_complete(
       else
          res = nextwild(OUT xp, WILD_EXPAND_KEEP, options, escape);
 
-      //Remove popup window if no completion items are available
+      //Remove popup portal if no completion items are available
       if (redraw_if_menu_empty && xp->files.len <= 0)
           drawUpdateScreen(0);
 
@@ -8462,7 +8469,7 @@ cmdline_toggle_langmap(long *b_im_ptr) {
 private int
 cmdline_insert_reg(int *gotesc) {
    int save_new_cmdpos = new_cmdpos;
-   putcmdline('"', true);
+   scrPutCharOnCommline('"', true);
    ++no_mapping;
    ++allow_keys;
    int c = plain_vgetc();    //CTRL-R <char>
@@ -8471,7 +8478,7 @@ cmdline_insert_reg(int *gotesc) {
       i = Ctrl_R;      //CTRL-R CTRL-O == CTRL-R CTRL-R
    if (i == Ctrl_R)
       c = plain_vgetc();   //CTRL-R CTRL-R <char>
-    extra_char = ZERO;
+    extraCharP = ZERO;
     --no_mapping;
     --allow_keys;
    //Insert the result of an expression.
@@ -8709,7 +8716,7 @@ init_ccline(int firstc, int indent) {
 
 //getCommline() - accept a command line starting with firstc.
 //
-//firstc == ':'       get ":" command line.
+//firstc == ';'       get ";" command line.
 //firstc == '/' or '?'       get search pattern
 //firstc == '='       get expression
 //firstc == '@'       get text for input() function
@@ -8725,7 +8732,7 @@ init_ccline(int firstc, int indent) {
 pub CS
 getCommline(
    Unt firstc,
-   long count,   //only used for incremental search
+   Long count,   //only used for incremental search
    int indent,   //indent for inside conditionals
    GetlineAlgo
 ){
@@ -8735,7 +8742,7 @@ getCommline(
 private Arr(Byte)
 getCommandWorker(
    Unt firstc,
-   long count,   //only used for incremental search
+   Long count,   //only used for incremental search
    int indent,   //indent for inside conditionals
    Boole clear_ccline
 ) {  //clear commInfo first
@@ -8746,9 +8753,6 @@ getCommandWorker(
    int gotesc = false;      //true when <ESC> just typed
    int do_abbr;      //when true check for abbr.
    Text lookfor = (Text){NULL, 0};   //string to match
-   int hiscnt;         //current history line in use
-   int histype;      //history type to be used
-   IncSearch is_state;
    int did_wild_list = false;   //did wild_list() recently
    int wim_index = 0;      //index in wim_flags[]
    int res;
@@ -8783,7 +8787,8 @@ getCommandWorker(
       break_ctrl_c = true;
    }
 
-   init_incsearch_state(&is_state);
+   IncSearch is_state;
+   init_incsearch_state(OUT &is_state);
 
    init_ccline(firstc, indent);
 
@@ -8819,7 +8824,7 @@ getCommandWorker(
    }
 
    //Avoid scrolling when called by a recursive doCommand(), e.g. when
-   //doing ":@0" when register 0 doesn't contain a CR.
+   //doing ";@0" when register 0 doesn't contain a CR.
    msg_scroll = false;
 
    stateG = MODE_COMMLINE;
@@ -8846,8 +8851,9 @@ getCommandWorker(
       may_trigger_modechanged();
 
    init_history();
-   hiscnt = getHistLen();   //set hiscnt to impossible history value
-   histype = hist_char2type(firstc);
+    //current history line in use
+   int hiscnt = getHistLen();   //set hiscnt to impossible history value
+   int histype = hist_char2type(firstc);
 
    //If something above caused an error, reset the flags, we do want to type
    //and execute commands. Display may be messed up a bit.
@@ -8856,12 +8862,11 @@ getCommandWorker(
 
    //Redraw the statusline in case it uses the current mode using the mode() function.
    if (!cmd_silent && msg_scrolled == 0) {
-      int   found_one = false;
-      Portal   *wp;
-
-      FOR_ALL_PORTALS(wp) {
-         if (wp->o.statusLine) {
-            wp->statusLineNeedsRedraw = true;
+      int found_one = false;
+      Portal* po;
+      FOR_ALL_PORTALS(po) {
+         if (po->o.statusLine) {
+            po->statusLineNeedsRedraw = true;
             found_one = true;
          }
       }
@@ -8875,9 +8880,9 @@ getCommandWorker(
 
    //Collect the command string, handling editing keys.
    for (;;) {
-      int   end_wildmenu;
-      int   prev_cmdpos = commInfo.cmdpos;
-      int   skip_pum_redraw = false;
+      int end_wildmenu;
+      int prev_cmdpos = commInfo.cmdpos;
+      int skip_pum_redraw = false;
 
       EE_CLEAR(prev_cmdbuff);
 
@@ -8922,7 +8927,7 @@ getCommandWorker(
 
       //Ignore gotInterruptG when CTRL-C was typed here.
       //Don't ignore it in :global, we really need to break then, e.g., for
-      //":g/pat/normal /pat" (without the <CR>).
+      //";g/pat/normal /pat" (without the <CR>).
       //Don't ignore it for the input() function.
       if ((c == Ctrl_C || c == extraInterruptCharG)
             && firstc != '@'
@@ -8963,22 +8968,23 @@ getCommandWorker(
       }
 
       //Trigger CmdlineLeavePre autocommand
-      if (keyWasTypedG && (c == '\n' || c == '\r' || c == K_KENTER || c == ESC
+      if (keyWasTypedG
+            && (c == '\n' || c == '\r' || c == K_KENTER || c == ESC
              || c == extraInterruptCharG
              || c == Ctrl_C)
+            && ((c == ESC || c == Ctrl_C) && (wim_flags[0] & WIM_LIST) != 0)
       ){
-         if ((c == ESC || c == Ctrl_C) && (wim_flags[0] & WIM_LIST))
-            setHlsearch(false);
+         setHlsearch(false);
       }
 
       //The wildmenu is cleared if the pressed key is not used for navigating the wild menu
-      //(i.e. the key is not 'wildchar' or 'wildcharm' or Ctrl-N or Ctrl-P or Ctrl-A or Ctrl-L).
+      //(i.e. the key is not @wild.char or @wild.charm or Ctrl-N or Ctrl-P or Ctrl-A or Ctrl-L).
       //If the popup menu is displayed, then PageDown and PageUp keys are
       //also used to navigate the menu.
       end_wildmenu = (!key_is_wc
          && c != Ctrl_N && c != Ctrl_P && c != Ctrl_A && c != Ctrl_L);
-      end_wildmenu = end_wildmenu && (!cmdline_pum_active() ||
-                (c != K_PAGEDOWN && c != K_PAGEUP
+      end_wildmenu = end_wildmenu && (!cmdline_pum_active()
+            || (c != K_PAGEDOWN && c != K_PAGEUP
                  && c != K_KPAGEDOWN && c != K_KPAGEUP));
 
       //free expanded names when finished walking through matches
@@ -9015,13 +9021,13 @@ getCommandWorker(
          c = Ctrl_BSL;      //backslash key not processed by cmdline_handle_ctrl_bsl()
       }
 
-      if (c == Ctrl_F || c == K_COMMPORT) {
+      if ((c == Ctrl_F || c == K_COMMPORT)
+         && ((c == K_COMMPORT || ex_normal_busy == 0) && gotInterruptG == false)
+      ) {
           //TODO: why is ex_normal_busy checked here?
-          if ((c == K_COMMPORT || ex_normal_busy == 0) && gotInterruptG == false) {
-             //Open a portal into the command line history
-             c = openCommPort();
-             some_key_typed = true;
-          }
+          //Open a portal into the command line history
+          c = openCommPort();
+          some_key_typed = true;
       }
 
       if (c == '\n' || c == '\r' || c == K_KENTER || (c == ESC && !keyWasTypedG)) {
@@ -9035,7 +9041,7 @@ getCommandWorker(
          break;
       }
 
-      //Completion for 'wildchar', 'wildcharm', and wildtrigger()
+      //Completion for @wild.char, @wild.charm, and wildtrigger()
       if ((c == p_wc && !gotesc && keyWasTypedG) || c == p_wcm || c == K_WILD) {
          if (c == K_WILD)
             ++emsg_silent;  //Silence the bell
@@ -9081,7 +9087,7 @@ getCommandWorker(
       //If already used to cancel/accept wildmenu, don't process the key further.
       if (wild_type == WILD_CANCEL || wild_type == WILD_APPLY) {
          //Apply search highlighting
-         if (is_state.winid != curPor->id)
+         if (is_state.portId != curPor->id)
             init_incsearch_state(&is_state);
          if (keyWasTypedG || vpeekc() == ZERO)
             may_do_incsearch_highlighting(firstc, count, &is_state);
@@ -9313,14 +9319,14 @@ getCommandWorker(
       case Ctrl_V:
       case Ctrl_Q: {
          ignore_drag_release = true;
-         putcmdline('^', true);
+         scrPutCharOnCommline('^', true);
 
          //Get next (two) character(s). Do not change any
          //modifyOtherKeys ESC sequence to a normal key for CTRL-SHIFT-V.
          c = get_literal(modMaskG & MOD_MASK_SHIFT);
 
          do_abbr = false;       //don't do abbreviation now
-         extra_char = ZERO;
+         extraCharP = ZERO;
          //may need to remove ^ when composing char was typed
          if (utf_iscomposing(c) && !cmd_silent) {
             draw_cmdline(commInfo.cmdpos, commInfo.cmdlen - commInfo.cmdpos);
@@ -9338,9 +9344,9 @@ getCommandWorker(
             gotesc = true;   //will free commInfo.commBuf after putting it in history
             goto returncmd;   //back to Normal mode
          }
-         //Normal character with no special meaning.  Just set modMaskG
-         //to 0x0 so that typing Shift-Space in the GUI doesn't enter
-         //the string <S-Space>.  This should only happen after ^V.
+         //Normal character with no special meaning. Just set modMaskG to 0x0 so that typing
+         //Shift-Space in the GUI doesn't enter the string <S-Space>. This should only happen
+         //after ^V.
          if (!IS_SPECIAL(c))
             modMaskG = 0x0;
          break;
@@ -9349,7 +9355,7 @@ getCommandWorker(
 
       if (do_abbr && (IS_SPECIAL(c) || !eeIsWordc(c))
             && (ccheck_abbr(
-               //Add ABBR_OFF for characters above 0x100, this is what check_abbr() expects.
+                //Add ABBR_OFF for characters above 0x100, this is what check_abbr() expects.
                   (c >= 0x100) ? (c + ABBR_OFF) : c
                 )
                 || c == Ctrl_RSB)
@@ -9358,11 +9364,11 @@ getCommandWorker(
 
       //put the character in the command line
       if (IS_SPECIAL(c) || modMaskG != 0)
-         put_on_cmdline(get_special_key_name(c, modMaskG), -1, true);
+         scrPutOnCommline(get_special_key_name(c, modMaskG), -1, true);
       else {
          j = mb_char2bytes(c, ioBuffG);
          ioBuffG[j] = ZERO;   //exclude composing chars
-         put_on_cmdline(ioBuffG, j, true);
+         scrPutOnCommline(ioBuffG, j, true);
       }
       goto commlineChanged;
 
@@ -9380,8 +9386,8 @@ getCommandWorker(
          continue;
 
    commlineChanged:
-      //If the window changed incremental search state is not valid.
-      if (is_state.winid != curPor->id)
+      //If the portal changed, incremental search state is not valid.
+      if (is_state.portId != curPor->id)
          init_incsearch_state(&is_state);
       if (xp.context == EXPAND_NOTHING && (keyWasTypedG || vpeekc() == ZERO))
          may_do_incsearch_highlighting(firstc, count, &is_state);
@@ -9417,7 +9423,7 @@ returncmd:
       }
 
       if (gotesc)
-          abandon_cmdline();
+         abandon_cmdline();
    }
 
    //If the screen was shifted up, redraw the whole screen (later).
@@ -9446,9 +9452,9 @@ theend:
 
       --depth;
       if (did_save_ccline)
-          restoreCommline(&save_ccline);
+         restoreCommline(&save_ccline);
       else
-          commInfo.commBuf = NULL;
+         commInfo.commBuf = NULL;
 
       eeglFree(prev_cmdbuff);
       return p;
@@ -9458,21 +9464,21 @@ theend:
 //Get a command line with a prompt.
 //This is prepared to be called recursively from getCommline() (e.g. by f_input() when evaluating
 //an expression from CTRL-R =). Return the command line in allocated memory, or NULL.
-pub Arr(Byte)
+private Arr(Byte)
 getcmdline_prompt(
-   Unt      firstc,
+   Unt firstc,
    CS prompt,   //command line prompt
-   char      deco,      //decorations for prompt
-   int      context,   //type of expansion
-   CS completionFn)   //user-defined expansion argument
-{
+   char deco,      //decorations for prompt
+   int context,   //type of expansion
+   CS completionFn   //user-defined expansion argument
+){
    Arr(Byte) s;
-   CommlineInfo   save_ccline;
-   int         did_save_ccline = false;
-   int         msgColSaved = msgColG;
-   int         msg_silent_save = msg_silent;
+   CommlineInfo save_ccline;
+   int did_save_ccline = false;
+   int msgColSaved = msgColG;
+   int msg_silent_save = msg_silent;
 
-   if (commInfo.commBuf != NULL) {
+   if (commInfo.commBuf) {
       //Save the values of the current cmdline and restore them below.
       saveCommline(&save_ccline);
       did_save_ccline = true;
@@ -9491,11 +9497,10 @@ getcmdline_prompt(
       restoreCommline(&save_ccline);
 
    msg_silent = msg_silent_save;
-   //Restore msgColG, the prompt from input() may have changed it.
-   //But only if called recursively and the commandline is therefore being
-   //restored to an old one; if not, the input() prompt stays on the screen,
-   //so we need its modified msgColG left intact.
-   if (commInfo.commBuf != NULL)
+   //Restore msgColG, the prompt from input() may have changed it. But only if called
+   //recursively and the commandline is therefore being restored to an old one; if not, the
+   //input() prompt stays on the screen, so we need its modified msgColG left intact.
+   if (commInfo.commBuf)
       msgColG = msgColSaved;
 
    return s;
@@ -9558,7 +9563,7 @@ check_opt_wim(void) {
 }
 
 //Return true when the text must not be changed and we can't switch to
-//another window or buffer.  true when editing the command line, evaluating 'balloonexpr', etc.
+//another portal or book. True when editing the command line, evaluating 'balloonexpr', etc.
 pub int
 text_locked(void) {
    if (commPortTypeG != 0)
@@ -9667,7 +9672,7 @@ correct_cmdspos(int idx, int cells) {
 //Get a command line for the ";" action
 pub CS
 scrGetTypedCommand(
-   Unt  c,      //normally ';', NUL for ":append"
+   Unt c,      //normally ';', ZERO for ";append"
    void*,
    int indent,      //indent for inside conditionals
    GetlineAlgo options
@@ -9698,8 +9703,8 @@ cmdline_getvcol_cursor(void) {
    if (commInfo.commBuf == NULL || commInfo.cmdpos > commInfo.cmdlen)
       return MAXCOL;
 
-   ColNr   col;
-   int   i = 0;
+   ColNr col;
+   int i = 0;
 
    for (col = 0; i < commInfo.cmdpos; ++col)
       i += utfCharLen(commInfo.commBuf + i);
@@ -9746,8 +9751,8 @@ reallocateCommBuf(int len) {
 
    if (commInfo.xpc && commInfo.xpc->input.len > 0
        && commInfo.xpc->context != EXPAND_NOTHING
-       && commInfo.xpc->context != EXPAND_UNSUCCESSFUL)
-    {
+       && commInfo.xpc->context != EXPAND_UNSUCCESSFUL
+   ) {
       int i = (int)(commInfo.xpc->input.c - p);
 
       //If pattern points inside the old commannd buff it needs to be adjusted
@@ -9767,11 +9772,12 @@ draw_cmdline(int start, int len) {
    msgTranslatedSlice((Text){commInfo.commBuf + start, len});
 }
 
-//Put a character on the command line.  Shifts the following text to the
+//Put a character on the command line. Shifts the following text to the
 //right when "shift" is true.  Used for CTRL-V, CTRL-K, etc.
 //"c" must be printable (fit in one display cell)!
 pub void
-putcmdline(int c, int shift) {
+scrPutCharOnCommline(Unt c, int shift) {
+   lo("xxx put char on commline %d", c);
    if (cmd_silent)
       return;
    msg_no_more = true;
@@ -9780,13 +9786,13 @@ putcmdline(int c, int shift) {
       draw_cmdline(commInfo.cmdpos, commInfo.cmdlen - commInfo.cmdpos);
    msg_no_more = false;
    cursorcmd();
-   extra_char = c;
+   extraCharP = c;
    extra_char_shift = shift;
 }
 
-//Undo a putcmdline(c, false).
+//Undo a scrPutCharOnCommline(c, false).
 pub void
-unputcmdline(void) {
+scrUndoPutCharOnCommline(void) {
    if (cmd_silent)
       return;
    msg_no_more = true;
@@ -9796,7 +9802,7 @@ unputcmdline(void) {
       draw_cmdline(commInfo.cmdpos, utfCharLen(commInfo.commBuf + commInfo.cmdpos));
    msg_no_more = false;
    cursorcmd();
-   extra_char = ZERO;
+   extraCharP = ZERO;
 }
 
 //Put the given string, of the given length, onto the command line.
@@ -9805,20 +9811,18 @@ unputcmdline(void) {
 //part will be redrawn, otherwise it will not.  If this function is called
 //twice in a row, then 'redraw' should be false and redrawcmd() should be called afterwards.
 pub int
-put_on_cmdline(Byte *str, int len, int redraw) {
-   int      retval;
-   Unt      i;
-   int      m;
-   int      c;
+scrPutOnCommline(CS str, int len, int redraw) {
+   Unt i;
+   int m;
+   int c;
 
    if (len < 0)
       len = (int)STRLEN(str);
 
    //Check if commInfo.commBuf needs to be longer
-   if (commInfo.cmdlen + len + 1 >= commInfo.cmdbufflen)
-      retval = reallocateCommBuf(commInfo.cmdlen + len + 1);
-   else
-      retval = OK;
+   int retval = (commInfo.cmdlen + len + 1 >= commInfo.cmdbufflen)
+      ? reallocateCommBuf(commInfo.cmdlen + len + 1)
+      : OK;
 
    if (retval == OK) {
       if (!commInfo.overstrike) {
@@ -9830,11 +9834,11 @@ put_on_cmdline(Byte *str, int len, int redraw) {
          //Count nr of characters in the new string.
          m = 0;
          for (i = 0; i < (Unt)len; i += utfCharLen(str + i))
-             ++m;
+            ++m;
          //Count nr of bytes in cmdline that are overwritten by these characters.
          for (i = commInfo.cmdpos; i < (Unt)commInfo.cmdlen && m > 0;
                 i += utfCharLen(commInfo.commBuf + i))
-             --m;
+            --m;
          if (i < (Unt)commInfo.cmdlen) {
             MEMMOVE(commInfo.commBuf + commInfo.cmdpos + len,
                commInfo.commBuf + i, (Unt)(commInfo.cmdlen - i));
@@ -9861,8 +9865,8 @@ put_on_cmdline(Byte *str, int len, int redraw) {
          commInfo.cmdspos -= i;
          msgColG -= i;
          if (msgColG < 0) {
-             msgColG += visibleColsG;
-             --msgRowG;
+            msgColG += visibleColsG;
+            --msgRowG;
          }
       }
 
@@ -9901,18 +9905,18 @@ put_on_cmdline(Byte *str, int len, int redraw) {
       }
    }
    if (redraw)
-   msg_check();
-    return retval;
+      msg_check();
+   return retval;
 }
 
-private CommlineInfo   prev_ccline;
-private int      prev_ccline_used = false;
+private CommlineInfo prev_ccline;
+private int prev_ccline_used = false;
 
 //Save commInfo, because obtaining the "=" register may execute "normal :comm"
 //and overwrite it.  But get_cmdline_str() may need it, thus make it
 //available globally in prev_ccline.
 private void
-saveCommline(CommlineInfo *ccp) {
+saveCommline(CommlineInfo* ccp) {
    if (!prev_ccline_used) {
       CLEAR_FIELD(prev_ccline);
       prev_ccline_used = true;
@@ -9941,10 +9945,8 @@ cmdline_paste(
     int literally,   //Insert text literally instead of "as typed"
     int remcr      //remove trailing CR
 ){
-   long      i;
-   Byte      *arg;
-   Byte      *p;
-   int         allocated;
+   Byte* arg;
+   Byte* p;
 
    //check for valid regname; also accept special characters for CTRL-R in the command line
    if (regname != Ctrl_F && regname != Ctrl_P && regname != Ctrl_W
@@ -9963,20 +9965,22 @@ cmdline_paste(
    //Need to set "textlock" to avoid nasty things like going to another
    //buffer when evaluating an expression.
    ++textlock;
-   i = get_spec_reg(regname, &arg, &allocated, true);
+   int allocated;
+   Long i = get_spec_reg(regname, &arg, OUT &allocated, true);
+
    --textlock;
 
    if (i) {
       //Got the value of a special register in "arg".
-      if (arg == NULL)
-          return FAIL;
+      if (!arg)
+         return FAIL;
 
       //When 'incsearch' is set and CTRL-R CTRL-W used: skip the duplicate
       //part of the word.
       p = arg;
       if (p_is && regname == Ctrl_W) {
-          Byte  *w;
-          int       len;
+         Byte* w;
+         int len;
 
          //Locate start of last word in the comm buffer.
          for (w = commInfo.commBuf + commInfo.cmdpos; w > commInfo.commBuf; ) {
@@ -9992,7 +9996,7 @@ cmdline_paste(
 
       cmdline_paste_str(p, literally);
       if (allocated)
-          eeglFree(arg);
+         eeglFree(arg);
       return OK;
     }
 
@@ -10004,10 +10008,10 @@ cmdline_paste(
 //When "literally" is false, insert as typed, but don't leave the command line.
 pub void
 cmdline_paste_str(CS s, int literally) {
-   Unt      c, cv;
+   Unt c, cv;
 
    if (literally)
-      put_on_cmdline(s, -1, true);
+      scrPutOnCommline(s, -1, true);
    else {
       while (*s != ZERO) {
          cv = *s;
@@ -10017,8 +10021,9 @@ cmdline_paste_str(CS s, int literally) {
          if (cv == Ctrl_V || c == ESC || c == Ctrl_C
              || c == ENTER || c == NL || c == Ctrl_L
              || c == extraInterruptCharG
-             || (c == Ctrl_BSL && *s == Ctrl_N))
-         stuffcharReadbuff(Ctrl_V);
+             || (c == Ctrl_BSL && *s == Ctrl_N)
+         )
+            stuffcharReadbuff(Ctrl_V);
          stuffcharReadbuff(c);
       }
    }
@@ -10046,12 +10051,12 @@ redrawCommlineEx(int do_compute_cmdrow) {
 
 private void
 redrawPrompt(void) {
-   int      i;
+   int i;
 
    if (cmd_silent)
-   return;
+      return;
    if (commInfo.cmdfirstc != ZERO)
-   msg_putchar(commInfo.cmdfirstc);
+      msg_putchar(commInfo.cmdfirstc);
    if (commInfo.cmdprompt != NULL) {
       msgPutsDeco(commInfo.cmdprompt, commInfo.cmdattr);
       commInfo.cmdindent = msgColG + (msgRowG - commlineRowG) * visibleColsG;
@@ -10079,7 +10084,7 @@ redrawcmd(void) {
       return;
    }
 
-   //Do not put this in the message window.
+   //Do not put this in the message portal.
    inEchoPortalG = false;
 
    sb_text_restart_cmdline();
@@ -10093,8 +10098,8 @@ redrawcmd(void) {
    msg_no_more = false;
 
    set_cmdspos_cursor();
-   if (extra_char != ZERO)
-      putcmdline(extra_char, extra_char_shift);
+   if (extraCharP != ZERO)
+      scrPutCharOnCommline(extraCharP, extra_char_shift);
 
    //An emsg() before may have set msg_scroll. This is used in normal mode,
    //in cmdline mode we can reset them now.
@@ -10177,7 +10182,7 @@ copyStr_fnameescape(CS fname, Unt what) {
 
    //'>' and '+' are special at the start of some commands, e.g. ":edit" and
    //":write".  "cd -" has a special meaning.
-   if (p != NULL && (*p == '>' || *p == '+' || (*p == '-' && p[1] == ZERO)))
+   if (p && (*p == '>' || *p == '+' || (*p == '-' && p[1] == ZERO)))
       escape_fname(&p);
 
    return p;
@@ -10201,7 +10206,6 @@ tilde_replace(CS orig_pat, ExpandMatch* files) {
    if (orig_pat[0] == '~' && orig_pat[1] == '/') {
       for (Unt i = 0; i < files->len; ++i) {
          files->c[i] = homeReplaceA(NULL, files->c[i], files->a);
-
       }
    }
 }
@@ -10243,16 +10247,16 @@ getCommlineType(void) {
 private CS
 get_cmdline_str(void) {
    CommlineInfo* p = get_ccline_ptr();
-   if (p == NULL)
+   if (!p)
       return NULL;
    return copySubstr(p->commBuf, p->cmdlen);
 }
 
 //Get the current command-line completion pattern.
-private Byte *
+private Byte*
 get_cmdline_completion_pattern(void) {
    CommlineInfo *p;
-   int      context;
+   int context;
 
    p = get_ccline_ptr();
    if (p == NULL || p->xpc == NULL)
@@ -10278,14 +10282,11 @@ get_cmdline_completion_pattern(void) {
 //Get the command-line completion type.
 private CS
 get_cmdline_completion(void) {
-   CommlineInfo   *p;
-   int         context;
-
-   p = get_ccline_ptr();
-   if (p == NULL || p->xpc == NULL)
+   CommlineInfo* p = get_ccline_ptr();
+   if (!p || !p->xpc)
       return NULL;
 
-   context = p->xpc->context;
+   int context = p->xpc->context;
    if (context == EXPAND_NOTHING) {
       set_expand_context(p->xpc);
       context = p->xpc->context;
@@ -10349,12 +10350,10 @@ f_getcmdtype(Arr(Var), Var* returnVar) {
 private int
 set_cmdline_str(Byte *str, int pos) {
    CommlineInfo  *p = get_ccline_ptr();
-   int          len;
-
-   if (p == NULL)
+   if (!p)
       return 1;
 
-   len = (int)STRLEN(str);
+   int len = (int)STRLEN(str);
    if (reallocateCommBuf(len + 1) != OK)
       return 1;
    p->cmdlen = len;
@@ -10371,7 +10370,7 @@ set_cmdline_str(Byte *str, int pos) {
 //Set the command line byte position to "pos". Zero is the first position.
 //Only work when the command line is being edited. Return 1 when failed, 0 when OK.
 private int
-setCommlinePos(int      pos) {
+setCommlinePos(int pos) {
    CommlineInfo *p = get_ccline_ptr();
 
    if (!p)
@@ -10390,8 +10389,7 @@ pub void
 f_setcmdline(Arr(Var) argvars, Var* returnVar) {
    int pos = -1;
 
-   if (check_for_string_arg(argvars, 0) == FAIL
-       || check_for_opt_number_arg(argvars, 1) == FAIL)
+   if (check_for_string_arg(argvars, 0) == FAIL || check_for_opt_number_arg(argvars, 1) == FAIL)
       return;
 
    if (argvars[1].tag != VAR_UNKNOWN) {
@@ -10406,8 +10404,8 @@ f_setcmdline(Arr(Var) argvars, Var* returnVar) {
       }
    }
 
-    //Use tv_get_string() to handle a NULL string like an empty string.
-    returnVar->number = set_cmdline_str(tv_get_string(&argvars[0]), pos);
+   //Use tv_get_string() to handle a NULL string like an empty string.
+   returnVar->number = set_cmdline_str(tv_get_string(&argvars[0]), pos);
 }
 
 pub void
@@ -10524,8 +10522,8 @@ openCommPort(void) {
    commPortPortG = curPor;
 
    //Create empty command-line buffer.  Be especially cautious of BufLeave
-   //autocommands from startEditingFile(), as commport restrictions do not apply to them!
-   int newbuf_status = startEditingFile(0, NULL, NULL, NULL, ECMD_ONE, ECMD_HIDE, NULL);
+   //autocommands from bookStartEditingFile(), as commport restrictions do not apply to them!
+   int newbuf_status = bookStartEditingFile(0, NULL, NULL, NULL, ECMD_ONE, ECMD_HIDE, NULL);
    int commPortValid = portalIsValid(commPortPortG);
 
    BookRef bufref;
@@ -11368,7 +11366,7 @@ uc_list(CS name, Unt name_len) {
          if (len != 0)
             msg_puts((CS)&"    "[4 - len]);
 
-         msgOuttransDeco(comm->uc_name, getDecoFlags(HLF_D));
+         msgOuttransDeco(comm->uc_name, getDecoFlags(HILITE_Directories));
          len = (int)comm->uc_namelen + 4;
 
          if (len < 21) {
@@ -16906,12 +16904,12 @@ show_autocmd(AutoPat* ap, AutoEvent event) {
    if (event != last_event || ap->group != last_group) {
       if (ap->group != AUGROUP_DEFAULT) {
          if (AUGROUP_NAME(ap->group) == NULL)
-            msgPutsDeco(get_deleted_augroup(), getDecoFlags(HLF_E));
+            msgPutsDeco(get_deleted_augroup(), getDecoFlags(HILITE_ErrorMsg));
          else
-            msgPutsDeco(AUGROUP_NAME(ap->group), getDecoFlags(HLF_T));
+            msgPutsDeco(AUGROUP_NAME(ap->group), getDecoFlags(HILITE_OutputOfAutocmd));
          msg_puts(S"  ");
       }
-      msgPutsDeco(event_nr2name(event), getDecoFlags(HLF_T));
+      msgPutsDeco(event_nr2name(event), getDecoFlags(HILITE_OutputOfAutocmd));
       last_event = event;
       last_group = ap->group;
       msg_putchar('\n');

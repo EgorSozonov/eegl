@@ -121,7 +121,7 @@ void set_topline(Portal* po, LineNr lnum);
 void changed_cline_bef_curs(void);
 void changed_cline_bef_curs_win(Portal *po);
 void changed_line_abv_curs(void);
-void changed_line_abv_curs_win(Portal *po);
+void changed_line_abv_curs_po(Portal *po);
 void normInvalidateDisplayOfChangedBookLine(Book* book);
 void validate_botline(void);
 void validate_botline_win(Portal *po);
@@ -303,4 +303,3 @@ void internal_format(
 );
 int fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComments);
 void whAutoFormat(Boole trailblank, Boole prev_line);
-int comp_textwidth(int ff);

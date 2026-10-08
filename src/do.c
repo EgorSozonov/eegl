@@ -416,23 +416,16 @@ do_ascii(Invocation*){
 //";left", ";center" and ";right": align text.
 pub void
 c_align(Invocation* invo) {
-   int      len;
-   int      indent = 0;
+   int len;
+   int indent = 0;
    int width = atoi((char *)invo->arg);
    Pos save_curpos = curPor->cursor;
    if (invo->id == C_left) {   //width is used for new indent
       if (width >= 0)
          indent = width;
    } else {
-   //if 'textwidth' set, use it
-   //ei 'wrapmargin' set, use it
-   //if invalid value, use 80
-   if (width <= 0)
-       width = curBook->o.textWidth;
-   if (width == 0 && curBook->o.wrapMargin > 0)
-       width = curPor->width - curBook->o.wrapMargin;
-   if (width <= 0)
-       width = 80;
+      if (width <= 0)
+          width = curBook->o.textWidth;
    }
 
    if (u_save((LineNr)(invo->line1 - 1), (LineNr)(invo->line2 + 1)) == FAIL)
@@ -1666,7 +1659,7 @@ private void
 print_line_no_prefix(LineNr lnum, int list) {
    Byte numbuf[30];
    eeSnprintf(numbuf, sizeof(numbuf), "%*ld ", COL_PROLOGUE_WIDTH, (long)lnum);
-   msgPutsDeco(numbuf, getDecoFlags(HLF_N));   //Highlight line nrs
+   msgPutsDeco(numbuf, getDecoFlags(HILITE_LineNr));
    msg_prt_line(ml_get(lnum), list);
 }
 
@@ -1725,9 +1718,6 @@ renameBook(CS new_fname) {
    eeglFree(fname);
    eeglFree(sfname);
    applyAutocomms(EVENT_BUFFILEPOST, NULL, NULL, false, curBook);
-
-   //Change directories when the 'acd' option is set.
-   DO_AUTOCHDIR;
    return OK;
 }
 
@@ -1862,7 +1852,6 @@ do_write(Invocation* invo) {
    int retval = FAIL;
    CS free_fname = NULL;
    Book* altBook = NULL;
-   int name_was_missing;
 
    if (isWritingForbidden())      //check @modfiable option and p_modifiable command-line flag
       return FAIL;
@@ -1964,11 +1953,9 @@ do_write(Invocation* invo) {
                 (void)do_doautocmd(S"filetypedetect BufRead", true, NULL);
          }
 
-         //Autocommands may have changed book names, esp. when 'autochdir' is set.
+         //Autocommands may have changed book names
          fname = curBook->shortFileName;
       }
-
-      name_was_missing = curBook->fullFileName == NULL;
 
       retval = bookWrite(curBook, fullFName, fname, invo->line1, invo->line2,
                 invo, invo->append, invo->forceit, true, false);
@@ -1982,10 +1969,6 @@ do_write(Invocation* invo) {
             needRedrawTabpanelG = true;
          }
       }
-
-      //Change directories when the 'acd' option is set and the file name got changed or set.
-      if (invo->id == C_saveas || name_was_missing)
-          DO_AUTOCHDIR;
    }
 
 theend:
@@ -1996,7 +1979,7 @@ theend:
 //Handle ";wnext", ";wNext" and ";wprevious" commands.
 pub void
 c_wnext(Invocation* invo){
-   int      i;
+   int i;
    if (invo->comm[1] == 'n')
       i = curPor->argListInd + (int)invo->line2;
    else
@@ -2092,13 +2075,18 @@ check_readonly(OUT Boole* forceit, Book* book) {
       if ((p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) && book->currFileName) {
          Byte buff[DIALOG_MSG_SIZE];
 
-         if (!book->o.modifiable)
-            dialog_msg(buff, _("'readonly' option is set for \"%s\".\nDo you wish to write anyway?"),
-                book->currFileName);
-         else {
-            dialog_msg(buff, _("File permissions of \"%s\" are read-only.\n"
-                     "It may still be possible to write it.\nDo you wish to try?"),
-                book->currFileName);
+         if (!book->o.modifiable) {
+            dialog_msg(
+               buff,
+               _("'readonly' option is set for \"%s\".\nDo you wish to write anyway?"),
+                book->currFileName
+            );
+         } else {
+            dialog_msg(
+               buff, _("File permissions of \"%s\" are read-only.\n"
+               "It may still be possible to write it.\nDo you wish to try?"),
+               book->currFileName
+            );
          }
 
          if (eeDialog_yesno(EE_QUESTION, NULL, buff, 2) == EE_YES) {
@@ -2135,18 +2123,15 @@ getfile(
    LineNr lnum,
    Boole forceit
 ) {
+   if (!portCheckCanSetCurBookForceIt(forceit)
+       || text_locked()
+       || curBookLocked()
+   )
+      return GETFILE_ERROR;
+
    CS fullFName = ffname_arg;
    CS sfname = sfname_arg;
-   int      retval;
    CS free_me = NULL;
-
-   if (!portCheckCanSetCurBookForceIt(forceit))
-      return GETFILE_ERROR;
-
-   if (text_locked())
-      return GETFILE_ERROR;
-   if (curBookLocked())
-      return GETFILE_ERROR;
 
    Boole sameFile;
    if (fnum == 0) {
@@ -2163,13 +2148,16 @@ getfile(
       --no_wait_return;
    if (setpm)
       setpcmark();
+
+
+   int retval;
    if (sameFile) {
       if (lnum != 0)
          curPor->cursor.lnum = lnum;
       check_cursor_lnum();
       beginline(BL_SOL | BL_FIX);
       retval = GETFILE_SAME_FILE;   //it's in the same file
-   } ei (startEditingFile(fnum, fullFName, sfname, NULL, lnum,
+   } ei (bookStartEditingFile(fnum, fullFName, sfname, NULL, lnum,
            ECMD_HIDE + (forceit ? ECMD_FORCEIT : 0),
          curPor) == OK) {
       retval = GETFILE_OPEN_OTHER;   //opened another file
@@ -2239,9 +2227,8 @@ c_append(Invocation* invo) {
          stateG = save_State;
       }
       lines_left = visibleRowsG - 1;
-      if (theline == NULL)
+      if (!theline)
           break;
-
 
       //Look for the "." after automatic indent.
       vcol = 0;
@@ -2975,7 +2962,10 @@ c_substitute(Invocation* invo) {
                   msg_scroll = 0;      //truncate msg when needed
                   msg_no_more = true;
                   //write message same highlighting as for wait_return()
-                  smsgDeco(getDecoFlags(HLF_R), _("replace with %s (y/n/a/q/l/^E/^Y)?"), sub);
+                  smsgDeco(
+                        getDecoFlags(HILITE_YesNoQuestions),
+                        _("replace with %s (y/n/a/q/l/^E/^Y)?"), sub
+                  );
                   msg_no_more = false;
                   msg_scroll = i;
                   showruler(true);
@@ -4429,7 +4419,7 @@ bookWrite_all(Book* book, Boole forceit) {
       emsg(_(e_cannot_make_changes_modifiable_is_off));
    }
    if (curBook != curBookSaved) {
-      msg_source(getDecoFlags(HLF_W));
+      msg_source(getDecoFlags(HILITE_WarningMsg));
       msg(_("Warning: Entered other buffer unexpectedly (check autocommands)"));
    }
    return retval;
@@ -8480,7 +8470,7 @@ c_tabs(Invocation*) {
    for (Tab* t = firstTabG; t && !gotInterruptG; t = t->next) {
       msg_putchar('\n');
       eeSnprintf(ioBuffG, IOSIZE, _("Tab %d"), tabcount++);
-      msgOuttransDeco(ioBuffG, getDecoFlags(HLF_T));
+      msgOuttransDeco(ioBuffG, getDecoFlags(HILITE_OutputOfAutocmd));
       termOutFlush();       //output one line at a time
       ui_breakcheck();
 
@@ -8627,7 +8617,7 @@ c_open(Invocation* invo) {
    do_exedit(invo, NULL);
 }
 
-//";edit", ";badd", ";balt", ";visual".
+//";edit", ";badd", ";balt", ";visual", ";enew"
 pub void
 c_edit(Invocation* invo) {
    CS fullFName = invo->id == C_enew ? NULL : invo->arg;
@@ -8635,7 +8625,7 @@ c_edit(Invocation* invo) {
    //Exclude commands which keep the portal's current book
    if ( invo->id != C_badd
           && invo->id != C_balt
-          //All other commands must obey 'portfixbuf' / ! rules
+          //All other commands must obey @portfixbuf / ! rules
           && (!isSameFile(0, fullFName) && !portCheckCanSetCurBookForceIt(invo->forceit))
    )
       return;
@@ -8656,16 +8646,18 @@ c_edit(Invocation* invo) {
 
 //";edit <file>" command and alike.
 pub void
-do_exedit(Invocation* invo, Portal* old_curPor) {      //curPor before doing a split or NULL
+do_exedit(Invocation* invo, NULLABLE Portal* old_curPor) {      //curPor before doing a split
    if ((invo->id != C_pedit && portErrorIfPopup(false)) || portErrorIfTermPopup())
       return;
 
-   if ((invo->id == C_new || invo->id == C_tabnew || invo->id == C_tabedit || invo->id == C_vnew)
-         && *invo->arg == ZERO
+   if ((invo->id == C_new || invo->id == C_tabnew
+            || invo->id == C_tabedit || invo->id == C_vnew
+       )
+         && invo->arg[0] == ZERO
    ) {
       //";new" or ";tabnew" without argument: edit a new empty book
       setpcmark();
-      (void)startEditingFile(
+      (void)bookStartEditingFile(
          0, NULL, NULL, invo, ECMD_ONE, ECMD_HIDE + (invo->forceit ? ECMD_FORCEIT : 0),
          old_curPor ? null : curPor
       );
@@ -8680,7 +8672,7 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      //curPor before doing a s
          modifiable = true;
       if (invo->id != C_balt && invo->id != C_badd)
          setpcmark();
-      if (startEditingFile(
+      if (bookStartEditingFile(
            0,
            (invo->id == C_enew ? NULL : invo->arg),
            NULL, invo, invo->higherOrderLnum,
@@ -8697,7 +8689,7 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      //curPor before doing a s
          if (old_curPor) {
             //Reset the error/interrupt/exception state here so that
             //aborting() returns false when closing a portal.
-            Cleanup   cs;
+            Cleanup cs;
             enter_cleanup(OUT &cs);
             closePortal(curPor, false);
 
@@ -10478,7 +10470,7 @@ ask_yesno(CS str, int direct) {
 
    while (r != 'y' && r != 'n') {
       //same hiliting as for wait_return()
-      smsgDeco(getDecoFlags(HLF_R), "%s (y/n)?", str);
+      smsgDeco(getDecoFlags(HILITE_YesNoQuestions), "%s (y/n)?", str);
       if (direct)
          r = get_keystroke();
       else
@@ -12911,7 +12903,7 @@ c_undolist(Invocation*) {
       sortStrings((Byte **)ga.c, ga.len);
 
       msg_start();
-      msgPutsDeco(_("number changes  when               saved"), getDecoFlags(HLF_T));
+      msgPutsDeco(_("number changes  when               saved"), getDecoFlags(HILITE_OutputOfAutocmd));
       for (Unt i = 0; i < (Unt)ga.len && !gotInterruptG; ++i) {
          msg_putchar('\n');
          if (gotInterruptG)
@@ -13349,8 +13341,8 @@ change_warning(int col) {
    msg_start();
    if (msgRowG == visibleRowsG - 1)
       msgColG = col;
-   msg_source(getDecoFlags(HLF_W));
-   msgPutsDeco(_(w_readonly), getDecoFlags(HLF_W) | MSG_HIST);
+   msg_source(getDecoFlags(HILITE_WarningMsg));
+   msgPutsDeco(_(w_readonly), getDecoFlags(HILITE_WarningMsg) | MSG_HIST);
    msg_clr_eos();
    (void)msg_end();
    if (msg_silent == 0 && !silentModeG
@@ -13717,9 +13709,7 @@ changed_common(
             if (p->lnum != lnum)
                add = true;
             else {
-               cols = comp_textwidth(false);
-               if (cols == 0)
-                  cols = 79;
+               cols = curBook->o.textWidth;
                add = (p->col + cols < col || col + cols < p->col);
             }
          }
@@ -13807,20 +13797,20 @@ changed_common(
          if (po->cursor.lnum <= lnum) {
             i = find_wl_entry(po, lnum);
             if (i >= 0 && po->cursor.lnum > po->lines[i].bookLnum) {
-                changed_line_abv_curs_win(po);
+                changed_line_abv_curs_po(po);
             }
          }
          if (po->cursor.lnum > lnum)
-            changed_line_abv_curs_win(po);
+            changed_line_abv_curs_po(po);
          ei (po->cursor.lnum == lnum && po->cursor.col >= col)
             changed_cline_bef_curs_win(po);
          if (po->bottomLine >= lnum) {
             if (xtra < 0) {
                invalidate_botline_win(po);
             } else {
-                //Assume that botline doesn't change (inserted lines make
-                //other lines scroll down below botline).
-                approximate_botline_win(po);
+               //Assume that botline doesn't change (inserted lines make
+               //other lines scroll down below botline).
+               approximate_botline_win(po);
             }
          }
 
@@ -13971,7 +13961,7 @@ doChangedLinesBook(
    Book* book,
    LineNr lnum,       //first line with change
    LineNr lnume,       //line below last changed line
-   long xtra       //number of extra lines (negative when deleting)
+   Long xtra       //number of extra lines (negative when deleting)
 ){
    if (book->needsRedraw) {
       //find the maximum area that must be redisplayed
@@ -14091,7 +14081,7 @@ replaceChar(Unt c) {
 
 pub void
 opInsertCharBytes(CS targetLine, int charlen, Boole replace) {
-   LineNr   lnum = curPor->cursor.lnum;
+   LineNr lnum = curPor->cursor.lnum;
 
    //Break tabs if needed.
    if (virtual_active() && curPor->cursor.coladd > 0)
@@ -14180,10 +14170,10 @@ del_char(Boole fixpos) {
 
 //Like del_bytes(), but delete characters instead of bytes.
 pub int
-del_chars(long count, Boole fixpos) {
-   long   bytes = 0;
+del_chars(Long count, Boole fixpos) {
+   Long bytes = 0;
    CS p = ml_get_cursor();
-   for (int i = 0; i < count && *p != ZERO; ++i)     {
+   for (Unt i = 0; i < count && *p != ZERO; ++i)     {
       int l = utfCharLen(p);
       bytes += l;
       p += l;
@@ -14315,7 +14305,7 @@ get_leader_len(CS line, Byte** flags, int backward, int include_space) {
    }
 
    int j;
-   int got_com = false;
+   Boole got_com = false;
    Boole foundOne;
    Byte   part_buf[COM_MAX_LEN];   //buffer for one option part
    CS string;      //pointer to comment string
@@ -14334,7 +14324,7 @@ get_leader_len(CS line, Byte** flags, int backward, int include_space) {
       //scan through the 'comments' option for a match
       foundOne = false;
       for (list = curBook->o.comments; *list != ZERO; ) {
-         //Get one option part into part_buf[].  Advance "list" to next
+         //Get one option part into part_buf[]. Advance "list" to next
          //one. Put "string" at start of string.
          if (!got_com && flags)
             *flags = list;       //remember where flags started

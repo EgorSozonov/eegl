@@ -746,7 +746,7 @@ do_intro_line(int row, CS mesg, int add_version){
          clen += bookPtr2Cells(p + l);
          l += utfCharLen(p + l) - 1;
       }
-      drawTextLen(p, l, row, col + firstPor->windowCol, *p == '<' ? getDecoFlags(HLF_8) : 0);
+      drawTextLen(p, l, row, col + firstPor->windowCol, *p == '<' ? getDecoFlags(HILITE_MetaSpecialKeys) : 0);
       col += clen;
    }
 
@@ -940,9 +940,6 @@ libMain(void) {
    isRedrawingDisabledG = 0;
    redraw_all_later(UPD_NOT_VALID);
    no_wait_return = false;
-
-   //'autochdir' has been postponed
-   DO_AUTOCHDIR;
 
    applyAutocomms(EVENT_EEGLENTER, NULL, NULL, false, curBook);
    TIME_MSG("EeglEnter autocommands");
@@ -2175,7 +2172,7 @@ editBuffers(MainParams* par, CS cwd) {        //current working dir
          //Edit file from arg list, if there is one.  When "Quit" selected
          //at the ATTENTION prompt close the window.
          swap_exists_did_quit = false;
-         (void)startEditingFile(0,
+         (void)bookStartEditingFile(0,
             arg_idx < GARGCOUNT ? alist_name(&GARGLIST[arg_idx]) : NULL,
             NULL, NULL, ECMD_LASTL, ECMD_HIDE, curPor
          );

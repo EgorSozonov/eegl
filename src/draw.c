@@ -385,11 +385,11 @@ pub Decoration
 getPortcolorDeco(Portal* po) {
    if (PORTAL_IS_POPUP(po)) {
       if (isInfoPopup(po))
-         return getFullDecoration(HLF_PSI);    //PmenuSel
+         return getFullDecoration(HILITE_PmenuSelected);
       else
-         return getFullDecoration(HLF_PNI);    //Pmenu
+         return getFullDecoration(HILITE_Pmenu);
    } else {
-      return getFullDecoration(HLF_NONE);
+      return getFullDecoration(HILITE_None);
    }
 }
 
@@ -444,11 +444,11 @@ drawVoidAtPortalEnd(
       if (po->o.signColumn)
          //draw the sign column
          n = fillRowsWithCharsWithColumnOffset(
-             po, ' ', ' ', n, 2, row, endrow, getFullDecoration(HLF_SC)
+             po, ' ', ' ', n, 2, row, endrow, getFullDecoration(HILITE_SignColumn)
          );
       //draw the number column
       n = fillRowsWithCharsWithColumnOffset(
-         po, ' ', ' ', n, COL_PROLOGUE_WIDTH + 1, row, endrow, getFullDecoration(HLF_N)
+         po, ' ', ' ', n, COL_PROLOGUE_WIDTH + 1, row, endrow, getFullDecoration(HILITE_LineNr)
       );
    }
 
@@ -530,7 +530,7 @@ skipForPopup(int row, int col) {
 //Get its decrations into "*deco".
 private Unt
 fillchar_vsep(OUT Decoration* deco) {
-   *deco = getFullDecoration(HLF_C);
+   *deco = getFullDecoration(HILITE_VertSplit);
    return (deco->flags == 0 && fillCharsG.vert == ' ') ? '|' : fillCharsG.vert;
 }
 
@@ -653,8 +653,8 @@ drawFlushLine(
                || getDecoFlags(screenDecosP[offTo].hiId) != deco.flags
             ){
                screenTextP[offTo] = c;
-               screenDecosP[offTo].hiId = HLF_C;
-               screenDecosP[offTo].flags = getDecoFlags(HLF_C);
+               screenDecosP[offTo].hiId = HILITE_VertSplit;
+               screenDecosP[offTo].flags = getDecoFlags(HILITE_VertSplit);
 
                if (c >= 0x80) {
                    screenLinesUCG[offTo] = c;
@@ -2645,7 +2645,7 @@ showmode(void) {
       //Position on the last line in the portal, column 0
       msg_pos_mode();
       cursor_off();
-      flags = getDecoFlags(HLF_CM);         //hilite mode
+      flags = getDecoFlags(HILITE_ModeName);         //hilite mode
       if (do_mode) {
          msgPutsDeco((CS)"--", flags);
          //CTRL-X in Insert mode
@@ -2754,7 +2754,7 @@ clearmode(void) {
 
    msg_pos_mode();
    if (reg_recording != 0)
-      recording_mode(getDecoFlags(HLF_CM));
+      recording_mode(getDecoFlags(HILITE_ModeName));
    msg_clr_eos();
 
    msgColG = saveMsgCol;
@@ -2775,17 +2775,17 @@ pub Unt
 statusLineNextChar(OUT Decoration* deco, Portal* po) {
    if (bt_terminal(po->book)) {
       if (po == curPor) {
-         *deco = getFullDecoration(HLF_ST);
+         *deco = getFullDecoration(HILITE_TerminalStatusLine);
          return fillCharsG.stl;
       } else {
-         *deco = getFullDecoration(HLF_STNC);
+         *deco = getFullDecoration(HILITE_TerminalNoncurrentStatusLine);
          return fillCharsG.stlnc;
       }
    } ei (po == curPor) {
-      *deco = getFullDecoration(HLF_S);
+      *deco = getFullDecoration(HILITE_StatusLine);
       return fillCharsG.stl;
    } else {
-      *deco = getFullDecoration(HLF_SNC);
+      *deco = getFullDecoration(HILITE_StatusLinesInactive);
       return fillCharsG.stlnc;
    }
 }
@@ -3061,7 +3061,6 @@ check_chars_options(CS newVal) {
 
 //}}}
 //{{{high level
-
 
 //Code for updating all the portals on the screen.
 //
@@ -3582,7 +3581,7 @@ drawFoldedLine(Portal* po, Long foldCount, FoldInfo* foldinfo, LineNr lnum, int 
    //1. Add the commPortTypeG for the command-line portal
    if (po == commPortPortG) {
       screenTextP[off] = commPortTypeG;
-      screenDecosP[off].flags = getDecoFlags(HLF_AT);
+      screenDecosP[off].flags = getDecoFlags(HILITE_None);
       screenLinesUCG[off] = 0;
       ++col;
    }
@@ -3594,7 +3593,7 @@ drawFoldedLine(Portal* po, Long foldCount, FoldInfo* foldinfo, LineNr lnum, int 
    } while (0)
 
    //Set all decorations of the 'relativenumber' column and the text
-   RL_MEMSET(col, getDecoFlags(HLF_FL), (int)po->width - col);
+   RL_MEMSET(col, getDecoFlags(HILITE_FoldedLine), (int)po->width - col);
 
    //If signs are being displayed, add a space
    if (po->o.signColumn) {
@@ -3602,7 +3601,7 @@ drawFoldedLine(Portal* po, Long foldCount, FoldInfo* foldinfo, LineNr lnum, int 
       if (len > 0) {
          if (len > 1)
             len = 1;
-         copyTextWithDecos(off + col, S" ", len, getDecoFlags(HLF_FL));
+         copyTextWithDecos(off + col, S" ", len, getDecoFlags(HILITE_FoldedLine));
          col += len;
       }
    }
@@ -3626,7 +3625,7 @@ drawFoldedLine(Portal* po, Long foldCount, FoldInfo* foldinfo, LineNr lnum, int 
       }
 
       eeSnprintf(buf, sizeof(buf), fmt, w, num);
-      copyTextWithDecos(off + col, buf, len, getDecoFlags(HLF_FL));
+      copyTextWithDecos(off + col, buf, len, getDecoFlags(HILITE_FoldedLine));
       col += len;
    }
 
@@ -3685,13 +3684,13 @@ drawFoldedLine(Portal* po, Long foldCount, FoldInfo* foldinfo, LineNr lnum, int 
                else
                   len = po->width - txtcol;
                RL_MEMSET(
-                   po->oldCursorFcol + txtcol, getDecoFlags(HLF_V),
+                   po->oldCursorFcol + txtcol, getDecoFlags(HILITE_VisualMode),
                    len - (int)po->oldCursorFcol
                );
             }
          } else {
             //Set all decorations of the text
-            RL_MEMSET(txtcol, getDecoFlags(HLF_V), (int)po->width - txtcol);
+            RL_MEMSET(txtcol, getDecoFlags(HILITE_VisualMode), (int)po->width - txtcol);
          }
       }
    }
@@ -4020,7 +4019,7 @@ drawPortal(Portal* po, UpdatePortalInfo u) {
          //popup line that doesn't fit is left as-is
          po->bottomLine = lnum;
       } else {
-         drawVoidAtPortalEnd(po, fillCharsG.lastline, ' ', true, srow, po->height, HLF_AT);
+         drawVoidAtPortalEnd(po, fillCharsG.lastline, ' ', true, srow, po->height, HILITE_None);
          po->bottomLine = lnum;
       }
    } else {
@@ -4033,7 +4032,7 @@ drawPortal(Portal* po, UpdatePortalInfo u) {
             Unt filler = (bookChar2Cells(fillCharsG.diff) > 1) ? '-' : fillCharsG.diff;
             if (row + j > (int)po->height)
                j = po->height - row;
-            drawVoidAtPortalEnd(po, filler, filler, true, row, row + (int)j, HLF_DED);
+            drawVoidAtPortalEnd(po, filler, filler, true, row, row + (int)j, HILITE_DiffDeleted);
             row += j;
           }
       }
@@ -4041,10 +4040,7 @@ drawPortal(Portal* po, UpdatePortalInfo u) {
 
       //Make sure the rest of the screen is blank.
       //write the " " character to rows that aren't part of the file.
-      if (PORTAL_IS_POPUP(po))
-         drawVoidAtPortalEnd(po, ' ', ' ', false, row, po->height, HLF_AT);
-      else
-         drawVoidAtPortalEnd(po, ' ', ' ', false, row, po->height, HLF_NONE);
+      drawVoidAtPortalEnd(po, ' ', ' ', false, row, po->height, HILITE_None);
   }
 
    //Reset the type of redrawing required, the portal has been updated.
@@ -4891,13 +4887,13 @@ useCursorLineHilite(Portal* po, LineNr lnum) {
 private void
 drawSignOrPad(Portal* po, DrawCtx* m) {
    //Draw two cells with the sign value or blank.
-   m->c_extra = ' ';
+   m->c_extra = '|';
    m->c_final = ZERO;
    if (useCursorLineHilite(po, m->lnum))
-      m->charDeco = getFullDecoration(HLF_CLS);
+      m->charDeco = getFullDecoration(HILITE_CurrentSign);
    else
-      m->charDeco = getFullDecoration(HLF_SC);
-   m->countExtraBytes = 2;
+      m->charDeco = getFullDecoration(HILITE_SignColumn);
+   m->countExtraBytes = 1;
    //TODO implement signs
 }
 
@@ -4937,7 +4933,7 @@ drawLineNumber(OUT DrawCtx* m, Decoration numDeco, Portal* po) {
       m->c_final = ZERO;
    }
    m->countExtraBytes = 2;
-   m->charDeco = getFullDecoration(HLF_N);
+   m->charDeco = getFullDecoration(HILINE_LineNr);
    //When 'cursorline' is set, hilite the line number of the current line differently.
    //When 'cursorlineopt' does not have "line" only hilite the line number itself.
    //TODO: Can we use CursorLine instead of CursorLineNr when CursorLineNr isn't set?
@@ -4945,13 +4941,13 @@ drawLineNumber(OUT DrawCtx* m, Decoration numDeco, Portal* po) {
            && m->lnum == po->cursor.lnum
            && (m->row == lnum_row || (m->row > lnum_row))
    )
-      m->charDeco = getFullDecoration(HLF_CLN);
-   if (m->lnum < po->cursor.lnum && getDecoFlags(HLF_LNA) != 0)
+      m->charDeco = getFullDecoration(HILITE_CurrentLineNr);
+   if (m->lnum < po->cursor.lnum && getDecoFlags(HILITE_LineNrAbove) != 0)
       //Use LineNrAbove
-      m->charDeco = getFullDecoration(HLF_LNA);
-   ei (m->lnum > po->cursor.lnum && getDecoFlags(HLF_LNB) != 0)
+      m->charDeco = getFullDecoration(HILITE_LineNrAbove);
+   ei (m->lnum > po->cursor.lnum && getDecoFlags(HILITE_LineNrBelow) != 0)
       //Use LineNrBelow
-      m->charDeco = getFullDecoration(HLF_LNB);
+      m->charDeco = getFullDecoration(HILITE_LineNrBelow);
    ei (numDeco.hiId < SHORT)
       m->charDeco = numDeco;
 }
@@ -4996,7 +4992,7 @@ showbreakAndFiller(Portal* po, DrawCtx* m) {
          m->c_final = ZERO;
       }
       m->countExtraBytes = po->width - m->col;
-      m->charDeco = getFullDecoration(HLF_DED);
+      m->charDeco = getFullDecoration(HILITE_DiffDeleted);
    }
 
    m->need_showbreak = false;
@@ -5181,7 +5177,7 @@ smoothFlushScreenLine(Portal* po, DrawCtx* m, Boole clear_end) {
       for (int i = 0; i < 3 && i + skip < (int)po->width; ++i) {
          screenTextP[off] = '<';
          screenLinesUCG[off] = 0;
-         screenDecosP[off].flags = getFullDecoration(HLF_AT).flags;
+         screenDecosP[off].flags = getFullDecoration(HILITE_None).flags;
          ++off;
       }
    }
@@ -5490,7 +5486,7 @@ drawLineSub(
 
       //When the portal is too narrow, draw all "@" lines.
       if (m->state != DRAWING_TEXT && m->filler_todo <= 0) {
-         drawVoidAtPortalEnd(port, '@', ' ', true, m->row, port->height, HLF_AT);
+         drawVoidAtPortalEnd(port, '@', ' ', true, m->row, port->height, HILITE_None);
          drawVerticalSeparator(port, m->row);
          m->row = m->endRow;
       }
@@ -5577,16 +5573,18 @@ drawDiff(DrawCtx* m, Subcontext* c, Portal* port) {
    }
    //When there is extra text (e.g. virtual text) it gets the
    //diff hiliting for the line, but not for changed text.
-   if (m->diff_hlf == HLF_CHD
+   if (m->diff_hlf == HILITE_DrawText
          && m->ptr - m->line >= *c->changeStart
          && m->countExtraBytes == 0
    )
-      m->diff_hlf = added ? HLF_TXA : HLF_TXD;   //added/changed text
-   if ((m->diff_hlf == HLF_TXD || m->diff_hlf == HLF_TXA)
+      m->diff_hlf = added
+         ? HILITE_DiffAddedTextInChanged : HILITE_DiffChangedTextInChanged;
+   if ((m->diff_hlf == HILITE_DiffChangedTextInChanged
+            || m->diff_hlf == HILITE_DiffAddedTextInChanged)
          && ((m->ptr - m->line >= *c->changeEnd && m->countExtraBytes == 0)
                 || (m->countExtraBytes > 0 && m->textPropHasExtra))
    )
-      m->diff_hlf = HLF_CHD;      //changed line
+      m->diff_hlf = HILITE_DrawText;      //changed line
    m->lineDeco = getFullDecoration(m->diff_hlf);
    if (port->o.cursorLine && c->lnum == port->cursor.lnum)
       applyCursorlineHilite(m);
@@ -5897,7 +5895,7 @@ getNextCharFromExtra(DrawCtx* m, OUT SubSubcontext* sc, Portal* port,
          sc->multiByte = '>';
          multibLength = 1;
          sc->mb_utf8 = false;
-         sc->multiDeco = getFullDecoration(HLF_AT);
+         sc->multiDeco = getFullDecoration(HILITE_None);
          if (m->cursorlineDeco.hiId != SHORT)
             overlayDeco(OUT &sc->multiDeco, OVERLAY_DECO_ALTERED_BG);
 
@@ -5992,7 +5990,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
       m->c_final = ZERO;
       if (sc->areaDeco.hiId == SHORT && m->searchHiId == 0) {
          sc->numDecoCells = m->countExtraBytes + 1;
-         m->extraDeco = getFullDecoration(HLF_8);
+         m->extraDeco = getFullDecoration(HILITE_MetaSpecialKeys);
          sc->charDecoSaved = m->charDeco; //save current deco
       }
    } ei (multibLength == 0)  //at the ZERO at end-of-line
@@ -6005,7 +6003,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
       sc->multiByte = currSymb;
       sc->mb_utf8 = false;
       multibLength = 1;
-      sc->multiDeco = getFullDecoration(HLF_AT);
+      sc->multiDeco = getFullDecoration(HILITE_None);
       //Put pointer back so that the character will be displayed at the start of next line
       m->ptr--;
    } ei (*m->ptr != ZERO)
@@ -6020,7 +6018,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
       currSymb = ' ';
       if (sc->areaDeco.hiId == SHORT && m->searchHiId == 0) {
          sc->numDecoCells = m->countExtraBytes + 1;
-         m->extraDeco = getFullDecoration(HLF_AT);
+         m->extraDeco = getFullDecoration(HILITE_None);
       }
       sc->multiByte = currSymb;
       sc->mb_utf8 = false;
@@ -6053,7 +6051,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
          currSymb = (currSymb == ' ') ? ' ' : listCharsG.nbsp;
          if (sc->areaDeco.hiId == SHORT && m->searchHiId == 0) {
             sc->numDecoCells = 1;
-            m->extraDeco = getFullDecoration(HLF_8);
+            m->extraDeco = getFullDecoration(HILITE_MetaSpecialKeys);
          }
          sc->multiByte = currSymb;
          if (mb_char2len(currSymb) > 1) {
@@ -6073,7 +6071,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
 
          if (!sc->decoPriority) {
             sc->numDecoCells = 1;
-            m->extraDeco = getFullDecoration(HLF_8);
+            m->extraDeco = getFullDecoration(HILITE_MetaSpecialKeys);
          }
          sc->multiByte = currSymb;
          if (mb_char2len(currSymb) > 1) {
@@ -6106,7 +6104,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
             m->c_extra = listCharsG.tab2;
             m->c_final = listCharsG.tab3;
             sc->numDecoCells = tab_len + 1;
-            m->extraDeco = getFullDecoration(HLF_8);
+            m->extraDeco = getFullDecoration(HILITE_MetaSpecialKeys);
             sc->multiByte = currSymb;
             if (mb_char2len(currSymb) > 1) {
                sc->mb_utf8 = true;
@@ -6150,7 +6148,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
          sc->listCharEndOfLine = UNT;
          m->ptr--;       //put it back at the ZERO
          if (!sc->decoPriority) {
-            m->extraDeco = getFullDecoration(HLF_AT);
+            m->extraDeco = getFullDecoration(HILITE_None);
             sc->numDecoCells = 1;
          }
          sc->multiByte = currSymb;
@@ -6173,7 +6171,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
             if (textPropType && (sc->textPropFlags & PT_FLAG_OVERRIDE) != 0)
                m->extraDeco = textPropDeco;
             else
-               m->extraDeco = getFullDecoration(HLF_8);
+               m->extraDeco = getFullDecoration(HILITE_MetaSpecialKeys);
          }
          sc->mb_utf8 = false;   //don't draw as UTF-8
       } ei (VIsual_active
@@ -6208,8 +6206,10 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
              && !(port->o.cursorLine && c->lnum == port->cursor.lnum)
          )
             m->charDeco = getFullDecoration(m->signHilites.lineHiId);
-         if (m->diff_hlf == HLF_TXD || m->diff_hlf == HLF_TXA) {
-            m->diff_hlf = HLF_CHD;
+         if (m->diff_hlf == HILITE_DiffChangedTextInChanged
+               || m->diff_hlf == HILITE_DiffAddedTextInChanged
+         ) {
+            m->diff_hlf = HILITE_DrawText;
             if (c->visualDeco.hiId == SHORT || !decoEq(m->charDeco, c->visualDeco)) {
                m->charDeco = getFullDecoration(m->diff_hlf);
                if (port->o.cursorLine && c->lnum == port->cursor.lnum)
@@ -6272,7 +6272,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                m->countExtraBytes = 1;
                m->c_extra = commPortTypeG;
                m->c_final = ZERO;
-               m->charDeco = getFullDecoration(HLF_AT);
+               m->charDeco = getFullDecoration(HILITE_None);
             }
          }
          if (m->state == DRAWING_COMMLINE && m->countExtraBytes == 0) {
@@ -6293,8 +6293,8 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             //- LineNrAbove or LineNrBelow is used, or
             //- still drawing filler lines.
             if ((m->row + 1 - m->startrow < c->drawingOnlyNumberCol
-                  && (   getFullDecoration(HLF_LNA).flags != 0
-                      || getFullDecoration(HLF_LNB).flags != 0
+                  && (   getFullDecoration(HILITE_LineNrAbove).flags != 0
+                      || getFullDecoration(HILITE_LineNrBelow).flags != 0
                      )
                )
                || m->filler_todo > 0
@@ -6632,7 +6632,7 @@ drawLineOnScreen(
          //if inverting in this line set areaHiliting
          if (m.fromcol >= 0) {
             c.areaHiliting = true;
-            c.visualDeco = getFullDecoration(HLF_V);
+            c.visualDeco = getFullDecoration(HILITE_VisualMode);
          }
       }
       //handle @incsearch and ":s///c" hiliting
@@ -6669,25 +6669,25 @@ drawLineOnScreen(
    if (linestatus != LINE_STATUS_UNCHANGED) {
       if (linestatus == LINE_STATUS_CHANGED) {
          if (diff_find_change(port, lnum, &lineChanges)) {
-            m.diff_hlf = HLF_ADD;   //added line
+            m.diff_hlf = HILITE_DiffTextAdd;   //added line
          } ei (lineChanges.num_changes > 0) {
             int added = diff_change_parse(
                &lineChanges, &lineChanges.changes[0], &changeStart, &changeEnd
             );
             if (changeStart == 0) {
                if (added)
-                  m.diff_hlf = HLF_TXA;   //added text on changed line
+                  m.diff_hlf = HILITE_DiffAddedTextInChanged;
                else
-                  m.diff_hlf = HLF_TXD;   //changed text on changed line
+                  m.diff_hlf = HILITE_DiffChangedTextInChanged;
             } else
-               m.diff_hlf = HLF_CHD;   //unchanged text on changed line
+               m.diff_hlf = HILITE_DrawText; //unchanged text on changed line
             m.changeIndex = 0;
          } else {
-            m.diff_hlf = HLF_CHD;   //changed line
+            m.diff_hlf = HILITE_DrawText;   //changed line
             m.changeIndex = 0;
          }
       } else
-         m.diff_hlf = HLF_ADD;
+         m.diff_hlf = HILITE_DiffTextAdd;
 
       c.areaHiliting = true;
    }
@@ -6707,7 +6707,7 @@ drawLineOnScreen(
       //Hilite the current line in the location portal
    }
    if (isLocationListBook(port->book) && llCurrentEntry(port) == lnum)
-      m.lineDeco = getFullDecoration(HLF_QFL);
+      m.lineDeco = getFullDecoration(HILITE_LocationPortalSelected);
 
    if (m.lineDeco.flags != 0)
       c.areaHiliting = true;
@@ -6999,7 +6999,7 @@ drawMsgScrollUp(void) {
       //background here. It's not efficient, but avoids that we have to do it all over the code.
       fillRowsWithTwoChars(
          (int)visibleRowsG - 1, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ',
-         getFullDecoration(HLF_MSG)
+         getFullDecoration(HILITE_MessageArea)
       );
 
       //Also clear the last char of the penultimate line if it was not cleared before to avoid
@@ -7007,7 +7007,7 @@ drawMsgScrollUp(void) {
       if (screenDecosP[lineStartsP[visibleRowsG - 2] + visibleColsG - 1].hiId == 0) {
           fillRowsWithTwoChars(
              (int)visibleRowsG - 2, (int)visibleRowsG - 1, (int)visibleColsG - 1,
-             (int)visibleColsG, ' ', ' ', getFullDecoration(HLF_MSG)
+             (int)visibleColsG, ' ', ' ', getFullDecoration(HILITE_MessageArea)
           );
       }
    }

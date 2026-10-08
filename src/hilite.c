@@ -51,7 +51,7 @@ typedef struct {
    VTermColor fg; //foreground color
    VTermColor bg; //background color
    VTermColor under; //underline color, if underline is applied
-    
+
    int link;   //link to this hilite group ID
    int deflink;   //default link; restored in clearHiliteWorker()
    ScriptPos deflink_sctx; //script where the default link was set
@@ -153,65 +153,112 @@ typedef struct {
 pub
 #define HI_HAS_FG    1
 #define HI_HAS_BG    2
-#define HI_HAS_UNDER 4
-#define HI_IS_LINK   8
+#define HI_IS_LINK   4
 
-//Values for index in highlight_attr[]. When making changes, also update HL_FLAGS below!
-//And update the default value of 'highlight': HIGHLIGHT_INIT in option.c
-pub
-#define HLF_NONE     0 //No decorations
-#define HLF_NONTEXT  1 //Non-text
-#define HLF_FLOAT    2 //Normal float
-#define HLF_AT       3 //characters at end of screen, characters that don't really exist in the text
-#define HLF_D        4 //directories in CTRL-D listing
-#define HLF_E        5 //error messages
-#define HLF_W        6 //warning messages
-#define HLF_M        7 //"--More--" message
-#define HLF_CM       8 //Mode (e.g., "-- INSERT --")
-#define HLF_CLN      9 //current line number
-#define HLF_CLS     10 //current line sign column
-#define HLF_CLF     11 //current line fold
-#define HLF_R       12 //return to continue message and yes/no questions
-#define HLF_S       13 //status lines
-#define HLF_SNC     14 //status lines of not-current portals
-#define HLF_C       15 //column to separate vertically split windows
-#define HLF_T       16 //Titles for output from ":set all", ":autocmd" etc.
-#define HLF_V       17 //Visual mode
-#define HLF_VNC     18 //Visual mode, autoselecting and not clipboard owner
-#define HLF_WM      19 //Wildmenu highlight
-#define HLF_FL      20 //Folded line
-#define HLF_ADD     21 //Added diff line
-#define HLF_CHD     22 //Changed diff line
-#define HLF_TXD     23 //Text Changed in changed diff line
-#define HLF_TXA     24 //Text Added in changed diff line
-#define HLF_DED     25 //Deleted diff line
-#define HLF_SC      26 //Sign column
-#define HLF_PNI     27 //popup menu normal item
-#define HLF_PSI     28 //popup menu selected item
-#define HLF_PMNI    29 //popup menu matched text in normal item
-#define HLF_PMSI    30 //popup menu matched text in selected item
-#define HLF_PNK     31 //popup menu normal item "kind"
-#define HLF_PSK     32 //popup menu selected item "kind"
-#define HLF_PNX     33 //popup menu normal item "menu" (extra text)
-#define HLF_PSX     34 //popup menu selected item "menu" (extra text)
-#define HLF_PSB     35 //popup menu scrollbar
-#define HLF_PST     36 //popup menu scrollbar thumb
-#define HLF_TPL     37 //tabpanel
-#define HLF_TPLS    38 //tabpanel selected
-#define HLF_TPLF    39 //tabpanel filler
-#define HLF_QFL     40 //location portal line currently selected
-#define HLF_ST      41 //status lines of terminal windows
-#define HLF_STNC    42 //status lines of not-current terminal portals
-#define HLF_TERMR   43 //status lines of not-current terminal portals
-#define HLF_TERMG   44 //status lines of not-current terminal portals
-#define HLF_TERMB   45 //status lines of not-current terminal portals
-#define HLF_MSG     46 //message area
-#define HLF_8       47 //Meta & special keys listed with ":map", text that is displayed different
-#define HLF_N       48 //line number for ":number" and ":#" commands
-#define HLF_LNA     49 //LineNrAbove
-#define HLF_LNB     50 //LineNrBelow
+//{{{hilite groups
 
+#define HI(name, fieldPresence, fg, bg, decoFlags, link) (HiliteGroup){\
+   .name = text(#name), .flags = decoFlags, .fieldPresence = fieldPresence, .link = link}\
+},
 
+//The hilite groups
+pubWrapped("#define HI(a, b, c, d, e, f) HILITES_##a",
+   "#undef HI"
+)
+HI(None, HI_HAS_FG|HI_HAS_BG, 7, 0, 0, 0) //0
+HI(NonText, HI_HAS_FG, 4, 0, BOLD, 0)
+HI(NormalFloat, HI_IS_LINK, 0, 0, HILITE_None)
+HI(Directories, HI_IS_LINK, 0, 0, HILITE_None)    //directories in CTRL-D listing
+HI(ErrorMsg, HI_HAS_FG|HI_HAS_BG, 7, 1, 0, 0)
+HI(WarningMsg, HI_IS_LINK, 0, 0, 0, HILITE_None)         //warning messages
+HI(MoreMsg, HI_IS_LINK, 0, 0, 0, HILITE_None)            //10 "--More--" message
+HI(ModeName, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)           //Mode (e.g., "-- INSERT --")
+HI(CurrentLineNr, HI_IS_LINK, 0, 0, 0, HILITE_None)      //current line number
+HI(CurrentSign, HI_IS_LINK, 0, 0, 0, HILITE_None)        //current line sign column
+HI(CurrentFold, HI_IS_LINK, 0, 0, 0, HILITE_None)        //current line fold
+HI(YesNoQuestions, HI_IS_LINK, 0, 0, 0, HILITE_None)     //return to continue message
+                                                         //and yes/no questions
+HI(StatusLine deco=inverse),      //status lines
+HI(StatusLinesInactive deco=inverse), //status lines of not-current portals
+HI(VertSplit, deco=inverse),       //column to separate vertically split portals
+HI(OutputOfAutocmd, link=None)    //Titles for output from ";set all", ";autocmd" etc
+HI(VisualMode deco=bold)         //20 Visual mode
+HI(VisualModeAutoselecting, link=None) //Visual mode, autoselecting and not clipboard owner
+HI(WildcardMenu, HI_IS_LINK, 0, 0, 0, HILITE_None),       //Wildmenu hilite
+HI(FoldedLine, link=None)         //Folded line
+HI(DiffTextAdd, fg=regular2)      //Added diff line
+HI(DiffText, fg=regular4)         //Changed diff line
+HI(DiffChangedTextInChanged, link=None) //Text Changed in changed diff line
+HI(DiffAddedTextInChanged, link=None) //Text Added in changed diff line
+HI(DiffDeleted, deco=bold bg=bright6 fg=regular4) //HILITE_DiffDeleted
+HI(SignColumn, HI_HAS_FG|HI_HAS_BG, bg=grey10 fg=regular6, 0, 0) //30 Sign column
+HI(Pmenu, bg=regular4 bg=regular0) //popup menu normal item
+HI(PmenuSelected, bg=grey4)         //popup menu selected item
+HI(PmenuMatchedText, link=None)   //popup menu matched text in normal item
+HI(PmenuMatchedInSelected link=None) //popup menu matched text in selected item
+HI(PmenuNormalItem link=None)      //popup menu normal item "kind"
+HI(PmenuSelectedItem link=None)  //popup menu selected item "kind"
+HI(PmenuExtraText link=None)     //popup menu normal item "menu" (extra text)
+HI(PmenuSelectedExtraText link=None) //popup menu selected item "menu" (extra text)
+HI(PmenuScrollbar bg=grey12)       //popup menu scrollbar
+HI(PmenuScrollBarThumb  bg=regular7) //40 popup menu scrollbar thumb
+HI(Tabpanel deco=underline bg=grey4) //tabpanel
+HI(TabpanelSelected link=None)   //tabpanel selected
+HI(TabpanelFill link=None)       //tabpanel filler
+HI(CursorLine,  bg=444)             //@cursorline
+HI(LocationPortalSelected, 0, LINK, 0, 0, link=PmenuSelectedItem) //location portal line
+                                                                  //currently selected
+HI(TerminalStatusLine, link=None), //50 status lines of terminal portals
+HI(TerminalNoncurrentStatusLine, link=None), //status lines of not-current terminal
+HI(                                          //portals
+HI(TerminalRed, fg=regular1)      //status lines of not-current terminal portals
+HI(TerminalGreen fg=bright2)     //status lines of not-current terminal portals
+HI(TerminalBlue fg=bright4)      //status lines of not-current terminal portals
+HI(MessageArea, HI_IS_LINK, 0, 0, 0, HILITE_None)        //message area
+HI(MetaSpecialKeys link=None)      //Meta & special keys listed with ":map", text that is
+HI(                                //  displayed different
+HI(LineNr fg=regular3)             //line number for ":number" and ":#" commands
+HI(LineNrAbove link=None)
+HI(LineNrBelow link=None)
+HI(Directory, fg=bright6)
+HI(CursorLineNr, deco=bold fg=regular3)
+HI(MoreMsg, deco=bold fg=143)
+HI(Question, deco=bold fg=bright2)
+HI(SpecialKey, fg=bright4)
+HI(Title, deco=bold fg=bright5)
+HI(WarningMsg, bg=grey7 fg=bright1)
+HI(InfoMsg, bg=grey6 fg=bright2)
+HI(WildMenu, bg=regular3 fg=regular0)
+HI(Folded, bg=grey2 fg=bright6)
+HI(Visual, bg=grey16 fg=grey23)
+HI(ColorColumn, bg=regular1)
+HI(MatchParen, bg=regular6)
+HI(StatusLineTerm, deco=bold fg=regular2 bg=bright2)
+HI(StatusLineTermNC, fg=353 bg=050)
+HI(Search, fg=regular0 bg=bright3)
+HI(CurSearch, link=Search)
+HI(LocationLine, link=Search)
+HI(Comment, fg=regular2)
+HI(Constant, fg=544)
+HI(Special, fg=540)
+HI(Identifier, fg=255)
+HI(Statement, fg=552)
+HI(PreProc, fg=525)
+HI(Type, fg=353)
+HI(Keyword, fg=550)
+HI(Underlined, fg=125 deco=underline)
+HI(Ignore, fg=grey7)
+HI(Added, fg=252)
+HI(Changed, fg=225)
+HI(Removed, fg=regular1)
+HI(Error, bg=regular1)
+HI(Todo, bg=regular3 fg=regular4)
+HI(Bold, deco=bold)
+HI(Italic, deco=italic)
+
+#undef HI
+
+//}}}
 //}}}
 //{{{@@forward declarations
 private Text keyName(HiKey kv, CS s);
@@ -331,7 +378,7 @@ private Short check_keyword_id(
    long* flagsp,   //return: flags of matching keyword
    Short** next_listp,   //return: next_list of matching keyword
    StateItem* currStateItem,   //item at the top of the stack
-   int* 
+   int*
 );
 private void caseSubcommand(Invocation* invo, int);
 private void syn_cmd_foldlevel(Invocation* invo, int);
@@ -420,12 +467,6 @@ private int syn_cur_foldlevel(void);
 //}}}
 //{{{Hilite groups
 
-typedef struct {
-   int nameStart; //index into "colorsText"
-   int nameLen;
-   VTermColor value;
-} BuiltinColor;
-
 private Text
 keyName(HiKey kv, CS s) {
    return (Text){.c = s + kv.start, .len = kv.end - kv.start};
@@ -453,14 +494,14 @@ sliceCmpToConst0(Text a, Arr(char) b, Unt len) {
 
 //must be sorted by the 'value' field because it is used by bsearch()!
 private Kv decoKinds[] = {
-   KEYVALUE_ENTRY(DECO_ALTERED_BG, "alteredBg"),  
-   KEYVALUE_ENTRY(DECO_BOLD, "bold"),           
-   KEYVALUE_ENTRY(DECO_INVERSE, "inverse"),     
-   KEYVALUE_ENTRY(DECO_ITALIC, "italic"),       
-   KEYVALUE_ENTRY(DECO_NONE, "NONE"),         
-   KEYVALUE_ENTRY(DECO_UNDERCURL, "undercurl"), 
+   KEYVALUE_ENTRY(DECO_ALTERED_BG, "alteredBg"),
+   KEYVALUE_ENTRY(DECO_BOLD, "bold"),
+   KEYVALUE_ENTRY(DECO_INVERSE, "inverse"),
+   KEYVALUE_ENTRY(DECO_ITALIC, "italic"),
+   KEYVALUE_ENTRY(DECO_NONE, "NONE"),
+   KEYVALUE_ENTRY(DECO_UNDERCURL, "undercurl"),
    KEYVALUE_ENTRY(DECO_UNDERLINE, "underdash"),
-   KEYVALUE_ENTRY(DECO_UNDERLINE, "underline")  
+   KEYVALUE_ENTRY(DECO_UNDERLINE, "underline")
 };
 
 //this table is used to display hilite names in the correct order. keep in sync with decoKinds[]
@@ -511,101 +552,7 @@ enum {
     NONE
 };
 
-//The hilite groups. Keep in sync with the HLF_* constants
-private CS hiliteGroupStrings[] = {
-   S"None fg=regular7 bg=regular0", //0
-   S"NonText deco=bold fg=regular4",
-   S"NormalFloat link=None",
-   S"InvisAtEndOfScreen link=None", //HLF_AT chars at end of screen, chars that don't really exist in text 
-   S"Directories link=None",        //HLF_D directories in CTRL-D listing
-   S"ErrorMsg bg=regular1 fg=regular7", //HLF_E  error messages
-   S"WarningMsg link=None",         //HLF_W       warning messages
-   S"MoreMsg link=None",            //10 HLF_M    "--More--" message
-   S"ModeName deco=bold",           //HLF_CM    Mode (e.g., "-- INSERT --")
-   S"CurrentLineNr link=None",      //HLF_CLN   current line number
-   S"CurrentSign link=None",        //HLF_CLS   current line sign column
-   S"CurrentFold link=None",        //HLF_CLF   current line fold
-   S"YesNoQuestions link=None",     //HLF_R     return to continue message and yes/no questions
-   S"StatusLine deco=inverse",      //HLF_S  status lines
-   S"StatusLinesInactive deco=inverse", //HLF_SNC    status lines of not-current portals
-   S"VertSplit deco=inverse",       //HLF_C    column to separate vertically split portals
-   S"OutputOfAutocmd link=None",    //HLF_T     Titles for output from ":set all", ":autocmd" etc.
-   S"VisualMode deco=bold",         //20 HLF_V       Visual mode
-   S"VisualModeAutoselecting link=None", //HLF_VNC   Visual mode, autoselecting and not clipboard owner
-   S"WildcardMenu link=None",       //HLF_WM    Wildmenu hilite
-   S"FoldedLine link=None",         //HLF_FL      Folded line
-   S"DiffTextAdd fg=regular2",      //HLF_ADD  Added diff line
-   S"DiffText fg=regular4",         //HLF_CHD  Changed diff line
-   S"DiffChangedTextInChanged link=None", //HLF_TXD  Text Changed in changed diff line
-   S"DiffAddedTextInChanged link=None", //HLF_TXA  Text Added in changed diff line
-   //Deleted diff line
-   S"DiffDeleted deco=bold bg=bright6 fg=regular4", //HLF_DED
-   S"SignColumn bg=grey10 fg=regular6", //30 HLF_SC Sign column
-   S"Pmenu bg=regular4 bg=regular0", //HLF_PNI  popup menu normal item
-   S"PmenuSelected bg=grey4",         //HLF_PSI  popup menu selected item
-   S"PmenuMatchedText link=None",   //HLF_PMNI popup menu matched text in normal item
-   S"PmenuMatchedInSelected link=None", //HLF_PMSI popup menu matched text in selected item
-   S"PmenuNormalItem link=None",    //HLF_PNK  popup menu normal item "kind"
-   S"PmenuSelectedItem link=None",  //HLF_PSK   popup menu selected item "kind"
-   S"PmenuExtraText link=None",     //HLF_PNX   popup menu normal item "menu" (extra text)
-   S"PmenuSelectedExtraText link=None", //HLF_PSX   popup menu selected item "menu" (extra text)
-   S"PmenuScrollbar bg=grey12",       //HLF_PSB  popup menu scrollbar
-   S"PmenuScrollBarThumb  bg=regular7", //40 HLF_PST  popup menu scrollbar thumb
-   S"Tabpanel deco=underline bg=grey4", //HLF_TPL   tabpanel
-   S"TabpanelSelected link=None",   //HLF_TPLS  tabpanel selected
-   S"TabpanelFill link=None",       //HLF_TPLF  tabpanel filler
-   S"CursorLine  bg=444",             //HLF_CUL  'cursorline'
-   S"LocationPortalSelected link=PmenuSelectedItem", //HLF_QFL   location portal line currently 
-                                                     //selected
-   S"TerminalStatusLine link=None", //50 HLF_ST    status lines of terminal portals
-   S"TerminalNoncurrentStatusLine link=None", //HLF_STNC  status lines of not-current terminal 
-                                              //portals
-   S"TerminalRed fg=regular1",      //HLF_TERMR  status lines of not-current terminal portals
-   S"TerminalGreen fg=bright2",     //HLF_TERMG  status lines of not-current terminal portals
-   S"TerminalBlue fg=bright4",      //HLF_TERMB  status lines of not-current terminal portals
-   S"MessageArea link=None",        //HLF_MSG   message area
-   S"MetaSpecialKeys link=None",    //HLF_8 Meta & special keys listed with ":map", text that is 
-   S                                //  displayed different
-   S"LineNr fg=regular3",           //HLF_N   line number for ":number" and ":#" commands
-   S"LineNrAbove link=None",        //HLF_LNA  LineNrAbove
-   S"LineNrBelow link=None",        //HLF_LNB  LineNrBelow
-   S"Directory fg=bright6",
-   S"CursorLineNr deco=bold fg=regular3",
-   S"MoreMsg deco=bold fg=143",
-   S"Question deco=bold fg=bright2", 
-   S"SpecialKey fg=bright4",
-   S"Title deco=bold fg=bright5",
-   S"WarningMsg bg=grey7 fg=bright1",
-   S"InfoMsg bg=grey6 fg=bright2",
-   S"WildMenu bg=regular3 fg=regular0",
-   S"Folded bg=grey2 fg=bright6",
-   S"Visual bg=grey16 fg=grey23",
-   S"ColorColumn bg=regular1",
-   S"MatchParen bg=regular6",
-   S"StatusLineTerm deco=bold fg=regular2 bg=bright2",
-   S"StatusLineTermNC fg=353 bg=050",
-   S"Search fg=regular0 bg=bright3",
-   S"CurSearch link=Search",
-   S"LocationLine link=Search",
-   S"Comment fg=regular2",
-   S"Constant fg=544",
-   S"Special fg=540",
-   S"Identifier fg=255",
-   S"Statement fg=552",
-   S"PreProc fg=525",
-   S"Type fg=353",
-   S"Keyword fg=550",
-   S"Underlined fg=125 deco=underline",
-   S"Ignore fg=grey7",
-   S"Added fg=252",
-   S"Changed fg=225",
-   S"Removed fg=regular1",
-   S"Error bg=regular1",
-   S"Todo bg=regular3 fg=regular4",
-   S"Bold deco=bold",
-   S"Italic deco=italic"
-}; 
-   
+
 //The names of hilite groups, separated by ZERO. Same len as hiliteGroupStrings
 private CS hiNamesContainer;
 
@@ -644,40 +591,40 @@ initializeGroups(void) {
       count++;
       len += (nameEnd - groupString + 1); //+1 for the ZERO
    }
-   
+
    hiNamesContainer = alloc(len);
    hilites = alloc(count*sizeof(HiliteGroup));
-   
+
    CS target = hiNamesContainer;
    HiliteGroup* targetGroup = hilites;
    for (Short i = 0; i < countGroups; i++) {
       CS groupString = (CS)hiliteGroupStrings[i];
       CS nameEnd = skiptowhite(groupString);
       Int nameLen = nameEnd - groupString;
-      
+
       for (Short j = 0; j < nameLen; j++) {
          Byte byte = groupString[j];
          if (!bookIsCharPrintable(byte)) {
             emsg(_(e_unprintable_character_in_group_name));
             return;
          } ei (!ASCII_ISALNUM(byte) && byte != '_' && byte != '.') {
-            msg_source(getDecoFlags(HLF_W));
+            msg_source(getDecoFlags(HILITE_WarningMsg));
             msg(_("W18: Invalid character in group name"));
             return;
          }
       }
-      
+
       targetGroup->name = (Text){.c = target, .len = nameLen};
-      
+
       memcpy(target, groupString, nameLen);
       target += nameLen; //+1 for the ZERO
       *target = ZERO;
       targetGroup->hiId = i;
-      
+
       target++;
       targetGroup++;
    }
-   
+
    hiNames = dictStringInt128NewJustIndices(hiNamesContainer, countGroups, a);
 }
 
@@ -688,13 +635,13 @@ initHilite(int reset) { //clear group first?
    //load colors and groups (they are all built-in)
    countGroups = ARRAY_LENGTH(hiliteGroupStrings);
    initializeGroups();
-   
+
    decorationsG = alloc((countGroups + 10)*sizeof(Decoration));
    doHilite((CS)hiliteGroupStrings[0], reset, true);
    set_normal_colors();
    for (int i = 1; i < countGroups; ++i) {
       doHilite((CS)hiliteGroupStrings[i], reset, true);
-   } 
+   }
 }
 
 ////Reset all hiliting to the defaults. Removes all hiliting for the groups added by the user
@@ -710,7 +657,7 @@ initHilite(int reset) { //clear group first?
 //  redraw_later_clear();
 //}
 
-//Set the 'deco' field for the hilite group at index 'id'. 'arg' is deco name . 
+//Set the 'deco' field for the hilite group at index 'id'. 'arg' is deco name .
 //Returns true if the decos are set.
 private int
 setDecoration(Text arg, OUT HiliteGroup* g) {
@@ -730,14 +677,14 @@ setDecoration(Text arg, OUT HiliteGroup* g) {
 
 private Boole
 getColorByName(OUT VTermColor* res, Text name) {
-   if (name.len == 8 
-         && name.c[7] >= '0' && name.c[7] < '8' 
+   if (name.len == 8
+         && name.c[7] >= '0' && name.c[7] < '8'
          && eq(((Text){name.c, 7}), S"regular")
    ) {
       *res = name.c[7] - '0';
       return true;
    } ei (name.len == 7
-         && name.c[6] >= '0' && name.c[6] < '8' 
+         && name.c[6] >= '0' && name.c[6] < '8'
          && eq(((Text){name.c, 6}), S"bright")
    ) {
       *res = (name.c[7] - '0') + 8;
@@ -776,7 +723,7 @@ setBackground(HiliteGroup* group, Text arg){
       group->fieldPresence |= HI_HAS_BG;
       return true;
    }
-   return false; 
+   return false;
 }
 
 //Set the underline/undercurl color for the hilite group at 'id'.
@@ -815,7 +762,7 @@ printHilite(HiliteGroup* group) {
       msg_outtrans(S"CLEARED");
    }
    if (group->link) {
-      msgPutsDeco(S"links to", getDecoFlags(HLF_D));
+      msgPutsDeco(S"links to", getDecoFlags(HILITE_Directories));
       msg_putchar(' ');
       msg_outtrans(hilites[group->link].name.c);
    }
@@ -861,9 +808,9 @@ printAllHiliteGroups() {
    for (int i = 0; i < countGroups; ++i) {
       //TODO: only call when the group has decos set?
       printHilite(sortedGroups + i);
-   } 
-      
-   deleteArena(a); 
+   }
+
+   deleteArena(a);
 }
 
 private void
@@ -945,12 +892,12 @@ linkHilite(
    Text toName
 ) {
    clearHiliteWorker(OUT group);
-   
+
    Short toId = hiliteGroupByName(toName);
    if (toId == SHORT) {
       return false;
    }
-      
+
    group->link = toId;
    group->script_ctx = scriptPosG;
    group->script_ctx.lineNr += SOURCING_LNUM;
@@ -994,7 +941,7 @@ writeToDecoration(HiliteGroup* restrict g) {
 //Fill the keys and kvs arrays for a hilite expression
 //After the call, keys and kvs are terminated by structs with start = SHORT.
 //In case of parse error, keys[0].start = SHORT - 1.
-private void 
+private void
 parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line) {
    Byte posEquals = 255; //set when "=" is encountered
    Byte posStart = 0;
@@ -1009,7 +956,7 @@ parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line)
                showErrFmtMsg(_(e_unexpected_equal_sign_str), line);
                goto errorOut;
             }
-            
+
             kvs[indKvs] = (HiKeyValue){.start = posStart, .keyEnd = posEquals, .end = p - line};
             indKvs++;
          } else {
@@ -1028,17 +975,17 @@ parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line)
       } else {
          if (*p == '=') {
             posEquals = (Short)(p - line);
-         } 
+         }
          p++;
       }
    }
-   
+
 finalize:
    kvs[indKvs] = (HiKeyValue){.start = SHORT};
    keys[indKeys] = (HiKey){.start = SHORT};
    return;
 
-errorOut: 
+errorOut:
    keys[0] = (HiKey){.start = SHORT - 1};
 }
 
@@ -1057,7 +1004,7 @@ doHilite(CS line, Boole forceit, Boole init) { //true when called for initializi
       printAllHiliteGroups();
       return;
    }
-   
+
    HiKey keys[3]; //up to two keys, the group name & optionala "none"
    HiKeyValue kvs[5]; //up to 4 key-values: "fg", "bg", "under" and "deco", or the single "link"
    parseHiliteArgs(OUT keys, OUT kvs, line);
@@ -1065,18 +1012,18 @@ doHilite(CS line, Boole forceit, Boole init) { //true when called for initializi
       showErrFmtMsg(_(e_illegal_argument_str_3), line);
       return;
    }
-   
+
    //Isolate the name.
    Text groupName = keyName(keys[0], line);
    Unt hiId = keys[0].start < SHORT ? hiliteGroupByName(groupName) : SHORT;
-   
+
    if (hiId == SHORT) {
       showErrFmtMsg(_(e_hilite_group_name_not_found_str), line);
       return;
-   } 
-   
+   }
+
    HiliteGroup* group = hilites + hiId;
-   
+
    //":highlight {group-name}": just list hiliting for one group and exit.
    if (kvs[0].start == SHORT) {
       printHilite(group);
@@ -1086,7 +1033,7 @@ doHilite(CS line, Boole forceit, Boole init) { //true when called for initializi
    //Clear the highlighting for ":hi clear {group}" and ":hi clear".
    if (forceit || init) {
       clearHiliteWorker(OUT group);
-   } 
+   }
    group->fieldPresence &= ~HI_IS_LINK;
    for (HiKeyValue* kv = kvs; kv->start != SHORT && !error; kv++) {
       Text keyStr = keyOf(*kv, line);
@@ -1100,24 +1047,24 @@ doHilite(CS line, Boole forceit, Boole init) { //true when called for initializi
       case DECO: {
          if (!setDecoration(val, OUT group)) {
             error = true;
-         } 
+         }
          break;
       }
       case FG: {
          if (!setForeground(OUT group, val))
             error = true;
-         break; 
-      } 
+         break;
+      }
       case BG: {
          if (!setBackground(OUT group, val))
             error = true;
-         break; 
-      } 
+         break;
+      }
       case UNDER: {
          if (!setUnderline(OUT group, val))
             error = true;
-         break; 
-      } 
+         break;
+      }
       case LINK: {
          if (kv != kvs || kvs[1].start != SHORT) { //if "link" is present, it must be alone
             showErrFmtMsg(_(e_illegal_argument_str_3), keyStr);
@@ -1136,12 +1083,12 @@ doHilite(CS line, Boole forceit, Boole init) { //true when called for initializi
          break;
       }
    }
-   
+
    if (error) {
       showErrFmtMsg(_(e_hilite_group_name_not_found_str), line);
       return;
    }
-   
+
    decorationsG[group->hiId] = writeToDecoration(group);
 
    group->script_ctx = scriptPosG;
@@ -1280,11 +1227,11 @@ getHiliteGroupName(Expand*, int id) {
       return text(S"NONE");
    ei (hiId == countGroups + hiComplIncludeNoneG && hiComplIncludeDefaultG != 0)
       return text(S"default");
-   ei (hiId == countGroups + hiComplIncludeNoneG + hiComplIncludeDefaultG 
+   ei (hiId == countGroups + hiComplIncludeNoneG + hiComplIncludeDefaultG
             && hiComplIncludeLinkG != 0
    )
      return text(S"link");
-   ei (hiId == countGroups + hiComplIncludeNoneG + hiComplIncludeDefaultG + 1 
+   ei (hiId == countGroups + hiComplIncludeNoneG + hiComplIncludeDefaultG + 1
             && hiComplIncludeLinkG != 0
    )
       return text(S"clear");
@@ -1338,7 +1285,7 @@ toDict(Short hiId, int resolveLinks) {
 
    HiliteGroup* group = hilites + hiId;
 
-   if (bagAddString(dict, S"name", group->name.c) == FAIL 
+   if (bagAddString(dict, S"name", group->name.c) == FAIL
          || bagAddNumber(dict, S"id", hiId) == FAIL)
       goto error;
 
@@ -1350,7 +1297,7 @@ toDict(Short hiId, int resolveLinks) {
          goto error;
    }
    Byte buf[4];
-   
+
    if ((group->fieldPresence & HI_IS_LINK) != 0) {
       Text linkName = hilites[group->link].name;
       if (linkName.len > 0 && bagAddString(dict, S"linksto", linkName.c) == FAIL)
@@ -1366,7 +1313,7 @@ toDict(Short hiId, int resolveLinks) {
       if ((group->fieldPresence & HI_HAS_UNDER) != 0)
          bagAddString(dict, S"under", printColor(OUT buf, group->under));
    }
-   
+
    if (bagSize(dict) == 2)
       //If only 'name' is present, then the hilite group is cleared.
       bagAdd_bool(dict, S"cleared", VVAL_TRUE);
@@ -1428,9 +1375,9 @@ pub Decoration
 getFullDecoration(Short hiId) {
    Short resolvedId = hiResolveLinks(hiId);
    HiliteGroup* g = hilites + resolvedId;
-   
+
    return (Decoration) {
-      .fg = g->fg, .bg = g->bg, .under = g->under, .flags = g->flags, 
+      .fg = g->fg, .bg = g->bg, .under = g->under, .flags = g->flags,
       .fieldPresence = g->fieldPresence, .hiId = hiId
    };
 }
@@ -1587,7 +1534,7 @@ typedef struct syn_cluster_S {
 //instead of passing it to them, we stow it here.
 private Byte** synCommline;
 
-//Another Annoying Hack(TM):  To prevent rules from other ":syn include"'d files from leaking 
+//Another Annoying Hack(TM):  To prevent rules from other ":syn include"'d files from leaking
 //into ALLBUT lists, we assign a unique ID to the rules in each ":syn include"'d file.
 private int current_syn_inc_tag = 0;
 private int running_syn_inc_tag = 0;
@@ -1656,7 +1603,7 @@ private int current_line_id = 0;   //unique number for current line
 
 private void syn_stack_apply_changes_block(SyntaxBlock *block, Book* book);
 private void find_endpos(
-      int idx, PosNoVirt *startpos, PosNoVirt *m_endpos, PosNoVirt *hl_endpos, long *flagsp, 
+      int idx, PosNoVirt *startpos, PosNoVirt *m_endpos, PosNoVirt *hl_endpos, long *flagsp,
       PosNoVirt *end_endpos, int *end_idx, RegExternalMatch *start_ext
 );
 
@@ -1703,7 +1650,7 @@ syntaxStartLine(Portal *wp, LineNr lnum) {
          (void)store_current_state();
       }
 
-      //If the currLnumS is now the same as "lnum", keep the current state (this happens very 
+      //If the currLnumS is now the same as "lnum", keep the current state (this happens very
       //often!).  Otherwise invalidate current_state and figure it out below.
       if (currLnumS != lnum)
          invalidate_current_state();
@@ -1916,7 +1863,7 @@ syn_sync(Portal   *wp, LineNr   start_lnum, SyntaxState   *last_valid){
                update_si_attr(current_state.len - 1);
                 break;
             }
-         } 
+         }
       }
 
       //restore cursor and buffer
@@ -1996,7 +1943,7 @@ syn_sync(Portal   *wp, LineNr   start_lnum, SyntaxState   *last_valid){
                else
                   ++currColS;
 
-               //getCurrentDeco() will have skipped the check for an item that ends here, need to 
+               //getCurrentDeco() will have skipped the check for an item that ends here, need to
                //do that now. Be careful not to go past the ZERO.
                prev_current_col = currColS;
                if (syn_getcurline()[currColS] != ZERO)
@@ -2017,8 +1964,8 @@ syn_sync(Portal   *wp, LineNr   start_lnum, SyntaxState   *last_valid){
                && push_current_state(found_match_idx) == OK)
                 update_si_attr(current_state.len - 1);
 
-            //When using "grouphere", continue from the sync point match, until the end of the 
-            //line. Parsing starts at the next line. For "groupthere" the parsing starts at 
+            //When using "grouphere", continue from the sync point match, until the end of the
+            //line. Parsing starts at the next line. For "groupthere" the parsing starts at
             //start_lnum.
             if (found_flags & HL_SYNC_HERE) {
                if (current_state.len) {
@@ -2130,10 +2077,10 @@ syn_update_ends(int startofline) {
       }
    }
 
-   //Need to update the end of a start/skip/end that continues from the previous line. And regions 
-   //that have "keepend", because they may influence contained items.  If we've just removed 
-   //"extend" (startofline == 0) then we should update ends of normal regions contained inside 
-   //"keepend" because "extend" could have extended these "keepend" regions as well as contained 
+   //Need to update the end of a start/skip/end that continues from the previous line. And regions
+   //that have "keepend", because they may influence contained items.  If we've just removed
+   //"extend" (startofline == 0) then we should update ends of normal regions contained inside
+   //"keepend" because "extend" could have extended these "keepend" regions as well as contained
    //normal regions. Then check for items ending in column 0.
    i = current_state.len - 1;
    if (keepend_level >= 0)
@@ -2167,23 +2114,23 @@ syn_update_ends(int startofline) {
 //
 //EXPLANATION OF THE SYNTAX STATE STACK CACHE
 //
-//To speed up syntax highlighting, the state stack for the start of some lines is cached. These 
+//To speed up syntax highlighting, the state stack for the start of some lines is cached. These
 //entries can be used to start parsing at that point.
-//The stack is kept in array[] for each buffer.  There is a list of valid entries. first points 
-//to the first one, then follow next. The entries are sorted on line number. The first entry 
-//is often for line 2 (line 1 always starts with an empty stack). There is also a list for free 
+//The stack is kept in array[] for each buffer.  There is a list of valid entries. first points
+//to the first one, then follow next. The entries are sorted on line number. The first entry
+//is often for line 2 (line 1 always starts with an empty stack). There is also a list for free
 //entries. This construction is used to avoid having to allocate and free memory blocks too often.
 //
-//When making changes to the buffer, this is logged in b_mod_*.  When calling drawUpdateScreen() to 
-//update the display, it will call syn_stack_apply_changes() for each displayed buffer to adjust 
+//When making changes to the buffer, this is logged in b_mod_*.  When calling drawUpdateScreen() to
+//update the display, it will call syn_stack_apply_changes() for each displayed buffer to adjust
 //the cached entries.  The entries which are inside the changed area are removed, because they must
-//be recomputed. Entries below the changed have their line number adjusted for deleted/inserted 
-//lines, and have their invalidatingChangeLnum set to indicate that a check must be made if the changed 
+//be recomputed. Entries below the changed have their line number adjusted for deleted/inserted
+//lines, and have their invalidatingChangeLnum set to indicate that a check must be made if the changed
 //lines would change the cached entry.
 //
-//When later displaying lines, an entry is stored for each line. Displayed lines are likely to be 
-//displayed again, in which case the state at the start of the line is needed. For undisplayed 
-//lines, an entry is stored for every so many lines. These entries will be used e.g., when 
+//When later displaying lines, an entry is stored for each line. Displayed lines are likely to be
+//displayed again, in which case the state at the start of the line is needed. For undisplayed
+//lines, an entry is stored for every so many lines. These entries will be used e.g., when
 //scrolling backwards. The distance between entries depends on the number of lines in the buffer.
 //For small buffers the distance is fixed at SST_DIST, for large buffers there is a fixed
 //number of entries SST_MAX_ENTRIES, and the distance is computed.
@@ -2198,7 +2145,7 @@ synFreeBlock(SyntaxBlock *block) {
 
    FOR_ALL_SYNSTATES(block, p) {
       clear_syn_state(p);
-   } 
+   }
    EE_CLEAR(block->array);
    block->first = NULL;
    block->len = 0;
@@ -2432,7 +2379,7 @@ store_current_state(void) {
             FOR_ALL_SYNSTATES(synBlockS, p) {
                if (p->next == sp)
                   break;
-            } 
+            }
             if (p)   //just in case
                p->next = sp->next;
          }
@@ -2670,11 +2617,11 @@ syn_finish_line(int       syncing) {     //called for syncing
          //Check for match with sync item.
          currStateItem = &CUR_STATE(current_state.len - 1);
          if (currStateItem->si_idx >= 0
-                && (SYN_ITEMS(synBlockS)[currStateItem->si_idx].sp_flags 
+                && (SYN_ITEMS(synBlockS)[currStateItem->si_idx].sp_flags
                    & (HL_SYNC_HERE|HL_SYNC_THERE)))
             return true;
 
-         //getCurrentDeco() will have skipped the check for an item that ends here, need to do 
+         //getCurrentDeco() will have skipped the check for an item that ends here, need to do
          //that now.  Be careful not to go past the ZERO.
          prev_current_col = currColS;
          if (syn_getcurline()[currColS] != ZERO)
@@ -2788,7 +2735,7 @@ getCurrentDeco(
    }
 
    //Only check for keywords when not syncing and there are some.
-   do_keywords = !syncing 
+   do_keywords = !syncing
       && (synBlockS->keywords.count > 0 || synBlockS->keywordsIgnoreCase.count > 0);
 
    //Init the list of zero-width matches with a nextlist.  This is used to
@@ -2805,13 +2752,13 @@ getCurrentDeco(
       keep_next_list = false;
       hiId = SHORT;
 
-      //1. Check for a current state. Only when there is no current state, or if the current state 
-      //may contain other things, we need to check for keywords and patterns. Always need to check 
+      //1. Check for a current state. Only when there is no current state, or if the current state
+      //may contain other things, we need to check for keywords and patterns. Always need to check
       //for contained items if some item has the "containedin" argument (takes extra time!).
       currStateItem = current_state.len != 0 ? &CUR_STATE(current_state.len - 1) : null;
 
       if (synBlockS->b_syn_containedin || currStateItem == NULL || currStateItem->si_containsHiId) {
-         //2. Check for keywords, if on a keyword char after a non-keyword char. 
+         //2. Check for keywords, if on a keyword char after a non-keyword char.
          //Don't do this when syncing.
          if (do_keywords) {
             line = syn_getcurline();
@@ -2861,7 +2808,7 @@ getCurrentDeco(
          if (hiId == 0 && synBlockS->syntaxPatterns.len) {
             //If we didn't check for a match yet, or we are past it, seek any match with a pattern
             if (nextMatchIdx < 0 || nextMatchCol < (int)currColS) {
-               //Check all relevant patterns for a match at this position.  This is complicated, 
+               //Check all relevant patterns for a match at this position.  This is complicated,
                //because matching with a pattern takes quite a bit of time, thus we want to
                //avoid doing it when it's not needed.
                nextMatchIdx = 0;      //no match in this line yet
@@ -2916,12 +2863,12 @@ getCurrentDeco(
                      //remember the next column where this pattern matches in the current line
                      spp->sp_startcol = startcol;
 
-                     //If a previously found match starts at a lower column number, don't use 
+                     //If a previously found match starts at a lower column number, don't use
                      //this one
                      if (startcol >= nextMatchCol)
                         continue;
 
-                     //If we matched this pattern at this position before, skip it.  Must retry 
+                     //If we matched this pattern at this position before, skip it.  Must retry
                      //in the next column, because it may match from there.
                      if (did_match_already(idx, &zero_width_next_ga)) {
                         try_next_column = true;
@@ -2937,7 +2884,7 @@ getCurrentDeco(
                      //Compute the region start. Default is to use the end of the match.
                      syn_add_end_off(&eos_pos, &regmatch, spp, SPO_RS_OFF, 0);
 
-                     //Grab the external submatches before they get overwritten.  Reference count 
+                     //Grab the external submatches before they get overwritten.  Reference count
                      //doesn't change.
                      unref_extmatch(cur_extmatch);
                      cur_extmatch = re_extmatch_out;
@@ -2949,7 +2896,7 @@ getCurrentDeco(
                      end_idx = 0;
                      hl_endpos.lnum = 0;
 
-                     //For a "oneline" the end must be found in the same line too.  Search for 
+                     //For a "oneline" the end must be found in the same line too.  Search for
                      //it after the end of the match with the start pattern.  Set the
                      //resulting end positions at the same time.
                      if (spp->sp_type == SPTYPE_START && (spp->sp_flags & HL_ONELINE)) {
@@ -2957,7 +2904,7 @@ getCurrentDeco(
 
                         startpos = endpos;
                         find_endpos(
-                           idx, &startpos, &endpos, &hl_endpos, &flags, &eoe_pos, &end_idx, 
+                           idx, &startpos, &endpos, &hl_endpos, &flags, &eoe_pos, &end_idx,
                            cur_extmatch
                         );
                         if (endpos.lnum == 0)
@@ -3015,7 +2962,7 @@ getCurrentDeco(
                   keep_next_list = true;
                   zero_width_next_list = true;
 
-                  //Add the index to a list, so that we can check later that we don't match it 
+                  //Add the index to a list, so that we can check later that we don't match it
                   //again (and cause an endless loop).
                   if (ga_grow(&zero_width_next_ga, 1) == OK) {
                      ((int *)(zero_width_next_ga.c))[zero_width_next_ga.len] = nextMatchIdx;
@@ -3045,7 +2992,7 @@ getCurrentDeco(
 
          //If a nextgroup was found: Use it, and continue looking for contained matches.
          //If a nextgroup was not found: Continue looking for a normal match.
-         //When did set current_next_list for a zero-width item and no match was found don't loop 
+         //When did set current_next_list for a zero-width item and no match was found don't loop
          //(would get stuck).
          current_next_list = NULL;
          nextMatchIdx = -1;
@@ -3080,9 +3027,9 @@ getCurrentDeco(
          }
       }
 
-      //Check for end of current state (and the states before it) at the next column. Don't do 
+      //Check for end of current state (and the states before it) at the next column. Don't do
       //this for syncing, because we would miss a single character match.
-      //First check if the current state ends at the current column.  It may be for an empty 
+      //First check if the current state ends at the current column.  It may be for an empty
       //match and a containing item might end in the current column.
       if (!syncing && !keep_state) {
          check_state_ends();
@@ -3120,14 +3067,14 @@ did_match_already(int idx, ArrayList *gap) {
             && CUR_STATE(i).matchLnum == (int)currLnumS
             && CUR_STATE(i).si_idx == idx)
          return true;
-   } 
+   }
 
    //Zero-width matches with a nextgroup argument are not put on the syntax
    //stack, and can only be matched once anyway.
    for (int i = gap->len; --i >= 0; ) {
       if (((int *)(gap->c))[i] == idx)
          return true;
-   } 
+   }
 
    return false;
 }
@@ -3277,7 +3224,7 @@ check_state_ends(void) {
     }
 }
 
-//Update an entry in the current_state stack for a match or region. This fills in deco, 
+//Update an entry in the current_state stack for a match or region. This fills in deco,
 //nextList and si_containsHiId.
 private void
 update_si_attr(int idx) {
@@ -3338,7 +3285,7 @@ check_keepend(void) {
    for (i = current_state.len - 1; i > keepend_level; --i) {
       if (CUR_STATE(i).si_flags & HL_EXTEND)
          break;
-   } 
+   }
 
    maxpos.lnum = 0;
    maxpos.col = 0;
@@ -3578,10 +3525,10 @@ find_endpos(
                 matchcol = pos.col;
             else {
                //Be careful not to jump over the ZERO at the end-of-line
-               for (matchcol = regmatch.endpos[0].col; matchcol < line_len && matchcol < pos.col; 
+               for (matchcol = regmatch.endpos[0].col; matchcol < line_len && matchcol < pos.col;
                      ++matchcol)
                   {}
-            } 
+            }
 
             //if the skip pattern includes end-of-line, break here
             if (matchcol >= line_len)
@@ -3794,7 +3741,7 @@ syn_regexec(
    return false;
 }
 
-//Check one position in a line for a matching keyword. The caller must check if a keyword can 
+//Check one position in a line for a matching keyword. The caller must check if a keyword can
 //start at startcol. Return its ID if found, 0 otherwise.
 private Short
 check_keyword_id(
@@ -3804,7 +3751,7 @@ check_keyword_id(
    long* flagsp,   //return: flags of matching keyword
    Short** next_listp,   //return: next_list of matching keyword
    StateItem* currStateItem,   //item at the top of the stack
-   int* 
+   int*
 ){
    CS kwp;
    int round;
@@ -4040,7 +3987,7 @@ syntax_sync_clear(void) {
    for (int i = curPor->ownSyntax->syntaxPatterns.len; --i >= 0; ) {
       if (SYN_ITEMS(curPor->ownSyntax)[i].syncing)
           syn_remove_pattern(curPor->ownSyntax, i);
-   } 
+   }
 
    curPor->ownSyntax->syncFlags = 0;
    curPor->ownSyntax->b_syn_sync_minlines = 0;
@@ -4161,7 +4108,7 @@ syn_clear_one(Short hiId, int syncing) {
 private void
 offSubcommand(Invocation*, int) {
    autoEventImpl(
-      EVENT_SYNTAX, null, 
+      EVENT_SYNTAX, null,
       (AutoCommCreation){
          .group = AUGROUP_ALL, .commandBody = null, .deleteExisting = true, false, false
       }
@@ -4178,8 +4125,8 @@ offSubcommand(Invocation*, int) {
 private void
 theOnSubcommand(Invocation* invo, int) {
    offSubcommand(invo, false);
-   
-   Var tv = (Var){.tag = VAR_BOOL, .number = VVAL_TRUE}; 
+
+   Var tv = (Var){.tag = VAR_BOOL, .number = VVAL_TRUE};
    evalLetVarSimple(S"syntaxOn", &tv);
    evalLetVarSimple(S"syntaxManual", &tv);
    //callScriptForSubcommand(invo, "syntax");
@@ -4356,7 +4303,7 @@ syn_list_one(
       KEYVALUE_ENTRY(HL_SKIPEMPTY, "skipempty")
    };
 
-   char decoFlags = getDecoFlags(HLF_D);      //hilite like directories
+   char decoFlags = getDecoFlags(HILITE_Directories);      //hilite like directories
 
    //list the keywords for "id"
    if (!syncing) {
@@ -4432,7 +4379,7 @@ syn_list_flags(Kv *nlist, int nr_entries, int flags, char decoFlags) {
          msgPutsDeco(nlist[i].value.c, decoFlags);
          msg_putchar(' ');
       }
-   } 
+   }
 }
 
 //List one syntax cluster, for ":syntax" or "syntax list syntax_name".
@@ -4452,10 +4399,10 @@ syn_list_cluster(int id) {
    msg_advance(endcol);
    if (SYN_CLSTR(curPor->ownSyntax)[id].hiIds != NULL) {
       put_id_list(
-         (CS)"cluster", SYN_CLSTR(curPor->ownSyntax)[id].hiIds, getDecoFlags(HLF_D)
+         (CS)"cluster", SYN_CLSTR(curPor->ownSyntax)[id].hiIds, getDecoFlags(HILITE_Directories)
       );
    } else {
-      msgPutsDeco((CS)"cluster", getDecoFlags(HLF_D));
+      msgPutsDeco((CS)"cluster", getDecoFlags(HILITE_Directories));
       msg_puts((CS)"=NONE");
    }
 }
@@ -4519,7 +4466,7 @@ put_pattern(CS s, int c, SyntaxPattern   *spp, int deco) {
           i = 0;   //no good char found, just use the first one
           break;
       }
-   } 
+   }
    msg_putchar(sepchars[i]);
    msg_outtrans(spp->pattern);
    msg_putchar(sepchars[i]);
@@ -4824,8 +4771,8 @@ get_syn_options(
          for (i = 0, len = 0; p[i] != ZERO; i += 2, ++len) {
             if (arg[len] != p[i] && arg[len] != p[i + 1])
                break;
-         } 
-         if (p[i] == ZERO 
+         }
+         if (p[i] == ZERO
                 && (SPACE_OR_TAB(arg[len])
                    || (flagtab[fidx].argtype > 0 ? arg[len] == '=' : endsComm(arg + len)))
          ) {
@@ -4979,7 +4926,7 @@ syn_cmd_include(Invocation* invo, int) {
             : source_runtime(invo->arg, DIP_ALL) == FAIL
    ) {
       showErrFmtMsg(_(e_cant_open_file_str), invo->arg);
-   } 
+   }
    curPor->ownSyntax->b_syn_topgrp = prev_toplvl_grp;
    current_syn_inc_tag = prev_syn_inc_tag;
 }
@@ -5128,7 +5075,7 @@ syn_cmd_match( Invocation   *invo, int      syncing) {      //true for ":syntax 
       //Check for trailing command and illegal trailing arguments.
       if (!endsComm(rest) || invo->skip)
          rest = NULL;
-      ei (ga_grow(&curPor->ownSyntax->syntaxPatterns, 1) == OK 
+      ei (ga_grow(&curPor->ownSyntax->syntaxPatterns, 1) == OK
             && (hiId = hiliteGroupByName(mbText(arg))) != SHORT
       ) {
          syn_incl_toplevel(hiId, &syn_opt_arg.flags);
@@ -5300,7 +5247,7 @@ syn_cmd_region(
             reg_do_extmatch = REX_SET;
          ei (item == ITEM_SKIP || item == ITEM_END)
             reg_do_extmatch = REX_USE;
-         Boole hadEol = false; 
+         Boole hadEol = false;
          rest = getSyntPattern(rest, ppp->pattern, OUT &hadEol);
          reg_do_extmatch = 0;
          if (item == ITEM_END && hadEol && !(syn_opt_arg.flags & HL_EXCLUDENL))
@@ -5323,7 +5270,7 @@ syn_cmd_region(
       //Check for trailing garbage or command. If OK, add the item.
       if (!endsComm(rest) || invo->skip)
          rest = NULL;
-      ei (ga_grow(&(curPor->ownSyntax->syntaxPatterns), pat_count) == OK 
+      ei (ga_grow(&(curPor->ownSyntax->syntaxPatterns), pat_count) == OK
             && (hiId = hiliteGroupByName(mbText(arg))) != SHORT
       ) {
           syn_incl_toplevel(hiId, &syn_opt_arg.flags);
@@ -5371,7 +5318,7 @@ syn_cmd_region(
          ppp_next = ppp->pp_next;
          eeglFree(ppp);
       }
-   } 
+   }
 
    if (!success) {
       eeglFree(syn_opt_arg.containsHiId);
@@ -5425,8 +5372,8 @@ syn_combine_list(Short **clstr1, Short **clstr2, int list_op) {
    qsort(*clstr1, (Unt)count1, sizeof(Short), syn_compare_stub);
    qsort(*clstr2, (Unt)count2, sizeof(Short), syn_compare_stub);
 
-   //We proceed in two passes; in round 1, we count the elements to place in the new list, and in 
-   //round 2, we allocate and populate the new list.  For speed, we use a mergesort-like method, 
+   //We proceed in two passes; in round 1, we count the elements to place in the new list, and in
+   //round 2, we allocate and populate the new list.  For speed, we use a mergesort-like method,
    //adding the smaller of the current elements in each list to the new list.
    for (int round = 1; round <= 2; round++) {
       g1 = *clstr1;
@@ -5459,7 +5406,7 @@ syn_combine_list(Short **clstr1, Short **clstr2, int list_op) {
       for (; *g1; g1++, count++) {
          if (round == 2)
             clstr[count] = *g1;
-      } 
+      }
       if (list_op == CLUSTER_ADD)
          for (; *g2; g2++, count++) {
             if (round == 2)
@@ -5496,7 +5443,7 @@ clusterByName(CS name) {
             && STRCMP(name_u, SYN_CLSTR(curPor->ownSyntax)[i].nameUpper) == 0
       )
          break;
-   } 
+   }
    eeglFree(name_u);
    return (i == SHORT ? SHORT : i + SYNID_CLUSTER);
 }
@@ -5513,8 +5460,8 @@ syntaxClusterByName(Text line) {
    return id;
 }
 
-//Find syntax cluster name in the table and return its ID. The argument is a pointer to the name 
-//and the length of the name. If it doesn't exist yet, a new entry is created. Return 0 for 
+//Find syntax cluster name in the table and return its ID. The argument is a pointer to the name
+//and the length of the name. If it doesn't exist yet, a new entry is created. Return 0 for
 //failure.
 private int
 syn_check_cluster(CS pp, int len) {
@@ -5667,7 +5614,7 @@ getSyntPattern(CS arg, SyntaxPattern *ci, OUT Boole* hadEol) {
       for (idx = SPO_COUNT; --idx >= 0; ) {
          if (STRNCMP(end, spo_name_tab[idx], 3) == 0)
             break;
-      } 
+      }
       if (idx >= 0) {
          p = &(ci->sp_offsets[idx]);
          if (idx != SPO_LC_OFF) {
@@ -5677,8 +5624,8 @@ getSyntPattern(CS arg, SyntaxPattern *ci, OUT Boole* hadEol) {
             case 'e':   idx += SPO_COUNT; break;
             default:    idx = -1; break;
             }
-         } 
-         
+         }
+
          if (idx >= 0) {
             ci->sp_off_flags |= (1 << idx);
             if (idx == SPO_LC_OFF) {      //lc=99
@@ -5803,7 +5750,7 @@ syn_cmd_sync(Invocation* invo, int) {
             }
             curPor->ownSyntax->lineContinIgnoreCase = curPor->ownSyntax->b_syn_ic;
 
-            curPor->ownSyntax->lineContinProg = 
+            curPor->ownSyntax->lineContinProg =
                compileRegexp(curPor->ownSyntax->lineContinuationPattern, RE_MAGIC);
 
             if (curPor->ownSyntax->lineContinProg == NULL) {
@@ -6033,11 +5980,11 @@ in_id_list(
    int      toplevel;
 
    //If ssp has a "containedin" list and "currStateItem" is in it, return true.
-   if (currStateItem != NULL 
-         && ssp->containedInHiId != NULL 
+   if (currStateItem != NULL
+         && ssp->containedInHiId != NULL
          && !(currStateItem->si_flags & HL_MATCH)
    ) {
-      //Ignore transparent items without a contains argument.  Double check that we don't go back 
+      //Ignore transparent items without a contains argument.  Double check that we don't go back
       //past the first one.
       while ((currStateItem->si_flags & HL_TRANS_CONT)
          && currStateItem > (StateItem *)(current_state.c))
@@ -6052,7 +5999,7 @@ in_id_list(
    if (!list)
       return false;
 
-   //If list is ID_LIST_ALL, we are in a transparent item that isn't inside anything. Only allow 
+   //If list is ID_LIST_ALL, we are in a transparent item that isn't inside anything. Only allow
    //not-contained groups.
    if (list == ID_LIST_ALL)
       return !(flags & HL_CONTAINED);
@@ -6129,7 +6076,7 @@ private Subcommand subcommands[] = { SMAP1((CS),
    "spell",      syn_cmd_spell,
    "sync",      syn_cmd_sync,
    "",      syn_cmd_list
-   ) 
+   )
 };
 
 //":syntax". Search the subcommands[] table for the subcommand name, and call a
@@ -6303,7 +6250,7 @@ get_syntax_name(Expand* xp, int idx) {
    }
    case EXP_CLUSTER: {
       if (idx < curPor->ownSyntax->syntaxClusters.len) {
-         eeSnprintf(xp->matchBuilder, EXPAND_BUF_LEN, "@%s", 
+         eeSnprintf(xp->matchBuilder, EXPAND_BUF_LEN, "@%s",
                SYN_CLSTR(curPor->ownSyntax)[idx].name
          );
          return xp->matchBuilder;
@@ -6338,7 +6285,7 @@ syn_get_id(
    return (trans ? current_trans_id : current_id);
 }
 
-//Return the syntax ID at position "i" in the current stack. The caller must have called 
+//Return the syntax ID at position "i" in the current stack. The caller must have called
 //syn_get_id() before to fill the stack. Returns -1 when "i" is out of range.
 pub int
 syn_get_stack_item(int i) {
@@ -6358,7 +6305,7 @@ syn_cur_foldlevel(void) {
    for (int i = 0; i < current_state.len; ++i) {
       if (CUR_STATE(i).si_flags & HL_FOLD)
          ++level;
-   } 
+   }
    return level;
 }
 

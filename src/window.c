@@ -1857,7 +1857,7 @@ c_display(Invocation* invo) {
 
    if (arg && *arg == ZERO)
       arg = NULL;
-   char flags = getDecoFlags(HLF_8);
+   char flags = getDecoFlags(HILITE_MetaSpecialKeys);
 
    // Hilite the title
    msg_puts_title(_("\nType Name Content"));

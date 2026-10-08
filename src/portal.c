@@ -78,12 +78,7 @@ private Portal * horizNeighbor(Tab* t, Portal* po, Boole left, long count);
 private Portal * vertNeighbor(Tab* t, Portal* po, Boole up, long count);
 private void gotoPortal_hor(Boole goLeft, long count);
 private void gotoPortal_ver(Boole goUp, long count);
-private void cmd_with_count(
-   CS cmd,
-   CS bufp,
-   Unt   bufsize,
-   long   prenum)
-;
+private void cmd_with_count(CS cmd, CS bufp, Unt bufsize, Long prenum);
 private int check_split_disallowed(Portal* po);
 private void init(Portal* newp, Portal* oldp, Unt);
 private void initg_some(Portal* newp, Portal* oldp);
@@ -287,6 +282,7 @@ private void add_border_left_right_padding(Portal* po);
 private Boole popup_terminal_exists(void);
 private void updateNotificationColor(Portal* po, PopupKind type);
 private void initPopupBook(Book* book);
+private Portal* createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind);
 private void invokeCallback(Portal* po, Var *result);
 private void back_to_prevPor(Portal* po);
 private void popup_close_and_callback(Portal* po, Var *arg);
@@ -559,7 +555,8 @@ vertNeighbor(Tab* t, Portal* po, Boole up, long count) {
          if (nfr->layout == FR_ROW) {
             //Find the frame at the cursor row.
             while (fr->next
-                  && frameToPort(fr)->windowCol + fr->width <= (Unt)po->windowCol + po->cursorCol)
+               && frameToPort(fr)->windowCol + fr->width <= (Unt)po->windowCol + po->cursorCol
+            )
                fr = fr->next;
          }
          if (nfr->layout == FR_COL && up) {
@@ -595,8 +592,7 @@ gotoPortal_ver(Boole goUp, long count) {
 
 //All CTRL-W portal commands are handled here, called from normal_cmd().
 pub void
-doPortal(int nchar, long prenum, Unt xchar) { //extra char from ":wincmd gx" or ZERO
-   long   prenum1;
+doPortal(int nchar, Long prenum, Unt xchar) { //extra char from ";wincmd gx" or ZERO
    Portal* po;
    CS ptr;
    LineNr lnum = -1;
@@ -608,15 +604,15 @@ doPortal(int nchar, long prenum, Unt xchar) { //extra char from ":wincmd gx" or 
       return;
 
 #define CHECK_COMMPORT \
-    do { \
-   if (commPortTypeG != 0) \
-   { \
-       emsg(_(e_invalid_in_commline_portal)); \
-       return; \
-   } \
-    } while (0)
+   do { \
+      if (commPortTypeG != 0) \
+      { \
+          emsg(_(e_invalid_in_commline_portal)); \
+          return; \
+      } \
+   } while (0)
 
-   prenum1 = prenum == 0 ? 1 : prenum;
+   Long prenum1 = prenum == 0 ? 1 : prenum;
 
    switch (nchar) {
    //split current portal in two parts, horizontally
@@ -906,32 +902,31 @@ newPortal:
       portSetWidth(curPor->width - (int)prenum1, curPor);
       break;
 
-//set current portal width
-    case '|':
+   //set current portal width
+   case '|':
       portSetWidth(prenum != 0 ? (int)prenum : 9999, curPor);
       break;
 
-//jump to tag and split portal if tag exists (in preview portal)
-    case '}':
+   //jump to tag and split portal if tag exists (in preview portal)
+   case '}':
       CHECK_COMMPORT;
       if (prenum)
-          g_do_tagpreview = prenum;
+         g_do_tagpreview = prenum;
       else
-          g_do_tagpreview = p_pvh;
+         g_do_tagpreview = p_pvh;
       //FALLTHROUGH
     case ']':
     case Ctrl_RSB:
       CHECK_COMMPORT;
       //keep Visual mode, can select words to use as a tag
       if (prenum)
-          postponed_split = prenum;
+         postponed_split = prenum;
       else
-          postponed_split = -1;
+         postponed_split = -1;
       if (nchar != '}')
-          g_do_tagpreview = 0;
+         g_do_tagpreview = 0;
 
-      //Execute the command right here, required when "wincmd ]"
-      //was used in a function.
+      //Execute the command right here, required when "wincmd ]" was used in a function.
       do_nv_ident(Ctrl_RSB, ZERO);
       postponed_split = 0;
       break;
@@ -947,9 +942,9 @@ portGotoFile:
 
       ptr = grab_file_name(prenum1, OUT &lnum);
       if (ptr) {
-          Tab* oldtab = curtab;
-          Portal* oldPortal = curPor;
-          setpcmark();
+         Tab* oldtab = curtab;
+         Portal* oldPortal = curPor;
+         setpcmark();
 
          //If 'switchbook' is set to 'useopen' or 'loadTab' and the
          //file is already opened in a portal, then jump to it.
@@ -959,7 +954,7 @@ portGotoFile:
 
          if (po == NULL && splitPortal(0, 0) == OK) {
             curPor->o.diff = false;
-            if (startEditingFile(0, ptr, NULL, NULL, ECMD_LASTL, ECMD_HIDE, NULL) == FAIL) {
+            if (bookStartEditingFile(0, ptr, NULL, NULL, ECMD_LASTL, ECMD_HIDE, NULL) == FAIL) {
                //Failed to open the file, close the portal opened for it.
                closePortal(curPor, false);
                goto_tab_port(oldtab, oldPortal);
@@ -1154,16 +1149,11 @@ getPortCommAddressType(CS arg, Invocation* invo) {
      //no count
      invo->addressKind = ADDR_NONE;
      break;
-  }
+   }
 }
 
 private void
-cmd_with_count(
-   CS cmd,
-   CS bufp,
-   Unt   bufsize,
-   long   prenum)
-{
+cmd_with_count(CS cmd, CS bufp, Unt bufsize, Long prenum) {
    if (prenum > 0)
       eeSnprintf(bufp, bufsize, "%s %ld", cmd, prenum);
    else
@@ -1240,19 +1230,19 @@ splitPortal_ins(
 ) {
    Portal* po = newPort;
    Portal* oldPortal;
-   int      new_size = size;
-   int      i;
-   int      do_equal = false;
-   int      needed;
-   int      available;
-   int      oldPortal_height = 0;
-   int      layout;
-   Frame   *fr, *curfrp, *fr2, *prevfrp;
-   int      before;
-   int      minheight;
-   int      wmh1;
-   int      did_set_fraction = false;
-   int      retval = FAIL;
+   int new_size = size;
+   int i;
+   int do_equal = false;
+   int needed;
+   int available;
+   int oldPortal_height = 0;
+   int layout;
+   Frame *fr, *curfrp, *fr2, *prevfrp;
+   int before;
+   int minheight;
+   int wmh1;
+   int did_set_fraction = false;
+   int retval = FAIL;
 
    //Do not redraw here, curPor->book may be invalid.
    ++isRedrawingDisabledG;
@@ -1260,9 +1250,9 @@ splitPortal_ins(
    if (!newPort)
       triggerPortalNewPre();
 
-   if (flags & WSP_TOP)
+   if ((flags & WSP_TOP) != 0)
       oldPortal = firstPor;
-   ei (flags & WSP_BOT)
+   ei ((flags & WSP_BOT) != 0)
       oldPortal = lastPor;
    else
       oldPortal = curPor;
@@ -4445,7 +4435,7 @@ gotoPortal(Portal* po) {
 pub void
 enterPortal(Portal* po, int undo_sync) {
    (void)enterPortalWorker(
-       po,
+      po,
       (undo_sync ? WEE_UNDO_SYNC : 0) | WEE_TRIGGER_ENTER_AUTOCMDS | WEE_TRIGGER_LEAVE_AUTOCMDS
    );
 }
@@ -4563,9 +4553,6 @@ enterPortalWorker(Portal* po, Unt flags) {
       portSetWidth((int)p_wiw, curPor);
 
    setmouse();         //in case jumped to/from help book
-
-   //Change directories when the 'acd' option is set.
-   DO_AUTOCHDIR;
 
    return did_decrement;
 }
@@ -5911,7 +5898,7 @@ portalNewWidth(Portal* po, int width) {
    //Should we give an error if width < 0?
    po->width = width < 0 ? 0 : width;
    po->validLines = 0;
-   changed_line_abv_curs_win(po);
+   changed_line_abv_curs_po(po);
    invalidate_botline_win(po);
 
    if (po == curPor)
@@ -6359,7 +6346,7 @@ didChangePortalSettingCurPor(void) {
 pub void
 didChangePortalSetting(Portal *po) {
    po->validLines = 0;
-   changed_line_abv_curs_win(po);
+   changed_line_abv_curs_po(po);
    po->cacheState &= ~(VALID_BOTLINE|VALID_BOTLINE_AP|VALID_TOPLINE);
    redrawPortLater(po, UPD_NOT_VALID);
 }
@@ -11570,14 +11557,13 @@ initPopupBook(Book* book) {
    book->o.initialized = true;
 }
 
-
 //createPopup({text}, {options})
 //popup_atcursor({text}, {options})
 //When creating a preview or info popup "argvars" and "returnVar" are NULL.
 //If the first arg is a number, it's interpreted as the book index.
 //If it's a string, then a new book is created and filled with that string.
-pub Portal*
-createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind) {
+private Portal*
+createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind) { //:createPopup
    Portal* po;
    Tab* tab = NULL;
    int tabnr = 0;
@@ -13351,11 +13337,11 @@ update_popups(void (*portUpdate)(Portal* po, Boole *)) {
          if (po->pup.scrollbarHilite)
             scrollDeco = decosByHiliteName(po->pup.scrollbarHilite).flags;
          else
-            scrollDeco = getDecoFlags(HLF_PSB);
+            scrollDeco = getDecoFlags(HILITE_PmenuScrollbar);
          if (po->pup.thumbHilite)
             thumbFlags = decosByHiliteName(po->pup.thumbHilite).flags;
          else
-            thumbFlags = getDecoFlags(HLF_PST);
+            thumbFlags = getDecoFlags(HILITE_PmenuScrollBarThumb);
       }
 
       for (int i = po->pup.border[0]; i < total_height - po->pup.border[2]; ++i) {
@@ -14016,12 +14002,12 @@ pum_under_menu(int row, int col, int only_redrawing) {
 //Return decorations for every cell, or NULL if all decorations are the same.
 private Arr(Decoration)
 computeTextDeco(CS text, Short hiId, Decoration userDeco) {
-   if (*text == ZERO || (hiId != HLF_PSI && hiId != HLF_PNI)
-          || (getDecoFlags(HLF_PMSI) == getDecoFlags(HLF_PSI)
-              && getDecoFlags(HLF_PMNI) == getDecoFlags(HLF_PNI)))
+   if (*text == ZERO || (hiId != HILITE_PmenuSelected && hiId != HILITE_Pmenu)
+          || (getDecoFlags(PmenuMatchedInSelected) == getDecoFlags(HILITE_PmenuSelected)
+              && getDecoFlags(PmenuMatchedText) == getDecoFlags(HILITE_Pmenu)))
       return NULL;
 
-   Boole isSelect = hiId == HLF_PSI;
+   Boole isSelect = hiId == HILITE_PmenuSelected;
    CS leader = (stateG & MODE_COMMLINE) ? cmdline_compl_pattern() : ins_compl_leader();
    if (!leader || *leader == ZERO)
       return NULL;
@@ -14050,7 +14036,7 @@ computeTextDeco(CS text, Short hiId, Decoration userDeco) {
          //Handle fuzzy matching
          for (int i = 0; i < ga->len; i++) {
             if (char_pos == ((Unt *)ga->c)[i]) {
-               newDeco = decorationsG[isSelect ? HLF_PMSI : HLF_PMNI];
+               newDeco = decorationsG[isSelect ? PmenuMatchedInSelected : PmenuMatchedText];
                break;
             }
          }
@@ -14058,12 +14044,12 @@ computeTextDeco(CS text, Short hiId, Decoration userDeco) {
          if (matchedLen < 0 && caseInsensitiveCompareNChars(ptr, leader, leaderLen) == 0)
             matchedLen = (int)leaderLen;
          if (matchedLen > 0) {
-            newDeco = decorationsG[isSelect ? HLF_PMSI : HLF_PMNI];
+            newDeco = decorationsG[isSelect ? PmenuMatchedInSelected : PmenuMatchedText];
             matchedLen--;
          }
       }
 
-      newDeco = getFullDecoration(HLF_PNI);
+      newDeco = getFullDecoration(HILITE_Pmenu);
       if (userDeco.hiId != SHORT)
          newDeco = userDeco;
 
@@ -14153,7 +14139,7 @@ displayText(
    int pad = next_isempty ? 0 : 2;
    int truncated = false;
    int remaining = 0;
-   char truncDeco = decorationsG[selected ? HLF_PSI : HLF_PNI].flags;
+   char truncDeco = decorationsG[selected ? HILITE_PmenuSelected : HILITE_Pmenu].flags;
    Unt trunc = fillCharsG.trunc != ZERO ? fillCharsG.trunc : '>';
 
    if (!text)
@@ -14278,7 +14264,7 @@ pum_draw_scrollbar(int row, int i, int thumb_pos, int thumb_height){
    if (pum_scrollbar <= 0)
       return;
    char deco = (i >= thumb_pos && i < thumb_pos + thumb_height) ?
-         getDecoFlags(HLF_PST) : getDecoFlags(HLF_PSB);
+         getDecoFlags(HILITE_PmenuScrollBarThumb) : getDecoFlags(HILITE_PmenuScrollbar);
    screen_putchar(' ', row, pumColP + pum_width, deco);
 }
 
@@ -14308,14 +14294,14 @@ pum_redraw(void) {
    Short hisNorm[3]; //hilite ids for normal
    Short hisSel[3];  //hilite ids for selections
    //"word"/"abbr"
-   hisNorm[0] = HLF_PNI;
-   hisSel[0] = HLF_PSI;
+   hisNorm[0] = HILITE_Pmenu;
+   hisSel[0] = HILITE_PmenuSelected;
    //"kind"
-   hisNorm[1] = HLF_PNK;
-   hisSel[1] = HLF_PSK;
+   hisNorm[1] = HILITE_PmenuNormalItem;
+   hisSel[1] = HILITE_PmenuSelectedItem;
    //"extra text"
-   hisNorm[2] = HLF_PNX;
-   hisSel[2] = HLF_PSX;
+   hisNorm[2] = HILITE_PmenuExtraText;
+   hisSel[2] = HILITE_PmenuSelectedExtraText;
 
    if (callUpdateScreen) {
       callUpdateScreen = false;
@@ -14531,7 +14517,7 @@ pum_set_selected(int n, int repeat) {
          if (curPor->isPreview || (curPor->pup.flags & POPF_INFO)) {
             //Don't want to sync undo in the current book.
             ++no_u_sync;
-            int res = startEditingFile(0, NULL, NULL, NULL, ECMD_ONE, 0, NULL);
+            int res = bookStartEditingFile(0, NULL, NULL, NULL, ECMD_ONE, 0, NULL);
             --no_u_sync;
             if (res == OK) {
                //Edit a new, empty book. Set options for a "wipeout" book.

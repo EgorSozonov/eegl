@@ -284,7 +284,7 @@ int bookCompare(const void* s0, const void* s1);
 Boole bookWasChanged(Book* book);
 Boole bookWasChangedNotTerm(Book* book);
 void drawGetTranslatedBookName(Book* book);
-int startEditingFile(
+int bookStartEditingFile(
    int fnum,
    CS fullFName,
    CS sfname,

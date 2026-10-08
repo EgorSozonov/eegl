@@ -6698,7 +6698,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
    CLEAR_FIELD(splitInvo);
    if (opt->curPor) {
       //Create a new buffer in the current portal.
-      if (startEditingFile(
+      if (bookStartEditingFile(
               0, NULL, NULL, OUT &splitInvo, ECMD_ONE,
               ECMD_HIDE + ((flags & TERM_START_FORCEIT) ? ECMD_FORCEIT : 0), curPor
           ) == FAIL) {
@@ -7184,7 +7184,7 @@ free_terminal(Book* book) {
    if (fstTermP == term)
       fstTermP = term->next;
    else {
-      for (Terminal* tp = fstTermP; tp->next != NULL; tp = tp->next) {
+      for (Terminal* tp = fstTermP; tp->next; tp = tp->next) {
          if (tp->next == term) {
             tp->next = term->next;
             break;
@@ -11883,7 +11883,7 @@ draw_tabpanel(void) {
    int saved_keyWasTypedG = keyWasTypedG;
    int saved_gotInterruptG = gotInterruptG;
    Unt maxwidth = tabpanel_width();
-   char vsDecoFlags = getDecoFlags(HLF_C);
+   char vsDecoFlags = getDecoFlags(HILITE_VertSplit);
    Unt curtab_row = 0;
    Boole is_right = tabPanelAlignS == ALIGN_RIGHT;
 
@@ -12054,7 +12054,7 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
       if (countPortals > 1) {
          eeSnprintf(nameBuffG, MAXPATHL, "%d", countPortals);
          len = (Unt)STRLEN(nameBuffG);
-         drawTextLen_for_tabpanel(tplmode, nameBuffG, len, getFullDecoration(HLF_T), tapa);
+         drawTextLen_for_tabpanel(tplmode, nameBuffG, len, getFullDecoration(HILITE_OutputOfAutocmd), tapa);
       }
       if (modified) {
          buf[0] = '+';
@@ -12155,11 +12155,10 @@ do_by_tplmode(
    OUT Unt* pcurtab_row,
    OUT Unt* tabNr
 ){
-   Decoration fillerDeco = getFullDecoration(HLF_TPLF);
-   Unt      col = col_start;
+   Decoration fillerDeco = getFullDecoration(HILITE_TabpanelFill);
+   Unt col = col_start;
    Unt row = 0;
-   Tab* tp = NULL;
-   Var   v;
+   Var v;
    Tabpanel tapa;
    tapa.maxrow = commlineRowG;
    tapa.offsetrow = 0;
@@ -12171,31 +12170,31 @@ do_by_tplmode(
          tapa.offsetrow += tapa.maxrow;
    }
 
-   tp = firstTabG;
+   Var* t = firstTabG;
 
-   for (row = 0; tp; row++) {
+   for (row = 0; t; row++) {
       if (tplmode != TPLMODE_GET_CURTAB_ROW && tapa.maxrow <= row - tapa.offsetrow)
          break;
 
       col = col_start;
 
       v.tag = VAR_NUMBER;
-      v.number = indexOfTab(tp);
+      v.number = indexOfTab(t);
       set_var(tConst("g:actual_curtabpage"), &v, true);
 
-      if (tp->topframe == topframeG) {
+      if (t->topframe == topframeG) {
          if (tplmode == TPLMODE_GET_CURTAB_ROW) {
             *pcurtab_row = row;
             break;
          }
       }
 
-      if (tp == curtab) {
+      if (t == curtab) {
          tapa.currPort = curPor;
          tapa.po = firstPor;
       } else {
-         tapa.currPort = tp->curPor;
-         tapa.po = tp->firstPor;
+         tapa.currPort = t->curPor;
+         tapa.po = t->firstPor;
       }
 
       CS usefmt = startsWithPercentAndBang(&tapa);
@@ -12253,7 +12252,7 @@ do_by_tplmode(
 
       unletImpl(S"g:actual_curtabpage", true);
 
-      tp = tp->next;
+      t = t->next;
 
       if ((tplmode == TPLMODE_GET_TAB_NR)
             && row >= tapa.offsetrow && (mouseRowG <= ((int)row - (int)tapa.offsetrow))

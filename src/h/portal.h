@@ -5,7 +5,7 @@ Boole portCheckCanSetCurBookDisabled(void);
 Boole portCheckCanSetCurBookForceIt(Boole forceit);
 Portal* prevPor_curPor(void);
 Portal* switchBufGotoPortalIntoBuf(Book* book);
-void doPortal(int nchar, long prenum, Unt xchar);
+void doPortal(int nchar, Long prenum, Unt xchar);
 void getPortCommAddressType(CS arg, Invocation* invo);
 int splitPortal(int size, Unt flags);
 int splitPortal_ins(
@@ -257,7 +257,6 @@ int parse_completepopup(Portal* po);
 void popup_set_wantpos_cursor(Portal* po, int width, Bag *d);
 void popup_set_wantpos_rowcol(Portal* po, int row, int col);
 void popup_redraw_all(void);
-Portal* createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind);
 void f_popup_clear(Arr(Var) argvars, Var*);
 void f_createPopup(Arr(Var) argvars, OUT Var* returnVar);
 void f_popup_atcursor(Arr(Var) argvars, OUT Var* returnVar);
