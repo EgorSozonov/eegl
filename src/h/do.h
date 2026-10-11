@@ -112,7 +112,6 @@ LineNr doGetCommandAddress(
    int to_other_file,  //flag: may jump to other file
    int address_count //1 for first address, >1 after comma
 );
-void c_ni(Invocation* invo);
 int expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg);
 void separateNextCommand(Invocation* invo, int keep_backslash);
 CS skip_cmd_arg(CS p, int rembs);

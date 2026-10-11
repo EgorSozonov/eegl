@@ -6358,9 +6358,7 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
          CS ps = s;
          MB_PTR_ADV(s);
          int c = *s;
-         if (!(c != ZERO
-                && (EE_ISBREAK(c)
-                  || (!EE_ISBREAK(c) && (vcol2 == vcol || !EE_ISBREAK((int)*ps))))))
+         if (c == ZERO)
             break;
 
          vcol2 += win_chartabsize(po, s, vcol2);
@@ -7577,8 +7575,8 @@ bookDo(
          while (book != curBook && !bookWasChanged(book));
       }
       if (!bookWasChanged(book)) {
-          emsg(_(e_no_modified_buffer_found));
-          return FAIL;
+         emsg(_(e_no_modified_book_found));
+         return FAIL;
       }
    } ei (start == DOBOOK_FIRST && count) { //find specified book number
       while (book && book->fiNum != count)
@@ -7588,18 +7586,20 @@ bookDo(
 
       Book* bp = NULL;
       while (count > 0
-            || (bp != book && !unload && !(helpOnly ? book->kind == BOOK_HELP : book->o.bookListed))
+            || (bp != book && !unload
+                  && !(helpOnly ? book->kind == BOOK_HELP : book->o.bookListed)
+               )
       ) {
          //remember the book where we start, we return there when all books are unlisted
-         if (bp == NULL)
+         if (!bp)
             bp = book;
          if (dir == FORWARD) {
             book = book->next;
-            if (book == NULL)
+            if (!book)
                book = firstBook;
          } else {
             book = book->prev;
-            if (book == NULL)
+            if (!book)
                book = lastBook;
          }
          //Avoid non-help books if the starting point was a help book and vice-versa.
@@ -7609,7 +7609,7 @@ bookDo(
                   ? book->kind == BOOK_HELP
                   : (book->o.bookListed
                      && ((flags & DOBOOK_SKIPHELP) == 0
-                        || (book->kind != BOOK_HELP && book->kind != BOOK_LOCATION)
+                           || (book->kind != BOOK_HELP && book->kind != BOOK_LOCATION)
                         )
                   )
                )
@@ -7619,7 +7619,7 @@ bookDo(
          }
          if (bp == book) {
             //back where we started, didn't find anything.
-            emsg(_(e_there_is_no_listed_buffer));
+            emsg(_(e_there_is_no_listed_book));
             return FAIL;
          }
       }
@@ -7631,9 +7631,9 @@ bookDo(
          if (!unload)
             showErrFmtMsg(_(e_book_nr_does_not_exist), count);
       } ei (dir == FORWARD)
-         emsg(_(e_cannot_go_beyond_last_buffer));
+         emsg(_(e_cannot_go_beyond_last_book));
       else
-         emsg(_(e_cannot_go_before_first_buffer));
+         emsg(_(e_cannot_go_before_first_book));
       return FAIL;
    }
    if ((flags & DOBOOK_NOPOPUP) && bt_popup(book) && !bt_terminal(book))

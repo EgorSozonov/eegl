@@ -191,7 +191,6 @@ private void addr_error(CommandAddress addressKind);
 private LineNr default_address(Invocation* invo);
 private void address_default_all(Invocation* invo);
 private void get_flags(Invocation* invo);
-private void ex_script_ni(Invocation* invo);
 private CS invalid_range(Invocation* invo);
 private void correct_range(Invocation* invo);
 private CS skip_grep_pat(Invocation* invo);
@@ -1879,7 +1878,7 @@ do_write(Invocation* invo) {
       altBook = setaltfname(fullFName, fname, (LineNr)1);
       if (altBook && altBook->mem.mfile) {
          //Overwriting a file that is loaded in another book is not a good idea.
-         emsg(_(e_file_is_loaded_in_another_buffer));
+         emsg(_(e_file_is_loaded_in_another_book));
          goto theend;
       }
    }
@@ -1904,7 +1903,7 @@ do_write(Invocation* invo) {
                goto theend;
             invo->forceit = true;
          } else {
-            emsg(_(e_use_bang_to_write_partial_buffer));
+            emsg(_(e_use_bang_to_write_partial_book));
             goto theend;
          }
       }
@@ -2021,7 +2020,7 @@ do_wqall(Invocation* invo){
             break;
          }
          if (book->fullFileName == NULL) {
-            showErrFmtMsg(_(e_no_file_name_for_buffer_nr), (long)book->fiNum);
+            showErrFmtMsg(_(e_no_file_name_for_book_nr), (Long)book->fiNum);
             ++error;
          } ei (check_readonly(OUT &invo->forceit, book)
              || check_overwrite(invo, book, book->currFileName, book->fullFileName, false) == FAIL
@@ -2057,7 +2056,7 @@ isWritingForbidden(void) {
    return false;
 }
 
-//Check if a book is read-only (either 'modifiable' option is not set or file is
+//Check if a book is read-only (either @modifiable option is not set or file is
 //read-only). Ask for overruling in a dialog. Return true and give an error
 //message when the book is readonly.
 private Boole
@@ -2095,9 +2094,9 @@ check_readonly(OUT Boole* forceit, Book* book) {
             return false;
          } else
             return true;
-      } ei (!book->o.modifiable)
-         emsg(_(e_readonly_option_is_set_add_bang_to_override));
-      else
+      } ei (!book->o.modifiable) {
+         return true;
+      } else
          showErrFmtMsg(_(e_str_is_read_only_add_bang_to_override), book->currFileName);
       return true;
    }
@@ -4431,37 +4430,6 @@ bookWrite_all(Book* book, Boole forceit) {
 private int quitmore = 0;
 private int ex_pressedreturn = false;
 
-private void append_command(CS cmd);
-
-private void do_exbuffer(Invocation* invo);
-private CS getargcmd(OUT CS*);
-private int getargopt(Invocation* invo);
-
-private LineNr default_address(Invocation* invo);
-private void address_default_all(Invocation* invo);
-private void get_flags(Invocation* invo);
-#define HAVE_EX_SCRIPT_NI
-private void   ex_script_ni(Invocation* invo);
-private CS invalid_range(Invocation* invo);
-private void   correct_range(Invocation* invo);
-private CS replaceMakeProgramName(Invocation* invo, OUT CS p, OUT CS* commline);
-private CS repl_commline(
-      Invocation* invo, CS src, Unt srclen, CS repl, OUT CS* commline
-);
-private void   prepare_preview_window(void);
-private void   back_to_current_window(Portal *curPor_save);
-# define ex_syntime      c_ni
-# define ex_loadkeymap   c_ni
-private void   close_redir(void);
-#define ex_diffoff       c_ni
-#define ex_diffpatch     c_ni
-#define ex_diffgetput    c_ni
-#define ex_diffsplit     c_ni
-#define ex_diffthis      c_ni
-#define ex_diffupdate    c_ni
-
-
-#define ex_profile       c_ni
 
 //Declare the full commands table[].
 #define DO_DECLARE_COMMANDS
@@ -5024,12 +4992,6 @@ doOneCommand(
       goto doend;
    }
 
-   int ni = (!IS_USER_COMMAND(invo.id) && (commands[invo.id].fn == c_ni
-#ifdef HAVE_EX_SCRIPT_NI
-        || commands[invo.id].fn == ex_script_ni
-#endif
-        ));//set when Not Implemented
-
    //forced commands
    if (*p == '!' && invo.id != C_substitute) {
       ++p;
@@ -5074,20 +5036,20 @@ doOneCommand(
       )
          goto doend;
 
-      if (!ni && !(invo.argFlags & RANGE) && invo.addr_count > 0) {
+      if ((invo.argFlags & RANGE) == 0 && invo.addr_count > 0) {
           errorMsg = _(e_no_range_allowed);
           goto doend;
       }
    }
 
-   if (!ni && !(invo.argFlags & BANG) && invo.forceit) {
+   if ((invo.argFlags & BANG) == 0 && invo.forceit) {
       errorMsg = _(e_no_bang_allowed);
       goto doend;
    }
 
    //Don't complain about the range if it is not used
    //(could happen if line_count is accidentally set to 0).
-   if (!invo.skip && !ni && (invo.argFlags & RANGE)) {
+   if (!invo.skip && (invo.argFlags & RANGE)) {
       //If the range is backwards, ask for confirmation and, if given, swap
       //invo.line1 & invo.line2 so it's forwards again.
       //When global command is busy, don't ask, will fail below.
@@ -5141,7 +5103,7 @@ doOneCommand(
    //Check for "++opt=val" argument. Must be first, allow ":w ++enc=utf8 !cmd"
    if (invo.argFlags & ARGOPT) {
       while (invo.arg[0] == '+' && invo.arg[1] == '+') {
-         if (getargopt(&invo) == FAIL && !ni) {
+         if (getargopt(&invo) == FAIL) {
             errorMsg = _(e_invalid_argument);
             goto doend;
          }
@@ -5244,7 +5206,7 @@ doOneCommand(
                        || SPACE_OR_TAB(*p))) {
       n = parseLong_quoted(&invo.arg);
       invo.arg = skipwhite(invo.arg);
-      if (n <= 0 && !ni && (invo.argFlags & ZERO_LINE_OK) == 0) {
+      if (n <= 0 && (invo.argFlags & ZERO_LINE_OK) == 0) {
           errorMsg = _(e_positive_count_required);
           goto doend;
       }
@@ -5272,7 +5234,7 @@ doOneCommand(
    if ((invo.argFlags & FLAGS) != 0)
       get_flags(&invo);
 
-   if (!ni && !(invo.argFlags & EXTRA) && *invo.arg != ZERO
+   if ((invo.argFlags & EXTRA) == 0 && *invo.arg != ZERO
         && !isComment(invo.arg) && (*invo.arg != '|' || (invo.argFlags & TRLBAR) == 0)
    ) {
       //no arguments allowed but there is something
@@ -5280,7 +5242,7 @@ doOneCommand(
       goto doend;
    }
 
-   if (!ni && (invo.argFlags & NEEDARG) && *invo.arg == ZERO) {
+   if ((invo.argFlags & NEEDARG) != 0 && *invo.arg == ZERO) {
       errorMsg = _(e_argument_required);
       goto doend;
    }
@@ -6922,25 +6884,6 @@ get_flags(Invocation* invo) {
       invo->arg = skipwhite(invo->arg + 1);
    }
 }
-
-//Function called for command which is Not Implemented.  NI!
-pub void
-c_ni(Invocation* invo) {
-   if (!invo->skip)
-      invo->errmsg = _(e_sorry_command_is_not_available_in_this_version);
-}
-
-#ifdef HAVE_EX_SCRIPT_NI
-//Function called for script command which is Not Implemented.  NI!
-//Skips over ":perl <<EOF" constructs.
-private void
-ex_script_ni(Invocation* invo) {
-   if (!invo->skip)
-      c_ni(invo);
-   else
-      eeglFree(script_get(invo, invo->arg));
-}
-#endif
 
 //Check range in a command for validity. Return NULL when valid, error message when invalid.
 private CS
@@ -9816,14 +9759,14 @@ tagCmd(Invocation* invo, CS name) {
         break;
    case 'n': cmd = DT_NEXT;   //";tnext"
         break;
-   case 'o': cmd = DT_POP;      //":pop"
+   case 'o': cmd = DT_POP;      //";pop"
         break;
-   case 'f':         //":tfirst"
-   case 'r': cmd = DT_FIRST;   //":trewind"
+   case 'f':         //";tfirst"
+   case 'r': cmd = DT_FIRST;   //";trewind"
         break;
-   case 'l': cmd = DT_LAST;   //":tlast"
+   case 'l': cmd = DT_LAST;   //";tlast"
         break;
-   default:         //":tag"
+   default:         //";tag"
       if (p_cst && *invo->arg != ZERO)  {
          c_cstag(invo);
          return;
@@ -9833,8 +9776,7 @@ tagCmd(Invocation* invo, CS name) {
    }
 
    if (name[0] == 'l') {
-      c_ni(invo);
-      return;
+      cmd = DT_LTAG;
    }
 
    do_tag(invo->arg, cmd, invo->addr_count > 0 ? (int)invo->line2 : 1, invo->forceit, true);

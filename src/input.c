@@ -1490,7 +1490,7 @@ restore_typeahead(TypeaheadSave* tp, Boole overwrite) {
     set_input_buf(tp->save_inputbuf, overwrite);
 }
 
-//Open a new script file for the ":source!" command.
+//Open a new script file for the ";source!" command.
 pub void
 openscript(CS name, Boole directly) {
    if (curscript + 1 == NSCRIPT) {
@@ -1508,7 +1508,7 @@ openscript(CS name, Boole directly) {
    doExpandEnv(OUT nameBuffTextG, name);
    if ((scriptin[curscript] = fopen((char *)nameBuffG, READBIN)) == NULL) {
       showErrFmtMsg(_(e_cant_open_file_str), name);
-      if (curscript)
+      if (curscript != 0)
          --curscript;
       return;
    }

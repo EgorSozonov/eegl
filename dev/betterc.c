@@ -14,7 +14,6 @@
 
 typedef unsigned char Byte;
 
-#define _pure __attribute__((pure))
 
 #define ZERO 0
 #define false 0
@@ -31,6 +30,7 @@ typedef uint32_t Unt;
 typedef int32_t Int;
 
 #define generic(...)
+#define pubWrap(a, b)
 
 typedef struct { //:Text
    S c;
@@ -42,13 +42,13 @@ typedef struct { //:Slice
    Unt len;
 } Slice; //slice of text referencing the current source code file
 
-private _pure Text
-text(S s) {
+private Text
+text(S s) [[unsequenced]] {
    return (Text){s, strlen(s)};
 }
 
-private _pure Text
-textOfSlice(Slice sl, S container) {
+private Text
+textOfSlice(Slice sl, S container) [[unsequenced]] {
    return (Text){container + sl.c, sl.len};
 }
 
@@ -167,7 +167,6 @@ allocateOnArena(Unt allocSize, Arena* a) { //:allocateOnArena
          a->currChunk = newChunk;
          a->currInd = 0;
       }
-
    }
    void* result = (void*)(a->currChunk->memory + (a->currInd));
    a->currInd += allocSize;
@@ -175,6 +174,13 @@ allocateOnArena(Unt allocSize, Arena* a) { //:allocateOnArena
       a->currInd += (4 - (allocSize % 4));
    }
    return result;
+}
+
+pub Text
+textOnArena(Unt len, Arena* a) { //:textOnArena
+   S allocation = allocateOnArena(len + 1, a);
+   allocation[len] = ZERO;
+   return (Text){allocation, len};
 }
 
 pub void
@@ -239,6 +245,7 @@ GEN_TYPE_L(Text);
 #define add(T, X) _Generic((T),\
    LToken*: add_LToken,\
    LText*: add_LText,\
+   LPuwr*: add_LPuwr,\
    LGenericMethod*: add_LGenericMethod\
    )(T, X)
 
@@ -335,7 +342,7 @@ put_StringMap(Slice key, Unt val, OUT StringMap* hm) { //:put_StringMap
       Unt lenBucket = (bu->capAndLen & 0xFFFF);
       for (Unt i = 0; i < lenBucket; i++) {
          StringValue strVal = bu->c[i];
-         if (strVal.hash == hash 
+         if (strVal.hash == hash
                && strVal.key.len == key.len
                && memcmp(text + (hm->c[strVal.key.c]), text + key.c, key.len) == 0
          ) {
@@ -364,7 +371,7 @@ get_StringMap(Slice needle, StringMap* hm) { //:get_StringMap
       Unt lenBucket = (b->capAndLen & 0xFFFF);
       Arr(StringValue) stringValues = (Arr(StringValue))b->c;
       for (Unt i = 0; i < lenBucket; i++) {
-         if (stringValues[i].hash == hash 
+         if (stringValues[i].hash == hash
             && stringValues[i].key.len == needle.len
             && memcmp(hm->c + needle.c, hm->c + stringValues[i].key.c, needle.len) == 0
          ) {
@@ -413,17 +420,27 @@ typedef struct { //:GenericMethod
    LText* types;
 } GenericMethod;
 
+typedef struct { //:Puwr
+   Text prefix;
+   Slice c;
+   Text postfix;
+} Puwr;
+
 GEN_TYPE_L(Token);
 
 GEN_TYPE_L(GenericMethod);
 generic(2) GEN_create_L(private, GenericMethod);
 generic(2) GEN_add_L(private, GenericMethod);
 
-typedef struct { //:GenParser
+GEN_TYPE_L(Puwr);
+generic(2) GEN_create_L(private, Puwr);
+generic(2) GEN_add_L(private, Puwr);
+
+typedef struct { //:Parser
    LToken* tokens;
    S inp; //current position in "source"
-   S source; //source code
-} GenParser;
+   S source; //source code start
+} Parser;
 
 
 typedef enum {
@@ -440,27 +457,28 @@ typedef struct { //:ToplevelThing
    AccessLevel acc;
 } ToplevelThing;
 
-pub typedef struct { //:FileParse
+pub typedef struct { //:Better
    Arr(ToplevelThing) c;
    Unt len;
    Unt cap;
    StringMap genericMethods; //method names to build _Generic() tables for.
                              //Values = indices into @generics
    LGenericMethod* generics;   //the types in _Generic() tables.
+   LPuwr* puwrs;
    Text source;
    Text existingForwDecls;
    FilePath fn;
    Arena* a;
-} FileParse;
+} Better;
 
 //}}}
 //{{{@@forward declarations
 
-private FileParse parseFile(Text fileContents, FilePath fn, Arena*);
+private Better parseFile(Text fileContents, FilePath fn, Arena*);
 
-private void addGeneric(OUT FileParse* r, GenParser g);
+private void addGeneric(OUT Better* r, Parser g);
 
-private Text writeGenerics(FileParse* r);
+private Text writeGenerics(Better* r);
 
 //}}}
 //{{{utils
@@ -481,7 +499,7 @@ readSourceFile(FilePath fName) {
    // Go back to the start of the file
    if (fseek(file, 0L, SEEK_SET) != 0)
       { goto cleanup; }
-      
+
    S result = malloc(fileSize + 1);
 
    // Read the entire file into memory
@@ -497,12 +515,12 @@ readSourceFile(FilePath fName) {
    return (Text){.c = result, .len = len};
 }
 
-private FileParse
+private Better
 processSourceFile(FilePath fname, Arena* a) {
    if (fname.len == 0 || fname.len == fname.dirLen) {
-      return (FileParse){};
+      return (Better){};
    }
-   return parseFile(readSourceFile(fname), fname, a); 
+   return parseFile(readSourceFile(fname), fname, a);
 }
 
 //txt must be non-empty
@@ -564,8 +582,8 @@ isSpaceOrNewline(Byte c) {
 }
 
 
-private _pure Boole
-startsWith(S big, Text prefix) {
+private Boole
+startsWith(S big, Text prefix) [[unsequenced]] {
    Unt i;
    for (i = 0; i < prefix.len && big[i] != ZERO; i++) {
       if (big[i] != prefix.c[i]) {
@@ -575,41 +593,100 @@ startsWith(S big, Text prefix) {
    return i == prefix.len;
 }
 
-private _pure Boole
-eq(Text a, Text b) {
+
+private Boole
+eq(Text a, Text b) [[unsequenced]] {
    return a.len == b.len && memcmp(a.c, b.c, a.len) == 0;
+}
+
+private S
+skipTillEmptyLine(S inp) {
+   S start = inp;
+   S nextLine = inp;
+   for (Boole lineIsEmpty = true; ; nextLine++, start = nextLine, lineIsEmpty = true) {
+      for (; nextLine[0] != ZERO && nextLine[0] != '\n'; nextLine++) {
+         if (lineIsEmpty && nextLine[0] != ' ' && nextLine[0] != '\t') {
+            lineIsEmpty = false;
+         }
+      }
+      _bp(true)
+      if (lineIsEmpty) {
+         return start;
+      } ei (nextLine[0] == ZERO) {
+         return nextLine;
+      }
+   }
+   return nextLine;
+}
+
+private Unt
+countNewlines(Text t) {
+   Unt count = 0;
+   for (S p = t.c; p < t.c + t.len; p++) {
+      if (p[0] == '\\' && p[1] == 'n')
+         count++;
+   }
+   return count;
 }
 
 //}}}
 //{{{parsing
-//{{{lexing generics
-generic(2) GEN_create_L(private, Token);
-generic(2) GEN_add_L(private, Token);
 
-// Token types
-// The following group of variants are transferred to the AST byte for byte, with no analysis
-// Their values must exactly correspond with the initial group of variants in "Node"
-// The largest value must be stored in "topVerbatimTokenVariant" constant
-pub
-#define tokArity        1 //GEN_*()
-pub
-#define tokMethod       2 //the argument signifying the method
-pub
-#define tokType         3 //the argument holding a type chunk
+//Token types
+//Generics:
+#define tokArity           1 //GEN_*()
+#define tokMethod          2 //the argument signifying the generic method name
+#define tokType            3 //the argument holding a type chunk
+//pubWrapped:
+#define tokPrefixLiteral  10 //A string literal from first argument to pubWrap
+#define tokPuwr           11 //The body of a pubWrap
+#define tokPostfixLiteral 12 //A string literal from second argument to pubWrap
 
 #define errGenParser    1
 #define errGenEndOfList 2 //reached the closing paren in an (a,b,c) list
+#define errPuwrLiterals 3
+#define errPuwrBody     4 //empty pubWrap body
 
-typedef Unt (*GenParseFn)(OUT GenParser*);
+
+typedef Unt (*ParserFn)(OUT Parser*);
+
+//{{{parsing utils
 
 private Unt
-genMaybe(GenParseFn fn, OUT GenParser* gp) {
+maybe(ParserFn fn, OUT Parser* gp) {
    fn(OUT gp);
    return 0;
 }
 
+private void
+printTokens(Parser* g, S source) {
+   printf("Tokens:\n");
+   for (Unt i = 0; i < g->tokens->len; i++) {
+      Token t = g->tokens->c[i];
+      switch (t.tp) {
+      //case tokArity:       printf("arity "); break;
+      //case tokMethod:      printf("method "); break;
+      //case tokType:        printf("Type "); break;
+      case tokPrefixLiteral:  printf("prefix "); break;
+      case tokPuwr:           printf("body "); break;
+      case tokPostfixLiteral: printf("postfix "); break;
+      }
+      fwrite(source + t.startBt, 1, t.lenBts, stdout);
+
+      printf("\n");
+   }
+   printf("\n");
+   printf("--------\n");
+}
+
+//}}}
+//{{{parsing generics
+
+generic(2) GEN_create_L(private, Token);
+generic(2) GEN_add_L(private, Token);
+
 private Unt
-genConsumeKeyword(Text keyw, OUT GenParser* gp) {
+genConsumeKeyword(Text keyw, OUT Parser* gp) {
    if (startsWith(gp->inp, keyw)) {
       gp->inp += keyw.len;
       return 0;
@@ -619,7 +696,7 @@ genConsumeKeyword(Text keyw, OUT GenParser* gp) {
 }
 
 private Unt
-genLocalMacroMethod(OUT GenParser* g) {
+genLocalMacroMethod(OUT Parser* g) {
    S p = g->inp;
    for (; p[0] != ZERO && p[0] != '_'; p++) {
    }
@@ -634,7 +711,7 @@ genLocalMacroMethod(OUT GenParser* g) {
 }
 
 private Unt
-genLocalMacroTypeCon(OUT GenParser* g) {
+genLocalMacroTypeCon(OUT Parser* g) {
    S p = g->inp;
    for (; p[0] != ZERO && p[0] != '('; p++) {
    }
@@ -656,7 +733,7 @@ genIsNotTerminator(Byte b) {
 }
 
 private Unt
-genArity(OUT GenParser* g) {
+genArity(OUT Parser* g) {
    S numStart = skipSpaces(g->inp);
    S p = numStart;
    for (; p[0] >= '0' && p[0] <= '9'; p++) {
@@ -665,7 +742,7 @@ genArity(OUT GenParser* g) {
       return errGenParser;
    }
    Token tok =  (Token){.tp = tokArity, .startBt = numStart - g->source, .lenBts = p - numStart};
-   
+
    g->inp = skipSpaces(p);
    add(g->tokens, tok);
    return 0;
@@ -673,9 +750,9 @@ genArity(OUT GenParser* g) {
 
 //Skip the first arg and ensure it's followed by a comma
 private Unt
-genAccessModifier(OUT GenParser* g) {
+genAccessModifier(OUT Parser* g) {
    S p = skipSpaces(g->inp);
-   
+
    for (; genIsNotTerminator(p[0]); p++) {
    }
    p = skipSpaces(p);
@@ -687,11 +764,11 @@ genAccessModifier(OUT GenParser* g) {
 }
 
 private Unt
-genLocalMacroTypeArg(OUT GenParser* g) {
+genLocalMacroTypeArg(OUT Parser* g) {
    if (g->inp[0] != ',') {
       return errGenParser;
    }
-   
+
    S wordStart = skipSpaces(g->inp + 1); //+1 for the comma
    S p = wordStart;
    for (; genIsNotTerminator(p[0]) && p[0] != ')'; p++) {
@@ -708,7 +785,7 @@ genLocalMacroTypeArg(OUT GenParser* g) {
 }
 
 private Unt
-genTypeArgs(OUT GenParser* g) {
+genTypeArgs(OUT Parser* g) {
    Unt errCode;
    for (errCode = 0; errCode == 0; ) {
       errCode = genLocalMacroTypeArg(OUT g);
@@ -719,7 +796,7 @@ genTypeArgs(OUT GenParser* g) {
 //Start here: `method_Type(acc, typeArg, typeArg1)`
 //Parse: `method`, `Type`, `typeArg` and `typeArg1`
 private Unt
-genLocalMacroImpl(OUT GenParser* g) {
+genLocalMacroImpl(OUT Parser* g) {
    return
          genLocalMacroMethod(OUT g)
       || genLocalMacroTypeCon(OUT g)
@@ -729,13 +806,14 @@ genLocalMacroImpl(OUT GenParser* g) {
 
 //The `GEN_method_...` form which is used for local defs/decls
 private Unt
-genLocalMacro(OUT GenParser* g) {
+genLocalMacro(OUT Parser* g) {
    g->inp = skipSpaces(g->inp);
    return (genConsumeKeyword(tConst("GEN_"), OUT g) || genLocalMacroImpl(OUT g));
 }
 
+//The `generic(2, ...)`
 private Unt
-genExternalMethod(OUT GenParser* g) {
+genExternalMethod(OUT Parser* g) {
    S wordStart = skipSpaces(g->inp);
    S p = wordStart;
    for (; genIsNotTerminator(p[0]); p++) {
@@ -756,7 +834,7 @@ genExternalMethod(OUT GenParser* g) {
 //We are here ^                      or here     ^
 //This is optional(there may be no arguments after arity)
 private Unt
-genExternalContent(OUT GenParser* g) {
+genExternalContent(OUT Parser* g) {
    return
          genAccessModifier(OUT g)
       || genExternalMethod(OUT g)
@@ -764,7 +842,7 @@ genExternalContent(OUT GenParser* g) {
 }
 
 private Unt
-genClosingParen(OUT GenParser* g) {
+genClosingParen(OUT Parser* g) {
    if (g->inp[0] != ')') {
       return errGenParser;
    }
@@ -775,39 +853,331 @@ genClosingParen(OUT GenParser* g) {
 //The `generic(1, rivate, method, type)` which is for using externally defined generic methods
 //We are here  ^
 private Unt
-genExternalMacro(OUT GenParser* g) {
+genExternalMacro(OUT Parser* g) {
    return
          genArity(OUT g)
-      || genMaybe(&genExternalContent, OUT g)
+      || maybe(&genExternalContent, OUT g)
       || genClosingParen(OUT g);
 }
 
 //Parse a generic expression
-//Parse `generic() GEN_add_L(private, Int)` or `generic(private, add, L, Int)` 
+//Parse `generic() GEN_add_L(private, Int)` or `generic(private, add, L, Int)`
 //We are here    ^
 private void
-genParse(OUT S* inp, OUT GenParser* g) {
-   Unt errCode = 
+genParse(OUT S* inp, OUT Parser* g) {
+   Unt errCode =
          genExternalMacro(OUT g)
-      || genMaybe(&genLocalMacro, OUT g);
-      
-   *inp = g->inp; 
+      || maybe(&genLocalMacro, OUT g);
+
+   *inp = g->inp;
    if (errCode > 0) {
-      g->tokens = null;
+      g->tokens->len = 0;
    }
 }
 
-//}}}
+//A `generic(a, b)` or `generic() GEN_` form
+private void
+tryParseGeneric(OUT Better* p, OUT S* inp, Arena* a) {
+   Parser parsedGenerics = (Parser){
+      .source = p->source.c, .tokens = create(L, Token)(4, a), .inp = *inp
+   };
+
+   genParse(OUT inp, OUT &parsedGenerics);
+
+   if (parsedGenerics.tokens->len == 0) {
+      return;
+   }
+   addGeneric(OUT p, parsedGenerics);
+
+   //printTokens(&parsedGenerics, p->source.c);
+}
+
+//Create a string like `LLText`
+private Text
+glueGenericType(Arr(Token) typeTokens, Unt count, S source, Arena* a) {
+   Unt len = 0;
+   for (Unt i = 0; i < count; i++) {
+      len += typeTokens[i].lenBts;
+   }
+   S result = (S)allocateArray(len + 1, Byte, a);
+   result[len] = ZERO;
+
+   S w = result;
+   for (Unt i = 0; i < count; i++) {
+      memcpy(w, source + typeTokens[i].startBt, typeTokens[i].lenBts);
+      w += typeTokens[i].lenBts;
+   }
+   return (Text){result, len};
+}
 
 private void
-append(OUT FileParse* p, ToplevelThing new) {
+addGeneric(OUT Better* r, Parser g) {
+   Unt indArity = UNT;
+   Unt indMethod = UNT;
+   Unt indTypeStart = UNT;
+   for (Unt i = 0; i < g.tokens->len; i++) {
+      if (g.tokens->c[i].tp == tokArity) {
+         indArity = i;
+      } ei (g.tokens->c[i].tp == tokMethod) {
+         indMethod = i;
+      } ei (g.tokens->c[i].tp == tokType) {
+         indTypeStart = i;
+         break;
+      }
+   }
+   if (indArity == UNT || indMethod == UNT || indTypeStart == UNT || indMethod > indTypeStart) {
+      return;
+   }
+   for (Unt i = indTypeStart; i < g.tokens->len; i++) {
+      if (g.tokens->c[i].tp != tokType) {
+         return;
+      }
+   }
+
+   Slice methName = (Slice){g.tokens->c[indMethod].startBt, g.tokens->c[indMethod].lenBts};
+   Text type = glueGenericType(
+         g.tokens->c + indTypeStart, g.tokens->len - indTypeStart, r->source.c, r->a
+   );
+
+   Unt ind = get_StringMap(methName, &r->genericMethods);
+   if (ind != UNT) {
+      add(r->generics->c[ind].types, type);
+   } else {
+      Token arityTk = g.tokens->c[indArity];
+      Unt arity = parseInteger((Text){r->source.c + arityTk.startBt, arityTk.lenBts });
+
+      LText* typeList = create(L, Text)(2, r->a);
+      add(typeList, type);
+      GenericMethod newMethod = (GenericMethod){methName, arity, typeList};
+
+      put_StringMap(methName, r->generics->len, OUT &r->genericMethods);
+      add(r->generics, newMethod);
+   }
+}
+
+
+//}}}
+//{{{parsing pubWrap
+
+//the pubWrapped(prefix, postfix) form - output a block to the public header while wrapping
+//it with arbitrary statements. Useful for x-macros, e.g. defining an enum from the same list
+//as an array.
+
+//Skip spaces, newlines and comments
+private void
+puwrSkippable(OUT Parser* pa) {
+   S p = skipSpaces(pa->inp);
+   for (;;) {
+      if (p[0] == ' ' || p[0] == '\n') {
+         p = skipSpaces(p);
+      } ei (p[0] == '/' && p[1] == '/') {
+         p = skipNormalComment(p);
+      } else {
+         break;
+      }
+   }
+   if (p > pa->inp) {
+      pa->inp = p;
+   }
+}
+
+private Unt
+puwrChar(OUT Parser* pa, Byte c) {
+   if (pa->inp[0] != c) {
+      return errPuwrLiterals;
+   }
+   pa->inp++;
+   puwrSkippable(OUT pa);
+   return 0;
+}
+
+//A series of C string literals, with possible `//` comments
+private Unt
+puwrStringLiteral(OUT Parser* pa, Unt typeOfToken) {
+   if (pa->inp[0] != '"') {
+      return errPuwrLiterals;
+   }
+   S p = pa->inp + 1;
+   for (; p[0] != ZERO && p[0] != '"'; p++) {
+      if (p[0] == '\\' && p[1] == '"') {
+         p++;
+      }
+   }
+   if (p[0] != '"')
+      return errPuwrLiterals;
+
+   int len = p - pa->inp - 2; //-2 for both quotes
+   if (len > 0) {
+      add(
+         pa->tokens,
+         ((Token){ .tp = typeOfToken, .startBt = pa->inp - pa->source + 1, .lenBts = len })
+      );
+      pa->inp = p + 1;
+   }
+   return 0;
+}
+
+//A series of C string literals, with possible `//` comments
+private Unt
+puwrLiterals(OUT Parser* pa, Unt typeOfToken) {
+   Unt retVal = 0;
+   for (; retVal == 0 && pa->inp[0] == '"';) {
+      retVal = puwrStringLiteral(OUT pa, typeOfToken);
+      puwrSkippable(OUT pa);
+   }
+   return retVal;
+}
+
+//pubWrap("a", "b")
+//XMACRO(...)
+//^ we are here
+//Read any block until an empty line
+private Unt
+puwrBody(OUT Parser* pa) {
+   S p = skipTillEmptyLine(pa->inp);
+   if (p > pa->inp) {
+      add(pa->tokens,
+            ((Token){tokPuwr, .startBt = pa->inp - pa->source, .lenBts = p - pa->inp})
+      );
+      pa->inp = p;
+      return 0;
+   }
+   return errPuwrBody;
+}
+
+//Parse a pubWrapped expression
+//Parse `pubWrap(   "asdf", "bcjk")`
+//      We are here ^
+private void
+puwrParse(OUT S* inp, OUT Parser* pa) {
+   Unt errCode =
+         puwrLiterals(OUT pa, tokPrefixLiteral)
+      || puwrChar(OUT pa, ',')
+      || puwrLiterals(OUT pa, tokPostfixLiteral)
+      || puwrChar(OUT pa, ')')
+      || puwrBody(OUT pa);
+
+   *inp = pa->inp;
+   if (errCode > 0) {
+      pa->tokens->len = 0;
+   }
+}
+
+private S
+printWithNewlineSubstitution(OUT S wPre, S source, Slice slice) {
+   Unt len = slice.len;
+   Unt newlines = countNewlines((Text){source + slice.c, slice.len});
+   if (newlines == 0) {
+      memcpy(wPre, source + slice.c, slice.len);
+      wPre += len;
+   } else {
+      Unt prev = 0;
+      S s = source + slice.c;
+      Unt j;
+      for (j = 0; j < slice.len; j++) {
+         if (s[j] == '\\' && s[j + 1] == 'n') {
+            if (j > prev) {
+               memcpy(wPre, s + prev, j - prev);
+               wPre += (j - prev);
+            }
+            wPre[0] = '\n';
+            prev += 2;
+            j++;
+         }
+      }
+      if (j > prev) {
+         memcpy(wPre, s + prev, j - prev);
+         wPre += (j - prev);
+      }
+   }
+   return wPre;
+}
+
+private void
+addPuwr(OUT Better* r, Parser g) {
+   Unt lenPrefix = 0;
+   Unt lenPostfix = 0;
+   Token tokBody;
+   for (Unt i = 0; i < g.tokens->len; i++) {
+      Token tok = g.tokens->c[i];
+      if (tok.tp == tokPrefixLiteral) {
+         if (lenPostfix > 0)
+            return;
+         lenPrefix += tok.lenBts;
+         lenPrefix -= countNewlines((Text){r->source.c + tok.startBt, tok.lenBts});
+      } ei (tok.tp == tokPostfixLiteral) {
+         if (lenPrefix == 0)
+            return;
+         lenPostfix += tok.lenBts;
+         lenPostfix -= countNewlines((Text){r->source.c + tok.startBt, tok.lenBts});
+      } ei (tok.tp == tokPuwr) {
+         if (lenPostfix == 0)
+            return;
+         tokBody = tok;
+      }
+   }
+
+   if (lenPrefix == 0 || lenPostfix == 0 || tokBody.lenBts == 0)
+      return;
+
+   Puwr res = (Puwr){
+      .prefix = textOnArena(lenPrefix, r->a),
+      .c = (Slice){tokBody.startBt, tokBody.lenBts},
+      .postfix = textOnArena(lenPostfix, r->a)
+   };
+
+   S wPre = res.prefix.c;
+   wPre[lenPrefix] = ZERO;
+   S wPost = res.postfix.c;
+
+   for (Unt i = 0; i < g.tokens->len; i++) {
+      Token tok = g.tokens->c[i];
+      if (tok.tp == tokPrefixLiteral) {
+         wPre = printWithNewlineSubstitution(
+               OUT wPre, r->source.c, (Slice){tok.startBt, tok.lenBts}
+         );
+      } ei (tok.tp == tokPostfixLiteral) {
+         wPost = printWithNewlineSubstitution(
+               OUT wPost, r->source.c, (Slice){tok.startBt, tok.lenBts}
+         );
+      }
+   }
+   add(r->puwrs, res);
+}
+
+//Parse a pubWrap expression
+//Parse `pubWrap( "asdf", "bcjk" )
+//We are here     ^
+private void
+tryParsePuwr(OUT Better* p, OUT S* inp, Arena* a) {
+   Parser puwr = (Parser){
+      .source = p->source.c, .tokens = create(L, Token)(4, a), .inp = *inp
+   };
+
+   puwrParse(OUT inp, OUT &puwr);
+
+   if (puwr.tokens->len == 0) {
+      return;
+   }
+
+   printf("TOkens of PUWR:\n");
+   printTokens(&puwr, p->source.c);
+
+   addPuwr(OUT p, puwr);
+}
+
+//}}}
+//{{{parsing toplevels
+
+private void
+append(OUT Better* p, ToplevelThing new) {
    if (p->len == p->cap) {
       Arr(ToplevelThing) newContent = malloc(2*p->cap*sizeof(ToplevelThing));
       memcpy(OUT newContent, p->c, p->cap*sizeof(ToplevelThing));
       free(p->c);
       p->c = newContent;
       p->cap *= 2;
-   } 
+   }
    p->c[p->len++] = new;
 }
 
@@ -827,32 +1197,32 @@ parseMacro(OUT S* inp, S i, AccessLevel accLevel) {
 }
 
 private void
-parseMacroOrMacros(OUT FileParse* p, OUT S* inp, S i, AccessLevel accLevel) {
-   append(OUT p, parseMacro(OUT inp, i, accLevel)); 
+parseMacroOrMacros(OUT Better* p, OUT S* inp, S i, AccessLevel accLevel) {
+   append(OUT p, parseMacro(OUT inp, i, accLevel));
    while (startsWith(*inp, tConst("\n#define"))) {
-      append(OUT p, parseMacro(OUT inp, *inp, accLevel)); 
+      append(OUT p, parseMacro(OUT inp, *inp, accLevel));
    }
 }
 
 //*inp is looking at the first non-space after "pub"/"private"/etc
 private void
-tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
+tryParseToplevelThing(OUT Better* p, OUT S* inp, AccessLevel accLevel) {
    int parenLvl = 0;
    int curlyLvl = 0;
    Boole metParens = false;
    S start = *inp;
    S i = start;
-   
+
 #define startsWithKeyword(kw) startsWith(i, tConst(kw)) && isSpaceOrNewline(i[sizeof(kw) - 1]) \
    && curlyLvl == 0 && parenLvl == 0
-   
+
    //function = met parens and now see a {
    //constant = didn't meet parens and now see a =
    //type = didn't meet parens and now see a ;
    //typedef = might've met parens and we see a ;
    for (; *i != ZERO; i++) {
       switch (*i) {
-      case '{': 
+      case '{':
          if (metParens && curlyLvl == 0 && parenLvl == 0) {
             int len = i[-1] == ' ' ? (i - start - 1) : (i - start);
             append(
@@ -878,8 +1248,10 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
       case '=':
          if (!metParens && curlyLvl == 0) {
             append(
-               OUT p, 
-               (ToplevelThing){.c = (Text){start, i - 1 - start}, .kind = CONSTANT, .acc = accLevel}
+               OUT p,
+               (ToplevelThing){
+                  .c = (Text){start, i - 1 - start}, .kind = CONSTANT, .acc = accLevel
+               }
             );
             return;
          }
@@ -887,7 +1259,7 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
       case ';':
          if (curlyLvl == 0) {
             append(
-               OUT p, 
+               OUT p,
                (ToplevelThing){.c = (Text){start, i - start}, .kind = TYPE, .acc = accLevel}
             );
             return;
@@ -895,8 +1267,9 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
          break;
       case '#':
          if (startsWithKeyword("#define")) {
-            parseMacroOrMacros(OUT p, OUT inp, i - 1, accLevel); //macros are parsed starting at \n
-            
+            //macros are parsed starting at \n
+            parseMacroOrMacros(OUT p, OUT inp, i - 1, accLevel);
+
             (*inp)--; //to compensate for the ++ in the {parseFile} loop
             return;
          }
@@ -926,42 +1299,9 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
       }
    }
    *inp = i;
-   
-#undef startsWithKeyword 
+
+#undef startsWithKeyword
 }
-
-//private void
-//printTokens(GenParser* g, S source) {
-//   printf("Tokens:\n");
-//   for (Unt i = 0; i < g->tokens->len; i++) {
-//      Token t = g->tokens->c[i];
-//      switch (t.tp) {
-//      case tokArity:       printf("arity "); break;      
-//      case tokMethod:      printf("method "); break;      
-//      case tokType:        printf("Type "); break;      
-//      }
-//      fwrite(source + t.startBt, 1, t.lenBts, stdout);
-//   }
-//   printf("\n");
-//}
-
-//A `generic(a, b)` or `generic() GEN_` form
-private void
-tryParseGeneric(OUT FileParse* p, OUT S* inp, Arena* a) {
-   GenParser parsedGenerics = (GenParser){
-      .source = p->source.c, .tokens = create(L, Token)(4, a), .inp = *inp
-   };
-   
-   genParse(OUT inp, OUT &parsedGenerics);
-   
-   if (!parsedGenerics.tokens) {
-      return;
-   }
-   addGeneric(OUT p, parsedGenerics);
-   
-   //printTokens(&parsedGenerics, p->source.c);
-}
-
 
 #define forwDeclMarker "@@"
 #define forwDeclPrologue "//{{" "{" forwDeclMarker "forward declarations"
@@ -979,18 +1319,19 @@ determineExistingForwDecls(S markerLine) {
    return (Text){.c = start, .len = p - start};
 }
 
-
-private  FileParse
-parseFile(Text source, FilePath fn, Arena* a) [[unsequenced]] {
+private  Better
+parseFile(Text source, FilePath fn, Arena* a) {
    if (source.len == 0) {
-      return (FileParse){};
+      return (Better){};
    }
-   
+
    StringMap* genMethods = create_StringMap(4, source.c, a);
-   FileParse res = {
+   Better res = {
       .source = source, .fn = fn,
-      .c = malloc(4*sizeof(ToplevelThing)), .len = 0, .cap = 4, .existingForwDecls = {}, 
-      .genericMethods = *genMethods, .generics = create(L, GenericMethod)(4, a),
+      .c = malloc(4*sizeof(ToplevelThing)), .len = 0, .cap = 4, .existingForwDecls = {},
+      .genericMethods = *genMethods,
+      .generics = create(L, GenericMethod)(4, a),
+      .puwrs = create(L, Puwr)(4, a),
       .a = a
    };
    for (S inp = source.c; inp[0] != ZERO; inp++) {
@@ -999,23 +1340,26 @@ parseFile(Text source, FilePath fn, Arena* a) [[unsequenced]] {
       }
       if (inp[1] == 'p') {
          inp++; //CONSUME the newline
-         if (startsWith(inp, tConst("pub")) && isSpaceOrNewline(inp[3])) {
+         if (startsWith(inp, tConst("pubWrap(")) && isSpaceOrNewline(inp[8])) {
+            inp = skipSpaces(inp + 8); //CONSUME "pubWrap(" and spaces after it
+            tryParsePuwr(OUT &res, OUT &inp, a);
+         } if (startsWith(inp, tConst("pub")) && isSpaceOrNewline(inp[3])) {
             inp = skipSpaces(inp + 3); //CONSUME "pub" and spaces after it
             tryParseToplevelThing(OUT &res, OUT &inp, PUBLIC);
          } ei (startsWith(inp, tConst("private")) && isSpaceOrNewline(inp[7])) {
             inp = skipSpaces(inp + 7); //CONSUME "private" and spaces after it
             tryParseToplevelThing(OUT &res, OUT &inp, PRIVATE);
          }
-      } ei (inp[1] == 'g') { 
+      } ei (inp[1] == 'g') {
          inp++; //CONSUME the newline
          if (startsWith(inp, tConst("generic("))) {
             inp += 8;
             tryParseGeneric(OUT &res, OUT &inp, a);
-         } 
+         }
       } ei (inp[1] == '/' && inp[2] == '/') {
          if (inp[3] == '{' && startsWith(inp + 1, tConst("//{{" "{" forwDeclMarker))) {
             //found forward declarations block. It will be written to, and no need to read it
-            
+
             res.existingForwDecls = determineExistingForwDecls(inp + 8);
             if (res.existingForwDecls.len > 0) {
                //skipping the forward declarations block as it has nothing interesting
@@ -1026,17 +1370,17 @@ parseFile(Text source, FilePath fn, Arena* a) [[unsequenced]] {
          }
       }
    }
-   
+
    return res;
 }
 
 private Unt
 toplevelLen(ToplevelThing* t) {
-   if (t->kind == MACRO) 
+   if (t->kind == MACRO)
       return t->c.len + 1;
-   ei (t->kind == CONSTANT) 
+   ei (t->kind == CONSTANT)
       return t->c.len + 9; //+7 for `extern `, +2 for the `;\n`
-   else 
+   else
       return t->c.len + 2; //+2 for the semicolon & newline char
 }
 
@@ -1054,7 +1398,7 @@ toplevelWrite(OUT S* w, ToplevelThing* t) {
          memcpy(*w, t->c.c, firstNewline);
          (*w)[firstNewline] = ' ';
          *w += firstNewline + 1;
-         
+
          memcpy(*w, t->c.c + firstNewline + 1, restLen);
          *w += restLen;
          (*w)[0] = ';';
@@ -1071,99 +1415,58 @@ toplevelWrite(OUT S* w, ToplevelThing* t) {
    if (t->kind == MACRO) {
       (*w)[0] = '\n';
       (*w)++;
-   } else { 
+   } else {
       (*w)[0] = ';';
       (*w)[1] = '\n';
       *w += 2;
-   } 
-}
-
-//Create a string like `LLText`
-private Text
-glueGenericType(Arr(Token) typeTokens, Unt count, S source, Arena* a) {
-   Unt len = 0;
-   for (Unt i = 0; i < count; i++) {
-      len += typeTokens[i].lenBts;
    }
-   S result = (S)allocateArray(len + 1, Byte, a);
-   result[len] = ZERO;
-   
-   S w = result;
-   for (Unt i = 0; i < count; i++) {
-      memcpy(w, source + typeTokens[i].startBt, typeTokens[i].lenBts);
-      w += typeTokens[i].lenBts;
-   }
-   return (Text){result, len};
 }
 
 private void
-addGeneric(OUT FileParse* r, GenParser g) {
-   Unt indArity = UNT;
-   Unt indMethod = UNT;
-   Unt indTypeStart = UNT;
-   for (Unt i = 0; i < g.tokens->len; i++) {
-      if (g.tokens->c[i].tp == tokArity) {
-         indArity = i;
-      } ei (g.tokens->c[i].tp == tokMethod) {
-         indMethod = i;
-      } ei (g.tokens->c[i].tp == tokType) {
-         indTypeStart = i;
-         break;
-      }
-   }
-   if (indArity == UNT || indMethod == UNT || indTypeStart == UNT || indMethod > indTypeStart) {
-      return;
-   }
-   for (Unt i = indTypeStart; i < g.tokens->len; i++) {
-      if (g.tokens->c[i].tp != tokType) {
-         return;
-      }
-   }
-   
-   Slice methName = (Slice){g.tokens->c[indMethod].startBt, g.tokens->c[indMethod].lenBts};
-   Text type = glueGenericType(
-         g.tokens->c + indTypeStart, g.tokens->len - indTypeStart, r->source.c, r->a
-   );
-   
-   Unt ind = get_StringMap(methName, &r->genericMethods);
-   if (ind != UNT) {
-      add(r->generics->c[ind].types, type);
-   } else {
-      Token arityTk = g.tokens->c[indArity];
-      Unt arity = parseInteger((Text){r->source.c + arityTk.startBt, arityTk.lenBts });
-      
-      LText* typeList = create(L, Text)(2, r->a);
-      add(typeList, type);
-      GenericMethod newMethod = (GenericMethod){methName, arity, typeList};
-      
-      put_StringMap(methName, r->generics->len, OUT &r->genericMethods);
-      add(r->generics, newMethod);
-   }
+puwrWrite(OUT S* w, Puwr puwr, S source) {
+   memcpy(*w, puwr.prefix.c, puwr.prefix.len);
+   *w += puwr.prefix.len;
+
+   memcpy(*w, source + puwr.c.c, puwr.c.len);
+   *w += puwr.c.len;
+
+   memcpy(*w, puwr.postfix.c, puwr.postfix.len);
+   *w += puwr.postfix.len;
 }
 
+//}}}
 //}}}
 //{{{writing
 
 //Build header file for public functions
 //Return allocated string, caller must free it
 private Text
-buildPublicHeader(FileParse* r) [[unsequenced]] {
+buildPublicHeader(Better* r) [[unsequenced]] {
    Unt totalLen = 0;
+   for (Unt i = 0; i < r->puwrs->len; i++) {
+      Puwr puwr = r->puwrs->c[i];
+      totalLen += puwr.prefix.len + puwr.c.len + puwr.postfix.len;
+   }
    for (Unt i = 0; i < r->len; i++) {
       if (r->c[i].acc == PUBLIC && r->c[i].kind == FUNCTION) {
-         totalLen += toplevelLen(r->c + i); 
+         totalLen += toplevelLen(r->c + i);
       }
    }
-   
+
    S newContent = malloc(totalLen + 1);
    newContent[totalLen] = ZERO;
    S w = newContent;
+
+   for (Unt i = 0; i < r->puwrs->len; i++) {
+      Puwr puwr = r->puwrs->c[i];
+      puwrWrite(OUT &w, puwr, r->source.c);
+   }
    for (Unt i = 0; i < r->len; i++) {
       if (r->c[i].acc == PUBLIC && r->c[i].kind == FUNCTION) {
          toplevelWrite(OUT &w, r->c + i);
       }
    }
-   
+
    if (w - newContent != totalLen) {
       printf(
          "ERROR in public header: totalLen %d but wrote only %d", totalLen, (Unt)(w - newContent)
@@ -1174,14 +1477,14 @@ buildPublicHeader(FileParse* r) [[unsequenced]] {
 
 //Return allocated string, caller must free it
 private Text
-buildNonFnHeader(FileParse* r) [[unsequenced]] {
+buildNonFnHeader(Better* r) [[unsequenced]] {
    Unt totalLen = 0;
    for (Unt i = 0; i < r->len; i++) {
       if (r->c[i].acc == PUBLIC && r->c[i].kind != FUNCTION) {
-         totalLen += toplevelLen(r->c + i); 
+         totalLen += toplevelLen(r->c + i);
       }
    }
-   
+
    S newContent = malloc(totalLen + 1);
    newContent[totalLen] = ZERO;
    S w = newContent;
@@ -1190,7 +1493,7 @@ buildNonFnHeader(FileParse* r) [[unsequenced]] {
          toplevelWrite(OUT &w, r->c + i);
       }
    }
-   
+
    if (w - newContent != totalLen) {
       printf(
          "ERROR in macro header: totalLen %d but wrote only %d", totalLen, (Unt)(w - newContent)
@@ -1215,7 +1518,7 @@ dirExists(S path) {
 }
 
 private S
-determinePublicName(FileParse* r, Boole isNonFns, NULLABLE S subdir) [[unsequenced]] {
+determinePublicName(Better* r, Boole isNonFns, NULLABLE S subdir) [[unsequenced]] {
    S publicName;
    Unt suffixLen = isNonFns ? 6 : 0;
    Unt len;
@@ -1226,7 +1529,7 @@ determinePublicName(FileParse* r, Boole isNonFns, NULLABLE S subdir) [[unsequenc
       publicName[len] = ZERO;
       memcpy(publicName, r->fn.c, r->fn.dirLen);
       memcpy(publicName + r->fn.dirLen, subdir, subdirLen);
-      
+
       //check if dir exists
       publicName[r->fn.dirLen + subdirLen] = ZERO;
       if (!dirExists(publicName)) {
@@ -1234,11 +1537,11 @@ determinePublicName(FileParse* r, Boole isNonFns, NULLABLE S subdir) [[unsequenc
          printf("||%s||\n", publicName);
          exit(1);
       }
-      
+
       publicName[r->fn.dirLen + subdirLen] = '/';
       memcpy(
-            OUT publicName + r->fn.dirLen + subdirLen + 1, 
-            r->fn.c + r->fn.dirLen, 
+            OUT publicName + r->fn.dirLen + subdirLen + 1,
+            r->fn.c + r->fn.dirLen,
             r->fn.len - r->fn.dirLen - 1 //-1 for the to-be overwritten "c" at the end
       );
       if (isNonFns) {
@@ -1259,9 +1562,9 @@ determinePublicName(FileParse* r, Boole isNonFns, NULLABLE S subdir) [[unsequenc
 }
 
 private void
-writePublicHeader(FileParse* r, Boole isNonFns, S publicName) {
+writePublicHeader(Better* r, Boole isNonFns, S publicName) {
    Text publicContent = isNonFns ? buildNonFnHeader(r) : buildPublicHeader(r);
-   
+
    FILE* out = fopen(publicName, "w");
    fputs(publicContent.c, out);
    fclose(out);
@@ -1271,7 +1574,7 @@ writePublicHeader(FileParse* r, Boole isNonFns, S publicName) {
 
 //Return an empty Text. This is the place where forward declarations will be inserted
 private Text
-writeDeterminePlaceForForwDecls(FileParse* r) {
+writeDeterminePlaceForForwDecls(Better* r) {
    Unt latestType = 0;
    for (Unt i = 0; i < r->len; i++) {
       if (r->c[i].kind == TYPE) {
@@ -1286,14 +1589,14 @@ writeDeterminePlaceForForwDecls(FileParse* r) {
 
 private S
 buildFileImpl(
-   FileParse* r, Text existingDecls, Text genericMacros, Unt beforeLen, Unt afterLen, Unt totalLen
+   Better* r, Text existingDecls, Text genericMacros, Unt beforeLen, Unt afterLen, Unt totalLen
 ) {
    S newContent = malloc(totalLen + 1);
    newContent[totalLen] = ZERO;
    S w = newContent;
    memcpy(w, r->source.c, beforeLen);
    w += beforeLen;
-   
+
    if (existingDecls.len == 0) {
       w[0] = '\n';
       w++;
@@ -1312,7 +1615,7 @@ buildFileImpl(
       memcpy(w, genericMacros.c, genericMacros.len);
       w += genericMacros.len;
    }
-   
+
    if (existingDecls.len == 0) {
       memcpy(w, forwDeclEpilogue, sizeof(forwDeclEpilogue) - 1);
       w += sizeof(forwDeclEpilogue);
@@ -1320,62 +1623,62 @@ buildFileImpl(
    }
    memcpy(w, r->source.c + beforeLen + existingDecls.len, afterLen);
    w += afterLen;
-   
+
    if (w - newContent != totalLen) {
       printf("ERROR totalLen %d but wrote only %d", totalLen, (Unt)(w - newContent));
    }
-   
+
    return newContent;
 }
 
 private Unt
-calcForwardDeclLen(FileParse* r) {
+calcForwardDeclLen(Better* r) {
    Unt fwDeclLen = 0;
    for (Unt i = 0; i < r->len; i++) {
       if (r->c[i].acc == PRIVATE && r->c[i].kind == FUNCTION) {
          fwDeclLen += toplevelLen(r->c + i) + 8; //+8 for the "private "
       }
    }
-   
+
    return fwDeclLen;
 }
 
 //Return new allocated string with file content
 private S
-buildFileWithForwDecls(FileParse* r) {
+buildFileWithForwDecls(Better* r) {
    Text existingDecls = r->existingForwDecls;
    if (existingDecls.len == 0) {
       existingDecls = writeDeterminePlaceForForwDecls(r);
    }
-   
-   
+
+
    Unt fwDeclLen = calcForwardDeclLen(r);
    Text genericMacros = (Text){null, 0};
    if (isNonempty_StringMap(&r->genericMethods)) {
       genericMacros = writeGenerics(r);
       fwDeclLen += genericMacros.len;
    }
-   
+
    Unt totalLen;
    Unt beforeLen = existingDecls.c - r->source.c;
-   Unt afterLen; 
+   Unt afterLen;
    if (existingDecls.len == 0) {
       afterLen = r->source.len - beforeLen;
       totalLen = beforeLen + (sizeof(forwDeclPrologue) + 1) //"+ 1" because also two newline chars
-         + fwDeclLen 
+         + fwDeclLen
          + (sizeof(forwDeclEpilogue)) + afterLen;           //No "- 1" because also a newline char
    } else {
       afterLen = r->source.len - beforeLen - existingDecls.len;
       totalLen = beforeLen + fwDeclLen + afterLen;
    }
-   
+
    return buildFileImpl(r, existingDecls, genericMacros, beforeLen, afterLen, totalLen);
 }
 
 private void
-writeForwDecl(FileParse* r) {
+writeForwDecl(Better* r) {
    S newContent = buildFileWithForwDecls(r);
-   
+
    FILE* out = fopen(r->fn.c, "w");
    fputs(newContent, out);
    fclose(out);
@@ -1391,7 +1694,7 @@ calcGenericLen(GenericMethod m) {
    for (Unt i = 0; i < m.types->len; i++) {
       typesLen += m.types->c[i].len;
    }
-   return 8 // #define  
+   return 8 // #define
       + 16 // the tail of the first line, with the \n
       + 2*3*m.arity //param list, twice. 3 is parens and first param
       + m.name.len*(n + 1)
@@ -1446,7 +1749,7 @@ writeGeneric(OUT S* w, GenericMethod method, S source) {
          appendText(w, tConst(",\\""\n"));
       }
    }
-   
+
    appendText(w, tConst("   )"));
    *w = writeGenericParamList(*w, method.arity);
    *w[0] = '\n';
@@ -1454,7 +1757,7 @@ writeGeneric(OUT S* w, GenericMethod method, S source) {
 }
 
 private Text
-writeGenerics(FileParse* r) {
+writeGenerics(Better* r) {
    Unt len = calcGenericsLen(r->generics);
    S res = allocateOnArena(len + 1, r->a);
    res[len] = ZERO;
@@ -1462,26 +1765,26 @@ writeGenerics(FileParse* r) {
    for (Unt i = 0; i < r->generics->len; i++) {
       writeGeneric(OUT &w, r->generics->c[i], r->source.c);
    }
-   
+
    return (Text){res, len};
 }
 
 
 //}}}
 
-private void 
-writeResults(FileParse* r, NULLABLE S subdir) {
+private void
+writeResults(Better* r, NULLABLE S subdir) {
    Unt countPublics = 0;
    Unt countPrivateFns = 0; //functions only, only they need forward declarations
    Unt countNonFns = 0;
    for (Unt i = 0; i < r->len; i++) {
       ToplevelThing thing = r->c[i];
-      
+
       switch(thing.acc) {
       case PUBLIC: countPublics++; break;
-      case PRIVATE: 
+      case PRIVATE:
          if (thing.kind == FUNCTION)
-            countPrivateFns++; 
+            countPrivateFns++;
          break;
       default:
       }
@@ -1541,21 +1844,41 @@ parseCommLine(int argc, char** argv, int) {
 
 //}}}
 
+typedef struct {
+   int c;
+} Plausible;
+
+
+#define FOO(x, y) (Plausible){.c = y},
+
+Plausible arr[] = {
+
+pubWrap(
+   "#define FOO(x, y) FOO_##x\ntypedef enum{\n",
+   "}\n#undef FOO\n"
+)
+FOO(a, 15)
+FOO(b, 16)
+
+};
+
+#undef FOO
+
 pub int
 main(int argc, char** argv) {
    CommLine commLine = parseCommLine(argc, argv, 5);
-   if (!commLine.correct) { 
+   if (!commLine.correct) {
       printUsage();
       return 1;
-   } 
-   
+   }
+
    FilePath inpFile = filePath(commLine.fn);
-   
+
    Arena* a = createArena();
-   
-   FileParse parseRes = processSourceFile(inpFile, a); 
+
+   Better parseRes = processSourceFile(inpFile, a);
    writeResults(&parseRes, commLine.subdir);
-   
-   deleteArena(a); 
+
+   deleteArena(a);
 }
 

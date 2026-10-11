@@ -15616,41 +15616,6 @@ func_ptr_ref(UserFunc *fp) {
       ++fp->refCount;
 }
 
-//";return [expr]"
-pub void
-c_return(Invocation* invo) {
-   Byte   *arg = invo->arg;
-   Var   returnVar;
-   EvalCtx   evalarg;
-
-   if (!currentCallS) {
-      emsg(_(e_return_not_inside_function));
-      return;
-   }
-
-   init_evalarg(&evalarg);
-   evalarg.eval_flags = invo->skip ? 0 : EVAL_EVALUATE;
-
-   if (invo->skip)
-      ++emsg_skip;
-
-   if ((*arg != ZERO && *arg != '|' && *arg != '\n')
-              && eval0(arg, &returnVar, &evalarg) != FAIL
-   ) {
-      if (invo->skip)
-         clearVar(&returnVar);
-   }
-   //It's safer to return also on error.
-   ei (!invo->skip) {
-      //In return statement, cause_abort should be force_abort.
-      update_force_abort();
-   }
-
-   if (invo->skip)
-      --emsg_skip;
-   clear_evalarg(&evalarg, invo);
-}
-
 //Lower level implementation of "call".  Only called when not skipping.
 private int
 callInner(
@@ -16628,16 +16593,6 @@ ret_free:
    anyEmsgG |= saved_did_emsg;
 
    return fp;
-}
-
-
-pub void
-c_function(Invocation* invo) {
-   ArrayList linesToFree;
-   ga_init2(OUT &linesToFree, sizeof(CS), 50);
-
-   (void)define_function(invo, &linesToFree);
-   ga_clear_strings(&linesToFree);
 }
 
 //Check if a funcref is assigned to a valid variable name.

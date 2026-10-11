@@ -402,7 +402,6 @@ void func_unref(CS name);
 void func_ptr_unref(UserFunc* fp);
 void func_ref(CS name);
 void func_ptr_ref(UserFunc *fp);
-void c_return(Invocation* invo);
 int can_add_defer(void);
 int add_defer(CS name, int argcount_arg, Arr(Var) argvars);
 void invoke_all_defer(void);
@@ -425,7 +424,6 @@ Bag * get_current_funccal_dict(EeSet *ht);
 EeSetItem* find_hi_in_scoped_ht(CS name, EeSet** pht);
 DictItem * findVar_in_scoped_ht(Text name, Boole no_autoload);
 UserFunc * define_function(Invocation* invo, ArrayList* lines_to_free);
-void c_function(Invocation* invo);
 int var_wrong_func_name(
    Text name,   //points to start of variable name
    int new_var  //true when creating the variable

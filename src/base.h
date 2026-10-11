@@ -11,9 +11,6 @@ typedef unsigned char* CS; // ZERO-terminated byte arrays only
 #include <stdio.h>
 #include <stdarg.h> //va_list etc
 
-#define private static
-#define pub
-#define public
 #define OUT
 #define Arr(T) T*
 #define ei else if
@@ -49,7 +46,7 @@ typedef _Atomic int32_t AtomicInt;
 
 // Strings with length
 typedef struct Text {
-   CS c; //non-ZERO bytes followed by a ZERO (possibly outside of slice but in 
+   CS c; //non-ZERO bytes followed by a ZERO (possibly outside of slice but in
               //allocated memory). @c is non-null if len > 0.
    Unt  len;  //length of the slice
 } Text;
@@ -99,10 +96,10 @@ typedef struct {
 } DictStringIntItem;
 
 typedef struct {
-   Unt dict[129]; // Indices into @hashes and @c. 0th element is 0, last element is size 
+   Unt dict[129]; // Indices into @hashes and @c. 0th element is 0, last element is size
    Arr(Unt) hashes; // len == dict[128]
    Arr(DictStringIntItem) c; // len == dict[128]
-   Arr(Byte const) text; 
+   Arr(Byte const) text;
    Unt textLen;
 } DictStringInt128;
 
@@ -245,7 +242,7 @@ typedef struct pollfd {
 #define Ctrl_HAT   30 //^
 #define Ctrl__     31
 
-#define asciiA 97 
+#define asciiA 97
 
 #define CSI     155   //Control Sequence Introducer
 #define CSI_STR "\233"
@@ -462,7 +459,7 @@ enum key_extra{
    KE_S_XF3 = 73,
    KE_S_XF4 = 74,
 
-   // NOTE: The scroll wheel events are inverted: i.e. UP is the same as moving the actual scroll 
+   // NOTE: The scroll wheel events are inverted: i.e. UP is the same as moving the actual scroll
    // wheel down, LEFT is the same as moving the scroll wheel right.
    KE_MOUSEDOWN = 75,      // scroll wheel pseudo-button Down
    KE_MOUSEUP = 76,      // scroll wheel pseudo-button Up
@@ -785,3 +782,9 @@ typedef struct stat FileStat;
 
 
 #include <signal.h>      //for sigatomic_t
+
+
+#define private static
+#define pub
+#define pubWrapped(a, b)
+#define public

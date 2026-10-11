@@ -376,9 +376,6 @@ typedef struct tm Tm;
    } \
    } while (0)
 
-//EE_ISBREAK() is used very often if 'linebreak' is set, use a macro to make
-//it work fast.  Only works for single byte characters!
-#define EE_ISBREAK(c) ((c) < 256 && breakat_flags[(Byte)(c)])
 
 #define mch_access(n, p)   access((char*)(n), (p))
 
@@ -5135,19 +5132,17 @@ EXTERN int concatenateBackslashesG INIT(= true);
 
 EXTERN int keep_help_flag INIT(= false); //doing :ta from help file
 
-EXTERN int  redir_off INIT(= false);   //no redirection for a moment
-EXTERN FILE *redir_fd INIT(= NULL);   //message redirection file
-EXTERN int  redir_reg INIT(= 0);   //message redirection register
-EXTERN int  redir_vname INIT(= 0);   //message redirection variable
-EXTERN int  redir_execute INIT(= 0);   //execute() redirection
+EXTERN int redir_off INIT(= false);   //no redirection for a moment
+EXTERN FILE* redir_fd INIT(= NULL);   //message redirection file
+EXTERN int redir_reg INIT(= 0);   //message redirection register
+EXTERN int redir_vname INIT(= 0);   //message redirection variable
+EXTERN int redir_execute INIT(= 0);   //execute() redirection
 
 EXTERN Byte langmap_mapchar[256];   //mapping for language keys
 
 EXTERN int wild_menu_showing INIT(= 0);
 #define WM_SHOWN     1      //wildmenu showing
 #define WM_SCROLLED  2      //wildmenu showing with scroll
-
-EXTERN Boole breakat_flags[256];   //which characters are in 'breakat'
 
 //These are in main.c, call initLongVersion() before use.
 extern CS Version;
@@ -5161,11 +5156,11 @@ EXTERN CS globaldir INIT(= NULL);
 //EXTERN int disable_fold_update INIT(= 0);
 
 //Whether 'keymodel' contains "stopsel" and "startsel".
-EXTERN int   km_stopsel INIT(= false);
-EXTERN int   km_startsel INIT(= false);
+EXTERN int km_stopsel INIT(= false);
+EXTERN int km_startsel INIT(= false);
 
-EXTERN int   commPortTypeG INIT(= 0);   //type of commline portal or 0
-EXTERN Unt   commPortResultG INIT(= 0); //result of commline portal or 0
+EXTERN int commPortTypeG INIT(= 0);   //type of commline portal or 0
+EXTERN Unt commPortResultG INIT(= 0); //result of commline portal or 0
 EXTERN Book* commPortBookG INIT(= NULL); //book of commline portal or NULL
 EXTERN Book* msgG INIT(= NULL); //book of messages
 EXTERN Portal* commPortPortG INIT(= NULL); //portal of commmline portal or NULL
@@ -5196,10 +5191,10 @@ EXTERN DisplayTick display_tick INIT(= 0);
 
 //Line in which spell checking wasn't hilited because it touched the
 //cursor position in Insert mode.
-EXTERN LineNr      spell_redraw_lnum INIT(= 0);
+EXTERN LineNr spell_redraw_lnum INIT(= 0);
 
 //Set when the cursor line needs to be redrawn.
-EXTERN int      need_cursor_line_redraw INIT(= false);
+EXTERN int need_cursor_line_redraw INIT(= false);
 
 //Some messages that can be shared are included here.
 EXTERN char top_bot_msg[]   INIT(= "search hit TOP, continuing at BOTTOM");
@@ -5307,8 +5302,6 @@ EXTERN Byte e_backslash_should_be_followed_by[]
    INIT(= "E10: \\ should be followed by /, ? or &");
 EXTERN Byte e_invalid_in_commline_portal[]
    INIT(= "E11: Invalid in command-line portal; :q<CR> closes the portal");
-EXTERN Byte e_command_not_allowed_from_vimrc_in_current_dir_or_tag_search[]
-   INIT(= "E12: Command not allowed from vimrc in current dir or tag search");
 EXTERN Byte e_file_exists[] INIT(= "E13: File exists (add ! to override)");
 EXTERN Byte e_invalid_expression_str[] INIT(= "E15: Invalid expression: \"%s\"");
 EXTERN Byte e_invalid_range[] INIT(= "E16: Invalid range");
@@ -5319,7 +5312,7 @@ EXTERN Byte e_unexpected_characters_in_assignment[]
 EXTERN Byte e_mark_has_invalid_line_number[] INIT(= "E19: Mark has invalid line number");
 EXTERN Byte e_mark_not_set[] INIT(= "E20: Mark not set");
 EXTERN Byte e_cannot_make_changes_modifiable_is_off[]
-   INIT(= "E21: Cannot make changes, 'modifiable' is off");
+   INIT(= "E21: Cannot make changes, @modifiable is off");
 EXTERN Byte e_scripts_nested_too_deep[] INIT(= "E22: Scripts nested too deep");
 EXTERN Byte e_no_alternate_file[] INIT(= "E23: No alternate file");
 EXTERN Byte e_no_such_abbreviation[] INIT(= "E24: No such abbreviation");
@@ -5343,30 +5336,18 @@ EXTERN Byte e_cant_open_errorfile_str[] INIT(= "E40: Can't open errorfile %s");
 EXTERN Byte e_out_of_memory[] INIT(= "E41: Out of memory!");
 EXTERN Byte e_no_entries_in_location_list[] INIT(= "E42: No entries in this location list");
 EXTERN Byte e_damaged_match_string[] INIT(= "E43: Damaged match string");
-EXTERN Byte e_corrupted_regexp_program[] INIT(= "E44: Corrupted regexp program");
-EXTERN Byte e_readonly_option_is_set_add_bang_to_override[]
-   INIT(= "E45: book is not modifiable");
 EXTERN Byte e_cannot_change_readonly_variable[] INIT(= "E46: Cannot change read-only variable");
 EXTERN Byte e_cannot_change_readonly_variable_str[]
    INIT(= "E46: Cannot change read-only variable \"%s\"");
 EXTERN Byte e_error_while_reading_errorfile[] INIT(= "E47: Error while reading errorfile");
 EXTERN Byte e_invalid_scroll_size[] INIT(= "E49: Invalid scroll size");
-EXTERN Byte e_too_many_z[] INIT(= "E50: Too many \\z(");
-EXTERN Byte e_too_many_str_open[] INIT(= "E51: Too many %s(");
-EXTERN Byte e_unmatched_z[] INIT(= "E52: Unmatched \\z(");
 EXTERN Byte e_unmatched_str_percent_open[] INIT(= "E53: Unmatched %s%%(");
 EXTERN Byte e_unmatched_str_open[] INIT(= "E54: Unmatched %s(");
 EXTERN Byte e_unmatched_str_close[] INIT(= "E55: Unmatched %s)");
 EXTERN Byte e_invalid_character_after_str_at[] INIT(= "E59: Invalid character after %s@");
-EXTERN Byte e_too_many_complex_str_curly[] INIT(= "E60: Too many complex %s{...}s");
-EXTERN Byte e_nested_str[] INIT(= "E61: Nested %s*");
-EXTERN Byte e_nested_str_chr[] INIT(= "E62: Nested %s%c");
-EXTERN Byte e_invalid_use_of_underscore[] INIT(= "E63: Invalid use of \\_");
-EXTERN Byte e_str_chr_follows_nothing[] INIT(= "E64: %s%c follows nothing");
 EXTERN Byte e_illegal_back_reference[] INIT(= "E65: Illegal back reference");
 EXTERN Byte e_z_not_allowed_here[] INIT(= "E66: \\z( not allowed here");
 EXTERN Byte e_z1_z9_not_allowed_here[] INIT(= "E67: \\z1 - \\z9 not allowed here");
-EXTERN Byte e_invalid_character_after_bsl_z[] INIT(= "E68: Invalid character after \\z");
 EXTERN Byte e_missing_sb_after_str[] INIT(= "E69: Missing ] after %s%%[");
 EXTERN Byte e_empty_str_brackets[] INIT(= "E70: Empty %s%%[]");
 EXTERN Byte e_invalid_character_after_str[] INIT(= "E71: Invalid character after %s%%");
@@ -5385,11 +5366,11 @@ EXTERN Byte e_cannot_allocate_any_buffer_exiting[]
    INIT(= "E82: Cannot allocate any book, exiting...");
 EXTERN Byte e_cannot_allocate_book_using_other_one[]
    INIT(= "E83: Cannot allocate book, using other one...");
-EXTERN Byte e_no_modified_buffer_found[] INIT(= "E84: No modified book found");
-EXTERN Byte e_there_is_no_listed_buffer[] INIT(= "E85: There is no listed book");
+EXTERN Byte e_no_modified_book_found[] INIT(= "E84: No modified book found");
+EXTERN Byte e_there_is_no_listed_book[] INIT(= "E85: There is no listed book");
 EXTERN Byte e_book_nr_does_not_exist[] INIT(= "E86: Book %ld does not exist");
-EXTERN Byte e_cannot_go_beyond_last_buffer[] INIT(= "E87: Cannot go beyond last book");
-EXTERN Byte e_cannot_go_before_first_buffer[] INIT(= "E88: Cannot go before first book");
+EXTERN Byte e_cannot_go_beyond_last_book[] INIT(= "E87: Cannot go beyond last book");
+EXTERN Byte e_cannot_go_before_first_book[] INIT(= "E88: Cannot go before first book");
 EXTERN Byte e_no_write_since_last_change_for_buffer_nr_add_bang_to_override[]
    INIT(= "E89: No write since last change for book %d (add ! to override)");
 EXTERN Byte e_cannot_unload_last_buffer[] INIT(= "E90: Cannot unload last book");
@@ -5452,7 +5433,6 @@ EXTERN Byte e_cannot_delete_function_str_it_is_in_use[]
    INIT(= "E131: Cannot delete function %s: It is in use");
 EXTERN Byte e_function_call_depth_is_higher_than_maxfuncdepth[]
    INIT(= "E132: Function call depth is higher than 'maxfuncdepth'");
-EXTERN Byte e_return_not_inside_function[] INIT(= "E133: :return not inside a function");
 EXTERN Byte e_cannot_move_range_of_lines_into_itself[]
    INIT(= "E134: Cannot move a range of lines into itself");
 EXTERN Byte e_filter_autocommands_must_not_change_current_buffer[]
@@ -5462,9 +5442,9 @@ EXTERN Byte e_eeglinfo_too_many_errors_skipping_rest_of_file[]
 EXTERN Byte e_eeglinfo_file_is_not_writable_str[]
    INIT(= "E137: Eeglinfo file is not writable: %s");
 EXTERN Byte e_cant_write_eeglinfo_file_str[] INIT(= "E138: Can't write eeglinfo file %s!");
-EXTERN Byte e_file_is_loaded_in_another_buffer[] INIT(= "E139: File is loaded in another book");
-EXTERN Byte e_use_bang_to_write_partial_buffer[] INIT(= "E140: Use ! to write partial book");
-EXTERN Byte e_no_file_name_for_buffer_nr[] INIT(= "E141: No file name for buffer %ld");
+EXTERN Byte e_file_is_loaded_in_another_book[] INIT(= "E139: File is loaded in another book");
+EXTERN Byte e_use_bang_to_write_partial_book[] INIT(= "E140: Use ! to write partial book");
+EXTERN Byte e_no_file_name_for_book_nr[] INIT(= "E141: No file name for book %ld");
 EXTERN Byte e_file_not_written_writing_is_disabled_by_write_option[]
    INIT(= "E142: File not written: Writing is disabled by @modifiable option or -R or -M arg");
 EXTERN Byte e_autocommands_unexpectedly_deleted_new_buffer_str[]
@@ -5473,9 +5453,9 @@ EXTERN Byte e_non_numeric_argument_to_z[] INIT(= "E144: Non-numeric argument to 
 EXTERN Byte e_regular_expressions_cant_be_delimited_by_letters[]
    INIT(= "E146: Regular expressions can't be delimited by letters");
 EXTERN Byte e_cannot_do_global_recursive_with_range[]
-   INIT(= "E147: Cannot do :global recursive with a range");
+   INIT(= "E147: Cannot do ;global recursive with a range");
 EXTERN Byte e_regular_expression_missing_from_global[]
-   INIT(= "E148: Regular expression missing from :global");
+   INIT(= "E148: Regular expression missing from ;global");
 EXTERN Byte e_sorry_no_help_for_str[] INIT(= "E149: Sorry, no help for %s");
 EXTERN Byte e_not_a_directory_str[] INIT(= "E150: Not a directory: %s");
 EXTERN Byte e_no_match_str_1[] INIT(= "E151: No match: %s");
@@ -5498,17 +5478,10 @@ EXTERN Byte e_cannot_go_before_first_file[] INIT(= "E164: Cannot go before first
 EXTERN Byte e_cannot_go_beyond_last_file[] INIT(= "E165: Cannot go beyond last file");
 EXTERN Byte e_cant_open_linked_file_for_writing[]
    INIT(= "E166: Can't open linked file for writing");
-EXTERN Byte e_finish_used_outside_of_sourced_file[]
-   INIT(= "E168: :finish used outside of a sourced file");
 EXTERN Byte e_command_too_recursive[] INIT(= "E169: Command too recursive");
-EXTERN Byte e_missing_endwhile[] INIT(= "E170: Missing :endwhile");
-EXTERN Byte e_missing_endfor[] INIT(= "E170: Missing :endfor");
-EXTERN Byte e_missing_endif[] INIT(= "E171: Missing :endif");
 EXTERN Byte e_missing_marker[] INIT(= "E172: Missing marker");
-
 PLURAL_MSG(e_nr_more_file_to_edit, "E173: %d more file to edit",
       e_nr_more_files_to_edit, "E173: %d more files to edit")
-
 EXTERN Byte e_command_already_exists_add_bang_to_replace_it_str[]
    INIT(= "E174: Command already exists: add ! to replace it: %s");
 EXTERN Byte e_no_attribute_specified[] INIT(= "E175: No attribute specified");
@@ -5545,7 +5518,6 @@ EXTERN Byte e_no_alternate_file_name_to_substitute_for_hash[]
    INIT(= "E194: No alternate file name to substitute for '#'");
 EXTERN Byte e_cannot_open_eeglinfo_file_for_reading[]
    INIT(= "E195: Cannot open eeglinfo file for reading");
-EXTERN Byte e_no_digraphs_version[] INIT(= "E196: No digraphs in this version");
 EXTERN Byte e_cannot_set_language_to_str[] INIT(= "E197: Cannot set language to \"%s\"");
 EXTERN Byte e_active_window_or_buffer_changed_or_deleted[]
    INIT(= "E199: Active portal or book changed or deleted");
@@ -5558,10 +5530,6 @@ EXTERN Byte e_autocommands_deleted_or_unloaded_buffer_to_be_written[]
    INIT(= "E203: Autocommands deleted or unloaded buffer to be written");
 EXTERN Byte e_autocommands_changed_number_of_lines_in_unexpected_way[]
    INIT(= "E204: Autocommand changed number of lines in unexpected way");
-EXTERN Byte e_patchmode_cant_save_original_file[]
-   INIT(= "E205: Patchmode: can't save original file");
-EXTERN Byte e_patchmode_cant_touch_empty_original_file[]
-   INIT(= "E206: Patchmode: can't touch empty original file");
 EXTERN Byte e_cant_delete_backup_file[] INIT(= "E207: Can't delete backup file");
 EXTERN Byte e_error_writing_to_str[] INIT(= "E208: Error writing to \"%s\"");
 EXTERN Byte e_error_closing_str[] INIT(= "E209: Error closing \"%s\"");
@@ -5570,8 +5538,6 @@ EXTERN Byte e_file_str_no_longer_available[] INIT(= "E211: File \"%s\" no longer
 EXTERN Byte e_cant_open_file_for_writing[] INIT(= "E212: Can't open file for writing");
 EXTERN Byte e_cannot_convert_add_bang_to_write_without_conversion[]
    INIT(= "E213: Cannot convert (add ! to write without conversion)");
-EXTERN Byte e_cant_find_temp_file_for_writing[]
-   INIT(= "E214: Can't find temp file for writing");
 EXTERN Byte e_illegal_character_after_star_str[] INIT(= "E215: Illegal character after *: %s");
 EXTERN Byte e_no_such_event_str[] INIT(= "E216: No such event: %s");
 EXTERN Byte e_no_such_group_or_event_str[] INIT(= "E216: No such group or event: %s");
@@ -5688,8 +5654,6 @@ EXTERN Byte e_pointer_block_id_wrong_four[]
    INIT(= "E317: Pointer block id wrong 4");
 EXTERN Byte e_updated_too_many_blocks[]
    INIT(= "E318: Updated too many blocks?");
-EXTERN Byte e_sorry_command_is_not_available_in_this_version[]
-   INIT(= "E319: Sorry, the command is not available in this version");
 EXTERN Byte e_cannot_find_line_nr[]
    INIT(= "E320: Cannot find line %ld");
 EXTERN Byte e_could_not_reload_str[]
@@ -5702,28 +5666,6 @@ EXTERN Byte e_attention[]
    INIT(= "E325: ATTENTION");
 EXTERN Byte e_too_many_swap_files_found[]
    INIT(= "E326: Too many swap files found");
-EXTERN Byte e_part_of_menu_item_path_is_not_sub_menu[]
-   INIT(= "E327: Part of menu-item path is not sub-menu");
-EXTERN Byte e_menu_only_exists_in_another_mode[]
-   INIT(= "E328: Menu only exists in another mode");
-EXTERN Byte e_no_menu_str[]
-   INIT(= "E329: No menu \"%s\"");
-EXTERN Byte e_menu_path_must_not_lead_to_sub_menu[]
-   INIT(= "E330: Menu path must not lead to a sub-menu");
-EXTERN Byte e_must_not_add_menu_items_directly_to_menu_bar[]
-   INIT(= "E331: Must not add menu items directly to menu bar");
-EXTERN Byte e_separator_cannot_be_part_of_menu_path[]
-   INIT(= "E332: Separator cannot be part of a menu path");
-EXTERN Byte e_menu_path_must_lead_to_menu_item[]
-   INIT(= "E333: Menu path must lead to a menu item");
-EXTERN Byte e_menu_not_found_str[]
-   INIT(= "E334: Menu not found: %s");
-EXTERN Byte e_menu_not_defined_for_str_mode[]
-   INIT(= "E335: Menu not defined for %s mode");
-EXTERN Byte e_menu_path_must_lead_to_sub_menu[]
-   INIT(= "E336: Menu path must lead to a sub-menu");
-EXTERN Byte e_menu_not_found_check_menu_names[]
-   INIT(= "E337: Menu not found - check menu names");
 EXTERN Byte e_pattern_too_long[]
    INIT(= "E339: Pattern too long");
 EXTERN Byte e_internal_error_please_report_a_bug[]
@@ -6500,8 +6442,6 @@ EXTERN Byte e_undojoin_is_not_allowed_after_undo[]
    INIT(= "E790: undojoin is not allowed after undo");
 EXTERN Byte e_empty_keymap_entry[]
    INIT(= "E791: Empty keymap entry");
-EXTERN Byte e_empty_menu_name[]
-   INIT(= "E792: Empty menu name");
 EXTERN Byte e_no_other_buffer_in_diff_mode_is_modifiable[]
    INIT(= "E793: No other buffer in diff mode is modifiable");
 EXTERN Byte e_cannot_delete_variable[]
@@ -6573,7 +6513,6 @@ EXTERN Byte e_conflicts_with_value_of_listchars[]
    INIT(= "E834: Conflicts with value of 'listchars'");
 EXTERN Byte e_conflicts_with_value_of_fillchars[]
    INIT(= "E835: Conflicts with value of 'fillchars'");
-//E839 unused
 EXTERN Byte e_complete_function_deleted_text[]
    INIT(= "E840: Completion function deleted text");
 EXTERN Byte e_reserved_name_cannot_be_used_for_user_defined_command[]
@@ -6599,7 +6538,8 @@ EXTERN Byte e_path_too_long_for_completion[]
 EXTERN Byte e_autocommands_caused_command_to_abort[]
    INIT(= "E855: Autocommands caused command to abort");
 EXTERN Byte e_assert_fails_second_arg[]
-   INIT(= "E856: \"assert_fails()\" second argument must be a string or a list with one or two strings");
+   INIT(= "E856: \"assert_fails()\" second argument must be a string or a list with one or"
+         " two strings");
 EXTERN Byte e_dictionary_key_str_required[]
    INIT(= "E857: Dictionary key \"%s\" required");
 EXTERN Byte e_need_id_and_type_or_types_with_both[]
@@ -6636,7 +6576,8 @@ EXTERN Byte e_nfa_regexp_proper_termination_error[]
 EXTERN Byte e_nfa_regexp_could_not_pop_stack[]
    INIT(= "E874: (NFA regexp) Could not pop the stack!");
 EXTERN Byte e_nfa_regexp_while_converting_from_postfix_to_nfa_too_many_stats_left_on_stack[]
-   INIT(= "E875: (NFA regexp) (While converting from postfix to NFA), too many states left on stack");
+   INIT(= "E875: (NFA regexp) (While converting from postfix to NFA), too many states left"
+         " on stack");
 EXTERN Byte e_nfa_regexp_not_enough_space_to_store_whole_nfa[]
    INIT(= "E876: (NFA regexp) Not enough space to store the whole NFA");
 EXTERN Byte e_nfa_regexp_invalid_character_class_nr[]
@@ -6723,25 +6664,20 @@ EXTERN Byte e_directory_not_found_in_str_str[]
    INIT(= "E919: Directory not found in '%s': \"%s\"");
 EXTERN Byte e_io_file_requires_name_to_be_set[]
    INIT(= "E920: _io file requires _name to be set");
-EXTERN Byte e_invalid_callback_argument[]
-   INIT(= "E921: Invalid callback argument");
-//E922 unused
+EXTERN Byte e_invalid_callback_argument[] INIT(= "E921: Invalid callback argument");
 EXTERN Byte e_second_argument_of_function_must_be_list_or_dict[]
    INIT(= "E923: Second argument of function() must be a list or a dict");
 EXTERN Byte e_current_window_was_closed[]
    INIT(= "E924: Current portal was closed");
 EXTERN Byte e_current_location_list_was_changed[]
    INIT(= "E926: Current location list was changed");
-EXTERN Byte e_invalid_action_str_1[]
-   INIT(= "E927: Invalid action: '%s'");
-EXTERN Byte e_string_required[]
-   INIT(= "E928: String required");
+EXTERN Byte e_invalid_action_str_1[] INIT(= "E927: Invalid action: '%s'");
+EXTERN Byte e_string_required[] INIT(= "E928: String required");
 EXTERN Byte e_too_many_eeglinfo_temp_files_like_str[]
    INIT(= "E929: Too many eeglinfo temp files, like %s!");
 EXTERN Byte e_cannot_use_redir_inside_execute[]
-   INIT(= "E930: Cannot use :redir inside execute()");
-EXTERN Byte e_book_cannot_be_registered[]
-   INIT(= "E931: Book cannot be registered");
+   INIT(= "E930: Cannot use ;redir inside execute()");
+EXTERN Byte e_book_cannot_be_registered[] INIT(= "E931: Book cannot be registered");
 EXTERN Byte e_closure_function_should_not_be_at_top_level_str[]
    INIT(= "E932: Closure function should not be at top level: %s");
 EXTERN Byte e_function_was_deleted_str[]
@@ -6762,8 +6698,6 @@ EXTERN Byte e_cannot_lock_or_unlock_variable_str[]
    INIT(= "E940: Cannot lock or unlock variable %s");
 EXTERN Byte e_already_started_server[]
    INIT(= "E941: Already started a server");
-EXTERN Byte e_clientserver_feature_not_available[]
-   INIT(= "E942: +clientserver feature not available");
 EXTERN Byte e_command_table_needs_to_be_updated_run_make_ids[]
    INIT(= "E943: Command table needs to be updated, run 'make indices'");
 EXTERN Byte e_reverse_range_in_character_class[]
@@ -6774,12 +6708,10 @@ EXTERN Byte e_cannot_make_terminal_with_running_job_modifiable[]
    INIT(= "E946: Cannot make a terminal with running job modifiable");
 EXTERN Byte e_job_still_running_in_buffer_str[]
    INIT(= "E947: Job still running in buffer \"%s\"");
-EXTERN Byte e_job_still_running[]
-   INIT(= "E948: Job still running");
+EXTERN Byte e_job_still_running[] INIT(= "E948: Job still running");
 EXTERN Byte e_job_still_running_add_bang_to_end_the_job[]
    INIT(= "E948: Job still running (add ! to end the job)");
-EXTERN Byte e_file_changed_while_writing[]
-   INIT(= "E949: File changed while writing");
+EXTERN Byte e_file_changed_while_writing[] INIT(= "E949: File changed while writing");
 EXTERN Byte e_cannot_convert_between_str_and_str[]
    INIT(= "E950: Cannot convert between %s and %s");
 EXTERN Byte e_percent_value_too_large[]
@@ -6787,34 +6719,23 @@ EXTERN Byte e_percent_value_too_large[]
    INIT(= "E951: \\% value too large");
 EXTERN Byte e_autocommand_caused_recursive_behavior[]
    INIT(= "E952: Autocommand caused recursive behavior");
-EXTERN Byte e_file_exists_str[]
-   INIT(= "E953: File exists: %s");
-EXTERN Byte e_not_terminal_buffer[]
-   INIT(= "E955: Not a terminal buffer");
-EXTERN Byte e_cannot_use_pattern_recursively[]
-   INIT(= "E956: Cannot use pattern recursively");
-EXTERN Byte e_invalid_portal_number[]
-   INIT(= "E957: Invalid portal number");
-EXTERN Byte e_job_already_finished[]
-   INIT(= "E958: Job already finished");
-EXTERN Byte e_invalid_diff_format[]
-   INIT(= "E959: Invalid diff format.");
+EXTERN Byte e_file_exists_str[] INIT(= "E953: File exists: %s");
+EXTERN Byte e_not_terminal_buffer[] INIT(= "E955: Not a terminal buffer");
+EXTERN Byte e_cannot_use_pattern_recursively[] INIT(= "E956: Cannot use pattern recursively");
+EXTERN Byte e_invalid_portal_number[] INIT(= "E957: Invalid portal number");
+EXTERN Byte e_job_already_finished[] INIT(= "E958: Job already finished");
+EXTERN Byte e_invalid_diff_format[] INIT(= "E959: Invalid diff format.");
 EXTERN Byte e_problem_creating_internal_diff[]
    INIT(= "E960: Problem creating the internal diff");
 EXTERN Byte e_no_line_number_to_use_for_sflnum[]
    INIT(= "E961: No line number to use for \"<sflnum>\"");
-EXTERN Byte e_invalid_action_str_2[]
-   INIT(= "E962: Invalid action: '%s'");
+EXTERN Byte e_invalid_action_str_2[] INIT(= "E962: Invalid action: '%s'");
 EXTERN Byte e_setting_v_str_to_value_with_wrong_type[]
    INIT(= "E963: Setting v:%s to value with wrong type");
-EXTERN Byte e_invalid_column_number_nr[]
-   INIT(= "E964: Invalid column number: %ld");
-EXTERN Byte e_missing_property_type_name[]
-   INIT(= "E965: Missing property type name");
-EXTERN Byte e_invalid_line_number_nr[]
-   INIT(= "E966: Invalid line number: %ld");
-EXTERN Byte e_text_property_info_corrupted[]
-   INIT(= "E967: Text property info corrupted");
+EXTERN Byte e_invalid_column_number_nr[] INIT(= "E964: Invalid column number: %ld");
+EXTERN Byte e_missing_property_type_name[] INIT(= "E965: Missing property type name");
+EXTERN Byte e_invalid_line_number_nr[] INIT(= "E966: Invalid line number: %ld");
+EXTERN Byte e_text_property_info_corrupted[] INIT(= "E967: Text property info corrupted");
 EXTERN Byte e_need_at_least_one_of_id_or_type[]
    INIT(= "E968: Need at least one of 'id' or 'type'");
 EXTERN Byte e_property_type_str_already_defined[]
@@ -6847,53 +6768,33 @@ EXTERN Byte e_invalid_return_value_from_tagfunc[]
    INIT(= "E987: Invalid return value from tagfunc");
 EXTERN Byte e_non_default_argument_follows_default_argument[]
    INIT(= "E989: Non-default argument follows default argument");
-EXTERN Byte e_missing_end_marker_str[]
-   INIT(= "E990: Missing end marker '%s'");
-EXTERN Byte e_cannot_use_heredoc_here[]
-   INIT(= "E991: Cannot use =<< here");
-EXTERN Byte e_window_nr_is_not_popup_portal[]
-   INIT(= "E993: Portal %d is not a popup portal");
-EXTERN Byte e_not_allowed_in_popup_portal[]
-   INIT(= "E994: Not allowed in a popup portal");
-EXTERN Byte e_cannot_modify_existing_variable[]
-   INIT(= "E995: Cannot modify existing variable");
-EXTERN Byte e_cannot_lock_range[]
-   INIT(= "E996: Cannot lock a range");
-EXTERN Byte e_cannot_lock_option[]
-   INIT(= "E996: Cannot lock an option");
-EXTERN Byte e_cannot_lock_list_or_dict[]
-   INIT(= "E996: Cannot lock a list or dict");
+EXTERN Byte e_missing_end_marker_str[] INIT(= "E990: Missing end marker '%s'");
+EXTERN Byte e_cannot_use_heredoc_here[] INIT(= "E991: Cannot use =<< here");
+EXTERN Byte e_window_nr_is_not_popup_portal[] INIT(= "E993: Portal %d is not a popup portal");
+EXTERN Byte e_not_allowed_in_popup_portal[] INIT(= "E994: Not allowed in a popup portal");
+EXTERN Byte e_cannot_modify_existing_variable[] INIT(= "E995: Cannot modify existing variable");
+EXTERN Byte e_cannot_lock_range[] INIT(= "E996: Cannot lock a range");
+EXTERN Byte e_cannot_lock_option[] INIT(= "E996: Cannot lock an option");
+EXTERN Byte e_cannot_lock_list_or_dict[] INIT(= "E996: Cannot lock a list or dict");
 EXTERN Byte e_cannot_lock_environment_variable[]
    INIT(= "E996: Cannot lock an environment variable");
-EXTERN Byte e_cannot_lock_register[]
-   INIT(= "E996: Cannot lock a register");
-EXTERN Byte e_tabpage_not_found_nr[]
-   INIT(= "E997: Tabpage not found: %d");
+EXTERN Byte e_cannot_lock_register[] INIT(= "E996: Cannot lock a register");
+EXTERN Byte e_tabpage_not_found_nr[] INIT(= "E997: Tabpage not found: %d");
 EXTERN Byte e_reduce_of_an_empty_str_with_no_initial_value[]
    INIT(= "E998: Reduce of an empty %s with no initial value");
-//E1000 unused
-EXTERN Byte e_variable_not_found_str[]
-   INIT(= "E1001: Variable not found: %s");
-EXTERN Byte e_syntax_error_at_str[]
-   INIT(= "E1002: Syntax error at %s");
-EXTERN Byte e_missing_return_value[]
-   INIT(= "E1003: Missing return value");
+EXTERN Byte e_variable_not_found_str[] INIT(= "E1001: Variable not found: %s");
+EXTERN Byte e_syntax_error_at_str[] INIT(= "E1002: Syntax error at %s");
+EXTERN Byte e_missing_return_value[] INIT(= "E1003: Missing return value");
 EXTERN Byte e_white_space_required_before_and_after_str_at_str[]
    INIT(= "E1004: White space required before and after '%s' at \"%s\"");
-EXTERN Byte e_too_many_argument_types[]
-   INIT(= "E1005: Too many argument types");
-EXTERN Byte e_str_is_used_as_argument[]
-   INIT(= "E1006: %s is used as an argument");
+EXTERN Byte e_too_many_argument_types[] INIT(= "E1005: Too many argument types");
+EXTERN Byte e_str_is_used_as_argument[] INIT(= "E1006: %s is used as an argument");
 EXTERN Byte e_mandatory_argument_after_optional_argument[]
    INIT(= "E1007: Mandatory argument after optional argument");
-EXTERN Byte e_missing_type_after_str[]
-   INIT(= "E1008: Missing <type> after %s");
-EXTERN Byte e_missing_gt_after_type_str[]
-   INIT(= "E1009: Missing > after type: %s");
-EXTERN Byte e_type_not_recognized_str[]
-   INIT(= "E1010: Type not recognized: %s");
-EXTERN Byte e_name_too_long_str[]
-   INIT(= "E1011: Name too long: %s");
+EXTERN Byte e_missing_type_after_str[] INIT(= "E1008: Missing <type> after %s");
+EXTERN Byte e_missing_gt_after_type_str[] INIT(= "E1009: Missing > after type: %s");
+EXTERN Byte e_type_not_recognized_str[] INIT(= "E1010: Type not recognized: %s");
+EXTERN Byte e_name_too_long_str[] INIT(= "E1011: Name too long: %s");
 EXTERN Byte e_type_mismatch_expected_str_but_got_str[]
    INIT(= "E1012: Type mismatch; expected %s but got %s");
 EXTERN Byte e_type_mismatch_expected_str_but_got_str_in_str[]
@@ -6902,46 +6803,31 @@ EXTERN Byte e_argument_nr_type_mismatch_expected_str_but_got_str[]
    INIT(= "E1013: Argument %d: type mismatch, expected %s but got %s");
 EXTERN Byte e_argument_nr_type_mismatch_expected_str_but_got_str_in_str[]
    INIT(= "E1013: Argument %d: type mismatch, expected %s but got %s in %s");
-EXTERN Byte e_invalid_key_str[]
-   INIT(= "E1014: Invalid key: %s");
-EXTERN Byte e_name_expected_str[]
-   INIT(= "E1015: Name expected: %s");
+EXTERN Byte e_invalid_key_str[] INIT(= "E1014: Invalid key: %s");
+EXTERN Byte e_name_expected_str[] INIT(= "E1015: Name expected: %s");
 EXTERN Byte e_cannot_declare_a_scope_variable_str[]
    INIT(= "E1016: Cannot declare a %s variable: %s");
 EXTERN Byte e_cannot_declare_an_environment_variable_str[]
    INIT(= "E1016: Cannot declare an environment variable: %s");
-EXTERN Byte e_variable_already_declared_str[]
-   INIT(= "E1017: Variable already declared: %s");
-EXTERN Byte e_cannot_assign_to_constant_str[]
-   INIT(= "E1018: Cannot assign to a constant: %s");
+EXTERN Byte e_variable_already_declared_str[] INIT(= "E1017: Variable already declared: %s");
+EXTERN Byte e_cannot_assign_to_constant_str[] INIT(= "E1018: Cannot assign to a constant: %s");
 EXTERN Byte e_can_only_concatenate_to_string[]
    INIT(= "E1019: Can only concatenate to string");
 EXTERN Byte e_cannot_use_operator_on_new_variable_str[]
    INIT(= "E1020: Cannot use an operator on a new variable: %s");
-EXTERN Byte e_const_requires_a_value[]
-   INIT(= "E1021: Const requires a value");
-EXTERN Byte e_type_or_initialization_required[]
-   INIT(= "E1022: Type or initialization required");
-EXTERN Byte e_using_number_as_bool_nr[]
-   INIT(= "E1023: Using a Number as a Boole: %lld");
-EXTERN Byte e_using_number_as_string[]
-   INIT(= "E1024: Using a Number as a String");
+EXTERN Byte e_const_requires_a_value[] INIT(= "E1021: Const requires a value");
+EXTERN Byte e_type_or_initialization_required[] INIT(= "E1022: Type or initialization required");
+EXTERN Byte e_using_number_as_bool_nr[] INIT(= "E1023: Using a Number as a Boole: %lld");
+EXTERN Byte e_using_number_as_string[] INIT(= "E1024: Using a Number as a String");
 EXTERN Byte e_using_rcurly_outside_if_block_scope[] //{
    INIT(= "E1025: Using } outside of a block scope");
 EXTERN Byte e_missing_rcurly[] //{
    INIT(= "E1026: Missing }");
-EXTERN Byte e_missing_return_statement[]
-   INIT(= "E1027: Missing return statement");
-EXTERN Byte e_compiling_def_function_failed[]
-   INIT(= "E1028: Compiling :def function failed");
-EXTERN Byte e_expected_str_but_got_str[]
-   INIT(= "E1029: Expected %s but got %s");
+EXTERN Byte e_missing_return_statement[] INIT(= "E1027: Missing return statement");
+EXTERN Byte e_expected_str_but_got_str[] INIT(= "E1029: Expected %s but got %s");
 EXTERN Byte e_using_string_as_number_str[]
    INIT(= "E1030: Using a String as a Number: \"%s\"");
-EXTERN Byte e_cannot_use_void_value[]
-   INIT(= "E1031: Cannot use void value");
-EXTERN Byte e_missing_catch_or_finally[]
-   INIT(= "E1032: Missing :catch or :finally");
+EXTERN Byte e_cannot_use_void_value[] INIT(= "E1031: Cannot use void value");
 EXTERN Byte e_catch_unreachable_after_catch_all[]
    INIT(= "E1033: Catch unreachable after catch-all");
 EXTERN Byte e_cannot_use_reserved_name_str[]
@@ -6959,8 +6845,6 @@ EXTERN Byte e_invalid_command_after_export[]
    INIT(= "E1043: Invalid command after :export");
 EXTERN Byte e_export_with_invalid_argument[]
    INIT(= "E1044: Export with invalid argument");
-//E1045 not used
-//E1046 not used
 EXTERN Byte e_syntax_error_in_import_str[]
    INIT(= "E1047: Syntax error in import: %s");
 EXTERN Byte e_item_not_found_in_script_str[]
@@ -6969,125 +6853,81 @@ EXTERN Byte e_item_not_exported_in_script_str[]
    INIT(= "E1049: Item not exported in script: %s");
 EXTERN Byte e_colon_required_before_range_str[]
    INIT(= "E1050: Colon required before a range: %s");
-EXTERN Byte e_wrong_argument_type_for_plus[]
-   INIT(= "E1051: Wrong argument type for +");
-EXTERN Byte e_cannot_declare_an_option_str[]
-   INIT(= "E1052: Cannot declare an option: %s");
-EXTERN Byte e_could_not_import_str[]
-   INIT(= "E1053: Could not import \"%s\"");
+EXTERN Byte e_wrong_argument_type_for_plus[] INIT(= "E1051: Wrong argument type for +");
+EXTERN Byte e_cannot_declare_an_option_str[] INIT(= "E1052: Cannot declare an option: %s");
+EXTERN Byte e_could_not_import_str[] INIT(= "E1053: Could not import \"%s\"");
 EXTERN Byte e_variable_already_declared_in_script_str[]
    INIT(= "E1054: Variable already declared in the script: %s");
-EXTERN Byte e_missing_name_after_dots[]
-   INIT(= "E1055: Missing name after ...");
-EXTERN Byte e_expected_type_str[]
-   INIT(= "E1056: Expected a type: %s");
-EXTERN Byte e_missing_enddef[]
-   INIT(= "E1057: Missing :enddef");
-EXTERN Byte e_function_nesting_too_deep[]
-   INIT(= "E1058: Function nesting too deep");
+EXTERN Byte e_missing_name_after_dots[] INIT(= "E1055: Missing name after ...");
+EXTERN Byte e_expected_type_str[] INIT(= "E1056: Expected a type: %s");
+EXTERN Byte e_function_nesting_too_deep[] INIT(= "E1058: Function nesting too deep");
 EXTERN Byte e_no_white_space_allowed_before_colon_str[]
    INIT(= "E1059: No white space allowed before colon: %s");
 EXTERN Byte e_expected_dot_after_name_str[]
    INIT(= "E1060: Expected dot after name: %s");
-EXTERN Byte e_cannot_find_function_str[]
-   INIT(= "E1061: Cannot find function %s");
-EXTERN Byte e_cannot_index_number[]
-   INIT(= "E1062: Cannot index a Number");
-EXTERN Byte e_type_mismatch_for_v_variable[]
-   INIT(= "E1063: Type mismatch for v: variable");
+EXTERN Byte e_cannot_find_function_str[] INIT(= "E1061: Cannot find function %s");
+EXTERN Byte e_cannot_index_number[] INIT(= "E1062: Cannot index a Number");
+EXTERN Byte e_type_mismatch_for_v_variable[] INIT(= "E1063: Type mismatch for v: variable");
 EXTERN Byte e_yank_register_changed_while_using_it[]
    INIT(= "E1064: Yank register changed while using it");
 EXTERN Byte e_command_cannot_be_shortened_str[]
    INIT(= "E1065: Command cannot be shortened: %s");
-EXTERN Byte e_cannot_declare_a_register_str[]
-   INIT(= "E1066: Cannot declare a register: %s");
-EXTERN Byte e_separator_mismatch_str[]
-   INIT(= "E1067: Separator mismatch: %s");
+EXTERN Byte e_cannot_declare_a_register_str[] INIT(= "E1066: Cannot declare a register: %s");
+EXTERN Byte e_separator_mismatch_str[] INIT(= "E1067: Separator mismatch: %s");
 EXTERN Byte e_no_white_space_allowed_before_str_str[]
    INIT(= "E1068: No white space allowed before '%s': %s");
 EXTERN Byte e_white_space_required_after_str_str[]
    INIT(= "E1069: White space required after '%s': %s");
-EXTERN Byte e_invalid_string_for_import_str[]
-   INIT(= "E1071: Invalid string for :import: %s");
-EXTERN Byte e_cannot_compare_str_with_str[]
-   INIT(= "E1072: Cannot compare %s with %s");
-EXTERN Byte e_name_already_defined_str[]
-   INIT(= "E1073: Name already defined: %s");
+EXTERN Byte e_invalid_string_for_import_str[] INIT(= "E1071: Invalid string for :import: %s");
+EXTERN Byte e_cannot_compare_str_with_str[] INIT(= "E1072: Cannot compare %s with %s");
+EXTERN Byte e_name_already_defined_str[] INIT(= "E1073: Name already defined: %s");
 EXTERN Byte e_no_white_space_allowed_after_dot[]
    INIT(= "E1074: No white space allowed after dot");
-EXTERN Byte e_namespace_not_supported_str[]
-   INIT(= "E1075: Namespace not supported: %s");
-//E1076 unused (was deleted)
-EXTERN Byte e_missing_argument_type_for_str[]
-   INIT(= "E1077: Missing argument type for %s");
+EXTERN Byte e_namespace_not_supported_str[] INIT(= "E1075: Namespace not supported: %s");
+EXTERN Byte e_missing_argument_type_for_str[] INIT(= "E1077: Missing argument type for %s");
 EXTERN Byte e_invalid_command_nested_did_you_mean_plusplus_nested[]
    INIT(= "E1078: Invalid command \"nested\", did you mean \"++nested\"?");
 EXTERN Byte e_cannot_declare_variable_on_command_line[]
    INIT(= "E1079: Cannot declare a variable on the command line");
-EXTERN Byte e_invalid_assignment[]
-   INIT(= "E1080: Invalid assignment");
-EXTERN Byte e_cannot_unlet_str[]
-   INIT(= "E1081: Cannot unlet %s");
+EXTERN Byte e_invalid_assignment[] INIT(= "E1080: Invalid assignment");
+EXTERN Byte e_cannot_unlet_str[] INIT(= "E1081: Cannot unlet %s");
 EXTERN Byte e_command_modifier_without_command[]
    INIT(= "E1082: Command modifier without command");
-EXTERN Byte e_missing_backtick[]
-   INIT(= "E1083: Missing backtick");
-EXTERN Byte e_not_callable_type_str[]
-   INIT(= "E1085: Not a callable type: %s");
-//E1086 unused
+EXTERN Byte e_missing_backtick[] INIT(= "E1083: Missing backtick");
+EXTERN Byte e_not_callable_type_str[] INIT(= "E1085: Not a callable type: %s");
 EXTERN Byte e_cannot_use_index_when_declaring_variable[]
    INIT(= "E1087: Cannot use an index when declaring a variable");
-EXTERN Byte e_script_cannot_import_itself[]
-   INIT(= "E1088: Script cannot import itself");
-EXTERN Byte e_unknown_variable_str[]
-   INIT(= "E1089: Unknown variable: %s");
-EXTERN Byte e_cannot_assign_to_argument_str[]
-   INIT(= "E1090: Cannot assign to argument %s");
-EXTERN Byte e_function_is_not_compiled_str[]
-   INIT(= "E1091: Function is not compiled: %s");
-EXTERN Byte e_cannot_nest_redir[]
-   INIT(= "E1092: Cannot nest :redir");
-EXTERN Byte e_expected_nr_items_but_got_nr[]
-   INIT(= "E1093: Expected %d items but got %d");
+EXTERN Byte e_script_cannot_import_itself[] INIT(= "E1088: Script cannot import itself");
+EXTERN Byte e_unknown_variable_str[] INIT(= "E1089: Unknown variable: %s");
+EXTERN Byte e_cannot_assign_to_argument_str[] INIT(= "E1090: Cannot assign to argument %s");
+EXTERN Byte e_function_is_not_compiled_str[] INIT(= "E1091: Function is not compiled: %s");
+EXTERN Byte e_expected_nr_items_but_got_nr[] INIT(= "E1093: Expected %d items but got %d");
 EXTERN Byte e_import_can_only_be_used_in_script[]
    INIT(= "E1094: Import can only be used in a script");
-EXTERN Byte e_unreachable_code_after_str[]
-   INIT(= "E1095: Unreachable code after :%s");
+EXTERN Byte e_unreachable_code_after_str[] INIT(= "E1095: Unreachable code after :%s");
 EXTERN Byte e_returning_value_in_function_without_return_type[]
    INIT(= "E1096: Returning a value in a function without a return type");
-EXTERN Byte e_line_incomplete[]
-   INIT(= "E1097: Line incomplete");
-EXTERN Byte e_string_list_or_blob_required[]
-   INIT(= "E1098: String, List or Blob required");
+EXTERN Byte e_line_incomplete[] INIT(= "E1097: Line incomplete");
+EXTERN Byte e_string_list_or_blob_required[] INIT(= "E1098: String, List or Blob required");
 EXTERN Byte e_unknown_error_while_executing_str[]
    INIT(= "E1099: Unknown error while executing %s");
 EXTERN Byte e_cannot_declare_script_variable_in_function_str[]
    INIT(= "E1101: Cannot declare a script variable in a function: %s");
-EXTERN Byte e_lambda_function_not_found_str[]
-   INIT(= "E1102: Lambda function not found: %s");
-EXTERN Byte e_dictionary_not_set[]
-   INIT(= "E1103: Dictionary not set");
-EXTERN Byte e_missing_gt[]
-   INIT(= "E1104: Missing >");
-EXTERN Byte e_cannot_convert_str_to_string[]
-   INIT(= "E1105: Cannot convert %s to string");
-
+EXTERN Byte e_lambda_function_not_found_str[] INIT(= "E1102: Lambda function not found: %s");
+EXTERN Byte e_dictionary_not_set[] INIT(= "E1103: Dictionary not set");
+EXTERN Byte e_missing_gt[] INIT(= "E1104: Missing >");
+EXTERN Byte e_cannot_convert_str_to_string[] INIT(= "E1105: Cannot convert %s to string");
 PLURAL_MSG(e_one_argument_too_many, "E1106: One argument too many",
       e_nr_arguments_too_many, "E1106: %d arguments too many")
-
 EXTERN Byte e_string_list_dict_or_blob_required[]
    INIT(= "E1107: String, List, Bag or Blob required");
-//E1108 unused
-EXTERN Byte e_list_item_nr_is_not_list[]
-   INIT(= "E1109: List item %d is not a List");
+EXTERN Byte e_list_item_nr_is_not_list[] INIT(= "E1109: List item %d is not a List");
 EXTERN Byte e_list_item_nr_does_not_contain_3_numbers[]
    INIT(= "E1110: List item %d does not contain 3 numbers");
-EXTERN Byte e_list_item_nr_range_invalid[]
-   INIT(= "E1111: List item %d range invalid");
+EXTERN Byte e_list_item_nr_range_invalid[] INIT(= "E1111: List item %d range invalid");
 EXTERN Byte e_list_item_nr_cell_width_invalid[]
    INIT(= "E1112: List item %d cell width invalid");
-EXTERN Byte e_overlapping_ranges_for_nr[]
-   INIT(= "E1113: Overlapping ranges for 0x%lx");
+EXTERN Byte e_overlapping_ranges_for_nr[] INIT(= "E1113: Overlapping ranges for 0x%lx");
 EXTERN Byte e_only_values_of_0x80_and_higher_supported[]
    INIT(= "E1114: Only values of 0x80 and higher supported");
 EXTERN Byte e_assert_fails_fourth_argument[]
@@ -7103,8 +6943,6 @@ EXTERN Byte e_cannot_change_dict_item[] INIT(= "E1121: Cannot change dict item")
 EXTERN Byte e_variable_is_locked_str[] INIT(= "E1122: Variable is locked: %s");
 EXTERN Byte e_missing_comma_before_argument_str[]
    INIT(= "E1123: Missing comma before argument: %s");
-EXTERN Byte e_str_cannot_be_used_in_vim_script[]
-   INIT(= "E1124: \"%s\" cannot be used in Vim script");
 EXTERN Byte e_final_requires_a_value[] INIT(= "E1125: Final requires a value");
 EXTERN Byte e_missing_name_after_dot[] INIT(= "E1127: Missing name after dot");
 EXTERN Byte e_endblock_without_block[] INIT(= "E1128: } without {");
@@ -7118,7 +6956,6 @@ EXTERN Byte e_using_string_as_bool_str[]
    INIT(= "E1135: Using a String as a Boole: \"%s\"");
 EXTERN Byte e_cmd_mapping_must_end_with_cr_before_second_cmd[]
    INIT(= "E1136: <Cmd> mapping must end with <CR> before second <Cmd>");
-//E1137 unused
 EXTERN Byte e_using_bool_as_number[] INIT(= "E1138: Using a Boole as a Number");
 EXTERN Byte e_missing_matching_bracket_after_dict_key[]
    INIT(= "E1139: Missing matching bracket after dict key");
@@ -7130,21 +6967,16 @@ EXTERN Byte e_calling_test_garbagecollect_now_while_v_testing_is_not_set[]
 EXTERN Byte e_empty_expression_str[] INIT(= "E1143: Empty expression: \"%s\"");
 EXTERN Byte e_command_str_not_followed_by_white_space_str[]
    INIT(= "E1144: Command \"%s\" is not followed by white space: %s");
-EXTERN Byte e_missing_heredoc_end_marker_str[]
-   INIT(= "E1145: Missing heredoc end marker: %s");
-EXTERN Byte e_command_not_recognized_str[]
-   INIT(= "E1146: Command not recognized: %s");
+EXTERN Byte e_missing_heredoc_end_marker_str[] INIT(= "E1145: Missing heredoc end marker: %s");
+EXTERN Byte e_command_not_recognized_str[] INIT(= "E1146: Command not recognized: %s");
 EXTERN Byte e_list_not_set[] INIT(= "E1147: List not set");
 EXTERN Byte e_cannot_index_str[] INIT(= "E1148: Cannot index a %s");
 EXTERN Byte e_script_variable_invalid_after_reload_in_function_str[]
    INIT(= "E1149: Script variable is invalid after reload in function %s");
-EXTERN Byte e_script_variable_type_changed[]
-   INIT(= "E1150: Script variable type changed");
-EXTERN Byte e_mismatched_endfunction[]
-   INIT(= "E1151: Mismatched endfunction");
+EXTERN Byte e_script_variable_type_changed[] INIT(= "E1150: Script variable type changed");
+EXTERN Byte e_mismatched_endfunction[] INIT(= "E1151: Mismatched endfunction");
 EXTERN Byte e_mismatched_enddef[] INIT(= "E1152: Mismatched enddef");
-EXTERN Byte e_invalid_operation_for_str[]
-   INIT(= "E1153: Invalid operation for %s");
+EXTERN Byte e_invalid_operation_for_str[] INIT(= "E1153: Invalid operation for %s");
 EXTERN Byte e_divide_by_zero[] INIT(= "E1154: Divide by zero");
 EXTERN Byte e_cannot_define_autocommands_for_all_events[]
    INIT(= "E1155: Cannot define autocommands for ALL events");
@@ -7170,21 +7002,18 @@ EXTERN Byte e_argument_name_shadows_existing_variable_str[]
    INIT(= "E1167: Argument name shadows existing variable: %s");
 EXTERN Byte e_argument_already_declared_in_script_str[]
    INIT(= "E1168: Argument already declared in the script: %s");
-EXTERN Byte e_expression_too_recursive_str[]
-   INIT(= "E1169: Expression too recursive: %s");
+EXTERN Byte e_expression_too_recursive_str[] INIT(= "E1169: Expression too recursive: %s");
 EXTERN Byte e_cannot_use_hash_curly_to_start_comment[]
    INIT(= "E1170: Cannot use #{ to start a comment");
 EXTERN Byte e_missing_end_block[] INIT(= "E1171: Missing } after inline function");
 EXTERN Byte e_cannot_use_default_values_in_lambda[]
    INIT(= "E1172: Cannot use default values in a lambda");
-EXTERN Byte e_text_found_after_str_str[]
-   INIT(= "E1173: Text found after %s: %s");
+EXTERN Byte e_text_found_after_str_str[] INIT(= "E1173: Text found after %s: %s");
 EXTERN Byte e_string_required_for_argument_nr[]
    INIT(= "E1174: String required for argument %d");
 EXTERN Byte e_non_empty_string_required_for_argument_nr[]
    INIT(= "E1175: Non-empty string required for argument %d");
-EXTERN Byte e_misplaced_command_modifier[]
-   INIT(= "E1176: Misplaced command modifier");
+EXTERN Byte e_misplaced_command_modifier[] INIT(= "E1176: Misplaced command modifier");
 EXTERN Byte e_for_loop_on_str_not_supported[]
    INIT(= "E1177: For loop on %s not supported");
 EXTERN Byte e_cannot_lock_unlock_local_variable[]
@@ -7193,16 +7022,14 @@ EXTERN Byte e_failed_to_extract_pwd_from_str_check_your_shell_config[]
    INIT(= "E1179: Failed to extract PWD from %s, check your shell's config related to OSC 7");
 EXTERN Byte e_variable_arguments_type_must_be_list_str[]
    INIT(= "E1180: Variable arguments type must be a list: %s");
-EXTERN Byte e_cannot_use_underscore_here[]
-   INIT(= "E1181: Cannot use an underscore here");
+EXTERN Byte e_cannot_use_underscore_here[] INIT(= "E1181: Cannot use an underscore here");
 EXTERN Byte e_cannot_use_range_with_assignment_operator_str[]
    INIT(= "E1183: Cannot use a range with an assignment operator: %s");
 EXTERN Byte e_blob_not_set[] INIT(= "E1184: Blob not set");
 EXTERN Byte e_missing_redir_end[] INIT(= "E1185: Missing :redir END");
 EXTERN Byte e_expression_does_not_result_in_value_str[]
    INIT(= "E1186: Expression does not result in a value: %s");
-EXTERN Byte e_failed_to_source_defaults[]
-   INIT(= "E1187: Failed to source defaults.vim");
+EXTERN Byte e_failed_to_source_defaults[] INIT(= "E1187: Failed to source defaults.vim");
 EXTERN Byte e_cannot_open_terminal_from_command_line_window[]
    INIT(= "E1188: Cannot open a terminal from the command line window");
 EXTERN Byte e_cannot_use_legacy_with_command_str[]
@@ -7222,24 +7049,19 @@ EXTERN Byte e_no_white_space_allowed_between_option_and[]
    INIT(= "E1205: No white space allowed between option and");
 EXTERN Byte e_dict_required_for_argument_nr[]
    INIT(= "E1206: Dictionary required for argument %d");
-EXTERN Byte e_expression_without_effect_str[]
-   INIT(= "E1207: Expression without an effect: %s");
+EXTERN Byte e_expression_without_effect_str[] INIT(= "E1207: Expression without an effect: %s");
 EXTERN Byte e_complete_used_without_allowing_arguments[]
    INIT(= "E1208: -complete used without allowing arguments");
 EXTERN Byte e_invalid_value_for_line_number_str[]
    INIT(= "E1209: Invalid value for a line number: \"%s\"");
 EXTERN Byte e_number_required_for_argument_nr[]
    INIT(= "E1210: Number required for argument %d");
-EXTERN Byte e_list_required_for_argument_nr[]
-   INIT(= "E1211: List required for argument %d");
-EXTERN Byte e_bool_required_for_argument_nr[]
-   INIT(= "E1212: Boole required for argument %d");
-EXTERN Byte e_redefining_imported_item_str[]
-   INIT(= "E1213: Redefining imported item \"%s\"");
+EXTERN Byte e_list_required_for_argument_nr[] INIT(= "E1211: List required for argument %d");
+EXTERN Byte e_bool_required_for_argument_nr[] INIT(= "E1212: Boole required for argument %d");
+EXTERN Byte e_redefining_imported_item_str[] INIT(= "E1213: Redefining imported item \"%s\"");
 EXTERN Byte e_chan_or_job_required_for_argument_nr[]
    INIT(= "E1217: Channel or Job required for argument %d");
-EXTERN Byte e_job_required_for_argument_nr[]
-   INIT(= "E1218: Job required for argument %d");
+EXTERN Byte e_job_required_for_argument_nr[] INIT(= "E1218: Job required for argument %d");
 EXTERN Byte e_float_or_number_required_for_argument_nr[]
    INIT(= "E1219: Float or Number required for argument %d");
 EXTERN Byte e_string_or_number_required_for_argument_nr[]
@@ -7276,22 +7098,16 @@ EXTERN Byte e_cannot_use_str_itself_it_is_imported[]
    INIT(= "E1236: Cannot use %s itself, it is imported");
 EXTERN Byte e_no_such_user_defined_command_in_current_buffer_str[]
    INIT(= "E1237: No such user-defined command in current buffer: %s");
-EXTERN Byte e_blob_required_for_argument_nr[]
-   INIT(= "E1238: Blob required for argument %d");
-EXTERN Byte e_invalid_value_for_blob_nr[]
-   INIT(= "E1239: Invalid value for blob: %d");
-EXTERN Byte e_resulting_text_too_long[]
-   INIT(= "E1240: Resulting text too long");
-EXTERN Byte e_separator_not_supported_str[]
-   INIT(= "E1241: Separator not supported: %s");
+EXTERN Byte e_blob_required_for_argument_nr[] INIT(= "E1238: Blob required for argument %d");
+EXTERN Byte e_invalid_value_for_blob_nr[] INIT(= "E1239: Invalid value for blob: %d");
+EXTERN Byte e_resulting_text_too_long[] INIT(= "E1240: Resulting text too long");
+EXTERN Byte e_separator_not_supported_str[] INIT(= "E1241: Separator not supported: %s");
 EXTERN Byte e_no_white_space_allowed_before_separator_str[]
    INIT(= "E1242: No white space allowed before separator: %s");
-EXTERN Byte e_bad_color_string_str[]
-   INIT(= "E1244: Bad color string: %s");
+EXTERN Byte e_bad_color_string_str[] INIT(= "E1244: Bad color string: %s");
 EXTERN Byte e_cannot_find_variable_to_unlock_str[]
    INIT(= "E1246: Cannot find variable to (un)lock: %s");
-EXTERN Byte e_line_number_out_of_range[]
-   INIT(= "E1247: Line number out of range");
+EXTERN Byte e_line_number_out_of_range[] INIT(= "E1247: Line number out of range");
 EXTERN Byte e_closure_called_from_invalid_context[]
    INIT(= "E1248: Closure called from invalid context");
 EXTERN Byte e_highlight_group_name_too_long[]
@@ -7304,11 +7120,9 @@ EXTERN Byte e_string_list_or_blob_required_for_argument_nr[]
    INIT(= "E1252: String, List or Blob required for argument %d");
 EXTERN Byte e_string_list_tuple_or_blob_required_for_argument_nr[]
    INIT(= "E1253: String, List or Blob required for argument %d");
-//E1253 unused
 EXTERN Byte e_cannot_use_script_variable_in_for_loop[]
    INIT(= "E1254: Cannot use script variable in for loop");
-EXTERN Byte e_cmd_mapping_must_end_with_cr[]
-   INIT(= "E1255: <Cmd> mapping must end with <CR>");
+EXTERN Byte e_cmd_mapping_must_end_with_cr[] INIT(= "E1255: <Cmd> mapping must end with <CR>");
 EXTERN Byte e_string_or_function_required_for_argument_nr[]
    INIT(= "E1256: String or function required for argument %d");
 EXTERN Byte e_imported_script_must_use_as_or_end_in_dot_vim_str[]
@@ -7338,8 +7152,7 @@ EXTERN Byte e_no_script_file_name_to_substitute_for_script[]
    INIT(= "E1274: No script file name to substitute for \"<script>\"");
 EXTERN Byte e_string_or_function_required_for_arrow_parens_expr[]
    INIT(= "E1275: String or function required for ->(expr)");
-EXTERN Byte e_illegal_map_mode_string_str[]
-   INIT(= "E1276: Illegal map mode string: '%s'");
+EXTERN Byte e_illegal_map_mode_string_str[] INIT(= "E1276: Illegal map mode string: '%s'");
 EXTERN Byte e_stray_closing_curly_str[] //{
    INIT(= "E1278: Stray '}' without a matching '{': %s");
 EXTERN Byte e_missing_close_curly_str[] INIT(= "E1279: Missing '}': %s");
@@ -7388,8 +7201,6 @@ EXTERN Byte e_cannot_resize_portal_in_another_tab[]
    INIT(= "E1308: Cannot resize a portal in another tab");
 EXTERN Byte e_cannot_change_mappings_while_listing[]
    INIT(= "E1309: Cannot change mappings while listing");
-EXTERN Byte e_cannot_change_menus_while_listing[]
-   INIT(= "E1310: Cannot change menus while listing");
 EXTERN Byte e_cannot_change_user_commands_while_listing[]
    INIT(= "E1311: Cannot change user commands while listing");
 EXTERN Byte e_not_allowed_to_change_portal_layout_in_this_autocmd[]
@@ -7404,11 +7215,9 @@ EXTERN Byte e_invalid_object_variable_declaration_str[]
    INIT(= "E1317: Invalid object variable declaration: %s");
 EXTERN Byte e_not_valid_command_in_class_str[]
    INIT(= "E1318: Not a valid command in a class: %s");
-//E1319 unused
 EXTERN Byte e_using_object_as_number[] INIT(= "E1320: Using an Object as a Number");
 EXTERN Byte e_using_object_as_float[] INIT(= "E1322: Using an Object as a Float");
-EXTERN Byte e_using_object_as_string[]
-   INIT(= "E1324: Using an Object as a String");
+EXTERN Byte e_using_object_as_string[] INIT(= "E1324: Using an Object as a String");
 EXTERN Byte e_method_not_found_on_class_str_str[]
    INIT(= "E1325: Method \"%s\" not found in class \"%s\"");
 EXTERN Byte e_variable_not_found_on_object_str_str[]
@@ -7647,7 +7456,7 @@ EXTERN Byte e_cannot_have_negative_or_zero_number_of_quickfix[]
 EXTERN Byte e_cannot_have_more_than_hundred_quickfix[]
    INIT(= "E1543: Cannot have more than a hundred quickfix/location lists");
 EXTERN Byte e_failed_resizing_quickfix_stack[]
-   INIT(= "E1544: Failed resizing the quickfix/location list stack");
+   INIT(= "E1544: Failed resizing the location list stack");
 EXTERN Byte e_cannot_switch_to_a_closing_buffer[]
    INIT(= "E1546: Cannot switch to a closing buffer");
 EXTERN Byte e_wayland_connection_unavailable[]
@@ -7670,14 +7479,11 @@ EXTERN Byte e_too_many_types_for_generic_function_str[]
    INIT(= "E1556: Too many types specified for generic function '%s'");
 EXTERN Byte e_not_enough_types_for_generic_function_str[]
    INIT(= "E1557: Not enough types specified for generic function '%s'");
-EXTERN Byte e_unknown_generic_function_str[]
-   INIT(= "E1558: Unknown generic function: %s");
+EXTERN Byte e_unknown_generic_function_str[] INIT(= "E1558: Unknown generic function: %s");
 EXTERN Byte e_generic_func_missing_type_args_str[]
    INIT(= "E1559: Type arguments missing for generic function '%s'");
-EXTERN Byte e_not_a_generic_function_str[]
-   INIT(= "E1560: Not a generic function: %s");
-EXTERN Byte e_duplicate_type_var_name_str[]
-   INIT(= "E1561: Duplicate type variable name: %s");
+EXTERN Byte e_not_a_generic_function_str[] INIT(= "E1560: Not a generic function: %s");
+EXTERN Byte e_duplicate_type_var_name_str[] INIT(= "E1561: Duplicate type variable name: %s");
 EXTERN Byte e_diff_anchors_with_hidden_windows[]
    INIT(= "E1562: Diff anchors cannot be used with hidden diff portals");
 EXTERN Byte e_use_get_not_set_for_reading_options[]
@@ -7688,12 +7494,9 @@ EXTERN Byte e_illegal_combination_of_flags_str[]
    INIT(= "E1567: Illegal combination of flags in the option %s");
 EXTERN Byte e_trying_to_set_option_to_wrong_type[]
    INIT(= "E1569: Trying to set option to wrong type");
-EXTERN Byte e_bool_required_after_equal[]
-   INIT(= "E1570: Boole required after =");
-EXTERN Byte e_enum_required_after_equal[]
-   INIT(= "E1571: Enum required after =");
-EXTERN Byte e_flags_required_after_equal[]
-   INIT(= "E1572: Flags required after =");
+EXTERN Byte e_bool_required_after_equal[] INIT(= "E1570: Boole required after =");
+EXTERN Byte e_enum_required_after_equal[] INIT(= "E1571: Enum required after =");
+EXTERN Byte e_flags_required_after_equal[] INIT(= "E1572: Flags required after =");
 EXTERN Byte e_setter_required_for_enum_or_flag_option[]
    INIT(= "E1573: Enumeration, flags and callback options require a setter function!");
 EXTERN Byte e_options_are_frozen[] INIT(= "E1574: Options are frozen and cannot be changed!");

@@ -39,7 +39,7 @@
 #define MODIFY       0x100000 //forbidden in non-'modifiable' book
 #define FLAGS        0x200000 //allow flags after count in argument
 #define EXPAND       0x800000 //expands wildcards later
-#define LOCK_OK     0x1000000 //command can be executed when textlock is set; when missing, 
+#define LOCK_OK     0x1000000 //command can be executed when textlock is set; when missing,
                               //disallows editing another book when curbuf_lock is set
 #define NONWHITE_OK 0x2000000 //command can be followed by non-white
 #define KEEPSCRIPT  0x4000000 //keep sctx of where command was invoked
@@ -52,7 +52,7 @@
 #endif
 
 
-#ifdef DO_DECLARE_COMMANDS //Full table 
+#ifdef DO_DECLARE_COMMANDS //Full table
 
 #define C(a, b, c, d, e) {(CS)b, STRLEN_LITERAL(b), c, (Ulong)(d), e}
 
@@ -64,7 +64,7 @@ typedef struct {
    CommFn fn;     //function for this command
    Ulong flags;   //flags declared above
    CommandAddress addressKind; //flag for address type
-} CommandDef; 
+} CommandDef;
 
 static CommandDef commands[] =
 
@@ -112,12 +112,12 @@ enum CommIndex
 
 #if defined(DO_DECLARE_COMMANDS) || defined(DECLARE_COMMANDS_ENUM)\
    || defined(DECLARE_COMMANDS_FOR_INDEXING)
-//This array declares and defines all built-in Commands. The order in which commands are listed 
+//This array declares and defines all built-in Commands. The order in which commands are listed
 //is SIGNIFICANT -- ambiguous abbreviations are always resolved to be the first possible match
 //(e.g. "r" is taken to mean "read", not "rewind", because "read" comes before "rewind").
 //Unsupported commands are included to avoid ambiguities.
 {
-C(C_abbreviate, "abbreviate", c_abbreviate, 
+C(C_abbreviate, "abbreviate", c_abbreviate,
       EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE
 ),
 C(C_abclear, "abclear", c_abclear, EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
@@ -162,12 +162,12 @@ C(C_browse, "browse", c_wrongmodifier, NEEDARG|EXTRA|NOTRLCOM|COMMPORT|LOCK_OK, 
 C(C_bufdo,   "bufdo",   c_listDo, BANG|NEEDARG|EXTRA|NOTRLCOM|RANGE|DFLALL|EXPAND, ADDR_BUFFERS),
 C(C_bunload,   "bunload",   c_bunload, BANG|RANGE|BUFNAME|COUNT|EXTRA|TRLBAR, ADDR_LOADED_BUFFERS),
 C(C_bwipeout, "bwipeout", c_bunload, BANG|RANGE|BUFNAME|BUFUNL|COUNT|EXTRA|TRLBAR, ADDR_BUFFERS),
-C(C_change, "change", c_change, 
+C(C_change, "change", c_change,
       BANG|WHOLEFOLD|RANGE|COUNT|TRLBAR|COMMPORT|LOCK_OK|MODIFY, ADDR_LINES
 ),
 C(C_cabbrev, "cabbrev", c_abbreviate, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_cabclear,   "cabclear",   c_abclear, EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_call,      "call",      c_call, 
+C(C_call,      "call",      c_call,
       RANGE|NEEDARG|EXTRA|NOTRLCOM|EXPR_ARG|COMMPORT|LOCK_OK, ADDR_LINES
 ),
 C(C_cd,      "cd",      c_cd, BANG|FILE1|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
@@ -182,7 +182,7 @@ C(C_clearjumps,   "clearjumps",   c_clearjumps, TRLBAR|COMMPORT|LOCK_OK, ADDR_NO
 C(C_cmap,      "cmap",      c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_cmapclear,   "cmapclear",   c_mapclear, EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_cnoremap,   "cnoremap",   c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_cnoreabbrev, "cnoreabbrev", c_abbreviate, 
+C(C_cnoreabbrev, "cnoreabbrev", c_abbreviate,
    EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE
 ),
 C(C_copy, "copy", c_copymove, RANGE|WHOLEFOLD|EXTRA|TRLBAR|COMMPORT|LOCK_OK|MODIFY, ADDR_LINES),
@@ -202,7 +202,7 @@ C(C_delete,   "delete",   c_operators,
 ),
 C(C_delmarks,   "delmarks",   c_delmarks, BANG|EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_debug,   "debug",   c_debug, NEEDARG|EXTRA|NOTRLCOM|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_debuggreedy, "debuggreedy", c_debuggreedy, 
+C(C_debuggreedy, "debuggreedy", c_debuggreedy,
       RANGE|ZERO_LINE_OK|TRLBAR|COMMPORT|LOCK_OK, ADDR_OTHER
 ),
 C(C_defer,   "defer", c_call, NEEDARG|EXTRA|NOTRLCOM|EXPR_ARG|COMMPORT|LOCK_OK, ADDR_NONE),
@@ -229,11 +229,11 @@ C(C_echo,      "echo",      c_echo, EXTRA|NOTRLCOM|EXPR_ARG|COMMPORT|LOCK_OK, AD
 C(C_echoerr,   "echoerr",   c_execute, EXTRA|NOTRLCOM|EXPR_ARG|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_echohl,   "echohl",   c_echohl, EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_echomsg,   "echomsg",   c_execute, EXTRA|NOTRLCOM|EXPR_ARG|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_echoconsole,   "echoconsole",   c_execute, 
+C(C_echoconsole,   "echoconsole",   c_execute,
       EXTRA|NOTRLCOM|EXPR_ARG|COMMPORT|LOCK_OK, ADDR_NONE
 ),
 C(C_echon,   "echon",   c_echo, EXTRA|NOTRLCOM|EXPR_ARG|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_echowindow,   "echowindow",   c_execute, 
+C(C_echowindow,   "echowindow",   c_execute,
       RANGE|EXTRA|NOTRLCOM|EXPR_ARG|COMMPORT|LOCK_OK, ADDR_OTHER
 ),
 C(C_elck,   "elck",   c_elgrep, RANGE|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE, ADDR_OTHER),
@@ -247,7 +247,7 @@ C(C_enew,      "enew",      c_edit, BANG|TRLBAR, ADDR_NONE),
 C(C_eval,      "eval",      c_eval, EXTRA|NOTRLCOM|EXPR_ARG|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_ex,      "ex",      c_edit, BANG|FILE1|CMDARG|ARGOPT|TRLBAR, ADDR_NONE),
 C(C_execute,   "execute",   c_execute, EXTRA|NOTRLCOM|EXPR_ARG|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_exit,      "exit", c_exit, 
+C(C_exit,      "exit", c_exit,
       RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES
 ),
 C(C_exusage,   "exusage",   c_exusage, TRLBAR, ADDR_NONE),
@@ -260,18 +260,17 @@ C(C_final,   "final",   c_let, EXTRA|NOTRLCOM|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_first,   "first",   c_rewind, EXTRA|BANG|CMDARG|ARGOPT|TRLBAR, ADDR_NONE),
 C(C_fixdel,   "fixdel",   do_fixdel, TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_fold,      "fold",      c_fold, RANGE|WHOLEFOLD|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),
-C(C_foldclose,   "foldclose",   c_foldopen, 
+C(C_foldclose,   "foldclose",   c_foldopen,
       RANGE|BANG|WHOLEFOLD|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES
 ),
 C(C_folddoopen,   "folddoopen",   c_folddo, RANGE|DFLALL|NEEDARG|EXTRA|NOTRLCOM, ADDR_LINES),
 C(C_folddoclosed,   "folddoclosed",   c_folddo, RANGE|DFLALL|NEEDARG|EXTRA|NOTRLCOM, ADDR_LINES),
-C(C_foldopen,   "foldopen",   c_foldopen, 
+C(C_foldopen,   "foldopen",   c_foldopen,
       RANGE|BANG|WHOLEFOLD|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES
 ),
-C(C_function, "function", c_function, EXTRA|BANG|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_get,   "get",   c_get, EXTRA|COMMPORT|LOCK_OK|NONWHITE_OK, ADDR_NONE),
 C(C_getGlobal,   "getglobal",   c_get, EXTRA|COMMPORT|LOCK_OK|NONWHITE_OK, ADDR_NONE),
-C(C_global,   "global",   c_global, 
+C(C_global,   "global",   c_global,
       RANGE|WHOLEFOLD|BANG|EXTRA|DFLALL|COMMPORT|LOCK_OK|NONWHITE_OK, ADDR_LINES
 ),
 C(C_goto,      "goto",      c_goto, RANGE|COUNT|TRLBAR|COMMPORT|LOCK_OK, ADDR_OTHER),
@@ -293,11 +292,11 @@ C(C_ilist,   "ilist", c_findpat, BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|COMMPORT|LOCK
 C(C_imap,      "imap",      c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_imapclear,   "imapclear",   c_mapclear, EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_inoremap,   "inoremap",   c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_inoreabbrev,   "inoreabbrev",   
+C(C_inoreabbrev,   "inoreabbrev",
       c_abbreviate, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE
 ),
 C(C_intro,   "intro",   c_intro, TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_iput,      "iput",      c_iput, 
+C(C_iput,      "iput",      c_iput,
       RANGE|WHOLEFOLD|BANG|REGSTR|TRLBAR|ZERO_LINE_OK|COMMPORT|LOCK_OK|MODIFY, ADDR_LINES
 ),
 C(C_isearch, "isearch", c_findpat, BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|COMMPORT|LOCK_OK, ADDR_LINES),
@@ -382,11 +381,11 @@ C(C_nnoremap,   "nnoremap",   c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_O
 C(C_noremap,   "noremap",   c_map, BANG|EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_noautocmd,   "noautocmd",   c_wrongmodifier, NEEDARG|EXTRA|NOTRLCOM, ADDR_NONE),
 C(C_nohlsearch,   "nohlsearch",   c_nohlsearch, TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_noreabbrev, "noreabbrev", c_abbreviate, 
+C(C_noreabbrev, "noreabbrev", c_abbreviate,
       EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE
 ),
 C(C_noswapfile,   "noswapfile",   c_wrongmodifier, NEEDARG|EXTRA|NOTRLCOM, ADDR_NONE),
-C(C_normal, "normal", c_normal, 
+C(C_normal, "normal", c_normal,
       RANGE|BANG|EXTRA|NEEDARG|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_LINES
 ),
 C(C_number,   "number",   c_print, RANGE|WHOLEFOLD|COUNT|FLAGS|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),
@@ -399,12 +398,12 @@ C(C_onoremap,   "onoremap",   c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_O
 C(C_options,   "options",   c_options, TRLBAR, ADDR_NONE),
 C(C_ounmap,   "ounmap",   c_unmap, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_ownsyntax,   "ownsyntax",   c_ownsyntax, EXTRA|NOTRLCOM|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_print,   "print",   c_print, 
+C(C_print,   "print",   c_print,
       RANGE|WHOLEFOLD|COUNT|FLAGS|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES
 ),
 C(C_packadd, "packadd", c_packadd, BANG|FILE1|NEEDARG|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_packloadall,   "packloadall", c_packloadall, BANG|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_pbuffer, "pbuffer", c_pbuffer, 
+C(C_pbuffer, "pbuffer", c_pbuffer,
       BANG|RANGE|BUFNAME|BUFUNL|COUNT|EXTRA|CMDARG|TRLBAR, ADDR_BUFFERS
 ),
 C(C_pclose,   "pclose", c_pclose, BANG|TRLBAR, ADDR_NONE),
@@ -442,7 +441,7 @@ C(C_redrawstatus,   "redrawstatus",   c_redrawstatus, BANG|TRLBAR|COMMPORT|LOCK_
 C(C_redrawtabpanel, "redrawtabpanel", c_redrawtabpanel, TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_registers, "registers", c_display, EXTRA|NOTRLCOM|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_resize,   "resize",   c_resize, RANGE|TRLBAR|WORD1|COMMPORT|LOCK_OK, ADDR_OTHER),
-C(C_retab,   "retab",   c_retab, 
+C(C_retab,   "retab",   c_retab,
       TRLBAR|RANGE|WHOLEFOLD|DFLALL|BANG|WORD1|COMMPORT|LOCK_OK|MODIFY, ADDR_LINES
 ),
 C(C_rewind,   "rewind",   c_rewind, EXTRA|BANG|CMDARG|ARGOPT|TRLBAR, ADDR_NONE),
@@ -450,16 +449,16 @@ C(C_right,   "right",   c_align, TRLBAR|RANGE|WHOLEFOLD|EXTRA|COMMPORT|LOCK_OK|M
 C(C_rightbelow,   "rightbelow",   c_wrongmodifier, NEEDARG|EXTRA|NOTRLCOM, ADDR_NONE),
 C(C_runtime, "runtime", c_runtime, BANG|NEEDARG|FILES|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_rundo,   "rundo",   c_rundo, NEEDARG|FILE1, ADDR_NONE),
-C(C_substitute,   "substitute",   c_substitute, 
+C(C_substitute,   "substitute",   c_substitute,
       RANGE|WHOLEFOLD|EXTRA|COMMPORT|LOCK_OK|NONWHITE_OK, ADDR_LINES
 ),
 C(C_sNext,   "sNext",   c_previous, EXTRA|RANGE|COUNT|BANG|CMDARG|ARGOPT|TRLBAR, ADDR_OTHER),
-C(C_sargument, "sargument", c_argument, 
+C(C_sargument, "sargument", c_argument,
       BANG|RANGE|COUNT|EXTRA|CMDARG|ARGOPT|TRLBAR, ADDR_ARGUMENTS
 ),
 C(C_sall,      "sall",      c_all, BANG|RANGE|COUNT|TRLBAR, ADDR_OTHER),
 C(C_saveas,   "saveas",   c_write, BANG|FILE1|ARGOPT|COMMPORT|LOCK_OK|TRLBAR, ADDR_NONE),
-C(C_sbuffer, "sbuffer", c_book, 
+C(C_sbuffer, "sbuffer", c_book,
       BANG|RANGE|BUFNAME|BUFUNL|COUNT|EXTRA|CMDARG|TRLBAR, ADDR_BUFFERS
 ),
 C(C_sbNext,   "sbNext",   &c_bprevious, RANGE|COUNT|CMDARG|TRLBAR, ADDR_OTHER),
@@ -488,7 +487,7 @@ C(C_slast,   "slast",   c_last, EXTRA|BANG|CMDARG|ARGOPT|TRLBAR, ADDR_NONE),
 C(C_smile,   "smile",   c_smile, TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_snext,   "snext",   c_next, RANGE|BANG|FILES|CMDARG|ARGOPT|TRLBAR, ADDR_OTHER),
 C(C_snoremap,   "snoremap",   c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_source, "source", c_source, 
+C(C_source, "source", c_source,
       RANGE|DFLALL|BANG|FILE1|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES
 ),
 C(C_sort,      "sort", c_sort, RANGE|DFLALL|WHOLEFOLD|BANG|EXTRA|NOTRLCOM|MODIFY, ADDR_LINES),
@@ -516,7 +515,7 @@ C(C_tabclose,   "tabclose",   c_tabclose,
 ),
 C(C_tabdo,   "tabdo",   c_listDo, NEEDARG|EXTRA|NOTRLCOM|RANGE|DFLALL|EXPAND, ADDR_TABS),
 C(C_tabedit, "tabedit", c_splitview, BANG|FILE1|RANGE|ZERO_LINE_OK|CMDARG|ARGOPT|TRLBAR, ADDR_TABS),
-C(C_tabfind,   "tabfind", c_splitview, 
+C(C_tabfind,   "tabfind", c_splitview,
       BANG|FILE1|RANGE|ZERO_LINE_OK|CMDARG|ARGOPT|NEEDARG|TRLBAR, ADDR_TABS
 ),
 C(C_tabfirst,   "tabfirst",   c_tabnext, TRLBAR, ADDR_NONE),
@@ -530,7 +529,7 @@ C(C_tabonly, "tabonly", c_tabonly,
 C(C_tabprevious,   "tabprevious",  c_tabnext,
    RANGE|ZERO_LINE_OK|EXTRA|NOSPC_IN_EXTRA|TRLBAR, ADDR_TABS_RELATIVE
 ),
-C(C_tabNext,   "tabNext",   c_tabnext, 
+C(C_tabNext,   "tabNext",   c_tabnext,
       RANGE|ZERO_LINE_OK|EXTRA|NOSPC_IN_EXTRA|TRLBAR, ADDR_TABS_RELATIVE
 ),
 C(C_tabrewind,   "tabrewind",   c_tabnext, TRLBAR, ADDR_NONE),
@@ -555,7 +554,7 @@ C(C_tunmap,   "tunmap", c_unmap, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, A
 C(C_undo,      "undo", c_undo, RANGE|COUNT|ZERO_LINE_OK|TRLBAR|COMMPORT|LOCK_OK, ADDR_OTHER),
 C(C_undojoin,   "undojoin", c_undojoin, TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_undolist,   "undolist", c_undolist, TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_unabbreviate, "unabbreviate", c_abbreviate, 
+C(C_unabbreviate, "unabbreviate", c_abbreviate,
       EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE
 ),
 C(C_unhide,   "unhide",   c_bookAll, RANGE|COUNT|TRLBAR, ADDR_OTHER),
@@ -567,17 +566,17 @@ C(C_unsilent,   "unsilent",   c_wrongmodifier,
    NEEDARG|EXTRA|NOTRLCOM|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_update,   "update",   c_update, RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR, ADDR_LINES),
 C(C_viusage,   "usage",   c_usage, TRLBAR, ADDR_NONE),
-C(C_vglobal, "vglobal", c_global, 
+C(C_vglobal, "vglobal", c_global,
       RANGE|WHOLEFOLD|EXTRA|DFLALL|COMMPORT|LOCK_OK|NONWHITE_OK, ADDR_LINES
 ),
 C(C_version,   "version",   c_version, EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_verbose,   "verbose",   c_wrongmodifier, 
+C(C_verbose,   "verbose",   c_wrongmodifier,
       NEEDARG|RANGE|EXTRA|NOTRLCOM|COMMPORT|LOCK_OK, ADDR_OTHER
 ),
 C(C_vertical,   "vertical",   c_wrongmodifier, NEEDARG|EXTRA|NOTRLCOM, ADDR_NONE),
 C(C_visual,   "visual",   c_edit, BANG|FILE1|CMDARG|ARGOPT|TRLBAR, ADDR_NONE),
 C(C_view,      "view",      c_edit, BANG|FILE1|CMDARG|ARGOPT|TRLBAR, ADDR_NONE),
-C(C_vimgrep, "vimgrep", c_vimgrep, 
+C(C_vimgrep, "vimgrep", c_vimgrep,
       RANGE|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE|LOCK_OK, ADDR_OTHER
 ),
 C(C_vimgrepadd, "vimgrepadd", c_vimgrep,
@@ -589,7 +588,7 @@ C(C_vnoremap,   "vnoremap",   c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_O
 C(C_vnew,      "vnew",      c_splitview, BANG|FILE1|RANGE|CMDARG|ARGOPT|TRLBAR, ADDR_OTHER),
 C(C_vsplit,   "vsplit",   c_splitview, BANG|FILE1|RANGE|CMDARG|ARGOPT|TRLBAR, ADDR_OTHER),
 C(C_vunmap,   "vunmap",   c_unmap, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
-C(C_write,   "write",   c_write, 
+C(C_write,   "write",   c_write,
       RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES
 ),
 C(C_wNext,   "wNext",   c_wnext, RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|TRLBAR, ADDR_OTHER),
@@ -615,22 +614,22 @@ C(C_bang,      "!", c_bang, RANGE|WHOLEFOLD|BANG|FILES|COMMPORT|LOCK_OK|NONWHITE
 C(C_pound,   "#", c_print, RANGE|WHOLEFOLD|COUNT|FLAGS|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),
 C(C_and, "&", c_substitute, RANGE|WHOLEFOLD|EXTRA|COMMPORT|LOCK_OK|MODIFY|NONWHITE_OK, ADDR_LINES),
 C(C_star, "*", c_at, RANGE|WHOLEFOLD|EXTRA|TRLBAR|COMMPORT|LOCK_OK|NONWHITE_OK, ADDR_LINES),
-C(C_lshift, "<", c_operators, 
+C(C_lshift, "<", c_operators,
       RANGE|WHOLEFOLD|COUNT|FLAGS|TRLBAR|COMMPORT|LOCK_OK|MODIFY, ADDR_LINES
 ),
 C(C_equal,   "=",      c_equal, RANGE|TRLBAR|DFLALL|FLAGS|COMMPORT|LOCK_OK, ADDR_LINES),
-C(C_rshift, ">", c_operators, 
+C(C_rshift, ">", c_operators,
       RANGE|WHOLEFOLD|COUNT|FLAGS|TRLBAR|COMMPORT|LOCK_OK|MODIFY, ADDR_LINES
 ),
 C(C_at, "@", c_at, RANGE|WHOLEFOLD|EXTRA|TRLBAR|COMMPORT|LOCK_OK|NONWHITE_OK, ADDR_LINES),
-C(C_tilde, "~", c_substitute, 
+C(C_tilde, "~", c_substitute,
       RANGE|WHOLEFOLD|EXTRA|COMMPORT|LOCK_OK|MODIFY|NONWHITE_OK, ADDR_LINES
 ),
 
 //commands that start with an uppercase letter
 C(C_Next,      "Next", c_previous, EXTRA|RANGE|COUNT|BANG|CMDARG|ARGOPT|TRLBAR, ADDR_OTHER),
 C(C_Print,   "Print",   c_print, RANGE|WHOLEFOLD|COUNT|FLAGS|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),
-C(C_StrictSubstitute,   "Substitute",   c_substitute, 
+C(C_StrictSubstitute,   "Substitute",   c_substitute,
       RANGE|WHOLEFOLD|EXTRA|COMMPORT|LOCK_OK|NONWHITE_OK, ADDR_LINES
 ),
 

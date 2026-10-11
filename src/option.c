@@ -3775,9 +3775,6 @@ private void
 didset_options(void) {
    //initialize the table for @iskeyword et.al.
    (void)bookInitCharsForKeywordsForCurbook();
-   //zero out the table for @breakat.
-   for (Unt i = 0; i < 256; i++)
-      breakat_flags[i] = false;
    afterCopyPortOpt(curPor);
 }
 
