@@ -6348,7 +6348,6 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
 
       ColNr vcol2 = vcol;
       for (;;) {
-         CS ps = s;
          MB_PTR_ADV(s);
          int c = *s;
          if (c == ZERO)
@@ -15238,10 +15237,9 @@ cleanup_prop_remove:
 //Common for f_prop_type_add() and f_prop_type_change().
 private void
 prop_type_set(Var *argvars, int add) {
-   CS name;
-   Book   *book = NULL;
-   DictItem  *di;
-   name = tv_get_string(&argvars[0]);
+   Book* book = NULL;
+   DictItem* di;
+   CS name = tv_get_string(&argvars[0]);
    if (*name == ZERO) {
       showErrFmtMsg(_(e_invalid_argument_str), "\"\"");
       return;

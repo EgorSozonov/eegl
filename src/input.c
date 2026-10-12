@@ -145,7 +145,9 @@ pub typedef enum {
 #define MOUSE_RELEASE 0x03
 
 //}}}
+#define AVOID_DUPLICATION
 #include "h/input.h"
+#undef AVOID_DUPLICATION
 //{{{@@forward declarations
 private void freeBuffer(TextHeader* buf);
 private CS get_buffcont(

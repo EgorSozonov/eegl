@@ -1137,7 +1137,7 @@ appMain(int argc, char** argv) {
    if (GARGCOUNT > 1 && !silentModeG && !is_not_a_term())
       printf((char*)_("%d files to edit\n"), GARGCOUNT);
 
-   initHilite(true); //set the default hilite groups
+   initHilite(); //set the default hilite groups
    drawInit();
    if (paramsP.want_full_screen && !silentModeG) {
       //set terminal name and get terminal capabilities (will set fullScreenG)

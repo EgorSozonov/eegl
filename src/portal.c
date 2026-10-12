@@ -260,7 +260,7 @@ private void addTimeout(Portal* po, int time, int close);
 private PopupPosition get_pos_entry(Bag *d, int give_error);
 private void applyMoveParams(Portal* po, Bag* params);
 private void handle_moved_argument(Portal* po, DictItem* di, int mousemoved);
-private void check_highlight(Bag* dict, CS name, OUT CS* pval);
+private void check_highlight(Bag* dict, CS name, OUT Unt* pval);
 private void scrollToCurrent(Portal* po);
 private CS popup_get_sign_name(Portal* po);
 private void highlightCurrentLine(Portal* po);
@@ -286,7 +286,7 @@ private Portal * findPopupPortal(int id);
 private void popup_free(Portal* po);
 private void error_for_popup_portal(void);
 private void get_padding_border(Bag* dict, int* array, CS name);
-private void get_borderhighlight(Bag* dict, Portal* po);
+private void getBorderHilite(Bag* dict, Portal* po);
 private void get_borderchars(Bag* bag, Portal* po);
 private void get_moved_list(Bag* bag, Portal* po);
 private int invoke_popup_filter(Portal* po, int c);
@@ -4712,10 +4712,6 @@ freePortal(Portal* po, Tab* t) { //tab "po" is in, NULL for current
 
    evFreeCallback(&po->pup.closeCb);
    evFreeCallback(&po->pup.filterCb);
-   for (Unt i = 0; i < 4; ++i)
-      EE_CLEAR(po->pup.borderHilite[i]);
-   eeglFree(po->pup.scrollbarHilite);
-   eeglFree(po->pup.thumbHilite);
    eeglFree(po->pup.title);
    list_unref(po->pup.mask);
    eeglFree(po->pup.maskCells);
@@ -10449,17 +10445,16 @@ handle_moved_argument(Portal* po, DictItem* di, int mousemoved) {
 }
 
 private void
-check_highlight(Bag* dict, CS name, OUT CS* pval) {
+check_highlight(Bag* dict, CS name, OUT Unt* pval) {
    DictItem* di = bagFind(dict, mbText(name));
    if (!di)
       return;
 
-   if (di->c.tag != VAR_STRING)
+   if (di->c.tag != VAR_NUMBER)
       showErrFmtMsg(_(e_invalid_value_for_argument_str), name);
    else {
-      CS str = tv_get_string(&di->c);
-      if (*str != ZERO)
-         *pval = copyStr(str);
+      Short hiId = (Short)tv_get_number(&di->c);
+      *pval = hiId;
    }
 }
 
@@ -10600,29 +10595,15 @@ apply_general_options(Portal* po, Bag* dict) {
    )
       return FAIL;
 
-   di = bagFind(dict, tConst("borderhighlight"));
+   di = bagFind(dict, tConst("borderhilite"));
    if (di) {
       if (di->c.tag != VAR_LIST || di->c.list == NULL) {
           emsg(_(e_list_required));
           return FAIL;
       } else {
          List* list = di->c.list;
-         ListItem   *li = list->first;
 
          CHECK_LIST_MATERIALIZE(list);
-         for (int i = 0; i < 4 && i < list->len; ++i, li = li->next) {
-            str = tv_get_string(&li->c);
-            if (*str != ZERO) {
-                eeglFree(po->pup.borderHilite[i]);
-                po->pup.borderHilite[i] = copyStr(str);
-            }
-         }
-         if (list->len == 1 && po->pup.borderHilite[0] != NULL) {
-            for (int i = 1; i < 4; ++i) {
-                eeglFree(po->pup.borderHilite[i]);
-                po->pup.borderHilite[i] = copyStr(po->pup.borderHilite[0]);
-            }
-         }
       }
    }
 
@@ -10660,8 +10641,8 @@ apply_general_options(Portal* po, Bag* dict) {
       }
    }
 
-   check_highlight(dict, S"scrollbarhighlight", &po->pup.scrollbarHilite);
-   check_highlight(dict, S"thumbhighlight", &po->pup.thumbHilite);
+   check_highlight(dict, S"scrollbarhilite", &po->pup.scrollbarHilite);
+   check_highlight(dict, S"thumbhighlilite", &po->pup.thumbHilite);
 
    di = bagFind(dict, tConst("zindex"));
    if (di) {
@@ -11774,8 +11755,6 @@ createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind) { //:createPop
       parse_completepopup(po);
    }
 
-   for (i = 0; i < 4; ++i)
-      EE_CLEAR(po->pup.borderHilite[i]);
    for (i = 0; i < 8; ++i)
       po->pup.borderChar[i] = 0;
    po->pup.wantScrollbar = 1;
@@ -12445,21 +12424,21 @@ get_padding_border(Bag* dict, int* array, CS name) {
    }
 }
 
-//For popup_getoptions(): add a "borderhighlight" entry to "dict".
+//For popup_getoptions(): add a "borderhilite" entry to "dict".
 private void
-get_borderhighlight(Bag* dict, Portal* po) {
-   int       i;
+getBorderHilite(Bag* dict, Portal* po) {
+   int i;
    for (i = 0; i < 4; ++i) {
-      if (po->pup.borderHilite[i] != NULL)
-          break;
+      if (po->pup.borderHilite[i] != SHORT)
+         break;
    }
    if (i == 4)
       return;
 
    List* list = list_alloc();
-   bagAddList(dict, S"borderhighlight", list);
+   bagAddList(dict, S"borderhilite", list);
    for (i = 0; i < 4; ++i)
-      list_append_string(list, po->pup.borderHilite[i], -1);
+      list_append_number(list, po->pup.borderHilite[i]);
 }
 
 //For popup_getoptions(): add a "borderchars" entry to "dict".
@@ -12537,9 +12516,9 @@ f_popup_getoptions(Arr(Var) argvars, OUT Var* returnVar) {
    bagAddNumber(b, S"posinvert", (po->pup.flags & POPF_POSINVERT) != 0);
    bagAddNumber(b, S"cursorline", (po->pup.flags & POPF_CURSORLINE) != 0);
    if (po->pup.scrollbarHilite)
-      bagAddString(b, S"scrollbarhighlight", po->pup.scrollbarHilite);
+      bagAddNumber(b, S"scrollbarhilite", po->pup.scrollbarHilite);
    if (po->pup.thumbHilite)
-      bagAddString(b, S"thumbhighlight", po->pup.thumbHilite);
+      bagAddNumber(b, S"thumbhilite", po->pup.thumbHilite);
 
    //find the tab that holds this popup
    int i = 1;
@@ -12562,7 +12541,7 @@ f_popup_getoptions(Arr(Var) argvars, OUT Var* returnVar) {
 
    get_padding_border(b, po->pup.padding, S"padding");
    get_padding_border(b, po->pup.border, S"border");
-   get_borderhighlight(b, po);
+   getBorderHilite(b, po);
    get_borderchars(b, po);
    get_moved_list(b, po);
 
@@ -13226,8 +13205,8 @@ update_popups(void (*portUpdate)(Portal* po, Boole *)) {
 
       for (Unt i = 0; i < 4; ++i) {
          borderDeco[i] = popupDeco;
-         if (po->pup.borderHilite[i] != NULL)
-            borderDeco[i] = decosByHiliteName(po->pup.borderHilite[i]);
+         if (po->pup.borderHilite[i] != SHORT)
+            borderDeco[i] = getFullDecoration(po->pup.borderHilite[i]);
       }
 
       //Title goes on top of border or padding.
@@ -13329,11 +13308,11 @@ update_popups(void (*portUpdate)(Portal* po, Boole *)) {
             sb_thumb_top = last - 1;
 
          if (po->pup.scrollbarHilite)
-            scrollDeco = decosByHiliteName(po->pup.scrollbarHilite).flags;
+            scrollDeco = getFullDecoration(po->pup.scrollbarHilite).flags;
          else
             scrollDeco = getDecoFlags(HILITE_PmenuScrollbar);
          if (po->pup.thumbHilite)
-            thumbFlags = decosByHiliteName(po->pup.thumbHilite).flags;
+            thumbFlags = getFullDecoration(po->pup.thumbHilite).flags;
          else
             thumbFlags = getDecoFlags(HILITE_PmenuScrollBarThumb);
       }
@@ -13997,8 +13976,11 @@ pum_under_menu(int row, int col, int only_redrawing) {
 private Arr(Decoration)
 computeTextDeco(CS text, Short hiId, Decoration userDeco) {
    if (*text == ZERO || (hiId != HILITE_PmenuSelected && hiId != HILITE_Pmenu)
-          || (getDecoFlags(PmenuMatchedInSelected) == getDecoFlags(HILITE_PmenuSelected)
-              && getDecoFlags(PmenuMatchedText) == getDecoFlags(HILITE_Pmenu)))
+          || (getFullDecoration(HILITE_PmenuMatchedInSelected).hiId
+                == getFullDecoration(HILITE_PmenuSelected).hiId
+                 && getDecoFlags(HILITE_PmenuMatchedText) == getDecoFlags(HILITE_Pmenu)
+             )
+   )
       return NULL;
 
    Boole isSelect = hiId == HILITE_PmenuSelected;
@@ -14030,7 +14012,9 @@ computeTextDeco(CS text, Short hiId, Decoration userDeco) {
          //Handle fuzzy matching
          for (int i = 0; i < ga->len; i++) {
             if (char_pos == ((Unt *)ga->c)[i]) {
-               newDeco = decorationsG[isSelect ? PmenuMatchedInSelected : PmenuMatchedText];
+               newDeco = decorationsG[isSelect
+                  ? HILITE_PmenuMatchedInSelected : HILITE_PmenuMatchedText
+               ];
                break;
             }
          }
@@ -14038,7 +14022,9 @@ computeTextDeco(CS text, Short hiId, Decoration userDeco) {
          if (matchedLen < 0 && caseInsensitiveCompareNChars(ptr, leader, leaderLen) == 0)
             matchedLen = (int)leaderLen;
          if (matchedLen > 0) {
-            newDeco = decorationsG[isSelect ? PmenuMatchedInSelected : PmenuMatchedText];
+            newDeco = decorationsG[isSelect
+               ? HILITE_PmenuMatchedInSelected : HILITE_PmenuMatchedText
+            ];
             matchedLen--;
          }
       }

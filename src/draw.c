@@ -4927,7 +4927,7 @@ drawLineNumber(OUT DrawCtx* m, Decoration numDeco, Portal* po) {
       m->c_final = ZERO;
    }
    m->countExtraBytes = 2;
-   m->charDeco = getFullDecoration(HILINE_LineNr);
+   m->charDeco = getFullDecoration(HILITE_LineNr);
    //When 'cursorline' is set, hilite the line number of the current line differently.
    //When 'cursorlineopt' does not have "line" only hilite the line number itself.
    //TODO: Can we use CursorLine instead of CursorLineNr when CursorLineNr isn't set?
@@ -5567,7 +5567,7 @@ drawDiff(DrawCtx* m, Subcontext* c, Portal* port) {
    }
    //When there is extra text (e.g. virtual text) it gets the
    //diff hiliting for the line, but not for changed text.
-   if (m->diff_hlf == HILITE_DrawText
+   if (m->diff_hlf == HILITE_None
          && m->ptr - m->line >= *c->changeStart
          && m->countExtraBytes == 0
    )
@@ -5578,7 +5578,7 @@ drawDiff(DrawCtx* m, Subcontext* c, Portal* port) {
          && ((m->ptr - m->line >= *c->changeEnd && m->countExtraBytes == 0)
                 || (m->countExtraBytes > 0 && m->textPropHasExtra))
    )
-      m->diff_hlf = HILITE_DrawText;      //changed line
+      m->diff_hlf = HILITE_None;      //changed line
    m->lineDeco = getFullDecoration(m->diff_hlf);
    if (port->o.cursorLine && c->lnum == port->cursor.lnum)
       applyCursorlineHilite(m);
@@ -6203,7 +6203,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
          if (m->diff_hlf == HILITE_DiffChangedTextInChanged
                || m->diff_hlf == HILITE_DiffAddedTextInChanged
          ) {
-            m->diff_hlf = HILITE_DrawText;
+            m->diff_hlf = HILITE_None;
             if (c->visualDeco.hiId == SHORT || !decoEq(m->charDeco, c->visualDeco)) {
                m->charDeco = getFullDecoration(m->diff_hlf);
                if (port->o.cursorLine && c->lnum == port->cursor.lnum)
@@ -6674,10 +6674,10 @@ drawLineOnScreen(
                else
                   m.diff_hlf = HILITE_DiffChangedTextInChanged;
             } else
-               m.diff_hlf = HILITE_DrawText; //unchanged text on changed line
+               m.diff_hlf = HILITE_None; //unchanged text on changed line
             m.changeIndex = 0;
          } else {
-            m.diff_hlf = HILITE_DrawText;   //changed line
+            m.diff_hlf = HILITE_None;   //changed line
             m.changeIndex = 0;
          }
       } else

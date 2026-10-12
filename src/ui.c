@@ -12165,7 +12165,7 @@ do_by_tplmode(
          tapa.offsetrow += tapa.maxrow;
    }
 
-   Var* t = firstTabG;
+   Tab* t = firstTabG;
 
    for (row = 0; t; row++) {
       if (tplmode != TPLMODE_GET_CURTAB_ROW && tapa.maxrow <= row - tapa.offsetrow)

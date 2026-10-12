@@ -211,7 +211,9 @@ typedef struct searchstat {
 #define QF_WINHEIGHT   10  //default height for location portal
 
 //}}}
+#define AVOID_DUPLICATION
 #include "h/location.h"
+#undef AVOID_DUPLICATION
 //{{{@@forward declarations
 private ArrayList * getTempList(void);
 private void clearArrayList(void);
@@ -3789,13 +3791,13 @@ c_list(Invocation* invo) {
 
    //Get the attributes for the different location hilite items. Note
    //that this depends on syntax items defined in the qf.vim syntax file
-   fileDeco = decosByHiliteName(HILITE_LocationFileName);
+   fileDeco = getFullDecoration(HILITE_LocationFileName);
    if (fileDeco.flags == 0)
       fileDeco = getFullDecoration(HILITE_Directories);
-   separatorDeco = decosByHiliteName(HILITE_LocationSeparator);
+   separatorDeco = getFullDecoration(HILITE_LocationSeparator);
    if (separatorDeco.flags == 0)
       separatorDeco = getFullDecoration(HILITE_Directories);
-   lineDeco = decosByHiliteName(HILITE_LineNr);
+   lineDeco = getFullDecoration(HILITE_LineNr);
    if (lineDeco.flags == 0)
       lineDeco = getFullDecoration(HILITE_LineNr);
 

@@ -15905,7 +15905,7 @@ pub Decoration
 getDecorationIfColumnIsWithinCompletion(LineNr lnum, int col) {
    if (curBook->o.completeOpt & COT_FUZZY)
       return (Decoration){.hiId = SHORT};
-   Decoration deco = decosByHiliteName(HILITE_ComplMatchIns);
+   Decoration deco = getFullDecoration(HILITE_ComplMatchIns);
 
    int start_col = compl_col + (int)ins_compl_leader_len();
    if (isCompletionSingleLine())
@@ -17596,8 +17596,8 @@ theend:
 
 private inline Decoration
 getUserDecoration(CS name) {
-   if (hlname && *hlname != ZERO)
-      return decosByHiliteName(hlname);
+   if (name && name[0] != ZERO)
+      return decosByHiliteName(text(name));
    return EMPTY_DECO;
 }
 

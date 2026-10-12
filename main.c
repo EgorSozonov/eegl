@@ -8,10 +8,9 @@
 
 #include "src/base.h"
 #include "src/eegl.h"
-#include "src/h/motor.types.h"
 #include "src/h/motor.h"
 
-int 
+int
 main(int argc, char** argv) {
    return appMain(argc, argv); // see src/motor.c
 }

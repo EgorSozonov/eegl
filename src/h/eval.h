@@ -221,8 +221,6 @@ CS get_list_line(Unt, void* cookie, int, GetlineAlgo);
 void execute_common(Arr(Var) argvars, Var* returnVar, int arg_off);
 void f_exists(Var* argvars, Var* returnVar);
 int dynamic_feature(CS feature);
-void f_hlID(Arr(Var) argvars, Var* returnVar);
-void f_hlexists(Arr(Var) argvars, Var* returnVar);
 void f_hostname(Arr(Var), Var* returnVar);
 void f_id(Arr(Var) argvars, Var* returnVar);
 void f_len(Arr(Var) argvars, Var* returnVar);

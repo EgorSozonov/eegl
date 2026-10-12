@@ -786,5 +786,5 @@ typedef struct stat FileStat;
 
 #define private static
 #define pub
-#define pubWrapped(a, b)
+#define pubWrap(a, b)
 #define public

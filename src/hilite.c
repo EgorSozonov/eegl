@@ -50,7 +50,7 @@ typedef struct {
    VTermColor bg; //background color
    VTermColor under; //underline color, if underline is applied
 
-   int link;   //link to this hilite group ID
+   Short link;   //link to this hilite group ID
    int deflink;   //default link; restored in clearHiliteWorker()
    ScriptPos deflink_sctx; //script where the default link was set
    ScriptPos script_ctx;   //script in which the group was last set
@@ -149,25 +149,30 @@ typedef struct {
 } SynOptArg;
 
 pub
-#define HI_HAS_FG    1
-#define HI_HAS_BG    2
-#define HI_HAS_DECO  4
-#define HI_IS_LINK   8
+#define HI_HAS_FG     1
+#define HI_HAS_BG     2
+#define HI_HAS_DECO   4
+#define HI_IS_LINK    8
+#define HI_HAS_UNDER 16
+
 
 //{{{hilite groups
 
-#define HI(name, fieldPresence, fg, bg, decoFlags, link) (HiliteGroup){\
-   .name = text(#name), .flags = decoFlags, .fieldPresence = fieldPresence, .link = link}\
-},
+//Table with the specifications for an decoration number. Note that this table is used by ALL
+//books. This is required because the TUI can redraw at any time for any book.
+private HiliteGroup hilites[] = {
+
+#define HI(na, presence, fg, bg, decoFlags, lnk) (HiliteGroup){\
+   .name = tConst(#na), .flags = decoFlags, .fieldPresence = presence, .link = lnk},
 
 //The hilite groups
-pubWrap("typedef enum {\n#define HI(a, b, c, d, e, f) HILITES_##a,\n",
+pubWrap("typedef enum {\n#define HI(a, b, c, d, e, f) HILITE_##a,\n",
    "#undef HI\n} HiliteId;\n"
 )
 HI(None, HI_HAS_FG|HI_HAS_BG, 7, 0, 0, 0) //0
-HI(NonText, HI_HAS_FG, 4, 0, BOLD, 0)
+HI(NonText, HI_HAS_FG, 4, 0, DECO_BOLD, 0)
 HI(NormalFloat, HI_IS_LINK, 0, 0, 0, HILITE_None)
-HI(Directories, HI_IS_LINK, 0, 0, 0, HILITE_None)    //directories in CTRL-D listing
+HI(Directories, HI_IS_LINK, 0, 0, 0, HILITE_None)        //directories in CTRL-D listing
 HI(ErrorMsg, HI_HAS_FG|HI_HAS_BG, 7, 1, 0, 0)
 HI(WarningMsg, HI_HAS_FG|HI_HAS_BG, 9, 7 + 232, 0, 0)    //warning messages
 HI(MoreMsg, HI_IS_LINK, 0, 0, 0, HILITE_None)            //10 "--More--" message
@@ -183,14 +188,14 @@ HI(VertSplit, HI_HAS_DECO, 0, 0, DECO_INVERSE, 0) //column to separate verticall
 HI(OutputOfAutocmd, HI_IS_LINK, 0, 0, 0, HILITE_None)    //Titles for output from
                                                          //";set all", ";autocmd" etc
 HI(VisualMode, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)          //20 Visual mode
-HI(WildcardMenu, HI_IS_LINK, 0, 0, 0, HILITE_None)      //Wildmenu hilite
+HI(WildcardMenu, HI_IS_LINK, 0, 0, 0, HILITE_None)       //Wildmenu hilite
 HI(FoldedLine, HI_IS_LINK, 0, 0, 0, HILITE_None)         //Folded line
-HI(DiffTextAdd, HI_HAS_FG, 2, 0, 0, 0)      //Added diff line
-HI(DiffText, HI_HAS_FG, 4, 0, 0, 0)         //Changed diff line
-HI(DiffChangedTextInChanged, HI_IS_LINK, 0, 0, 0, HILITE_None) //Text Changed in changed diff line
+HI(DiffTextAdd, HI_HAS_FG, 2, 0, 0, 0)                   //Added diff line
+HI(DiffText, HI_HAS_FG, 4, 0, 0, 0)                      //Changed diff line
+HI(DiffChangedTextInChanged, HI_IS_LINK, 0, 0, 0, HILITE_None) //Text Changed in changed diff
 HI(DiffAddedTextInChanged, HI_IS_LINK, 0, 0, 0, HILITE_None) //Text Added in changed diff line
 HI(DiffDeleted, HI_HAS_FG|HI_HAS_BG|HI_HAS_DECO, 4, 14, DECO_BOLD, 0) //HILITE_DiffDeleted
-HI(SignColumn, HI_HAS_FG|HI_HAS_BG, 6, 232 + 10, 0, 0) //30 Sign column
+HI(SignColumn, HI_HAS_FG|HI_HAS_BG, 6, 232 + 10, 0, 0)   //30 Sign column
 HI(Pmenu, HI_HAS_FG|HI_HAS_BG, 0, 4, 0, 0)               //popup menu normal item
 HI(PmenuSelected, HI_HAS_BG, 0, 4 + 232, 0, 0)           //popup menu selected item
 HI(PmenuMatchedText, HI_IS_LINK, 0, 0, 0, HILITE_None)   //popup menu matched text in normal item
@@ -202,25 +207,25 @@ HI(PmenuExtraText, HI_IS_LINK, 0, 0, 0, HILITE_None)     //popup menu normal ite
                                                          //(extra text)
 HI(PmenuSelectedExtraText, HI_IS_LINK, 0, 0, 0, HILITE_None) //popup menu selected item "menu"
                                                              //(extra text)
-HI(PmenuScrollbar, HI_HAS_BG, 0, 12 + 232, 0, 0)       //popup menu scrollbar
+HI(PmenuScrollbar, HI_HAS_BG, 0, 12 + 232, 0, 0)         //popup menu scrollbar
 HI(PmenuScrollBarThumb, HI_HAS_BG, 0, 7, 0, 0) //40 popup menu scrollbar thumb
-HI(Tabpanel, HI_HAS_BG, 0, 4, 0, 0) //tabpanel
-HI(TabpanelSelected, HI_IS_LINK, 0, 0, 0, HILITE_None)  //tabpanel selected
-HI(TabpanelFill, HI_IS_LINK, 0, 0, 0, HILITE_None)      //tabpanel filler
-HI(CursorLine, HI_HAS_BG, 0, 8 + 232, 0, 0)             //@cursorline
+HI(Tabpanel, HI_HAS_BG, 0, 4, 0, 0)                      //tabpanel
+HI(TabpanelSelected, HI_IS_LINK, 0, 0, 0, HILITE_None)   //tabpanel selected
+HI(TabpanelFill, HI_IS_LINK, 0, 0, 0, HILITE_None)       //tabpanel filler
+HI(CursorLine, HI_HAS_BG, 0, 8 + 232, 0, 0)              //@cursorline
 HI(LocationPortalSelected, HI_IS_LINK, 0, 0, 0, HILITE_PmenuSelectedItem) //location portal line
                                                                           //currently selected
-HI(TerminalStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None) //50 status lines of terminal portals
+HI(TerminalStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None)  //50 status lines of terminal portals
 HI(TerminalNoncurrentStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None) //status lines of
                                                                     //not-current terminal
                                                                     //portals
-HI(TerminalRed, HI_HAS_FG, 1, 0, 0, 0)      //status lines of not-current terminal portals
-HI(TerminalGreen, HI_HAS_FG, 10, 0, 0, 0)     //status lines of not-current terminal portals
+HI(TerminalRed, HI_HAS_FG, 1, 0, 0, 0)       //status lines of not-current terminal portals
+HI(TerminalGreen, HI_HAS_FG, 10, 0, 0, 0)    //status lines of not-current terminal portals
 HI(TerminalBlue, HI_HAS_FG, 4, 0, 0, 0)      //status lines of not-current terminal portals
 HI(MessageArea, HI_IS_LINK, 0, 0, 0, HILITE_None)        //message area
-HI(MetaSpecialKeys, HI_IS_LINK, 0, 0, 0, HILITE_None)      //Meta & special keys listed with
-                                                           //";map", text that is
-                                   //  displayed different
+HI(MetaSpecialKeys, HI_IS_LINK, 0, 0, 0, HILITE_None)    //Meta & special keys listed with
+                                                         //";map", text that is
+                                                         //displayed different
 HI(LineNr, HI_HAS_FG, 3, 0, 0, 0)             //line number for ";number" and ";#" commands
 HI(LineNrAbove, HI_IS_LINK, 0, 0, 0, HILITE_None)
 HI(LineNrBelow, HI_IS_LINK, 0, 0, 0, HILITE_None)
@@ -230,9 +235,10 @@ HI(Question, HI_HAS_FG|HI_HAS_DECO, 10, 0, DECO_BOLD, 0)
 HI(SpecialKey, HI_HAS_FG, 12, 0, 0, 0)
 HI(Title, HI_HAS_FG|HI_HAS_DECO, 13, 0, DECO_BOLD, 0)
 HI(InfoMsg, HI_HAS_FG|HI_HAS_BG, 10, 6 + 232, 0, 0)
-HI(WildMenu, HI_HAS_FG|HI_HAS_BG, bg=regular3 fg=regular0)
-HI(Folded, HI_HAS_FG|HI_HAS_BG,bg=grey2 fg=bright6)
-HI(Visual, HI_HAS_FG|HI_HAS_BG,bg=grey16 fg=grey23)
+HI(ComplMatchIns, HI_HAS_DECO, 0, 0, DECO_INVERSE, 0)
+HI(WildMenu, HI_HAS_FG|HI_HAS_BG, 0, 3, 0, 0)
+HI(Folded, HI_HAS_FG|HI_HAS_BG, 14, 2 + 232, 0, 0)
+HI(Visual, HI_HAS_FG|HI_HAS_BG, 23 + 232, 16 + 232, 0, 0)
 HI(ColorColumn, HI_HAS_BG, 0, 1, 0, 0)
 HI(MatchParen, HI_HAS_FG, 6, 0, 0, 0)
 HI(StatusLineTerm, HI_HAS_FG|HI_HAS_BG|HI_HAS_DECO, 2, 10, DECO_BOLD, 0)
@@ -260,6 +266,7 @@ HI(Bold, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)
 HI(Italic, HI_HAS_DECO, 0, 0, DECO_ITALIC, 0)
 
 #undef HI
+};
 
 //}}}
 //}}}
@@ -270,7 +277,6 @@ private Text valueOf(HiKeyValue kv, CS s);
 private Boole sliceCmpToConst0(Text a, Arr(char) b, Unt len);
 private Text hiliteGroupName(Short hiId);
 private Short getLinkId(Short hiId);
-private void initializeGroups(void);
 private int setDecoration(Text arg, OUT HiliteGroup* g);
 private Boole getColorByName(OUT VTermColor* res, Text name);
 private Boole setForeground(HiliteGroup* group, Text arg);
@@ -301,7 +307,6 @@ private Decoration writeToDecoration(HiliteGroup* restrict g);
 private void parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line);
 private void clearHiliteWorker(OUT HiliteGroup* g);
 private void set_normal_colors(void);
-private Short hiliteGroupByName(Text name);
 private Short hiResolveLinks(Short hiId);
 private HiliteGroup* resolveLinksByGroup(HiliteGroup* group);
 private Bag * getDecorationDict(int hlDeco);
@@ -557,14 +562,6 @@ enum {
     NONE
 };
 
-
-//The names of hilite groups, separated by ZERO. Same len as hiliteGroupStrings
-private CS hiNamesContainer;
-
-//Table with the specifications for an decoration number.
-//Note that this table is used by ALL books. This is required because the
-//TUI can redraw at any time for any book.
-private Arr(HiliteGroup) hilites;
 private Short countGroups;
 private DictStringInt128* hiNames;
 
@@ -585,68 +582,12 @@ getLinkId(Short hiId) {
    return hilites[hiId].link;
 }
 
-//Store group names from hiliteGroupStrings into hiNames. Initialize names of hilite groups
-private void
-initializeGroups(void) {
-   Int count = 0;
-   Int len = 0;
-   for (Int i = 0; i < countGroups; i++) {
-      CS groupString = (CS)hiliteGroupStrings[i];
-      CS nameEnd = skiptowhite(groupString);
-      count++;
-      len += (nameEnd - groupString + 1); //+1 for the ZERO
-   }
-
-   hiNamesContainer = alloc(len);
-   hilites = alloc(count*sizeof(HiliteGroup));
-
-   CS target = hiNamesContainer;
-   HiliteGroup* targetGroup = hilites;
-   for (Short i = 0; i < countGroups; i++) {
-      CS groupString = (CS)hiliteGroupStrings[i];
-      CS nameEnd = skiptowhite(groupString);
-      Int nameLen = nameEnd - groupString;
-
-      for (Short j = 0; j < nameLen; j++) {
-         Byte byte = groupString[j];
-         if (!bookIsCharPrintable(byte)) {
-            emsg(_(e_unprintable_character_in_group_name));
-            return;
-         } ei (!ASCII_ISALNUM(byte) && byte != '_' && byte != '.') {
-            msg_source(getDecoFlags(HILITE_WarningMsg));
-            msg(_("W18: Invalid character in group name"));
-            return;
-         }
-      }
-
-      targetGroup->name = (Text){.c = target, .len = nameLen};
-
-      memcpy(target, groupString, nameLen);
-      target += nameLen; //+1 for the ZERO
-      *target = ZERO;
-      targetGroup->hiId = i;
-
-      target++;
-      targetGroup++;
-   }
-
-   hiNames = dictStringInt128NewJustIndices(hiNamesContainer, countGroups, a);
-}
-
 pub void
-initHilite(int reset) { //clear group first?
+initHilite() {
    a = createArena();
 
-   //load colors and groups (they are all built-in)
-   countGroups = ARRAY_LENGTH(hiliteGroupStrings);
-   initializeGroups();
-
    decorationsG = alloc((countGroups + 10)*sizeof(Decoration));
-   doHilite((CS)hiliteGroupStrings[0], reset, true);
    set_normal_colors();
-   for (int i = 1; i < countGroups; ++i) {
-      doHilite((CS)hiliteGroupStrings[i], reset, true);
-   }
 }
 
 ////Reset all hiliting to the defaults. Removes all hiliting for the groups added by the user
@@ -1132,15 +1073,15 @@ set_normal_colors(void) {
 //}
 
 //Lookup a hilite group name and return its ID. If it is not found, SHORT is returned.
-private Short
-hiliteGroupByName(Text name) {
+pub Short
+hiliteGroupByName(Text name) { //:hiliteGroupByName
    return getOrDefault(name, SHORT, hiNames);
 }
 
 //Lookup a hilite group name and return its decos. Return zero if not found.
 pub Decoration
-decosByHiliteName(HiliteId id) {
-   Short hiId = hiliteGroupByName(mbText(name));
+decosByHiliteName(Text name) {
+   Short hiId = hiliteGroupByName(name);
    return hiId != SHORT ? getFullDecoration(hiId) : EMPTY_DECO;
 }
 
@@ -1392,10 +1333,25 @@ decoEq(Decoration a, Decoration b) {
    return a.flags == b.flags && a.hiId == b.hiId;
 }
 
+//}}}
+//{{{api
+
 //";echohl {name}".
 pub void
 c_echohl(Invocation* invo) {
-   echoDecoFlagsG = getOrDefault(mbText(invo->arg), SHORT, hiNames).flags;
+   echoDecoFlagsG = hilites[getOrDefault(mbText(invo->arg), SHORT, hiNames)].flags;
+}
+
+//"hilite(name)" function
+pub void
+f_hlID(Arr(Var) argvars, Var* returnVar) {
+   returnVar->number = hiliteGroupByName(mbText(tv_get_string(&argvars[0])));
+}
+
+//"hiliteExists()" function
+pub void
+f_hlexists(Arr(Var) argvars, Var* returnVar) {
+   returnVar->number = hiliteExists(mbText(tv_get_string(&argvars[0])));
 }
 
 //}}}

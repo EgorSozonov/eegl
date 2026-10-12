@@ -11094,18 +11094,6 @@ f_haslocaldir(Arr(Var) argvars, Var* returnVar) {
       returnVar->number = 0;
 }
 
-//"highlightID(name)" function
-pub void
-f_hlID(Arr(Var) argvars, Var* returnVar) {
-   returnVar->number = hiliteGroupByName(mbText(tv_get_string(&argvars[0])));
-}
-
-//"highlight_exists()" function
-pub void
-f_hlexists(Arr(Var) argvars, Var* returnVar) {
-   returnVar->number = hiliteExists(mbText(tv_get_string(&argvars[0])));
-}
-
 //"hostname()" function
 pub void
 f_hostname(Arr(Var), Var* returnVar) {

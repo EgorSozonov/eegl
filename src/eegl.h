@@ -3659,22 +3659,22 @@ typedef struct {
    Portal* propPort;  //portal to search for textprop
    int propId;    //when not zero: textprop ID
    int zIndex;
-   int minHeight;      //"minheight" for popup portal
-   int minWidth;       //"minwidth" for popup portal
-   int maxHeight;      //"maxheight" for popup portal
-   int maxWidth;       //"maxwidth" for popup portal
-   int maxWidthOpt;       //maxwidth from option
-   int wantLine;       //"line" for popup portal
-   int wantCol;        //"col" for popup portal
-   int firstLine;      //"firstline" for popup portal
+   int minHeight;     //"minheight" for popup portal
+   int minWidth;      //"minwidth" for popup portal
+   int maxHeight;     //"maxheight" for popup portal
+   int maxWidth;      //"maxwidth" for popup portal
+   int maxWidthOpt;   //maxwidth from option
+   int wantLine;      //"line" for popup portal
+   int wantCol;       //"col" for popup portal
+   int firstLine;     //"firstline" for popup portal
    int wantScrollbar; //when zero don't use a scrollbar
    int hasScrollbar;  //1 if scrollbar displayed, 0 otherwise
-   Unt scrollbarHilite; //"scrollbarhighlight"
-   Unt thumbHilite; //"thumbhighlight"
-   int padding[4]; //padding top/right/bot/left
-   int border[4];  //border top/right/bot/left
-   Unt borderHilite[4];  //border highlight
-   int borderChar[8];   //border characters
+   Unt scrollbarHilite; //"scrollbarhilite"
+   Unt thumbHilite;   //"thumbhilite"
+   int padding[4];    //padding top/right/bot/left
+   int border[4];     //border top/right/bot/left
+   Unt borderHilite[4];//border highlight
+   int borderChar[8]; //border characters
 
    int leftOff;    //columns left of the screen
    int rightOff;   //columns right of the screen
