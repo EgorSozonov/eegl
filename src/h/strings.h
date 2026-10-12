@@ -1,3 +1,7 @@
+#ifndef AVOID_DUPLICATION
+declStruct(ChunkString);
+#endif
+
 Arena* createArena();
 void* allocateOnArena(Unt allocSize, Arena* a);
 void deleteArena(Arena* ar);

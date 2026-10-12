@@ -1,3 +1,9 @@
+#ifndef AVOID_DUPLICATION
+#define REX_SET   1   //to allow \z\(...\),
+#define REX_USE   2   //to allow \z\1 et al.
+#define REX_ALL   (REX_SET | REX_USE)
+#endif
+
 void init_regexp_timeout(long msec);
 void disable_regexp_timeout(void);
 int re_multiline(RegProg* prog);

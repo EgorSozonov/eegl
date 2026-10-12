@@ -5,23 +5,19 @@
 
 #include "base.h"
 #include "eegl.h"
-#include "h/data.types.h"
 #include "h/data.h"
 #include "h/book.h"
 #include "h/do.h"
-#include "h/draw.types.h"
 #include "h/draw.h"
-#include "h/input.types.h"
 #include "h/input.h"
 #include "h/hilite.h"
+#define AVOID_DUPLICATION
 #include "h/eval.h"
+#undef AVOID_DUPLICATION
 #include "h/diff.h"
-#include "h/fileio.types.h"
 #include "h/fileio.h"
-#include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
-#include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/option.h"
 #include "h/portal.h"
@@ -29,11 +25,9 @@
 #include "h/script.h"
 #include "h/strings.h"
 #include "h/tag.h"
-#include "h/term.types.h"
 #include "h/term.h"
 #include "h/ui.h"
 #include "h/window.h"
-#include "h/wheel.types.h"
 #include "h/wheel.h"
 
 #include <ctype.h> //for toupper()

@@ -7,21 +7,17 @@
 
 #include "base.h"
 #include "eegl.h"
-#include "h/data.types.h"
 #include "h/data.h"
-#include "h/book.types.h"
 #include "h/book.h"
 #include "h/do.h"
-#include "h/draw.types.h"
 #include "h/draw.h"
 #include "h/eval.h"
-#include "h/fileio.types.h"
 #include "h/fileio.h"
-#include "h/hilite.types.h"
 #include "h/hilite.h"
-#include "h/input.types.h"
 #include "h/input.h"
+#define AVOID_DUPLICATION
 #include "h/message.h"
+#undef AVOID_DUPLICATION
 #include "h/option.h"
 #include "h/portal.h"
 #include "h/regexp.h"

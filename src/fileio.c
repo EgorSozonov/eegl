@@ -6,20 +6,17 @@
 #include "base.h"
 #include "eegl.h"
 #include "h/book.h"
-#include "h/data.types.h"
 #include "h/data.h"
-#include "h/input.types.h"
 #include "h/input.h"
 #include "h/do.h"
 #include "h/diff.h"
-#include "h/draw.types.h"
 #include "h/draw.h"
 #include "h/eval.h"
+#define AVOID_DUPLICATION
 #include "h/fileio.h"
-#include "h/hilite.types.h"
+#undef AVOID_DUPLICATION
 #include "h/hilite.h"
 #include "h/message.h"
-#include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/option.h"
 #include "h/portal.h"
@@ -29,7 +26,6 @@
 #include "h/tag.h"
 #include "h/term.h"
 #include "h/ui.h"
-#include "h/wheel.types.h"
 #include "h/wheel.h"
 
 #include <ctype.h> //for isdigit()
@@ -238,7 +234,7 @@ init_homedir(void) {
    CS var = mch_getenv("HOME");
 
    if (var) {
-      //Change to the directory and get the actual path. This resolves links. Don't do it when 
+      //Change to the directory and get the actual path. This resolves links. Don't do it when
       //we can't return.
       if (mch_dirname(nameBuffG, MAXPATHL) == OK && mch_chdir(nameBuffG) == 0) {
          if (!mch_chdir(var) && mch_dirname(ioBuffG, IOSIZE) == OK)
@@ -402,12 +398,12 @@ findfilendir(Arr(Var) argvars, Var* returnVar, int find_what){
          if (returnVar->tag == VAR_STRING || returnVar->tag == VAR_LIST)
             eeglFree(fresult);
          fresult = findFileInPathImpl(
-            first ? mbText(fname) : (Text){null, 0}, 
+            first ? mbText(fname) : (Text){null, 0},
             0, first, path,
             find_what,
             curBook->fullFileName,
             find_what == FINDFILE_DIR || !curBook->o.suffixesAdd? S"" : curBook->o.suffixesAdd,
-            OUT &file_to_find, 
+            OUT &file_to_find,
             OUT &searchCtx
          );
          first = false;
@@ -467,14 +463,14 @@ f_fnamemodify(Arr(Var) argvars, Var* returnVar) {
 
 //"getcwd()" function
 //
-//Return the current working directory of a window in a tab. First optional argument 'winnr' is 
+//Return the current working directory of a window in a tab. First optional argument 'winnr' is
 //the portal number or -1 and the second optional argument 'tabnr' is the tab number.
 //
 //If no arguments are supplied, then return the directory of the current portal.
-//If only 'winnr' is specified and is not -1 or 0 then return the directory of the specified 
+//If only 'winnr' is specified and is not -1 or 0 then return the directory of the specified
 //portal. If 'winnr' is 0 then return the directory of the current portal.
 //If both 'winnr and 'tabnr' are specified and 'winnr' is -1 then return the
-//directory of the specified tab.  Otherwise return the directory of the specified portal in the 
+//directory of the specified tab.  Otherwise return the directory of the specified portal in the
 //specified tab. If the portal or the tab doesn't exist then return NULL.
 pub void
 f_getcwd(Arr(Var) argvars, Var* returnVar) {
@@ -686,11 +682,11 @@ f_globpath(Arr(Var) argvars, Var* returnVar) {
          allocReturnList(returnVar);
          for (Unt i = 0; i < matches.len; ++i)
             list_append_string(returnVar->list, matches.c[i], -1);
-      } 
+      }
    } else
       returnVar->string = NULL;
-      
-   deleteArena(matches.a); 
+
+   deleteArena(matches.a);
 }
 
 //"isdirectory()" function
@@ -973,12 +969,12 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
                if (len == 0) {
                   while (prevlen > 0 && prev[prevlen - 1] == '\r')
                      --prevlen;
-               } 
+               }
             }
             if (prevlen == 0)
                s = copySubstr(start, len);
             else {
-               //Change "prev" buffer to be the right size. This way the bytes are only copied once, 
+               //Change "prev" buffer to be the right size. This way the bytes are only copied once,
                //and very long lines are allocated only once.
                s = eeRealloc(prev, prevlen + len + 1);
                MEMMOVE(s + prevlen, start, len);
@@ -1038,7 +1034,7 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
          listitem_remove(returnVar->list, returnVar->list->first);
          --cnt;
       }
-   } 
+   }
 
    if (failed) {
       //an empty list is returned on error
@@ -1252,7 +1248,7 @@ f_writefile(Var* argvars, Var* returnVar){
       FOR_ALL_LIST_ITEMS(list, li) {
          if (convertVarToStringSingleUse(&li->c) == NULL)
             return;
-      } 
+      }
    } ei (argvars[0].tag == VAR_BLOB) {
       blob = argvars[0].blob;
       if (blob == NULL)
@@ -1355,7 +1351,7 @@ f_filecopy(Arr(Var) argvars, Var* returnVar){
       returnVar->number = eeCopyfile(
           tv_get_string(&argvars[0]),
           tv_get_string(&argvars[1])) == OK ? true : false;
-   } 
+   }
 }
 
 //Return true if the directory of "fname" exists, false otherwise.
@@ -1380,10 +1376,10 @@ fiExpandAndCopy(NULLABLE CS fname, int force) { //force expansion, even when it 
 
    Byte buf[MAXPATHL];
 
-   //Force expanding the path always, because symbolic links may mess up the full path name, even 
+   //Force expanding the path always, because symbolic links may mess up the full path name, even
    //though it starts with a '/'. Also expand when there is ".." in the file name, try to remove it,
    //because "~/src/../README" is equal to "~/README".
-   return (eeFullFileName(fname, buf, MAXPATHL, force) != FAIL) 
+   return (eeFullFileName(fname, buf, MAXPATHL, force) != FAIL)
       ? copyStr(buf) : copyStr(fname);
 }
 
@@ -1553,8 +1549,8 @@ pstrcmp(const void* a, const void* b) {
    return (pathcmp(*(CS*)a, *(CS*)b, -1));
 }
 
-//Recursively expand one path component into all matching files and/or directories. Adds matches 
-//to "gap". Handles "*", "?", "[a-z]", "**", etc. "path" has backslashes before chars that are 
+//Recursively expand one path component into all matching files and/or directories. Adds matches
+//to "gap". Handles "*", "?", "[a-z]", "**", etc. "path" has backslashes before chars that are
 //not to be expanded, starting at "path + wildoff". Return the number of matches found.
 private int
 unix_expandpath(
@@ -1586,14 +1582,14 @@ unix_expandpath(
    Unt tempLen = STRLEN(path) + MAXPATHL;
    CS temp = alloc(tempLen);
 
-   //Find the first part in the path name that contains a wildcard. When EW_ICASE is set every 
+   //Find the first part in the path name that contains a wildcard. When EW_ICASE is set every
    //letter is considered to be a wildcard. Copy it into "temp", including preceding characters.
    CS p = temp;
    CS s = temp;
    CS e = NULL;
    CS path_end = path;
    while (*path_end != ZERO) {
-      //May ignore a wildcard that has a backslash before it; it will be removed by 
+      //May ignore a wildcard that has a backslash before it; it will be removed by
       //rem_backslash() or file_pat_to_reg_pat() below.
       if (path_end >= path + wildoff && rem_backslash(path_end))
           *p++ = *path_end++;
@@ -1606,7 +1602,7 @@ unix_expandpath(
                  || ((flags & EW_ICASE) && eeglIsAlfa(mb_ptr2char(path_end))))
       ) {
           e = p;
-      } 
+      }
       int charlen = utfCharLen(path_end);
 
       STRNCPY(p, path_end, (Unt)charlen);
@@ -1624,13 +1620,13 @@ unix_expandpath(
          --e;
          --s;
       }
-   } 
+   }
 
    //Check for "**" between "s" and "e".
    for (p = s; p < e; ++p) {
       if (p[0] == '*' && p[1] == '*')
          starstar = true;
-   } 
+   }
 
    //convert the file pattern to a regexp pattern
    starts_with_dot = *s == '.';
@@ -1702,7 +1698,7 @@ unix_expandpath(
             } else {
                FileStat  sb;
 
-               //no more wildcards, check if there is a match, remove backslashes for the 
+               //no more wildcards, check if there is a match, remove backslashes for the
                //remaining components only
                if (*path_end != ZERO)
                   backslash_halve(temp + len + 1);
@@ -1751,7 +1747,7 @@ GEN_TYPE_L(DirPtr)
 //        hay++;
 //        if (startsWith(hay, needle)) {
 //           return true;
-//        } 
+//        }
 //     }
 //  }
 //  return false;
@@ -1776,7 +1772,7 @@ GEN_TYPE_L(DirPtr)
 //  //Arr(Byte) subdir; // like "src", where to search for files
 //  //Arr(Byte) includedExtensions; // like "c,h,cpp"
 //  //Arr(Byte) excludedSubfolders; // like ".git,.vscode,node_modules"
-//  
+//
 //  DirPtr startDir = opendir((char const*)filter.subdir);
 //  if (startDir) {
 //     add(startDir, stack);
@@ -1795,8 +1791,8 @@ GEN_TYPE_L(DirPtr)
 //           appendSubDir(de->d_name, OUT &fullPath);
 //        }
 //     } ei (de->d_type == DT_REG || de->d_type == DT_LNK) {
-//        Text shortFName = (Text){.c = (CS)de->d_name, .len = strlen(de->d_name)}; 
-//        
+//        Text shortFName = (Text){.c = (CS)de->d_name, .len = strlen(de->d_name)};
+//
 //        Arr(Byte) fiExtension = fileExtension(shortFName);
 //        if (searchStringInCommaedList(fiExtension, filter.includedExtensions)) {
 //           addFile(fileList, toFullFileName(shortFName, &fullPath), flags);
@@ -1804,14 +1800,14 @@ GEN_TYPE_L(DirPtr)
 //        }
 //     }
 //  }
-//  
-//  deleteArena(a); 
+//
+//  deleteArena(a);
 //  return countMatches;
 //}
 
 #ifdef SPECIAL_WILDCHAR
 
-//Return true if "p" contains a special wildcard character, one that Eegl cannot expand, 
+//Return true if "p" contains a special wildcard character, one that Eegl cannot expand,
 //requires using a shell.
 private int
 has_special_wildchar(CS p){
@@ -1839,10 +1835,10 @@ has_special_wildchar(CS p){
 
 //Generic wildcard expansion code.
 //
-//Characters in "pat" that should not be expanded must be preceded with a backslash. E.g., 
+//Characters in "pat" that should not be expanded must be preceded with a backslash. E.g.,
 //"/path\ with\ spaces/my\*star*"
 //
-//Return FAIL when no single file was found. In this case "num_file" is not set, and "file" may 
+//Return FAIL when no single file was found. In this case "num_file" is not set, and "file" may
 //contain an error message. Return OK when some files found. "num_file" is set to the number of
 //matches, "file" to the array of matches.
 pub int
@@ -1865,7 +1861,7 @@ gen_expand_wildcards(
    if (recursive)
       return mch_expand_wildcards(num_pat, pat, flags, OUT matches);
 
-   //If there are any special wildcard characters which we cannot handle here, call machine 
+   //If there are any special wildcard characters which we cannot handle here, call machine
    //specific function for all the expansion. This avoids starting the shell for each argument
    //separately. For `=expr` do use the internal function.
    for (int i = 0; i < num_pat; i++) {
@@ -1889,7 +1885,7 @@ gen_expand_wildcards(
             p = doExpandEnvInFilePaths(p, true);
             if (p == NULL)
                p = pat[i];
-            //If doExpandEnv() can't expand an environment variable, use the shell to do that. 
+            //If doExpandEnv() can't expand an environment variable, use the shell to do that.
             //Discard previously found file names and start all over again.
             ei (hasEnvVar(p) || *p == '~') {
                eeglFree(p);
@@ -1900,7 +1896,7 @@ gen_expand_wildcards(
             }
          }
 
-         //If there are wildcards or case-insensitive expansion is required: Expand file names 
+         //If there are wildcards or case-insensitive expansion is required: Expand file names
          //and add each match to the list. If there is no match, and EW_NOTFOUND is given, add the
          //pattern. Otherwise: Add the file name if it exists or when EW_NOTFOUND is given.
          if (mch_has_exp_wildcard(p) || (flags & EW_ICASE)) {
@@ -1946,8 +1942,8 @@ gen_expand_wildcards(
       if ((flags & EW_EMPTYOK) == 0) {
          recursive = false;
          return FAIL;
-      } 
-   } 
+      }
+   }
 
    recursive = false;
    return retval;
@@ -1965,7 +1961,7 @@ addFile(OUT ExpandMatch* matches, CS fName, Unt flags){
    FileStat   sb;
 
    //if the file/dir/link doesn't exist, may not add it
-   if ((flags & EW_NOTFOUND) == 0 
+   if ((flags & EW_NOTFOUND) == 0
          && ((flags & EW_ALLLINKS) != 0 ? LSTAT(fName, &sb) < 0 : mch_getperm(fName) < 0)
    )
       return;
@@ -2008,7 +2004,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     //also expand whe
       if (!p && eq(fname, S".."))
          //Handle ".." without path separators.
          p = fname + 2;
-      //If the file name has a path, change to that directory for a moment, and then get the 
+      //If the file name has a path, change to that directory for a moment, and then get the
       //directory (and get back to where we were).
       //This will get the correct path name with "../" things.
       if (p) {
@@ -2016,7 +2012,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     //also expand whe
             //For "/path/dir/.." include the "/..".
             p += 3;
 
-         //Use fchdir() if possible, it's said to be faster and more reliable.  
+         //Use fchdir() if possible, it's said to be faster and more reliable.
          if (!dont_fchdir) {
             fd = open(".", O_RDONLY | O_EXTRA, 0);
             if (fd >= 0 && fchdir(fd) < 0) {
@@ -2028,7 +2024,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     //also expand whe
 
          //Only change directory when we are sure we can return to where
          //we are now. After doing "su" chdir(".") might not work.
-         if (fd < 0 
+         if (fd < 0
                && (mch_dirname(olddir, MAXPATHL) == FAIL || mch_chdir(olddir) != 0)
          ){
             p = NULL;   //can't get current dir: don't chdir
@@ -2041,7 +2037,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     //also expand whe
             else {
                copySubstrToAllocation(buf, (Text){fname, p - fname});
                if (mch_chdir(buf)) {
-                  //Path does not exist (yet). For a full path fail, will use the path as-is. 
+                  //Path does not exist (yet). For a full path fail, will use the path as-is.
                   //For a relative path use the current directory and append the file name.
                   if (!strIsRelative(fname))
                      retval = FAIL;
@@ -2124,7 +2120,7 @@ same_directory(CS f1, CS f2) {
    //safety check
    if (!f1 || !f2)
       return false;
-      
+
    Byte ffname[MAXPATHL];
    (void)eeFullFileName(f1, ffname, MAXPATHL, false);
    CS t1 = gettail_sep(ffname);
@@ -2399,7 +2395,7 @@ repeat:
       for ( ; s > tail; --s) {
          if (s[0] == '.')
             break;
-      } 
+      }
       if (src[*usedlen + 1] == 'e') {     //:e
          if (s > tail) {
             *fnamelen += (*fnamep - (s + 1));
@@ -2535,10 +2531,10 @@ home_replace(
    if (!one)
       src = skipwhite(src);
    while (*src && dstlen > 0) {
-      //Here we are at the beginning of a file name. First, check to see if the beginning of the 
+      //Here we are at the beginning of a file name. First, check to see if the beginning of the
       //file name matches $HOME or the "real" home directory. Check that there is a '/'
-      //after the match (so that if e.g. the file is "/home/pieter/bla", and the home directory 
-      //is "/home/piet", the file does not end up as "~er/bla" (which would seem to indicate the 
+      //after the match (so that if e.g. the file is "/home/pieter/bla", and the home directory
+      //is "/home/piet", the file does not end up as "~er/bla" (which would seem to indicate the
       //file "bla" in user er's home directory)).
       p = homedir;
       len = dirlen;
@@ -2553,7 +2549,7 @@ home_replace(
             if (--dstlen > 0)
                *dst++ = '~';
 
-            //Do not add directory separator into dst, because dst is expected to just return the 
+            //Do not add directory separator into dst, because dst is expected to just return the
             //directory name without the directory separator '/'.
             break;
          }
@@ -2592,15 +2588,15 @@ home_replace(
 //All private functions and variables start with 'ff_'
 //
 //In general it works like this:
-//First you create yourself a search context by calling eeFindFile_init(). It is possible to give 
-//a search context from a previous call to eeFindFile_init(), so it can be reused. After this you 
+//First you create yourself a search context by calling eeFindFile_init(). It is possible to give
+//a search context from a previous call to eeFindFile_init(), so it can be reused. After this you
 //call eeFindFile() until you are satisfied with the result or it returns NULL. On every call it
-//returns the next file which matches the conditions given to eeFindFile_init(). If it doesn't 
+//returns the next file which matches the conditions given to eeFindFile_init(). If it doesn't
 //find a next file it returns NULL.
 //
-//It is possible to call eeFindFile_init() again to reinitialise your search with some new 
-//parameters. Don't forget to pass your old search context to it, so it can reuse it and 
-//especially reuse the list of already visited directories. If you want to delete the list of 
+//It is possible to call eeFindFile_init() again to reinitialise your search with some new
+//parameters. Don't forget to pass your old search context to it, so it can reuse it and
+//especially reuse the list of already visited directories. If you want to delete the list of
 //already visited directories simply call findfileFreeVisitedList().
 //
 //When you are done call eeFindFile_cleanup() to free the search context.
@@ -2676,9 +2672,9 @@ private Text fileExpansionS = {NULL, 0};       //used for expanding filenames
 //
 //Upward search is only done on the starting dir.
 //
-//If 'free_visited' is true, the list of already visited files/directories is cleared. Set this to 
-//false if you just want to search from another directory, but want to be sure that no directory 
-//from a previous search is searched again. This is useful if you search for a file at different 
+//If 'free_visited' is true, the list of already visited files/directories is cleared. Set this to
+//false if you just want to search from another directory, but want to be sure that no directory
+//from a previous search is searched again. This is useful if you search for a file at different
 //places. The list of visited files/dirs can also be cleared with the function
 //findfileFreeVisitedList().
 //
@@ -2779,7 +2775,7 @@ eeFindFile_init(
    //If this fails (mem allocation), there is no upward search at all or a
    //stop directory is not recognized -> continue silently.
    //If stopdirs just contains a ";" or is empty,
-   //searchCtx->stopDirs will only contain a  NULL pointer. This is handled as unlimited upward 
+   //searchCtx->stopDirs will only contain a  NULL pointer. This is handled as unlimited upward
    //search. See function ff_path_in_stoplist() for details.
    if (stopdirs) {
       CS walker = stopdirs;
@@ -2980,7 +2976,7 @@ eeFindFile_init(
          searchCtx->wildcardPath.c,
          searchCtx->wildcardPath.len,
          level,
-         false 
+         false
    );
 
    if (!sptr)
@@ -2994,7 +2990,7 @@ eeFindFile_init(
    return searchCtx;
 
 error_return:
-   //We clear the search context now! Even when the caller gave us a (perhaps valid) context, we 
+   //We clear the search context now! Even when the caller gave us a (perhaps valid) context, we
    //free it here, as we might have already destroyed it.
    eeFindFile_cleanup(searchCtx);
    return NULL;
@@ -3087,7 +3083,7 @@ eeFindFile_cleanup(FileSearchCtx* ctx) {
 //Return a pointer to an allocated file name or NULL if nothing found. To get all matching files,
 //call this function until you get NULL.
 //If the passed search_context is NULL, NULL is returned.
-//The search algorithm is depth first. To change this replace the stack with a list (don't forget 
+//The search algorithm is depth first. To change this replace the stack with a list (don't forget
 //to leave partly searched directories on the top of the list).
 pub CS
 eeFindFile(FileSearchCtx* search_ctx_arg) {
@@ -3105,7 +3101,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
    filePath.c = filePathBuilder;
 
    //store the end of the start dir -- needed for upward search
-   
+
    CS path_end = (searchCtx->startDir.c) ? &searchCtx->startDir.c[searchCtx->startDir.len] : null;
 
    //upward search loop
@@ -3397,7 +3393,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                }
             } else {
                //still wildcards left, push the directories for further search
-               for (Unt i = stackp->ffs_filearray_cur; i < stackp->files.len; ++i) { 
+               for (Unt i = stackp->ffs_filearray_cur; i < stackp->files.len; ++i) {
                   if (!mch_isdir(stackp->files.c[i]))
                      continue;   //not a directory
 
@@ -3790,7 +3786,7 @@ ff_path_in_stoplist(CS path, int path_len, Arr(Text) stopdirs_v) {
          && ((int)stopdirs_v[i].len <= path_len
              || stopdirs_v[i].c[path_len] == '/'))
           return true;
-   } 
+   }
 
    return false;
 }
@@ -3824,7 +3820,7 @@ findFileInPath(
    OUT FileSearchCtx** searchCtx   //state of the search
 ){
    return findFileInPathImpl(
-         fname, options, first, curBook->o.path, FINDFILE_BOTH, rel_fname, 
+         fname, options, first, curBook->o.path, FINDFILE_BOTH, rel_fname,
          curBook->o.suffixesAdd ? curBook->o.suffixesAdd : S"",
          OUT file_to_find, OUT searchCtx
    );
@@ -3916,7 +3912,7 @@ findFileInPathImpl(
                 MEMMOVE(ptr, ptr + 1, (Unt)((*file_to_find + file_to_findlen) - (ptr + 1)) + 1);
                 --file_to_findlen;
             }
-         } 
+         }
       }
    }
 
@@ -4188,7 +4184,7 @@ eval_includeexpr(CS, int) {
    if (!curBook->o.includeExpr) {
       return null;
    }
-   
+
    ScriptPos save_sctx = scriptPosG;
 
    scriptPosG = curBook->o.scriptLocs[BOOK_includeExpr];
@@ -4338,7 +4334,7 @@ expand_path_option(CS curdir, NULLABLE CS path_option, OUT ExpandMatch* files) {
                               //path or cdpath
    if (!path_option)
       return;
-      
+
    Byte buf[MAXPATHL];
    CS p;
    Unt curdirlen = 0;
@@ -4413,13 +4409,13 @@ get_path_cutoff(CS fname, OUT ExpandMatch* matches) {
    if (cutoff) {
       while (*cutoff == '/')
          MB_PTR_ADV(cutoff);
-   } 
+   }
 
    return cutoff;
 }
 
-//Sort, remove duplicates and modify all the fullpath names in "matches" so that they are unique with 
-//respect to each other while conserving the part that matches the pattern. Beware, this is at 
+//Sort, remove duplicates and modify all the fullpath names in "matches" so that they are unique with
+//respect to each other while conserving the part that matches the pattern. Beware, this is at
 //least O(n^2) wrt "matches->len".
 private void
 uniquefy_paths( OUT ExpandMatch* matches, CS pattern, CS path_option) {   //path or cdpath
@@ -4560,7 +4556,7 @@ expand_in_path(OUT ExpandMatch* matches, CS pattern, Unt flags) {      //EW_* fl
       expand_path_option(curdir, p_cdpath, OUT matches);
    else
       expand_path_option(curdir, path_option, OUT matches);
-      
+
    if (matches->len == 0)
       return 0;
 
@@ -4576,8 +4572,8 @@ expand_in_path(OUT ExpandMatch* matches, CS pattern, Unt flags) {      //EW_* fl
    return matches->len;
 }
 
-//Convert a file name into a canonical form. It simplifies a file name into its simplest form by 
-//stripping out unneeded components, if any. The resulting file name is simplified in place and 
+//Convert a file name into a canonical form. It simplifies a file name into its simplest form by
+//stripping out unneeded components, if any. The resulting file name is simplified in place and
 //will either be the same length as that supplied, or shorter.
 pub Unt
 simplify_filename(CS filename) {
@@ -4613,8 +4609,8 @@ simplify_filename(CS filename) {
          if (p == start && relative)
          p += 1 + (p[1] != ZERO);   //keep single "." or leading "./"
          else {
-            //Strip "./" or ".///".  If we are at the end of the file name and there is no 
-            //trailing path separator, either strip "/." if we are after "start", or strip "." 
+            //Strip "./" or ".///".  If we are at the end of the file name and there is no
+            //trailing path separator, either strip "/." if we are after "start", or strip "."
             //if we are at the beginning of an absolute path name .
             tail = p + 1;
             if (p[1] != ZERO) {
@@ -4654,12 +4650,12 @@ simplify_filename(CS filename) {
                   MB_PTR_BACK(start, p);
 
                if (!do_strip) {
-                  //If the component exists in the file system, check that stripping it won't 
-                  //change the meaning of the file name. First get information about the 
-                  //unstripped file name. This may fail if the component to strip is not a 
-                  //searchable directory (but a regular file, for instance), since the trailing 
-                  //"/.." cannot be applied then. We don't strip it then since we don't want to 
-                  //replace an erroneous file name by a valid one, and we disable stripping of 
+                  //If the component exists in the file system, check that stripping it won't
+                  //change the meaning of the file name. First get information about the
+                  //unstripped file name. This may fail if the component to strip is not a
+                  //searchable directory (but a regular file, for instance), since the trailing
+                  //"/.." cannot be applied then. We don't strip it then since we don't want to
+                  //replace an erroneous file name by a valid one, and we disable stripping of
                   //later components.
                   saved_char = *tail;
                   *tail = ZERO;
@@ -4671,9 +4667,9 @@ simplify_filename(CS filename) {
                   if (do_strip) {
                      FileStat new_st;
 
-                     //The check for the unstripped file name above works also for a symbolic link 
-                     //pointing to a searchable directory. But then the parent of the directory 
-                     //pointed to by the link must be the same as the stripped file name. (The 
+                     //The check for the unstripped file name above works also for a symbolic link
+                     //pointing to a searchable directory. But then the parent of the directory
+                     //pointed to by the link must be the same as the stripped file name. (The
                      //latter exists in the file system since it's the component's parent directory)
                      if (p == start && relative)
                         (void)stat(".", OUT &new_st);
@@ -4699,8 +4695,8 @@ simplify_filename(CS filename) {
                 p = tail;
                 components = 0;
             } else {
-               //Strip previous component. If the result would get empty and there is no 
-               //trailing path separator, leave a single "." instead.  If we are at the end of 
+               //Strip previous component. If the result would get empty and there is no
+               //trailing path separator, leave a single "." instead.  If we are at the end of
                //the file name and there is no trailing path separator and a preceding
                //component is left after stripping, strip its trailing path separator as well.
                if (p == start && relative && tail[-1] == '.') {
@@ -4767,7 +4763,7 @@ have_wildcard(int num, Arr(CS) file){
    for (int i = 0; i < num; i++) {
       if (mch_has_wildcard(file[i]))
           return 1;
-   } 
+   }
    return 0;
 }
 
@@ -4804,14 +4800,14 @@ buildShellCommandForWildcardExpansion( CS tempname, int num_pat, Arr(CS) pat, Un
 #define STRING_INIT(s) \
       {(CS)(s), STRLEN_LITERAL(s)}
             //vimglob() function to define for Posix shell
-   static Text sh_vimglob_func = 
+   static Text sh_vimglob_func =
       STRING_INIT("vimglob() { while [ $# -ge 1 ]; do echo \"$1\"; shift; done }; vimglob >");
             //vimglob() function with globstar setting enabled, only for bash >= 4.X
-   static Text sh_globstar_opt = 
+   static Text sh_globstar_opt =
       STRING_INIT("[[ ${BASH_VERSINFO[0]} -ge 4 ]] && shopt -s globstar; ");
 #undef STRING_INIT
 
-   //Compute the length of the command. We need 2 extra bytes: for the optional '&' and for the 
+   //Compute the length of the command. We need 2 extra bytes: for the optional '&' and for the
    //ZERO. Worst case: "unset nonomatch; print -N >" plus two is 29
    Unt tempnamelen = STRLEN(tempname);
    Unt len = tempnamelen + 29;
@@ -4845,7 +4841,7 @@ buildShellCommandForWildcardExpansion( CS tempname, int num_pat, Arr(CS) pat, Un
          if (pat[i][j] == '`')
             intick = !intick;
          ei (pat[i][j] == '\\' && pat[i][j + 1] != ZERO) {
-            //Remove a backslash, take char literally. But keep backslash inside backticks, 
+            //Remove a backslash, take char literally. But keep backslash inside backticks,
             //before a special character and before a backtick.
             if (intick
                     || firstOccurrence(SHELL_SPECIAL, pat[i][j + 1]) != NULL
@@ -4881,7 +4877,7 @@ buildShellCommandForWildcardExpansion( CS tempname, int num_pat, Arr(CS) pat, Un
 private int
 mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* matches){
                                                //EW_* flags
-   lo("mch_expand_wc"); 
+   lo("mch_expand_wc");
 
    //If there are no wildcards, just copy the names to allocated memory.
    //Save a lot of time, because we don't have to start a new shell.
@@ -4910,7 +4906,7 @@ mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* match
    if (shellResult.status != 0) { //chCallShell() failed
       mch_remove(tempname);
       eeglFree(tempname);
-   
+
       //With interactive completion, the error message is not printed.
       if ((flags & EW_SILENT) == 0) {
          redraw_later_clear();   //probably messed up screen
@@ -4936,7 +4932,7 @@ mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* match
    fseek(fd, 0L, SEEK_END);
    long llen = ftell(fd);         //get size of temp file
    fseek(fd, 0L, SEEK_SET);
-   
+
    //just in case ftell() would fail
    CS buf = (llen < 0) ? null : alloc(llen + 1);
    Unt len = llen;
@@ -5026,7 +5022,7 @@ notfound:
 }
 
 //Expand "file" for all comma-separated directories in "path".
-//Add the matches to "matches". Caller must init "matches". 
+//Add the matches to "matches". Caller must init "matches".
 pub void
 fiGlobpath(
    CS path,
@@ -5060,7 +5056,7 @@ fiGlobpath(
 
          ExpandMatch matches = {};
          matches.a = xp.files.a;
-         if (expandFromContext(OUT &xp, buf, WILD_SILENT|expand_options, OUT &matches) != FAIL 
+         if (expandFromContext(OUT &xp, buf, WILD_SILENT|expand_options, OUT &matches) != FAIL
                && matches.len > 0
          ) {
             expandEscape(OUT &xp, buf, WILD_SILENT|expand_options, OUT &matches);
@@ -5104,7 +5100,7 @@ filemess(Book* book, CS name, CS s, int attr){
    if (*s != ZERO)
       STRNCPY(ioBuffG + len, s, 99);
 
-   //For the first message may have to start a new line. For further ones overwrite the previous 
+   //For the first message may have to start a new line. For further ones overwrite the previous
    //one, reset msg_scroll before calling filemess().
    msg_scroll_save = msg_scroll;
    if (!isExitingG && p_verbose == 0)
@@ -5344,10 +5340,10 @@ readfile(
          buf_store_time(curBook, &st, fname);
          curBook->readTime = curBook->modifiedTime;
          curBook->readTimeNs = curBook->modifiedTimeNs;
-         //Use the protection bits of the original file for the swap file. This makes it possible 
-         //for others to read the name of the edited file from the swapfile, but only if they can 
+         //Use the protection bits of the original file for the swap file. This makes it possible
+         //for others to read the name of the edited file from the swapfile, but only if they can
          //read the edited file. Remove the "write" and "execute" bits for group and others
-         //(they must not write the swapfile). Add the "read" and "write" bits for the user, 
+         //(they must not write the swapfile). Add the "read" and "write" bits for the user,
          //otherwise we may not be able to write to the file ourselves.
          //Setting the bits is done below, after creating the swap file.
          swap_mode = (st.st_mode & 0644) | 0600;
@@ -5366,7 +5362,7 @@ readfile(
 
    //check readonly with perm and mch_access()
    Boole file_readonly = false;
-   
+
    if (read_stdin) {
    } ei (!read_buffer) {
       if ( !(perm & 0222) || mch_access(fname, W_OK))
@@ -5432,7 +5428,7 @@ readfile(
    //loaded. Help files always get readonly mode
    if ((check_readonly && file_readonly) || curBook->kind == BOOK_HELP) {
       curBook->o.modifiable = false;
-   } 
+   }
 
    if (set_options) {
       //Don't change 'eol' if reading from buffer as it will already be
@@ -5459,8 +5455,8 @@ readfile(
       if (swap_mode > 0 && !bookNoFname(curBook)) {
          CS swap_fname = bookGetSwapName(curBook);
 
-         //If the group-read bit is set but not the world-read bit, then the group must be equal 
-         //to the group of the original file.  If we can't make that happen then reset the 
+         //If the group-read bit is set but not the world-read bit, then the group must be equal
+         //to the group of the original file.  If we can't make that happen then reset the
          //group-read bit. This avoids making the swap file readable to more users when the
          //primary group of the user is too permissive.
          if ((swap_mode & 044) == 040) {
@@ -5499,7 +5495,7 @@ readfile(
       if (!read_stdin)
          close(fd);      //ignore errors
 
-      //The output from the autocommands should not overwrite anything and should not be 
+      //The output from the autocommands should not overwrite anything and should not be
       //overwritten: Set msg_scroll, restore its value if no output was done.
       msg_scroll = true;
       if (filtering)
@@ -5600,8 +5596,8 @@ readfile(
    }
 
    while (!error && !gotInterruptG) {
-      //We allocate as much space for the file as we can get, plus space for the old line plus 
-      //room for one terminating ZERO. The amount is limited by the fact that read() only 
+      //We allocate as much space for the file as we can get, plus space for the old line plus
+      //room for one terminating ZERO. The amount is limited by the fact that read() only
       //can read up to max_unsigned characters (and other things).
       if (!skip_read) {
 #if defined(SSIZE_MAX) && (SSIZE_MAX < 0x10000L)
@@ -5724,7 +5720,7 @@ readfile(
             line_start = ptr + 1;
          }
       }
-      
+
       linerest = (long)(ptr - line_start);
       ui_breakcheck();
       }
@@ -5773,7 +5769,7 @@ failed:
    if (recoveryModeG) { // In recovery mode everything but autocommands is skipped.
       goto afterRecovery;
    }
-   
+
    //need to delete the last line, which comes from the empty book
    if (newfile && wasempty && !(curBook->mem.flags & ML_EMPTY)) {
        ml_delete(curBook->mem.lineCount);
@@ -5791,7 +5787,7 @@ failed:
    } ei (linecnt)      //appended at least one line
       appended_lines_mark(from, linecnt);
 
-   //If we were reading from the same terminal as where messages go, the screen will have been 
+   //If we were reading from the same terminal as where messages go, the screen will have been
    //messed up. Switch on raw mode now and clear the screen.
    if (read_stdin) {
       termSetMode(TMODE_RAW);   //set to raw mode
@@ -5883,7 +5879,7 @@ failed:
       curBook->opEnd.col = 0;
    }
 
-afterRecovery: 
+afterRecovery:
    msg_scroll = msg_save;
 
    //Get the marks before executing autocommands, so they can be used there.
@@ -6034,7 +6030,7 @@ write_blob(FILE* fd, Blob* blob) {
 //}}}
 //{{{aux functions
 
-//Fill "*invo" to force the 'binary' option to be equal to the book "book". 
+//Fill "*invo" to force the 'binary' option to be equal to the book "book".
 //Used for calling readfile(). Return OK or FAIL.
 pub int
 prep_exarg(Invocation* invo, Book* book){
@@ -6130,7 +6126,7 @@ pub void
 msg_add_lines(int insert_space, long lnum, FileOffset nchars) {
    int  len = (int)STRLEN(ioBuffG);
    eeSnprintf(
-      ioBuffG + len, IOSIZE - (Unt)len, _("%s%ldLines, %ldB"), insert_space ? " " : "", 
+      ioBuffG + len, IOSIZE - (Unt)len, _("%s%ldLines, %ldB"), insert_space ? " " : "",
       lnum, (Long)nchars
    );
 }
@@ -6146,8 +6142,8 @@ time_differs(FileStat* st, long mtime, long mtime_ns){
    //On a FAT filesystem, esp. under Linux, there are only 5 bits to store
    //the seconds. Since the roundoff is done when flushing the inode, the
    //time may change unexpectedly by one second!!!
-   return (Long)st->st_mtim.tv_nsec != mtime_ns 
-      || (Long)st->st_mtime - mtime > 1 
+   return (Long)st->st_mtim.tv_nsec != mtime_ns
+      || (Long)st->st_mtime - mtime > 1
       || mtime - (Long)st->st_mtime > 1;
 }
 
@@ -6186,8 +6182,8 @@ shorten_fname(CS full_path, CS dir_name){
 
 //Add extension to file name - change path/fo.o.h to path/fo.o.h.ext
 //
-//Assumed that fname is a valid name found in the filesystem we assure that the return value is a 
-//different name and ends in 'ext'. "ext" MUST be at most 4 characters long if it starts with a 
+//Assumed that fname is a valid name found in the filesystem we assure that the return value is a
+//different name and ends in 'ext'. "ext" MUST be at most 4 characters long if it starts with a
 //dot, 3 characters otherwise. Space for the returned name is allocated, must be freed later.
 //Return NULL when out of memory.
 pub CS
@@ -6261,8 +6257,8 @@ fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot) {  //may prepend a '.
    return retval;
 }
 
-//Like fgets(), but if the file line is too long, it is truncated and the rest of the line is 
-//thrown away. Return true for end-of-file. If the line is truncated then buf[size - 2] 
+//Like fgets(), but if the file line is too long, it is truncated and the rest of the line is
+//thrown away. Return true for end-of-file. If the line is truncated then buf[size - 2]
 //will not be ZERO.
 pub int
 eeFgets(CS buf, int size, FILE *fp){
@@ -6342,7 +6338,7 @@ eeRename(CS from, CS to){
       return -1;
    }
 
-   //Delete the "to" file, this is required on some systems to make the mch_rename() work, on 
+   //Delete the "to" file, this is required on some systems to make the mch_rename() work, on
    //other systems it makes sure that we don't have two files when the mch_rename() fails.
 
    mch_remove(to);
@@ -6405,7 +6401,7 @@ eeCopyfile(CS from, CS to){
          errmsg = _(e_error_writing_to_str);
          break;
       }
-   } 
+   }
 
    eeglFree(buf);
    close(fd_in);
@@ -6560,9 +6556,9 @@ buf_reload(Book* book, int orig_mode, int reload_options){
           flags |= READ_KEEP_UNDO;
       }
 
-      //To behave like when a new file is edited (matters for BufReadPost autocommands) we first need 
+      //To behave like when a new file is edited (matters for BufReadPost autocommands) we first need
       //to delete the current book contents. But if reading the file fails we should keep
-      //the old contents. Can't use memory only, the file might be too big. Use a hidden book to 
+      //the old contents. Can't use memory only, the file might be too big. Use a hidden book to
       //move the book contents to.
       if (CURBOOK_EMPTY() || saved == FAIL)
          savebuf = NULL;
@@ -6601,7 +6597,7 @@ buf_reload(Book* book, int orig_mode, int reload_options){
                while (!CURBOOK_EMPTY()) {
                   if (ml_delete(book->mem.lineCount) == FAIL)
                      break;
-               } 
+               }
                (void)move_lines(savebuf, book);
             }
          } ei (book == curBook) {  //"book" still valid
@@ -6641,9 +6637,9 @@ buf_reload(Book* book, int orig_mode, int reload_options){
          FOR_ALL_TAB_PORTALS(t, wp) {
             if (wp->book == curPor->book)
                foldUpdateAll(wp);
-         } 
+         }
       }
-      //If the mode didn't change and @modifiable was set, keep the old value; the user probably used 
+      //If the mode didn't change and @modifiable was set, keep the old value; the user probably used
       //the ":view" command. But don't reset it, might have had a read error.
       if (orig_mode == curBook->origMode)
           curBook->o.modifiable |= old_ro;
@@ -6774,7 +6770,7 @@ mch_nodetype(CS name) {
 }
 
 
-//Delete "name" and everything in it, recursively. return true for success, false if some file was 
+//Delete "name" and everything in it, recursively. return true for success, false if some file was
 //not deleted.
 private Boole
 recursivelyDeleteDir(CS name){
@@ -6845,12 +6841,12 @@ eeDelTempDir(void) {
    EE_CLEAR(eeTempDirG);
 }
 
-//Directory "tempdir" was created. Expand this name to a full path and put it in "eeTempDirG". 
+//Directory "tempdir" was created. Expand this name to a full path and put it in "eeTempDirG".
 //This avoids that using ":cd" would confuse us. "tempdir" must be no longer than MAXPATHL.
 private void
 eeSettempdir(CS tempdir){
    Byte buf[MAXPATHL + 2];
-   
+
    if (eeFullFileName(tempdir, buf, MAXPATHL, false) == FAIL)
       STRCPY(buf, tempdir);
    Unt buflen = STRLEN(buf);
@@ -6864,7 +6860,7 @@ eeSettempdir(CS tempdir){
 
 //eeTempName(): Return a unique name that can be used for a temp file.
 //
-//The temp file is NOT guaranteed to be created. If "keep" is false it is guaranteed to NOT be 
+//The temp file is NOT guaranteed to be created. If "keep" is false it is guaranteed to NOT be
 //created.
 //
 //The returned pointer is to allocated memory.
@@ -6881,8 +6877,8 @@ eeTempName(int, int) {
    static CS tempdirs[] = {SMAP((CS), TEMPDIRNAMES)};
    int i;
 
-   //This will create a directory for private use by this instance of Eegl. This is done once, and 
-   //the same directory is used for all temp files. This method avoids security problems because 
+   //This will create a directory for private use by this instance of Eegl. This is done once, and
+   //the same directory is used for all temp files. This method avoids security problems because
    //of symlink attacks et al. It's also a bit faster, because we only need to check for an existing
    //file when creating the directory and not for each temp file.
    if (!eeTempDirG) {
@@ -6914,7 +6910,7 @@ eeTempName(int, int) {
    }
 
    if (eeTempDirG) {
-      //There is no need to check if the file exists, because we own the directory and nobody 
+      //There is no need to check if the file exists, because we own the directory and nobody
       //else creates a file in it.
       int itmplen = eeSnprintf(itmp, sizeof(itmp), "%s%ld", eeTempDirG, temp_count++);
       return copySubstr(itmp, (Unt)itmplen);
@@ -6924,7 +6920,7 @@ eeTempName(int, int) {
 }
 
 //Try matching a filename with a "pattern" ("prog" is NULL), or use the precompiled regprog "prog"
-//("pattern" is NULL). That avoids calling compileRegexp() often. Used for autocommands and 
+//("pattern" is NULL). That avoids calling compileRegexp() often. Used for autocommands and
 //'wildignore'. Return true if there is a match, false otherwise.
 pub int
 match_file_pat(
@@ -6954,7 +6950,7 @@ match_file_pat(
           || (!allow_dirs && eeRegexec(&regmatch, tail, (ColNr)0)))
    ) {
       result = true;
-   } 
+   }
 
    if (prog != NULL)
       *prog = regmatch.regprog;
@@ -6963,7 +6959,7 @@ match_file_pat(
    return result;
 }
 
-//Return true if a file matches with a pattern in "list". "list" is a comma-separated list of 
+//Return true if a file matches with a pattern in "list". "list" is a comma-separated list of
 //patterns, like 'wildignore'. "sfname" is the short file name or NULL, "ffname" the long file name
 pub int
 match_file_list(CS list, CS sfname, CS ffname){
@@ -6986,7 +6982,7 @@ match_file_list(CS list, CS sfname, CS ffname){
 }
 
 //Convert the given pattern "pat" which has shell style wildcards in it, into a regular expression,
-//and return the result in allocated memory. If there is a directory path separator to be matched, 
+//and return the result in allocated memory. If there is a directory path separator to be matched,
 //then true is put in allow_dirs, otherwise false is put there -- webb.
 //Handle backslashes before special characters, like "\*" and "\ ".
 pub CS
@@ -7204,7 +7200,7 @@ fiGetShellOutput(
       for (int i = 0; i < tempFileLen; ++i) {
          if (buf[i] == ZERO)
             buf[i] = 1;
-      } 
+      }
 
       buf[tempFileLen] = ZERO;   //make sure the buf is terminated
    } else
@@ -7254,7 +7250,7 @@ fiGetShellOutput_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
                   err = true;
                   break;
                }
-            } 
+            }
             if (putc(NL, fd) == EOF) {
                 err = true;
                 break;
@@ -7350,7 +7346,7 @@ f_systemlist(Var* argvars, Var* returnVar) {
 //Return a fresh allocation
 pub Text
 fiInitSwapDir(CS progName) {
-   Unt swapLen = doExpandEnvVarsWithEscaped(OUT nameBuffTextG, SWAP_DIR, true, null); 
+   Unt swapLen = doExpandEnvVarsWithEscaped(OUT nameBuffTextG, SWAP_DIR, true, null);
    CS shortProgName = fiGetShortFiName(progName);
    int progNameLen = STRLEN(shortProgName);
    memcpy(nameBuffTextG.c + swapLen, shortProgName, progNameLen);
@@ -7401,7 +7397,7 @@ get3c(FILE* fd) {
 //Read 4 bytes from "fd" and turn them into an int, MSB first. Returns -1 when encountering EOF.
 pub int
 get4c(FILE* fd) {
-   //Use unsigned rather than int otherwise result is undefined when left-shift sets the 
+   //Use unsigned rather than int otherwise result is undefined when left-shift sets the
    //most-significant bit
 
    int c = getc(fd);
@@ -7464,7 +7460,7 @@ pub void
 mch_copy_xattr(CS from_file, CS to_file) {
    if (!from_file)
       return;
-      
+
    Long   keylen, vallen, max_vallen = 0;
    CS val = NULL;
    CS errmsg = NULL;
@@ -7514,7 +7510,7 @@ mch_copy_xattr(CS from_file, CS to_file) {
          keylen = STRLEN(key) + 1;
          size -= keylen;
          key += keylen;
-      } 
+      }
       if (round)
           break;
 
@@ -7646,7 +7642,7 @@ resolveSymlink(OUT Text* result, Unt cap) {
          tgt = tmp;
       }
    }
-   
+
    showErrFmtMsg(_(e_symlink_loop_for_str), src.c);
    return FAIL;
 }
@@ -7671,8 +7667,8 @@ fiBuildSwapOrUndoFname(CS fname, Boole isUndo) {
       if (fnameBuf[i] == '/') {
          fnameBuf[i] = '%';
       }
-   } 
-   
+   }
+
    int extLen = isUndo ? 5 : 4;
    CS r = malloc(totalLen + extLen + 1);
    memcpy(OUT r, fnameBuf, totalLen);

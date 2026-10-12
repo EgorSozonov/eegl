@@ -5,30 +5,23 @@
 
 #include "base.h"
 #include "eegl.h"
-#include "h/data.types.h"
 #include "h/data.h"
 #include "h/book.h"
-#include "h/location.types.h"
 #include "h/location.h"
-#include "h/hilite.types.h"
 #include "h/hilite.h"
 #include "h/window.h"
 #include "h/do.h"
-#include "h/draw.types.h"
 #include "h/draw.h"
 #include "h/eval.h"
 #include "h/fileio.h"
-#include "h/input.types.h"
 #include "h/input.h"
 #include "h/message.h"
-#include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/portal.h"
 #include "h/script.h"
 #include "h/strings.h"
 #include "h/term.h"
 #include "h/ui.h"
-#include "h/wheel.types.h"
 #include "h/wheel.h"
 
 // for shm_open:
@@ -933,8 +926,8 @@ free_yank_all(void) {
    free_yank(y_current->y_size);
 }
 
-//Yank the text between "opArg->start" and "opArg->end" into a yank register. If we are to append 
-//(uppercase register), we first yank into a new yank register and then concatenate the old and 
+//Yank the text between "opArg->start" and "opArg->end" into a yank register. If we are to append
+//(uppercase register), we first yank into a new yank register and then concatenate the old and
 //the new one (so we keep the old one in case of out-of-memory).
 //
 //Return FAIL for failure, OK otherwise.
@@ -1173,7 +1166,7 @@ copy_yank_reg(YankReg *reg) {
    *y_current = *curr;
    y_current->y_array = lallocZeroed(sizeof(Text) * y_current->y_size, true);
    for (long j = 0; j < y_current->y_size; ++j) {
-       if ((y_current->y_array[j].c = copySubstr(curr->y_array[j].c, curr->y_array[j].len)) 
+       if ((y_current->y_array[j].c = copySubstr(curr->y_array[j].c, curr->y_array[j].len))
             == NULL
       ) {
          free_yank(j);
@@ -1222,7 +1215,7 @@ do_put(
    // Adjust register name for "unnamed" in 'clipboard'.
    clipGetDefaultRegister(&regname);
    (void)may_get_selection(regname);
-   
+
    curBook->opStart = curPor->cursor;   // default for '[ mark
    curBook->opEnd = curPor->cursor;   // default for '] mark
 
@@ -1318,7 +1311,7 @@ do_put(
             goto end;
          CS p = ml_get_cursor();
          CS p_orig = p;
-         
+
          Unt plen = ml_get_cursor_len();
          if (dir == FORWARD && *p != ZERO)
             MB_PTR_ADV(p);
@@ -1449,7 +1442,7 @@ do_put(
             delcount = 1;
             bd.textcol -= (*mb_head_off)(oldp, oldp + bd.textcol);
             if (oldp[bd.textcol] != TAB) {
-               //Only a Tab can be split into spaces. Other characters will have to be moved 
+               //Only a Tab can be split into spaces. Other characters will have to be moved
                //to after the block, causing misalignment.
                delcount = 0;
                bd.endspaces = 0;
@@ -1579,7 +1572,7 @@ do_put(
             if (end_lnum > start_lnum) {
                Pos   pos;
 
-               // "col" is valid for the first line, in following lines the virtual column needs 
+               // "col" is valid for the first line, in following lines the virtual column needs
                // to be used.  Matters for multi-byte characters.
                pos.lnum = lnum;
                pos.col = col;
@@ -2039,7 +2032,7 @@ writeToRegister(
       for (i = 0; i < len; i++) {
          if (str[i] == '\n')
             ++newlines;
-      } 
+      }
       if (type == MCHAR || len == 0 || str[len - 1] != '\n') {
          extraline = 1;
          ++newlines;   // count extra newline at the end
@@ -2237,7 +2230,7 @@ get_reg_contents(int regname, int flags) {
       for (i = 0; i < y_current->y_size; ++i) {
          if (list_append_string(list, y_current->y_array[i].c, -1) == FAIL)
             error = true;
-      } 
+      }
       if (error) {
          list_free(list);
          return NULL;
@@ -2366,7 +2359,7 @@ write_reg_contents_ex(
 ) {
    YankReg *old_y_previous, *old_y_current;
    Long len = (maxlen >= 0) ? maxlen :  (long)STRLEN(str);
-      
+
    // Special case: '/' search pattern
    if (name == '/') {
       set_last_search_pat(str, RE_SEARCH, true, true);
@@ -2461,12 +2454,12 @@ copyToClipboard() {
    Pos old_op_end = curBook->opEnd;
    Pos old_visual = VIsual;
    int old_visual_mode = VIsual_mode;
-   
+
    Operator oa;
    doClearOpArg(&oa);
    oa.regname = '*';
    oa.opTy = OP_YANK;
-   
+
    ActionArg ca;
    CLEAR_FIELD(ca);
    ca.oper = &oa;

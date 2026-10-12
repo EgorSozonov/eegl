@@ -21,12 +21,10 @@ pub
 //}}}
 
 #include "h/book.h"
-#include "h/input.types.h"
 #include "h/input.h"
 #include "h/do.h"
 #include "h/eval.h"
 #include "h/message.h"
-#include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/script.h"
 #include "h/strings.h"
@@ -103,7 +101,9 @@ pub typedef enum {
 } FilterMap;
 
 //}}}
+#define AVOID_DUPLICATION
 #include "h/data.h"
+#undef AVOID_DUPLICATION
 //{{{@@forward declarations
 private void list_fix_watch(List* l, ListItem* item);
 private void registerForGc(List* l);

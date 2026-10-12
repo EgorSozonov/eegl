@@ -1,3 +1,7 @@
+#ifndef AVOID_DUPLICATION
+#define MAX_FUNC_NAME_LEN   200
+#endif
+
 int checkIfNameReserved(CS name, int is_objm_access);
 Long num_divide(Long n1, Long n2, OUT Boole* failed);
 Long num_modulus(Long n1, Long n2, OUT Boole* failed);

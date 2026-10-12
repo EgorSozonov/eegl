@@ -1,3 +1,10 @@
+#ifndef AVOID_DUPLICATION
+#define POPUPWIN_DEFAULT_ZINDEX       50
+#define POPUPMENU_ZINDEX             100
+#define POPUPWIN_DIALOG_ZINDEX       200
+#define POPUPWIN_NOTIFICATION_ZINDEX 300
+#endif
+
 void portalLayout_lock(void);
 void portalLayout_unlock(void);
 Boole portalLayout_locked(CommIndex cmd);

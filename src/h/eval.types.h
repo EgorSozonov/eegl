@@ -1,1 +1,0 @@
-#define MAX_FUNC_NAME_LEN   200

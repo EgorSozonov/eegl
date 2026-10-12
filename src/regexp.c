@@ -3,26 +3,24 @@
 
 //## regexp.c: Eegl-specific handling of regular expressions: compileRegexp(), eeRegexec(), eeRegsub()
 
-//By default: do not create debugging logs or files related to regular expressions, even when 
+//By default: do not create debugging logs or files related to regular expressions, even when
 //compiling with -DDEBUG. Uncomment the second line to get the regexp debugging.
 #undef DEBUG
 //#define DEBUG
 
 #include "base.h"
 #include "eegl.h"
-#include "h/data.types.h"
 #include "h/data.h"
 #include "h/book.h"
-#include "h/input.types.h"
 #include "h/input.h"
 #include "h/do.h"
 #include "h/eval.h"
-#include "h/location.types.h"
 #include "h/location.h"
 #include "h/message.h"
-#include "h/motor.types.h"
 #include "h/motor.h"
+#define AVOID_DUPLICATION
 #include "h/regexp.h"
+#undef AVOID_DUPLICATION
 #include "h/script.h"
 #include "h/strings.h"
 
@@ -148,7 +146,7 @@ private int timeout_nesting = 0;
 private SigAtomic *saved_timeout_flag;
 
 //The first byte of the BT regexp internal "program" is actually this magic number; the start node
-//begins in the second byte.  It's used to catch the most severe mutilation of the program by the 
+//begins in the second byte.  It's used to catch the most severe mutilation of the program by the
 //caller.
 
 #define REGMAGIC   0234
@@ -156,7 +154,7 @@ private SigAtomic *saved_timeout_flag;
 //Utility definitions.
 #define UCHARAT(p)   ((int)*(CS)(p))
 
-//Used for an error (down from) compileRegexp(): give the error message, set anyRegexEmsgG and 
+//Used for an error (down from) compileRegexp(): give the error message, set anyRegexEmsgG and
 //return NULL
 #define EMSG_RET_NULL(m) return (emsg((m)), anyRegexEmsgG = true, (void *)NULL)
 #define IEMSG_RET_NULL(m) return (internalErrMsg((m)), anyRegexEmsgG = true, (void *)NULL)
@@ -816,7 +814,7 @@ skip_regexp_err(Byte* startp, int delim, int magic) {
 }
 
 //skip_regexp() with extra arguments:
-//When "newp" is not NULL and "dirc" is '?', make an allocated copy of the expression and change 
+//When "newp" is not NULL and "dirc" is '?', make an allocated copy of the expression and change
 //"\?" to "?".  If "*newp" is not NULL the expression is changed in-place.
 //If a "\?" is changed to "?" then "dropped" is incremented, unless NULL.
 //If "magic_val" is not NULL, returns the effective magicness of the pattern
@@ -841,7 +839,7 @@ skip_regexp_ex(
    for (; p[0] != ZERO; MB_PTR_ADV(p)) {
       if (p[0] == dirc)   //found end of regexp
           break;
-      if ((p[0] == '[' && mymagic >= MAGIC_ON) 
+      if ((p[0] == '[' && mymagic >= MAGIC_ON)
             || (p[0] == '\\' && p[1] == '[' && mymagic <= MAGIC_OFF)
       ){
          p = skip_anyof(p + 1);
@@ -1215,7 +1213,7 @@ private void cleanup_zsubexpr(void);
 private Byte* reg_tofree = NULL;
 private Unt reg_tofreelen;
 
-//Structure used to store the execution state of the regex 
+//Structure used to store the execution state of the regex
 //Which ones are set depends on whether a single-line or multi-line match is done:
 //          single-line      multi-line
 //match       &RegMatch       NULL
@@ -1764,7 +1762,7 @@ cstrchr(Byte *s, int c) {
       } else
          return firstOccurrence(s, c);
    }
-   
+
    for (p = s; *p != ZERO; p += utfCharLen(p)) {
       Unt uc = mb_ptr2char(p);
       if (c > 0x80 || uc > 0x80) {
@@ -1890,7 +1888,7 @@ regtilde(CS source) {
 }
 
 
-//Put the submatches into "argv[argskip]" which is a list passed into call_func() by 
+//Put the submatches into "argv[argskip]" which is a list passed into call_func() by
 //eeRegsub_both(). Precondition: has_varargs(fp) || fp->args.len > argskip)
 private int
 fill_submatch_list(int, Var *argv, int argskip) {
@@ -2087,7 +2085,7 @@ eeRegsub_both(
          rsm.sm_maxline = exe.reg_maxline;
          rsm.sm_line_lbr = exe.reg_line_lbr;
 
-         //Although unlikely, it is possible that the expression invokes a substitute command 
+         //Although unlikely, it is possible that the expression invokes a substitute command
          //(it might fail, but still). Therefore keep an array of eval results.
          ++nesting;
 
@@ -2182,20 +2180,20 @@ eeRegsub_both(
                no = *src++ - '0';
             } ei (firstOccurrence((CS)"uUlLeE", *src)) {
                switch (*src++) {
-               case 'u':   
+               case 'u':
                   func_one = do_upper;
                   continue;
-               case 'U':  
+               case 'U':
                   func_all = do_upper;
                   continue;
                case 'l':
                   func_one = do_lower;
                   continue;
-               case 'L':   
+               case 'L':
                   func_all = do_lower;
                   continue;
                case 'e':
-               case 'E':   
+               case 'E':
                   func_all = null;
                   func_one = func_all;
                   continue;
@@ -2232,7 +2230,7 @@ eeRegsub_both(
 
                   //If "backslash" is true the backslash will be removed
                   //later.  Used to insert a literal CR.
-                  default:   
+                  default:
                      if (flags & REGSUB_BACKSLASH) {
                         if (copy) {
                            if (dst + 1 > dest + destlen) {
@@ -2375,11 +2373,11 @@ eeRegsub_both(
                   --len;
                }
             }
-blockEnd: 
+blockEnd:
             no = -1;
          }
       }
-   } 
+   }
    if (copy)
       *dst = ZERO;
 
@@ -2552,10 +2550,10 @@ reg_submatch_list(int no) {
 //- Error log: Contains NFA engine's fatal errors.
 //- Dump log: Contains compiled NFA state machine's information.
 //- Run log: Contains information of matching procedure.
-//- Debug log: Contains detailed information of matching procedure. Can be disabled by undefining 
+//- Debug log: Contains detailed information of matching procedure. Can be disabled by undefining
 // REGEXP_DEBUG_LOG.
 //The first one can also be used without debug mode.
-//The last three are enabled when compiled as debug mode and individually disabled by commenting 
+//The last three are enabled when compiled as debug mode and individually disabled by commenting
 //them out.
 //The log files can get quite big!
 //To disable all of this when compiling Eegl for debugging, undefine DEBUG in this file
@@ -2815,8 +2813,8 @@ private int failure_chance(RState *state, int depth);
 #define EMIT(c) if (postfixS >= postfixEndS && reallocPostfix() == FAIL) \
             return FAIL;      \
          *postfixS++ = c; \
-      
-      
+
+
 //Setup to parse the regexp.  Used once to get the length and once to do it.
 private void
 regcomp_start(Byte* expr, Unt flags) {      //see eeRegcomp()
@@ -3763,7 +3761,7 @@ seen_endbrace(int refnum){
       anyRegexEmsgG = true;
       return false;
    }
-   
+
    return true;
 }
 
@@ -3877,7 +3875,7 @@ parseAtom(OUT Boole* hadEol) {
          return FAIL;
       }
 
-      //When '.' is followed by a composing char, ignore the dot, so that the composing char is 
+      //When '.' is followed by a composing char, ignore the dot, so that the composing char is
       //matched here.
       if (c == Magic('.') && utf_iscomposing(peekchr())) {
          old_regparse = regparse;
@@ -3936,7 +3934,7 @@ parseAtom(OUT Boole* hadEol) {
          EMIT(mb_ptr2char(lp));
          if (lp != reg_prev_sub) {
             EMIT(CONCAT);
-         } 
+         }
       }
       EMIT(NOPEN);
       break;
@@ -4012,7 +4010,7 @@ parseAtom(OUT Boole* hadEol) {
       case '(':
          if (parse(REG_NPAREN, OUT hadEol) == FAIL) {
             return FAIL;
-         } 
+         }
          EMIT(NOPEN);
          break;
 
@@ -4184,7 +4182,7 @@ collection:
       endp = skip_anyof(p);
       if (*endp == ']') {
          Unt plen;
-         //Try to reverse engineer character classes. For example, recognize that [0-9] stands for 
+         //Try to reverse engineer character classes. For example, recognize that [0-9] stands for
          //\d and [A-Za-z_] for \h, and perform the necessary substitutions in the NFA.
          result = recognizeCharClass(regparse, endp, extra == ADD_NL);
          if (result != FAIL) {
@@ -4194,12 +4192,12 @@ collection:
                EMIT(OR);
             } else {
                EMIT(result);
-            } 
+            }
             regparse = endp;
             MB_PTR_ADV(regparse);
             return OK;
          }
-         //Failed to recognize a character class. Use the simple version that turns [abc] into 
+         //Failed to recognize a character class. Use the simple version that turns [abc] into
          //'a' OR 'b' OR 'c'
          startc = UNT;
          negated = false;
@@ -4209,7 +4207,7 @@ collection:
             EMIT(START_NEG_COLL);
          } else {
             EMIT(START_COLL);
-         } 
+         }
          if (*regparse == '-') {
             startc = '-';
             EMIT(startc);
@@ -4320,7 +4318,7 @@ collection:
                continue;       //reading the end of the range
             }
 
-            //Now handle simple and escaped characters. Eegl considers "\]", "\^", "\]" and "\\" 
+            //Now handle simple and escaped characters. Eegl considers "\]", "\^", "\]" and "\\"
             //special, as well as "\t", "\e", etc. Posix doesn't recognize backslash at all.
             if (*regparse == '\\'
                && regparse + 1 <= endp
@@ -4372,7 +4370,7 @@ collection:
                      EMIT(1);
                   } else {
                      --postfixS; //remove CONCAT
-                  } 
+                  }
                   EMIT(endc);
                   EMIT(RANGE);
                   EMIT(CONCAT);
@@ -4428,7 +4426,7 @@ collection:
                      EMIT(1);
                   } else {
                      EMIT(c);
-                  } 
+                  }
                   EMIT(CONCAT);
                   if ((i += mb_char2len(c)) >= plen)
                      break;
@@ -4455,7 +4453,7 @@ collection:
             EMIT(END_NEG_COLL);
          } else {
             EMIT(END_COLL);
-         } 
+         }
 
          //\_[] also matches \n but it's not negated
          if (extra == ADD_NL) {
@@ -4490,7 +4488,7 @@ nfa_do_multibyte:
             EMIT(c);
             if (i > 0) {
                EMIT(CONCAT);
-            } 
+            }
             if ((i += mb_char2len(c)) >= plen)
                break;
             c = mb_ptr2char(old_regparse + i);
@@ -4550,9 +4548,9 @@ parsePiece(OUT Boole* hadEol) {
       EMIT(STAR);
       break;
    case Magic('+'):
-      //Trick: Normally, (a*)\+ would match the whole input "aaa". The first and only submatch 
-      //would be "aaa". But the backtracking engine interprets the plus as "try matching one more 
-      //time", and a* matches a second time at the end of the input, the empty string. The 
+      //Trick: Normally, (a*)\+ would match the whole input "aaa". The first and only submatch
+      //would be "aaa". But the backtracking engine interprets the plus as "try matching one more
+      //time", and a* matches a second time at the end of the input, the empty string. The
       //submatch will be the empty string.
       //
       //In order to be consistent with the old engine, we replace <atom>+ with <atom><atom>*
@@ -4599,7 +4597,7 @@ parsePiece(OUT Boole* hadEol) {
       EMIT(i);
       if (i == PREV_ATOM_JUST_BEFORE || i == PREV_ATOM_JUST_BEFORE_NEG) {
          EMIT(c2);
-      } 
+      }
       break;
 
    case Magic('?'):
@@ -4629,7 +4627,7 @@ parsePiece(OUT Boole* hadEol) {
          } else {       //{ { (match the braces)
             //\{-}, \{-0,}
             EMIT(STAR_NONGREEDY);
-         } 
+         }
          break;
       }
 
@@ -4661,14 +4659,14 @@ parsePiece(OUT Boole* hadEol) {
                   EMIT(STAR);
                } else {
                   EMIT(STAR_NONGREEDY);
-               } 
+               }
             } else {
                EMIT(quest);
-            } 
+            }
          }
          if (oldPostfixLen != my_postfixStartS) {
             EMIT(CONCAT);
-         } 
+         }
          if (i + 1 > minval && maxval == MAX_LIMIT)
             break;
       }
@@ -4750,7 +4748,7 @@ parseOneOrMorePieces(OUT Boole* hadEol){
          EMIT(CONCAT);
       } else {
          first = false;
-      } 
+      }
       break;
       }
    }
@@ -4782,7 +4780,7 @@ parseBranch(OUT Boole* hadEol) {
       //if concat is empty do emit a node
       if (oldPostfixLen == (int)(postfixS - postfixStartS)) {
          EMIT(EMPTY);
-      } 
+      }
       EMIT(NOPEN);
       EMIT(PREV_ATOM_NO_WIDTH);
       oldPostfixLen = (int)(postfixS - postfixStartS);
@@ -4791,14 +4789,14 @@ parseBranch(OUT Boole* hadEol) {
       //if concat is empty do emit a node
       if (oldPostfixLen == (int)(postfixS - postfixStartS)) {
          EMIT(EMPTY);
-      } 
+      }
       EMIT(CONCAT);
    }
 
    //if a branch is empty, emit one node for it
    if ((int)(postfixS - postfixStartS) == oldPostfixLen) {
       EMIT(EMPTY);
-   } 
+   }
 
    return OK;
 }
@@ -5567,7 +5565,7 @@ countStatesInPostfix(Unt* postfix, Unt* end) {
          int pattern = (*p == PREV_ATOM_LIKE_PATTERN);
          count += pattern ? 4 : 2;
          break;
-         
+
       case COMPOSING:   //char with composing char
       case MOPEN:   //\( \) Submatch
       case MOPEN1:
@@ -5589,7 +5587,7 @@ countStatesInPostfix(Unt* postfix, Unt* end) {
       case ZOPEN7:
       case ZOPEN8:
       case ZOPEN9:
-      case NOPEN: 
+      case NOPEN:
       case BACKREF1:
       case BACKREF2:
       case BACKREF3:
@@ -5610,7 +5608,7 @@ countStatesInPostfix(Unt* postfix, Unt* end) {
       case ZREF9:
          count += 2;
          break;
-         
+
       case LNUM:
       case LNUM_GT:
       case LNUM_LT:
@@ -5726,7 +5724,7 @@ buildAutomaton(Arr(Unt) postfix, Unt* end) {
 
       case END_COLL:
       case END_NEG_COLL:
-         //On the stack is the sequence starting with START_COLL or START_NEG_COLL and 
+         //On the stack is the sequence starting with START_COLL or START_NEG_COLL and
          //all possible characters. Patch it to add the output to the start.
          e = POP();
          s = alloc_state(END_COLL, NULL, NULL);
@@ -5738,7 +5736,7 @@ buildAutomaton(Arr(Unt) postfix, Unt* end) {
          break;
 
       case RANGE:
-         //Before this are two characters, the low and high end of a range.  Turn them into two 
+         //Before this are two characters, the low and high end of a range.  Turn them into two
          //states with MIN and MAX.
          e2 = POP();
          e1 = POP();
@@ -5917,7 +5915,7 @@ buildAutomaton(Arr(Unt) postfix, Unt* end) {
              break;
          }
 
-         //Allow "MOPEN" as a valid postfix representation for the empty regexp "". In this 
+         //Allow "MOPEN" as a valid postfix representation for the empty regexp "". In this
          //case, the NFA will be MOPEN -> MCLOSE. Note that this also allows
          //empty groups of parenthesis, and empty mbyte chars
          if (stackp == stack) {
@@ -5932,7 +5930,7 @@ buildAutomaton(Arr(Unt) postfix, Unt* end) {
             break;
          }
 
-         //At least one node was emitted before MOPEN, so at least one node will be between 
+         //At least one node was emitted before MOPEN, so at least one node will be between
          //MOPEN and MCLOSE
          e = POP();
          s = alloc_state(mopen, e.start, NULL);   //`('
@@ -6585,7 +6583,7 @@ addstate(
 
    case BOL:
    case BOF:
-      //"^" won't match past end-of-line, don't bother trying. Except when at the end of the 
+      //"^" won't match past end-of-line, don't bother trying. Except when at the end of the
       //line, or when we are going to the next line for a look-behind match.
       if (exe.input > exe.line
              && *exe.input != ZERO
@@ -6614,12 +6612,12 @@ addstate(
    case ZOPEN9:
    case NOPEN:
    case ZSTART:
-       //These nodes need to be added so that we can bail out when it was added to this list 
+       //These nodes need to be added so that we can bail out when it was added to this list
        //before at the same position to avoid an endless loop for "\(\)*"
 
    default:
       if (state->lastlist[nfa_ll_index] == l->id && state->c != SKIP) {
-      //This state is already in the list, don't add it again, unless it is an MOPEN that is 
+      //This state is already in the list, don't add it again, unless it is an MOPEN that is
       //used for a backreference or when there is a PIM. For MATCH check the position,
       //lower position is preferred.
       if (!exe.nfa_has_backref && pim == NULL && !l->has_pim && state->c != MATCH) {
@@ -6635,7 +6633,7 @@ addstate(
    skip_add:
 #ifdef REGEXP_LOGGING
             nfa_set_code(state->c);
-            fprintf(log_fd, 
+            fprintf(log_fd,
                "> Not adding state %d to list %d. char %d: %s pim: %s has_pim: %d found: %d\n",
                abs(state->id), l->id, state->c, code,
                pim == NULL ? "NULL" : "yes", l->has_pim, found
@@ -6651,7 +6649,7 @@ addstate(
          goto skip_add;
       }
 
-      //When there are backreferences or PIMs the number of states may be (a lot) bigger than 
+      //When there are backreferences or PIMs the number of states may be (a lot) bigger than
       //anticipated.
       if (l->n == l->len) {
          int      newlen = l->len * 3 / 2 + 50;
@@ -7075,7 +7073,7 @@ retempty:
    if (REG_MULTI) {
       if (sub->list.multi[subidx].start_lnum < 0 || sub->list.multi[subidx].end_lnum < 0)
          goto retempty;
-      if (sub->list.multi[subidx].start_lnum == exe.lnum 
+      if (sub->list.multi[subidx].start_lnum == exe.lnum
          && sub->list.multi[subidx].end_lnum == exe.lnum
       ){
          len = sub->list.multi[subidx].end_col - sub->list.multi[subidx].start_col;
@@ -7983,7 +7981,7 @@ match(
             result = false;
          ei (reg_prev_class() == this_class)
             result = false;
-      } 
+      }
       if (result) {
          add_here = true;
          add_state = t->state->out;
@@ -8002,7 +8000,7 @@ match(
          prev_class = reg_prev_class();
          if (this_class == prev_class || prev_class == 0 || prev_class == 1)
             result = false;
-      } 
+      }
       if (result) {
          add_here = true;
          add_state = t->state->out;
@@ -8074,7 +8072,7 @@ match(
                for (j = 0; j < ccount; ++j) {
                   if (cchars[j] == sta->c)
                      break;
-               } 
+               }
                if (j == ccount) {
                   result = FAIL;
                   break;
@@ -8170,7 +8168,7 @@ match(
                      for (j = 0; j < ccount; ++j) {
                         if (cchars[j] == sta->c)
                            break;
-                     } 
+                     }
                      if (j == ccount) {
                         result = FAIL;
                         break;
@@ -8211,7 +8209,7 @@ match(
                          done = true;
                          break;
                      }
-                  } 
+                  }
                   if (done)
                      break;
                }
@@ -8748,7 +8746,7 @@ match(
                //Checking if the required start character matches is
                //cheaper than adding a state that won't match.
                c = mb_ptr2char(exe.input + clen);
-               if (c != prog->regstart 
+               if (c != prog->regstart
                      && (!exe.reg_ic || MB_CASEFOLD(c) != MB_CASEFOLD(prog->regstart))
                ) {
 #ifdef REGEXP_LOGGING
@@ -8792,7 +8790,7 @@ nextchar:
       //Advance to the next character, or advance to the next line, or finish.
       if (clen != 0)
          exe.input += clen;
-      ei (go_to_nextline 
+      ei (go_to_nextline
             || (mustEndAtS != NULL && REG_MULTI && exe.lnum < mustEndAtS->se_u.pos.lnum))
          reg_nextline();
       else
@@ -9172,7 +9170,7 @@ freeBranch(RegProg *prog) {
 }
 
 //Match a regexp against a string.
-//"rmp->regprog" is a compiled regexp as returned by compile(). Use curBook for line count 
+//"rmp->regprog" is a compiled regexp as returned by compile(). Use curBook for line count
 //and 'iskeyword'. If "line_lbr" is true consider a "\n" in "line" to be a line break.
 //Return <= 0 for failure, number of lines contained in the match otherwise.
 private int
@@ -9259,7 +9257,7 @@ matchManyLines(
 
 
 //}}}
-//{{{common regexp code 
+//{{{common regexp code
 
 //Compile a regular expression into internal code. Returns the program in allocated memory.
 //Use eeRegFree() to free the memory. Returns NULL for an error.
@@ -9276,7 +9274,7 @@ compileRegexp(CS expr_arg, Unt flags) {
    RegProg* prog = compile(expr, flags);
 
    if (prog) {
-      //Store the info needed to call regcomp() again when the engine turns out to be very slow 
+      //Store the info needed to call regcomp() again when the engine turns out to be very slow
       //when executing it.
       prog->flags  = flags;
    }

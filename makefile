@@ -779,15 +779,12 @@ indices: src/commands.h src/actions.h
 
 BETTERC:=$(OBJDIR)/betterc
 
-$(BETTERC): ##Better C: codegen for headers & generics
+$(BETTERC): dev/betterc.c ##Better C: codegen for headers & generics
 / $(CC) --std=c23 -Wall  -o $(OBJDIR)/betterc $(MUSL_STUFF) \
    dev/betterc.c
 
-#better: $(BETTERC)
-#/ for f in src/*.c; do $(BETTERC) -d h "$$f"; done
-
 $(BASIC_HEADERS): src/h/%.h : src/%.c
-/ $(OBJDIR)/betterc -d h $<
+/ $(OBJDIR)/betterc $< > $@
 
 better: $(BETTERC) $(BASIC_HEADERS)
 

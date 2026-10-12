@@ -1,3 +1,10 @@
+#ifndef AVOID_DUPLICATION
+declStruct(VTermLineInfo);
+int WCWIDTH_FUNCTION(uint32_t ucs);
+int IS_COMBINING_FUNCTION(Unt codepoint);
+int GET_SPECIAL_PTY_TYPE_FUNCTION(void);
+#endif
+
 void init_job_options(JobOptions *opt);
 void c_terminal(Invocation* invo);
 int expand_terminal_opt(CS pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches);

@@ -1,3 +1,11 @@
+#ifndef AVOID_DUPLICATION
+declStruct(Record);
+declStruct(XdlClass);
+declStruct(Entry);
+declStruct(XdRecord);
+declStruct(DiffCmpPath);
+#endif
+
 void diffDeleteBook(Book* book);
 void diffBookAdjust(Portal* port);
 void diffAddBook(Book* book);

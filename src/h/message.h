@@ -1,3 +1,7 @@
+#ifndef AVOID_DUPLICATION
+int eeSnprintf0(CS str, Unt str_m, const char *fmt, ...);
+#endif
+
 CS msg_strtrunc(CS s, int force);
 void trunc_string(
    Byte   *s,

@@ -1,3 +1,8 @@
+#ifndef AVOID_DUPLICATION
+declStruct(AutoPat);
+declStruct(AutoComm);
+#endif
+
 void estack_init(void);
 Estack * estack_push(CallFrame type, CS name, long lnum);
 Estack* estack_push_ufunc(UserFunc *ufunc, long lnum);

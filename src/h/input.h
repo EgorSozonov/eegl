@@ -1,3 +1,12 @@
+#ifndef AVOID_DUPLICATION
+#define MAXMAPLEN 50
+typedef enum {
+   FLUSH_MINIMAL,
+   FLUSH_TYPEAHEAD,   //flush current typebuf contents
+   FLUSH_INPUT      //flush typebuf and inchar() input
+} FlushBuffers;
+#endif
+
 CS get_recorded(void);
 Text get_inserted(void);
 Unt get_keystroke(void);

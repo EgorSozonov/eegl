@@ -506,7 +506,7 @@ readSourceFile(FilePath fName) {
    Unt len = fread(OUT result, 1, fileSize, file);
 
    if (ferror(file) != 0 || len == 0) {
-      fputs("Error reading file", stderr);
+      fprintf(stderr, "Error reading file");
    } else {
       result[len] = '\0'; // Just to be safe
    }
@@ -535,11 +535,15 @@ parseInteger(Text txt) {
    return result;
 }
 
-
 private void
 appendText(OUT S* w, Text txt) {
    memcpy(*w, txt.c, txt.len);
    *w += txt.len;
+}
+
+private void
+print(Text t) {
+   fwrite(t.c, 1, t.len, stdout);
 }
 
 void __attribute__((noinline))
@@ -1469,8 +1473,11 @@ buildPublicHeader(Better* r) [[unsequenced]] {
    }
 
    if (w - newContent != totalLen) {
-      printf(
-         "ERROR in public header: totalLen %d but wrote only %d", totalLen, (Unt)(w - newContent)
+      fprintf(
+         stderr,
+         "ERROR in public header: totalLen %d but wrote only %d",
+         totalLen,
+         (Unt)(w - newContent)
       );
    }
    return (Text){newContent, totalLen};
@@ -1479,7 +1486,7 @@ buildPublicHeader(Better* r) [[unsequenced]] {
 //Return allocated string, caller must free it
 private Text
 buildNonFnHeader(Better* r) [[unsequenced]] {
-   Unt totalLen = 0;
+   Unt totalLen = sizeof("#ifndef AVOID_DUPLICATION") + sizeof("#endif");
    for (Unt i = 0; i < r->len; i++) {
       if (r->c[i].acc == PUBLIC && r->c[i].kind != FUNCTION) {
          totalLen += toplevelLen(r->c + i);
@@ -1489,88 +1496,31 @@ buildNonFnHeader(Better* r) [[unsequenced]] {
    S newContent = malloc(totalLen + 1);
    newContent[totalLen] = ZERO;
    S w = newContent;
+
+   appendText(OUT &w, tConst("#ifndef AVOID_DUPLICATION\n"));
+
    for (Unt i = 0; i < r->len; i++) {
       if (r->c[i].acc == PUBLIC && r->c[i].kind != FUNCTION) {
          toplevelWrite(OUT &w, r->c + i);
       }
    }
 
+   appendText(OUT &w, tConst("#endif\n"));
+
    if (w - newContent != totalLen) {
-      printf(
-         "ERROR in macro header: totalLen %d but wrote only %d", totalLen, (Unt)(w - newContent)
+      fprintf(
+         stderr,
+         "ERROR in macro header: totalLen %d but wrote only %d",
+         totalLen,
+         (Unt)(w - newContent)
       );
    }
    return (Text){newContent, totalLen};
 }
 
-[[nodiscard]]
-private Boole
-dirExists(S path) {
-    struct stat statResult;
-
-    // stat() returns 0 on success
-    if (stat(path, OUT &statResult) == 0) {
-        // Check if the path is a directory
-        return S_ISDIR(statResult.st_mode);
-    }
-
-    // Path does not exist or is not accessible
-    return false;
-}
-
-private S
-determinePublicName(Better* r, Boole isNonFns, NULLABLE S subdir) [[unsequenced]] {
-   S publicName;
-   Unt suffixLen = isNonFns ? 6 : 0;
-   Unt len;
-   if (subdir) {
-      Unt subdirLen = strlen(subdir);
-      len = r->fn.len + 1 + suffixLen + subdirLen; //+1 for the slash for the subdir
-      publicName = malloc(len + 1);
-      publicName[len] = ZERO;
-      memcpy(publicName, r->fn.c, r->fn.dirLen);
-      memcpy(publicName + r->fn.dirLen, subdir, subdirLen);
-
-      //check if dir exists
-      publicName[r->fn.dirLen + subdirLen] = ZERO;
-      if (!dirExists(publicName)) {
-         printf("BetterC error: dir doesn't exist\n");
-         printf("||%s||\n", publicName);
-         exit(1);
-      }
-
-      publicName[r->fn.dirLen + subdirLen] = '/';
-      memcpy(
-            OUT publicName + r->fn.dirLen + subdirLen + 1,
-            r->fn.c + r->fn.dirLen,
-            r->fn.len - r->fn.dirLen - 1 //-1 for the to-be overwritten "c" at the end
-      );
-      if (isNonFns) {
-         memcpy(publicName + r->fn.len + subdirLen, "types.", suffixLen);
-      }
-      publicName[len - 1] = 'h';
-   } else {
-      len = r->fn.len + suffixLen;
-      publicName = malloc(len + 1);
-      publicName[len] = ZERO;
-      memcpy(publicName, r->fn.c, r->fn.len - 1);
-      if (isNonFns) {
-         memcpy(publicName + r->fn.len, "types.", suffixLen); //-1 to overwrite the dot
-      }
-      publicName[len - 1] = 'h';
-   }
-   return publicName;
-}
-
 private void
-writePublicHeader(Better* r, Boole isNonFns, S publicName) {
-   Text publicContent = isNonFns ? buildNonFnHeader(r) : buildPublicHeader(r);
-
-   FILE* out = fopen(publicName, "w");
-   fputs(publicContent.c, out);
-   fclose(out);
-   free(publicName);
-   free(publicContent.c);
+writePublicHeader(Better* r, Boole isNonFns) {
+   print(isNonFns ? buildNonFnHeader(r) : buildPublicHeader(r));
 }
 
 //Return an empty Text. This is the place where forward declarations will be inserted
@@ -1626,7 +1576,9 @@ buildFileImpl(
    w += afterLen;
 
    if (w - newContent != totalLen) {
-      printf("ERROR totalLen %d but wrote only %d", totalLen, (Unt)(w - newContent));
+      fprintf(
+            stderr, "ERROR totalLen %d but wrote only %d", totalLen, (Unt)(w - newContent)
+      );
    }
 
    return newContent;
@@ -1774,7 +1726,7 @@ writeGenerics(Better* r) {
 //}}}
 
 private void
-writeResults(Better* r, NULLABLE S subdir) {
+writeResults(Better* r) {
    Unt countPublics = 0;
    Unt countPrivateFns = 0; //functions only, only they need forward declarations
    Unt countNonFns = 0;
@@ -1793,13 +1745,14 @@ writeResults(Better* r, NULLABLE S subdir) {
          countNonFns++;
       }
    }
-   if (countPublics > 0) {
-      S publicName = determinePublicName(r, false, subdir);
-      writePublicHeader(r, false, publicName);
-   }
    if (countNonFns > 0) {
-      S nonFnsName = determinePublicName(r, true, subdir);
-      writePublicHeader(r, true, nonFnsName);
+      writePublicHeader(r, true);
+   }
+   if (countNonFns > 0 && countPublics > 0) {
+      printf("\n");
+   }
+   if (countPublics > 0) {
+      writePublicHeader(r, false);
    }
    if (countPrivateFns > 0) {
       //Need to rewrite the source file (.c) to add/update the forward fn declarations
@@ -1812,33 +1765,31 @@ writeResults(Better* r, NULLABLE S subdir) {
 
 private void
 printUsage() {
-    printf("Example usage:\n");
-    printf("betterc source/file.c\n");
-    printf("betterc -d headers source/file.c\n");
-    printf("\n");
+   printf("Example usage:\n");
+   printf("betterc source/file.c > source/file.h\n");
+   printf("betterc -p > base.h\n");
+   printf("\n");
 }
 
 typedef struct {
    S fn;
-   NULLABLE S subdir;
+   Boole prereq;
    Boole correct;
 } CommLine;
 
-//Return subdir if it's specified, or null
 private CommLine
 parseCommLine(int argc, char** argv, int) {
    CommLine res = {};
    if (argc == 1) {
-      printf("BetterC: Must name an input file!\n");
-   } ei (eq(text(argv[1]), tConst("-d")) && argc == 4) {
-      res.subdir = argv[2];
-      res.fn = argv[3];
+      fprintf(stderr, "BetterC: Must name an input file!\n");
+   } ei (eq(text(argv[1]), tConst("-p"))) {
+      res.prereq = true;
       res.correct = true;
    } ei (argc == 2) {
-      res.fn = argv[2];
+      res.fn = argv[1];
       res.correct = true;
    } else {
-      printf("BetterC: erroneous arguments\n");
+      fprintf(stderr, "BetterC: erroneous arguments\n");
    }
    return res;
 }
@@ -1852,14 +1803,16 @@ main(int argc, char** argv) {
       printUsage();
       return 1;
    }
+   if (commLine.prereq) {
+      printf("#define pub\n#define private static\n#define pubWrap(...)\n");
+   } else {
+      Arena* a = createArena();
 
-   FilePath inpFile = filePath(commLine.fn);
+      FilePath inpFile = filePath(commLine.fn);
+      Better parseRes = processSourceFile(inpFile, a);
+      writeResults(&parseRes);
 
-   Arena* a = createArena();
-
-   Better parseRes = processSourceFile(inpFile, a);
-   writeResults(&parseRes, commLine.subdir);
-
-   deleteArena(a);
+      deleteArena(a);
+   }
 }
 

@@ -1,8 +1,8 @@
 //EEGL - the Extensible development Environment for GNU/Linux
 //Licensed under GPLv3, see the LICENSE file (c) Egor Sozonov
 
-//## strings.c: utility functions for string manipulation 
- 
+//## strings.c: utility functions for string manipulation
+
 
 #include "base.h"
 #ifdef FREESTANDING_STRINGS
@@ -11,10 +11,11 @@
 #define eeglFree(a) if (a) { free(a); }
 #else
 #include "eegl.h"
-#include "h/data.types.h"
 #include "h/data.h"
 #endif
+#define AVOID_DUPLICATION
 #include "h/strings.h"
+#undef AVOID_DUPLICATION
 
 #include <string.h>
 #include <strings.h>
@@ -118,9 +119,9 @@ allocateOnArena(Unt allocSize, Arena* a) { //:allocateOnArena
    if ((Unt)a->currInd + allocSize >= a->currChunk->size) {
       if (a->currChunk->next != null && a->currChunk->next->size < allocSize) {
          //the next chunk is big enough, so we skip the rest of this chunk and move on
-#ifndef FREESTANDING_STRINGS 
+#ifndef FREESTANDING_STRINGS
          lo("reusing cleared memory from the arena!");
-#endif 
+#endif
          a->currChunk = a->currChunk->next;
          a->currInd = 0;
       } else { //we need to allocate new chunk
@@ -182,7 +183,7 @@ arenaTryFree(void* start, Unt len, Arena* a) {
 #define URL_SLASH      1      //path_is_url() has found "://"
 #define URL_BACKSLASH  2      //path_is_url() has found ":\\"
 
-//Lookup table to quickly get the length in bytes of a UTF-8 character from the first byte of a 
+//Lookup table to quickly get the length in bytes of a UTF-8 character from the first byte of a
 //UTF-8 string. Bytes which are illegal when used as the first byte have a 1.
 //The ZERO byte has length 1.
 private Byte utf8LenTable[256] = {
@@ -225,18 +226,18 @@ mb_ptr2char(Byte* p) {
             if (len == 4) {
                return ((p[0] & 0x07) << 18) + ((p[1] & 0x3f) << 12)
                   + ((p[2] & 0x3f) << 6) + (p[3] & 0x3f);
-           } 
+           }
            if ((p[4] & 0xc0) == 0x80) {
                if (len == 5) {
                   return ((p[0] & 0x03) << 24) + ((p[1] & 0x3f) << 18)
                      + ((p[2] & 0x3f) << 12) + ((p[3] & 0x3f) << 6)
                      + (p[4] & 0x3f);
-               } 
+               }
                if ((p[5] & 0xc0) == 0x80 && len == 6) {
                  return ((p[0] & 0x01) << 30) + ((p[1] & 0x3f) << 24)
                     + ((p[2] & 0x3f) << 18) + ((p[3] & 0x3f) << 12)
                     + ((p[4] & 0x3f) << 6) + (p[5] & 0x3f);
-               } 
+               }
             }
          }
       }
@@ -286,7 +287,7 @@ str_foldcase(
       Unt olen = utf_ptr2len(STR_PTR(i));
       int lc = utf_tolower(c);
 
-      //Only replace the character when it is not an invalid sequence (ASCII character or more 
+      //Only replace the character when it is not an invalid sequence (ASCII character or more
       //than one byte) and utf_tolower() doesn't return the original character.
       if ((c < 0x80 || olen > 1) && c != lc) {
          Unt nlen = mb_char2len(lc);
@@ -451,7 +452,7 @@ eeIsDigit(int c) {
    return (c >= '0' && c <= '9');
 }
 
-//Variant of isxdigit() that can handle characters > 0x100. We don't use isxdigit() here, because 
+//Variant of isxdigit() that can handle characters > 0x100. We don't use isxdigit() here, because
 //on some systems it also considers superscript 1 to be a digit.
 pub int
 eeIsXDigit(Unt c) {
@@ -462,7 +463,7 @@ pub Boole
 eeIsLower(Unt c) {
    if (c <= '@')
       return false;
-      
+
    if (c >= 0x80) {
       return utf_islower(c);
    }
@@ -560,7 +561,7 @@ parseLong_quoted(OUT CS* pp) {
       else
          retval = retval * 10  + (*str - '0');
       ++str;
-   } 
+   }
    if (**pp == '-') {
       if (retval == (Long)LONG_MAX)
          retval = LONG_MIN;
@@ -760,8 +761,8 @@ hexhex2nr(CS p) {
    return (hex2nr(p[0]) << 4) + hex2nr(p[1]);
 }
 
-//Return true if "str" starts with a backslash that should be removed. '$' is a valid file name 
-//character, we don't remove the backslash before it.  This means it is not possible to use an 
+//Return true if "str" starts with a backslash that should be removed. '$' is a valid file name
+//character, we don't remove the backslash before it.  This means it is not possible to use an
 //environment variable after a backslash. "~/\$EEGL\doc" is taken literally, only "$EEGL\doc" works.
 //Assume a file name doesn't start with a space.
 //For multi-byte names, never remove a backslash before a non-ascii
@@ -777,7 +778,7 @@ backslash_halve(CS p) {
    for ( ; *p; ++p) {
       if (rem_backslash(p))
          STRMOVE(p, p + 1);
-   } 
+   }
 }
 
 //backslash_halve() plus save the result in allocated memory.
@@ -788,7 +789,7 @@ backslash_halve_save(CS p) {
    return res;
 }
 
-//Convert non-printable character to two or more printable characters in "charbuf[]". 
+//Convert non-printable character to two or more printable characters in "charbuf[]".
 //"charbuf" needs to be able to hold five bytes.
 //Does NOT work for multi-byte characters, c must be <= 255.
 pub void
@@ -809,7 +810,7 @@ transchar_nonprint(CS charbuf, int c) {
 //The function is safe in the sense that it never accesses memory beyond the
 //first "n" bytes of "s".
 //
-//On success, return decoded codepoint, advance "s" to the beginning of next character and 
+//On success, return decoded codepoint, advance "s" to the beginning of next character and
 //decrease "n" accordingly.
 //
 //If end of string was reached, return 0 and, if "n" > 0, advance "s" past ZERO byte.
@@ -831,12 +832,12 @@ utf_safe_read_char_adv(OUT CS* s, OUT Unt* n){
    }
 
    if ((Unt)k <= *n) {
-      //We have a multibyte sequence and it isn't truncated by buffer limits so mb_ptr2char() is 
+      //We have a multibyte sequence and it isn't truncated by buffer limits so mb_ptr2char() is
       //safe to use. Or the first byte is illegal (k=0), and it's also safe to use mb_ptr2char().
       c = mb_ptr2char(*s);
 
-      //On failure, mb_ptr2char() returns the first byte, so here we check equality with the first 
-      //byte. The only non-ASCII character which equals the first byte of its own UTF-8 
+      //On failure, mb_ptr2char() returns the first byte, so here we check equality with the first
+      //byte. The only non-ASCII character which equals the first byte of its own UTF-8
       //representation is U+00C3 (UTF-8: 0xC3 0x83), so need to check that special case too.
       //It's safe even if n=1, else we would have k=2 > n.
       if (c != (int)(**s) || (c == 0xC3 && (*s)[1] == 0x83)) {
@@ -861,7 +862,7 @@ utf_ptr2len(CS p) {
    for (Unt i = 1; i < len; ++i) {
       if ((p[i] & 0xc0) != 0x80)
          return 1;
-   } 
+   }
    return len;
 }
 
@@ -884,7 +885,7 @@ utfNeedTruncate(CS p, int size) {
    return utf_ptr2len_len(p, size) < (Unt)utf8LenTable[*p];
 }
 
-//Get the length of UTF-8 byte sequence "p[size]". Do not include any following composing 
+//Get the length of UTF-8 byte sequence "p[size]". Do not include any following composing
 //characters. Return 1 for "". 1 for an illegal byte sequence (also in incomplete byte seq.).
 //number > "size" for an incomplete byte sequence. Never return 0.
 pub Unt
@@ -900,7 +901,7 @@ utf_ptr2len_len(Byte const* p, int size) {
    for (Unt i = 1; i < m; ++i) {
       if ((p[i] & 0xc0) != 0x80)
          return 1;
-   } 
+   }
    return len;
 }
 
@@ -2038,8 +2039,8 @@ mb_copy_char(OUT CS* fp, OUT CS* tp) {
    *fp += l;
 }
 
-//Return the offset from "p" to the first byte of a character.  When "p" is at the start of a 
-//character 0 is returned, otherwise the offset to the next character.  Can start anywhere in a 
+//Return the offset from "p" to the first byte of a character.  When "p" is at the start of a
+//character 0 is returned, otherwise the offset to the next character.  Can start anywhere in a
 //stream of bytes.
 pub int
 mb_off_next(CS base, CS p) {
@@ -2068,13 +2069,13 @@ mb_tail_off(CS base, CS p) {
    for (j = 0; p - j > base; ++j) {
       if ((p[-j] & 0xc0) != 0x80)
          break;
-   } 
+   }
    if (utf8LenTable[p[-j]] != i + j + 1)
       return 0;
    return i;
 }
 
-//Return true if string "s" is a valid utf-8 string. When "end" is NULL stop at the first 
+//Return true if string "s" is a valid utf-8 string. When "end" is NULL stop at the first
 //ZERO. Otherwise stop at "end".
 pub int
 utf_valid_string(CS s, CS end) {
@@ -2154,7 +2155,7 @@ mb_unescape(OUT CS* pp) {
          break;      //a special key can't be a multibyte char
       } else {
           buf[m++] = str[n];
-      } 
+      }
       buf[m] = ZERO;
 
       //Return a multi-byte character if it's found.  An illegal sequence will result in a 1 here.
@@ -2563,17 +2564,17 @@ appendSubDir(CS subDir, OUT DirName* dn) {
    Int const rawLen = STRLEN(subDir);
    if (rawLen == 0) {
       return;
-   } 
-   
+   }
+
    Boole needToAppendSlash = subDir[rawLen - 1] != '/';
    Int len = rawLen + (needToAppendSlash ? 1 : 0);
-   
+
    if (dn->len + len > dn->cap) {
       Int newCap = dn->len + len;
       Arr(Byte) newCont = allocateArray(newCap + 1, Byte, dn->a);
       if (dn->c) {
          memcpy(newCont, dn->c, dn->len);
-      } 
+      }
       dn->c = newCont;
       dn->cap = newCap;
    }
@@ -2590,12 +2591,12 @@ pub Boole
 removeSubDir(OUT DirName* restrict dn) {
    CS p = (CS)dn->c + dn->len - 2;
    for (; *p != '/' && p >= dn->c; p--)
-      {} 
+      {}
    if (p > dn->c) {
       dn->len = p - dn->c;
       return true;
    } else {
-      return false; 
+      return false;
    }
 }
 
@@ -2615,7 +2616,7 @@ struct ChunkString {
 struct ChunkyString {
    ChunkString first;
    ChunkString* last;
-   Int len; 
+   Int len;
    Arena* a;
 };
 
@@ -2624,8 +2625,8 @@ createChunkyString(Arr(Byte const) c, Arena* a) {
    ChunkyString* result = allocate(ChunkyString, a);
    Int len = strlen((Arr(char))c);
    *result = (ChunkyString){
-      .first = (ChunkString){ .len = len, .c = c, .next = null }, 
-      .last = &(result->first), 
+      .first = (ChunkString){ .len = len, .c = c, .next = null },
+      .last = &(result->first),
       .len = len, .a = a
    };
    return result;
@@ -2666,7 +2667,7 @@ utfCharLen(CS p) {
       return 0;
    if (b0 < 0x80 && p[1] < 0x80)   //be quick for ASCII
       return 1;
-      
+
    //Skip over first UTF-8 char, stopping at a ZERO byte.
    Unt len = utf_ptr2len(p);
 
@@ -2829,14 +2830,14 @@ pub void
 appendToPoly(Text s, OUT Polystring* buf) {
    if (s.len == 0) {
       return;
-   } 
+   }
    if (s.len + buf->len > buf->cap) {
       Unt newCap = MAX(buf->cap * 2, buf->cap + 2*s.len);
       CS newCont = alloc(newCap);
       if (buf->len > 0) {
          memcpy(newCont, buf->c, buf->len);
          eeglFree(buf->c);
-      } 
+      }
       buf->c = newCont;
       buf->cap = newCap;
    }
@@ -2850,7 +2851,7 @@ pub void
 appendToMulti(Text s, OUT Multistring* mu) {
    if (s.len == 0) {
       return;
-   } 
+   }
    Long bufferShift = 0; //by how much the buffer moved after reallocation
    if (s.len + mu->buf.len > mu->buf.cap) {
       Unt newCap = MAX(mu->buf.cap * 2, mu->buf.cap + 2*s.len);
@@ -2859,7 +2860,7 @@ appendToMulti(Text s, OUT Multistring* mu) {
          memcpy(newCont, mu->buf.c, mu->buf.len);
          eeglFree(mu->buf.c);
          bufferShift = (uintptr_t)newCont - (uintptr_t)mu->buf.c;
-      } 
+      }
       mu->buf.c = newCont;
       mu->buf.cap = newCap;
    }
@@ -2953,7 +2954,7 @@ copyStrEscapedA(CS string, CS escChars, Arena* a) {
    return copyStr_escaped_ext(string, escChars, '\\', false, a);
 }
 
-//Same as copyStr_escaped(), but when "bsl" is true also escape characters where rem_backslash() 
+//Same as copyStr_escaped(), but when "bsl" is true also escape characters where rem_backslash()
 //would remove the backslash. Escape the characters with "cc".
 //If "a" is non-null, allocation is within it, otherwise it's separate allocations
 pub CS
@@ -3025,7 +3026,7 @@ splitBySpace(CS inp) {
    ga_init(&split);
    split.c = alloc(2*sizeof(Byte*));
    split.cap = 2;
-   
+
    int prevInd = -1;
    CS p;
    for (p = inp; *p != ZERO; p++) {
@@ -3034,12 +3035,12 @@ splitBySpace(CS inp) {
          if (lenPiece == 0) {
             continue;
          }
-         
+
          CS piece = alloc(lenPiece + 1);
          memcpy(piece, inp + prevInd + 1, lenPiece);
-         piece[lenPiece] = ZERO;  
+         piece[lenPiece] = ZERO;
          ga_add_string(&split, piece);
-         
+
          prevInd = p - inp;
       }
    }
@@ -3047,7 +3048,7 @@ splitBySpace(CS inp) {
       int lenPiece = p - inp - prevInd - 1;
       CS piece = alloc(lenPiece + 1);
       memcpy(piece, inp + prevInd + 1, lenPiece);
-      piece[lenPiece] = ZERO;  
+      piece[lenPiece] = ZERO;
       ga_add_string(&split, piece);
    }
    return split;
@@ -3069,7 +3070,7 @@ tokenizeSeparator(OUT CS* inp, Byte separator) {
       } else {
          p++;
       }
-   } 
+   }
 }
 
 //Like copyStr(), but make all characters uppercase.
@@ -3107,7 +3108,7 @@ asciiToUpper(CS p) {
    int c;
    while ((c = *p1) != ZERO) {
       *p1++ = (c < 'a' || c > 'z') ? c : (c - 0x20);
-   } 
+   }
 }
 
 //Make string "s" all upper-case and return it in allocated memory.
@@ -3116,7 +3117,7 @@ pub CS
 strup_save(CS orig) {
    CS p;
    CS res = p = copyStr(orig);
-      
+
    while (*p != ZERO) {
       int c = mb_ptr2char(p);
       Unt l = utf_ptr2len(p);
@@ -3176,7 +3177,7 @@ skipSingleQuoted(Text s) {
 pub CS
 strlow_save(CS orig) {
    CS res = copyStr(orig);
-      
+
    for (CS p = res; *p != ZERO;) {
       int c = mb_ptr2char(p);
       Unt l = utf_ptr2len(p);
@@ -3235,8 +3236,8 @@ concatenateStrings(CS to, CS from, Unt tosize) {
       MEMMOVE(to + tolen, from, fromlen + 1);
 }
 
-//Compare two ASCII strings, for length "len", ignoring case, ignoring locale (mostly matters 
-//for Turkish locale where i I might be different). return 0 for match, < 0 for smaller, > 0 for 
+//Compare two ASCII strings, for length "len", ignoring case, ignoring locale (mostly matters
+//for Turkish locale where i I might be different). return 0 for match, < 0 for smaller, > 0 for
 //bigger
 pub int
 compareAscii(CS s1, CS s2, Unt len) {
@@ -3254,7 +3255,7 @@ compareAscii(CS s1, CS s2, Unt len) {
    return i;
 }
 
-//Search for first occurrence of "c" in "string". Version of strchr() that handles strings with 
+//Search for first occurrence of "c" in "string". Version of strchr() that handles strings with
 //characters from 128 to 255 correctly. Don't return a pointer to the ZERO at the string end
 pub CS
 firstOccurrence(CS string, Unt c) {
@@ -3302,9 +3303,9 @@ eeStrbyte(CS string, Unt c) {
    return NULL;
 }
 
-//Search for last occurrence of "c" in "string". Version of strrchr() that handles unsigned char 
-//strings with characters from 128 to 255 correctly.  It also doesn't return a pointer to the 
-//ZERO at the end of the string. Return NULL if not found. Does not handle multi-byte char 
+//Search for last occurrence of "c" in "string". Version of strrchr() that handles unsigned char
+//strings with characters from 128 to 255 correctly.  It also doesn't return a pointer to the
+//ZERO at the end of the string. Return NULL if not found. Does not handle multi-byte char
 //for "c"!
 pub CS
 lastOccurrence(CS string, int c) {
@@ -3346,7 +3347,7 @@ has_non_ascii(CS s) {
       for (CS p = s; *p != ZERO; ++p) {
          if (*p >= 128)
             return true;
-      } 
+      }
    }
    return false;
 }
@@ -3361,7 +3362,7 @@ concat_str(CS str0, CS str1) {
       STRCPY(dest, str0);
    else
       *dest = ZERO;
-      
+
    if (str1)
       STRCPY(dest + l, str1);
    return dest;
@@ -3383,7 +3384,7 @@ reverse_text(CS s) {
    return rev;
 }
 
-//Return string "str" in ' quotes, doubling ' characters. If "str" is NULL an empty string is 
+//Return string "str" in ' quotes, doubling ' characters. If "str" is NULL an empty string is
 //assumed. If "function" is true make it function('string').
 pub CS
 string_quote(CS str, int function) {
@@ -3410,7 +3411,7 @@ string_quote(CS str, int function) {
          *r++ = '\'';
           MB_COPY_CHAR(p, r);
       }
-   } 
+   }
    *r++ = '\'';
    if (function)
       *r++ = ')';
@@ -3442,7 +3443,7 @@ string_count(CS haystack, CS needle, int ic) {
           ++n;
           p = next + STRLEN(needle);
       }
-   } 
+   }
 
    return n;
 }
@@ -3585,7 +3586,7 @@ fileExtension(Text fName) {
    CS c = fName.c + fName.len - 1;
    int i = 0;
    for (; *c != '.' && i < MAX_EXTENSION_CHECKING_LEN; i++, c--)
-      {}  
+      {}
    if (*c == '.' && i > 0) {
       return c + 1;
    } else {
@@ -3601,7 +3602,7 @@ startsWith(Text haystack, Text needle) {
    } ei (needle.len == 0) {
       return true;
    }
-   
+
    return memcpy(haystack.c, needle.c, needle.len) == 0;
 }
 
@@ -3609,7 +3610,7 @@ startsWith(Text haystack, Text needle) {
 //{{{base64
 
 //Base64 character set
-private const Byte base64Table[] = 
+private const Byte base64Table[] =
    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 //Base64 decoding table (initialized in initBase64Table() below)
@@ -3669,7 +3670,7 @@ decodeBase64ToArrayList(OUT ArrayList* ret, Text base64) {
    if (base64.len == 0 || (base64.len % 4 != 0)) {
       *ret = decoded;
       return false;
-   } 
+   }
 
    initBase64Table();
 
@@ -3682,8 +3683,8 @@ decodeBase64ToArrayList(OUT ArrayList* ret, Text base64) {
       *ret = decoded;
       return false;
    }
-      
-   decoded.c = alloc(decodedLen);   
+
+   decoded.c = alloc(decodedLen);
    decoded.cap = decodedLen;
 
    Unt i, j;
@@ -3735,7 +3736,7 @@ pub Boole
 decodeBase64(OUT CS* ret, Text base64) {
    if (base64.len == 0 || (base64.len % 4 != 0)) {
       goto malformedInput;
-   } 
+   }
    Unt unpaddedLen = base64.len;
    Unt decodedFromUnpaddedLen = base64.len / 4 * 3; //decodedLen >= 3
    Unt decodedFromPaddedLen = 0;
@@ -3745,11 +3746,11 @@ decodeBase64(OUT CS* ret, Text base64) {
       unpaddedLen -= 4;
       if (base64.c[base64.len - 2] == '=') {
          decodedFromPaddedLen++;
-      } 
-   } 
-   
+      }
+   }
+
    initBase64Table();
-   
+
    *ret = alloc(decodedFromPaddedLen + decodedFromUnpaddedLen + 1);
    ret[decodedFromPaddedLen + decodedFromUnpaddedLen] = ZERO;
 
@@ -3782,7 +3783,7 @@ decodeBase64(OUT CS* ret, Text base64) {
       (*ret)[j] += base64DecodingTableG[base64.c[i++]] << 2;
    }
    return true;
-   
+
 malformedInput:
    *ret = null;
    return false;
@@ -3894,13 +3895,13 @@ strPrintShortName(CS src, CS dst, int dstlen) {
    }
    SNPRINTF(dst, dstlen, "%s", fiGetShortFiName(src));
 }
-//Get the tail of a path: the file name. When the path ends in a path separator, the tail is the 
+//Get the tail of a path: the file name. When the path ends in a path separator, the tail is the
 //ZERO after it. Fail safe: never return NULL.
 pub CS
 fiGetShortFiName(CS fname){
    if (!fname)
       return S"";
-      
+
    CS afterSlash;
    CS p;
    for (afterSlash = skipInitialSlashes(fname), p = afterSlash; *p != ZERO; MB_PTR_ADV(p)) {
@@ -4036,7 +4037,7 @@ strCutPathFromListOfPaths(OUT CS* option, OUT CS buf, int maxlen, CS sep_chars){
       buf[len] = *p;
       len++;
       p++;
-   } 
+   }
    while (*p != ZERO && firstOccurrence((CS)sep_chars, *p) == NULL) {
       //Skip backslash before a separator character and space.
       if (p[0] == '\\' && firstOccurrence((CS)sep_chars, p[1]) != NULL)
@@ -4044,7 +4045,7 @@ strCutPathFromListOfPaths(OUT CS* option, OUT CS buf, int maxlen, CS sep_chars){
       if (len < maxlen - 1) {
          buf[len] = *p;
          len++;
-      } 
+      }
       ++p;
    }
    buf[len] = ZERO;
@@ -4062,7 +4063,7 @@ pub Boole
 strMatchLowPrioSuffix(CS fname, CS suffixes){
    if (!suffixes)
       return false;
-      
+
 #define MAXSUFLEN 30       //maximum length of a file suffix
    Byte suf_buf[MAXSUFLEN];
 
@@ -4079,7 +4080,7 @@ strMatchLowPrioSuffix(CS fname, CS suffixes){
             break;
          }
       } else {
-         if (fnamelen >= setsuflen 
+         if (fnamelen >= setsuflen
                && STRNCMP(suf_buf, fname + fnamelen - setsuflen, (Unt)setsuflen) == 0)
             break;
          setsuflen = 0;
@@ -4141,7 +4142,7 @@ valid_name(CS val, CS allowed) {
    for (CS s = val; *s != ZERO; ++s) {
       if (!ASCII_ISALNUM(*s) && firstOccurrence((CS)allowed, *s) == NULL)
           return false;
-   } 
+   }
    return true;
 }
 
@@ -4192,7 +4193,7 @@ ga_clear_strings(ArrayList* gap) {
    if (gap->c) {
       for (i = 0; i < gap->len; ++i)
          eeglFree(((Byte **)(gap->c))[i]);
-   } 
+   }
    ga_clear(gap);
 }
 
@@ -4285,7 +4286,7 @@ ga_concat_strings(ArrayList *gap, char *sep) {
    return s;
 }
 
-//Make a copy of string "p" and add it to "gap". When out of memory, 
+//Make a copy of string "p" and add it to "gap". When out of memory,
 //nothing changes and FAIL is returned.
 pub int
 ga_copy_string(ArrayList *gap, CS p) {
@@ -4935,10 +4936,10 @@ initDict0(Arr(Byte const) text, Int size, Arena* a, OUT Arr(Unt)* temp) {
    dict->text = text;
    memset(dict->dict, 0, 128*4);
    dict->dict[128] = size;
-   
+
    //Temporary array which we'll free at end of function (since it's at the very end of the arena)
    *temp = allocateOnArena(size*4, a);
-   
+
    //calculate the hashes and keys
    Byte const* ch = text;
    for (Int i = 0; i < size; i++) {
@@ -4951,7 +4952,7 @@ initDict0(Arr(Byte const) text, Int size, Arena* a, OUT Arr(Unt)* temp) {
       ch++;
    }
    dict->textLen = ch - text;
-   
+
    //Bucket counts -> bucket start indices
    Unt sumBefore = dict->dict[0];
    dict->dict[0] = 0;
@@ -4972,21 +4973,21 @@ initDict1(Arena* a, int size, Arr(Unt) temp, OUT DictStringInt128* dict) {
       dict->dict[i + 1] = dict->dict[i];
    }
    dict->dict[0] = 0;
-   
+
    //Now store the hashes into their correct buckets
    for (Int i = 0; i < size; i++) {
       Unt hash = temp[i];
       Unt ind = dict->dict[hash >> 25];
-      dict->hashes[ind] = hash; 
+      dict->hashes[ind] = hash;
       dict->dict[hash >> 25]++;
    }
-   
+
    //@dict needs the same shift again
    for (Int i = 126; i > -1; i--) {
       dict->dict[i + 1] = dict->dict[i];
    }
    dict->dict[0] = 0;
-   
+
    arenaTryFree((void*)temp, size*4, a);
 }
 
@@ -5001,7 +5002,7 @@ pub DictStringInt128* dictStringInt128New(Arr(Byte const) text, Arr(Int) values,
       dict->c[ind] = (DictStringIntItem){.key = dict->hashes[i], .value = values[i]};
       dict->dict[bucket]++;
    }
-   
+
    initDict1(a, size, temp, OUT dict);
    return dict;
 }
@@ -5018,7 +5019,7 @@ pub DictStringInt128* dictStringInt128NewJustIndices(Arr(Byte const) text, Int s
       dict->c[ind] = (DictStringIntItem){.key = dict->hashes[i], .value = i};
       dict->dict[bucket]++;
    }
-   
+
    initDict1(a, size, temp, OUT dict);
    return dict;
 }
@@ -5035,7 +5036,7 @@ pub DictStringInt128* dictStringInt128NewJustIndices(Arr(Byte const) text, Int s
       }\
    }\
    ifNotFound;
-   
+
 #define dictGetterFn_Text(ifFound, ifNotFound) \
    Unt needleHash = hashOfText(needle);\
    Unt ind = needleHash >> 25;\
@@ -5076,7 +5077,7 @@ pub Int getOrDefault_Text_DictStringInt128(
    Unt ind = needleHash >> 25;
    Unt const end = haystack->dict[ind + 1];
    for (Unt i = haystack->dict[ind]; i < end; i++) {
-      if (haystack->hashes[i] == needleHash 
+      if (haystack->hashes[i] == needleHash
             && haystack->c[i].key + needle.len < haystack->textLen
             && memcmp(haystack->text + haystack->c[i].key, needle.c, needle.len) == 0
       ) {
@@ -5093,7 +5094,7 @@ pub Int getKv_Text_DictStringInt128(
    Unt ind = needleHash >> 25;
    Unt const end = haystack->dict[ind + 1];
    for (Unt i = haystack->dict[ind]; i < end; i++) {
-      if (haystack->hashes[i] == needleHash 
+      if (haystack->hashes[i] == needleHash
             && haystack->c[i].key + needle.len < haystack->textLen
             && memcmp(haystack->text + haystack->c[i].key, needle.c, needle.len) == 0
       ) {

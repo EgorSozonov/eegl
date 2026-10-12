@@ -17,25 +17,19 @@
 
 #include "base.h"
 #include "eegl.h"
+#define AVOID_DUPLICATION
 #include "h/book.h"
-#include "h/data.types.h"
+#undef AVOID_DUPLICATION
 #include "h/data.h"
 #include "h/diff.h"
-#include "h/do.types.h"
 #include "h/do.h"
-#include "h/draw.types.h"
 #include "h/draw.h"
 #include "h/eval.h"
-#include "h/hilite.types.h"
 #include "h/hilite.h"
-#include "h/input.types.h"
 #include "h/input.h"
-#include "h/message.types.h"
 #include "h/message.h"
 #include "h/fileio.h"
-#include "h/location.types.h"
 #include "h/location.h"
-#include "h/motor.types.h"
 #include "h/motor.h"
 #include "h/option.h"
 #include "h/portal.h"
@@ -44,7 +38,6 @@
 #include "h/script.h"
 #include "h/term.h"
 #include "h/ui.h"
-#include "h/wheel.types.h"
 #include "h/wheel.h"
 
 #include <errno.h> //for errno
