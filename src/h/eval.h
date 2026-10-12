@@ -99,7 +99,6 @@ int evCopyItem(Var* from, Var* to, int deep, int top, Unt copyID);
 int mch_get_random(OUT CS buf, int len);
 void echo_one(Var* returnVar, int with_space, int *atstart, int *needclr);
 void c_echo(Invocation* invo);
-void c_echohl(Invocation* invo);
 int get_echo_attr(void);
 void c_execute(Invocation* invo);
 CS find_option_end(OUT CS* arg, OUT int *scope);

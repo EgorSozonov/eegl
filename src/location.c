@@ -3797,13 +3797,13 @@ c_list(Invocation* invo) {
 
    //Get the attributes for the different location hilite items. Note
    //that this depends on syntax items defined in the qf.vim syntax file
-   fileDeco = decosByHiliteName(S"qfFileName");
+   fileDeco = decosByHiliteName(HILITE_LocationFileName);
    if (fileDeco.flags == 0)
       fileDeco = getFullDecoration(HILITE_Directories);
-   separatorDeco = decosByHiliteName(S"qfSeparator");
+   separatorDeco = decosByHiliteName(HILITE_LocationSeparator);
    if (separatorDeco.flags == 0)
       separatorDeco = getFullDecoration(HILITE_Directories);
-   lineDeco = decosByHiliteName(S"qfLineNr");
+   lineDeco = decosByHiliteName(HILITE_LineNr);
    if (lineDeco.flags == 0)
       lineDeco = getFullDecoration(HILITE_LineNr);
 

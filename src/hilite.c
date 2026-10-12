@@ -163,8 +163,8 @@ pub
 },
 
 //The hilite groups
-pubWrapped("#define HI(a, b, c, d, e, f) HILITES_##a",
-   "#undef HI"
+pubWrap("typedef enum {\n#define HI(a, b, c, d, e, f) HILITES_##a\n",
+   "#undef HI\n} HiliteId;\n"
 )
 HI(None, HI_HAS_FG|HI_HAS_BG, 7, 0, 0, 0) //0
 HI(NonText, HI_HAS_FG, 4, 0, BOLD, 0)
@@ -244,6 +244,8 @@ HI(StatusLineTermNC, HI_HAS_FG|HI_HAS_BG, 5, 3, 0, 0)
 HI(Search, HI_HAS_FG|HI_HAS_BG, 0, 11, 0, 0)
 HI(CurSearch, HI_IS_LINK, 0, 0, 0, HILITE_Search)
 HI(LocationLine, HI_IS_LINK, 0, 0, 0, HILITE_Search)
+HI(LocationFileName, HI_IS_LINK, 0, 0, 0, HILITE_None)
+HI(LocationSeparator, HI_IS_LINK, 0, 0, 0, HILITE_None)
 HI(Comment, HI_HAS_FG, 2, 0, 0, 0)
 HI(Constant, HI_HAS_FG, 44, 0, 0, 0)
 HI(Special, HI_HAS_FG, 54, 0, 0, 0)
@@ -302,6 +304,7 @@ private Decoration writeToDecoration(HiliteGroup* restrict g);
 private void parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line);
 private void clearHiliteWorker(OUT HiliteGroup* g);
 private void set_normal_colors(void);
+private Short hiliteGroupByName(Text name);
 private Short hiResolveLinks(Short hiId);
 private HiliteGroup* resolveLinksByGroup(HiliteGroup* group);
 private Bag * getDecorationDict(int hlDeco);
@@ -580,8 +583,8 @@ hiliteGroupName(Short hiId) {
 }
 
 //Return the ID of the link in a hilite group.
-pub int
-highlight_link_id(Short hiId) {
+private Short
+getLinkId(Short hiId) {
    return hilites[hiId].link;
 }
 
@@ -1132,14 +1135,14 @@ set_normal_colors(void) {
 //}
 
 //Lookup a hilite group name and return its ID. If it is not found, SHORT is returned.
-pub Short
+private Short
 hiliteGroupByName(Text name) {
    return getOrDefault(name, SHORT, hiNames);
 }
 
 //Lookup a hilite group name and return its decos. Return zero if not found.
 pub Decoration
-decosByHiliteName(CS name) {
+decosByHiliteName(HiliteId id) {
    Short hiId = hiliteGroupByName(mbText(name));
    return hiId != SHORT ? getFullDecoration(hiId) : EMPTY_DECO;
 }
@@ -1390,6 +1393,12 @@ getFullDecoration(Short hiId) {
 pub Boole
 decoEq(Decoration a, Decoration b) {
    return a.flags == b.flags && a.hiId == b.hiId;
+}
+
+//";echohl {name}".
+pub void
+c_echohl(Invocation* invo) {
+   echoDecoFlagsG = getOrDefault(mbText(invo->arg), SHORT, hiNames).flags;
 }
 
 //}}}
@@ -4360,7 +4369,7 @@ syn_list_one(
          msg_putchar(' ');
          if (spp->sp_sync_idx >= 0)
             msg_outtrans(
-               hiliteGroupName(SYN_ITEMS(curPor->ownSyntax)[spp->sp_sync_idx].syntax.hiId - 1).c
+               hiliteGroupName(SYN_ITEMS(curPor->ownSyntax)[spp->sp_sync_idx].syntax.hiId).c
             );
          else
             msg_puts((CS)"NONE");
@@ -4369,11 +4378,11 @@ syn_list_one(
    }
 
    //list the link, if there is one
-   if (highlight_link_id(id - 1) && (did_header || link_only) && !gotInterruptG) {
+   if (getLinkId(id) != 0 && (did_header || link_only) && !gotInterruptG) {
       printHiliteHeader(did_header, 999, id);
-      msgPutsDeco((CS)"links to", decoFlags);
+      msgPutsDeco(S"links to", decoFlags);
       msg_putchar(' ');
-      msg_outtrans(hiliteGroupName(highlight_link_id(id - 1) - 1).c);
+      msg_outtrans(hiliteGroupName(getLinkId(id) - 1).c);
    }
 }
 
@@ -4882,9 +4891,9 @@ syn_cmd_include(Invocation* invo, int) {
    CS group_name_end;
    CS rest;
    CS errorMsg = NULL;
-   int      prev_toplvl_grp;
-   int      prev_syn_inc_tag;
-   int      source = false;
+   int prev_toplvl_grp;
+   int prev_syn_inc_tag;
+   int source = false;
 
    if (invo->skip)
       return;
@@ -5294,8 +5303,9 @@ syn_cmd_region(
                SYN_ITEMS(curPor->ownSyntax)[idx].patternHiId = ppp->pp_matchgroup_id;
                if (item == ITEM_START) {
                   SYN_ITEMS(curPor->ownSyntax)[idx].sp_containsHiId = syn_opt_arg.containsHiId;
-                  SYN_ITEMS(curPor->ownSyntax)[idx].syntax.containedInHiId = syn_opt_arg.containedInHiId;
-                  if (syn_opt_arg.containedInHiId != NULL)
+                  SYN_ITEMS(curPor->ownSyntax)[idx].syntax.containedInHiId =
+                     syn_opt_arg.containedInHiId;
+                  if (syn_opt_arg.containedInHiId)
                       curPor->ownSyntax->b_syn_containedin = true;
                   SYN_ITEMS(curPor->ownSyntax)[idx].sp_next_list = syn_opt_arg.next_list;
                }

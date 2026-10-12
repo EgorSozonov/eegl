@@ -789,7 +789,7 @@ $(BETTERC): ##Better C: codegen for headers & generics
 $(BASIC_HEADERS): src/h/%.h : src/%.c
 / $(OBJDIR)/betterc -d h $<
 
-better: $(BASIC_HEADERS)
+better: $(BETTERC) $(BASIC_HEADERS)
 
 # The normal command to compile a .c file to its .o file.
 # Without or with ALL_FLAGS.

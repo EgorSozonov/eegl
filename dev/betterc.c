@@ -609,7 +609,6 @@ skipTillEmptyLine(S inp) {
             lineIsEmpty = false;
          }
       }
-      _bp(true)
       if (lineIsEmpty) {
          return start;
       } ei (nextLine[0] == ZERO) {
@@ -623,8 +622,10 @@ private Unt
 countNewlines(Text t) {
    Unt count = 0;
    for (S p = t.c; p < t.c + t.len; p++) {
-      if (p[0] == '\\' && p[1] == 'n')
+      if (p[0] == '\\' && p[1] == 'n') {
          count++;
+         p++;
+      }
    }
    return count;
 }
@@ -637,7 +638,7 @@ countNewlines(Text t) {
 #define tokArity           1 //GEN_*()
 #define tokMethod          2 //the argument signifying the generic method name
 #define tokType            3 //the argument holding a type chunk
-//pubWrapped:
+//pubWrap:
 #define tokPrefixLiteral  10 //A string literal from first argument to pubWrap
 #define tokPuwr           11 //The body of a pubWrap
 #define tokPostfixLiteral 12 //A string literal from second argument to pubWrap
@@ -658,26 +659,26 @@ maybe(ParserFn fn, OUT Parser* gp) {
    return 0;
 }
 
-private void
-printTokens(Parser* g, S source) {
-   printf("Tokens:\n");
-   for (Unt i = 0; i < g->tokens->len; i++) {
-      Token t = g->tokens->c[i];
-      switch (t.tp) {
-      //case tokArity:       printf("arity "); break;
-      //case tokMethod:      printf("method "); break;
-      //case tokType:        printf("Type "); break;
-      case tokPrefixLiteral:  printf("prefix "); break;
-      case tokPuwr:           printf("body "); break;
-      case tokPostfixLiteral: printf("postfix "); break;
-      }
-      fwrite(source + t.startBt, 1, t.lenBts, stdout);
-
-      printf("\n");
-   }
-   printf("\n");
-   printf("--------\n");
-}
+//private void
+//printTokens(Parser* g, S source) {
+//   printf("Tokens:\n");
+//   for (Unt i = 0; i < g->tokens->len; i++) {
+//      Token t = g->tokens->c[i];
+//      switch (t.tp) {
+//      //case tokArity:       printf("arity "); break;
+//      //case tokMethod:      printf("method "); break;
+//      //case tokType:        printf("Type "); break;
+//      case tokPrefixLiteral:  printf("prefix %d", t.lenBts); break;
+//      case tokPuwr:           printf("body "); break;
+//      case tokPostfixLiteral: printf("postfix "); break;
+//      }
+//      fwrite(source + t.startBt, 1, t.lenBts, stdout);
+//
+//      printf("\n");
+//   }
+//   printf("\n");
+//   printf("--------\n");
+//}
 
 //}}}
 //{{{parsing generics
@@ -991,7 +992,7 @@ puwrChar(OUT Parser* pa, Byte c) {
    return 0;
 }
 
-//A series of C string literals, with possible `//` comments
+//A series of C string literals, with possible spaces, newlines and `//` comments
 private Unt
 puwrStringLiteral(OUT Parser* pa, Unt typeOfToken) {
    if (pa->inp[0] != '"') {
@@ -1006,7 +1007,7 @@ puwrStringLiteral(OUT Parser* pa, Unt typeOfToken) {
    if (p[0] != '"')
       return errPuwrLiterals;
 
-   int len = p - pa->inp - 2; //-2 for both quotes
+   int len = p - pa->inp - 1; //-1 for first double-quote
    if (len > 0) {
       add(
          pa->tokens,
@@ -1064,31 +1065,32 @@ puwrParse(OUT S* inp, OUT Parser* pa) {
 }
 
 private S
-printWithNewlineSubstitution(OUT S wPre, S source, Slice slice) {
+buildWithNewlineSubstitution(OUT S wPre, S source, Slice slice) {
    Unt len = slice.len;
    Unt newlines = countNewlines((Text){source + slice.c, slice.len});
    if (newlines == 0) {
       memcpy(wPre, source + slice.c, slice.len);
-      wPre += len;
-   } else {
-      Unt prev = 0;
-      S s = source + slice.c;
-      Unt j;
-      for (j = 0; j < slice.len; j++) {
-         if (s[j] == '\\' && s[j + 1] == 'n') {
-            if (j > prev) {
-               memcpy(wPre, s + prev, j - prev);
-               wPre += (j - prev);
-            }
-            wPre[0] = '\n';
-            prev += 2;
-            j++;
+      return wPre + len;
+   }
+
+   Unt prev = 0;
+   S s = source + slice.c;
+   Unt j;
+   for (j = 0; j < slice.len; j++) {
+      if (s[j] == '\\' && s[j + 1] == 'n') {
+         if (j > prev) {
+            memcpy(wPre, s + prev, j - prev);
+            wPre += (j - prev);
          }
+         wPre[0] = '\n';
+         wPre++;
+         prev = j + 2;
+         j++;
       }
-      if (j > prev) {
-         memcpy(wPre, s + prev, j - prev);
-         wPre += (j - prev);
-      }
+   }
+   if (j > prev) {
+      memcpy(wPre, s + prev, j - prev);
+      wPre += (j - prev);
    }
    return wPre;
 }
@@ -1129,15 +1131,16 @@ addPuwr(OUT Better* r, Parser g) {
    S wPre = res.prefix.c;
    wPre[lenPrefix] = ZERO;
    S wPost = res.postfix.c;
+   wPost[lenPostfix] = ZERO;
 
    for (Unt i = 0; i < g.tokens->len; i++) {
       Token tok = g.tokens->c[i];
       if (tok.tp == tokPrefixLiteral) {
-         wPre = printWithNewlineSubstitution(
+         wPre = buildWithNewlineSubstitution(
                OUT wPre, r->source.c, (Slice){tok.startBt, tok.lenBts}
          );
       } ei (tok.tp == tokPostfixLiteral) {
-         wPost = printWithNewlineSubstitution(
+         wPost = buildWithNewlineSubstitution(
                OUT wPost, r->source.c, (Slice){tok.startBt, tok.lenBts}
          );
       }
@@ -1155,13 +1158,11 @@ tryParsePuwr(OUT Better* p, OUT S* inp, Arena* a) {
    };
 
    puwrParse(OUT inp, OUT &puwr);
-
    if (puwr.tokens->len == 0) {
       return;
    }
 
-   printf("TOkens of PUWR:\n");
-   printTokens(&puwr, p->source.c);
+   //printTokens(&puwr, p->source.c);
 
    addPuwr(OUT p, puwr);
 }
@@ -1340,7 +1341,7 @@ parseFile(Text source, FilePath fn, Arena* a) {
       }
       if (inp[1] == 'p') {
          inp++; //CONSUME the newline
-         if (startsWith(inp, tConst("pubWrap(")) && isSpaceOrNewline(inp[8])) {
+         if (startsWith(inp, tConst("pubWrap("))) {
             inp = skipSpaces(inp + 8); //CONSUME "pubWrap(" and spaces after it
             tryParsePuwr(OUT &res, OUT &inp, a);
          } if (startsWith(inp, tConst("pub")) && isSpaceOrNewline(inp[3])) {
@@ -1843,26 +1844,6 @@ parseCommLine(int argc, char** argv, int) {
 }
 
 //}}}
-
-typedef struct {
-   int c;
-} Plausible;
-
-
-#define FOO(x, y) (Plausible){.c = y},
-
-Plausible arr[] = {
-
-pubWrap(
-   "#define FOO(x, y) FOO_##x\ntypedef enum{\n",
-   "}\n#undef FOO\n"
-)
-FOO(a, 15)
-FOO(b, 16)
-
-};
-
-#undef FOO
 
 pub int
 main(int argc, char** argv) {

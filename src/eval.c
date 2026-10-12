@@ -5218,12 +5218,6 @@ c_echo(Invocation* invo) {
    }
 }
 
-//":echohl {name}".
-pub void
-c_echohl(Invocation* invo) {
-   echoDecoFlagsG = decosByHiliteName(invo->arg).flags;
-}
-
 //Return the :echo attribute
 pub int
 get_echo_attr(void) {

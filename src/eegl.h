@@ -3669,11 +3669,11 @@ typedef struct {
    int firstLine;      //"firstline" for popup portal
    int wantScrollbar; //when zero don't use a scrollbar
    int hasScrollbar;  //1 if scrollbar displayed, 0 otherwise
-   CS scrollbarHilite; //"scrollbarhighlight"
-   CS thumbHilite; //"thumbhighlight"
+   Unt scrollbarHilite; //"scrollbarhighlight"
+   Unt thumbHilite; //"thumbhighlight"
    int padding[4]; //padding top/right/bot/left
    int border[4];  //border top/right/bot/left
-   CS borderHilite[4];  //border highlight
+   Unt borderHilite[4];  //border highlight
    int borderChar[8];   //border characters
 
    int leftOff;    //columns left of the screen

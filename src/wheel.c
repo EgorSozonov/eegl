@@ -449,7 +449,7 @@ private Unt copyCompletionCbs(OUT Callback* dest, Callback* src);
 private CS get_complete_funcname(int type);
 private Callback* get_insert_callback(int type);
 private void expand_by_function(int type, CS base, Callback* cb);
-private inline Decoration getUserDecoration(CS hlname);
+private inline Decoration getUserDecoration(CS name);
 private int ins_compl_add_tv(Var* tv, Unt dir, int fast);
 private void ins_compl_add_list(List* list);
 private void ins_compl_add_dict(Bag* dict);
@@ -15911,9 +15911,7 @@ pub Decoration
 getDecorationIfColumnIsWithinCompletion(LineNr lnum, int col) {
    if (curBook->o.completeOpt & COT_FUZZY)
       return (Decoration){.hiId = SHORT};
-   Decoration deco = decosByHiliteName(S"ComplMatchIns");
-   if (deco.hiId == SHORT)
-      return (Decoration){.hiId = SHORT};
+   Decoration deco = decosByHiliteName(HILITE_ComplMatchIns);
 
    int start_col = compl_col + (int)ins_compl_leader_len();
    if (isCompletionSingleLine())
@@ -17603,7 +17601,7 @@ theend:
 }
 
 private inline Decoration
-getUserDecoration(CS hlname) {
+getUserDecoration(CS name) {
    if (hlname && *hlname != ZERO)
       return decosByHiliteName(hlname);
    return EMPTY_DECO;
@@ -17617,11 +17615,11 @@ getUserDecoration(CS hlname) {
 private int
 ins_compl_add_tv(Var* tv, Unt dir, int fast) {
    CS word;
-   int      dup = false;
-   int      empty = false;
-   int      flags = fast ? CP_FAST : 0;
+   int dup = false;
+   int empty = false;
+   Unt flags = fast ? CP_FAST : 0;
    CS  cptext[CPT_COUNT];
-   Var   user_data;
+   Var user_data;
    CS user_abbr_hlname;
    CS user_kind_hlname;
    Decoration userDecos[2] = { EMPTY_DECO, EMPTY_DECO };
@@ -17671,8 +17669,8 @@ ins_compl_add_tv(Var* tv, Unt dir, int fast) {
 //Add completions from a list.
 private void
 ins_compl_add_list(List* list) {
-   ListItem   *li;
-   Unt      dir = compl_direction;
+   ListItem* li;
+   Unt dir = compl_direction;
 
    //Go through the List with matches and add each of them.
    CHECK_LIST_MATERIALIZE(list);
