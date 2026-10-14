@@ -1394,7 +1394,7 @@ cmd_source(Byte *fname, Invocation* invo) {
       }
    }
 
-   if (*fname != ZERO && invo != NULL && invo->addr_count > 0) {
+   if (*fname != ZERO && invo != NULL && invo->addrCount > 0) {
       //if a filename is specified to :source, then a range is not allowed
       emsg(_(e_no_range_allowed));
       return;
@@ -1781,12 +1781,12 @@ scriptRunFile(CS fname, OUT int* retSid){
 //":scriptnames"
 pub void
 c_scriptnames(Invocation* invo) {
-   if (invo->addr_count > 0 || *invo->arg != ZERO) {
+   if (invo->addrCount > 0 || *invo->arg != ZERO) {
       //:script {scriptId}: edit the script
-      if (invo->addr_count > 0 && !SCRIPT_ID_VALID(invo->line2))
+      if (invo->addrCount > 0 && !SCRIPT_ID_VALID(invo->line2))
          emsg(_(e_invalid_argument));
       else {
-         if (invo->addr_count > 0)
+         if (invo->addrCount > 0)
             invo->arg = SCRIPT_ITEM(invo->line2)->sn_name;
          else {
             doExpandEnv(OUT nameBuffTextG, invo->arg);
@@ -2969,7 +2969,7 @@ c_breakadd(Invocation* invo) {
 //":debuggreedy".
 pub void
 c_debuggreedy(Invocation* invo) {
-   if (invo->addr_count == 0 || invo->line2 != 0)
+   if (invo->addrCount == 0 || invo->line2 != 0)
       debug_greedy = true;
    else
       debug_greedy = false;
@@ -7691,14 +7691,8 @@ parse_pattern_and_range(
    OUT int* skiplen,
    OUT int* patlen
 ){
-   Byte   *comm, *p, *end;
-   CommandModifier  dummyModifier;
-   Invocation   invo;
-   Pos   save_cursor;
-   int      delim_optional = false;
-   int      delim;
-   int      use_last_pat;
-   Magic     magic = 0;
+   Boole delim_optional = false;
+   Magic magic = 0;
    CS dummy;
 
    *skiplen = 0;
@@ -7708,6 +7702,7 @@ parse_pattern_and_range(
    search_first_line = 0;
    search_last_line = MAXLNUM;
 
+   Invocation invo;
    CLEAR_FIELD(invo);
    invo.line1 = 1;
    invo.line2 = 1;
@@ -7715,15 +7710,17 @@ parse_pattern_and_range(
    invo.addressKind = ADDR_LINES;
 
    //Skip over command modifiers
-   parse_command_modifiers(&invo, OUT &dummy, &dummyModifier, true);
+   CommandModifier dummyModifier;
+   doParseCommandModifiers(&invo, OUT &dummy, OUT &dummyModifier, true);
 
    //Skip over the range to find the command.
-   comm = skip_range(invo.comm, true, NULL);
+   CS comm = skip_range(invo.comm, true, NULL);
 
-   if (firstOccurrence((CS)"sgvl", *comm) == NULL)
+   if (firstOccurrence(S"sgvl", *comm) == NULL)
       return false;
 
    //Skip over command name to find pattern separator
+   CS p;
    for (p = comm; ASCII_ISALPHA(*p); ++p)
       {}
    if (*skipwhite(p) == ZERO)
@@ -7758,11 +7755,11 @@ parse_pattern_and_range(
       return false;
 
    p = skipwhite(p);
-   delim = (delim_optional && eeIsIdentifierChar(*p)) ? ' ' : *p++;
+   Unt delim = (delim_optional && eeIsIdentifierChar(*p)) ? ' ' : *p++;
    *searchDelim = delim;
 
-   end = skip_regexp_ex(p, delim, true, NULL, NULL, &magic);
-   use_last_pat = end == p && *end == delim;
+   CS end = skip_regexp_ex(p, delim, true, NULL, NULL, &magic);
+   Boole use_last_pat = end == p && *end == delim;
 
    if (end == p && !use_last_pat)
       return false;
@@ -7782,12 +7779,12 @@ parse_pattern_and_range(
    *patlen = (int)(end - p);
 
    //Parse the address range
-   save_cursor = curPor->cursor;
+   Pos save_cursor = curPor->cursor;
    curPor->cursor = *incsearch_start;
 
-   parse_cmd_address(&invo, &dummy, true);
+   parse_cmd_address(OUT &invo, OUT &dummy, true);
 
-   if (invo.addr_count > 0) {
+   if (invo.addrCount > 0) {
       int reverse_match = invo.line2 < invo.line1;
       search_first_line = reverse_match ? invo.line2 : invo.line1;
       search_last_line = reverse_match ? invo.line1 : invo.line2;
@@ -9771,7 +9768,6 @@ draw_cmdline(int start, int len) {
 //"c" must be printable (fit in one display cell)!
 pub void
 scrPutCharOnCommline(Unt c, int shift) {
-   lo("xxx put char on commline %d", c);
    if (cmd_silent)
       return;
    msg_no_more = true;
@@ -12352,8 +12348,8 @@ uc_check_code(
       Byte num_buf[NUMBUFLEN];
       long num = (type == ct_LINE1) ? invo->line1 :
             (type == ct_LINE2) ? invo->line2 :
-            (type == ct_RANGE) ? invo->addr_count :
-            (invo->addr_count > 0) ? invo->line2 : comm->uc_def;
+            (type == ct_RANGE) ? invo->addrCount :
+            (invo->addrCount > 0) ? invo->line2 : comm->uc_def;
       Unt num_len;
 
       num_len = eeSnprintf(num_buf, sizeof(num_buf), "%ld", num);
@@ -13107,8 +13103,8 @@ get_function_body(
 
                   //check for line starting with "au" for :autocmd or
                   //"com" for :command, these can use a {} block
-                  is_block = checkforcmd_noparen(&s, S"autocmd", 2)
-                           || checkforcmd_noparen(&s, S"command", 3);
+                  is_block = doCheckForCommNoParen(&s, S"autocmd", 2)
+                           || doCheckForCommNoParen(&s, S"command", 3);
                }
 
                if (is_block) {
@@ -15628,7 +15624,7 @@ callInner(
    for ( ; lnum <= invo->line2; ++lnum) {
       FnExe funcexe;
 
-      if (invo->addr_count > 0) {
+      if (invo->addrCount > 0) {
          if (lnum > curBook->mem.lineCount) {
             //If the function deleted lines or switched to another buffer
             //the line number may become invalid.

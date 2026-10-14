@@ -5292,7 +5292,7 @@ c_execute(Invocation* invo) {
          msgDeco(ga.c, echoDecoFlagsG);
          termOutFlush();
       } ei (invo->id == C_echowindow) {
-         start_echowindow(invo->addr_count > 0 ? invo->line2 : 0);
+         start_echowindow(invo->addrCount > 0 ? invo->line2 : 0);
          msgDeco(ga.c, echoDecoFlagsG);
          end_echowindow();
       } ei (invo->id == C_echoconsole) {

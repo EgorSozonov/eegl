@@ -7362,7 +7362,7 @@ clearPortInfo(Book* book){
    }
 }
 
-//Free stuff in the book for ":bdel" or when wiping out the book.
+//Free stuff in the book for ";bdel" or when wiping out the book.
 private void
 freeAttachedData(Book* book, int free_options) {     //free options as well
    if (free_options) {
@@ -7835,19 +7835,19 @@ bookDo(
 
 //do_bufdel() - delete or unload book(s)
 //
-//addr_count == 0: ":bdel" - delete current book
-//addr_count == 1: ":N bdel" or ":bdel N [N ..]" - first delete
+//addrCount == 0: ";bdel" - delete current book
+//addrCount == 1: ";N bdel" or ";bdel N [N ..]" - first delete
 //        book "end_bnr", then any other arguments.
-//addr_count == 2: ":N,N bdel" - delete books in range
+//addrCount == 2: ";N,N bdel" - delete books in range
 //
-//command can be DOBOOK_UNLOAD (":bunload"), DOBOOK_WIPE (":bwipeout") or DOBOOK_DEL (":bdel")
+//command can be DOBOOK_UNLOAD (";bunload"), DOBOOK_WIPE (";bwipeout") or DOBOOK_DEL (";bdel")
 //
 //Return error message or NULL
 pub CS
 do_bufdel(
    int command,
    CS arg,      //pointer to extra arguments
-   int addr_count,
+   int addrCount,
    int start_bnr,   //first book number in a range
    int end_bnr,   //book nr or last book nr in a range
    Boole forceit
@@ -7858,14 +7858,14 @@ do_bufdel(
    int bnr;      //book number
    CS p;
 
-   if (addr_count == 0) {
+   if (addrCount == 0) {
       (void)bookDo(command, DOBOOK_CURRENT, FORWARD, 0, forceit);
    } else {
-      if (addr_count == 2) {
+      if (addrCount == 2) {
          if (*arg)      //both range and argument is not allowed
             return ex_errmsg(e_trailing_characters_str, arg);
          bnr = start_bnr;
-      } else   //addr_count == 1
+      } else   //addrCount == 1
          bnr = end_bnr;
 
       for ( ;!gotInterruptG; ui_breakcheck()) {
@@ -7880,10 +7880,10 @@ do_bufdel(
          ++deleted;
 
          //find next book number to delete/unload
-         if (addr_count == 2) {
+         if (addrCount == 2) {
             if (++bnr > end_bnr)
                break;
-         } else  {   //addr_count == 1
+         } else  {   //addrCount == 1
             arg = skipwhite(arg);
             if (*arg == ZERO)
                break;
@@ -10194,7 +10194,7 @@ c_bookAll(Invocation* invo) {
    int had_tab = commModifierG.cmod_tab;
    Tab* tNext;
 
-   if (invo->addr_count == 0)   //make as many portals as possible
+   if (invo->addrCount == 0)   //make as many portals as possible
       count = 9999;
    else
       count = invo->line2;   //make as many portals as specified
@@ -13214,7 +13214,7 @@ c_last(Invocation* invo){
 pub void
 c_argument(Invocation* invo){
    int      i;
-   if (invo->addr_count > 0)
+   if (invo->addrCount > 0)
       i = invo->line2 - 1;
    else
       i = curPor->argListInd;
@@ -13335,7 +13335,7 @@ c_argdedupe(Invocation*){
 
 pub void
 c_argedit(Invocation* invo) {
-   int i = invo->addr_count ? (int)invo->line2 : curPor->argListInd + 1;
+   int i = invo->addrCount ? (int)invo->line2 : curPor->argListInd + 1;
    //Whether curBook will be reused, curBook->fullFileName will be set.
    Boole isReusable = isCurBookReusable();
 
@@ -13354,7 +13354,7 @@ c_argedit(Invocation* invo) {
 pub void
 c_argadd(Invocation* invo) {
    do_arglist(invo->arg, AL_ADD,
-          invo->addr_count > 0 ? (int)invo->line2 : curPor->argListInd + 1,
+          invo->addrCount > 0 ? (int)invo->line2 : curPor->argListInd + 1,
           false);
 }
 
@@ -13366,9 +13366,9 @@ c_argdelete(Invocation* invo) {
    if (check_arglist_locked() == FAIL)
       return;
 
-   if (invo->addr_count > 0 || *invo->arg == ZERO) {
+   if (invo->addrCount > 0 || *invo->arg == ZERO) {
    //":argdel" works like ":.argdel"
-   if (invo->addr_count == 0) {
+   if (invo->addrCount == 0) {
        if (curPor->argListInd >= ARGCOUNT) {
       emsg(_(e_no_argument_to_delete));
       return;
@@ -13691,7 +13691,7 @@ openAllArgs(
 //":all" and ":sall". Also used for ":tab drop file ..." after setting the argument list.
 pub void
 c_all(Invocation* invo) {
-   if (invo->addr_count == 0)
+   if (invo->addrCount == 0)
       invo->line2 = 9999;
    openAllArgs((int)invo->line2, invo->forceit, invo->id == C_drop);
 }

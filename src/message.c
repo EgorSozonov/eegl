@@ -1282,7 +1282,7 @@ internalErrMsg(CS s) {
    if (emsg_not_now())
       return;
 
-   //Give a generic error which is translated.  The error itself may not be
+   //Give a generic error which is translated. The error itself may not be
    //translated, it almost never shows.
    emsgImpl(_(e_internal_error_please_report_a_bug));
 
@@ -1491,7 +1491,7 @@ messagesopt_changed(CS new) {
 pub void
 c_messages(Invocation *invo) {
    if (STRCMP(invo->arg, "clear") == 0) {
-      int keep = invo->addr_count == 0 ? 0 : invo->line2;
+      int keep = invo->addrCount == 0 ? 0 : invo->line2;
 
       while (msg_hist_len > keep)
          (void)delete_first_msg();
@@ -1507,7 +1507,7 @@ c_messages(Invocation *invo) {
 
    MsgHist* p = first_msg_hist;
    int c = 0;
-   if (invo->addr_count != 0) {
+   if (invo->addrCount != 0) {
       //Count total messages
       for (; p && !gotInterruptG; p = p->next)
           c++;

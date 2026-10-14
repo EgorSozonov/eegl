@@ -4029,7 +4029,7 @@ nvDiffGetPut(int put, long count) {
       ea.id = C_diffput;
    else
       ea.id = C_diffget;
-    ea.addr_count = 0;
+    ea.addrCount = 0;
     ea.line1 = curPor->cursor.lnum;
     ea.line2 = curPor->cursor.lnum;
     c_diffgetput(&ea);
@@ -4130,7 +4130,7 @@ c_diffgetput(Invocation* invo) {
    isBusyP = true;
 
    //When no range given include the line above or below the cursor.
-   if (invo->addr_count == 0) {
+   if (invo->addrCount == 0) {
       //Make it possible that ":diffget" on the last line gets line below
       //the cursor line when there is no difference above the cursor.
       LineDiffStatus linestatus = LINE_STATUS_UNCHANGED;
@@ -4172,7 +4172,7 @@ c_diffgetput(Invocation* invo) {
 
    dprev = NULL;
    for (dp = curtab->first_diff; dp != NULL; ) {
-      if (!invo->addr_count) {
+      if (!invo->addrCount) {
          //Handle the case with adjacent diff blocks (e.g. using linematch or anchors) at/above
          //the cursor. Since a range wasn't specified, we just want to grab one diff block rather
          //than all of them in the vicinity.
@@ -4196,7 +4196,7 @@ c_diffgetput(Invocation* invo) {
          //Inside the specified range and saving for undo worked.
          start_skip = 0;
          end_skip = 0;
-         if (invo->addr_count > 0) {
+         if (invo->addrCount > 0) {
             //A range was specified: check if lines need to be skipped.
             start_skip = invo->line1 + off - dp->lnum[idx_cur];
             if (start_skip > 0) {

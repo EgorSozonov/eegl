@@ -5250,7 +5250,7 @@ channel_exe_cmd(Channel* channel, ChannelFdKind part, Var* argv) {
       Invocation invo;
       CLEAR_FIELD(invo);
       invo.arg = arg;
-      invo.addr_count = 0;
+      invo.addrCount = 0;
       invo.forceit = true; //no mapping
       c_normal(&invo);
    } ei (STRCMP(cmd, "redraw") == 0) {

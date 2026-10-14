@@ -4154,6 +4154,8 @@ pub void
 c_set(Invocation* invo) {
    SetScope setScope = (invo->id == C_setglobal) ? SET_GLOBAL : SET_LOCAL;
 
+   lo("c_set");
+
    CS arg = invo->arg;
    Boole didShow = false;   //already showed one value
 

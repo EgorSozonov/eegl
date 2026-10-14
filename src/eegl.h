@@ -2102,7 +2102,7 @@ struct Invocation {
    CS*  commline;     //pointer to pointer of allocated cmdline
    CS commlineToFree; //free later
    Long argFlags;   //flags for the command
-   int addr_count;  //the number of addresses given
+   Unt addrCount;  //the number of addresses given
    LineNr line1;    //the first line number
    LineNr line2;    //the second line number or count
    CommandAddress addressKind; //kind of the count/range

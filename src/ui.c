@@ -6721,11 +6721,11 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
       splitInvo.arg = S"";
       if (opt->jo_term_rows > 0 && !vertical) {
          splitInvo.line2 = opt->jo_term_rows;
-         splitInvo.addr_count = 1;
+         splitInvo.addrCount = 1;
       }
       if (opt->jo_term_cols > 0 && vertical) {
          splitInvo.line2 = opt->jo_term_cols;
-         splitInvo.addr_count = 1;
+         splitInvo.addrCount = 1;
       }
 
       int cmod_split_modified = false;
@@ -6994,7 +6994,7 @@ c_terminal(Invocation* invo) {
          opt.jo_term_finish = TL_FINISH_CLOSE;
    }
 
-   if (invo->addr_count > 0) {
+   if (invo->addrCount > 0) {
       //Write lines from current buffer to the job.
       opt.set |= JO_IN_IO | JO_IN_BUF | JO_IN_TOP | JO_IN_BOT;
       opt.ioMode[PART_IN] = JIO_BUFFER;

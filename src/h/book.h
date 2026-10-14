@@ -230,7 +230,7 @@ int bookDo(
 CS do_bufdel(
    int command,
    CS arg,      //pointer to extra arguments
-   int addr_count,
+   int addrCount,
    int start_bnr,   //first book number in a range
    int end_bnr,   //book nr or last book nr in a range
    Boole forceit

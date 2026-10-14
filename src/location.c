@@ -3896,7 +3896,7 @@ c_llAge(Invocation* invo) {
    if ((stack = getStackForCommand(invo, true)) == NULL)
       return;
 
-   int count = (invo->addr_count != 0) ? invo->line2 : 1;
+   int count = (invo->addrCount != 0) ? invo->line2 : 1;
    while (count--) {
       if (invo->id == C_lolder) {
          if (stack->currList == 0) {
@@ -3921,7 +3921,7 @@ pub void
 qf_history(Invocation* invo) {
    LocationStack* stack = getStackForCommand(invo, false);
 
-   if (invo->addr_count > 0) {
+   if (invo->addrCount > 0) {
       if (!stack) {
           emsg(_(e_no_location_stack));
           return;
@@ -4279,7 +4279,7 @@ c_lOpen(Invocation* invo) {
    incrementLlBusyness();
 
    int height;
-   if (invo->addr_count != 0)
+   if (invo->addrCount != 0)
       height = invo->line2;
    else
       height = QF_WINHEIGHT;
@@ -4289,7 +4289,7 @@ c_lOpen(Invocation* invo) {
    //Find an existing location portal, or open a new one.
    if (commModifierG.cmod_tab == 0) {
       status = gotoLocationPortal(
-            stack, invo->addr_count != 0, height, commModifierG.cmod_split & WSP_VERT
+            stack, invo->addrCount != 0, height, commModifierG.cmod_split & WSP_VERT
       );
    }
    if (status == FAIL) {
@@ -4874,7 +4874,7 @@ eeglProcessArgs(Invocation* invo, OUT VimGrepArgs* args) {
    args->regmatch.regprog = NULL;
    args->title = copyStr(copyCommandTitle(*invo->commline));
 
-   if (invo->addr_count > 0)
+   if (invo->addrCount > 0)
       args->tomatch = invo->line2;
    else
       args->tomatch = MAXLNUM;
@@ -5252,7 +5252,7 @@ c_lMove(Invocation* invo) {
    if ((stack = getStackForCommand(invo, true)) == NULL)
       return;
 
-   if (invo->addr_count > 0)
+   if (invo->addrCount > 0)
       errornr = (int)invo->line2;
    else {
       switch (invo->id) {
@@ -5273,7 +5273,7 @@ c_lMove(Invocation* invo) {
    if (invo->id == C_ldo || invo->id == C_lfdo) {
       errornr = nthValidEntry(
          getCurrent(stack),
-         invo->addr_count > 0 ? (int)invo->line1 : 1,
+         invo->addrCount > 0 ? (int)invo->line1 : 1,
          invo->id == C_lfdo
       );
    }
@@ -5290,7 +5290,7 @@ c_lNext(Invocation* invo) {
       return;
 
    int errornr;
-   if (invo->addr_count > 0 && (invo->id != C_ldo && invo->id != C_lfdo))
+   if (invo->addrCount > 0 && (invo->id != C_ldo && invo->id != C_lfdo))
       errornr = (int)invo->line2;
    else
       errornr = 1;
@@ -5583,7 +5583,7 @@ c_lBelow(Invocation* invo) {
    Unt dir;
    int errornr = 0;
 
-   if (invo->addr_count > 0 && invo->line2 <= 0) {
+   if (invo->addrCount > 0 && invo->line2 <= 0) {
       emsg(_(e_invalid_range));
       return;
    }
@@ -5615,7 +5615,7 @@ c_lBelow(Invocation* invo) {
    //number is 0 based. Adjust the column number.
    pos.col++;
    errornr = findNthAdjacentEntry(ll, curBook->fiNum, &pos,
-            invo->addr_count > 0 ? invo->line2 : 0, dir,
+            invo->addrCount > 0 ? invo->line2 : 0, dir,
             invo->id == C_lbelow || invo->id == C_labove
    );
 
@@ -5904,7 +5904,7 @@ vimgrepProcessArgs(Invocation* invo, OUT VimGrepArgs* args) {
    args->regmatch.regprog = NULL;
    args->title = copyStr(copyCommandTitle(*invo->commline));
 
-   if (invo->addr_count > 0)
+   if (invo->addrCount > 0)
       args->tomatch = invo->line2;
    else
       args->tomatch = MAXLNUM;
@@ -7232,7 +7232,7 @@ processCbookArgs(Invocation* invo, OUT Book** outBook, LineNr* line1, LineNr* li
       return FAIL;
    }
 
-   if (invo->addr_count == 0) {
+   if (invo->addrCount == 0) {
       invo->line1 = 1;
       invo->line2 = book->mem.lineCount;
    }

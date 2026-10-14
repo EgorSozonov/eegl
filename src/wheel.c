@@ -4363,8 +4363,6 @@ private void
 nv_semicolon(OUT ActionArg* aArg) {
    Boole isCommKey = aArg->cmdchar == K_COMMAND || aArg->cmdchar == K_SCRIPT_COMMAND;
 
-   lo("xxx comm char is %d", aArg->cmdchar);
-
    if (VIsual_active && !isCommKey) {
       nv_operator(aArg);
       return;

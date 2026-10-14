@@ -24,7 +24,7 @@ void c_uniq(Invocation* invo);
 int do_move(LineNr line1, LineNr line2, LineNr dest);
 void free_prev_shellcmd(void);
 void do_bang(
-   int addr_count,
+   int addrCount,
    Invocation* invo,
    Boole forceit,
    Boole do_in,
@@ -91,16 +91,16 @@ int doCommand(
 CS ex_errmsg(CS msg, CS arg);
 CS ex_range_without_command(Invocation* invo);
 int checkforcmd(
-   OUT CS* pp,      //start of command
+   OUT CS* pp,  //start of command
    CS cmd,      //name of command
-   int      len
+   int len //required length
 );
-int checkforcmd_noparen(
-    OUT CS* pp,      //start of command
+int doCheckForCommNoParen(
+    OUT CS* pp,  //start of command
     CS cmd,      //name of command
     int len      //required length
 );
-int parse_command_modifiers(
+int doParseCommandModifiers(
    Invocation* invo,
    OUT CS* errorMsg,
    CommandModifier* cmod,
@@ -108,7 +108,7 @@ int parse_command_modifiers(
 );
 void applyCommModifiers(CommandModifier* cmod);
 void undoCommModifier(CommandModifier *cmod);
-int parse_cmd_address(Invocation* invo, CS* errorMsg, int silent);
+int parse_cmd_address(OUT Invocation* invo, OUT CS* errorMsg, Boole silent);
 CS skip_option_env_lead(CS start);
 int number_method(CS cmd);
 CS findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd));
