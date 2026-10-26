@@ -9120,7 +9120,7 @@ uiBeforeLeavingTerminal(void) {
    optChangeStringOptionDirect(S"book.type", BOOK_NORMAL, OPT_LOCAL, 0);
 }
 
-//Get the screen decoration for a position in the buffer. Use a negative "col" to get the
+//Get the screen decoration for a position in the book. Use a negative "col" to get the
 //filler bg color
 pub Decoration
 uiGetDeco(Portal* po, LineNr lnum, int col) {

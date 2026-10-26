@@ -1156,7 +1156,7 @@ ml_recover(Boole checkext) {
    if (directly) {
       doExpandEnv(OUT nameBuffTextG, b0p->b0_fname);
       if (setfname(curBook, nameBuffG, NULL, true) == FAIL)
-          goto theend;
+         goto theend;
    }
 
    home_replace(mfp->fName, nameBuffG, MAXPATHL, true);
@@ -1170,7 +1170,7 @@ ml_recover(Boole checkext) {
    msg_putchar('\n');
 
    //check date of swap file and original file
-   long mtime = charToLong(b0p->b0_mtime);
+   Long mtime = charToLong(b0p->b0_mtime);
    if (curBook->fullFileName != NULL
           && stat((char *)curBook->fullFileName, &org_stat) != -1
           && ((stat((char *)mfp->fName, &swp_stat) != -1
@@ -1185,17 +1185,18 @@ ml_recover(Boole checkext) {
 
    //Now that we are sure that the file is going to be recovered, clear the
    //contents of the current book.
-   while (!(curBook->mem.flags & ML_EMPTY))
-   ml_delete((LineNr)1);
+   while ((curBook->mem.flags & ML_EMPTY) == 0)
+      ml_delete((LineNr)1);
 
    //Try reading the original file to obtain the values of 'binary'. Ignore errors. The text
    //itself is not used. When the file is encrypted the user is asked to enter the key.
-   if (curBook->fullFileName)
+   if (curBook->fullFileName) {
       orig_file_status = readfile(
             curBook->fullFileName, NULL, (LineNr)0, (LineNr)0, (LineNr)MAXLNUM, NULL, READ_NEW
       );
+   }
 
-   unchanged(curBook, true);
+   doResetChangedFlag(curBook, true);
 
    BlockId bnum = 1;      //start with block 1
    int pageCount = 1;   //which is 1 page
@@ -6715,7 +6716,7 @@ readBook(
       if (!CURBOOK_EMPTY())
          changed();
       ei (retval == OK)
-         unchanged(curBook, true);
+         doResetChangedFlag(curBook, true);
    }
    return retval;
 }
@@ -6838,7 +6839,7 @@ bookOpenFromInvo(
    if (curBook->modifiedWasSet) {   //autocmd did ":set modified"
       changed();
    } ei (retval == OK && !read_stdin && !read_fifo) {
-      unchanged(curBook, true);
+      doResetChangedFlag(curBook, true);
    }
 
    //Set last_changedtick to avoid triggering a TextChanged autocommand right
@@ -7216,7 +7217,7 @@ bookClose(
 pub void
 buf_clear_file(Book* book){
    book->mem.lineCount = 1;
-   unchanged(book, true);
+   doResetChangedFlag(book, true);
    book->startEof = false;
    book->startEol = true;
    book->mem.mfile = NULL;
@@ -12609,8 +12610,8 @@ endOfName:
    //When written everything correctly: reset 'modified'.  Unless not
    //writing to the original file and '+' is not in 'cpoptions'.
    if (reset_changed && whole && !append && overwriting) {
-      unchanged(book, false);
-      //b:changedtick may be incremented in unchanged() but that should not
+      doResetChangedFlag(book, false);
+      //b:changedtick may be incremented in doResetChangedFlag() but that should not
       //trigger a TextChanged event.
       if (book->lastChangeTick + 1 == CHANGEDTICK(book))
          book->lastChangeTick = CHANGEDTICK(book);

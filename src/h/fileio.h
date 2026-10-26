@@ -79,11 +79,11 @@ int mch_dirname(CS buf, int len);
 CS home_replace_save(Book* book, CS inputFname);
 CS homeReplaceA(Book* book, CS inputFname, Arena* a);
 int modify_fname(
-   CS src,      //string with modifiers
-   int tilde_file,   //"~" is a file name, not $HOME
+   CS src,         //string with modifiers
+   int tilde_file, //"~" is a file name, not $HOME
    Unt* usedlen,   //characters after src that are used
-   OUT CS* fnamep,   //file name so far
-   OUT CS* bufp,      //buffer for allocated file name or NULL
+   OUT CS* fnamep, //file name so far
+   OUT CS* bufp,   //buffer for allocated file name or NULL
    Unt* fnamelen   //length of fnamep
 );
 void home_replace(
@@ -174,7 +174,7 @@ int eeFgets(CS buf, int size, FILE *fp);
 int eeRename(CS from, CS to);
 int check_timestamps(int focus);
 void buf_reload(Book* book, int orig_mode, int reload_options);
-void buf_store_time(Book *book, FileStat *st, CS);
+void buf_store_time(Book* book, FileStat* st, CS);
 void write_lnum_adjust(LineNr offset);
 int mch_isrealdir(CS name);
 Boole mch_isdir(CS name);

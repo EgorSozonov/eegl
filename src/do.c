@@ -4220,10 +4220,10 @@ dialog_changed(Book* book, int checkall) {  //may abandon all changed buffers
          book->currFileName = NULL;
          EE_CLEAR(book->fullFileName);
          EE_CLEAR(book->shortFileName);
-         unchanged(book, false);
+         doResetChangedFlag(book, false);
       }
    } ei (ret == EE_NO) {
-      unchanged(book, false);
+      doResetChangedFlag(book, false);
    } ei (ret == EE_ALL) {
       //Write all modified files that can be written.
       //Skip readonly buffers, these need to be confirmed individually.
@@ -4249,7 +4249,7 @@ dialog_changed(Book* book, int checkall) {  //may abandon all changed buffers
       }
    } ei (ret == EE_DISCARDALL) {
       FOR_ALL_BOOKS(buf2)
-         unchanged(buf2, false);
+         doResetChangedFlag(buf2, false);
    }
 }
 
@@ -12600,7 +12600,7 @@ u_undoredo(Boole undo) {
    if (old_flags & UH_CHANGED)
       changed();
    else
-      unchanged(curBook, true);
+      doResetChangedFlag(curBook, true);
 
    //restore marks from before undo/redo
    for (i = 0; i < NMARKS; ++i) {
@@ -13627,7 +13627,7 @@ changed_common(
       //Create a new entry if a new undo-able change was started or we
       //don't have an entry yet.
       if (curBook->newChange || curBook->changeListLen == 0) {
-         Bool willAdd;
+         Boole willAdd;
          if (curBook->changeListLen == 0)
             willAdd = true;
          else {
@@ -13891,8 +13891,8 @@ deleted_lines_mark(LineNr lnum, long count) {
 pub void
 doChangedLinesBook(
    Book* book,
-   LineNr lnum,       //first line with change
-   LineNr lnume,       //line below last changed line
+   LineNr lnum,    //first line with change
+   LineNr lnume,   //line below last changed line
    Long xtra       //number of extra lines (negative when deleting)
 ){
    if (book->needsRedraw) {
@@ -13955,7 +13955,7 @@ doChangedLines(
 //Called when the changed flag must be reset for book "book". When "always_inc_changedtick" is
 //true b:changedtick is incremented also when the changed flag was off.
 pub void
-unchanged(Book* book, int always_inc_changedtick) {
+doResetChangedFlag(Book* book, int always_inc_changedtick) {
    if (book->wasModified) {
       book->wasModified = false;
       ml_setflags(book);

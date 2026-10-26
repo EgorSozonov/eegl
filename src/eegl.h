@@ -60,9 +60,6 @@ typedef struct sigaction SignalAction;
 #define TEMPDIRNAMES  "$TMPDIR", "/tmp", ".", "$HOME"
 #define TEMPNAMELEN    256
 
-//Special wildcards that need to be handled by the shell
-#define SPECIAL_WILDCHAR    "`'{" //}
-
 //Unix has plenty of memory, use large buffers
 #define CMDBUFFSIZE 1024   //size of the command processing buffer
 
@@ -987,7 +984,7 @@ typedef struct tm Tm;
 #define SID_NONE      (-6)   //don't set scriptID
 #define SID_WINLAYOUT (-7)   //changing window size
 
-//Events for autocommands. Must be kept in sync with "autocmd.c:autoEvents".
+//Events for autocommands. Must be kept in sync with "script.c:autoEvents".
 enum AutoEvent {
    EVENT_BUFADD = 0,      //after adding a book to the book list
    EVENT_BUFCREATE,       //NOT USED: BufCreate == BufAdd
@@ -1769,7 +1766,7 @@ typedef struct {
    int freeCount;
 } BookRef;
 
-typedef Byte VTermColor;
+typedef Byte VTermColor; //Beautiful 256-color palette for the win!
 
 typedef struct {
    VTermColor fg;
@@ -1795,7 +1792,7 @@ typedef struct {
    VTermColor bg; //background, always from original hiId group
    VTermColor under; //underline color, possibly from merging hilites
    VTermDeco flags; //HL_BOLD, underline etc. Result from possibly merging hilites
-   Byte fieldPresence; //HI_* constants
+   Byte fieldPresence; //HI_HAS_* and HI_IS_LINK constants
    Short hiId; //original hilite group id
 } Decoration;
 

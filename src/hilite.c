@@ -162,8 +162,9 @@ pub
 //books. This is required because the TUI can redraw at any time for any book.
 private HiliteGroup hilites[] = {
 
-#define HI(na, presence, fg, bg, decoFlags, lnk) (HiliteGroup){\
-   .name = tConst(#na), .flags = decoFlags, .fieldPresence = presence, .link = lnk},
+#define HI(na, presence, fgA, bgA, decoFlags, lnk) (HiliteGroup){\
+   .name = tConst(#na), .fg = fgA, .bg = bgA, .flags = decoFlags, .fieldPresence = presence,\
+   .link = lnk},
 
 //The hilite groups
 pubWrap("typedef enum {\n#define HI(a, b, c, d, e, f) HILITE_##a,\n",
@@ -276,7 +277,6 @@ private Text keyOf(HiKeyValue kv, CS s);
 private Text valueOf(HiKeyValue kv, CS s);
 private Boole sliceCmpToConst0(Text a, Arr(char) b, Unt len);
 private Text hiliteGroupName(Short hiId);
-private Short getLinkId(Short hiId);
 private int setDecoration(Text arg, OUT HiliteGroup* g);
 private Boole getColorByName(OUT VTermColor* res, Text name);
 private Boole setForeground(HiliteGroup* group, Text arg);
@@ -569,25 +569,16 @@ private DictStringInt128* hiNames;
 
 private Arena* a;
 
-
-//Return the name of a hilite group.
-private Text
-hiliteGroupName(Short hiId) {
-   return hilites[hiId].name;
-}
-
-//Return the ID of the link in a hilite group.
-private Short
-getLinkId(Short hiId) {
-   return hilites[hiId].link;
-}
-
 pub void
 initHilite() {
    a = createArena();
 
    decorationsG = alloc((countGroups + 10)*sizeof(Decoration));
    set_normal_colors();
+   for (Unt i = 0; i < ARRAY_LENGTH(hilites); i++) {
+      hilites[i].hiId = i;
+   }
+   lo("yyy after init LineNr id %d fg %d", HILITE_LineNr, hilites[HILITE_LineNr].fg);
 }
 
 ////Reset all hiliting to the defaults. Removes all hiliting for the groups added by the user
@@ -831,12 +822,9 @@ printHiliteHeader(
 
 //}}}
 
-//Handle ":highlight {from} link={to}" command.
+//Handle ":hilite {from} link={to}" command.
 private Boole
-linkHilite(
-   HiliteGroup* group,
-   Text toName
-) {
+linkHilite(HiliteGroup* group, Text toName) {
    clearHiliteWorker(OUT group);
 
    Short toId = hiliteGroupByName(toName);
@@ -1274,7 +1262,7 @@ error:
 //"hlget([name])" function
 //Return the decos of a specific hilite group (if specified) or all the hilite groups
 pub void
-f_hlget(Var *argvars, Var *returnVar) {
+f_hlget(Arr(Var) argvars, OUT Var* returnVar) {
 
    allocReturnList(returnVar);
 
@@ -1344,13 +1332,13 @@ c_echohl(Invocation* invo) {
 
 //"hilite(name)" function
 pub void
-f_hlID(Arr(Var) argvars, Var* returnVar) {
+f_hlID(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->number = hiliteGroupByName(mbText(tv_get_string(&argvars[0])));
 }
 
 //"hiliteExists()" function
 pub void
-f_hlexists(Arr(Var) argvars, Var* returnVar) {
+f_hlexists(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->number = hiliteExists(mbText(tv_get_string(&argvars[0])));
 }
 
@@ -4322,7 +4310,7 @@ syn_list_one(
          msg_putchar(' ');
          if (spp->sp_sync_idx >= 0)
             msg_outtrans(
-               hiliteGroupName(SYN_ITEMS(curPor->ownSyntax)[spp->sp_sync_idx].syntax.hiId).c
+               hilites[SYN_ITEMS(curPor->ownSyntax)[spp->sp_sync_idx].syntax.hiId].name.c
             );
          else
             msg_puts((CS)"NONE");
@@ -4331,11 +4319,13 @@ syn_list_one(
    }
 
    //list the link, if there is one
-   if (getLinkId(id) != 0 && (did_header || link_only) && !gotInterruptG) {
+   if ((hilites[id].fieldPresence & HI_IS_LINK) != 0
+         && (did_header || link_only) && !gotInterruptG
+   ) {
       printHiliteHeader(did_header, 999, id);
       msgPutsDeco(S"links to", decoFlags);
       msg_putchar(' ');
-      msg_outtrans(hiliteGroupName(getLinkId(id) - 1).c);
+      msg_outtrans(hilites[hilites[id].link - 1].name.c);
    }
 }
 
@@ -4396,7 +4386,7 @@ put_id_list(CS name, Short *list, int deco) {
          msg_putchar('@');
          msg_outtrans(SYN_CLSTR(curPor->ownSyntax)[scl_id].name);
       } else
-         msg_outtrans(hiliteGroupName(*p - 1).c);
+         msg_outtrans(hilites[(*p - 1)].name.c);
       if (p[1])
          msg_putchar(',');
     }
@@ -4405,11 +4395,11 @@ put_id_list(CS name, Short *list, int deco) {
 
 private void
 put_pattern(CS s, int c, SyntaxPattern   *spp, int deco) {
-   long   n;
-   int      mask;
-   int      first;
-   static char   *sepchars = "/+=-#@\"|'^&";
-   int      i;
+   Long n;
+   int mask;
+   int first;
+   static char* sepchars = "/+=-#@\"|'^&";
+   int i;
 
    //May have to write "matchgroup=group"
    if (last_matchgroup != spp->patternHiId) {
@@ -4419,7 +4409,7 @@ put_pattern(CS s, int c, SyntaxPattern   *spp, int deco) {
       if (last_matchgroup == 0)
          msg_outtrans((CS)"NONE");
       else
-         msg_outtrans(hiliteGroupName(last_matchgroup - 1).c);
+         msg_outtrans(hilites[last_matchgroup - 1].name.c);
       msg_putchar(' ');
    }
 
@@ -5847,7 +5837,7 @@ get_id_list(
                regmatch.rm_ic = true;
                id = SHORT;
                for (i = countDecosG; --i >= 0; ) {
-                  if (eeRegexec(&regmatch, hiliteGroupName(i).c, (ColNr)0)) {
+                  if (eeRegexec(&regmatch, hilites[i].name.c, (ColNr)0)) {
                      if (round == 2) {
                         //Got more items than expected; can happen
                         //when adding items that match: "contains=a.*b,axb".

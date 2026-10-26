@@ -68,8 +68,7 @@ typedef struct {
    CS ptr;           //current position in text line
    CS line;          //current text line start
 
-   Decoration portalDeco;     //background for the whole portal, except margins and "~" lines.
-   Decoration portcolorDeco;  //decorations from @portcolor
+   Decoration portalDeco;  //background for the whole portal, except margins and "~" lines.
    Decoration cursorlineDeco; //set when @cursorline active
    Decoration lineDeco;   //for the whole line, includes @cursorline
    Unt flushFlags; //flags for drawFlushLine()
@@ -85,7 +84,8 @@ typedef struct {
 
    int countExtraBytes; //number of extra bytes (for virtual text)
    CS extraBytes;       //virtual text. This is only used when c_extra and c_final are ZERO
-   Decoration extraDeco; //decorations for extraBytes, should be combined with portalDeco if needed
+   Decoration extraDeco; //decorations for extraBytes, should be combined with portalDeco if
+                         //needed
    int toSkipBeforeDeco;    //chars to skip before using extraDeco
    Unt c_extra;   //extra chars, virtual text
    Unt c_final;   //final char, mandatory if set
@@ -369,22 +369,8 @@ pub
 
 pub void
 drawInit() {
-   lo("init draw");
    defaultDecoP = getFullDecoration(0);
    activeDecoP = defaultDecoP;
-}
-
-//If "po" is a popup portal, then get the "Pmenu" hilite decoration.
-pub Decoration
-getPortcolorDeco(Portal* po) {
-   if (PORTAL_IS_POPUP(po)) {
-      if (isInfoPopup(po))
-         return getFullDecoration(HILITE_PmenuSelected);
-      else
-         return getFullDecoration(HILITE_Pmenu);
-   } else {
-      return getFullDecoration(HILITE_None);
-   }
 }
 
 //Call fillRowsWithTwoChars() with a column offset. Return the new offset.
@@ -4942,8 +4928,13 @@ drawLineNumber(OUT DrawCtx* m, Decoration numDeco, Portal* po) {
    ei (m->lnum > po->cursor.lnum && getDecoFlags(HILITE_LineNrBelow) != 0)
       //Use LineNrBelow
       m->charDeco = getFullDecoration(HILITE_LineNrBelow);
-   ei (numDeco.hiId < SHORT)
+   ei (numDeco.hiId < SHORT) {
+      lo("xxxx numDeco! numDeco hiId %d, line nr color %d",
+            numDeco.hiId, getFullDecoration(HILITE_LineNr).fg);
       m->charDeco = numDeco;
+   }
+   lo("line nr fg %d bg %d presense %d",
+         m->charDeco.fg, m->charDeco.bg, m->charDeco.fieldPresence);
 }
 
 //draw @breakindent: indent wrapped text accordingly
@@ -6522,7 +6513,7 @@ drawLineOnScreen(
    c.nextLineInd = 0;   //index in nextline[] where next line starts
    c.visualDeco = EMPTY_DECO;      //decorations for Visual and incsearch hiliting
    c.lineDecoSaved = EMPTY_DECO;
-   c.numDeco = EMPTY_DECO;      //decoration for the number column
+   c.numDeco = getFullDecoration(HILITE_LineNr);  //decoration for the number column
    c.currCheckedCol = 0;   //checked column for current line
    c.hasExtraHiliting = false;   //has extra hiliting
    int changeStart = MAXCOL;   //first col of changed area
@@ -6722,7 +6713,7 @@ drawLineOnScreen(
       }
    }
 
-   m.portalDeco = getPortcolorDeco(port);
+   m.portalDeco = getFullDecoration(HILITE_None);
    if (m.portalDeco.flags != 0) {
       m.portalDeco = m.portalDeco;
       c.areaHiliting = true;

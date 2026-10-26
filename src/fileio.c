@@ -893,10 +893,10 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
    int io_size = sizeof(buf);
    int readlen;      //size of last fread()
    CS prev    = NULL;   //previously read bytes, if any
-   long prevlen  = 0;      //length of data in prev
-   long prevsize = 0;      //size of prev buffer
-   long maxline  = MAXLNUM;
-   long cnt    = 0;
+   Long prevlen  = 0;      //length of data in prev
+   Long prevsize = 0;      //size of prev buffer
+   Long maxline  = MAXLNUM;
+   Long cnt    = 0;
    CS p;         //position in @buf
    CS start;         //start of current line
    FileOffset offset = 0;
@@ -974,8 +974,8 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
             if (prevlen == 0)
                s = copySubstr(start, len);
             else {
-               //Change "prev" buffer to be the right size. This way the bytes are only copied once,
-               //and very long lines are allocated only once.
+               //Change "prev" buffer to be the right size. This way the bytes are only copied
+               //once, and very long lines are allocated only once.
                s = eeRealloc(prev, prevlen + len + 1);
                MEMMOVE(s + prevlen, start, len);
                s[prevlen + len] = ZERO;
@@ -1423,9 +1423,8 @@ expand_wildcards_eval(
 
    if (eval_pat) {
       if (files->len == 0 && is_cur_alt_file && star_follows) {
-         //Expanding "%" or "#" and the file does not exist: Add the
-         //pattern anyway (without the star) so that this works for remote
-         //files and non-file buffer names.
+         //Expanding "%" or "#" and the file does not exist: Add the pattern anyway (without the
+         //star) so that this works for remote files and non-file book names.
          files->c = ALLOC_ONE(CS);
          files->c[0] = eval_pat;
          eval_pat = NULL;
@@ -1805,7 +1804,10 @@ GEN_TYPE_L(DirPtr)
 //  return countMatches;
 //}
 
-#ifdef SPECIAL_WILDCHAR
+
+//Special wildcards that need to be handled by the shell
+#define SPECIAL_WILDCHAR    S"`'{" //}
+
 
 //Return true if "p" contains a special wildcard character, one that Eegl cannot expand,
 //requires using a shell.
@@ -1818,7 +1820,7 @@ has_special_wildchar(CS p){
       //Allow for escaping.
       if (*p == '\\' && p[1] != ZERO && p[1] != '\r' && p[1] != '\n')
           ++p;
-      ei (firstOccurrence((CS)SPECIAL_WILDCHAR, *p) != NULL) {
+      ei (firstOccurrence(SPECIAL_WILDCHAR, p[0]) != NULL) {
          //A { must be followed by a matching }.
          if (*p == '{' && firstOccurrence(p, '}') == NULL)
             continue;
@@ -1830,8 +1832,6 @@ has_special_wildchar(CS p){
    }
    return false;
 }
-
-#endif
 
 //Generic wildcard expansion code.
 //
@@ -2221,11 +2221,11 @@ homeReplaceA(Book* book, CS inputFname, Arena* a){
 //Return VALID_ flags or -1 for failure. When there is an error, *fnamep is set to NULL.
 pub int
 modify_fname(
-   CS src,      //string with modifiers
-   int tilde_file,   //"~" is a file name, not $HOME
+   CS src,         //string with modifiers
+   int tilde_file, //"~" is a file name, not $HOME
    Unt* usedlen,   //characters after src that are used
-   OUT CS* fnamep,   //file name so far
-   OUT CS* bufp,      //buffer for allocated file name or NULL
+   OUT CS* fnamep, //file name so far
+   OUT CS* bufp,   //buffer for allocated file name or NULL
    Unt* fnamelen   //length of fnamep
 ){
    Unt valid = 0;
@@ -5184,28 +5184,25 @@ readfile(
    CS buffer = NULL;      //read buffer
    CS nebuffer = NULL;   //init to shut up gcc
    CS line_start = NULL;   //init to shut up gcc
-   int      wasempty;      //buffer was empty before reading
    ColNr   len;
    long   size = 0;
    CS p;
    FileOffset   filesize = 0;
    int      skip_read = false;
    ContextSha256 sha_ctx;
-   int      read_undo_file = false;
-   int      split = 0;      //number of split lines
+   int read_undo_file = false;
+   int split = 0;      //number of split lines
 #define UNKNOWN    0x0fffffff      //file size is unknown
    LineNr   linecnt;
-   int      error = false;      //errors encountered
-   long   linerest = 0;      //remaining chars in line
-   int      perm = 0;
-   int      swap_mode = -1;      //protection bits for swap file
-   FileStat   st;
+   int error = false;      //errors encountered
+   Long linerest = 0;      //remaining chars in line
+   int perm = 0;
+   int swap_mode = -1;      //protection bits for swap file
+   FileStat st;
    LineNr skip_count = 0;
    LineNr read_count = 0;
    int msg_save = msg_scroll;
-   LineNr read_no_eol_lnum = 0;   //non-zero lnum when last line of
-               //last read was missing the eol
-   int file_rewind = false;
+   LineNr read_no_eol_lnum = 0;  //non-zero lnum when last line of last read was missing the eol
    LineNr illegal_byte = 0;   //line nr with illegal byte
    int bad_char_behavior = BAD_REPLACE; //BAD_KEEP, BAD_DROP or character to replace with
    Pos  orig_start;
@@ -5216,10 +5213,9 @@ readfile(
    curBook->auDidFileType = false; //reset before triggering any autocommands
    curBook->noEolLnum = 0;   //in case it was set by the previous read
 
-   //Remember the initial values of curBook, curBook->fullFileName and
-   //curBook->currFileName to detect whether they are altered as a result of
-   //executing nasty autocommands.  Also check if "fname" and "sfname"
-   //point to one of these values.
+   //Remember the initial values of curBook, curBook->fullFileName and curBook->currFileName to
+   //detect whether they are altered as a result of executing nasty autocommands. Also check if
+   //"fname" and "sfname" point to one of these values.
    old_curbuf = curBook;
    CS old_fullFileName = curBook->fullFileName;
    CS old_currFileName = curBook->currFileName;
@@ -5373,11 +5369,7 @@ readfile(
    if (fd < 0) { //{{{ cannot open at all
       msg_scroll = msg_save;
          if (newfile) {
-            if (perm < 0
-#ifdef ENOENT
-               && errno == ENOENT
-#endif
-            ){
+            if (perm < 0 && errno == ENOENT){
                //Set the 'new-file' flag, so that when the file has
                //been created by someone else, a ":w" will complain.
                curBook->flags |= BF_NEW;
@@ -5409,15 +5401,12 @@ readfile(
                   retval = OK;       //a new file is not an error
                goto theend;
             } else {
-                filemess(curBook, sfname, (CS)(
-# ifdef EFBIG
+               filemess(curBook, sfname, (CS)(
                    (errno == EFBIG) ? _("[File too big]") :
-# endif
-# ifdef EOVERFLOW
                    (errno == EOVERFLOW) ? _("[File too big]") :
-# endif
-                        _("[Permission Denied]")), 0);
-                curBook->o.modifiable = false;
+                        _("[Permission Denied]")), 0
+               );
+               curBook->o.modifiable = false;
             }
           }
 
@@ -5534,19 +5523,19 @@ readfile(
       }
    }
 
-   //Autocommands may add lines to the file, need to check if it is empty
-   wasempty = (curBook->mem.flags & ML_EMPTY);
+   //Was buffer empty before reading? Autocommands may add lines to the file, need to check
+   Boole wasempty = (curBook->mem.flags & ML_EMPTY) != 0;
 
    if (!recoveryModeG && !filtering && !(flags & READ_DUMMY)) {
-   //Show the user that we are busy reading the input.  Sometimes this
-   //may take a while.  When reading from stdin another program may
-   //still be running, don't move the cursor to the last line, unless always using the GUI.
-   if (read_stdin) {
-      if (!is_not_a_term()) {
-         mch_msg(_("Eegl: Reading from stdin...\n"));
-      }
-   } ei (!read_buffer)
-       filemess(curBook, sfname, (CS)"", 0);
+      //Show the user that we are busy reading the input. Sometimes this
+      //may take a while. When reading from stdin another program may
+      //still be running, don't move the cursor to the last line, unless always using the GUI.
+      if (read_stdin) {
+         if (!is_not_a_term()) {
+            mch_msg(_("Eegl: Reading from stdin...\n"));
+         }
+      } ei (!read_buffer)
+          filemess(curBook, sfname, (CS)"", 0);
    }
 
    msg_scroll = false;         //overwrite the file message
@@ -5564,21 +5553,6 @@ readfile(
 
    c = true;
 
-   if (file_rewind) {
-      if (read_buffer) {
-         read_buf_lnum = 1;
-         read_buf_col = 0;
-      } ei (read_stdin || lseek(fd, (FileOffset)0L, SEEK_SET) != 0) {
-         //Can't rewind the file, give up.
-         error = true;
-         goto failed;
-      }
-      //Delete the previously read lines.
-      while (lnum > from)
-         ml_delete(lnum--);
-      file_rewind = false;
-   }
-
    if (!skip_read) {
       linerest = 0;
       filesize = 0;
@@ -5592,7 +5566,7 @@ readfile(
                  && !read_stdin
                  && !read_buffer);
       if (read_undo_file)
-          sha256_start(&sha_ctx);
+         sha256_start(&sha_ctx);
    }
 
    while (!error && !gotInterruptG) {
@@ -5600,23 +5574,19 @@ readfile(
       //room for one terminating ZERO. The amount is limited by the fact that read() only
       //can read up to max_unsigned characters (and other things).
       if (!skip_read) {
-#if defined(SSIZE_MAX) && (SSIZE_MAX < 0x10000L)
-         size = SSIZE_MAX;          //use max I/O size, 52K
-#else
          //Use buffer >= 64K.  Add linerest to double the size if the
          //line gets very long, to avoid a lot of copying. But don't
          //read more than 1 Mbyte at a time, so we can be interrupted.
          size = 0x10000L + linerest;
          if (size > 0x100000L)
             size = 0x100000L;
-#endif
       }
 
       //Protect against the argument of lalloc() going negative.
       if (size < 0 || size + linerest + 1 < 0 || linerest >= MAXCOL) {
-          ++split;
-          *ptr = NL;          //split line by inserting a NL
-          size = 1;
+         ++split;
+         *ptr = NL;          //split line by inserting a NL
+         size = 1;
       } else {
          if (!skip_read) {
             for ( ; size >= 10; size = (long)((Ulong)size >> 1)) {
@@ -5693,40 +5663,39 @@ readfile(
          if (size <= 0)
             break;
 
-      --ptr;
-      while (++ptr, --size >= 0) {
-         if ((c = *ptr) != ZERO && c != NL)  //catch most common case
-            continue;
-         if (c == ZERO)
-            *ptr = NL;   //NULs are replaced by newlines!
-         else {
-            if (skip_count == 0) {
-               *ptr = ZERO;      //end of line
-               len = (ColNr)(ptr - line_start + 1);
-               if (ml_append(lnum, line_start, len, newfile) == FAIL) {
-                  error = true;
-                  break;
-               }
-               if (read_undo_file)
-                  sha256_update(&sha_ctx, line_start, len);
-               ++lnum;
-               if (--read_count == 0) {
-                  error = true;       //break loop
-                  line_start = ptr;   //nothing left to write
-                  break;
-               }
-            } else
-               --skip_count;
-            line_start = ptr + 1;
+         --ptr;
+         while (++ptr, --size >= 0) {
+            if ((c = *ptr) != ZERO && c != NL)  //catch most common case
+               continue;
+            if (c == ZERO)
+               *ptr = NL;   //NULs are replaced by newlines!
+            else {
+               if (skip_count == 0) {
+                  *ptr = ZERO;      //end of line
+                  len = (ColNr)(ptr - line_start + 1);
+                  if (ml_append(lnum, line_start, len, newfile) == FAIL) {
+                     error = true;
+                     break;
+                  }
+                  if (read_undo_file)
+                     sha256_update(&sha_ctx, line_start, len);
+                  ++lnum;
+                  if (--read_count == 0) {
+                     error = true;       //break loop
+                     line_start = ptr;   //nothing left to write
+                     break;
+                  }
+               } else
+                  --skip_count;
+               line_start = ptr + 1;
+            }
          }
-      }
 
-      linerest = (long)(ptr - line_start);
-      ui_breakcheck();
+         linerest = (long)(ptr - line_start);
+         ui_breakcheck();
       }
    }
 
-failed:
    //not an error, max. number of lines reached
    if (error && read_count == 0)
       error = false;
@@ -5756,13 +5725,11 @@ failed:
    }
    eeglFree(buffer);
 
-#ifdef HAVE_DUP
    if (read_stdin) {
       //Use stderr for stdin, makes shell commands work.
       close(0);
       (void)dup(2);
    }
-#endif
 
    --no_wait_return;         //may wait for return now
 
@@ -6602,7 +6569,7 @@ buf_reload(Book* book, int orig_mode, int reload_options){
             }
          } ei (book == curBook) {  //"book" still valid
             //Mark the book as unmodified and free undo info.
-            unchanged(book, true);
+            doResetChangedFlag(book, true);
             if ((flags & READ_KEEP_UNDO) == 0)
                invalidateUndoBufferAndFreeBlocks(book);
             else {
@@ -6651,13 +6618,9 @@ buf_reload(Book* book, int orig_mode, int reload_options){
 }
 
 pub void
-buf_store_time(Book *book, FileStat *st, CS){
-   book->modifiedTime = (long)st->st_mtime;
-#ifdef ST_MTIM_NSEC
-   book->modifiedTimeNs = (long)st->ST_MTIM_NSEC;
-#else
-   book->modifiedTimeNs = 0;
-#endif
+buf_store_time(Book* book, FileStat* st, CS){
+   book->modifiedTime = (Long)st->st_mtime;
+   book->modifiedTimeNs = (Long)st->st_mtim.tv_nsec;
    book->origSize = st->st_size;
    book->origMode = (int)st->st_mode;
 }

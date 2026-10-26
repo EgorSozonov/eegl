@@ -318,8 +318,8 @@ void deleted_lines(LineNr lnum, long count);
 void deleted_lines_mark(LineNr lnum, long count);
 void doChangedLinesBook(
    Book* book,
-   LineNr lnum,       //first line with change
-   LineNr lnume,       //line below last changed line
+   LineNr lnum,    //first line with change
+   LineNr lnume,   //line below last changed line
    Long xtra       //number of extra lines (negative when deleting)
 );
 void doChangedLines(
@@ -328,7 +328,7 @@ void doChangedLines(
    LineNr lnume,   //line below last changed line
    long xtra       //number of extra lines (negative when deleting)
 );
-void unchanged(Book* book, int always_inc_changedtick);
+void doResetChangedFlag(Book* book, int always_inc_changedtick);
 void ins_bytes(CS p);
 void ins_bytes_len(CS p, int len);
 void insertChar(Unt c);

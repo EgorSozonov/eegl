@@ -13185,7 +13185,7 @@ update_popups(void (*portUpdate)(Portal* po, Boole *)) {
 
       int total_width = popup_width(po) - po->pup.rightOff;
       int total_height = popup_height(po);
-      Decoration popupDeco = getPortcolorDeco(po);
+      Decoration popupDeco = getFullDecoration(HILITE_None);
 
       if (po->windowRow + total_height > (int)commlineRowG)
          po->pup.flags |= POPF_ON_CMDLINE;
