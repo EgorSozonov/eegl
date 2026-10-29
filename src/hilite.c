@@ -42,7 +42,7 @@ typedef struct {
 //This is module-private info, the publically usable part is written to decorationsG.
 
 typedef struct {
-   Unt hiId;
+   HiliteId hiId;
    Text name;
    VTermDeco flags;   //flag of text decoration combo (bold, underline etc)
    Byte fieldPresence; //HI_HAS_* and HI_IS_LINK flags
@@ -155,6 +155,8 @@ pub
 #define HI_IS_LINK    8
 #define HI_HAS_UNDER 16
 
+pub
+#define EMPTY_DECO  (Decoration){.hiId = HILITE_NULL, .fieldPresence = 0, .flags = 0}
 
 //{{{hilite groups
 

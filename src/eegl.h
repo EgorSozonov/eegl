@@ -555,8 +555,6 @@ typedef struct tm Tm;
 //special attribute addition: Put message in history
 #define MSG_HIST     64
 
-#define EMPTY_DECO  (Decoration){.hiId = HILITE_NULL, .fieldPresence = 0, .flags = 0}
-
 //Values for State.
 //
 //The lower bits up to 0x80 are used to distinguish normal/visual/op_pending
@@ -1787,8 +1785,8 @@ typedef struct {
    CellDeco deco;
 } ScreenCell;
 
-//typedef enum HiliteId HiliteId;
 enum HiliteId : unsigned char;
+typedef enum HiliteId HiliteId;
 
 typedef struct {
    VTermColor fg; //foreground, always from original hiId group
@@ -1796,7 +1794,7 @@ typedef struct {
    VTermColor under; //underline color, possibly from merging hilites
    VTermDeco flags; //HL_BOLD, underline etc. Result from possibly merging hilites
    Byte fieldPresence; //HI_HAS_* and HI_IS_LINK constants
-   enum HiliteId hiId; //original hilite group id
+   HiliteId hiId; //original hilite group id
 } Decoration;
 
 //marks: positions in a file (a normal mark is a lnum/col pair, the same as a file position)

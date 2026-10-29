@@ -15884,13 +15884,15 @@ ins_compl_insert_bytes(CS p, int len) {
 //column range. If it is, return a special hilite decoration. -1 means normal item.
 pub Decoration
 getDecorationIfColumnIsWithinCompletion(LineNr lnum, int col) {
-   if (curBook->o.completeOpt & COT_FUZZY)
-      return (Decoration){.hiId = SHORT};
+   if ((curBook->o.completeOpt & COT_FUZZY) != 0)
+      return (Decoration){.hiId = HILITE_NULL};
    Decoration deco = getFullDecoration(HILITE_ComplMatchIns);
 
    int start_col = compl_col + (int)ins_compl_leader_len();
-   if (isCompletionSingleLine())
-      return (col >= start_col && col < compl_ins_end_col) ? deco : (Decoration){.hiId = SHORT};
+   if (isCompletionSingleLine()) {
+      return (col >= start_col && col < compl_ins_end_col)
+         ? deco : (Decoration){.hiId = HILITE_NULL};
+   }
 
    //Multiple lines
    if (  (lnum == compl_lnum && col >= start_col && col < MAXCOL)
@@ -15899,7 +15901,7 @@ getDecorationIfColumnIsWithinCompletion(LineNr lnum, int col) {
    )
       return deco;
 
-   return (Decoration){.hiId = SHORT};
+   return (Decoration){.hiId = HILITE_NULL};
 }
 
 //Return true if the current completion string contains newline characters,

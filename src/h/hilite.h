@@ -4,9 +4,10 @@
 #define HI_HAS_DECO   4
 #define HI_IS_LINK    8
 #define HI_HAS_UNDER 16
+#define EMPTY_DECO  (Decoration){.hiId = HILITE_NULL, .fieldPresence = 0, .flags = 0}
 #endif
 
-typedef enum {
+enum HiliteId : unsigned char {
 #define HI(a, b, c, d, e, f) HILITE_##a,
 HI(None, HI_HAS_FG|HI_HAS_BG, 7, 0, 0, 0)
 HI(NonText, HI_HAS_FG, 4, 0, DECO_BOLD, 0)
@@ -105,7 +106,7 @@ HI(Bold, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)
 HI(Italic, HI_HAS_DECO, 0, 0, DECO_ITALIC, 0)
 HILITE_NULL
 #undef HI
-} HiliteId;
+};
 void initHilite();
 void doHilite(CS line, Boole forceit, Boole init);
 Short hiliteGroupByName(Text name);

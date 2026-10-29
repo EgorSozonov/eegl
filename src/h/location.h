@@ -244,7 +244,7 @@ Boole searchPrepareHiliteLine(
    ColNr mincol,
    OUT CS* line,
    Match* search_hl,
-   OUT Short* searchHiId
+   OUT HiliteId* searchHiId
 );
 Short update_search_hl(
    Portal* po,
@@ -257,7 +257,7 @@ Short update_search_hl(
    OUT Boole* onLastCol
 );
 int get_prevcol_hl_flag(Portal* po, Match* search_hl, long curcol);
-void get_search_match_hl(Portal* po, Match* search_hl, long col, OUT Short* charHiId);
+void get_search_match_hl(Portal* po, Match* search_hl, long col, OUT HiliteId* charHiId);
 void f_clearmatches(Var* argvars, Var*);
 void f_getmatches(Arr(Var) argvars, Var* returnVar);
 void f_setmatches(Arr(Var) argvars, Var* returnVar);

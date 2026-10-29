@@ -8836,10 +8836,10 @@ struct Sign {
    int typeNr; //type number of sign
    CS name; //name of sign
    CS text; //text used instead of pixmap
-   Short lineHiId; //hilite ID for line
-   Short textHiId; //hilite ID for text
-   Short cursorLineHiId; //hilite ID for text on current line when 'cursorline' is set
-   Short lineNumHiId; //hilite ID for line number
+   HiliteId lineHiId; //hilite ID for line
+   HiliteId textHiId; //hilite ID for text
+   HiliteId cursorLineHiId; //hilite ID for text on current line when 'cursorline' is set
+   HiliteId lineNumHiId; //hilite ID for line number
    int priority; //default priority of this sign, -1 means SIGN_DEF_PRIO
 };
 
@@ -9234,13 +9234,13 @@ markGetSignDecorations(Portal *wp, LineNr lnum, OUT SignHilite* signHilites) {
          if (signHilites->text != NULL && sp->textHiId > 0)
             signHilites->textHiId = decorationByHiliteId(sp->textHiId);
 
-         if (sp->lineHiId < SHORT)
+         if (sp->lineHiId < HILITE_NULL)
             signHilites->lineHiId = decorationByHiliteId(sp->lineHiId);
 
-         if (sp->cursorLineHiId < SHORT)
+         if (sp->cursorLineHiId < HILITE_NULL)
             signHilites->cursorLineHiId = sp->cursorLineHiId;
 
-         if (sp->lineNumHiId < SHORT)
+         if (sp->lineNumHiId < HILITE_NULL)
             signHilites->lineNumHiId = sp->lineNumHiId;
 
          signHilites->priority = sign->priority;
@@ -9259,16 +9259,16 @@ markGetSignDecorations(Portal *wp, LineNr lnum, OUT SignHilite* signHilites) {
                signHilites->text = next_sp->text;
             }
 
-            if (sp->textHiId == SHORT && next_sp->textHiId < SHORT)
+            if (sp->textHiId == HILITE_NULL && next_sp->textHiId < HILITE_NULL)
                signHilites->textHiId = next_sp->textHiId;
 
-            if (sp->lineHiId == SHORT && next_sp->lineHiId < SHORT)
+            if (sp->lineHiId == HILITE_NULL && next_sp->lineHiId < HILITE_NULL)
                signHilites->lineHiId = next_sp->lineHiId;
 
-            if (sp->cursorLineHiId == SHORT && next_sp->cursorLineHiId < SHORT)
+            if (sp->cursorLineHiId == HILITE_NULL && next_sp->cursorLineHiId < HILITE_NULL)
                signHilites->cursorLineHiId = next_sp->cursorLineHiId;
 
-            if (sp->lineNumHiId == SHORT && next_sp->lineNumHiId < SHORT)
+            if (sp->lineNumHiId == HILITE_NULL && next_sp->lineNumHiId < HILITE_NULL)
                signHilites->lineNumHiId = next_sp->lineNumHiId;
          }
          return true;
@@ -14056,7 +14056,7 @@ match_add(
          po->nextMatchId = id + 100;
    }
 
-   Short hiId;
+   HiliteId hiId;
    if ((hiId = syntaxClusterByName((Text){.c = grp, .len = STRLEN(grp)})) == 0) {
       showErrFmtMsg(_(e_no_such_highlight_group_name_str), grp);
       return -1;
@@ -14240,8 +14240,8 @@ searchInitHilite(Portal* po, Match* search_hl) {
    MatchItem* cur = po->firstMatch;
    while (cur) {
       cur->mit_hl.rm = cur->match;
-      if (cur->hiId == SHORT)
-         cur->mit_hl.currHiId = SHORT;
+      if (cur->hiId == HILITE_NULL)
+         cur->mit_hl.currHiId = HILITE_NULL;
       else
          cur->mit_hl.currHiId = cur->hiId;
       cur->mit_hl.book = po->book;
@@ -14475,7 +14475,7 @@ searchPrepareHiliteLine(
    ColNr mincol,
    OUT CS* line,
    Match* search_hl,
-   OUT Short* searchHiId
+   OUT HiliteId* searchHiId
 ){
    Boole areaHiliting = false;
 
@@ -14492,7 +14492,7 @@ searchPrepareHiliteLine(
          match = &cur->mit_hl;
       match->startcol = MAXCOL;
       match->endcol = MAXCOL;
-      match->currHiId = SHORT;
+      match->currHiId = HILITE_NULL;
       match->is_addpos = false;
       match->has_cursor = false;
       if (cur)
@@ -14552,7 +14552,7 @@ update_search_hl(
 ) {
    Match* match;          //points to search_hl or a match
    Boole pos_inprogress;       //marks that position match search is in progress
-   Short searchHiId = 0;
+   HiliteId searchHiId = HILITE_NULL;
 
    //Do this for 'search_hl' and the match list (ordered by priority).
    MatchItem* cur = po->firstMatch; //the match list
@@ -14578,7 +14578,7 @@ update_search_hl(
                match->extra = OVERLAY_DECO_INVERT;
             }
          } ei (col == match->endcol) {
-            match->currHiId = SHORT;
+            match->currHiId = HILITE_NULL;
             next_search_hl(po, search_hl, match, lnum, col, match == search_hl ? NULL : cur);
             pos_inprogress = (cur && cur->currPos != 0);
 
@@ -14627,7 +14627,7 @@ update_search_hl(
          didHiliteSearch = true;
       } else
          match = &cur->mit_hl;
-      if (match->currHiId != SHORT) {
+      if (match->currHiId != HILITE_NULL) {
          searchHiId = match->currHiId;
          *onLastCol = col + 1 >= match->endcol;
       }
@@ -14636,7 +14636,7 @@ update_search_hl(
    }
    //Only highlight one character after the last column.
    if (*(*line + col) == ZERO && (didLineDecorations >= 1 || (po->o.list && lcs_eol_one == -1)))
-      searchHiId = SHORT;
+      searchHiId = HILITE_NULL;
    return searchHiId;
 }
 
@@ -14678,7 +14678,7 @@ get_prevcol_hl_flag(Portal* po, Match* search_hl, long curcol) {
 
 //Get hiliting for the char after the text in "char_attr" from 'hlsearch' or match hiliting
 pub void
-get_search_match_hl(Portal* po, Match* search_hl, long col, OUT Short* charHiId) {
+get_search_match_hl(Portal* po, Match* search_hl, long col, OUT HiliteId* charHiId) {
    MatchItem* cur = po->firstMatch;         //points to the match list
    Boole isPopup = PORTAL_IS_POPUP(po);  //flag to indicate whether search_hl has been processed or not
    Match* match; //points to search_hl or a match

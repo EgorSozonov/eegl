@@ -117,7 +117,7 @@ typedef struct {
    int cellsToSkip;   //nr of cells to skip for leftCol or skipCol
    long bufferLen;    //length of the currently built part of the text line
    int changeIndex;
-   Short searchHiId;
+   HiliteId searchHiId;
    Boole didLine;
    Boole inMultispace;//in multiple consecutive spaces
    int multispacePos; //position in lcs-multispace string
@@ -1039,7 +1039,7 @@ end_search_hl(void) {
 
 pub void
 drawStopHilite(void) {
-   if (activeDecoP.hiId == SHORT) {
+   if (activeDecoP.hiId == HILITE_NULL) {
       return;
    }
 
@@ -1270,7 +1270,7 @@ fillRowsWithTwoChars(
             } else
                screenLinesUCG[off] = 0;
             screenDecosP[off].flags = deco.flags;
-            if (screenDecosP[off].hiId == SHORT) {
+            if (screenDecosP[off].hiId == HILITE_NULL) {
                screenDecosP[off] = deco;
             }
             if (!did_delete || c != ' ') {
@@ -5166,14 +5166,14 @@ finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m) {
       m->vcol = v + wcol - normalPortalColumnOffset(po);
 #define VCOL_HLC (m->vcol - m->virtualOffset)
 
-   if (m->lineDeco.hiId != SHORT || m->portalDeco.flags != 0) {
+   if (m->lineDeco.hiId != HILITE_NULL || m->portalDeco.flags != 0) {
       int rightmost_vcol = 0;
 
       while ((m->col < (int)po->width)) {
          screenTextP[m->off] = ' ';
          screenLinesUCG[m->off] = 0;
 
-         Decoration deco = (m->lineDeco.hiId != SHORT) ? m->portalDeco : m->lineDeco;
+         Decoration deco = (m->lineDeco.hiId != HILITE_NULL) ? m->portalDeco : m->lineDeco;
          screenDecosP[m->off].flags = deco.flags;
          screenColS[m->off] = m->vcol;
          ++m->off;
@@ -5278,7 +5278,7 @@ drawLineSub(
       //line. If it's beyond the last char on the screen, just overwrite that one (tricky!)  Not
       //needed when a '$' was displayed for 'list'.
       if (listCharsG.eol == sc->listCharEndOfLine
-          && ((sc->areaDeco.hiId != SHORT && m->vcol == m->fromcol
+          && ((sc->areaDeco.hiId != HILITE_NULL && m->vcol == m->fromcol
                    && (VIsual_mode != Ctrl_V
                         || c->lnum == VIsual.lnum
                         || c->lnum == curPor->cursor.lnum)
@@ -5306,9 +5306,9 @@ drawLineSub(
             screenTextP[m->off] = ' ';
             screenLinesUCG[m->off] = 0;
          }
-         if (sc->areaDeco.hiId == SHORT) {
+         if (sc->areaDeco.hiId == HILITE_NULL) {
             //Use decos from the match with highest priority among 'search_hl' and the match list
-            Short charHiId;
+            HiliteId charHiId;
             get_search_match_hl(port, &screenSearchP, (long)(m->ptr - m->line), &charHiId);
             m->charDeco = getFullDecoration(charHiId);
          }
@@ -5363,7 +5363,7 @@ drawLineSub(
       } else
          screenLinesUCG[m->off] = 0;
 
-      if (sc->multiDeco.hiId < SHORT) {
+      if (sc->multiDeco.hiId < HILITE_NULL) {
          screenDecosP[m->off].flags = sc->multiDeco.flags;
          sc->multiDeco = EMPTY_DECO;
       } else
@@ -5406,7 +5406,7 @@ drawLineSub(
    if (m->state > DRAWING_NR && m->filler_todo <= 0)
       ++m->vcol;
 
-   if (vcolDecoSaved.hiId < SHORT)
+   if (vcolDecoSaved.hiId < HILITE_NULL)
       m->charDeco = vcolDecoSaved;
 
    //restore decorations after "precedes" in @listchars
@@ -5863,7 +5863,7 @@ getNextCharFromExtra(DrawCtx* m, OUT SubSubcontext* sc, Portal* port,
          multibLength = 1;
          sc->mb_utf8 = false;
          sc->multiDeco = getFullDecoration(HILITE_None);
-         if (m->cursorlineDeco.hiId != SHORT)
+         if (m->cursorlineDeco.hiId != HILITE_NULL)
             overlayDeco(OUT &sc->multiDeco, OVERLAY_DECO_ALTERED_BG);
 
          //put the pointer back to output the double-width
@@ -5881,9 +5881,9 @@ getNextCharFromExtra(DrawCtx* m, OUT SubSubcontext* sc, Portal* port,
       //Only restore searchHiId and areaDeco after "countExtraBytes" in
       //the next screen line is also done.
       if (m->saved_n_extra <= 0) {
-         if (m->searchHiId == SHORT)
+         if (m->searchHiId == HILITE_NULL)
             m->searchHiId = searchDecoSaved;
-         if (sc->areaDeco.hiId == SHORT && *m->ptr != ZERO)
+         if (sc->areaDeco.hiId == HILITE_NULL && *m->ptr != ZERO)
             sc->areaDeco = areaDecoSaved;
 
          if (m->textPropHasExtra)
@@ -5955,7 +5955,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
       m->countExtraBytes = (int)STRLEN(m->extraBytes);
       m->c_extra = ZERO;
       m->c_final = ZERO;
-      if (sc->areaDeco.hiId == SHORT && m->searchHiId == 0) {
+      if (sc->areaDeco.hiId == HILITE_NULL && m->searchHiId == 0) {
          sc->numDecoCells = m->countExtraBytes + 1;
          m->extraDeco = getFullDecoration(HILITE_MetaSpecialKeys);
          sc->charDecoSaved = m->charDeco; //save current deco
@@ -5983,7 +5983,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
       m->c_extra = MB_FILLER_CHAR;
       m->c_final = ZERO;
       currSymb = ' ';
-      if (sc->areaDeco.hiId == SHORT && m->searchHiId == 0) {
+      if (sc->areaDeco.hiId == HILITE_NULL && m->searchHiId == 0) {
          sc->numDecoCells = m->countExtraBytes + 1;
          m->extraDeco = getFullDecoration(HILITE_None);
       }
@@ -6016,7 +6016,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
             )
       ) {
          currSymb = (currSymb == ' ') ? ' ' : listCharsG.nbsp;
-         if (sc->areaDeco.hiId == SHORT && m->searchHiId == 0) {
+         if (sc->areaDeco.hiId == HILITE_NULL && m->searchHiId == 0) {
             sc->numDecoCells = 1;
             m->extraDeco = getFullDecoration(HILITE_MetaSpecialKeys);
          }
@@ -6099,7 +6099,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
       ){
          //Display a '$' after the line or hilite an extra character if the line break is
          //included. For a diff line the hiliting continues after the "$".
-         if (m->diff_hlf == 0 && m->lineDeco.hiId == SHORT) {
+         if (m->diff_hlf == 0 && m->lineDeco.hiId == HILITE_NULL) {
             //In virtualedit, visual selections may extend beyond end of line.
             if (!(c->areaHiliting && virtual_active()
                       && m->tocol != MAXCOL
@@ -6150,9 +6150,9 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
       ){
          currSymb = ' ';
          m->ptr--;       //put it back at the ZERO
-      } ei ((  m->diff_hlf != SHORT
-            || m->portalDeco.hiId != SHORT
-            || m->lineDeco.hiId != SHORT
+      } ei ((  m->diff_hlf != HILITE_NULL
+            || m->portalDeco.hiId != HILITE_NULL
+            || m->lineDeco.hiId != HILITE_NULL
          ) && (m->col < (int)port->width)
       ){
          //Hilite until the right side of the portal
@@ -6163,7 +6163,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
          sc->didLineDeco++;
 
          //don't do search HL for the rest of the line
-         if (m->lineDeco.hiId != SHORT && m->charDeco.hiId == m->searchHiId
+         if (m->lineDeco.hiId != HILITE_NULL && m->charDeco.hiId == m->searchHiId
                && (sc->didLineDeco > 1 || (port->o.list && listCharsG.eol > 0))
          )
             m->charDeco = m->lineDeco;
@@ -6177,21 +6177,22 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
                || m->diff_hlf == HILITE_DiffAddedTextInChanged
          ) {
             m->diff_hlf = HILITE_None;
-            if (c->visualDeco.hiId == SHORT || !decoEq(m->charDeco, c->visualDeco)) {
+            if (c->visualDeco.hiId == HILITE_NULL || !decoEq(m->charDeco, c->visualDeco)) {
                m->charDeco = getFullDecoration(m->diff_hlf);
                if (port->o.cursorLine && c->lnum == port->cursor.lnum)
                   applyCursorlineHilite(m);
             }
          }
-         if (m->portalDeco.hiId != SHORT) {
+         if (m->portalDeco.hiId != HILITE_NULL) {
             m->charDeco = m->portalDeco;
-            if (m->lineDeco.hiId != SHORT)
+            if (m->lineDeco.hiId != HILITE_NULL)
                m->charDeco = m->lineDeco;
          }
       }
    }
    return currSymb;
 }
+
 
 //Main loop for drawing real text to screen
 private void
@@ -6220,7 +6221,8 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
    Decoration textPropDeco_comb = EMPTY_DECO;  //textPropDeco combined with syntaxDeco
    PropType* textPropType = NULL;
    Decoration textPropDeco = EMPTY_DECO;
-   Short searchDecoSaved = SHORT; //searchHiId to be used when countExtraBytes goes to zero
+   HiliteId searchDecoSaved = HILITE_NULL; //searchHiId to be used when countExtraBytes goes to
+                                           //0
    m->didLine = false;  //set to true when line text done
    sc.numDecoCells = 0;
    sc.didLineDeco = 0;
@@ -6334,10 +6336,10 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                      && m->vcol < m->tocol)
          )
             *areaDecoTmp = c->visualDeco;      //start hiliting
-         ei (areaDecoTmp->hiId != SHORT
+         ei (areaDecoTmp->hiId != HILITE_NULL
               && (m->vcol == m->tocol || (c->noInvertCursor && (ColNr)m->vcol == port->virtCol))
          )
-            areaDecoTmp->hiId = SHORT;      //stop hiliting
+            areaDecoTmp->hiId = HILITE_NULL;      //stop hiliting
 
          if (m->countExtraBytes == 0) {
             //Check for start/end of 'hlsearch' and other matches. After end, check for
@@ -6356,7 +6358,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                Decoration insMatchDeco = getDecorationIfColumnIsWithinCompletion(
                   c->lnum, (int)(m->ptr - m->line)
                );
-               if (insMatchDeco.hiId != SHORT) {
+               if (insMatchDeco.hiId != HILITE_NULL) {
                   m->searchHiId = insMatchDeco.hiId;
                }
             }
@@ -6408,7 +6410,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
 
          //Decide which of the hilite decorations to use.
          sc.decoPriority = true;
-         if (sc.areaDeco.hiId != SHORT) {
+         if (sc.areaDeco.hiId != HILITE_NULL) {
             if (highlight_match)
                m->charDeco = sc.areaDeco;
             else
@@ -6416,7 +6418,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                m->charDeco = getFullDecoration(m->searchHiId);
          } ei (m->searchHiId != 0) {
             m->charDeco = getFullDecoration(m->searchHiId);
-         } ei (m->lineDeco.hiId != SHORT
+         } ei (m->lineDeco.hiId != HILITE_NULL
              && ((m->fromcol == -10 && m->tocol == MAXCOL)
                   || m->vcol < m->fromcol
                   || sc.vcol_prev < c->fromcol_prev
@@ -6436,7 +6438,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
       }
 
       //combine decoration with @portcolor
-      if (m->portalDeco.hiId != SHORT && m->charDeco.hiId == SHORT)
+      if (m->portalDeco.hiId != HILITE_NULL && m->charDeco.hiId == HILITE_NULL)
          m->charDeco = m->portalDeco;
 
       //Get the next character to put on the screen. The "extraBytes" points to the extra stuff
