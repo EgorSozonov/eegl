@@ -14,20 +14,20 @@
 CS did_set_tagfunc(OptionChange *cha);
 void free_tagfunc_option(void);
 int do_tag(
-   CS tag,      //tag (pattern) to jump to
-   Unt type,
-   int count,
-   Boole forceit,   //:ta with !
-   Boole verbose   //print "tag not found" message
+	CS tag,      //tag (pattern) to jump to
+	Unt type,
+	int count,
+	Boole forceit,   //:ta with !
+	Boole verbose   //print "tag not found" message
 );
 void tag_freematch(void);
 void do_tags(Invocation*);
 int find_tags(
-   CS pat,         //pattern to search for
-   Unt flags,
-   int mincount,      //MAXCOL: find all matches. other: minimal number of matches
-   CS buf_ffname,      //name of buffer for priority
-   OUT ExpandMatch* matches
+	CS pat,         //pattern to search for
+	Unt flags,
+	int mincount,      //MAXCOL: find all matches. other: minimal number of matches
+	CS buf_ffname,      //name of buffer for priority
+	OUT ExpandMatch* matches
 );
 void free_tag_stuff(void);
 void tagstack_clear_entry(Taggy* item);

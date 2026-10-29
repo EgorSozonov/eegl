@@ -575,7 +575,7 @@ skipMultilineComment(S i) {
 private S
 skipSpaces(S i) {
    S p = i;
-   for (; p[0] == ' ' || p[0] == '\n'; p++) {
+   for (; p[0] == ' ' || p[0] == '\t' || p[0] == '\n'; p++) {
    }
    return p;
 }
@@ -973,7 +973,7 @@ private void
 puwrSkippable(OUT Parser* pa) {
    S p = skipSpaces(pa->inp);
    for (;;) {
-      if (p[0] == ' ' || p[0] == '\n') {
+      if (p[0] == ' ' || p[0] == '\t' || p[0] == '\n') {
          p = skipSpaces(p);
       } ei (p[0] == '/' && p[1] == '/') {
          p = skipNormalComment(p);

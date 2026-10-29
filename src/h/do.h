@@ -24,11 +24,11 @@ void c_uniq(Invocation* invo);
 int do_move(LineNr line1, LineNr line2, LineNr dest);
 void free_prev_shellcmd(void);
 void do_bang(
-   int addrCount,
-   Invocation* invo,
-   Boole forceit,
-   Boole do_in,
-   Boole do_out
+	int addrCount,
+	Invocation* invo,
+	Boole forceit,
+	Boole do_in,
+	Boole do_out
 );
 void do_shell(CS cmd, Unt flags);
 int prompt_for_number(int *mouse_used);
@@ -41,12 +41,12 @@ int do_write(Invocation* invo);
 void c_wnext(Invocation* invo);
 void do_wqall(Invocation* invo);
 int getfile(
-   int fnum,
-   CS ffname_arg,
-   CS sfname_arg,
-   int setpm,
-   LineNr lnum,
-   Boole forceit
+	int fnum,
+	CS ffname_arg,
+	CS sfname_arg,
+	int setpm,
+	LineNr lnum,
+	Boole forceit
 );
 void c_append(Invocation* invo);
 void c_change(Invocation* invo);
@@ -60,9 +60,9 @@ void free_old_sub(void);
 void c_global(Invocation* invo);
 void global_exe(CS cmd);
 int prepare_tagpreview(
-   int      undo_sync,       //sync undo when leaving the portal
-   int      use_previewpopup,   //use popup if 'previewpopup' set
-   UsePopup   use_popup       //use other popup portal
+	int      undo_sync,       //sync undo when leaving the portal
+	int      use_previewpopup,   //use popup if 'previewpopup' set
+	UsePopup   use_popup       //use other popup portal
 );
 void c_smile(Invocation*);
 void c_drop(Invocation* invo);
@@ -79,32 +79,32 @@ int check_fname(void);
 int bookWrite_all(Book* book, Boole forceit);
 int executeCommLine(CS cmd);
 CS getline_peek(
-   LineGetter fgetline,
-   void* cookie      //argument for fgetline()
+	LineGetter fgetline,
+	void* cookie      //argument for fgetline()
 );
 int doCommand(
-   CS commline,
-   LineGetter fgetline,
-   void* cookie,      //argument for fgetline()
-   Unt flags
+	CS commline,
+	LineGetter fgetline,
+	void* cookie,      //argument for fgetline()
+	Unt flags
 );
 CS ex_errmsg(CS msg, CS arg);
 CS ex_range_without_command(Invocation* invo);
 int checkforcmd(
-   OUT CS* pp,  //start of command
-   CS cmd,      //name of command
-   int len //required length
+	OUT CS* pp,  //start of command
+	CS cmd,      //name of command
+	int len //required length
 );
 int doCheckForCommNoParen(
-    OUT CS* pp,  //start of command
-    CS cmd,      //name of command
-    int len      //required length
+	 OUT CS* pp,  //start of command
+	 CS cmd,      //name of command
+	 int len      //required length
 );
 int doParseCommandModifiers(
-   Invocation* invo,
-   OUT CS* errorMsg,
-   CommandModifier* cmod,
-   int skip_only
+	Invocation* invo,
+	OUT CS* errorMsg,
+	CommandModifier* cmod,
+	int skip_only
 );
 void applyCommModifiers(CommandModifier* cmod);
 void undoCommModifier(CommandModifier *cmod);
@@ -118,28 +118,28 @@ void f_fullcommand(Var *argvars, Var *returnVar);
 CommIndex commandGetInd(CS cmd, int len);
 Long commandGetFlags(CommIndex idx);
 CS skip_range(
-   CS cmd_start,
-   int skip_star,   //skip "*" used for Visual range
-   Unt* ctx)      //pointer to context or NULL
+	CS cmd_start,
+	int skip_star,   //skip "*" used for Visual range
+	Unt* ctx)      //pointer to context or NULL
 ;
 LineNr doGetCommandAddress(
-   Invocation* invo,
-   OUT CS* ptr,
-   CommandAddress   addressKind,
-   int skip,      //only skip the address, don't use it
-   int silent,      //no errors or side effects
-   int to_other_file,  //flag: may jump to other file
-   int address_count //1 for first address, >1 after comma
+	Invocation* invo,
+	OUT CS* ptr,
+	CommandAddress   addressKind,
+	int skip,      //only skip the address, don't use it
+	int silent,      //no errors or side effects
+	int to_other_file,  //flag: may jump to other file
+	int address_count //1 for first address, >1 after comma
 );
 int expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg);
 void separateNextCommand(Invocation* invo, int keep_backslash);
 CS skip_cmd_arg(CS p, int rembs);
 int get_bad_opt(CS p, Invocation* invo);
 int expand_argopt(
-   CS pat,
-   Expand* xp,
-   RegMatch* rmp,
-   OUT ExpandMatch* matches
+	CS pat,
+	Expand* xp,
+	RegMatch* rmp,
+	OUT ExpandMatch* matches
 );
 void c_autocmd(Invocation* invo);
 void c_doautocmd(Invocation* invo);
@@ -236,13 +236,13 @@ void c_stag(Invocation* invo);
 void c_tag(Invocation* invo);
 int find_commline_var(CS src, Unt *usedlen);
 CS evalVars(
-   OUT LineNr* lnump,      //line number for :e command, or NULL
-   OUT CS* errorMsg,   //pointer to error message
-   CS src,      //pointer into commandline
-   CS srcstart,   //beginning of valid memory for src
-   Unt* usedlen,   //characters after src that are used
-   int* escaped,   //return value has escaped white space (can be NULL)
-   int empty_is_error   //empty result is considered an error
+	OUT LineNr* lnump,      //line number for :e command, or NULL
+	OUT CS* errorMsg,   //pointer to error message
+	CS src,      //pointer into commandline
+	CS srcstart,   //beginning of valid memory for src
+	Unt* usedlen,   //characters after src that are used
+	int* escaped,   //return value has escaped white space (can be NULL)
+	int empty_is_error   //empty result is considered an error
 );
 CS expand_sfile(CS arg);
 void dialog_msg(CS buff, CS format, CS fname);
@@ -260,14 +260,14 @@ Unt ask_yesno(CS str, int direct);
 CS doExpandEnvInMultiplePaths(CS src);
 CS doExpandEnvInFilePaths(CS src, Boole singleFileName);
 Unt doExpandEnv(
-   OUT Text dst, //where to put the result
-   NULLABLE CS src  //input string e.g. "$HOME/eegl.hlp"
+	OUT Text dst, //where to put the result
+	NULLABLE CS src  //input string e.g. "$HOME/eegl.hlp"
 );
 Unt doExpandEnvVarsWithEscaped(
-   OUT Text dst, //where to put the result. Length must be sufficient!
-   CS srcArg,    //input string e.g. "$HOME/eegl.help"
-   Boole one,    //"srcp" is one file name
-   CS startstr   //start again after this (can be NULL)
+	OUT Text dst, //where to put the result. Length must be sufficient!
+	CS srcArg,    //input string e.g. "$HOME/eegl.help"
+	Boole one,    //"srcp" is one file name
+	CS startstr   //start again after this (can be NULL)
 );
 NULLABLE CS eeglGetEnv(CS name);
 void eeUnsetenv(CS var);
@@ -317,16 +317,16 @@ void appended_lines_mark(LineNr lnum, Long count);
 void deleted_lines(LineNr lnum, Long count);
 void deleted_lines_mark(LineNr lnum, Long count);
 void doChangedLinesBook(
-   Book* book,
-   LineNr lnum,    //first line with change
-   LineNr lnume,   //line below last changed line
-   Long xtra       //number of extra lines (negative when deleting)
+	Book* book,
+	LineNr lnum,    //first line with change
+	LineNr lnume,   //line below last changed line
+	Long xtra       //number of extra lines (negative when deleting)
 );
 void doChangedLines(
-   LineNr lnum,    //first line with change
-   ColNr col,      //column in first line with change
-   LineNr lnume,   //line below last changed line
-   Long xtra       //number of extra lines (negative when deleting)
+	LineNr lnum,    //first line with change
+	ColNr col,      //column in first line with change
+	LineNr lnume,   //line below last changed line
+	Long xtra       //number of extra lines (negative when deleting)
 );
 void doResetChangedFlag(Book* book, int always_inc_changedtick);
 void ins_bytes(CS p);
@@ -349,10 +349,10 @@ int get_op_char(int optype);
 int get_extra_op_char(int optype);
 void op_shift(Operator *oper, int curs_top, int amount);
 void shift_line(
-   int left,         //true if shift is to the left
-   int round,         //true if new indent is to be to a tabstop
-   int amount,         //Number of shifts
-   Boole call_changed_bytes   //call changed_bytes()
+	int left,         //true if shift is to the left
+	int round,         //true if new indent is to be to a tabstop
+	int amount,         //Number of shifts
+	Boole call_changed_bytes   //call changed_bytes()
 );
 Unt gchar_pos(Pos *pos);
 Unt gchar_cursor(void);
@@ -360,32 +360,32 @@ int op_delete(Operator* oper);
 Boole swapchar(Unt opTy, Pos* pos);
 void op_insert(Operator* oper, Long count1);
 int op_change(Operator *oper);
-void adjust_cursor_eol(void);
+void doAdjustCursorEol(void);
 CS skip_comment(CS line, Boole process, Boole include_space, OUT Boole* is_comment);
 int doJoinLinesUnderCursor(
-   Long count,
-   Boole insert_space,
-   Boole save_undo,
-   Boole use_formatoptions,
-   Boole setmark
+	Long count,
+	Boole insert_space,
+	Boole save_undo,
+	Boole use_formatoptions,
+	Boole setmark
 );
 void block_prep(
-   Operator* oper,
-   OUT BlockDef* bdp,
-   LineNr lnum,
-   Boole is_del
+	Operator* oper,
+	OUT BlockDef* bdp,
+	LineNr lnum,
+	Boole is_del
 );
 void doCharwiseBlockPrep(
-   Pos start,
-   Pos end,
-   BlockDef* bdp,
-   LineNr lnum,
-   int inclusive
+	Pos start,
+	Pos end,
+	BlockDef* bdp,
+	LineNr lnum,
+	int inclusive
 );
 void op_addsub(
-   Operator* oper,
-   LineNr prenum1,       //Amount of add/subtract
-   int g_cmd          //was g<c-a>/g<c-x>
+	Operator* oper,
+	LineNr prenum1,       //Amount of add/subtract
+	int g_cmd          //was g<c-a>/g<c-x>
 );
 void doClearOpArg(Operator *oper);
 void cursor_pos_info(Bag* dict);
@@ -415,10 +415,10 @@ int preprocs_left(void);
 int may_do_si(void);
 void doTrySmartIndent(int c);
 void opChangeIndent(
-   int type,
-   int amount,
-   int round,
-   Boole call_changed_bytes //call changed_bytes()
+	int type,
+	int amount,
+	int round,
+	Boole call_changed_bytes //call changed_bytes()
 );
 void c_retab(Invocation *eap);
 int get_expr_indent(void);

@@ -9026,7 +9026,7 @@ getCommandWorker(
          if (ccheck_abbr(c + ABBR_OFF))
             goto commlineChanged;
          if (!cmd_silent) {
-            windgoto(msgRowG, 0);
+            drawMoveCursor(msgRowG, 0);
             termOutFlush();
          }
          break;
@@ -10069,7 +10069,7 @@ redrawcmd(void) {
 
    //when 'incsearch' is set there may be no command line while redrawing
    if (commInfo.commBuf == NULL) {
-      windgoto(commlineRowG, 0);
+      drawMoveCursor(commlineRowG, 0);
       msg_clr_eos();
       return;
    }
@@ -10120,7 +10120,7 @@ cursorcmd(void) {
    if (msgRowG >= visibleRowsG)
        msgRowG = visibleRowsG - 1;
 
-   windgoto(msgRowG, msgColG);
+   drawMoveCursor(msgRowG, msgColG);
 }
 
 pub void
@@ -10129,7 +10129,7 @@ gotoCommline(int clr) {
    msgColG = 0;       //always start in column 0
    if (clr)          //clear the bottom line(s)
       msg_clr_eos();       //will reset mustClearCommlineG
-   windgoto(commlineRowG, 0);
+   drawMoveCursor(commlineRowG, 0);
 }
 
 //}}}

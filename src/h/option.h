@@ -13,17 +13,17 @@ int makefoldset(FILE *fd);
 CS optSetBinary(OptionChange* cha);
 CS setModifiable(OptionChange* cha);
 void optChangeAndReportError(
-   CS name,
-   OptionValue newValue,
-   SetScope setScope
+	CS name,
+	OptionValue newValue,
+	SetScope setScope
 );
 void afterCopyPortOpt(Portal* po);
 void copyPortOpt(PortalOptions* t, PortalOptions* s);
 void optClearPortOptions(PortalOptions* t);
 void optInitExpandContextForSet(
-   OUT Expand* xp,
-   CS arg,
-   SetScope setScope
+	OUT Expand* xp,
+	CS arg,
+	SetScope setScope
 );
 int optExpandOldOption(OUT ExpandMatch* matches);
 int reset_optWasSet(CS name);
@@ -43,32 +43,32 @@ void optCopyGlobalToPortal(OUT Portal* to);
 void optFreeBookCallbacks(Book* book);
 void optsCopyToBook(OUT Book* book, Unt flags);
 int optExpandOption(
-   Expand* xp,
-   RegMatch* regmatch,
-   CS fuzzystr,
-   Boole canFuzzy,
-   OUT ExpandMatch* matches
+	Expand* xp,
+	RegMatch* regmatch,
+	CS fuzzystr,
+	Boole canFuzzy,
+	OUT ExpandMatch* matches
 );
 Boole optImmutableMode();
 void optChangeStringOptionDirect(
-   CS name,
-   CS val,
-   SetScope scope,
-   ScriptId set_sid
+	CS name,
+	CS val,
+	SetScope scope,
+	ScriptId set_sid
 );
 void optSetStringOptionDirectInPort(
-   OUT Portal* po,
-   CS name,
-   CS val,
-   Unt optFlags,
-   int set_sid
+	OUT Portal* po,
+	CS name,
+	CS val,
+	Unt optFlags,
+	int set_sid
 );
 void optSetStringOptionDirectInBook(
-   Book* book,
-   CS name,
-   CS val,
-   Unt optFlags,
-   int set_sid
+	Book* book,
+	CS name,
+	CS val,
+	Unt optFlags,
+	int set_sid
 );
 CS get_mess_lang(void);
 void init_locale(void);

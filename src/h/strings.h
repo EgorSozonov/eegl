@@ -8,10 +8,10 @@ void deleteArena(Arena* ar);
 void arenaTryFree(void* start, Unt len, Arena* a);
 Unt mb_ptr2char(Byte* p);
 CS str_foldcase(
-   CS str,
-   Unt orglen,
-   CS buf,
-   Unt bufLen
+	CS str,
+	Unt orglen,
+	CS buf,
+	Unt bufLen
 );
 Unt nr2hex(Unt c);
 void transchar_hex(CS buf, int c);
@@ -39,15 +39,15 @@ long parseLong(OUT CS* pp);
 long parseLong_quoted(OUT CS* pp);
 int eeIsBlankLine(CS lbuf);
 void readLongNumber(
-   CS start,
-   OUT int* prep,    //type of number 0 = decimal, 'x' or 'X' is hex, 'b' or 'B' is bin
-   OUT int* len,     //detected length of number
-   int what,     //what numbers to recognize
-   OUT Long* nptr, //signed result
-   OUT Ulong* unptr,  //unsigned result
-   int maxlen,   //max length of string to check
-   Boole strict,   //check strictly
-   Boole* overflow  //when not NULL set to true for overflow
+	CS start,
+	OUT int* prep,    //type of number 0 = decimal, 'x' or 'X' is hex, 'b' or 'B' is bin
+	OUT int* len,     //detected length of number
+	int what,     //what numbers to recognize
+	OUT Long* nptr, //signed result
+	OUT Ulong* unptr,  //unsigned result
+	int maxlen,   //max length of string to check
+	Boole strict,   //check strictly
+	Boole* overflow  //when not NULL set to true for overflow
 );
 int hex2nr(int c);
 int hexhex2nr(CS p);
@@ -195,12 +195,12 @@ void ga_concat(ArrayList *gap, CS s);
 void ga_concat_len(ArrayList *gap, CS s, Unt len);
 int ga_append(ArrayList *gap, int c);
 void * mergesort_list(
-   void *head,
-   void *(*get_next)(void *),
-   void (*set_next)(void *, void *),
-   void *(*get_prev)(void *),
-   void (*set_prev)(void *, void *),
-   int (*compare)(const void *, const void *)
+	void *head,
+	void *(*get_next)(void *),
+	void (*set_next)(void *, void *),
+	void *(*get_prev)(void *),
+	void (*set_prev)(void *, void *),
+	int (*compare)(const void *, const void *)
 );
 void sha256_start(ContextSha256* ctx);
 void sha256_update(ContextSha256 *ctx, CS input, Unt length);
@@ -219,9 +219,9 @@ DictStringInt128* dictStringInt128NewJustIndices(Arr(Byte const) text, Int size,
 Boole containsKey_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack);
 Int get_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack);
 Int get_Text_DictStringInt128(Text needle, DictStringInt128* restrict haystack);
-Int getOrDefault_DictStringInt128(    Arr(Byte const) needle, Int defaultValue, DictStringInt128* restrict haystack
+Int getOrDefault_DictStringInt128( 	Arr(Byte const) needle, Int defaultValue, DictStringInt128* restrict haystack
 );
-Int getOrDefault_Text_DictStringInt128(    Text needle, Int defaultValue, DictStringInt128* restrict haystack
+Int getOrDefault_Text_DictStringInt128( 	Text needle, Int defaultValue, DictStringInt128* restrict haystack
 );
-Int getKv_Text_DictStringInt128(    OUT Unt* key, Text needle, DictStringInt128* restrict haystack
+Int getKv_Text_DictStringInt128( 	OUT Unt* key, Text needle, DictStringInt128* restrict haystack
 );

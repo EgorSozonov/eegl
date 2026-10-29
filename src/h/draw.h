@@ -16,12 +16,12 @@ void drawInit();
 int screen_get_current_line_off(void);
 void resetActiveDeco(void);
 void drawFlushLine(
-   int row,
-   int coloff,
-   int endcol,
-   int clear_width,
-   ColNr last_vcol,
-   Unt flags
+	int row,
+	int coloff,
+	int endcol,
+	int clear_width,
+	ColNr last_vcol,
+	Unt flags
 );
 int stl_connected(Portal* po);
 int drawGetKeymapStr(Portal* po, OUT Text buf);
@@ -29,24 +29,24 @@ void screen_putchar(int c, Unt row, Unt col, char decoFlags);
 void screen_getbytes(int row, int col, Byte* bytes, OUT Byte* decoFlags);
 void drawText(CS text, Unt row, Unt col, Byte decoFlags);
 void drawTextLen(
-   CS text,
-   int textlen,
-   Unt row,
-   int col,
-   Byte decoFlagsArg
+	CS text,
+	int textlen,
+	Unt row,
+	int col,
+	Byte decoFlagsArg
 );
 void end_search_hl(void);
 void drawStopHilite(void);
 void reset_cterm_colors(void);
 void screen_draw_rectangle(int row, int col, int height, int width, Boole invert);
 void fillRowsWithTwoChars(
-   Unt start_row,
-   Unt end_row,
-   Unt start_col,
-   Unt end_col,
-   Unt c1,
-   Unt c2,
-   Decoration deco
+	Unt start_row,
+	Unt end_row,
+	Unt start_col,
+	Unt end_col,
+	Unt c1,
+	Unt c2,
+	Decoration deco
 );
 void drawCheckShouldBeDelay(Boole check_msg_scroll);
 Boole screen_valid(Boole doclear);
@@ -56,39 +56,39 @@ int screenclear(void);
 void drawLineWasClobbered(int screen_lnum);
 int can_clear(CS p);
 void screen_start(void);
-void windgoto(int row, int col);
+void drawMoveCursor(int row, int col);
 void setcursor(void);
 void setcursor_mayforce(int force);
 int insertLinesIntoPortal(
-   Portal* po,
-   int row,
-   int line_count,
-   int invalid,
-   int mayclear
+	Portal* po,
+	int row,
+	int line_count,
+	int invalid,
+	int mayclear
 );
 int deleteLinesFromPortal(
-   Portal   *po,
-   int      row,
-   int      line_count,
-   int      invalid,
-   int      mayclear,
-   Unt      clearHiId       //for clearing lines
+	Portal   *po,
+	int      row,
+	int      line_count,
+	int      invalid,
+	int      mayclear,
+	Unt      clearHiId       //for clearing lines
 );
 int drawInsertLines(
-   int off,
-   int row,
-   int line_count,
-   int end,
-   int clearHiId,
-   Portal* po       //NULL or portal to use width from
+	int off,
+	int row,
+	int line_count,
+	int end,
+	int clearHiId,
+	Portal* po       //NULL or portal to use width from
 );
 int drawDeleteLinesFromScreen(
-   int off,
-   int row,
-   int line_count,
-   int end,
-   Int clearHiId,   //used for clearing lines
-   Portal* po      //NULL or portal to use width from
+	int off,
+	int row,
+	int line_count,
+	int end,
+	Int clearHiId,   //used for clearing lines
+	Portal* po      //NULL or portal to use width from
 );
 int skip_showmode(void);
 int showmode(void);
@@ -128,15 +128,15 @@ void redrawAllStatusLinesInFrame(Frame *fr);
 void drawPortLineLater(Portal* po, LineNr lnum);
 void redrawPortRangeLater(Portal* po, LineNr first, LineNr last);
 int text_prop_position(
-   Portal* po,
-   TextProp* t,
-   int vcol,       //current text column
-   int scr_col,       //current screen column
-   int* countExtraBytes,       //nr of bytes for virtual text
-   Byte** extraBytes,       //virtual text
-   OUT int* numDecoCells,       //decoration cells, NULL if not used
-   int* toSkipBeforeDeco,   //cells to skip deco, NULL if not used
-   int do_skip       //skip_cells is not zero
+	Portal* po,
+	TextProp* t,
+	int vcol,       //current text column
+	int scr_col,       //current screen column
+	int* countExtraBytes,       //nr of bytes for virtual text
+	Byte** extraBytes,       //virtual text
+	OUT int* numDecoCells,       //decoration cells, NULL if not used
+	int* toSkipBeforeDeco,   //cells to skip deco, NULL if not used
+	int do_skip       //skip_cells is not zero
 );
 void f_screenattr(Arr(Var) argvars, Var* returnVar);
 void f_screenchar(Arr(Var) argvars, Var* returnVar);

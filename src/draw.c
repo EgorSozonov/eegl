@@ -317,7 +317,7 @@ private Arr(Unt) lineStartsP = null;
 //
 //screenTextP[off]  Contains a copy of the whole screen, as it is currently displayed
 //                  (excluding text written by external commands).
-//   Dimensions of screenTextP = (visibleRowsG + 1) * visibleColumnsG
+//Dimensions: (visibleRowsG + 1) x visibleColumnsG
 //
 //screenDecosP[off] Contains the associated (drawn) decorations.
 //screenColS[off]   Contains the virtual columns in the line. -1 means not available or before
@@ -1113,7 +1113,7 @@ charToScreen(Unt off, int row, int col) { //:charToScreen
 	if (activeDecoP.hiId != hiId)
 		drawStopHilite();
 
-	windgoto(row, col);
+	drawMoveCursor(row, col);
 
 	if (activeDecoP.hiId != hiId)
 		startDrawingHilite(hiId);
@@ -1227,14 +1227,14 @@ fillRowsWithTwoChars(
 			) {
 				++off;
 			}
-			if (off < end_off) {    //something to be cleared
+			if (off < end_off) {         //something to be cleared
 				col = off - lineStartsP[row];
 				drawStopHilite();
-				term_windgoto(row, col);//clear rest of this screen line
+				termMoveCursor(row, col); //clear rest of this screen line
 				out_str(termCodesG[KS_CE]);
-				screen_start();      //don't know where cursor is now
+				screen_start();           //don't know where cursor is now
 				col = end_col - col;
-				while (col--) {     //clear chars in screenTextP
+				while (col--) {           //clear chars in screenTextP
 					space_to_screenline(off, 0);
 					++off;
 				}
@@ -1303,9 +1303,9 @@ fillRowsWithTwoChars(
 pub void
 drawCheckShouldBeDelay(Boole check_msg_scroll) {
 	if ((emsg_on_display || (check_msg_scroll && msg_scroll))
-		 && !did_wait_return
-		 && emsg_silent == 0
-		 && !in_assert_fails
+			&& !did_wait_return
+			&& emsg_silent == 0
+			&& !in_assert_fails
 	) {
 		termOutFlush();
 		ui_delay(1006L, true);
@@ -1356,10 +1356,10 @@ retry:
 			&& visibleRowsG == screenLinesRowsG
 			&& visibleColsG == screenLinesColsG
 			&& screenLinesUCG
-		  )
-			 || visibleRowsG == 0
-			 || visibleColsG == 0
-			 || (!fullScreenG && !screenTextP)) {
+		)
+			|| visibleRowsG == 0
+			|| visibleColsG == 0
+			|| (!fullScreenG && !screenTextP)) {
 		return;
 	}
 
@@ -1648,7 +1648,7 @@ screenclear2(Boole doclear) {
 	msg_scrolled = 0;      //compute_cmdrow() uses this
 	compute_cmdrow();
 	popup_redraw_all();      //redraw all popup portals
-	msgRowG = commlineRowG;   //put cursor on last line for messages
+	msgRowG = commlineRowG;  //put cursor on last line for messages
 	msgColG = 0;
 	screen_start();      //don't know where cursor is now
 	msg_didany = false;
@@ -1719,9 +1719,8 @@ screen_start(void) {
 //This tries to find the most efficient way to move, minimizing the number of
 //characters sent to the terminal.
 pub void
-windgoto(int row, int col) {
-
-#define GOTO_COST   7   //assume a term_windgoto() takes about 7 chars
+drawMoveCursor(int row, int col) {
+#define GOTO_COST   7   //assume a termMoveCursor() takes about 7 chars
 #define HIGHL_COST  5   //assume unhilite takes 5 chars
 
 #define PLAN_LE    1
@@ -1839,7 +1838,7 @@ windgoto(int row, int col) {
 			}
 		}
 
-		//We can do it without term_windgoto()!
+		//We can do it without termMoveCursor()!
 		if (cost < goto_cost) {
 			if (plan == PLAN_LE) {
 				if (noinvcurs)
@@ -1890,7 +1889,7 @@ windgoto(int row, int col) {
 		if (row == screenCursRowG && (col > screenCursColG) && *termCodesG[KS_CRI] != ZERO)
 			term_cursor_right(col - screenCursColG);
 		else
-			term_windgoto(row, col);
+			termMoveCursor(row, col);
 	}
 	screenCursRowG = row;
 	screenCursColG = col;
@@ -1907,7 +1906,7 @@ pub void
 setcursor_mayforce(int force) {
 	if (force || redrawing()) {
 		validate_cursor();
-		windgoto(curPor->windowRow + curPor->cursorRow, curPor->windowCol + (curPor->cursorCol));
+		drawMoveCursor(curPor->windowRow + curPor->cursorRow, curPor->windowCol + (curPor->cursorCol));
 	}
 }
 
@@ -2250,7 +2249,7 @@ drawInsertLines(
 	}
 
 	drawStopHilite();
-	windgoto(cursor_row, cursor_col);
+	drawMoveCursor(cursor_row, cursor_col);
 	if (clearHiId != 0)
 		startDrawingHilite(clearHiId);
 
@@ -2264,7 +2263,7 @@ drawInsertLines(
 		for (i = 0; i < line_count; i++) {
 			if (type == USE_T_AL) {
 				if (i && cursor_row != 0)
-					windgoto(cursor_row, cursor_col);
+					drawMoveCursor(cursor_row, cursor_col);
 				out_str(termCodesG[KS_AL]);
 			} else  //type == USE_T_SR
 				out_str(termCodesG[KS_SR]);
@@ -2276,7 +2275,7 @@ drawInsertLines(
 	//have been scrolled down into the region.
 	if (type == USE_T_SR && *termCodesG[KS_DA]) {
 		for (i = 0; i < line_count; ++i) {
-			windgoto(off + i, cursor_col);
+			drawMoveCursor(off + i, cursor_col);
 			out_str(termCodesG[KS_CE]);
 			screen_start();       //don't know where cursor is now
 		}
@@ -2416,27 +2415,27 @@ drawDeleteLinesFromScreen(
 	if (type == USE_REDRAW)
 		redraw_block(row, end, po);
 	ei (type == USE_T_CD) {    //delete the lines
-		windgoto(cursor_row, cursor_col);
+		drawMoveCursor(cursor_row, cursor_col);
 		out_str(termCodesG[KS_CD]);
 		screen_start();         //don't know where cursor is now
 	} ei (type == USE_T_CDL) {
-		windgoto(cursor_row, cursor_col);
+		drawMoveCursor(cursor_row, cursor_col);
 		term_delete_lines(line_count);
 		screen_start();         //don't know where cursor is now
 	}
 	//Deleting lines at top of the screen or scroll region: Just scroll
 	//the whole screen (scroll region) up by outputting newlines on the last line.
 	ei (type == USE_NL) {
-		windgoto(cursor_end - 1, cursor_col);
+		drawMoveCursor(cursor_end - 1, cursor_col);
 		for (i = line_count; --i >= 0; )
 			out_char('\n');      //cursor will remain on same line
 	} else {
 		for (i = line_count; --i >= 0; ) {
 			if (type == USE_T_DL) {
-				windgoto(cursor_row, cursor_col);
+				drawMoveCursor(cursor_row, cursor_col);
 				out_str(termCodesG[KS_DL]);      //delete a line
 			} else { //type == USE_T_CE
-				windgoto(cursor_row + i, cursor_col);
+				drawMoveCursor(cursor_row + i, cursor_col);
 				out_str(termCodesG[KS_CE]);      //erase a line
 			}
 			screen_start();      //don't know where cursor is now
@@ -2447,7 +2446,7 @@ drawDeleteLinesFromScreen(
 	//scrolled up at the bottom of the region.
 	if (*termCodesG[KS_DB] && (type == USE_T_DL || type == USE_T_CDL)) {
 		for (i = line_count; i > 0; --i) {
-			windgoto(cursor_end - i, cursor_col);
+			drawMoveCursor(cursor_end - i, cursor_col);
 			out_str(termCodesG[KS_CE]);      //erase a line
 			screen_start();      //don't know where cursor is now
 		}
@@ -3794,22 +3793,22 @@ drawPortal(Portal* po, UpdatePortalInfo u) {
 					j = idx;
 					for (l = lnum; l < u.modBot; ++l) {
 						if (getFoldsPortal(po, l, NULL, OUT &l, true, NULL))
-						   ++new_rows;
+							++new_rows;
 						else {
-						   if (l == po->topLine) {
-						      int n = plines_win_nofill(po, l, false) + po->topFill;
-						      n -= adjust_plines_for_skipcol(po);
-						      if (n > (int)po->height)
-						         n = (int)po->height;
-						      new_rows += n;
-						   } else
-						      new_rows += plines_win(po, l, true);
+							if (l == po->topLine) {
+								int n = plines_win_nofill(po, l, false) + po->topFill;
+								n -= adjust_plines_for_skipcol(po);
+								if (n > (int)po->height)
+									n = (int)po->height;
+								new_rows += n;
+							} else
+								new_rows += plines_win(po, l, true);
 						}
 						++j;
 						if (new_rows > (int)po->height - row - 2) {
-						   //it's getting too much, must redraw the rest
-						   new_rows = 9999;
-						   break;
+							//it's getting too much, must redraw the rest
+							new_rows = 9999;
+							break;
 						}
 					}
 					xtra_rows = new_rows - old_rows;
@@ -4156,9 +4155,11 @@ updatePortal(Portal* po, OUT Boole* didUpdateOnePortal) {
 				add = width1;
 			w += add;
 		}
-		if (w != po->skipCol)
+
+		if (w != po->skipCol) {
 			//always round down, the higher value may not be valid
 			po->skipCol = w - add;
+		}
 	}
 
 	int i = COL_PROLOGUE_WIDTH;
@@ -4206,8 +4207,8 @@ updatePortal(Portal* po, OUT Boole* didUpdateOnePortal) {
 	}
 
 	if (modTop != 0 && hasAnyFolding(po)) {
-		//A change in a line can cause lines above it to become folded or unfolded. Find the top
-		//most buffer line that may be affected. If the line was previously folded and displayed,
+		//A change in a line can cause lines above it to become folded or unfolded. Find the
+		//topmost book line that may be affected. If the line was previously folded and displayed,
 		//get the first line of that fold. If the line is folded now, get the first folded line.
 		//Use the minimum of these two.
 

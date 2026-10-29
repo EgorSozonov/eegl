@@ -4,10 +4,10 @@ int eeSnprintf0(CS str, Unt str_m, const char *fmt, ...);
 
 CS msg_strtrunc(CS s, int force);
 void trunc_string(
-   Byte   *s,
-   Byte   *builder,
-   int      room_in,
-   int      buflen)
+	Byte   *s,
+	Byte   *builder,
+	int      room_in,
+	int      buflen)
 ;
 void msg_start(void);
 void msg_starthere(void);
@@ -23,21 +23,21 @@ CS msgOneChar(CS p, char flags);
 int msgOuttransLenDeco(Text slice, char flags);
 void msg_make(CS arg);
 int msg_outtrans_special(
-   CS strstart,
-   int from,   //true for lhs of a mapping
-   int maxlen  //screen columns, 0 for unlimited
+	CS strstart,
+	int from,   //true for lhs of a mapping
+	int maxlen  //screen columns, 0 for unlimited
 );
 CS str2special_save(
-   Byte  *str,
-   int       replace_spaces,   //true to replace " " with "<Space>".
-            //used for the lhs of mapping and keytrans().
-   int       replace_lt      //true to replace "<" with "<lt>".
+	Byte  *str,
+	int       replace_spaces,   //true to replace " " with "<Space>".
+				//used for the lhs of mapping and keytrans().
+	int       replace_lt      //true to replace "<" with "<lt>".
 );
 CS str2special(
-   Byte** sp,
-   int      replace_spaces,   //true to replace " " with "<Space>".
-            //used for the lhs of mapping and keytrans().
-   int  replace_lt)   //true to replace "<" with "<lt>".
+	Byte** sp,
+	int      replace_spaces,   //true to replace " " with "<Space>".
+				//used for the lhs of mapping and keytrans().
+	int  replace_lt)   //true to replace "<" with "<lt>".
 ;
 void str2specialbuf(Byte *sp, OUT Byte *builder, int len);
 void msg_prt_line(CS s, int list);
@@ -69,31 +69,31 @@ void set_keep_msg(Byte *s, char flags);
 void msgmore(long n);
 void set_keep_msg_from_hist(void);
 int do_dialog(
-   int,
-   Byte*,
-   Byte* message,
-   Byte* buttons,
-   int dfltbutton,
-   Byte*,   //ioBuffG for inputdialog(), NULL otherwise
-   int ex_cmd       //when true pressing : accepts default and starts a Command
+	int,
+	Byte*,
+	Byte* message,
+	Byte* buttons,
+	int dfltbutton,
+	Byte*,   //ioBuffG for inputdialog(), NULL otherwise
+	int ex_cmd       //when true pressing : accepts default and starts a Command
 );
 int eeDialog_yesno(
-    int      type,
-    Byte   *title,
-    Byte   *message,
-    int      dflt)
+	 int      type,
+	 Byte   *title,
+	 Byte   *message,
+	 int      dflt)
 ;
 int eeDialog_yesnocancel(
-    int      type,
-    Byte   *title,
-    Byte   *message,
-    int      dflt)
+	 int      type,
+	 Byte   *title,
+	 Byte   *message,
+	 int      dflt)
 ;
 int eeDialog_yesnoallcancel(
-   int      type,
-   Byte   *title,
-   Byte   *message,
-   int      dflt
+	int      type,
+	Byte   *title,
+	Byte   *message,
+	int      dflt
 );
 void msg_puts(CS s);
 void msg_puts_title(CS s);

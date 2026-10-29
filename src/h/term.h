@@ -20,7 +20,7 @@ void termOutFlush(void);
 void out_char(unsigned c);
 void out_str_nf(CS s);
 void out_str(CS s);
-void term_windgoto(int row, int col);
+void termMoveCursor(int row, int col);
 void term_cursor_right(int i);
 void term_append_lines(int line_count);
 void term_delete_lines(int line_count);
@@ -76,12 +76,12 @@ void mch_termSetMode(TermInputMode tmode);
 void check_mouse_termcode(void);
 CS get_key_name(int i);
 CS replace_termcodes(
-   CS from,
-   CS* bufP,
-   ScriptId sid_arg,   //script ID to use for <SID>, or 0 to use scriptPosG
-   Unt flags,
-   OUT Boole* didSimplify,
-   Boole recognizeRawKeycodes
+	CS from,
+	CS* bufP,
+	ScriptId sid_arg,   //script ID to use for <SID>, or 0 to use scriptPosG
+	Unt flags,
+	OUT Boole* didSimplify,
+	Boole recognizeRawKeycodes
 );
 Unt simplify_key(Unt key, Unt* modifiers);
 void show_termcodes(Unt flags);
@@ -92,19 +92,19 @@ void ansi_color2rgb(int nr, OUT Byte *r, OUT Byte *g, OUT Byte *b, OUT Byte *ans
 void cterm_color2rgb(int nr, Byte* r, Byte* g, Byte* b, Byte* ansi_idx);
 int term_replace_keycodes(CS ta_buf, int ta_len, int len_arg);
 int termFindSpecialKey(
-   OUT Byte** srcp,
-   OUT Unt* modp,
-   Unt flags,      //FSK_ values
-   OUT Boole* didSimplify //found <C-H> or <A-x>
+	OUT Byte** srcp,
+	OUT Unt* modp,
+	Unt flags,      //FSK_ values
+	OUT Boole* didSimplify //found <C-H> or <A-x>
 );
 int termFindSpecialKey_in_table(int c);
 int special_to_buf(Unt key, Unt modifiers, int escape_ks, OUT CS dst);
 int trans_special(
-   OUT Byte** srcp,
-   CS dst,
-   Unt flags,      //FSK_ values
-   int escape_ks,   //escape K_SPECIAL bytes in the character
-   OUT Boole* didSimplify  //FSK_SIMPLIFY and found <C-H> or <A-x>
+	OUT Byte** srcp,
+	CS dst,
+	Unt flags,      //FSK_ values
+	int escape_ks,   //escape K_SPECIAL bytes in the character
+	OUT Boole* didSimplify  //FSK_SIMPLIFY and found <C-H> or <A-x>
 );
 int setup_slavepty(int fd);
 int openpty(char **ttyn);

@@ -499,7 +499,7 @@ private int parse_diff_optarg(
 );
 private void list_to_diffin(List* l, DiffInp* din, int icase);
 private Bag* get_diff_hunk_indices(Hunk* hunk);
-private long xdl_split(    unsigned long const *ha1, long off1, long lim1, unsigned long const *ha2, long off2, long lim2,
+private long xdl_split( 	unsigned long const *ha1, long off1, long lim1, unsigned long const *ha2, long off2, long lim2,
 	long *kvdf, long *kvdb, int need_min, XdpSplit *spl, Environment *xenv
 );
 private int xdl_recs_cmp(DiffData* dd1, long off1, long lim1,
@@ -538,12 +538,12 @@ private long xdl_guess_lines(MmFile* mf, long sample);
 private int xdl_blankline(CS line, long size, long flags);
 private int ends_with_optional_cr(CS l, long s, long i);
 private int xdl_recmatch(CS l1, long s1, CS l2, long s2, long flags);
-private unsigned long xdl_hash_record_with_whitespace(    Byte** data, CS top, long flags
+private unsigned long xdl_hash_record_with_whitespace( 	Byte** data, CS top, long flags
 );
 private Ulong xdl_hash_record(Byte** data, CS top, long flags);
 private Unt xdl_hashbits(Unt size);
 private int xdl_num_out(CS out, long val);
-private int xdl_format_hunk_hdr(    long s1, long c1, long s2, long c2, CS func, long funclen, XdEmitCb* ecb
+private int xdl_format_hunk_hdr( 	long s1, long c1, long s2, long c2, CS func, long funclen, XdEmitCb* ecb
 );
 private int xdl_emit_hunk_hdr(
 	long s1, long c1, long s2, long c2, Byte* func, long funclen, XdEmitCb *ecb
@@ -554,8 +554,8 @@ private int xdl_fall_back_diff(
 private void* xdl_alloc_grow_helper(void* p, Long nr, Long* alloc, Unt size);
 private int xdl_init_classifier(Classifier *cf, long size, long flags);
 private void xdl_free_classifier(Classifier *cf);
-private int xdl_classify_record(unsigned int pass, Classifier *cf, Record **rhash,                 unsigned int hbits, Record *rec);
-private int xdl_prepare_ctx(unsigned int pass, MmFile *mf, long narec, XpParam const *xpp,             Classifier *cf, XdFile *xdf
+private int xdl_classify_record(unsigned int pass, Classifier *cf, Record **rhash, 					 unsigned int hbits, Record *rec);
+private int xdl_prepare_ctx(unsigned int pass, MmFile *mf, long narec, XpParam const *xpp, 				Classifier *cf, XdFile *xdf
 );
 private void xdl_free_ctx(XdFile *xdf);
 private int xdl_prepare_env(MmFile *mf1, MmFile *mf2, XpParam const *xpp, XdfEnv *xe);

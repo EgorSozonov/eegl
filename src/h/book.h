@@ -1,36 +1,36 @@
 #ifndef AVOID_DUPLICATION
 typedef struct mf_hashtab_S {
-   Ulong mask; //mask used for hash value (nr of items in array is "mht_mask" + 1)
-   Ulong mht_count;       //nr of items inserted into hashtable
-   MfHashItem** mht_buckets;  //points to mht_small_buckets or dynamically allocated array
-   MfHashItem* mht_small_buckets[MHT_INIT_SIZE];   //initial buckets
-   Byte mht_fixed;       //non-zero value forbids growth
+	Ulong mask; //mask used for hash value (nr of items in array is "mht_mask" + 1)
+	Ulong mht_count;       //nr of items inserted into hashtable
+	MfHashItem** mht_buckets;  //points to mht_small_buckets or dynamically allocated array
+	MfHashItem* mht_small_buckets[MHT_INIT_SIZE];   //initial buckets
+	Byte mht_fixed;       //non-zero value forbids growth
 } MfHashTable;
 typedef enum {
-   MF_DIRTY_NO = 0,      //no dirty blocks
-   MF_DIRTY_YES,      //there are dirty blocks
-   MF_DIRTY_YES_NOSYNC,   //there are dirty blocks, do not sync yet
+	MF_DIRTY_NO = 0,      //no dirty blocks
+	MF_DIRTY_YES,      //there are dirty blocks
+	MF_DIRTY_YES_NOSYNC,   //there are dirty blocks, do not sync yet
 } MfDirty;
 struct MemFile {
-   CS fullFName;      //name of the file
-   CS fName;          //idem, full path
-   int fd;         //file descriptor
-   Unt mf_flags;      //flags used when opening this memfile
-   int mf_reopen;      //mf_fd was closed, retry opening
-   BlockHeader* freeFirst;      //first block_hdr in free list
-   BlockHeader* usedFirst;      //mru block_hdr in used list
-   BlockHeader* usedLast;      //lru block_hdr in used list
-   Unt mf_used_count;      //number of pages in used list
-   Unt usedCountMax;   //maximum number of pages in memory
-   MfHashTable mf_hash;      //hash lists
-   MfHashTable mf_trans;      //trans lists
-   BlockId mf_blocknr_max;      //highest positive block number + 1
-   BlockId mf_blocknr_min;      //lowest negative block number - 1
-   BlockId mf_neg_count;      //number of negative blocks numbers
-   BlockId pagesInFile;   //number of pages in the file
-   Unt pageSize;      //number of bytes in a page
-   MfDirty mf_dirty;
-   Book* book;      //book this memfile is for
+	CS fullFName;      //name of the file
+	CS fName;          //idem, full path
+	int fd;         //file descriptor
+	Unt mf_flags;      //flags used when opening this memfile
+	int mf_reopen;      //mf_fd was closed, retry opening
+	BlockHeader* freeFirst;      //first block_hdr in free list
+	BlockHeader* usedFirst;      //mru block_hdr in used list
+	BlockHeader* usedLast;      //lru block_hdr in used list
+	Unt mf_used_count;      //number of pages in used list
+	Unt usedCountMax;   //maximum number of pages in memory
+	MfHashTable mf_hash;      //hash lists
+	MfHashTable mf_trans;      //trans lists
+	BlockId mf_blocknr_max;      //highest positive block number + 1
+	BlockId mf_blocknr_min;      //lowest negative block number - 1
+	BlockId mf_neg_count;      //number of negative blocks numbers
+	BlockId pagesInFile;   //number of pages in the file
+	Unt pageSize;      //number of bytes in a page
+	MfDirty mf_dirty;
+	Book* book;      //book this memfile is for
 };
 #define PT_FLAG_INS_START_INCL 1 //insert at start included in property
 #define PT_FLAG_INS_END_INCL   2 //insert at end included in property
@@ -64,31 +64,31 @@ ColNr memGetBookLen(Book* book, LineNr lnum);
 CS memGetLine(Book* book, LineNr lnum, Boole willChange);
 int ml_line_alloced(void);
 int ml_append(
-   LineNr lnum, //append after this line (can be 0)
-   CS newContent, //text of the new line
-   ColNr len, //number of bytes to copy, or if 0 - will be replaced by strlen(newContent),
-   int   newfile //flag, see above
+	LineNr lnum, //append after this line (can be 0)
+	CS newContent, //text of the new line
+	ColNr len, //number of bytes to copy, or if 0 - will be replaced by strlen(newContent),
+	int   newfile //flag, see above
 );
 int ml_append_flags(
-   LineNr   lnum,      //append after this line (can be 0)
-   CS newContent,      //text of the new line
-   ColNr   len,        //length of new line, including ZERO, or 0
-   Unt      flags      //ML_APPEND_ values
+	LineNr   lnum,      //append after this line (can be 0)
+	CS newContent,      //text of the new line
+	ColNr   len,        //length of new line, including ZERO, or 0
+	Unt      flags      //ML_APPEND_ values
 );
 int memAppendBook(
-   Book* book,
-   LineNr lnum,  //append after this line (can be 0)
-   CS line,      //text of the new line
-   ColNr len,    //length of new line, including ZERO, or 0
-   int newfile  //flag, see above
+	Book* book,
+	LineNr lnum,  //append after this line (can be 0)
+	CS line,      //text of the new line
+	ColNr len,    //length of new line, including ZERO, or 0
+	int newfile  //flag, see above
 );
 int ml_replace(LineNr lnum, CS line, int copy);
 int ml_replace_len(
-   LineNr lnum,
-   CS line_arg,
-   ColNr len_arg,
-   int has_props,
-   int copy
+	LineNr lnum,
+	CS line_arg,
+	ColNr len_arg,
+	int has_props,
+	int copy
 );
 int ml_delete(LineNr lnum);
 int ml_deleteBufLine(Book* book, LineNr lnum);
@@ -164,56 +164,56 @@ int eeIsFnameChar(Unt c);
 Boole eeIsFnameCharForGf(Unt c);
 Boole bookIsCharPrintable(Unt c);
 void bookInitCharsForKeywordsSizeArg(
-   OUT CharTableSize* cts,
-   Portal* po,
-   LineNr lnum,
-   ColNr col,
-   CS line,
-   CS ptr
+	OUT CharTableSize* cts,
+	Portal* po,
+	LineNr lnum,
+	ColNr col,
+	CS line,
+	CS ptr
 );
 void clear_chartabsize_arg(OUT CharTableSize* cts);
 int lbr_chartabsize(CharTableSize* cts);
 int lbr_chartabsize_adv(CharTableSize *cts);
 int win_lbr_chartabsize(CharTableSize* cts, int* headp);
 void getvcol(
-   Portal* po,
-   Pos* pos,
-   ColNr* start,
-   ColNr* cursor,
-   ColNr* end
+	Portal* po,
+	Pos* pos,
+	ColNr* start,
+	ColNr* cursor,
+	ColNr* end
 );
 ColNr getvcol_nolist(Pos* posp);
 void bookGetVirtualColInVirtualMode(
-   Portal* po,
-   Pos* pos,
-   OUT ColNr* start,
-   OUT ColNr* cursor,
-   OUT ColNr* end
+	Portal* po,
+	Pos* pos,
+	OUT ColNr* start,
+	OUT ColNr* cursor,
+	OUT ColNr* end
 );
 void getvcols(
-   Portal* po,
-   Pos* pos1,
-   Pos* pos2,
-   ColNr* left,
-   ColNr* right
+	Portal* po,
+	Pos* pos1,
+	Pos* pos2,
+	ColNr* left,
+	ColNr* right
 );
 int get_highest_fnum(void);
 int bookCharidxToByteidx(Book* book, int lnum, int charidx);
 void bookEnsureLoaded(Book* book);
 Unt bookOpenFromInvo(
-   Boole read_stdin,     //read file from stdin
-   Invocation* invo, //for forced 'ff' or NULL
-   Unt flags        //extra flags for readfile()
+	Boole read_stdin,     //read file from stdin
+	Invocation* invo, //for forced 'ff' or NULL
+	Unt flags        //extra flags for readfile()
 );
 void bookStoreInRef(OUT BookRef *bookRef, Book* book);
 Boole bookRefValid(BookRef* bookRef);
 Boole bookIsValid(Book* book);
 int bookClose(
-   Portal* port,      //if not NULL, set lastCursor
-   Book* book,
-   Unt action,
-   int abort_if_last,
-   int ignore_abort
+	Portal* port,      //if not NULL, set lastCursor
+	Book* book,
+	Unt action,
+	int abort_if_last,
+	int ignore_abort
 );
 void buf_clear_file(Book* book);
 void bookFreeAll(Book* book, Unt flags);
@@ -221,57 +221,57 @@ void free_wininfo(PortInfo *poInfo);
 void bookGoto(Invocation* invo, int start, int dir, int count);
 void handle_swap_exists(BookRef *oldCurBook);
 int bookDo(
-   Unt action,
-   Unt start,
-   Unt dir,      //FORWARD or BACKWARD
-   int count,      //book number
-   Unt flags   //DOBOOK_FORCEIT when using !, etc
+	Unt action,
+	Unt start,
+	Unt dir,      //FORWARD or BACKWARD
+	int count,      //book number
+	Unt flags   //DOBOOK_FORCEIT when using !, etc
 );
 CS do_bufdel(
-   int command,
-   CS arg,      //pointer to extra arguments
-   int addrCount,
-   int start_bnr,   //first book number in a range
-   int end_bnr,   //book nr or last book nr in a range
-   Boole forceit
+	int command,
+	CS arg,      //pointer to extra arguments
+	int addrCount,
+	int start_bnr,   //first book number in a range
+	int end_bnr,   //book nr or last book nr in a range
+	Boole forceit
 );
 void bookSetCurBook(Book* book, int action);
 void no_write_message(void);
 void no_write_message_nobang(Book* book);
 Book* bookNew(
-   CS ffname_arg, //full path of fname or relative
-   CS sfname_arg, //short fname or NULL
-   LineNr lnum,   //preferred cursor line
-   Unt flags
+	CS ffname_arg, //full path of fname or relative
+	CS sfname_arg, //short fname or NULL
+	LineNr lnum,   //preferred cursor line
+	Unt flags
 );
 int booklistGetFile(
-   int n,
-   LineNr   lnum,
-   int options,
-   int forceit
+	int n,
+	LineNr   lnum,
+	int options,
+	int forceit
 );
 Book * booklistFindByNameExpandingLinks(CS fname);
 Book* booklistFindName(CS fullFName);
 int booklistFindPattern(
-   CS pattern,
-   CS pattern_end,   //pointer to first char after pattern
-   int unlisted,   //find unlisted books
-   int diffmode, //find diff-mode books only
-   int curtab_only  //find books in current tab only
+	CS pattern,
+	CS pattern_end,   //pointer to first char after pattern
+	int unlisted,   //find unlisted books
+	int diffmode, //find diff-mode books only
+	int curtab_only  //find books in current tab only
 );
 int bufExpandBufnames(
-   CS pat,
-   Unt options,
-   OUT ExpandMatch* matches
+	CS pat,
+	Unt options,
+	OUT ExpandMatch* matches
 );
 Book* bookFindFileByBookNr(int nr);
 CS bookGetNameByBookNr(int n, int fullname, Boole helptail);
 void bookSetPosInPort(
-   Book* book,
-   Portal* port,      //may be NULL when using :badd
-   LineNr lnum,
-   ColNr col,
-   Boole copy_options
+	Book* book,
+	Portal* port,      //may be NULL when using :badd
+	LineNr lnum,
+	ColNr col,
+	Boole copy_options
 );
 void get_winopts(Book* book);
 Pos * bookFindFpos(Book* book);
@@ -286,20 +286,20 @@ int bookOpen(CS fname, Unt flags);
 Boole fNameMatchesCurBook(CS fullFName);
 void buf_setino(Book* book);
 void fileinfo(
-   Boole fullname,       //when true, print full path; whan > 1, include book number
-   Boole shorthelp,
-   Boole dont_truncate
+	Boole fullname,       //when true, print full path; whan > 1, include book number
+	Boole shorthelp,
+	Boole dont_truncate
 );
 int col_print(CS buf, Unt  buflen, int col, int vcol);
 int bookRenderStatusLine(
-   Portal* po,
-   OUT CS out,      //string book to write into != nameBuffG
-   Unt outlen,      //length of out[]
-   CS fmt,
-   Byte oname,      //one of STATLINE_* constants
-   int opt_scope,   //scope for "oname"
-   Unt fillchar,
-   int maxwidth
+	Portal* po,
+	OUT CS out,      //string book to write into != nameBuffG
+	Unt outlen,      //length of out[]
+	CS fmt,
+	Byte oname,      //one of STATLINE_* constants
+	int opt_scope,   //scope for "oname"
+	Unt fillchar,
+	int maxwidth
 );
 int get_rel_pos(Portal* po, CS buf, int buflen);
 void fname_expand(CS* fullFName, CS* sfname);
@@ -325,13 +325,13 @@ Boole bookWasChanged(Book* book);
 Boole bookWasChangedNotTerm(Book* book);
 void drawGetTranslatedBookName(Book* book);
 int bookStartEditingFile(
-   int fnum,
-   CS fullFName,
-   CS sfname,
-   Invocation* invo,         //can be NULL!
-   LineNr newlnum,
-   Unt flags,
-   Portal* oldPort
+	int fnum,
+	CS fullFName,
+	CS sfname,
+	Invocation* invo,         //can be NULL!
+	LineNr newlnum,
+	Unt flags,
+	Portal* oldPort
 );
 void c_swapname(Invocation*);
 Boole bookNoMemfile(Book* b);
@@ -345,25 +345,25 @@ int bookGetFd(Book* b);
 void bookSetDirtyFlag(Book* book);
 CS new_file_message(void);
 int bookWrite(
-   Book* book,
-   CS fname,
-   CS sfname,
-   LineNr start,
-   LineNr end,
-   Invocation* invo,      //for forced 'ff', can be NULL!
-   Boole append,      //append to the file
-   Boole forceit,
-   Boole reset_changed,
-   Boole filtering
+	Book* book,
+	CS fname,
+	CS sfname,
+	LineNr start,
+	LineNr end,
+	Invocation* invo,      //for forced 'ff', can be NULL!
+	Boole append,      //append to the file
+	Boole forceit,
+	Boole reset_changed,
+	Boole filtering
 );
 void alist_clear(EeArgList* al);
 void alist_init(EeArgList *al);
 void alist_unlink(EeArgList *al);
 void alist_new(void);
 void arglistIngest(
-    EeArgList* al,
-    CS fname,
-    int set_fnum   //1: set book number; 2: re-use curBook
+	 EeArgList* al,
+	 CS fname,
+	 int set_fnum   //1: set book number; 2: re-use curBook
 );
 int bookParseAndExpandFnames(CS str, Boole omitWildignore, OUT ExpandMatch* matches);
 void set_arglist(CS str);
@@ -392,27 +392,27 @@ int findPropTypeIdByName(Text name, Book* book);
 void f_prop_add(Var *argvars, OUT Var* returnVar);
 void f_prop_add_list(Var *argvars, OUT Var*);
 int prop_add_common(
-   LineNr startLnum,
-   ColNr startCol,
-   Bag* dict,
-   Book* defaultBook,
-   Var* dictArg
+	LineNr startLnum,
+	ColNr startCol,
+	Bag* dict,
+	Book* defaultBook,
+	Var* dictArg
 );
 int get_text_props(OUT CS* props, Book* book, LineNr lnum, Boole will_change);
 int prop_count_above_below(Book* book, LineNr lnum);
 int count_props(LineNr lnum, int only_starting, int last_line);
 void sort_text_props(
-   Book* book,
-   TextProp* props,
-   int* idxs,
-   int count
+	Book* book,
+	TextProp* props,
+	int* idxs,
+	int count
 );
 int find_visible_prop(
-   Portal       *wp,
-   int       type_id,
-   int       id,
-   TextProp  *prop,
-   LineNr    *found_lnum
+	Portal       *wp,
+	int       type_id,
+	int       id,
+	TextProp  *prop,
+	LineNr    *found_lnum
 );
 void add_text_props(LineNr lnum, TextProp *text_props, int text_prop_count);
 PropType * text_prop_type_by_id(Book* book, int id);
@@ -428,18 +428,18 @@ void f_prop_type_list(Var *argvars, OUT Var* returnVar);
 void clear_global_prop_types(void);
 Boole adjustPropColumns(LineNr lnum, ColNr col, int bytes_added, Unt flags);
 void adjustPropsForSplit(
-   LineNr    lnumProps,
-   LineNr    lnumTop,
-   int       kept,
-   int       deleted,
-   int       atEol
+	LineNr    lnumProps,
+	LineNr    lnumTop,
+	int       kept,
+	int       deleted,
+	int       atEol
 );
 void prepend_joined_props(
-   CS new_props,
-   int       propcount,
-   OUT int* props_remaining,
-   LineNr    lnum,
-   int       last_line,
-   long       col,
-   int       removed
+	CS new_props,
+	int       propcount,
+	OUT int* props_remaining,
+	LineNr    lnum,
+	int       last_line,
+	long       col,
+	int       removed
 );

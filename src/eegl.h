@@ -3722,13 +3722,13 @@ struct Portal { //:Portal
    SyntaxBlock* ownSyntax;  //for :ownsyntax
    int locked;     //don't let autocommands close the portal
    Frame* frame;   //frame containing this portal
-   Pos   cursor;   //cursor position in book
+   Pos cursor;   //cursor position in book
    ColNr cursWant; //The column we'd like to be at. This is used to try to stay in the same
                    //column for up/down cursor motions.
    Boole setCursWant;    //If set, then update w_curswant the next time through cursupdate()
                          //to the current virtual column
-   LineNr lastCursorLine;//where last time 'cursorline' was drawn
-                         //the next seven are used to update the Visual highlighting
+   LineNr lastCursorLine;//where last time @cursorline was drawn
+                         //The next seven are used to update the Visual hiliting:
    Byte prevVisualMode;  //last known VIsual_mode
    LineNr prevVisualEnd; //last known end of visual part
    ColNr oldCursorFcol;  //first column for block visual part
@@ -3746,7 +3746,7 @@ struct Portal { //:Portal
    int topFillOld;   //w_topfill at last redraw
    int bottFill;     //true when filler lines are actually below w_topline (at end of file)
    int bottFillOld;  //w_botfill at last redraw
-   ColNr leftCol; //screen col of the leftmost character in the portal; used if 'wrap' is off
+   ColNr leftCol; //screen col of the leftmost character in the portal; used if @wrap is off
    ColNr skipCol; //starting screen column for the first line in the portal; used when @wrap is
                   //on; does not include win_col_off()
 

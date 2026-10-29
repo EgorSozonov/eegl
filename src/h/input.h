@@ -1,9 +1,9 @@
 #ifndef AVOID_DUPLICATION
 #define MAXMAPLEN 50
 typedef enum {
-   FLUSH_MINIMAL,
-   FLUSH_TYPEAHEAD,   //flush current typebuf contents
-   FLUSH_INPUT      //flush typebuf and inchar() input
+	FLUSH_MINIMAL,
+	FLUSH_TYPEAHEAD,   //flush current typebuf contents
+	FLUSH_INPUT      //flush typebuf and inchar() input
 } FlushBuffers;
 #endif
 
@@ -37,11 +37,11 @@ int start_redo_ins(void);
 void stop_redo_ins(void);
 int noremap_keys(void);
 int insertIntoTypebuf(
-   CS str,
-   Unt noremap,
-   int offset,
-   Boole nottyped,
-   Boole silent
+	CS str,
+	Unt noremap,
+	int offset,
+	Boole nottyped,
+	Boole silent
 );
 int ins_char_typebuf(int c, int modifiers);
 int typebuf_changed(int changeCnt);
@@ -86,9 +86,9 @@ int mb_get_class(CS p);
 Unt inpGetClassForBook(CS p, Book* book);
 Unt utfc_ptr2char(CS p, OUT Unt* pcc);
 Unt utfc_ptr2char_len(
-    CS p,
-    OUT Unt* pcc,   //composing chars, last one will be 0
-    int maxlen
+	 CS p,
+	 OUT Unt* pcc,   //composing chars, last one will be 0
+	 int maxlen
 );
 Unt utf_class(int c);
 void mb_adjust_cursor(void);
@@ -105,11 +105,11 @@ int mb_ptr2cells_len(CS p, int size);
 Unt mb_string2cells(CS p, int len);
 CS findWordStart(CS ptr);
 int do_mouse(
-   Operator* oper,  //operator argument, can be NULL
-   Unt c,           //K_LEFTMOUSE, etc
-   Unt dir,         //Direction to 'put' if necessary
-   long count,
-   int fixindent    //PUT_FIXINDENT if fixing indent necessary
+	Operator* oper,  //operator argument, can be NULL
+	Unt c,           //K_LEFTMOUSE, etc
+	Unt dir,         //Direction to 'put' if necessary
+	long count,
+	int fixindent    //PUT_FIXINDENT if fixing indent necessary
 );
 void ins_mouse(int c);
 void ins_mousescroll(int dir);
@@ -120,20 +120,20 @@ void del_mouse_termcode(Unt n);
 void setmouse(void);
 void mouseResetDragPortal(void);
 Unt jump_to_mouse(
-   Unt flags,
-   OUT Boole* inclusive,   //used for inclusive operator, can be NULL
-   Unt which_button   //MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE
+	Unt flags,
+	OUT Boole* inclusive,   //used for inclusive operator, can be NULL
+	Unt which_button   //MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE
 );
 void nv_mousescroll(ActionArg* cap);
 void nv_mouse(ActionArg* cap);
 void reset_held_button(void);
 int termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers);
 int mouse_comp_pos(
-   Portal* port,
-   OUT int* rowp,
-   OUT int* colp,
-   LineNr* lnump,
-   int* plines_cache
+	Portal* port,
+	OUT int* rowp,
+	OUT int* colp,
+	LineNr* lnump,
+	int* plines_cache
 );
 Portal* mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup);
 int vcol2col(Portal* po, LineNr lnum, int vcol, ColNr *coladdp);

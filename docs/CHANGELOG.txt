@@ -322,7 +322,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] Skip the quickfix buffer when looping through buffers
 [+] The :S command: a case-sensitive version of :s substitution
 [ ] Correct handling of /r, /n in substitutions. `s| |\n|g` should work correctly!
-[ ] When yanking in visual mode, the cursor should not move anywhere
+[+] When yanking in visual mode, the cursor should not move anywhere
 [+] :hi prints hilite groups sorted by name
 [+] replace CUT_BUFFER0 in X11 with PRIMARY or CLIPBOARD (clipboard.c) and remove string_convert()
 [+] Tab in insert mode enters Normal Mode

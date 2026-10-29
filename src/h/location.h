@@ -7,12 +7,12 @@
 #define LOC_LIST_CSCOPE    5 //selectable with ":list c"
 #define COUNT_LOC_LISTS    6 //= 1 + highest LIST_...value
 typedef enum {
-   LL_ACTION_INVALID, //placeholder for ill-defined strings
-   LL_ACTION_ADD, //add entry to location list
-   LL_ACTION_REPLACE,
-   LL_ACTION_UPDATE,
-   LL_ACTION_NEW, //create new location list
-   LL_ACTION_FREE
+	LL_ACTION_INVALID, //placeholder for ill-defined strings
+	LL_ACTION_ADD, //add entry to location list
+	LL_ACTION_REPLACE,
+	LL_ACTION_UPDATE,
+	LL_ACTION_NEW, //create new location list
+	LL_ACTION_FREE
 } LocListAction;
 #define SIGN_DEF_PRIO   10
 #define FM_BACKWARD  0x01   //search backwards
@@ -23,11 +23,11 @@ typedef enum {
 #endif
 
 int llInitFromFile(
-   OUT LocationStack* st,
-   CS errorFName,
-   NULLABLE CS errorformat,
-   Boole newlist,      //true: start a new error list
-   CS title
+	OUT LocationStack* st,
+	CS errorFName,
+	NULLABLE CS errorformat,
+	Boole newlist,      //true: start a new error list
+	CS title
 );
 int qf_stack_get_bufnr(void);
 void check_qfBusynessG(void);
@@ -59,11 +59,11 @@ void c_lBelow(Invocation* invo);
 void c_lFile(Invocation* invo);
 void c_vimgrep(Invocation* invo);
 int setLocationList(
-   OUT LocationStack* stack,
-   List* newContent,
-   LocListAction action,
-   CS title,
-   Bag* specific
+	OUT LocationStack* stack,
+	List* newContent,
+	LocListAction action,
+	CS title,
+	Bag* specific
 );
 void c_lbook(Invocation* invo);
 CS cexpr_get_auname(CommIndex id);
@@ -96,11 +96,11 @@ void c_clearjumps(Invocation*);
 void c_changes(Invocation*);
 void markAdjust(LineNr line1, LineNr line2, Long amount, Long amount_after, Boole adjustFolds);
 void mark_col_adjust(
-   LineNr lnum,
-   ColNr mincol,
-   Long lnum_amount,
-   Long col_amount,
-   int spaces_removed
+	LineNr lnum,
+	ColNr mincol,
+	Long lnum_amount,
+	Long col_amount,
+	int spaces_removed
 );
 void cleanup_jumplist(Portal* wp, int loadfiles);
 void copy_jumplist(Portal* from, Portal* to);
@@ -113,23 +113,23 @@ void init_signs(void);
 int markGetSignDecorations(Portal *wp, LineNr lnum, OUT SignHilite* signHilites);
 void llDeleteSigns(Book* book, CS group);
 int sign_define_by_name(
-   CS name,
-   CS linehl,
-   CS textt,
-   CS texthl,
-   CS culhl,
-   CS numhl,
-   int prio
+	CS name,
+	CS linehl,
+	CS textt,
+	CS texthl,
+	CS culhl,
+	CS numhl,
+	int prio
 );
 int sign_exists_by_name(CS name);
 int sign_undefine_by_name(CS name, Boole give_error);
 int sign_place(
-   int *sign_id,
-   CS sign_group,
-   CS sign_name,
-   Book* book,
-   LineNr lnum,
-   int prio
+	int *sign_id,
+	CS sign_group,
+	CS sign_name,
+	Book* book,
+	LineNr lnum,
+	int prio
 );
 void c_sign(Invocation* invo);
 void llGetBookSigns(Book *book, List *l);
@@ -146,12 +146,12 @@ void f_sign_undefine(Arr(Var) argvars, Var* returnVar);
 void f_sign_unplace(Arr(Var) argvars, Var* returnVar);
 void f_sign_unplacelist(Arr(Var) argvars, Var* returnVar);
 int search_regcomp(
-   Text pat,
-   Arr(CS) used_pat,
-   int pat_save,
-   int pat_use,
-   int options,
-   OUT RegMultilineMatch* regmatch   //return: pattern and ignore-case flag
+	Text pat,
+	Arr(CS) used_pat,
+	int pat_save,
+	int pat_use,
+	int options,
+	OUT RegMultilineMatch* regmatch   //return: pattern and ignore-case flag
 );
 CS get_search_pat(void);
 void save_re_pat(int idx, Text pat, int magic);
@@ -173,64 +173,64 @@ void set_csearch_until(int t_cmd);
 Text last_search_pat(void);
 void reset_search_dir(void);
 void set_last_search_pat(
-   CS s,
-   int idx,
-   int magic,
-   int setlast
+	CS s,
+	int idx,
+	int magic,
+	int setlast
 );
 void last_pat_prog(RegMultilineMatch* regmatch);
 int searchit(
-   Portal* port, //portal to search in; can be NULL for a buffer without a portal!
-   Book* book,
-   Pos* pos,
-   OUT Pos* end_pos,   //set to end of the match, unless NULL
-   Unt dir,    //forward or backward
-   Text pat,
-   long count,
-   Unt options,
-   int pat_use,   //which pattern to use when "pat" is empty
-   SearchitArg* extra_arg   //optional extra arguments, can be NULL
+	Portal* port, //portal to search in; can be NULL for a buffer without a portal!
+	Book* book,
+	Pos* pos,
+	OUT Pos* end_pos,   //set to end of the match, unless NULL
+	Unt dir,    //forward or backward
+	Text pat,
+	long count,
+	Unt options,
+	int pat_use,   //which pattern to use when "pat" is empty
+	SearchitArg* extra_arg   //optional extra arguments, can be NULL
 );
 void set_search_direction(int cdir);
 int do_search(
-   Operator* oap,   //can be NULL
-   int dirc,   //'/' or '?'
-   int search_delim, //the delimiter for the search, e.g. '%' in s%regex%replacement%
-   Text pat,
-   long count,
-   int options,
-   SearchitArg* sia   //optional arguments or NULL
+	Operator* oap,   //can be NULL
+	int dirc,   //'/' or '?'
+	int search_delim, //the delimiter for the search, e.g. '%' in s%regex%replacement%
+	Text pat,
+	long count,
+	int options,
+	SearchitArg* sia   //optional arguments or NULL
 );
 int search_for_exact_line(
-   Book* book,
-   Pos* pos,
-   int dir,
-   CS pat
+	Book* book,
+	Pos* pos,
+	int dir,
+	CS pat
 );
 int searchc(ActionArg* cap, int t_cmd);
 Pos* findmatch(Operator *oap, int initc);
 Pos* findmatchlimit(
-   Operator* oap,
-   Unt initc,
-   int flags,
-   int maxtravel
+	Operator* oap,
+	Unt initc,
+	int flags,
+	int maxtravel
 );
 int check_linecomment(CS line);
 int current_search(long   count, Boole forward);
 int linewhite(LineNr lnum);
 void find_pattern_in_path(
-   CS ptr,      //pointer to search pattern
-   Unt dir,   //direction of expansion
-   int len,      //length of search pattern
-   int whole,      //match whole words only
-   int skip_comments,   //don't match inside comments
-   int type,      //Type of search; are we looking for a type? a macro?
-   Long count,
-   int action,      //What to do when we find it
-   LineNr start_lnum,   //first line to start searching
-   LineNr end_lnum,   //last line for searching
-   int forceit,   //If true, always switch to the found path
-   int silent      //Do not print messages when ACTION_EXPAND
+	CS ptr,      //pointer to search pattern
+	Unt dir,   //direction of expansion
+	int len,      //length of search pattern
+	int whole,      //match whole words only
+	int skip_comments,   //don't match inside comments
+	int type,      //Type of search; are we looking for a type? a macro?
+	Long count,
+	int action,      //What to do when we find it
+	LineNr start_lnum,   //first line to start searching
+	LineNr end_lnum,   //last line for searching
+	int forceit,   //If true, always switch to the found path
+	int silent      //Do not print messages when ACTION_EXPAND
 );
 SearchPattern * getPrevSearchPattern(int idx);
 int getPrevSearchOrSubstPattern(void);
@@ -239,22 +239,22 @@ void clear_matches(Portal* po);
 void searchInitHilite(Portal* po, Match* search_hl);
 void prepare_search_hl(Portal* po, Match* search_hl, LineNr lnum);
 Boole searchPrepareHiliteLine(
-   Portal* po,
-   LineNr lnum,
-   ColNr mincol,
-   OUT CS* line,
-   Match* search_hl,
-   OUT HiliteId* searchHiId
+	Portal* po,
+	LineNr lnum,
+	ColNr mincol,
+	OUT CS* line,
+	Match* search_hl,
+	OUT HiliteId* searchHiId
 );
 Short update_search_hl(
-   Portal* po,
-   LineNr lnum,
-   ColNr col,
-   OUT CS* line,
-   Match* search_hl,
-   int didLineDecorations,
-   int lcs_eol_one,
-   OUT Boole* onLastCol
+	Portal* po,
+	LineNr lnum,
+	ColNr col,
+	OUT CS* line,
+	Match* search_hl,
+	int didLineDecorations,
+	int lcs_eol_one,
+	OUT Boole* onLastCol
 );
 int get_prevcol_hl_flag(Portal* po, Match* search_hl, long curcol);
 void get_search_match_hl(Portal* po, Match* search_hl, long col, OUT HiliteId* charHiId);
@@ -270,14 +270,14 @@ void c_help(Invocation* invo);
 void c_helpclose(Invocation*);
 CS check_help_lang(CS arg);
 int help_heuristic(
-   CS matched_string,
-   int offset,         //offset for match
-   int wrong_case      //no matching case
+	CS matched_string,
+	int offset,         //offset for match
+	int wrong_case      //no matching case
 );
 int find_help_tags(
-   CS arg,
-   int keep_lang,
-   OUT ExpandMatch* matches
+	CS arg,
+	int keep_lang,
+	OUT ExpandMatch* matches
 );
 void cleanup_help_tags(OUT ExpandMatch* matches);
 void prepare_help_buffer(void);

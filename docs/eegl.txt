@@ -83,6 +83,9 @@ ex_docmd.c:do_cmdline()
 // "." (last command)
 repeatCommlineG
 
+//number of column where actual text starts being drawn
+wheel.c:normalPortalColumnOffset()
+
 
 ml_append etc - functions from memline.c, direct line manipulation
 

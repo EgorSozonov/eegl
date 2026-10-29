@@ -73,10 +73,10 @@ int mch_input_isatty(void);
 void ui_write(CS s, int len, int console);
 void ui_inBytendo(CS s, int len);
 int ui_inchar(
-   OUT CS buf,
-   int maxlen,
-   long wtime,       //don't use "time", MIPS cannot handle it
-   int changeCnt
+	OUT CS buf,
+	int maxlen,
+	long wtime,       //don't use "time", MIPS cannot handle it
+	int changeCnt
 );
 Boole waitForChar(long msec, OUT Boole* interrupted, Boole ignore_input);
 int ui_char_avail(void);

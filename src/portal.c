@@ -40,27 +40,27 @@
 //Each toplevel fold can contain an array of second level folds in the fd_nested arraylist.
 //The info stored in both growarrays is the same: An array of Fold.
 typedef struct {
-   LineNr   fd_top;  //first line of fold; for nested fold relative to parent
-   LineNr   fd_len;  //number of lines in the fold
-   ArrayList   fd_nested; //array of nested folds
-   char   fd_flags;  //see below
-   char   fd_small;  //true, false or MAYBE: is fold line count above 1; MAYBE
-                     //applies to nested folds too
+	LineNr   fd_top;  //first line of fold; for nested fold relative to parent
+	LineNr   fd_len;  //number of lines in the fold
+	ArrayList   fd_nested; //array of nested folds
+	char   fd_flags;  //see below
+	char   fd_small;  //true, false or MAYBE: is fold line count above 1; MAYBE
+						   //applies to nested folds too
 } Fold;
 
 //Folding by indent, expr, marker and syntax.
 //Define "FoldLine", passed to get fold level for a line.
 typedef struct {
-   Portal* po;
-   LineNr lnum;      //current line number
-   LineNr off;      //offset between lnum and real line number
-   LineNr lnum_save;   //line nr used by foldUpdateIEMSRecurse()
-   int lvl;      //current level (-1 for undefined)
-   int lvl_next;   //level used for next line
-   int start;      //number of folds that are forced to start at this line.
-   int end;      //level of fold that is forced to end below this line
-   int had_end;   //level of fold that is forced to end above
-            //this line (copy of "end" of prev. line)
+	Portal* po;
+	LineNr lnum;      //current line number
+	LineNr off;      //offset between lnum and real line number
+	LineNr lnum_save;   //line nr used by foldUpdateIEMSRecurse()
+	int lvl;      //current level (-1 for undefined)
+	int lvl_next;   //level used for next line
+	int start;      //number of folds that are forced to start at this line.
+	int end;      //level of fold that is forced to end below this line
+	int had_end;   //level of fold that is forced to end above
+				//this line (copy of "end" of prev. line)
 } FoldLine;
 
 #define EVAL_OFFSET_X 15 //displacement of balloon topleft corner from pointer
@@ -80,14 +80,14 @@ private Boole portalValidPopup(Portal* port);
 private void exchangePortal(long prenum);
 private void rotatePortals(int upwards, int count);
 private void equalizeHeightRec(
-   Portal* next_curPor,   //pointer to current portal to be or NULL
-   int current,   //do only frame with current portal
-   Frame* topfr,      //frame to set size off
-   Byte dir,      //EAD_* constants, see portEqualizeHeight()
-   int col,      //horizontal position for frame
-   int row,      //vertical position for frame
-   int width,      //new width of frame
-   int height      //new height of frame
+	Portal* next_curPor,   //pointer to current portal to be or NULL
+	int current,   //do only frame with current portal
+	Frame* topfr,      //frame to set size off
+	Byte dir,      //EAD_* constants, see portEqualizeHeight()
+	int col,      //horizontal position for frame
+	int row,      //vertical position for frame
+	int width,      //new width of frame
+	int height      //new height of frame
 );
 private void initEmptyPortal(OUT Portal* po);
 private int closeLastPortalInTab(Portal* port, int free_buf, Tab* prev_curtab);
@@ -95,24 +95,24 @@ private void closePortalBook(Portal* port, int action, int abort_if_last);
 private void triggerPortalNewPre(void);
 private void triggerPortalClosed(Portal* port);
 private Bag * makePortInfoDict(
-   int width,
-   int height,
-   int topline,
-   int topfill,
-   int leftcol,
-   int skipcol
+	int width,
+	int height,
+	int topline,
+	int topfill,
+	int leftcol,
+	int skipcol
 );
 private void checkWhichPortalsResized(
-   int* size_count,
-   Portal** firstScrollPort,
-   Portal** firstResizedPort,
-   List* portlist,
-   OUT Bag* v_event
+	int* size_count,
+	Portal** firstScrollPort,
+	Portal** firstResizedPort,
+	List* portlist,
+	OUT Bag* v_event
 );
 private Portal * freePortalMem(
-   Portal* port,
-   OUT Byte* dirp,      //set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
-   Tab* t      //tab "port" is in, NULL for current
+	Portal* port,
+	OUT Byte* dirp,      //set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
+	Tab* t      //tab "port" is in, NULL for current
 );
 private void frame_flatten(Frame* fr);
 private void restoreFrame(Portal* po, Byte dir, Frame* unflat_altfr);
@@ -121,21 +121,21 @@ private Tab * altTab(void);
 private Portal* frameToPort(Frame *fr);
 private int frameHasPortal(Frame* fr, Portal* po);
 private void frame_new_height(
-   Frame* topFr,
-   int height,
-   Boole topfirst,   //resize topmost contained frame first
-   Boole wfh,  //obey @portfixheight when there is a choice; may cause the height not to be set
-   Boole set_ch      //set @commheight to resize topframe
+	Frame* topFr,
+	int height,
+	Boole topfirst,   //resize topmost contained frame first
+	Boole wfh,  //obey @portfixheight when there is a choice; may cause the height not to be set
+	Boole set_ch      //set @commheight to resize topframe
 );
 private int frame_fixed_height(Frame* fr);
 private int frame_fixed_width(Frame* fr);
 private void frame_add_statusline(Frame* fr);
 private void frameNewWidth(
-   Frame   *topFr,
-   int      width,
-   int      leftfirst,   //resize leftmost contained frame first
-   int      wfw      //obey 'portfixwidth' when there is a choice;
-            //may cause the width not to be set
+	Frame   *topFr,
+	int      width,
+	int      leftfirst,   //resize leftmost contained frame first
+	int      wfw      //obey 'portfixwidth' when there is a choice;
+				//may cause the width not to be set
 );
 private void frame_add_vsep(Frame* fr);
 private void frame_fix_width(Portal* po);
@@ -189,35 +189,35 @@ private int foldLevelWin(Portal *po, LineNr lnum);
 private void checkupdate(Portal* po);
 private void setFoldRepeat(LineNr lnum, Long count, Boole do_open);
 private LineNr setManualFoldPort(
-   Portal* po,
-   LineNr lnum,
-   Boole opening,    //true when opening, false when closing
-   Boole recurse,    //true when closing/opening recursive
-   OUT Unt* donep
+	Portal* po,
+	LineNr lnum,
+	Boole opening,    //true when opening, false when closing
+	Boole recurse,    //true when closing/opening recursive
+	OUT Unt* donep
 );
 private LineNr setManualFold(
-   LineNr lnum,
-   Boole opening,    //true when opening, false when closing
-   Boole recurse,    //true when closing/opening recursive
-   OUT Unt* donep
+	LineNr lnum,
+	Boole opening,    //true when opening, false when closing
+	Boole recurse,    //true when closing/opening recursive
+	OUT Unt* donep
 );
 private void foldOpenNested(Fold* fpr);
 private void deleteFoldEntry(ArrayList *gap, int idx, int recursive);
 private void foldMarkAdjustRecurse(
-   ArrayList   *gap,
-   LineNr   line1,
-   LineNr   line2,
-   long   amount,
-   long   amount_after
+	ArrayList   *gap,
+	LineNr   line1,
+	LineNr   line2,
+	long   amount,
+	long   amount_after
 );
 private int getDeepestNestingRecurse(ArrayList* gap);
 private Boole check_closed(
-   Portal* po,
-   Fold* fp,
-   OUT Boole* use_levelp,       //true: outer fold had FD_LEVEL
-   int level,          //folding depth
-   OUT Boole* maybe_smallp,       //true: outer this had fd_small == MAYBE
-   LineNr   lnum_off       //line number offset for fp->fd_top
+	Portal* po,
+	Fold* fp,
+	OUT Boole* use_levelp,       //true: outer fold had FD_LEVEL
+	int level,          //folding depth
+	OUT Boole* maybe_smallp,       //true: outer this had fd_small == MAYBE
+	LineNr   lnum_off       //line number offset for fp->fd_top
 );
 private void checkSmall(Portal* po, Fold* fp, LineNr lnum_off);
 private void setSmallMaybe(ArrayList* gap);
@@ -228,13 +228,13 @@ private void foldDelMarker(LineNr lnum, CS marker, int markerlen);
 private void foldtext_cleanup(CS str);
 private void foldUpdateIEMS(Portal* po, LineNr top, LineNr bot);
 private LineNr foldUpdateIEMSRecurse(
-   ArrayList   *gap,
-   int      level,
-   LineNr   startlnum,
-   FoldLine   *flp,
-   void   (*getlevel)(FoldLine *),
-   LineNr   bot,
-   int      topflags   //flags used by containing fold
+	ArrayList   *gap,
+	int      level,
+	LineNr   startlnum,
+	FoldLine   *flp,
+	void   (*getlevel)(FoldLine *),
+	LineNr   bot,
+	int      topflags   //flags used by containing fold
 );
 private int foldInsert(ArrayList* gap, int i);
 private void foldSplit(ArrayList* gap, int i, LineNr top, LineNr bot);
@@ -302,38 +302,38 @@ private int popup_closePortal(Portal* port);
 private void computeSize(void);
 private Arr(Decoration) computeTextDeco(CS text, Short hiId, Decoration userDeco);
 private void pum_drawText_withDecos(
-   int row,
-   int col,
-   int,
-   CS text,
-   int textlen,
-   Arr(Decoration) decos)
+	int row,
+	int col,
+	int,
+	CS text,
+	int textlen,
+	Arr(Decoration) decos)
 ;
 private inline void pum_align_order(int* order);
 private inline CS pum_get_item(int index, int type);
 private inline Decoration combineUserDecos(int idx, int type, Decoration defaultDeco);
 private int displayText(
-   int row,
-   int col,
-   CS text,
-   Decoration deco,
-   Arr(Decoration) decos,
-   int width,        //width already calculated in outer loop
-   int widthLimit,
-   int totwidth,
-   int next_isempty,
-   int selected
+	int row,
+	int col,
+	CS text,
+	Decoration deco,
+	Arr(Decoration) decos,
+	int width,        //width already calculated in outer loop
+	int widthLimit,
+	int totwidth,
+	int next_isempty,
+	int selected
 );
 private int drawMenuItem(
-   int row,
-   int col,
-   int idx,
-   int j,         //Current position in order array
-   int* order,    //Order array
-   Short hiId,
-   Decoration deco,
-   int* totwidth_ptr,
-   int next_isempty
+	int row,
+	int col,
+	int idx,
+	int j,         //Current position in order array
+	int* order,    //Order array
+	Short hiId,
+	Decoration deco,
+	int* totwidth_ptr,
+	int next_isempty
 );
 private void pum_draw_scrollbar(int row, int i, int thumb_pos, int thumb_height);
 private void pum_position_info_popup(Portal* po);
@@ -342,12 +342,12 @@ private int pum_in_same_position(void);
 private void pum_position_at_mouse(int min_width);
 private int can_use_beval(void);
 private void bexpr_eval(
-   BalloonEval* beval,
-   CS bexpr,
-   Portal* po,
-   LineNr,
-   int,
-   CS text
+	BalloonEval* beval,
+	CS bexpr,
+	Portal* po,
+	LineNr,
+	int,
+	CS text
 );
 //}}}
 //{{{portals
@@ -386,77 +386,77 @@ private int close_disallowed = 0;
 //Must be matched with exactly one call to portalLayout_unlock()!
 pub void
 portalLayout_lock(void) {
-   ++split_disallowed;
-   ++close_disallowed;
+	++split_disallowed;
+	++close_disallowed;
 }
 
 pub void
 portalLayout_unlock(void) {
-   --split_disallowed;
-   --close_disallowed;
+	--split_disallowed;
+	--close_disallowed;
 }
 
 //When the portal layout cannot be changed give an error and return true.
 //"cmd" indicates the action being performed and is used to pick the relevant error message.
 pub Boole
 portalLayout_locked(CommIndex cmd) {
-   if (split_disallowed > 0 || close_disallowed > 0) {
-      if (close_disallowed == 0 && cmd == C_tabnew)
-         emsg(_(e_cannot_split_portal_when_closing_book));
-      else
-         emsg(_(e_not_allowed_to_change_portal_layout_in_this_autocmd));
-      return true;
-   }
-   return false;
+	if (split_disallowed > 0 || close_disallowed > 0) {
+		if (close_disallowed == 0 && cmd == C_tabnew)
+			emsg(_(e_cannot_split_portal_when_closing_book));
+		else
+			emsg(_(e_not_allowed_to_change_portal_layout_in_this_autocmd));
+		return true;
+	}
+	return false;
 }
 
 //Check if the current portal is allowed to move to a different book.
 //If the portal has 'portFixBuf', this function will return false.
 pub Boole
 portCheckCanSetCurBookDisabled(void) {
-   if (curPor->o.portFixBuf) {
-      emsg(_(e_portfixbuf_cannot_go_to_buffer));
-      return false;
-   }
-   return true;
+	if (curPor->o.portFixBuf) {
+		emsg(_(e_portfixbuf_cannot_go_to_buffer));
+		return false;
+	}
+	return true;
 }
 
 //Check if the current portal is allowed to move to a different book.
 //If the portal has 'portFixBuf', then forceit must be true or this function will return false.
 pub Boole
 portCheckCanSetCurBookForceIt(Boole forceit) {
-   if (!forceit && curPor->o.portFixBuf) {
-      emsg(_(e_portfixbuf_cannot_go_to_buffer));
-      return false;
-   }
-   return true;
+	if (!forceit && curPor->o.portFixBuf) {
+		emsg(_(e_portfixbuf_cannot_go_to_buffer));
+		return false;
+	}
+	return true;
 }
 
 //Return the current portal, unless in the cmdline portal and "prevPor" is set, then "prevPor"
 pub Portal*
 prevPor_curPor(void) {
-   //In commPort, the alternative book should be used.
-   return inCommPort() && prevPor != NULL ? prevPor : curPor;
+	//In commPort, the alternative book should be used.
+	return inCommPort() && prevPor != NULL ? prevPor : curPor;
 }
 
 //If the @switchbook option contains "useopen" or "loadTab", then try to jump to a portal
 //containing "book". Return the pointer to the portal that was jumped to or NULL.
 pub Portal*
 switchBufGotoPortalIntoBuf(Book* book) {
-   if (!book)
-      return null;
+	if (!book)
+		return null;
 
-   Portal* po = null;
-   //If 'switchbook' contains "useopen": jump to first portal in the current
-   //tab containing "buf" if one exists.
-   if ((p_swb & SWB_USEOPEN) != 0)
-      po = portTryFindOpenBook(book);
+	Portal* po = null;
+	//If 'switchbook' contains "useopen": jump to first portal in the current
+	//tab containing "buf" if one exists.
+	if ((p_swb & SWB_USEOPEN) != 0)
+		po = portTryFindOpenBook(book);
 
-   //If 'switchbook' contains "loadTab": jump to 1st portal in any tab containing "buf" if one exists
-   if (!po && (p_swb & SWB_USETAB) != 0)
-      po = buf_jump_open_tab(book);
+	//If 'switchbook' contains "loadTab": jump to 1st portal in any tab containing "buf" if one exists
+	if (!po && (p_swb & SWB_USETAB) != 0)
+		po = buf_jump_open_tab(book);
 
-   return po;
+	return po;
 }
 
 //Get the left or right neighbor portal of the specified portal.
@@ -465,52 +465,52 @@ switchBufGotoPortalIntoBuf(Book* book) {
 //Return the specified portal if the neighbor is not found.
 private Portal *
 horizNeighbor(Tab* t, Portal* po, Boole left, long count) {
-   if (portalIsPopup(po))
-      //popups don't have neighbors.
-      return NULL;
+	if (portalIsPopup(po))
+		//popups don't have neighbors.
+		return NULL;
 
-   Frame* foundfr = po->frame;
+	Frame* foundfr = po->frame;
 
-   Frame* fr;
-   Frame* nfr;
-   while (count--) {
-      //First go upwards in the tree of frames until we find a left or right neighbor.
-      fr = foundfr;
-      for (;;) {
-         if (fr == t->topframe)
-            goto end;
-         if (left)
-            nfr = fr->prev;
-         else
-            nfr = fr->next;
-         if (fr->parent->layout == FR_ROW && nfr != NULL)
-            break;
-         fr = fr->parent;
-      }
+	Frame* fr;
+	Frame* nfr;
+	while (count--) {
+		//First go upwards in the tree of frames until we find a left or right neighbor.
+		fr = foundfr;
+		for (;;) {
+			if (fr == t->topframe)
+				goto end;
+			if (left)
+				nfr = fr->prev;
+			else
+				nfr = fr->next;
+			if (fr->parent->layout == FR_ROW && nfr != NULL)
+				break;
+			fr = fr->parent;
+		}
 
-      //Now go downwards to find the leftmost or rightmost frame in it.
-      for (;;) {
-         if (nfr->layout == FR_LEAF) {
-            foundfr = nfr;
-            break;
-         }
-         fr = nfr->child;
-         if (nfr->layout == FR_COL) {
-            //Find the frame at the cursor row.
-            while (fr->next
-               && frameToPort(fr)->windowRow + fr->height <= (Unt)po->windowRow + po->cursorRow
-            )
-               fr = fr->next;
-         }
-         if (nfr->layout == FR_ROW && left) {
-            while (fr->next)
-               fr = fr->next;
-         }
-         nfr = fr;
-      }
-   }
+		//Now go downwards to find the leftmost or rightmost frame in it.
+		for (;;) {
+			if (nfr->layout == FR_LEAF) {
+				foundfr = nfr;
+				break;
+			}
+			fr = nfr->child;
+			if (nfr->layout == FR_COL) {
+				//Find the frame at the cursor row.
+				while (fr->next
+					&& frameToPort(fr)->windowRow + fr->height <= (Unt)po->windowRow + po->cursorRow
+				)
+					fr = fr->next;
+			}
+			if (nfr->layout == FR_ROW && left) {
+				while (fr->next)
+					fr = fr->next;
+			}
+			nfr = fr;
+		}
+	}
 end:
-   return foundfr ? foundfr->port : NULL;
+	return foundfr ? foundfr->port : NULL;
 }
 
 //Get the above or below neighbor portal of the specified portal.
@@ -519,654 +519,654 @@ end:
 //Return the specified portal if the neighbor is not found.
 private Portal *
 vertNeighbor(Tab* t, Portal* po, Boole up, long count) {
-   if (portalIsPopup(po))
-      //popups don't have neighbors.
-      return NULL;
-   Frame* foundfr = po->frame;
-   while (count--) {
-      //First go upwards in the tree of frames until we find an upwards or downwards neighbor.
-      Frame* fr = foundfr;
-      Frame   *nfr;
-      for (;;) {
-         if (fr == t->topframe)
-            goto end;
-         if (up)
-            nfr = fr->prev;
-         else
-            nfr = fr->next;
-         if (fr->parent->layout == FR_COL && nfr != NULL)
-            break;
-         fr = fr->parent;
-      }
+	if (portalIsPopup(po))
+		//popups don't have neighbors.
+		return NULL;
+	Frame* foundfr = po->frame;
+	while (count--) {
+		//First go upwards in the tree of frames until we find an upwards or downwards neighbor.
+		Frame* fr = foundfr;
+		Frame   *nfr;
+		for (;;) {
+			if (fr == t->topframe)
+				goto end;
+			if (up)
+				nfr = fr->prev;
+			else
+				nfr = fr->next;
+			if (fr->parent->layout == FR_COL && nfr != NULL)
+				break;
+			fr = fr->parent;
+		}
 
-      //Now go downwards to find the bottom or top frame in it.
-      for (;;) {
-         if (nfr->layout == FR_LEAF) {
-            foundfr = nfr;
-            break;
-         }
-         fr = nfr->child;
-         if (nfr->layout == FR_ROW) {
-            //Find the frame at the cursor row.
-            while (fr->next
-               && frameToPort(fr)->windowCol + fr->width <= (Unt)po->windowCol + po->cursorCol
-            )
-               fr = fr->next;
-         }
-         if (nfr->layout == FR_COL && up) {
-            while (fr->next)
-               fr = fr->next;
-         }
-         nfr = fr;
-      }
-    }
+		//Now go downwards to find the bottom or top frame in it.
+		for (;;) {
+			if (nfr->layout == FR_LEAF) {
+				foundfr = nfr;
+				break;
+			}
+			fr = nfr->child;
+			if (nfr->layout == FR_ROW) {
+				//Find the frame at the cursor row.
+				while (fr->next
+					&& frameToPort(fr)->windowCol + fr->width <= (Unt)po->windowCol + po->cursorCol
+				)
+					fr = fr->next;
+			}
+			if (nfr->layout == FR_COL && up) {
+				while (fr->next)
+					fr = fr->next;
+			}
+			nfr = fr;
+		}
+	 }
 end:
-   return foundfr ? foundfr->port : NULL;
+	return foundfr ? foundfr->port : NULL;
 }
 
 //Move to left or right portal.
 private void
 gotoPortal_hor(Boole goLeft, long count) {
-   if (portErrorIfTermPopup())
-      return;
-   Portal* port = horizNeighbor(curtab, curPor, goLeft, count);
-   if (port)
-      gotoPortal(port);
+	if (portErrorIfTermPopup())
+		return;
+	Portal* port = horizNeighbor(curtab, curPor, goLeft, count);
+	if (port)
+		gotoPortal(port);
 }
 
 //Move to portal above or below "count" times.
 private void
 gotoPortal_ver(Boole goUp, long count) {
-   if (portErrorIfTermPopup())
-      return;
-   Portal* port = vertNeighbor(curtab, curPor, goUp, count);
-   if (port)
-      gotoPortal(port);
+	if (portErrorIfTermPopup())
+		return;
+	Portal* port = vertNeighbor(curtab, curPor, goUp, count);
+	if (port)
+		gotoPortal(port);
 }
 
 //All CTRL-W portal commands are handled here, called from normal_cmd().
 pub void
 doPortal(int nchar, Long prenum, Unt xchar) { //extra char from ";wincmd gx" or ZERO
-   Portal* po;
-   CS ptr;
-   LineNr lnum = -1;
-   Unt type = FIND_DEFINE;
-   int len;
-   Byte cbuf[40];
+	Portal* po;
+	CS ptr;
+	LineNr lnum = -1;
+	Unt type = FIND_DEFINE;
+	int len;
+	Byte cbuf[40];
 
-   if (portErrorIfPopup(true))
-      return;
+	if (portErrorIfPopup(true))
+		return;
 
 #define CHECK_COMMPORT \
-   do { \
-      if (commPortTypeG != 0) \
-      { \
-          emsg(_(e_invalid_in_commline_portal)); \
-          return; \
-      } \
-   } while (0)
+	do { \
+		if (commPortTypeG != 0) \
+		{ \
+			 emsg(_(e_invalid_in_commline_portal)); \
+			 return; \
+		} \
+	} while (0)
 
-   Long prenum1 = prenum == 0 ? 1 : prenum;
+	Long prenum1 = prenum == 0 ? 1 : prenum;
 
-   switch (nchar) {
-   //split current portal in two parts, horizontally
-   case 'S':
-   case Ctrl_S:
-   case 's':
-      CHECK_COMMPORT;
-      reset_VIsual_and_resel();   //stop Visual mode
-      //When splitting the location portal open a new book in it,
-      //don't replicate the location book.
-      if (isLocationListBook(curBook))
-         goto newPortal;
-      (void)splitPortal((int)prenum, 0);
-      break;
+	switch (nchar) {
+	//split current portal in two parts, horizontally
+	case 'S':
+	case Ctrl_S:
+	case 's':
+		CHECK_COMMPORT;
+		reset_VIsual_and_resel();   //stop Visual mode
+		//When splitting the location portal open a new book in it,
+		//don't replicate the location book.
+		if (isLocationListBook(curBook))
+			goto newPortal;
+		(void)splitPortal((int)prenum, 0);
+		break;
 
-   //split current portal in two parts, vertically
-   case Ctrl_V:
-   case 'v':
-      CHECK_COMMPORT;
-      reset_VIsual_and_resel();   //stop Visual mode
-      //When splitting the location portal open a new book in it,
-      //don't replicate the location book.
-      if (isLocationListBook(curBook))
-         goto newPortal;
-      (void)splitPortal((int)prenum, WSP_VERT);
-      break;
+	//split current portal in two parts, vertically
+	case Ctrl_V:
+	case 'v':
+		CHECK_COMMPORT;
+		reset_VIsual_and_resel();   //stop Visual mode
+		//When splitting the location portal open a new book in it,
+		//don't replicate the location book.
+		if (isLocationListBook(curBook))
+			goto newPortal;
+		(void)splitPortal((int)prenum, WSP_VERT);
+		break;
 
-   //split current portal and edit alternate file
-   case Ctrl_HAT:
-   case '^':
-      CHECK_COMMPORT;
-      reset_VIsual_and_resel();   //stop Visual mode
+	//split current portal and edit alternate file
+	case Ctrl_HAT:
+	case '^':
+		CHECK_COMMPORT;
+		reset_VIsual_and_resel();   //stop Visual mode
 
-      if (bookFindFileByBookNr(prenum == 0 ? curPor->altFnum : prenum) == NULL) {
-         if (prenum == 0)
-            emsg(_(e_no_alternate_file));
-         else
-            showErrFmtMsg(_(e_book_nr_not_found), prenum);
-         break;
-      }
+		if (bookFindFileByBookNr(prenum == 0 ? curPor->altFnum : prenum) == NULL) {
+			if (prenum == 0)
+				emsg(_(e_no_alternate_file));
+			else
+				showErrFmtMsg(_(e_book_nr_not_found), prenum);
+			break;
+		}
 
-      if (!curBookLocked() && splitPortal(0, 0) == OK)
-          (void)booklistGetFile(
-             prenum == 0 ? curPor->altFnum : prenum,
-             (LineNr)0, GETF_ALT, false);
-      break;
+		if (!curBookLocked() && splitPortal(0, 0) == OK)
+			 (void)booklistGetFile(
+				 prenum == 0 ? curPor->altFnum : prenum,
+				 (LineNr)0, GETF_ALT, false);
+		break;
 
-   //open new portal
-   case Ctrl_N:
-   case 'n':
-      CHECK_COMMPORT;
-      reset_VIsual_and_resel();   //stop Visual mode
+	//open new portal
+	case Ctrl_N:
+	case 'n':
+		CHECK_COMMPORT;
+		reset_VIsual_and_resel();   //stop Visual mode
 newPortal:
-      if (prenum)
-          //portal height
-          eeSnprintf(cbuf, sizeof(cbuf) - 5, "%ld", prenum);
-      else
-          cbuf[0] = ZERO;
-      if (nchar == 'v' || nchar == Ctrl_V)
-          STRCAT(cbuf, "v");
-      STRCAT(cbuf, "new");
-      executeCommLine(cbuf);
-      break;
+		if (prenum)
+			 //portal height
+			 eeSnprintf(cbuf, sizeof(cbuf) - 5, "%ld", prenum);
+		else
+			 cbuf[0] = ZERO;
+		if (nchar == 'v' || nchar == Ctrl_V)
+			 STRCAT(cbuf, "v");
+		STRCAT(cbuf, "new");
+		executeCommLine(cbuf);
+		break;
 
-   //quit current portal
-   case Ctrl_Q:
-   case 'q':
-      reset_VIsual_and_resel();   //stop Visual mode
-      cmd_with_count((CS)"quit", cbuf, sizeof(cbuf), prenum);
-      executeCommLine(cbuf);
-      break;
+	//quit current portal
+	case Ctrl_Q:
+	case 'q':
+		reset_VIsual_and_resel();   //stop Visual mode
+		cmd_with_count((CS)"quit", cbuf, sizeof(cbuf), prenum);
+		executeCommLine(cbuf);
+		break;
 
-   //close current portal
-   case Ctrl_C:
-   case 'c':
-      reset_VIsual_and_resel();   //stop Visual mode
-      cmd_with_count((CS)"close", cbuf, sizeof(cbuf), prenum);
-      executeCommLine(cbuf);
-      break;
+	//close current portal
+	case Ctrl_C:
+	case 'c':
+		reset_VIsual_and_resel();   //stop Visual mode
+		cmd_with_count((CS)"close", cbuf, sizeof(cbuf), prenum);
+		executeCommLine(cbuf);
+		break;
 
-   //close preview portal
-   case Ctrl_Z:
-   case 'z':
-      CHECK_COMMPORT;
-      reset_VIsual_and_resel();   //stop Visual mode
-      executeCommLine((CS)"pclose");
-      break;
+	//close preview portal
+	case Ctrl_Z:
+	case 'z':
+		CHECK_COMMPORT;
+		reset_VIsual_and_resel();   //stop Visual mode
+		executeCommLine((CS)"pclose");
+		break;
 
-   //cursor to preview portal
-   case 'P':
-      FOR_ALL_PORTALS(po) {
-         if (po->isPreview)
-            break;
-      }
-      if (!curtab->previewPortal)
-         emsg(_(e_there_is_no_preview_portal));
-      else
-         gotoPortal(curtab->previewPortal);
-      break;
+	//cursor to preview portal
+	case 'P':
+		FOR_ALL_PORTALS(po) {
+			if (po->isPreview)
+				break;
+		}
+		if (!curtab->previewPortal)
+			emsg(_(e_there_is_no_preview_portal));
+		else
+			gotoPortal(curtab->previewPortal);
+		break;
 
-   //close all but current portal
-   case Ctrl_O:
-   case 'o':
-      CHECK_COMMPORT;
-      reset_VIsual_and_resel();   //stop Visual mode
-      cmd_with_count((CS)"only", cbuf, sizeof(cbuf), prenum);
-      executeCommLine(cbuf);
-      break;
+	//close all but current portal
+	case Ctrl_O:
+	case 'o':
+		CHECK_COMMPORT;
+		reset_VIsual_and_resel();   //stop Visual mode
+		cmd_with_count((CS)"only", cbuf, sizeof(cbuf), prenum);
+		executeCommLine(cbuf);
+		break;
 
-   //cursor to next portal with wrap around
-   case Ctrl_W:
-   case 'w':
-   //cursor to previous portal with wrap around
-   case 'W':
-      CHECK_COMMPORT;
-      if (ONLY_ONE_PORTAL && prenum != 1)   //just one portal
-          inpFlushIfNotSilent();
-      else {
-         if (prenum) {        //go to specified portal
-            for (po = firstPor; --prenum > 0; ) {
-               if (po->next == NULL)
-                  break;
-               else
-                  po = po->next;
-            }
-         } else {
-            if (nchar == 'W') {      //go to previous portal
-               po = curPor->prev;
-               if (po == NULL)
-                  po = lastPor;       //wrap around
-            } else {            //go to next portal
-               po = curPor->next;
-               if (!po)
-                  po = firstPor;       //wrap around
-            }
-          }
-          gotoPortal(po);
-      }
-      break;
+	//cursor to next portal with wrap around
+	case Ctrl_W:
+	case 'w':
+	//cursor to previous portal with wrap around
+	case 'W':
+		CHECK_COMMPORT;
+		if (ONLY_ONE_PORTAL && prenum != 1)   //just one portal
+			 inpFlushIfNotSilent();
+		else {
+			if (prenum) {        //go to specified portal
+				for (po = firstPor; --prenum > 0; ) {
+					if (po->next == NULL)
+						break;
+					else
+						po = po->next;
+				}
+			} else {
+				if (nchar == 'W') {      //go to previous portal
+					po = curPor->prev;
+					if (po == NULL)
+						po = lastPor;       //wrap around
+				} else {            //go to next portal
+					po = curPor->next;
+					if (!po)
+						po = firstPor;       //wrap around
+				}
+			 }
+			 gotoPortal(po);
+		}
+		break;
 
-   //cursor to portal below
-   case 'j':
-   case K_DOWN:
-   case Ctrl_J:
-      CHECK_COMMPORT;
-      gotoPortal_ver(false, prenum1);
-      break;
+	//cursor to portal below
+	case 'j':
+	case K_DOWN:
+	case Ctrl_J:
+		CHECK_COMMPORT;
+		gotoPortal_ver(false, prenum1);
+		break;
 
-   //cursor to portal above
-   case 'k':
-   case K_UP:
-   case Ctrl_K:
-      CHECK_COMMPORT;
-      gotoPortal_ver(true, prenum1);
-      break;
+	//cursor to portal above
+	case 'k':
+	case K_UP:
+	case Ctrl_K:
+		CHECK_COMMPORT;
+		gotoPortal_ver(true, prenum1);
+		break;
 
-   //cursor to left portal
-   case 'h':
-   case K_LEFT:
-   case Ctrl_H:
-   case K_BS:
-      CHECK_COMMPORT;
-      gotoPortal_hor(true, prenum1);
-      break;
+	//cursor to left portal
+	case 'h':
+	case K_LEFT:
+	case Ctrl_H:
+	case K_BS:
+		CHECK_COMMPORT;
+		gotoPortal_hor(true, prenum1);
+		break;
 
-   //cursor to right portal
-   case 'l':
-   case K_RIGHT:
-   case Ctrl_L:
-      CHECK_COMMPORT;
-      gotoPortal_hor(false, prenum1);
-      break;
+	//cursor to right portal
+	case 'l':
+	case K_RIGHT:
+	case Ctrl_L:
+		CHECK_COMMPORT;
+		gotoPortal_hor(false, prenum1);
+		break;
 
-   //move portal to new tab
-   case 'T':
-      CHECK_COMMPORT;
-      if (onePortal())
-          msg(_(m_onlyone));
-      else {
-          Tab   *oldtab = curtab;
-          Tab   *newtab;
+	//move portal to new tab
+	case 'T':
+		CHECK_COMMPORT;
+		if (onePortal())
+			 msg(_(m_onlyone));
+		else {
+			 Tab   *oldtab = curtab;
+			 Tab   *newtab;
 
-          //First create a new tab with the portal, then go back to
-          //the old tab and close the portal there.
-          po = curPor;
-         if (portNewTab((int)prenum) == OK && isTabValid(oldtab)) {
-            newtab = curtab;
-            gotoTab(oldtab, true, true);
-            if (curPor == po)
-                closePortal(curPor, false);
-            if (isTabValid(newtab))
-                gotoTab(newtab, true, true);
-          }
-      }
-      break;
+			 //First create a new tab with the portal, then go back to
+			 //the old tab and close the portal there.
+			 po = curPor;
+			if (portNewTab((int)prenum) == OK && isTabValid(oldtab)) {
+				newtab = curtab;
+				gotoTab(oldtab, true, true);
+				if (curPor == po)
+					 closePortal(curPor, false);
+				if (isTabValid(newtab))
+					 gotoTab(newtab, true, true);
+			 }
+		}
+		break;
 
-   //cursor to top-left portal
-   case 't':
-   case Ctrl_T:
-      gotoPortal(firstPor);
-      break;
+	//cursor to top-left portal
+	case 't':
+	case Ctrl_T:
+		gotoPortal(firstPor);
+		break;
 
-   //cursor to bottom-right portal
-   case 'b':
-   case Ctrl_B:
-      gotoPortal(lastPor);
-      break;
+	//cursor to bottom-right portal
+	case 'b':
+	case Ctrl_B:
+		gotoPortal(lastPor);
+		break;
 
-   //cursor to last accessed (previous) portal
-   case 'p':
-   case Ctrl_P:
-      if (!portalIsValid(prevPor))
-          inpFlushIfNotSilent();
-      else
-          gotoPortal(prevPor);
-      break;
+	//cursor to last accessed (previous) portal
+	case 'p':
+	case Ctrl_P:
+		if (!portalIsValid(prevPor))
+			 inpFlushIfNotSilent();
+		else
+			 gotoPortal(prevPor);
+		break;
 
-   //exchange current and next portal
-   case 'x':
-   case Ctrl_X:
-      CHECK_COMMPORT;
-      exchangePortal(prenum);
-      break;
+	//exchange current and next portal
+	case 'x':
+	case Ctrl_X:
+		CHECK_COMMPORT;
+		exchangePortal(prenum);
+		break;
 
-   //rotate portal downwards
-    case Ctrl_R:
-    case 'r':
-      CHECK_COMMPORT;
-      reset_VIsual_and_resel();   //stop Visual mode
-      rotatePortals(false, (int)prenum1);    //downwards
-      break;
+	//rotate portal downwards
+	 case Ctrl_R:
+	 case 'r':
+		CHECK_COMMPORT;
+		reset_VIsual_and_resel();   //stop Visual mode
+		rotatePortals(false, (int)prenum1);    //downwards
+		break;
 
-   //rotate portals upwards
-   case 'R':
-      CHECK_COMMPORT;
-      reset_VIsual_and_resel();   //stop Visual mode
-      rotatePortals(true, (int)prenum1);       //upwards
-      break;
+	//rotate portals upwards
+	case 'R':
+		CHECK_COMMPORT;
+		reset_VIsual_and_resel();   //stop Visual mode
+		rotatePortals(true, (int)prenum1);       //upwards
+		break;
 
-   //move portal to the very top/bottom/left/right
-    case 'K':
-    case 'J':
-    case 'H':
-    case 'L':
-      CHECK_COMMPORT;
-      if (ONLY_ONE_PORTAL)
-          inpFlushIfNotSilent();
-      else {
-          int dir = ((nchar == 'H' || nchar == 'L') ? WSP_VERT : 0)
-             | ((nchar == 'H' || nchar == 'K') ? WSP_TOP : WSP_BOT);
-          (void)splitPortalmove(curPor, (int)prenum, dir);
-      }
-      break;
+	//move portal to the very top/bottom/left/right
+	 case 'K':
+	 case 'J':
+	 case 'H':
+	 case 'L':
+		CHECK_COMMPORT;
+		if (ONLY_ONE_PORTAL)
+			 inpFlushIfNotSilent();
+		else {
+			 int dir = ((nchar == 'H' || nchar == 'L') ? WSP_VERT : 0)
+				 | ((nchar == 'H' || nchar == 'K') ? WSP_TOP : WSP_BOT);
+			 (void)splitPortalmove(curPor, (int)prenum, dir);
+		}
+		break;
 
 //make all portals the same width and/or height
-    case '=': {
-         int mod = commModifierG.cmod_split & (WSP_VERT | WSP_HOR);
-         portEqualizeHeight(
-            NULL, false, mod == WSP_VERT ? EAD_VERTICAL : mod == WSP_HOR ? EAD_HORIZONTAL : EAD_BOTH
-         );
-      }
-      break;
+	 case '=': {
+			int mod = commModifierG.cmod_split & (WSP_VERT | WSP_HOR);
+			portEqualizeHeight(
+				NULL, false, mod == WSP_VERT ? EAD_VERTICAL : mod == WSP_HOR ? EAD_HORIZONTAL : EAD_BOTH
+			);
+		}
+		break;
 
-   //increase current portal height
-   case '+':
-      portSetHeight(curPor->height + (int)prenum1, curPor);
-      break;
+	//increase current portal height
+	case '+':
+		portSetHeight(curPor->height + (int)prenum1, curPor);
+		break;
 
-   //decrease current portal height
-   case '-':
-      portSetHeight(curPor->height - (int)prenum1, curPor);
-      break;
+	//decrease current portal height
+	case '-':
+		portSetHeight(curPor->height - (int)prenum1, curPor);
+		break;
 
-   //set current portal height
-   case Ctrl__:
-   case '_':
-      portSetHeight(prenum ? (int)prenum : 9999, curPor);
-      break;
+	//set current portal height
+	case Ctrl__:
+	case '_':
+		portSetHeight(prenum ? (int)prenum : 9999, curPor);
+		break;
 
-   //increase current portal width
-   case '>':
-      portSetWidth(curPor->width + (int)prenum1, curPor);
-      break;
+	//increase current portal width
+	case '>':
+		portSetWidth(curPor->width + (int)prenum1, curPor);
+		break;
 
-   //decrease current portal width
-   case '<':
-      portSetWidth(curPor->width - (int)prenum1, curPor);
-      break;
+	//decrease current portal width
+	case '<':
+		portSetWidth(curPor->width - (int)prenum1, curPor);
+		break;
 
-   //set current portal width
-   case '|':
-      portSetWidth(prenum != 0 ? (int)prenum : 9999, curPor);
-      break;
+	//set current portal width
+	case '|':
+		portSetWidth(prenum != 0 ? (int)prenum : 9999, curPor);
+		break;
 
-   //jump to tag and split portal if tag exists (in preview portal)
-   case '}':
-      CHECK_COMMPORT;
-      if (prenum)
-         g_do_tagpreview = prenum;
-      else
-         g_do_tagpreview = p_pvh;
-      //FALLTHROUGH
-    case ']':
-    case Ctrl_RSB:
-      CHECK_COMMPORT;
-      //keep Visual mode, can select words to use as a tag
-      if (prenum)
-         postponed_split = prenum;
-      else
-         postponed_split = -1;
-      if (nchar != '}')
-         g_do_tagpreview = 0;
+	//jump to tag and split portal if tag exists (in preview portal)
+	case '}':
+		CHECK_COMMPORT;
+		if (prenum)
+			g_do_tagpreview = prenum;
+		else
+			g_do_tagpreview = p_pvh;
+		//FALLTHROUGH
+	 case ']':
+	 case Ctrl_RSB:
+		CHECK_COMMPORT;
+		//keep Visual mode, can select words to use as a tag
+		if (prenum)
+			postponed_split = prenum;
+		else
+			postponed_split = -1;
+		if (nchar != '}')
+			g_do_tagpreview = 0;
 
-      //Execute the command right here, required when "wincmd ]" was used in a function.
-      do_nv_ident(Ctrl_RSB, ZERO);
-      postponed_split = 0;
-      break;
+		//Execute the command right here, required when "wincmd ]" was used in a function.
+		do_nv_ident(Ctrl_RSB, ZERO);
+		postponed_split = 0;
+		break;
 
 //edit file name under cursor in a new portal
-   case 'f':
-   case 'F':
-   case Ctrl_F:
+	case 'f':
+	case 'F':
+	case Ctrl_F:
 portGotoFile:
-      CHECK_COMMPORT;
-      if (check_text_or_curbuf_locked(NULL))
-         break;
+		CHECK_COMMPORT;
+		if (check_text_or_curbuf_locked(NULL))
+			break;
 
-      ptr = grab_file_name(prenum1, OUT &lnum);
-      if (ptr) {
-         Tab* oldtab = curtab;
-         Portal* oldPortal = curPor;
-         setpcmark();
+		ptr = grab_file_name(prenum1, OUT &lnum);
+		if (ptr) {
+			Tab* oldtab = curtab;
+			Portal* oldPortal = curPor;
+			setpcmark();
 
-         //If 'switchbook' is set to 'useopen' or 'loadTab' and the
-         //file is already opened in a portal, then jump to it.
-         po = NULL;
-         if ((p_swb & (SWB_USEOPEN | SWB_USETAB)) != 0 && commModifierG.cmod_tab == 0)
-            po = switchBufGotoPortalIntoBuf(booklistFindByNameExpandingLinks(ptr));
+			//If 'switchbook' is set to 'useopen' or 'loadTab' and the
+			//file is already opened in a portal, then jump to it.
+			po = NULL;
+			if ((p_swb & (SWB_USEOPEN | SWB_USETAB)) != 0 && commModifierG.cmod_tab == 0)
+				po = switchBufGotoPortalIntoBuf(booklistFindByNameExpandingLinks(ptr));
 
-         if (po == NULL && splitPortal(0, 0) == OK) {
-            curPor->o.diff = false;
-            if (bookStartEditingFile(0, ptr, NULL, NULL, ECMD_LASTL, ECMD_HIDE, NULL) == FAIL) {
-               //Failed to open the file, close the portal opened for it.
-               closePortal(curPor, false);
-               goto_tab_port(oldtab, oldPortal);
-            } else
-               po = curPor;
-         }
+			if (po == NULL && splitPortal(0, 0) == OK) {
+				curPor->o.diff = false;
+				if (bookStartEditingFile(0, ptr, NULL, NULL, ECMD_LASTL, ECMD_HIDE, NULL) == FAIL) {
+					//Failed to open the file, close the portal opened for it.
+					closePortal(curPor, false);
+					goto_tab_port(oldtab, oldPortal);
+				} else
+					po = curPor;
+			}
 
-         if (po && nchar == 'F' && lnum >= 0) {
-            curPor->cursor.lnum = lnum;
-            check_cursor_lnum();
-            beginline(BL_SOL | BL_FIX);
-         }
-         eeglFree(ptr);
-      }
-      break;
+			if (po && nchar == 'F' && lnum >= 0) {
+				curPor->cursor.lnum = lnum;
+				check_cursor_lnum();
+				beginline(BL_SOL | BL_FIX);
+			}
+			eeglFree(ptr);
+		}
+		break;
 
-   //Go to the first occurrence of the identifier under cursor along path in a new portal -- webb
-   case 'i':             //Go to any match
-   case Ctrl_I:
-      type = FIND_ANY;
-      //FALLTHROUGH
-   case 'd':             //Go to definition, using 'define'
-   case Ctrl_D:
-      CHECK_COMMPORT;
-      if ((len = find_ident_under_cursor(&ptr, FIND_IDENT)) == 0)
-          break;
+	//Go to the first occurrence of the identifier under cursor along path in a new portal -- webb
+	case 'i':             //Go to any match
+	case Ctrl_I:
+		type = FIND_ANY;
+		//FALLTHROUGH
+	case 'd':             //Go to definition, using 'define'
+	case Ctrl_D:
+		CHECK_COMMPORT;
+		if ((len = find_ident_under_cursor(&ptr, FIND_IDENT)) == 0)
+			 break;
 
-      //Make a copy, if the line was changed it will be freed.
-      ptr = copySubstr(ptr, len);
+		//Make a copy, if the line was changed it will be freed.
+		ptr = copySubstr(ptr, len);
 
-      find_pattern_in_path(
-         ptr, 0, len, true, prenum == 0 ? true : false, type,
-         prenum1, ACTION_SPLIT, (LineNr)1, (LineNr)MAXLNUM, false, false
-      );
-      eeglFree(ptr);
-      curPor->setCursWant = true;
-      break;
+		find_pattern_in_path(
+			ptr, 0, len, true, prenum == 0 ? true : false, type,
+			prenum1, ACTION_SPLIT, (LineNr)1, (LineNr)MAXLNUM, false, false
+		);
+		eeglFree(ptr);
+		curPor->setCursWant = true;
+		break;
 
-   //Quickfix portal only: view the result under the cursor in a new split.
-   case K_KENTER:
-   case ENTER:
-      if (isLocationListBook(curBook))
-         llViewLocation(true);
-      break;
+	//Quickfix portal only: view the result under the cursor in a new split.
+	case K_KENTER:
+	case ENTER:
+		if (isLocationListBook(curBook))
+			llViewLocation(true);
+		break;
 
 //CTRL-W g  extended commands
-   case 'g':
-   case Ctrl_G:
-      CHECK_COMMPORT;
-      ++no_mapping;
-      ++allow_keys;   //no mapping for xchar, but allow key codes
-      if (xchar == ZERO)
-         xchar = plain_vgetc();
-      LANGMAP_ADJUST(xchar, true);
-      --no_mapping;
-      --allow_keys;
-      (void)add_to_showcmd(xchar);
+	case 'g':
+	case Ctrl_G:
+		CHECK_COMMPORT;
+		++no_mapping;
+		++allow_keys;   //no mapping for xchar, but allow key codes
+		if (xchar == ZERO)
+			xchar = plain_vgetc();
+		LANGMAP_ADJUST(xchar, true);
+		--no_mapping;
+		--allow_keys;
+		(void)add_to_showcmd(xchar);
 
-      switch (xchar) {
-      case '}':
-         xchar = Ctrl_RSB;
-         if (prenum)
-             g_do_tagpreview = prenum;
-         else
-             g_do_tagpreview = p_pvh;
-         //FALLTHROUGH
-      case ']':
-      case Ctrl_RSB:
-         //keep Visual mode, can select words to use as a tag
-         if (prenum)
-            postponed_split = prenum;
-         else
-            postponed_split = -1;
+		switch (xchar) {
+		case '}':
+			xchar = Ctrl_RSB;
+			if (prenum)
+				 g_do_tagpreview = prenum;
+			else
+				 g_do_tagpreview = p_pvh;
+			//FALLTHROUGH
+		case ']':
+		case Ctrl_RSB:
+			//keep Visual mode, can select words to use as a tag
+			if (prenum)
+				postponed_split = prenum;
+			else
+				postponed_split = -1;
 
-         //Execute the command right here, required when "wincmd g}" was used in a function
-         do_nv_ident('g', xchar);
-         postponed_split = 0;
-         break;
+			//Execute the command right here, required when "wincmd g}" was used in a function
+			do_nv_ident('g', xchar);
+			postponed_split = 0;
+			break;
 
-      case 'f':       //CTRL-W gf: "gf" in a new tab
-      case 'F':       //CTRL-W gF: "gF" in a new tab
-         commModifierG.cmod_tab = indexOfTab(curtab) + 1;
-         nchar = xchar;
-         goto portGotoFile;
+		case 'f':       //CTRL-W gf: "gf" in a new tab
+		case 'F':       //CTRL-W gF: "gF" in a new tab
+			commModifierG.cmod_tab = indexOfTab(curtab) + 1;
+			nchar = xchar;
+			goto portGotoFile;
 
-      case 't':       //CTRL-W gt: go to next tab
-         gotoTabById((int)prenum);
-         break;
+		case 't':       //CTRL-W gt: go to next tab
+			gotoTabById((int)prenum);
+			break;
 
-      case 'T':       //CTRL-W gT: go to previous tab
-         gotoTabById(-(int)prenum1);
-         break;
+		case 'T':       //CTRL-W gT: go to previous tab
+			gotoTabById(-(int)prenum1);
+			break;
 
-      case TAB:       //CTRL-W g<Tab>: go to last used tab
-         if (goto_tabpage_lastused() == FAIL)
-            inpFlushIfNotSilent();
-         break;
+		case TAB:       //CTRL-W g<Tab>: go to last used tab
+			if (goto_tabpage_lastused() == FAIL)
+				inpFlushIfNotSilent();
+			break;
 
-      default:
-         inpFlushIfNotSilent();
-         break;
-      }
-      break;
+		default:
+			inpFlushIfNotSilent();
+			break;
+		}
+		break;
 
-    default:   inpFlushIfNotSilent();
-      break;
-   }
+	 default:   inpFlushIfNotSilent();
+		break;
+	}
 }
 
 //Figure out the address type for ":wincmd".
 pub void
 getPortCommAddressType(CS arg, Invocation* invo) {
-   switch (*arg) {
-   case 'S':
-   case Ctrl_S:
-   case 's':
-   case Ctrl_N:
-   case 'n':
-   case 'j':
-   case Ctrl_J:
-   case 'k':
-   case Ctrl_K:
-   case 'T':
-   case Ctrl_R:
-   case 'r':
-   case 'R':
-   case 'K':
-   case 'J':
-   case '+':
-   case '-':
-   case Ctrl__:
-   case '_':
-   case '|':
-   case ']':
-   case Ctrl_RSB:
-   case 'g':
-   case Ctrl_G:
-   case Ctrl_V:
-   case 'v':
-   case 'h':
-   case Ctrl_H:
-   case 'l':
-   case Ctrl_L:
-   case 'H':
-   case 'L':
-   case '>':
-   case '<':
-   case '}':
-   case 'f':
-   case 'F':
-   case Ctrl_F:
-   case 'i':
-   case Ctrl_I:
-   case 'd':
-   case Ctrl_D:
-     //portal size or any count
-     invo->addressKind = ADDR_OTHER;
-     break;
+	switch (*arg) {
+	case 'S':
+	case Ctrl_S:
+	case 's':
+	case Ctrl_N:
+	case 'n':
+	case 'j':
+	case Ctrl_J:
+	case 'k':
+	case Ctrl_K:
+	case 'T':
+	case Ctrl_R:
+	case 'r':
+	case 'R':
+	case 'K':
+	case 'J':
+	case '+':
+	case '-':
+	case Ctrl__:
+	case '_':
+	case '|':
+	case ']':
+	case Ctrl_RSB:
+	case 'g':
+	case Ctrl_G:
+	case Ctrl_V:
+	case 'v':
+	case 'h':
+	case Ctrl_H:
+	case 'l':
+	case Ctrl_L:
+	case 'H':
+	case 'L':
+	case '>':
+	case '<':
+	case '}':
+	case 'f':
+	case 'F':
+	case Ctrl_F:
+	case 'i':
+	case Ctrl_I:
+	case 'd':
+	case Ctrl_D:
+	  //portal size or any count
+	  invo->addressKind = ADDR_OTHER;
+	  break;
 
-   case Ctrl_HAT:
-   case '^':
-     //book number
-     invo->addressKind = ADDR_BUFFERS;
-     break;
+	case Ctrl_HAT:
+	case '^':
+	  //book number
+	  invo->addressKind = ADDR_BUFFERS;
+	  break;
 
-   case Ctrl_Q:
-   case 'q':
-   case Ctrl_C:
-   case 'c':
-   case Ctrl_O:
-   case 'o':
-   case Ctrl_W:
-   case 'w':
-   case 'W':
-   case 'x':
-   case Ctrl_X:
-     //Portal number
-     invo->addressKind = ADDR_PORTALS;
-     break;
+	case Ctrl_Q:
+	case 'q':
+	case Ctrl_C:
+	case 'c':
+	case Ctrl_O:
+	case 'o':
+	case Ctrl_W:
+	case 'w':
+	case 'W':
+	case 'x':
+	case Ctrl_X:
+	  //Portal number
+	  invo->addressKind = ADDR_PORTALS;
+	  break;
 
-   case Ctrl_Z:
-   case 'z':
-   case 'P':
-   case 't':
-   case Ctrl_T:
-   case 'b':
-   case Ctrl_B:
-   case 'p':
-   case Ctrl_P:
-   case '=':
-   case ENTER:
-     //no count
-     invo->addressKind = ADDR_NONE;
-     break;
-   }
+	case Ctrl_Z:
+	case 'z':
+	case 'P':
+	case 't':
+	case Ctrl_T:
+	case 'b':
+	case Ctrl_B:
+	case 'p':
+	case Ctrl_P:
+	case '=':
+	case ENTER:
+	  //no count
+	  invo->addressKind = ADDR_NONE;
+	  break;
+	}
 }
 
 private void
 cmd_with_count(CS cmd, CS bufp, Unt bufsize, Long prenum) {
-   if (prenum > 0)
-      eeSnprintf(bufp, bufsize, "%s %ld", cmd, prenum);
-   else
-      STRCPY(bufp, cmd);
+	if (prenum > 0)
+		eeSnprintf(bufp, bufsize, "%s %ld", cmd, prenum);
+	else
+		STRCPY(bufp, cmd);
 }
 
 //If "split_disallowed" is set, or "po"'s book is closing, give an error and return FAIL.
 //Otherwise return OK.
 private int
 check_split_disallowed(Portal* po) {
-   if (split_disallowed > 0) {
-      emsg(_(e_cant_split_portal_while_closing_another));
-      return FAIL;
-   }
-   if (po->book->lockedSplit) {
-      emsg(_(e_cannot_split_portal_when_closing_book));
-      return FAIL;
-   }
-   return OK;
+	if (split_disallowed > 0) {
+		emsg(_(e_cant_split_portal_while_closing_another));
+		return FAIL;
+	}
+	if (po->book->lockedSplit) {
+		emsg(_(e_cannot_split_portal_when_closing_book));
+		return FAIL;
+	}
+	return OK;
 }
 
 //Split the current portal. Implement CTRL-W s and :split
@@ -1183,28 +1183,28 @@ check_split_disallowed(Portal* po) {
 //return FAIL for failure, OK otherwise
 pub int
 splitPortal(int size, Unt flags) {
-   if (portErrorIfPopup(true) || check_split_disallowed(curPor) == FAIL)
-      return FAIL;
+	if (portErrorIfPopup(true) || check_split_disallowed(curPor) == FAIL)
+		return FAIL;
 
-   //When the ":tab" modifier was used, open a new tab instead.
-   if (mayOpenTab() == OK)
-      return OK;
+	//When the ":tab" modifier was used, open a new tab instead.
+	if (mayOpenTab() == OK)
+		return OK;
 
-   //Add flags from ":vertical", ":topleft" and ":botright".
-   flags |= commModifierG.cmod_split;
-   if ((flags & WSP_TOP) * (flags & WSP_BOT) != 0) {
-      emsg(_(e_cant_split_topleft_and_botright_at_the_same_time));
-      return FAIL;
-   }
+	//Add flags from ":vertical", ":topleft" and ":botright".
+	flags |= commModifierG.cmod_split;
+	if ((flags & WSP_TOP) * (flags & WSP_BOT) != 0) {
+		emsg(_(e_cant_split_topleft_and_botright_at_the_same_time));
+		return FAIL;
+	}
 
-   //When creating the help portal, make a snapshot of the portal layout.
-   //Otherwise clear the snapshot, it's now invalid.
-   if (flags & WSP_HELP)
-      make_snapshot(SNAP_HELP_IDX);
-   else
-      clearSnapshot(curtab, SNAP_HELP_IDX);
+	//When creating the help portal, make a snapshot of the portal layout.
+	//Otherwise clear the snapshot, it's now invalid.
+	if (flags & WSP_HELP)
+		make_snapshot(SNAP_HELP_IDX);
+	else
+		clearSnapshot(curtab, SNAP_HELP_IDX);
 
-   return splitPortal_ins(size, flags, NULL, 0, NULL);
+	return splitPortal_ins(size, flags, NULL, 0, NULL);
 }
 
 //When "newPort" is NULL: split the current portal in two.
@@ -1216,401 +1216,401 @@ splitPortal(int size, Unt flags) {
 //portal layout or sizes. Return FAIL for failure, OK otherwise.
 pub int
 splitPortal_ins(
-   int size,
-   Unt flags,
-   Portal* newPort,
-   int dir,
-   Frame* to_flatten
+	int size,
+	Unt flags,
+	Portal* newPort,
+	int dir,
+	Frame* to_flatten
 ) {
-   Portal* po = newPort;
-   Portal* oldPortal;
-   int new_size = size;
-   int i;
-   int do_equal = false;
-   int needed;
-   int available;
-   int oldPortal_height = 0;
-   int layout;
-   Frame *fr, *curfrp, *fr2, *prevfrp;
-   int before;
-   int minheight;
-   int wmh1;
-   int did_set_fraction = false;
-   int retval = FAIL;
+	Portal* po = newPort;
+	Portal* oldPortal;
+	int new_size = size;
+	int i;
+	int do_equal = false;
+	int needed;
+	int available;
+	int oldPortal_height = 0;
+	int layout;
+	Frame *fr, *curfrp, *fr2, *prevfrp;
+	int before;
+	int minheight;
+	int wmh1;
+	int did_set_fraction = false;
+	int retval = FAIL;
 
-   //Do not redraw here, curPor->book may be invalid.
-   ++isRedrawingDisabledG;
+	//Do not redraw here, curPor->book may be invalid.
+	++isRedrawingDisabledG;
 
-   if (!newPort)
-      triggerPortalNewPre();
+	if (!newPort)
+		triggerPortalNewPre();
 
-   if ((flags & WSP_TOP) != 0)
-      oldPortal = firstPor;
-   ei ((flags & WSP_BOT) != 0)
-      oldPortal = lastPor;
-   else
-      oldPortal = curPor;
+	if ((flags & WSP_TOP) != 0)
+		oldPortal = firstPor;
+	ei ((flags & WSP_BOT) != 0)
+		oldPortal = lastPor;
+	else
+		oldPortal = curPor;
 
-   if ((flags & WSP_VERT) != 0) {
-      layout = FR_ROW;
+	if ((flags & WSP_VERT) != 0) {
+		layout = FR_ROW;
 
-      //Check if we are able to split the current portal and compute its width.
-      //Current portal requires at least 1 space.
-      int wmw1 = MIN_PORTAL_WIDTH;
-      needed = wmw1 + 1;
-      if (flags & WSP_ROOM)
-         needed += p_wiw - wmw1;
+		//Check if we are able to split the current portal and compute its width.
+		//Current portal requires at least 1 space.
+		int wmw1 = MIN_PORTAL_WIDTH;
+		needed = wmw1 + 1;
+		if (flags & WSP_ROOM)
+			needed += p_wiw - wmw1;
 
-      int minwidth;
-      if (flags & (WSP_BOT | WSP_TOP)) {
-         minwidth = frame_minwidth(topframeG, NOPORT);
-         available = topframeG->width;
-         needed += minwidth;
-      } ei (p_ea) {
-         minwidth = frame_minwidth(oldPortal->frame, NOPORT);
-         prevfrp = oldPortal->frame;
-         for (fr = oldPortal->frame->parent; fr != NULL; fr = fr->parent) {
-            if (fr->layout == FR_ROW)
-               FOR_ALL_FRAMES(fr2, fr->child) {
-                  if (fr2 != prevfrp)
-                     minwidth += frame_minwidth(fr2, NOPORT);
-               }
-            prevfrp = fr;
-         }
-         available = topframeG->width;
-         needed += minwidth;
-      } else {
-         minwidth = frame_minwidth(oldPortal->frame, NOPORT);
-         available = oldPortal->frame->width;
-         needed += minwidth;
-      }
-      if ((flags & WSP_FORCE_ROOM) == 0&& available < needed) {
-         emsg(_(e_not_enough_room));
-         goto theend;
-      }
-      if (new_size == 0)
-         new_size = oldPortal->width / 2;
-      if (new_size > available - minwidth - 1)
-         new_size = available - minwidth - 1;
-      if (new_size < wmw1)
-         new_size = wmw1;
+		int minwidth;
+		if (flags & (WSP_BOT | WSP_TOP)) {
+			minwidth = frame_minwidth(topframeG, NOPORT);
+			available = topframeG->width;
+			needed += minwidth;
+		} ei (p_ea) {
+			minwidth = frame_minwidth(oldPortal->frame, NOPORT);
+			prevfrp = oldPortal->frame;
+			for (fr = oldPortal->frame->parent; fr != NULL; fr = fr->parent) {
+				if (fr->layout == FR_ROW)
+					FOR_ALL_FRAMES(fr2, fr->child) {
+						if (fr2 != prevfrp)
+						   minwidth += frame_minwidth(fr2, NOPORT);
+					}
+				prevfrp = fr;
+			}
+			available = topframeG->width;
+			needed += minwidth;
+		} else {
+			minwidth = frame_minwidth(oldPortal->frame, NOPORT);
+			available = oldPortal->frame->width;
+			needed += minwidth;
+		}
+		if ((flags & WSP_FORCE_ROOM) == 0&& available < needed) {
+			emsg(_(e_not_enough_room));
+			goto theend;
+		}
+		if (new_size == 0)
+			new_size = oldPortal->width / 2;
+		if (new_size > available - minwidth - 1)
+			new_size = available - minwidth - 1;
+		if (new_size < wmw1)
+			new_size = wmw1;
 
-      //if it doesn't fit in the current portal, need portEqualizeHeight()
-      if (oldPortal->width - new_size - 1 < MIN_PORTAL_WIDTH)
-         do_equal = true;
+		//if it doesn't fit in the current portal, need portEqualizeHeight()
+		if (oldPortal->width - new_size - 1 < MIN_PORTAL_WIDTH)
+			do_equal = true;
 
-      //We don't like to take lines for the new portal from a
-      //'portfixwidth' portal.  Take them from a portal to the left or right
-      //instead, if possible. Add one for the separator.
-      if (oldPortal->o.portFixWidth)
-         portSetWidth(oldPortal->width + new_size + 1, oldPortal);
+		//We don't like to take lines for the new portal from a
+		//'portfixwidth' portal.  Take them from a portal to the left or right
+		//instead, if possible. Add one for the separator.
+		if (oldPortal->o.portFixWidth)
+			portSetWidth(oldPortal->width + new_size + 1, oldPortal);
 
-      //Only make all portals the same width if one of them (except oldPortal)
-      //is wider than one of the split portals.
-      if (!do_equal && p_ea && size == 0 && p_ead != EAD_VERTICAL && oldPortal->frame->parent) {
-         fr = oldPortal->frame->parent->child;
-         while (fr) {
-            if (fr->port != oldPortal && fr->port
-                  && ((int)fr->port->width > new_size
-                      || fr->port->width > oldPortal->width - new_size - 1)
-            ) {
-               do_equal = true;
-               break;
-            }
-            fr = fr->next;
-         }
-      }
-   } else {
-      layout = FR_COL;
+		//Only make all portals the same width if one of them (except oldPortal)
+		//is wider than one of the split portals.
+		if (!do_equal && p_ea && size == 0 && p_ead != EAD_VERTICAL && oldPortal->frame->parent) {
+			fr = oldPortal->frame->parent->child;
+			while (fr) {
+				if (fr->port != oldPortal && fr->port
+						&& ((int)fr->port->width > new_size
+						    || fr->port->width > oldPortal->width - new_size - 1)
+				) {
+					do_equal = true;
+					break;
+				}
+				fr = fr->next;
+			}
+		}
+	} else {
+		layout = FR_COL;
 
-      //Check if we are able to split the current portal and compute its height.
-      //Current portal requires at least 1 space.
-      wmh1 = MIN_PORTAL_HEIGHT;
-      needed = wmh1 + STATUS_HEIGHT;
-      if (flags & WSP_ROOM)
-          needed += p_wh - wmh1;
-      if (flags & (WSP_BOT | WSP_TOP)) {
-          minheight = frame_minheight(topframeG, NOPORT);
-          available = topframeG->height;
-          needed += minheight;
-      } ei (p_ea) {
-         minheight = frame_minheight(oldPortal->frame, NOPORT);
-         prevfrp = oldPortal->frame;
-         for (fr = oldPortal->frame->parent; fr != NULL; fr = fr->parent) {
-            if (fr->layout == FR_COL) {
-               FOR_ALL_FRAMES(fr2, fr->child) {
-                  if (fr2 != prevfrp)
-                     minheight += frame_minheight(fr2, NOPORT);
-               }
-            }
-            prevfrp = fr;
-         }
-         available = topframeG->height;
-         needed += minheight;
-      } else {
-          minheight = frame_minheight(oldPortal->frame, NOPORT);
-          available = oldPortal->frame->height;
-          needed += minheight;
-      }
-      if (!(flags & WSP_FORCE_ROOM) && available < needed) {
-          emsg(_(e_not_enough_room));
-          goto theend;
-      }
-      oldPortal_height = oldPortal->height;
-      if (new_size == 0)
-          new_size = oldPortal_height / 2;
-      if (new_size > available - minheight - STATUS_HEIGHT)
-          new_size = available - minheight - STATUS_HEIGHT;
-      if (new_size < wmh1)
-          new_size = wmh1;
+		//Check if we are able to split the current portal and compute its height.
+		//Current portal requires at least 1 space.
+		wmh1 = MIN_PORTAL_HEIGHT;
+		needed = wmh1 + STATUS_HEIGHT;
+		if (flags & WSP_ROOM)
+			 needed += p_wh - wmh1;
+		if (flags & (WSP_BOT | WSP_TOP)) {
+			 minheight = frame_minheight(topframeG, NOPORT);
+			 available = topframeG->height;
+			 needed += minheight;
+		} ei (p_ea) {
+			minheight = frame_minheight(oldPortal->frame, NOPORT);
+			prevfrp = oldPortal->frame;
+			for (fr = oldPortal->frame->parent; fr != NULL; fr = fr->parent) {
+				if (fr->layout == FR_COL) {
+					FOR_ALL_FRAMES(fr2, fr->child) {
+						if (fr2 != prevfrp)
+						   minheight += frame_minheight(fr2, NOPORT);
+					}
+				}
+				prevfrp = fr;
+			}
+			available = topframeG->height;
+			needed += minheight;
+		} else {
+			 minheight = frame_minheight(oldPortal->frame, NOPORT);
+			 available = oldPortal->frame->height;
+			 needed += minheight;
+		}
+		if (!(flags & WSP_FORCE_ROOM) && available < needed) {
+			 emsg(_(e_not_enough_room));
+			 goto theend;
+		}
+		oldPortal_height = oldPortal->height;
+		if (new_size == 0)
+			 new_size = oldPortal_height / 2;
+		if (new_size > available - minheight - STATUS_HEIGHT)
+			 new_size = available - minheight - STATUS_HEIGHT;
+		if (new_size < wmh1)
+			 new_size = wmh1;
 
-      //if it doesn't fit in the current portal, need portEqualizeHeight()
-      if (oldPortal_height - new_size - STATUS_HEIGHT < MIN_PORTAL_HEIGHT)
-          do_equal = true;
+		//if it doesn't fit in the current portal, need portEqualizeHeight()
+		if (oldPortal_height - new_size - STATUS_HEIGHT < MIN_PORTAL_HEIGHT)
+			 do_equal = true;
 
-      //We don't like to take lines for the new portal from a
-      //'portfixheight' portal.  Take them from a portal above or below instead, if possible.
-      if (oldPortal->o.portFixHeight) {
-         //Set fraction now so that the cursor keeps the same relative
-         //vertical position using the old height.
-         set_fraction(oldPortal);
-         did_set_fraction = true;
+		//We don't like to take lines for the new portal from a
+		//'portfixheight' portal.  Take them from a portal above or below instead, if possible.
+		if (oldPortal->o.portFixHeight) {
+			//Set fraction now so that the cursor keeps the same relative
+			//vertical position using the old height.
+			set_fraction(oldPortal);
+			did_set_fraction = true;
 
-         portSetHeight(oldPortal->height + new_size + STATUS_HEIGHT, oldPortal);
-         oldPortal_height = oldPortal->height;
-      }
+			portSetHeight(oldPortal->height + new_size + STATUS_HEIGHT, oldPortal);
+			oldPortal_height = oldPortal->height;
+		}
 
-      //Only make all portals the same height if one of them (except oldPortal)
-      //is higher than one of the split portals.
-      if (!do_equal && p_ea && size == 0 && p_ead != EAD_HORIZONTAL && oldPortal->frame->parent) {
-         fr = oldPortal->frame->parent->child;
-         while (fr) {
-            if (fr->port != oldPortal && fr->port != NULL
-               && ((int)fr->port->height > new_size
-                   || (int)fr->port->height > oldPortal_height - new_size - STATUS_HEIGHT)
-            ) {
-               do_equal = true;
-               break;
-            }
-            fr = fr->next;
-         }
-      }
-   }
+		//Only make all portals the same height if one of them (except oldPortal)
+		//is higher than one of the split portals.
+		if (!do_equal && p_ea && size == 0 && p_ead != EAD_HORIZONTAL && oldPortal->frame->parent) {
+			fr = oldPortal->frame->parent->child;
+			while (fr) {
+				if (fr->port != oldPortal && fr->port != NULL
+					&& ((int)fr->port->height > new_size
+						 || (int)fr->port->height > oldPortal_height - new_size - STATUS_HEIGHT)
+				) {
+					do_equal = true;
+					break;
+				}
+				fr = fr->next;
+			}
+		}
+	}
 
-   //allocate new portal structure and link it in the portal list
-   if ((flags & WSP_TOP) == 0
-       && ((flags & WSP_BOT)
-            || (flags & WSP_BELOW)
-            || (!(flags & WSP_ABOVE)
-                && ( (flags & WSP_VERT) ? p_spr : p_sb)))
-   ) {
-      //new portal below/right of current one
-      if (!newPort)
-         po = allocPortal(oldPortal, false);
-      else
-         append(oldPortal, po);
-   } else {
-      if (!newPort)
-         po = allocPortal(oldPortal->prev, false);
-      else
-         append(oldPortal->prev, po);
-   }
+	//allocate new portal structure and link it in the portal list
+	if ((flags & WSP_TOP) == 0
+		 && ((flags & WSP_BOT)
+				|| (flags & WSP_BELOW)
+				|| (!(flags & WSP_ABOVE)
+					 && ( (flags & WSP_VERT) ? p_spr : p_sb)))
+	) {
+		//new portal below/right of current one
+		if (!newPort)
+			po = allocPortal(oldPortal, false);
+		else
+			append(oldPortal, po);
+	} else {
+		if (!newPort)
+			po = allocPortal(oldPortal->prev, false);
+		else
+			append(oldPortal->prev, po);
+	}
 
-   if (!newPort) {
-      if (!po)
-         goto theend;
+	if (!newPort) {
+		if (!po)
+			goto theend;
 
-      neframe(po);
-      if (!po->frame) {
-         freePortal(po, NULL);
-         goto theend;
-      }
+		neframe(po);
+		if (!po->frame) {
+			freePortal(po, NULL);
+			goto theend;
+		}
 
-      //make the contents of the new portal the same as the current one
-      init(po, curPor, flags);
-   }
+		//make the contents of the new portal the same as the current one
+		init(po, curPor, flags);
+	}
 
-   //Going to reorganize frames now, make sure they're flat.
-   if (to_flatten)
-      frame_flatten(to_flatten);
+	//Going to reorganize frames now, make sure they're flat.
+	if (to_flatten)
+		frame_flatten(to_flatten);
 
-   //Reorganize the tree of frames to insert the new portal.
-   if (flags & (WSP_TOP | WSP_BOT)) {
-      if ((topframeG->layout == FR_COL && (flags & WSP_VERT) == 0)
-          || (topframeG->layout == FR_ROW && (flags & WSP_VERT) != 0)
-      ){
-         curfrp = topframeG->child;
-         if (flags & WSP_BOT) {
-            while (curfrp->next)
-               curfrp = curfrp->next;
-         }
-      } else
-         curfrp = topframeG;
-      before = (flags & WSP_TOP);
-   } else {
-      curfrp = oldPortal->frame;
-      if (flags & WSP_BELOW)
-         before = false;
-      ei (flags & WSP_ABOVE)
-         before = true;
-      ei (flags & WSP_VERT)
-         before = !p_spr;
-      else
-         before = !p_sb;
-   }
-   if (!curfrp->parent || curfrp->parent->layout != layout) {
-      //Need to create a new frame in the tree to make a branch.
-      fr = ALLOC_CLEAR_ONE(Frame);
-      *fr = *curfrp;
-      curfrp->layout = layout;
-      fr->parent = curfrp;
-      fr->next = NULL;
-      fr->prev = NULL;
-      curfrp->child = fr;
-      curfrp->port = NULL;
-      curfrp = fr;
-      if (fr->port)
-         oldPortal->frame = fr;
-      else {
-         FOR_ALL_FRAMES(fr, fr->child) {
-            fr->parent = curfrp;
-         }
-      }
-   }
+	//Reorganize the tree of frames to insert the new portal.
+	if (flags & (WSP_TOP | WSP_BOT)) {
+		if ((topframeG->layout == FR_COL && (flags & WSP_VERT) == 0)
+			 || (topframeG->layout == FR_ROW && (flags & WSP_VERT) != 0)
+		){
+			curfrp = topframeG->child;
+			if (flags & WSP_BOT) {
+				while (curfrp->next)
+					curfrp = curfrp->next;
+			}
+		} else
+			curfrp = topframeG;
+		before = (flags & WSP_TOP);
+	} else {
+		curfrp = oldPortal->frame;
+		if (flags & WSP_BELOW)
+			before = false;
+		ei (flags & WSP_ABOVE)
+			before = true;
+		ei (flags & WSP_VERT)
+			before = !p_spr;
+		else
+			before = !p_sb;
+	}
+	if (!curfrp->parent || curfrp->parent->layout != layout) {
+		//Need to create a new frame in the tree to make a branch.
+		fr = ALLOC_CLEAR_ONE(Frame);
+		*fr = *curfrp;
+		curfrp->layout = layout;
+		fr->parent = curfrp;
+		fr->next = NULL;
+		fr->prev = NULL;
+		curfrp->child = fr;
+		curfrp->port = NULL;
+		curfrp = fr;
+		if (fr->port)
+			oldPortal->frame = fr;
+		else {
+			FOR_ALL_FRAMES(fr, fr->child) {
+				fr->parent = curfrp;
+			}
+		}
+	}
 
-   if (!newPort)
-      fr = po->frame;
-   else
-      fr = newPort->frame;
-   fr->parent = curfrp->parent;
+	if (!newPort)
+		fr = po->frame;
+	else
+		fr = newPort->frame;
+	fr->parent = curfrp->parent;
 
-   //Insert the new frame at the right place in the frame list.
-   if (before)
-      frame_insert(curfrp, fr);
-   else
-      frame_append(curfrp, fr);
+	//Insert the new frame at the right place in the frame list.
+	if (before)
+		frame_insert(curfrp, fr);
+	else
+		frame_append(curfrp, fr);
 
-   //Set fraction now so that the cursor keeps the same relative vertical position.
-   if (!did_set_fraction)
-      set_fraction(oldPortal);
-   po->fraction = oldPortal->fraction;
+	//Set fraction now so that the cursor keeps the same relative vertical position.
+	if (!did_set_fraction)
+		set_fraction(oldPortal);
+	po->fraction = oldPortal->fraction;
 
-   if (flags & WSP_VERT) {
-      po->scroll = curPor->scroll;
+	if (flags & WSP_VERT) {
+		po->scroll = curPor->scroll;
 
-      if ((flags & (WSP_TOP | WSP_BOT)) != 0) {
-         //set height and row of new portal to full height
-         po->windowRow = 0;
-         portalNewHeight(po, curfrp->height - 1);
-      } else {
-         //height and row of new portal is same as current portal
-         po->windowRow = oldPortal->windowRow;
-         portalNewHeight(po, VISIBLE_HEIGHT(oldPortal));
-      }
-      fr->height = curfrp->height;
+		if ((flags & (WSP_TOP | WSP_BOT)) != 0) {
+			//set height and row of new portal to full height
+			po->windowRow = 0;
+			portalNewHeight(po, curfrp->height - 1);
+		} else {
+			//height and row of new portal is same as current portal
+			po->windowRow = oldPortal->windowRow;
+			portalNewHeight(po, VISIBLE_HEIGHT(oldPortal));
+		}
+		fr->height = curfrp->height;
 
-      //"new_size" of the current portal goes to the new portal, use
-      //one column for the vertical separator
-      portalNewWidth(po, new_size);
-      if (before)
-         po->vsepWidth = 1;
-      else {
-         po->vsepWidth = oldPortal->vsepWidth;
-         oldPortal->vsepWidth = 1;
-      }
-      if ((flags & (WSP_TOP | WSP_BOT)) != 0) {
-         if ((flags & WSP_BOT) != 0)
-            frame_add_vsep(curfrp);
-         //Set width of neighbor frame
-         frameNewWidth(curfrp, curfrp->width
-              - (new_size + ((flags & WSP_TOP) != 0)), flags & WSP_TOP, false);
-      } else
-         portalNewWidth(oldPortal, oldPortal->width - (new_size + 1));
-      if (before) {  //new portal left of current one
-         po->windowCol = oldPortal->windowCol;
-         oldPortal->windowCol += new_size + 1;
-      } else      //new portal right of current one
-         po->windowCol = oldPortal->windowCol + oldPortal->width + 1;
-      frame_fix_width(oldPortal);
-      frame_fix_width(po);
-   } else {
-      //width and column of new portal is same as current portal
-      if ((flags & (WSP_TOP | WSP_BOT)) != 0) {
-         po->windowCol = firstPor->windowCol;
-         portalNewWidth(po, topframeG->width);
-         po->vsepWidth = 0;
-      } else {
-         po->windowCol = oldPortal->windowCol;
-         portalNewWidth(po, oldPortal->width);
-         po->vsepWidth = oldPortal->vsepWidth;
-      }
-      fr->width = curfrp->width;
+		//"new_size" of the current portal goes to the new portal, use
+		//one column for the vertical separator
+		portalNewWidth(po, new_size);
+		if (before)
+			po->vsepWidth = 1;
+		else {
+			po->vsepWidth = oldPortal->vsepWidth;
+			oldPortal->vsepWidth = 1;
+		}
+		if ((flags & (WSP_TOP | WSP_BOT)) != 0) {
+			if ((flags & WSP_BOT) != 0)
+				frame_add_vsep(curfrp);
+			//Set width of neighbor frame
+			frameNewWidth(curfrp, curfrp->width
+				  - (new_size + ((flags & WSP_TOP) != 0)), flags & WSP_TOP, false);
+		} else
+			portalNewWidth(oldPortal, oldPortal->width - (new_size + 1));
+		if (before) {  //new portal left of current one
+			po->windowCol = oldPortal->windowCol;
+			oldPortal->windowCol += new_size + 1;
+		} else      //new portal right of current one
+			po->windowCol = oldPortal->windowCol + oldPortal->width + 1;
+		frame_fix_width(oldPortal);
+		frame_fix_width(po);
+	} else {
+		//width and column of new portal is same as current portal
+		if ((flags & (WSP_TOP | WSP_BOT)) != 0) {
+			po->windowCol = firstPor->windowCol;
+			portalNewWidth(po, topframeG->width);
+			po->vsepWidth = 0;
+		} else {
+			po->windowCol = oldPortal->windowCol;
+			portalNewWidth(po, oldPortal->width);
+			po->vsepWidth = oldPortal->vsepWidth;
+		}
+		fr->width = curfrp->width;
 
-      //"new_size" of the current portal goes to the new portal, use
-      //one row for the status line
-      portalNewHeight(po, new_size);
-      if ((flags & (WSP_TOP | WSP_BOT)) != 0) {
-         int new_height = curfrp->height - new_size;
+		//"new_size" of the current portal goes to the new portal, use
+		//one row for the status line
+		portalNewHeight(po, new_size);
+		if ((flags & (WSP_TOP | WSP_BOT)) != 0) {
+			int new_height = curfrp->height - new_size;
 
-         new_height -= STATUS_HEIGHT;
-         if (flags & WSP_BOT)
-            frame_add_statusline(curfrp);
-         frame_new_height(curfrp, new_height, (flags & WSP_TOP) != 0, false, false);
-      } else
-         portalNewHeight(oldPortal, oldPortal_height - (new_size + STATUS_HEIGHT));
-      if (before) {   //new portal above current one
-         po->windowRow = oldPortal->windowRow;
-         oldPortal->windowRow += po->height + STATUS_HEIGHT;
-      } else {     //new portal below current one
-         po->windowRow = oldPortal->windowRow + VISIBLE_HEIGHT(oldPortal) + STATUS_HEIGHT;
-      }
-      frame_fix_height(po);
-      frame_fix_height(oldPortal);
-   }
+			new_height -= STATUS_HEIGHT;
+			if (flags & WSP_BOT)
+				frame_add_statusline(curfrp);
+			frame_new_height(curfrp, new_height, (flags & WSP_TOP) != 0, false, false);
+		} else
+			portalNewHeight(oldPortal, oldPortal_height - (new_size + STATUS_HEIGHT));
+		if (before) {   //new portal above current one
+			po->windowRow = oldPortal->windowRow;
+			oldPortal->windowRow += po->height + STATUS_HEIGHT;
+		} else {     //new portal below current one
+			po->windowRow = oldPortal->windowRow + VISIBLE_HEIGHT(oldPortal) + STATUS_HEIGHT;
+		}
+		frame_fix_height(po);
+		frame_fix_height(oldPortal);
+	}
 
-   if ((flags & (WSP_TOP | WSP_BOT)) != 0)
-      computePosPortal();
+	if ((flags & (WSP_TOP | WSP_BOT)) != 0)
+		computePosPortal();
 
-   //Both portals need redrawing.  Update all status lines, in case they
-   //show something related to the portal count or position.
-   redrawPortLater(po, UPD_NOT_VALID);
-   redrawPortLater(oldPortal, UPD_NOT_VALID);
-   status_redraw_all();
+	//Both portals need redrawing.  Update all status lines, in case they
+	//show something related to the portal count or position.
+	redrawPortLater(po, UPD_NOT_VALID);
+	redrawPortLater(oldPortal, UPD_NOT_VALID);
+	status_redraw_all();
 
-   //equalize the portal sizes.
-   if (do_equal || dir != 0) {
-      portEqualizeHeight(
-            po, true,
-            (flags & WSP_VERT) != 0
-               ? (dir == EAD_VERTICAL ? EAD_BOTH : EAD_HORIZONTAL)
-               : dir == EAD_HORIZONTAL ? EAD_BOTH : EAD_VERTICAL
-      );
-   }
+	//equalize the portal sizes.
+	if (do_equal || dir != 0) {
+		portEqualizeHeight(
+				po, true,
+				(flags & WSP_VERT) != 0
+					? (dir == EAD_VERTICAL ? EAD_BOTH : EAD_HORIZONTAL)
+					: dir == EAD_HORIZONTAL ? EAD_BOTH : EAD_VERTICAL
+		);
+	}
 
-   //Don't change the portal height/width to 'winheight' / 'winwidth' if a size was given.
-   if ((flags & WSP_VERT) != 0) {
-      i = p_wiw;
-      if (size != 0)
-         p_wiw = size;
-   } else {
-      i = p_wh;
-      if (size != 0)
-         p_wh = size;
-   }
+	//Don't change the portal height/width to 'winheight' / 'winwidth' if a size was given.
+	if ((flags & WSP_VERT) != 0) {
+		i = p_wiw;
+		if (size != 0)
+			p_wiw = size;
+	} else {
+		i = p_wh;
+		if (size != 0)
+			p_wh = size;
+	}
 
-   //make the new portal the current portal
-   (void)enterPortalWorker(po, (newPort == NULL ? WEE_TRIGGER_NEW_AUTOCMDS : 0)
-          | WEE_TRIGGER_ENTER_AUTOCMDS | WEE_TRIGGER_LEAVE_AUTOCMDS);
-   if (flags & WSP_VERT)
-      p_wiw = i;
-   else
-      p_wh = i;
-   retval = OK;
+	//make the new portal the current portal
+	(void)enterPortalWorker(po, (newPort == NULL ? WEE_TRIGGER_NEW_AUTOCMDS : 0)
+			 | WEE_TRIGGER_ENTER_AUTOCMDS | WEE_TRIGGER_LEAVE_AUTOCMDS);
+	if (flags & WSP_VERT)
+		p_wiw = i;
+	else
+		p_wh = i;
+	retval = OK;
 
 theend:
-   if (isRedrawingDisabledG > 0)
-      --isRedrawingDisabledG;
-   return retval;
+	if (isRedrawingDisabledG > 0)
+		--isRedrawingDisabledG;
+	return retval;
 }
 
 //Initialize portal "newp" from portal "oldp". Used when splitting a portal and when creating a
@@ -1618,136 +1618,136 @@ theend:
 //prevent the location list from being copied.
 private void
 init(Portal* newp, Portal* oldp, Unt) {
-   newp->book = oldp->book;
-   newp->ownSyntax = &(oldp->book->syntax);
-   oldp->book->countPortals++;
-   newp->cursor = oldp->cursor;
-   newp->cacheState = 0;
-   newp->cursWant = oldp->cursWant;
-   newp->setCursWant = oldp->setCursWant;
-   newp->topLine = oldp->topLine;
-   newp->topFill = oldp->topFill;
-   newp->leftCol = oldp->leftCol;
-   newp->prevContextMark = oldp->prevContextMark;
-   newp->prevPrevContextMark = oldp->prevPrevContextMark;
-   newp->altFnum = oldp->altFnum;
-   newp->cursorRow = oldp->cursorRow;
-   newp->fraction = oldp->fraction;
-   newp->prevFraction = oldp->prevFraction;
-   copy_jumplist(oldp, newp);
-   newp->locationStackRef = NULL;
-   newp->localDir = (oldp->localDir == NULL) ? NULL : copyStr(oldp->localDir);
-   newp->prevdir = (oldp->prevdir == NULL) ? NULL : copyStr(oldp->prevdir);
+	newp->book = oldp->book;
+	newp->ownSyntax = &(oldp->book->syntax);
+	oldp->book->countPortals++;
+	newp->cursor = oldp->cursor;
+	newp->cacheState = 0;
+	newp->cursWant = oldp->cursWant;
+	newp->setCursWant = oldp->setCursWant;
+	newp->topLine = oldp->topLine;
+	newp->topFill = oldp->topFill;
+	newp->leftCol = oldp->leftCol;
+	newp->prevContextMark = oldp->prevContextMark;
+	newp->prevPrevContextMark = oldp->prevPrevContextMark;
+	newp->altFnum = oldp->altFnum;
+	newp->cursorRow = oldp->cursorRow;
+	newp->fraction = oldp->fraction;
+	newp->prevFraction = oldp->prevFraction;
+	copy_jumplist(oldp, newp);
+	newp->locationStackRef = NULL;
+	newp->localDir = (oldp->localDir == NULL) ? NULL : copyStr(oldp->localDir);
+	newp->prevdir = (oldp->prevdir == NULL) ? NULL : copyStr(oldp->prevdir);
 
-   //copy tagstack and folds
-   for (Unt i = 0; i < oldp->tagStackLen; i++) {
-      Taggy* tag = &newp->tagStack[i];
-      *tag = oldp->tagStack[i];
-      if (tag->tagname != NULL)
-         tag->tagname = copyStr(tag->tagname);
-      if (tag->user_data != NULL)
-         tag->user_data = copyStr(tag->user_data);
-   }
-   newp->tagStackInd = oldp->tagStackInd;
-   newp->tagStackLen = oldp->tagStackLen;
+	//copy tagstack and folds
+	for (Unt i = 0; i < oldp->tagStackLen; i++) {
+		Taggy* tag = &newp->tagStack[i];
+		*tag = oldp->tagStack[i];
+		if (tag->tagname != NULL)
+			tag->tagname = copyStr(tag->tagname);
+		if (tag->user_data != NULL)
+			tag->user_data = copyStr(tag->user_data);
+	}
+	newp->tagStackInd = oldp->tagStackInd;
+	newp->tagStackLen = oldp->tagStackLen;
 
-   //Keep same changelist position in new portal.
-   newp->changeListInd = oldp->changeListInd;
+	//Keep same changelist position in new portal.
+	newp->changeListInd = oldp->changeListInd;
 
-   copyFoldingState(oldp, newp);
+	copyFoldingState(oldp, newp);
 
-   initg_some(newp, oldp);
+	initg_some(newp, oldp);
 }
 
 //Initialize portal "newp" from portal "old". Only the essential things are copied.
 private void
 initg_some(Portal* newp, Portal* oldp) {
-   //Use the same argument list.
-   newp->argList = oldp->argList;
-   ++newp->argList->al_refcount;
-   newp->argListInd = oldp->argListInd;
+	//Use the same argument list.
+	newp->argList = oldp->argList;
+	++newp->argList->al_refcount;
+	newp->argListInd = oldp->argListInd;
 
-   //copy options from existing portal
-   optCopyBetweenPortals(newp, oldp);
+	//copy options from existing portal
+	optCopyBetweenPortals(newp, oldp);
 }
 
 //Return true if "port" is a global popup or a popup in the current tab
 private Boole
 portalValidPopup(Portal* port) {
-   Portal* po;
-   FOR_ALL_POPUPPORTS(po) {
-      if (po == port)
-          return true;
-   }
-   FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
-      if (po == port)
-          return true;
-   }
-   return false;
+	Portal* po;
+	FOR_ALL_POPUPPORTS(po) {
+		if (po == port)
+			 return true;
+	}
+	FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
+		if (po == port)
+			 return true;
+	}
+	return false;
 }
 
 //Check if "port" is a pointer to an existing portal in the current tab
 pub int
 portalIsValid(Portal* port) {
-   if (!port)
-      return false;
+	if (!port)
+		return false;
 
-   Portal   *po;
-   FOR_ALL_PORTALS(po) {
-      if (po == port)
-          return true;
-   }
-   return portalValidPopup(port);
+	Portal   *po;
+	FOR_ALL_PORTALS(po) {
+		if (po == port)
+			 return true;
+	}
+	return portalValidPopup(port);
 }
 
 //Find portal "id" in the current tab. Also find popup portals. Return NULL if not found.
 pub Portal *
 portFindById(int id) {
-   Portal   *po;
+	Portal   *po;
 
-   FOR_ALL_PORTALS(po) {
-      if (po->id == id)
-          return po;
-   }
-   FOR_ALL_POPUPPORTS(po) {
-      if (po->id == id)
-          return po;
-   }
-   FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
-      if (po->id == id)
-          return po;
-   }
-   return NULL;
+	FOR_ALL_PORTALS(po) {
+		if (po->id == id)
+			 return po;
+	}
+	FOR_ALL_POPUPPORTS(po) {
+		if (po->id == id)
+			 return po;
+	}
+	FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
+		if (po->id == id)
+			 return po;
+	}
+	return NULL;
 }
 
 //Check if "port" is a pointer to an existing portal in any tab
 pub int
 doesPortalExistInAnyTab(Portal* port) {
-   if (!port)
-      return false;
-   Portal   *po;
-   Tab   *t;
-   FOR_ALL_TABS(t) {
-      FOR_ALL_PORTALS_IN_TAB(t, po) {
-         if (po == port)
-            return true;
-      }
-      FOR_ALL_POPUPPORTS_IN_TAB(t, po)
-         if (po == port)
-            return true;
-   }
-   return portalValidPopup(port);
+	if (!port)
+		return false;
+	Portal   *po;
+	Tab   *t;
+	FOR_ALL_TABS(t) {
+		FOR_ALL_PORTALS_IN_TAB(t, po) {
+			if (po == port)
+				return true;
+		}
+		FOR_ALL_POPUPPORTS_IN_TAB(t, po)
+			if (po == port)
+				return true;
+	}
+	return portalValidPopup(port);
 }
 
 //Return the number of portals.
 pub Unt
 portCount(void) {
-   Unt  count = 0;
+	Unt  count = 0;
 
-   Portal* po;
-   FOR_ALL_PORTALS(po)
-      ++count;
-   return count;
+	Portal* po;
+	FOR_ALL_PORTALS(po)
+		++count;
+	return count;
 }
 
 //Make "count" portals on the screen. Return actual number of portals on the screen.
@@ -1755,197 +1755,197 @@ portCount(void) {
 //line).
 pub Unt
 portMakePortals(Unt count, Boole vertical) {
-   int maxcountTentative;
-   if (vertical) {
-      //Each portal needs at least MIN_PORTAL_WIDTH lines and a separator column.
-      maxcountTentative = (curPor->width + curPor->vsepWidth - (p_wiw - MIN_PORTAL_WIDTH))
-         / (MIN_PORTAL_WIDTH + 1);
-   } else {
-      //Each portal needs at least MIN_PORTAL_HEIGHT lines and a status line.
-      maxcountTentative = (VISIBLE_HEIGHT(curPor) + STATUS_HEIGHT
-                 - (p_wh - MIN_PORTAL_HEIGHT)) / (MIN_PORTAL_HEIGHT + STATUS_HEIGHT);
-   }
+	int maxcountTentative;
+	if (vertical) {
+		//Each portal needs at least MIN_PORTAL_WIDTH lines and a separator column.
+		maxcountTentative = (curPor->width + curPor->vsepWidth - (p_wiw - MIN_PORTAL_WIDTH))
+			/ (MIN_PORTAL_WIDTH + 1);
+	} else {
+		//Each portal needs at least MIN_PORTAL_HEIGHT lines and a status line.
+		maxcountTentative = (VISIBLE_HEIGHT(curPor) + STATUS_HEIGHT
+					  - (p_wh - MIN_PORTAL_HEIGHT)) / (MIN_PORTAL_HEIGHT + STATUS_HEIGHT);
+	}
 
-   Unt maxCount = maxcountTentative < 2 ? 2 : (Unt)maxcountTentative;
-   if (count > maxCount)
-      count = maxCount;
+	Unt maxCount = maxcountTentative < 2 ? 2 : (Unt)maxcountTentative;
+	if (count > maxCount)
+		count = maxCount;
 
-   //add status line now, otherwise first portal will be too big
-   if (count > 1)
-      last_status();
+	//add status line now, otherwise first portal will be too big
+	if (count > 1)
+		last_status();
 
-   //Don't execute autocommands while creating the portals.  Must do that
-   //when putting the books in the portals.
-   block_autocmds();
+	//Don't execute autocommands while creating the portals.  Must do that
+	//when putting the books in the portals.
+	block_autocmds();
 
-   int todo; //number of portals left to create
-   for (todo = count - 1; todo > 0; --todo) {
-      if (vertical) {
-         if (splitPortal(curPor->width - (curPor->width - todo)
-                  / (todo + 1) - 1, WSP_VERT | WSP_ABOVE) == FAIL)
-            break;
-      } else {
-         if (splitPortal(
-                  curPor->height - (curPor->height - todo * STATUS_HEIGHT) / (todo + 1)
-                     - STATUS_HEIGHT,
-                  WSP_ABOVE
-             ) == FAIL
-         )
-            break;
-      }
-   }
+	int todo; //number of portals left to create
+	for (todo = count - 1; todo > 0; --todo) {
+		if (vertical) {
+			if (splitPortal(curPor->width - (curPor->width - todo)
+						/ (todo + 1) - 1, WSP_VERT | WSP_ABOVE) == FAIL)
+				break;
+		} else {
+			if (splitPortal(
+						curPor->height - (curPor->height - todo * STATUS_HEIGHT) / (todo + 1)
+						   - STATUS_HEIGHT,
+						WSP_ABOVE
+				 ) == FAIL
+			)
+				break;
+		}
+	}
 
-   unblock_autocmds();
+	unblock_autocmds();
 
-   //return actual number of portals
-   return (count - todo);
+	//return actual number of portals
+	return (count - todo);
 }
 
 //Exchange current and next portal
 private void
 exchangePortal(long prenum) {
-   Frame* fr;
-   Frame* fr2;
-   Portal* po;
-   Portal* po1;
-   int temp;
+	Frame* fr;
+	Frame* fr2;
+	Portal* po;
+	Portal* po1;
+	int temp;
 
-   if (portErrorIfPopup(true))
-      return;
-   if (ONLY_ONE_PORTAL) {      //just one portal
-      inpFlushIfNotSilent();
-      return;
-   }
-   if (text_or_buf_locked()) {
-      inpFlushIfNotSilent();
-      return;
-   }
+	if (portErrorIfPopup(true))
+		return;
+	if (ONLY_ONE_PORTAL) {      //just one portal
+		inpFlushIfNotSilent();
+		return;
+	}
+	if (text_or_buf_locked()) {
+		inpFlushIfNotSilent();
+		return;
+	}
 
-   //find portal to exchange with
-   if (prenum) {
-      fr = curPor->frame->parent->child;
-      while (fr && --prenum > 0)
-         fr = fr->next;
-   } ei (curPor->frame->next)   //Swap with next
-      fr = curPor->frame->next;
-   else    //Swap last portal in row/col with previous
-      fr = curPor->frame->prev;
+	//find portal to exchange with
+	if (prenum) {
+		fr = curPor->frame->parent->child;
+		while (fr && --prenum > 0)
+			fr = fr->next;
+	} ei (curPor->frame->next)   //Swap with next
+		fr = curPor->frame->next;
+	else    //Swap last portal in row/col with previous
+		fr = curPor->frame->prev;
 
-   //We can only exchange a portal with another portal, not with a frame
-   //containing portals.
-   if (!fr || !fr->port || fr->port == curPor)
-      return;
-   po = fr->port;
+	//We can only exchange a portal with another portal, not with a frame
+	//containing portals.
+	if (!fr || !fr->port || fr->port == curPor)
+		return;
+	po = fr->port;
 
-   //1. remove curPor from the list. Remember after which portal it was in po1
-   //2. insert curPor before po in the list
-   //if po != po1
-   //  3. remove po from the list
-   //  4. insert po after po1
-   //5. exchange the status line height and vsep width.
-   po1 = curPor->prev;
-   fr2 = curPor->frame->prev;
-   if (po->prev != curPor) {
-      removePortal(curPor, NULL);
-      frame_remove(curPor->frame);
-      append(po->prev, curPor);
-      frame_insert(fr, curPor->frame);
-   }
-   if (po != po1) {
-      removePortal(po, NULL);
-      frame_remove(po->frame);
-      append(po1, po);
-      if (fr2 == NULL)
-         frame_insert(po->frame->parent->child, po->frame);
-      else
-         frame_append(fr2, po->frame);
-   }
-   temp = curPor->vsepWidth;
-   curPor->vsepWidth = po->vsepWidth;
-   po->vsepWidth = temp;
+	//1. remove curPor from the list. Remember after which portal it was in po1
+	//2. insert curPor before po in the list
+	//if po != po1
+	//  3. remove po from the list
+	//  4. insert po after po1
+	//5. exchange the status line height and vsep width.
+	po1 = curPor->prev;
+	fr2 = curPor->frame->prev;
+	if (po->prev != curPor) {
+		removePortal(curPor, NULL);
+		frame_remove(curPor->frame);
+		append(po->prev, curPor);
+		frame_insert(fr, curPor->frame);
+	}
+	if (po != po1) {
+		removePortal(po, NULL);
+		frame_remove(po->frame);
+		append(po1, po);
+		if (fr2 == NULL)
+			frame_insert(po->frame->parent->child, po->frame);
+		else
+			frame_append(fr2, po->frame);
+	}
+	temp = curPor->vsepWidth;
+	curPor->vsepWidth = po->vsepWidth;
+	po->vsepWidth = temp;
 
-   frame_fix_height(curPor);
-   frame_fix_height(po);
-   frame_fix_width(curPor);
-   frame_fix_width(po);
+	frame_fix_height(curPor);
+	frame_fix_height(po);
+	frame_fix_width(curPor);
+	frame_fix_width(po);
 
-   computePosPortal();      //recompute portal positions
+	computePosPortal();      //recompute portal positions
 
-   if (po->book != curBook)
-      reset_VIsual_and_resel();
-   ei (VIsual_active)
-      po->cursor = curPor->cursor;
+	if (po->book != curBook)
+		reset_VIsual_and_resel();
+	ei (VIsual_active)
+		po->cursor = curPor->cursor;
 
-   enterPortal(po, true);
-   redraw_all_later(UPD_NOT_VALID);
+	enterPortal(po, true);
+	redraw_all_later(UPD_NOT_VALID);
 }
 
 //rotate portals: if upwards true the second portal becomes the first one
 //       if upwards false the first portal becomes the second one
 private void
 rotatePortals(int upwards, int count) {
-   Portal* po0;
-   Portal* po1;
-   Frame* fr;
-   int n;
+	Portal* po0;
+	Portal* po1;
+	Frame* fr;
+	int n;
 
-   if (ONLY_ONE_PORTAL) {     //nothing to do
-      inpFlushIfNotSilent();
-      return;
-   }
+	if (ONLY_ONE_PORTAL) {     //nothing to do
+		inpFlushIfNotSilent();
+		return;
+	}
 
-   //Check if all frames in this row/col have one portal.
-   FOR_ALL_FRAMES(fr, curPor->frame->parent->child) {
-      if (!fr->port) {
-         emsg(_(e_cannot_rotate_when_another_portal_is_split));
-         return;
-      }
-   }
+	//Check if all frames in this row/col have one portal.
+	FOR_ALL_FRAMES(fr, curPor->frame->parent->child) {
+		if (!fr->port) {
+			emsg(_(e_cannot_rotate_when_another_portal_is_split));
+			return;
+		}
+	}
 
-   while (count--) {
-      if (upwards) {     //first portal becomes last portal
-         //remove first portal/frame from the list
-         fr = curPor->frame->parent->child;
-         po0 = fr->port;
-         removePortal(po0, NULL);
-         frame_remove(fr);
+	while (count--) {
+		if (upwards) {     //first portal becomes last portal
+			//remove first portal/frame from the list
+			fr = curPor->frame->parent->child;
+			po0 = fr->port;
+			removePortal(po0, NULL);
+			frame_remove(fr);
 
-         //find last frame and append removed portal/frame after it
-         for ( ; fr->next != NULL; fr = fr->next)
-            {}
-         append(fr->port, po0);
-         frame_append(fr, po0->frame);
+			//find last frame and append removed portal/frame after it
+			for ( ; fr->next != NULL; fr = fr->next)
+				{}
+			append(fr->port, po0);
+			frame_append(fr, po0->frame);
 
-         po1 = fr->port;      //previously last portal
-      } else  {       //last portal becomes first portal
-         //find last portal/frame in the list and remove it
-         for (fr = curPor->frame; fr->next != NULL; fr = fr->next)
-            {}
-         po0 = fr->port;
-         po1 = po0->prev;          //will become last portal
-         removePortal(po0, NULL);
-         frame_remove(fr);
+			po1 = fr->port;      //previously last portal
+		} else  {       //last portal becomes first portal
+			//find last portal/frame in the list and remove it
+			for (fr = curPor->frame; fr->next != NULL; fr = fr->next)
+				{}
+			po0 = fr->port;
+			po1 = po0->prev;          //will become last portal
+			removePortal(po0, NULL);
+			frame_remove(fr);
 
-         //append the removed portal/frame before the first in the list
-         append(fr->parent->child->port->prev, po0);
-         frame_insert(fr->parent->child, fr);
-      }
+			//append the removed portal/frame before the first in the list
+			append(fr->parent->child->port->prev, po0);
+			frame_insert(fr->parent->child, fr);
+		}
 
-      //exchange status height and vsep width of old and new last portal
-      n = STATUS_HEIGHT;
-      frame_fix_height(po0);
-      frame_fix_height(po1);
-      n = po1->vsepWidth;
-      po1->vsepWidth = po0->vsepWidth;
-      po0->vsepWidth = n;
-      frame_fix_width(po0);
-      frame_fix_width(po1);
+		//exchange status height and vsep width of old and new last portal
+		n = STATUS_HEIGHT;
+		frame_fix_height(po0);
+		frame_fix_height(po1);
+		n = po1->vsepWidth;
+		po1->vsepWidth = po0->vsepWidth;
+		po0->vsepWidth = n;
+		frame_fix_width(po0);
+		frame_fix_width(po1);
 
-      //recompute windowRow and windowCol for all portals
-      computePosPortal();
-   }
+		//recompute windowRow and windowCol for all portals
+		computePosPortal();
+	}
 
-   redraw_all_later(UPD_NOT_VALID);
+	redraw_all_later(UPD_NOT_VALID);
 }
 
 //Move "po" into a new split in a given direction, possibly relative to the current portal.
@@ -1953,105 +1953,105 @@ rotatePortals(int upwards, int count) {
 //Returns FAIL for failure, OK otherwise.
 pub int
 splitPortalmove(Portal* po, int size, Unt flags) {
-   int height = po->height;
+	int height = po->height;
 
-   if (ONLY_ONE_PORTAL)
-      return OK;   //nothing to do
-   if (check_split_disallowed(po) == FAIL)
-      return FAIL;
+	if (ONLY_ONE_PORTAL)
+		return OK;   //nothing to do
+	if (check_split_disallowed(po) == FAIL)
+		return FAIL;
 
-   //Remove the portal and frame from the tree of frames.  Don't flatten any
-   //frames yet so we can restore things if splitPortal_ins fails.
-   Frame* unflat_altfr;
-   Byte dir;
-   portRemoveFrame(po, OUT &dir, NULL, OUT &unflat_altfr);
-   removePortal(po, NULL);
-   last_status();       //may need to remove last status line
-   computePosPortal();   //recompute portal positions
+	//Remove the portal and frame from the tree of frames.  Don't flatten any
+	//frames yet so we can restore things if splitPortal_ins fails.
+	Frame* unflat_altfr;
+	Byte dir;
+	portRemoveFrame(po, OUT &dir, NULL, OUT &unflat_altfr);
+	removePortal(po, NULL);
+	last_status();       //may need to remove last status line
+	computePosPortal();   //recompute portal positions
 
-   //Split a portal on the desired side and put "po" there.
-   if (splitPortal_ins(size, flags, po, dir, unflat_altfr) == FAIL) {
-      //splitPortal_ins doesn't change sizes or layout if it fails to insert an
-      //existing portal, so just undo portRemoveFrame.
-      restoreFrame(po, dir, unflat_altfr);
-      append(po->prev, po);
-      return FAIL;
-   }
+	//Split a portal on the desired side and put "po" there.
+	if (splitPortal_ins(size, flags, po, dir, unflat_altfr) == FAIL) {
+		//splitPortal_ins doesn't change sizes or layout if it fails to insert an
+		//existing portal, so just undo portRemoveFrame.
+		restoreFrame(po, dir, unflat_altfr);
+		append(po->prev, po);
+		return FAIL;
+	}
 
-   //If splitting horizontally, try to preserve height.
-   //Note that splitPortal_ins autocommands may have immediately closed "po"!
-   if (size == 0 && !(flags & WSP_VERT) && portalIsValid(po)) {
-      portSetHeight(height, po);
-      if (p_ea) {
-          //Equalize portals.  Note that splitPortal_ins autocommands may have
-          //made a portal other than "po" current.
-          portEqualizeHeight(curPor, curPor == po, EAD_VERTICAL);
-      }
-   }
-   return OK;
+	//If splitting horizontally, try to preserve height.
+	//Note that splitPortal_ins autocommands may have immediately closed "po"!
+	if (size == 0 && !(flags & WSP_VERT) && portalIsValid(po)) {
+		portSetHeight(height, po);
+		if (p_ea) {
+			 //Equalize portals.  Note that splitPortal_ins autocommands may have
+			 //made a portal other than "po" current.
+			 portEqualizeHeight(curPor, curPor == po, EAD_VERTICAL);
+		}
+	}
+	return OK;
 }
 
 //Move portal "port0" to below/right of "port1" and make "port0" the current
 //portal. Only works within the same frame!
 pub void
 portMoveAfter(Portal* port0, Portal* port1) {
-   //check if the arguments are reasonable
-   if (port0 == port1)
-      return;
+	//check if the arguments are reasonable
+	if (port0 == port1)
+		return;
 
-   //check if there is something to do
-   if (port1->next != port0) {
-      if (port0->frame->parent != port1->frame->parent) {
-         internalErrMsg((CS)"Trying to move a portal into another frame");
-         return;
-      }
+	//check if there is something to do
+	if (port1->next != port0) {
+		if (port0->frame->parent != port1->frame->parent) {
+			internalErrMsg((CS)"Trying to move a portal into another frame");
+			return;
+		}
 
-      //may need to move the status line/vertical separator of the last portal
-      if (port0 == lastPor) {
-         if (port0->prev->vsepWidth == 1) {
-            //Remove the vertical separator from the last-but-one portal,
-            //add it to the last portal.  Adjust the frame widths.
-            port0->prev->vsepWidth = 0;
-            port0->prev->frame->width -= 1;
-            port0->vsepWidth = 1;
-            port0->frame->width += 1;
-         }
-      } ei (port1 == lastPor) {
-         if (port0->vsepWidth == 1) {
-            //Remove the vertical separator from port0, add it to the last
-            //portal, port1.  Adjust the frame widths.
-            port1->vsepWidth = 1;
-            port1->frame->width++;
-            port0->vsepWidth = 0;
-            port0->frame->width--;
-         }
-      }
-      removePortal(port0, NULL);
-      frame_remove(port0->frame);
-      append(port1, port0);
-      frame_append(port1->frame, port0->frame);
+		//may need to move the status line/vertical separator of the last portal
+		if (port0 == lastPor) {
+			if (port0->prev->vsepWidth == 1) {
+				//Remove the vertical separator from the last-but-one portal,
+				//add it to the last portal.  Adjust the frame widths.
+				port0->prev->vsepWidth = 0;
+				port0->prev->frame->width -= 1;
+				port0->vsepWidth = 1;
+				port0->frame->width += 1;
+			}
+		} ei (port1 == lastPor) {
+			if (port0->vsepWidth == 1) {
+				//Remove the vertical separator from port0, add it to the last
+				//portal, port1.  Adjust the frame widths.
+				port1->vsepWidth = 1;
+				port1->frame->width++;
+				port0->vsepWidth = 0;
+				port0->frame->width--;
+			}
+		}
+		removePortal(port0, NULL);
+		frame_remove(port0->frame);
+		append(port1, port0);
+		frame_append(port1->frame, port0->frame);
 
-      computePosPortal();   //recompute windowRow for all portals
-      redraw_later(UPD_NOT_VALID);
-   }
-   enterPortal(port0, false);
+		computePosPortal();   //recompute windowRow for all portals
+		redraw_later(UPD_NOT_VALID);
+	}
+	enterPortal(port0, false);
 }
 
 //Make all portals the same height.
 //'next_curPor' will soon be the current portal, make sure it has enough rows.
 pub void
 portEqualizeHeight(
-   Portal* next_curPor,   //pointer to current portal to be or NULL
-   int current,   //do only frame with current portal
-   Byte dir   //EAD_* constants, or 0 for using p_ead
+	Portal* next_curPor,   //pointer to current portal to be or NULL
+	int current,   //do only frame with current portal
+	Byte dir   //EAD_* constants, or 0 for using p_ead
 ){
-   if (dir == 0) {
-      dir = p_ead;
-   }
-   equalizeHeightRec(
-      next_curPor ? next_curPor : curPor,
-      current, topframeG, dir, firstPor->windowCol, 0, topframeG->width, topframeG->height
-   );
+	if (dir == 0) {
+		dir = p_ead;
+	}
+	equalizeHeightRec(
+		next_curPor ? next_curPor : curPor,
+		current, topframeG, dir, firstPor->windowCol, 0, topframeG->width, topframeG->height
+	);
 }
 
 //Set a frame to a new position and height, spreading the available room equally over contained
@@ -2059,423 +2059,423 @@ portEqualizeHeight(
 //'winheight' and 'winwidth' if possible.
 private void
 equalizeHeightRec(
-   Portal* next_curPor,   //pointer to current portal to be or NULL
-   int current,   //do only frame with current portal
-   Frame* topfr,      //frame to set size off
-   Byte dir,      //EAD_* constants, see portEqualizeHeight()
-   int col,      //horizontal position for frame
-   int row,      //vertical position for frame
-   int width,      //new width of frame
-   int height      //new height of frame
+	Portal* next_curPor,   //pointer to current portal to be or NULL
+	int current,   //do only frame with current portal
+	Frame* topfr,      //frame to set size off
+	Byte dir,      //EAD_* constants, see portEqualizeHeight()
+	int col,      //horizontal position for frame
+	int row,      //vertical position for frame
+	int width,      //new width of frame
+	int height      //new height of frame
 ){
-   int n, m;
-   int extra_sep = 0;
-   int portCount, totalPortCount = 0;
-   Frame* fr;
-   int next_curPor_size = 0;
-   int room = 0;
-   int new_size;
-   int has_next_curPor = 0;
-   int hnc;
+	int n, m;
+	int extra_sep = 0;
+	int portCount, totalPortCount = 0;
+	Frame* fr;
+	int next_curPor_size = 0;
+	int room = 0;
+	int new_size;
+	int has_next_curPor = 0;
+	int hnc;
 
-   if (topfr->layout == FR_LEAF) {
-      //Set the width/height of this frame.
-      //Redraw when size or position changes
-      if (topfr->height != (Unt)height || topfr->port->windowRow != row
-         || topfr->width != (Unt)width || topfr->port->windowCol != col
-      ) {
-          topfr->port->windowRow = row;
-          frame_new_height(topfr, height, false, false, false);
-          topfr->port->windowCol = col;
-          frameNewWidth(topfr, width, false, false);
-          redraw_all_later(UPD_NOT_VALID);
-      }
-   } ei (topfr->layout == FR_ROW) {
-      topfr->width = width;
-      topfr->height = height;
+	if (topfr->layout == FR_LEAF) {
+		//Set the width/height of this frame.
+		//Redraw when size or position changes
+		if (topfr->height != (Unt)height || topfr->port->windowRow != row
+			|| topfr->width != (Unt)width || topfr->port->windowCol != col
+		) {
+			 topfr->port->windowRow = row;
+			 frame_new_height(topfr, height, false, false, false);
+			 topfr->port->windowCol = col;
+			 frameNewWidth(topfr, width, false, false);
+			 redraw_all_later(UPD_NOT_VALID);
+		}
+	} ei (topfr->layout == FR_ROW) {
+		topfr->width = width;
+		topfr->height = height;
 
-      if (dir != EAD_VERTICAL) {        //equalize frame widths
-         //Compute the maximum number of portals horizontally in this frame.
-         n = frame_minwidth(topfr, NOPORT);
-         //add one for the rightmost portal, it doesn't have a separator
-         if (col + width >= firstPor->windowCol + (int)topframeG->width)
-            extra_sep = 1;
-         else
-            extra_sep = 0;
-         totalPortCount = (n + extra_sep) / (MIN_PORTAL_WIDTH + 1);
-         has_next_curPor = frameHasPortal(topfr, next_curPor);
+		if (dir != EAD_VERTICAL) {        //equalize frame widths
+			//Compute the maximum number of portals horizontally in this frame.
+			n = frame_minwidth(topfr, NOPORT);
+			//add one for the rightmost portal, it doesn't have a separator
+			if (col + width >= firstPor->windowCol + (int)topframeG->width)
+				extra_sep = 1;
+			else
+				extra_sep = 0;
+			totalPortCount = (n + extra_sep) / (MIN_PORTAL_WIDTH + 1);
+			has_next_curPor = frameHasPortal(topfr, next_curPor);
 
-         //Compute width for "next_curPor" portal and room available for other portals.
-         //"m" is the minimal width when counting p_wiw for "next_curPor".
-         m = frame_minwidth(topfr, next_curPor);
-         room = width - m;
-         if (room < 0) {
-            next_curPor_size = p_wiw + room;
-            room = 0;
-         } else {
-            next_curPor_size = -1;
-            FOR_ALL_FRAMES(fr, topfr->child) {
-               if (!frame_fixed_width(fr))
-                  continue;
-               //If 'portfixwidth' set keep the portal width if possible.
-               //Watch out for this portal being the next_curPor.
-               n = frame_minwidth(fr, NOPORT);
-               new_size = fr->width;
-               if (frameHasPortal(fr, next_curPor)) {
-                  room += p_wiw - MIN_PORTAL_WIDTH;
-                  next_curPor_size = 0;
-                  if (new_size < p_wiw)
-                      new_size = p_wiw;
-               } else
-                  //These portals don't use up room.
-                  totalPortCount -=
-                     (n + (fr->next == NULL ? extra_sep : 0)) / (MIN_PORTAL_WIDTH + 1);
-               room -= new_size - n;
-               if (room < 0) {
-                  new_size += room;
-                  room = 0;
-               }
-               fr->newWidth = new_size;
-            }
-            if (next_curPor_size == -1) {
-               if (!has_next_curPor)
-                  next_curPor_size = 0;
-               ei (totalPortCount > 1
-                   && (room + (totalPortCount - 2)) / (totalPortCount - 1) > p_wiw
-               ) {
-                  //Can make all portals wider than 'winwidth', spread the room equally.
-                  next_curPor_size = (room + p_wiw
-                            + (totalPortCount - 1) * MIN_PORTAL_WIDTH
-                            + (totalPortCount - 1)) / totalPortCount;
-                  room -= next_curPor_size - p_wiw;
-               } else
-                  next_curPor_size = p_wiw;
-            }
-         }
+			//Compute width for "next_curPor" portal and room available for other portals.
+			//"m" is the minimal width when counting p_wiw for "next_curPor".
+			m = frame_minwidth(topfr, next_curPor);
+			room = width - m;
+			if (room < 0) {
+				next_curPor_size = p_wiw + room;
+				room = 0;
+			} else {
+				next_curPor_size = -1;
+				FOR_ALL_FRAMES(fr, topfr->child) {
+					if (!frame_fixed_width(fr))
+						continue;
+					//If 'portfixwidth' set keep the portal width if possible.
+					//Watch out for this portal being the next_curPor.
+					n = frame_minwidth(fr, NOPORT);
+					new_size = fr->width;
+					if (frameHasPortal(fr, next_curPor)) {
+						room += p_wiw - MIN_PORTAL_WIDTH;
+						next_curPor_size = 0;
+						if (new_size < p_wiw)
+						    new_size = p_wiw;
+					} else
+						//These portals don't use up room.
+						totalPortCount -=
+						   (n + (fr->next == NULL ? extra_sep : 0)) / (MIN_PORTAL_WIDTH + 1);
+					room -= new_size - n;
+					if (room < 0) {
+						new_size += room;
+						room = 0;
+					}
+					fr->newWidth = new_size;
+				}
+				if (next_curPor_size == -1) {
+					if (!has_next_curPor)
+						next_curPor_size = 0;
+					ei (totalPortCount > 1
+						 && (room + (totalPortCount - 2)) / (totalPortCount - 1) > p_wiw
+					) {
+						//Can make all portals wider than 'winwidth', spread the room equally.
+						next_curPor_size = (room + p_wiw
+						          + (totalPortCount - 1) * MIN_PORTAL_WIDTH
+						          + (totalPortCount - 1)) / totalPortCount;
+						room -= next_curPor_size - p_wiw;
+					} else
+						next_curPor_size = p_wiw;
+				}
+			}
 
-         if (has_next_curPor)
-            --totalPortCount;      //don't count curPor
-      }
+			if (has_next_curPor)
+				--totalPortCount;      //don't count curPor
+		}
 
-      FOR_ALL_FRAMES(fr, topfr->child) {
-         portCount = 1;
-         if (fr->next == NULL)
-            //last frame gets all that remains (avoid roundoff error)
-            new_size = width;
-         ei (dir == EAD_VERTICAL)
-            new_size = fr->width;
-         ei (frame_fixed_width(fr)) {
-            new_size = fr->newWidth;
-            portCount = 0;       //doesn't count as a sizeable portal
-         } else {
-            //Compute the maximum number of portals horiz. in "fr".
-            n = frame_minwidth(fr, NOPORT);
-            portCount = (n + (fr->next == NULL ? extra_sep : 0)) / (MIN_PORTAL_WIDTH + 1);
-            m = frame_minwidth(fr, next_curPor);
-            if (has_next_curPor)
-               hnc = frameHasPortal(fr, next_curPor);
-            else
-               hnc = false;
-            if (hnc)       //don't count next_curPor
-               --portCount;
-            if (totalPortCount == 0)
-               new_size = room;
-            else
-               new_size = (portCount * room + ((unsigned)totalPortCount >> 1)) / totalPortCount;
-            if (hnc) {      //add next_curPor size
-               next_curPor_size -= p_wiw - (m - n);
-               if (next_curPor_size < 0)
-                  next_curPor_size = 0;
-               new_size += next_curPor_size;
-               room -= new_size - next_curPor_size;
-            } else
-               room -= new_size;
-            new_size += n;
-         }
+		FOR_ALL_FRAMES(fr, topfr->child) {
+			portCount = 1;
+			if (fr->next == NULL)
+				//last frame gets all that remains (avoid roundoff error)
+				new_size = width;
+			ei (dir == EAD_VERTICAL)
+				new_size = fr->width;
+			ei (frame_fixed_width(fr)) {
+				new_size = fr->newWidth;
+				portCount = 0;       //doesn't count as a sizeable portal
+			} else {
+				//Compute the maximum number of portals horiz. in "fr".
+				n = frame_minwidth(fr, NOPORT);
+				portCount = (n + (fr->next == NULL ? extra_sep : 0)) / (MIN_PORTAL_WIDTH + 1);
+				m = frame_minwidth(fr, next_curPor);
+				if (has_next_curPor)
+					hnc = frameHasPortal(fr, next_curPor);
+				else
+					hnc = false;
+				if (hnc)       //don't count next_curPor
+					--portCount;
+				if (totalPortCount == 0)
+					new_size = room;
+				else
+					new_size = (portCount * room + ((unsigned)totalPortCount >> 1)) / totalPortCount;
+				if (hnc) {      //add next_curPor size
+					next_curPor_size -= p_wiw - (m - n);
+					if (next_curPor_size < 0)
+						next_curPor_size = 0;
+					new_size += next_curPor_size;
+					room -= new_size - next_curPor_size;
+				} else
+					room -= new_size;
+				new_size += n;
+			}
 
-         //Skip frame that is full width when splitting or closing a portal, unless equalizing all
-         //frames
-         if (!current || dir != EAD_VERTICAL || topfr->parent
-             || (new_size != (int)fr->width)
-             || frameHasPortal(fr, next_curPor)
-          )
-            equalizeHeightRec(next_curPor, current, fr, dir, col, row, new_size, height);
-         col += new_size;
-         width -= new_size;
-         totalPortCount -= portCount;
-      }
-   } else { //topfr->layout == FR_COL
-      topfr->width = width;
-      topfr->height = height;
+			//Skip frame that is full width when splitting or closing a portal, unless equalizing all
+			//frames
+			if (!current || dir != EAD_VERTICAL || topfr->parent
+				 || (new_size != (int)fr->width)
+				 || frameHasPortal(fr, next_curPor)
+			 )
+				equalizeHeightRec(next_curPor, current, fr, dir, col, row, new_size, height);
+			col += new_size;
+			width -= new_size;
+			totalPortCount -= portCount;
+		}
+	} else { //topfr->layout == FR_COL
+		topfr->width = width;
+		topfr->height = height;
 
-      if (dir != EAD_HORIZONTAL) {        //equalize frame heights
-         //Compute maximum number of portals vertically in this frame.
-         n = frame_minheight(topfr, NOPORT);
-         //add one for the bottom portal if it doesn't have a statusline
-         extra_sep = 0;
-         totalPortCount = (n + extra_sep) / (MIN_PORTAL_HEIGHT + 1);
-         has_next_curPor = frameHasPortal(topfr, next_curPor);
+		if (dir != EAD_HORIZONTAL) {        //equalize frame heights
+			//Compute maximum number of portals vertically in this frame.
+			n = frame_minheight(topfr, NOPORT);
+			//add one for the bottom portal if it doesn't have a statusline
+			extra_sep = 0;
+			totalPortCount = (n + extra_sep) / (MIN_PORTAL_HEIGHT + 1);
+			has_next_curPor = frameHasPortal(topfr, next_curPor);
 
-         //Compute height for "next_curPor" portal and room available for other portals.
-         //"m" is the minimal height when counting p_wh for "next_curPor".
-         m = frame_minheight(topfr, next_curPor);
-         room = height - m;
-         if (room < 0) {
-            //The room is less than 'winheight', use all space for the current portal.
-            next_curPor_size = p_wh + room;
-            room = 0;
-         } else {
-            next_curPor_size = -1;
-            FOR_ALL_FRAMES(fr, topfr->child) {
-               if (!frame_fixed_height(fr))
-                  continue;
-               //If 'portfixheight' set, keep the portal height if possible.
-               //Watch out for this portal being the next_curPor.
-               n = frame_minheight(fr, NOPORT);
-               new_size = fr->height;
-               if (frameHasPortal(fr, next_curPor)) {
-                  room += p_wh - MIN_PORTAL_HEIGHT;
-                  next_curPor_size = 0;
-                  if (new_size < p_wh)
-                     new_size = p_wh;
-               } else
-               //These portals don't use up room.
-               totalPortCount -= (n + (fr->next == NULL ? extra_sep : 0)) / (MIN_PORTAL_HEIGHT + 1);
-               room -= new_size - n;
-               if (room < 0) {
-                  new_size += room;
-                  room = 0;
-               }
-               fr->newHeight = new_size;
-            }
-            if (next_curPor_size == -1) {
-               if (!has_next_curPor)
-                  next_curPor_size = 0;
-               ei (totalPortCount > 1 && (room + (totalPortCount - 2)) / (totalPortCount - 1) > p_wh) {
-                  //can make all portals higher than 'winheight', spread the room equally.
-                  next_curPor_size = (room + p_wh
-                           + (totalPortCount - 1) * MIN_PORTAL_HEIGHT
-                           + (totalPortCount - 1)) / totalPortCount;
-                  room -= next_curPor_size - p_wh;
-               } else
-                  next_curPor_size = p_wh;
-            }
-         }
+			//Compute height for "next_curPor" portal and room available for other portals.
+			//"m" is the minimal height when counting p_wh for "next_curPor".
+			m = frame_minheight(topfr, next_curPor);
+			room = height - m;
+			if (room < 0) {
+				//The room is less than 'winheight', use all space for the current portal.
+				next_curPor_size = p_wh + room;
+				room = 0;
+			} else {
+				next_curPor_size = -1;
+				FOR_ALL_FRAMES(fr, topfr->child) {
+					if (!frame_fixed_height(fr))
+						continue;
+					//If 'portfixheight' set, keep the portal height if possible.
+					//Watch out for this portal being the next_curPor.
+					n = frame_minheight(fr, NOPORT);
+					new_size = fr->height;
+					if (frameHasPortal(fr, next_curPor)) {
+						room += p_wh - MIN_PORTAL_HEIGHT;
+						next_curPor_size = 0;
+						if (new_size < p_wh)
+						   new_size = p_wh;
+					} else
+					//These portals don't use up room.
+					totalPortCount -= (n + (fr->next == NULL ? extra_sep : 0)) / (MIN_PORTAL_HEIGHT + 1);
+					room -= new_size - n;
+					if (room < 0) {
+						new_size += room;
+						room = 0;
+					}
+					fr->newHeight = new_size;
+				}
+				if (next_curPor_size == -1) {
+					if (!has_next_curPor)
+						next_curPor_size = 0;
+					ei (totalPortCount > 1 && (room + (totalPortCount - 2)) / (totalPortCount - 1) > p_wh) {
+						//can make all portals higher than 'winheight', spread the room equally.
+						next_curPor_size = (room + p_wh
+						         + (totalPortCount - 1) * MIN_PORTAL_HEIGHT
+						         + (totalPortCount - 1)) / totalPortCount;
+						room -= next_curPor_size - p_wh;
+					} else
+						next_curPor_size = p_wh;
+				}
+			}
 
-         if (has_next_curPor)
-            --totalPortCount;      //don't count curPor
-      }
+			if (has_next_curPor)
+				--totalPortCount;      //don't count curPor
+		}
 
-      FOR_ALL_FRAMES(fr, topfr->child) {
-         portCount = 1;
-         if (fr->next == NULL)
-            //last frame gets all that remains (avoid roundoff error)
-            new_size = height;
-         ei (dir == EAD_HORIZONTAL)
-            new_size = fr->height;
-         ei (frame_fixed_height(fr)) {
-            new_size = fr->newHeight;
-            portCount = 0;       //doesn't count as a sizeable portal
-         } else {
-            //Compute the maximum number of portals vert. in "fr".
-            n = frame_minheight(fr, NOPORT);
-            portCount = (n + (fr->next == NULL ? extra_sep : 0)) / (MIN_PORTAL_HEIGHT + 1);
-            m = frame_minheight(fr, next_curPor);
-            if (has_next_curPor)
-               hnc = frameHasPortal(fr, next_curPor);
-            else
-               hnc = false;
-            if (hnc)       //don't count next_curPor
-               --portCount;
-            if (totalPortCount == 0)
-               new_size = room;
-            else
-               new_size = (portCount * room + ((unsigned)totalPortCount >> 1)) / totalPortCount;
-            if (hnc) {      //add next_curPor size
-               next_curPor_size -= p_wh - (m - n);
-               new_size += next_curPor_size;
-               room -= new_size - next_curPor_size;
-            } else
-                room -= new_size;
-            new_size += n;
-         }
-         //Skip full-width frame when splitting or closing a portal, unless equalizing all frames
-         if (!current || dir != EAD_HORIZONTAL || topfr->parent != NULL
-                || (new_size != (int)fr->height)
-                || frameHasPortal(fr, next_curPor)
-         )
-            equalizeHeightRec(next_curPor, current, fr, dir, col, row, width, new_size);
-         row += new_size;
-         height -= new_size;
-         totalPortCount -= portCount;
-      }
-   }
+		FOR_ALL_FRAMES(fr, topfr->child) {
+			portCount = 1;
+			if (fr->next == NULL)
+				//last frame gets all that remains (avoid roundoff error)
+				new_size = height;
+			ei (dir == EAD_HORIZONTAL)
+				new_size = fr->height;
+			ei (frame_fixed_height(fr)) {
+				new_size = fr->newHeight;
+				portCount = 0;       //doesn't count as a sizeable portal
+			} else {
+				//Compute the maximum number of portals vert. in "fr".
+				n = frame_minheight(fr, NOPORT);
+				portCount = (n + (fr->next == NULL ? extra_sep : 0)) / (MIN_PORTAL_HEIGHT + 1);
+				m = frame_minheight(fr, next_curPor);
+				if (has_next_curPor)
+					hnc = frameHasPortal(fr, next_curPor);
+				else
+					hnc = false;
+				if (hnc)       //don't count next_curPor
+					--portCount;
+				if (totalPortCount == 0)
+					new_size = room;
+				else
+					new_size = (portCount * room + ((unsigned)totalPortCount >> 1)) / totalPortCount;
+				if (hnc) {      //add next_curPor size
+					next_curPor_size -= p_wh - (m - n);
+					new_size += next_curPor_size;
+					room -= new_size - next_curPor_size;
+				} else
+					 room -= new_size;
+				new_size += n;
+			}
+			//Skip full-width frame when splitting or closing a portal, unless equalizing all frames
+			if (!current || dir != EAD_HORIZONTAL || topfr->parent != NULL
+					 || (new_size != (int)fr->height)
+					 || frameHasPortal(fr, next_curPor)
+			)
+				equalizeHeightRec(next_curPor, current, fr, dir, col, row, width, new_size);
+			row += new_size;
+			height -= new_size;
+			totalPortCount -= portCount;
+		}
+	}
 }
 
 pub void
 leavingPortal(Portal* port) {
-   //Only matters for a prompt portal
-   if (!bt_prompt(port->book))
-      return;
+	//Only matters for a prompt portal
+	if (!bt_prompt(port->book))
+		return;
 
-   //When leaving a prompt portal stop Insert mode and perhaps restart
-   //it when entering that portal again.
-   port->book->promptInsert = restart_edit;
-   if (restart_edit != 0 && isModeDisplayedG)
-      mustClearCommlineG = true;      //unshow mode later
-   restart_edit = ZERO;
+	//When leaving a prompt portal stop Insert mode and perhaps restart
+	//it when entering that portal again.
+	port->book->promptInsert = restart_edit;
+	if (restart_edit != 0 && isModeDisplayedG)
+		mustClearCommlineG = true;      //unshow mode later
+	restart_edit = ZERO;
 
-   //When leaving the portal (or closing it) was done from a callback, we need to break out of
-   //the Insert mode loop and restart Insert mode when entering the portal again.
-   if ((stateG & MODE_INSERT) && !stop_insert_mode) {
-      stop_insert_mode = true;
-      if (port->book->promptInsert == ZERO)
-          port->book->promptInsert = 'A';
-   }
+	//When leaving the portal (or closing it) was done from a callback, we need to break out of
+	//the Insert mode loop and restart Insert mode when entering the portal again.
+	if ((stateG & MODE_INSERT) && !stop_insert_mode) {
+		stop_insert_mode = true;
+		if (port->book->promptInsert == ZERO)
+			 port->book->promptInsert = 'A';
+	}
 }
 
 pub void
 enteringPortal(Portal* port) {
-   //Only matters for a prompt portal.
-   if (!bt_prompt(port->book))
-      return;
+	//Only matters for a prompt portal.
+	if (!bt_prompt(port->book))
+		return;
 
-   //When switching to a prompt book that was in Insert mode, don't stop
-   //Insert mode, it may have been set in leavingPortal().
-   if (port->book->promptInsert != ZERO)
-      stop_insert_mode = false;
+	//When switching to a prompt book that was in Insert mode, don't stop
+	//Insert mode, it may have been set in leavingPortal().
+	if (port->book->promptInsert != ZERO)
+		stop_insert_mode = false;
 
-   //When entering the prompt portal restart Insert mode if we were in Insert
-   //mode when we left it and not already in Insert mode.
-   if ((stateG & MODE_INSERT) == 0)
-      restart_edit = port->book->promptInsert;
+	//When entering the prompt portal restart Insert mode if we were in Insert
+	//mode when we left it and not already in Insert mode.
+	if ((stateG & MODE_INSERT) == 0)
+		restart_edit = port->book->promptInsert;
 }
 
 private void
 initEmptyPortal(OUT Portal* po) {
-   optCopyGlobalToPortal(OUT po);
-   redrawPortLater(po, UPD_NOT_VALID);
-   po->validLines = 0;
-   po->cursor.lnum = 1;
-   po->cursWant = po->cursor.col = 0;
-   po->cursor.coladd = 0;
-   po->prevContextMark.lnum = 1;   //pcmark not cleared but set to line 1
-   po->prevContextMark.col = 0;
-   po->prevPrevContextMark.lnum = 0;
-   po->prevPrevContextMark.col = 0;
-   po->topLine = 1;
-   po->topFill = 0;
-   po->bottomLine = 2;
-   po->cacheState = 0;
-   po->ownSyntax = &po->book->syntax;
+	optCopyGlobalToPortal(OUT po);
+	redrawPortLater(po, UPD_NOT_VALID);
+	po->validLines = 0;
+	po->cursor.lnum = 1;
+	po->cursWant = po->cursor.col = 0;
+	po->cursor.coladd = 0;
+	po->prevContextMark.lnum = 1;   //pcmark not cleared but set to line 1
+	po->prevContextMark.col = 0;
+	po->prevPrevContextMark.lnum = 0;
+	po->prevPrevContextMark.col = 0;
+	po->topLine = 1;
+	po->topFill = 0;
+	po->bottomLine = 2;
+	po->cacheState = 0;
+	po->ownSyntax = &po->book->syntax;
 }
 
 //Init the current portal "curPor". Called when a new file is being edited.
 pub void
 curPor_init(void) {
-   initEmptyPortal(curPor);
+	initEmptyPortal(curPor);
 }
 
 //Close all portals into book "buf".
 pub void
 closePortalsInto(Book* book, Boole keep_curPor)  {     //don't close "curPor"
-   Portal* po;
-   Unt count = indexOfTab(NULL);
+	Portal* po;
+	Unt count = indexOfTab(NULL);
 
-   ++isRedrawingDisabledG;
+	++isRedrawingDisabledG;
 
-   for (po = firstPor; po && !ONLY_ONE_PORTAL; ) {
-      if (po->book == book && (!keep_curPor || po != curPor)
-         && !(portalLocked(po) || po->book->locked > 0)
-      ) {
-         if (closePortal(po, false) == FAIL)
-            //If closing the portal fails give up, to avoid looping forever.
-            break;
+	for (po = firstPor; po && !ONLY_ONE_PORTAL; ) {
+		if (po->book == book && (!keep_curPor || po != curPor)
+			&& !(portalLocked(po) || po->book->locked > 0)
+		) {
+			if (closePortal(po, false) == FAIL)
+				//If closing the portal fails give up, to avoid looping forever.
+				break;
 
-         //Start all over, autocommands may change the portal layout.
-         po = firstPor;
-      } else
-         po = po->next;
-   }
+			//Start all over, autocommands may change the portal layout.
+			po = firstPor;
+		} else
+			po = po->next;
+	}
 
-   //Also check portals in other tabs
-   Tab* nexttp;
-   for (Tab* t = firstTabG; t; t = nexttp) {
-      nexttp = t->next;
-      if (t == curtab) {
-         continue;
-      }
-      FOR_ALL_PORTALS_IN_TAB(t, po) {
-         if (po->book == book && !(portalLocked(po) || po->book->locked > 0)) {
-            closePortal_othertab(po, false, t);
+	//Also check portals in other tabs
+	Tab* nexttp;
+	for (Tab* t = firstTabG; t; t = nexttp) {
+		nexttp = t->next;
+		if (t == curtab) {
+			continue;
+		}
+		FOR_ALL_PORTALS_IN_TAB(t, po) {
+			if (po->book == book && !(portalLocked(po) || po->book->locked > 0)) {
+				closePortal_othertab(po, false, t);
 
-            //Start all over, the tab may be closed and
-            //autocommands may change the portal layout.
-            nexttp = firstTabG;
-            break;
-         }
-      }
-   }
+				//Start all over, the tab may be closed and
+				//autocommands may change the portal layout.
+				nexttp = firstTabG;
+				break;
+			}
+		}
+	}
 
-   if (isRedrawingDisabledG > 0)
-      --isRedrawingDisabledG;
+	if (isRedrawingDisabledG > 0)
+		--isRedrawingDisabledG;
 
-   if (count != indexOfTab(NULL))
-      applyAutocomms(EVENT_TABCLOSED, NULL, NULL, false, curBook);
+	if (count != indexOfTab(NULL))
+		applyAutocomms(EVENT_TABCLOSED, NULL, NULL, false, curBook);
 }
 
 //Return true if the current portal is the only portal that exists (ignoring "autoCommPortG[]").
 //false if there is a portal, possibly in another tab.
 pub int
 lastPortal(void) {
-   return (onePortal() && firstTabG->next == NULL);
+	return (onePortal() && firstTabG->next == NULL);
 }
 
 //Return true if there is only one portal other than "autoCommPortG[]" in the current tab.
 pub int
 onePortal(void) {
-   Portal* po;
-   Boole seen_one = false;
-   FOR_ALL_PORTALS(po) {
-      if (!is_autoCommPort(po)) {
-         if (seen_one)
-            return false;
-         seen_one = true;
-      }
-   }
-   return true;
+	Portal* po;
+	Boole seen_one = false;
+	FOR_ALL_PORTALS(po) {
+		if (!is_autoCommPort(po)) {
+			if (seen_one)
+				return false;
+			seen_one = true;
+		}
+	}
+	return true;
 }
 
 //Close the possibly last portal in a tab.
 //Return false if there are other portals and nothing is done, true otherwise.
 private int
 closeLastPortalInTab(Portal* port, int free_buf, Tab* prev_curtab) {
-   if (!ONLY_ONE_PORTAL)
-      return false;
+	if (!ONLY_ONE_PORTAL)
+		return false;
 
-   Book* oldCurBook = curBook;
+	Book* oldCurBook = curBook;
 
-   //Closing the last portal in a tab.  First go to another tab
-   //page and then close the portal and the tab.  This avoids that
-   //curPor and curtab are invalid while we are freeing memory, they may
-   //be used in GUI events.
-   //Don't trigger autocommands yet, they may use wrong values, so do that below.
-   gotoTab(altTab(), false, true);
+	//Closing the last portal in a tab.  First go to another tab
+	//page and then close the portal and the tab.  This avoids that
+	//curPor and curtab are invalid while we are freeing memory, they may
+	//be used in GUI events.
+	//Don't trigger autocommands yet, they may use wrong values, so do that below.
+	gotoTab(altTab(), false, true);
 
-   //Safety check: Autocommands may have closed the portal when jumping
-   //to the other tab.
-   if (isTabValid(prev_curtab) && prev_curtab->firstPor == port)
-      closePortal_othertab(port, free_buf, prev_curtab);
-   enteringPortal(curPor);
-   //Since gotoTab above did not trigger *Enter autocommands, do that now.
-   applyAutocomms(EVENT_TABCLOSED, NULL, NULL, false, curBook);
-   if (p_stpl)
-      shell_new_columns();
-   applyAutocomms(EVENT_PORTENTER, NULL, NULL, false, curBook);
-   applyAutocomms(EVENT_TABENTER, NULL, NULL, false, curBook);
-   if (oldCurBook != curBook)
-      applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
-   return true;
+	//Safety check: Autocommands may have closed the portal when jumping
+	//to the other tab.
+	if (isTabValid(prev_curtab) && prev_curtab->firstPor == port)
+		closePortal_othertab(port, free_buf, prev_curtab);
+	enteringPortal(curPor);
+	//Since gotoTab above did not trigger *Enter autocommands, do that now.
+	applyAutocomms(EVENT_TABCLOSED, NULL, NULL, false, curBook);
+	if (p_stpl)
+		shell_new_columns();
+	applyAutocomms(EVENT_PORTENTER, NULL, NULL, false, curBook);
+	applyAutocomms(EVENT_TABENTER, NULL, NULL, false, curBook);
+	if (oldCurBook != curBook)
+		applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
+	return true;
 }
 
 //Close the book of "port" and unload it if "action" is DOBOOK_UNLOAD.
@@ -2483,28 +2483,28 @@ closeLastPortalInTab(Portal* port, int free_buf, Tab* prev_curtab) {
 //"abort_if_last" is passed to bookClose(): abort closing if all other portals are closed.
 private void
 closePortalBook(Portal* port, int action, int abort_if_last) {
-   //Free independent synblock before the book is freed.
-   if (port->book)
-      reset_synblock(port);
+	//Free independent synblock before the book is freed.
+	if (port->book)
+		reset_synblock(port);
 
-   //When a quickfix/location list portal is closed and the book is
-   //displayed in only one portal, then unlist the book.
-   if (port->book != NULL && isLocationListBook(port->book) && port->book->countPortals == 1)
-      port->book->o.bookListed = false;
+	//When a quickfix/location list portal is closed and the book is
+	//displayed in only one portal, then unlist the book.
+	if (port->book != NULL && isLocationListBook(port->book) && port->book->countPortals == 1)
+		port->book->o.bookListed = false;
 
-   //Close the link to the book.
-   if (port->book) {
-      BookRef bufref;
-      bookStoreInRef(OUT &bufref, curBook);
+	//Close the link to the book.
+	if (port->book) {
+		BookRef bufref;
+		bookStoreInRef(OUT &bufref, curBook);
 
-      port->locked = true;
-      bookClose(port, port->book, action, abort_if_last, true);
-      if (doesPortalExistInAnyTab(port))
-          port->locked = false;
-      //Make sure curBook is valid. It could become invalid if 'bufhidden' is "wipe" (can it now?)
-      if (!bookRefValid(&bufref))
-          curBook = firstBook;
-    }
+		port->locked = true;
+		bookClose(port, port->book, action, abort_if_last, true);
+		if (doesPortalExistInAnyTab(port))
+			 port->locked = false;
+		//Make sure curBook is valid. It could become invalid if 'bufhidden' is "wipe" (can it now?)
+		if (!bookRefValid(&bufref))
+			 curBook = firstBook;
+	 }
 }
 
 //Close portal "port".  Only works for the current tab. If "free_buf" is true related book may
@@ -2512,337 +2512,337 @@ closePortalBook(Portal* port, int action, int abort_if_last) {
 //Called by :quit, :close, :xit, :wq and findtag(). Returns FAIL when the portal was not closed.
 pub Unt
 closePortal(Portal* port, int free_buf) {
-   Portal* po;
-   Boole isOtherBook = false;
-   Boole close_curPor = false;
-   Boole isHelpPortal = false;
-   Tab* prev_curtab = curtab;
-   Frame* portFrame = port->frame->parent;
-   int had_diffmode = port->o.diff;
-   Boole did_decrement = false;
+	Portal* po;
+	Boole isOtherBook = false;
+	Boole close_curPor = false;
+	Boole isHelpPortal = false;
+	Tab* prev_curtab = curtab;
+	Frame* portFrame = port->frame->parent;
+	int had_diffmode = port->o.diff;
+	Boole did_decrement = false;
 
-   //Can close a popup portal with a terminal if the job has finished.
-   if (may_close_term_popup() == OK)
-      return OK;
-   if (portErrorIfPopup(true))
-      return FAIL;
+	//Can close a popup portal with a terminal if the job has finished.
+	if (may_close_term_popup() == OK)
+		return OK;
+	if (portErrorIfPopup(true))
+		return FAIL;
 
-   if (lastPortal()) {
-      emsg(_(e_cannot_close_last_portal));
-      return FAIL;
-   }
-   if (portalLayout_locked(C_close))
-      return FAIL;
+	if (lastPortal()) {
+		emsg(_(e_cannot_close_last_portal));
+		return FAIL;
+	}
+	if (portalLayout_locked(C_close))
+		return FAIL;
 
-   if (portalLocked(port) || (port->book != NULL && port->book->locked > 0))
-      return FAIL; //portal is already being closed
+	if (portalLocked(port) || (port->book != NULL && port->book->locked > 0))
+		return FAIL; //portal is already being closed
 
-   if (portUnlisted(port)) {
-      emsg(_(e_cannot_close_autocmd_or_popup_portal));
-      return FAIL;
-   }
-   if ((is_autoCommPort(firstPor) || is_autoCommPort(lastPor)) && onePortal()) {
-      emsg(_(e_cannot_close_portal_only_autocomm_portal_would_remain));
-      return FAIL;
-   }
+	if (portUnlisted(port)) {
+		emsg(_(e_cannot_close_autocmd_or_popup_portal));
+		return FAIL;
+	}
+	if ((is_autoCommPort(firstPor) || is_autoCommPort(lastPor)) && onePortal()) {
+		emsg(_(e_cannot_close_portal_only_autocomm_portal_would_remain));
+		return FAIL;
+	}
 
-   //When closing the last portal in a tab first go to another tab
-   //and then close the portal and the tab to avoid that curPor and
-   //curtab are invalid while we are freeing memory.
-   if (closeLastPortalInTab(port, free_buf, prev_curtab))
-      return FAIL;
+	//When closing the last portal in a tab first go to another tab
+	//and then close the portal and the tab to avoid that curPor and
+	//curtab are invalid while we are freeing memory.
+	if (closeLastPortalInTab(port, free_buf, prev_curtab))
+		return FAIL;
 
-   //When closing the help portal, try restoring a snapshot after closing
-   //the portal.  Otherwise clear the snapshot, it's now invalid.
-   if (bookIsHelp(port->book))
-      isHelpPortal = true;
-   else
-      clearSnapshot(curtab, SNAP_HELP_IDX);
+	//When closing the help portal, try restoring a snapshot after closing
+	//the portal.  Otherwise clear the snapshot, it's now invalid.
+	if (bookIsHelp(port->book))
+		isHelpPortal = true;
+	else
+		clearSnapshot(curtab, SNAP_HELP_IDX);
 
-   if (port == curPor) {
-      leavingPortal(curPor);
-      //Guess which portal is going to be the new current portal.
-      //This may change because of the autocommands (sigh).
-      po = frameToPort(getAltFrame(port, NULL));
+	if (port == curPor) {
+		leavingPortal(curPor);
+		//Guess which portal is going to be the new current portal.
+		//This may change because of the autocommands (sigh).
+		po = frameToPort(getAltFrame(port, NULL));
 
-      //Be careful: If autocommands delete the portal or cause this portal
-      //to be the last one left, return now.
-      if (po->book != curBook) {
-         reset_VIsual_and_resel();   //stop Visual mode
+		//Be careful: If autocommands delete the portal or cause this portal
+		//to be the last one left, return now.
+		if (po->book != curBook) {
+			reset_VIsual_and_resel();   //stop Visual mode
 
-         isOtherBook = true;
-         if (!portalIsValid(port))
-            return FAIL;
-         port->locked = true;
-         applyAutocomms(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
-         if (!portalIsValid(port))
-            return FAIL;
-         port->locked = false;
-         if (lastPortal())
-            return FAIL;
-      }
-      port->locked = true;
-      applyAutocomms(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
-      if (!portalIsValid(port))
-          return FAIL;
-      port->locked = false;
-      if (lastPortal())
-          return FAIL;
-      //autocmds may abort script processing
-      if (aborting())
-          return FAIL;
-   }
+			isOtherBook = true;
+			if (!portalIsValid(port))
+				return FAIL;
+			port->locked = true;
+			applyAutocomms(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
+			if (!portalIsValid(port))
+				return FAIL;
+			port->locked = false;
+			if (lastPortal())
+				return FAIL;
+		}
+		port->locked = true;
+		applyAutocomms(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
+		if (!portalIsValid(port))
+			 return FAIL;
+		port->locked = false;
+		if (lastPortal())
+			 return FAIL;
+		//autocmds may abort script processing
+		if (aborting())
+			 return FAIL;
+	}
 
-   if (popup_closePortal(port) && !portalIsValid(port))
-      return FAIL;
+	if (popup_closePortal(port) && !portalIsValid(port))
+		return FAIL;
 
-   //Trigger WinClosed just before starting to free portal-related resources.
-   triggerPortalClosed(port);
-   //autocmd may have freed the portal already.
-   if (!doesPortalExistInAnyTab(port))
-      return OK;
+	//Trigger WinClosed just before starting to free portal-related resources.
+	triggerPortalClosed(port);
+	//autocmd may have freed the portal already.
+	if (!doesPortalExistInAnyTab(port))
+		return OK;
 
-   closePortalBook(port, free_buf ? DOBOOK_UNLOAD : 0, true);
+	closePortalBook(port, free_buf ? DOBOOK_UNLOAD : 0, true);
 
-   if (portalIsValid(port) && port->book == NULL && !portalIsPopup(port) && lastPortal()) {
-      //Autocommands have closed all portals, quit now.  Restore
-      //curPor->book, otherwise writing eeglinfo may fail.
-      if (!curPor->book)
-         curPor->book = curBook;
-      exitEegl(0);
-   }
+	if (portalIsValid(port) && port->book == NULL && !portalIsPopup(port) && lastPortal()) {
+		//Autocommands have closed all portals, quit now.  Restore
+		//curPor->book, otherwise writing eeglinfo may fail.
+		if (!curPor->book)
+			curPor->book = curBook;
+		exitEegl(0);
+	}
 
-   //Autocommands may have moved to another tab.
-   if (curtab != prev_curtab && doesPortalExistInAnyTab(port) && port->book == NULL) {
-      //Need to close the portal anyway, since the buffer is NULL.
-      closePortal_othertab(port, false, prev_curtab);
-      return FAIL;
-   }
+	//Autocommands may have moved to another tab.
+	if (curtab != prev_curtab && doesPortalExistInAnyTab(port) && port->book == NULL) {
+		//Need to close the portal anyway, since the buffer is NULL.
+		closePortal_othertab(port, false, prev_curtab);
+		return FAIL;
+	}
 
-   //Autocommands may have closed the portal already or closed the only
-   //other portal.
-   if (!portalIsValid(port) || lastPortal()
-         || closeLastPortalInTab(port, free_buf, prev_curtab))
-      return FAIL;
+	//Autocommands may have closed the portal already or closed the only
+	//other portal.
+	if (!portalIsValid(port) || lastPortal()
+			|| closeLastPortalInTab(port, free_buf, prev_curtab))
+		return FAIL;
 
-   //Now we are really going to close the portal.  Disallow any autocommand
-   //to split a portal to avoid trouble.
-   //Also bail out of parse_queued_messages() to avoid it tries to update the screen.
-   ++split_disallowed;
-   ++dont_parse_messages;
+	//Now we are really going to close the portal.  Disallow any autocommand
+	//to split a portal to avoid trouble.
+	//Also bail out of parse_queued_messages() to avoid it tries to update the screen.
+	++split_disallowed;
+	++dont_parse_messages;
 
-   //Free the memory used for the portal and get the portal that received the screen space.
-   Byte dir;
-   po = freePortalMem(port, OUT &dir, NULL);
+	//Free the memory used for the portal and get the portal that received the screen space.
+	Byte dir;
+	po = freePortalMem(port, OUT &dir, NULL);
 
-   if (isHelpPortal) {
-      //Closing the help portal moves the cursor back to the current portal of the snapshot.
-      Portal* prevPort = get_snapshot_curPor(SNAP_HELP_IDX);
+	if (isHelpPortal) {
+		//Closing the help portal moves the cursor back to the current portal of the snapshot.
+		Portal* prevPort = get_snapshot_curPor(SNAP_HELP_IDX);
 
-      if (portalIsValid(prevPort))
-          po = prevPort;
-   }
+		if (portalIsValid(prevPort))
+			 po = prevPort;
+	}
 
-   //Make sure curPor isn't invalid.  It can cause severe trouble when
-   //printing an error message.  For portEqualizeHeight() curBook needs to be valid too.
-   if (port == curPor) {
-      curPor = po;
-      if (po->isPreview || isLocationListBook(po->book)) {
-         //If the cursor goes to the preview or the quickfix portal, try
-         //finding another portal to go to.
-         for (;;) {
-            if (!po->next)
-               po = firstPor;
-            else
-               po = po->next;
-            if (po == curPor)
-               break;
-            if (!po->isPreview && !isLocationListBook(po->book)) {
-               curPor = po;
-               break;
-            }
-         }
-      }
-      curBook = curPor->book;
-      close_curPor = true;
+	//Make sure curPor isn't invalid.  It can cause severe trouble when
+	//printing an error message.  For portEqualizeHeight() curBook needs to be valid too.
+	if (port == curPor) {
+		curPor = po;
+		if (po->isPreview || isLocationListBook(po->book)) {
+			//If the cursor goes to the preview or the quickfix portal, try
+			//finding another portal to go to.
+			for (;;) {
+				if (!po->next)
+					po = firstPor;
+				else
+					po = po->next;
+				if (po == curPor)
+					break;
+				if (!po->isPreview && !isLocationListBook(po->book)) {
+					curPor = po;
+					break;
+				}
+			}
+		}
+		curBook = curPor->book;
+		close_curPor = true;
 
-      //The cursor position may be invalid if the buffer changed after last
-      //using the portal.
-      check_cursor();
-   }
+		//The cursor position may be invalid if the buffer changed after last
+		//using the portal.
+		check_cursor();
+	}
 
-   //If last portal has a status line now and we don't want one, remove the
-   //status line. Do this before portEqualizeHeight(), because it may change the
-   //height of a portal
-   last_status();
+	//If last portal has a status line now and we don't want one, remove the
+	//status line. Do this before portEqualizeHeight(), because it may change the
+	//height of a portal
+	last_status();
 
-   if (p_ea && (p_ead == EAD_BOTH || p_ead == dir))
-      //If the frame of the closed portal contains the new current portal,
-      //only resize that frame.  Otherwise resize all portals.
-      portEqualizeHeight(curPor, curPor->frame->parent == portFrame, dir);
-   else {
-      computePosPortal();
-   }
-   if (close_curPor) {
-      //Pass WEE_ALLOW_PARSE_MESSAGES to decrement dont_parse_messages
-      //before autocommands.
-      did_decrement = enterPortalWorker(po,
-            WEE_CURWIN_INVALID | WEE_TRIGGER_ENTER_AUTOCMDS
-                  | WEE_TRIGGER_LEAVE_AUTOCMDS | WEE_ALLOW_PARSE_MESSAGES
-         );
-         if (isOtherBook)
-             //careful: after this po and port may be invalid!
-             applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
-   }
+	if (p_ea && (p_ead == EAD_BOTH || p_ead == dir))
+		//If the frame of the closed portal contains the new current portal,
+		//only resize that frame.  Otherwise resize all portals.
+		portEqualizeHeight(curPor, curPor->frame->parent == portFrame, dir);
+	else {
+		computePosPortal();
+	}
+	if (close_curPor) {
+		//Pass WEE_ALLOW_PARSE_MESSAGES to decrement dont_parse_messages
+		//before autocommands.
+		did_decrement = enterPortalWorker(po,
+				WEE_CURWIN_INVALID | WEE_TRIGGER_ENTER_AUTOCMDS
+						| WEE_TRIGGER_LEAVE_AUTOCMDS | WEE_ALLOW_PARSE_MESSAGES
+			);
+			if (isOtherBook)
+				 //careful: after this po and port may be invalid!
+				 applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
+	}
 
-   --split_disallowed;
-   if (!did_decrement)
-      --dont_parse_messages;
+	--split_disallowed;
+	if (!did_decrement)
+		--dont_parse_messages;
 
-   //After closing the help portal, try restoring the portal layout from before it was opened.
-   if (isHelpPortal)
-      restore_snapshot(SNAP_HELP_IDX, close_curPor);
+	//After closing the help portal, try restoring the portal layout from before it was opened.
+	if (isHelpPortal)
+		restore_snapshot(SNAP_HELP_IDX, close_curPor);
 
-   //If the portal had 'diff' set and now there is only one portal left in
-   //the tab with 'diff' set, and "closeoff" is in 'diffopt', then execute ":diffoff!".
-   if (diffopt_closeoff() && had_diffmode && curtab == prev_curtab) {
-      int   diffcount = 0;
-      Portal   *dPort;
-      FOR_ALL_PORTALS(dPort) {
-         if (dPort->o.diff)
-            ++diffcount;
-      }
-      if (diffcount == 1)
-         executeCommLine(S"diffoff!");
-   }
+	//If the portal had 'diff' set and now there is only one portal left in
+	//the tab with 'diff' set, and "closeoff" is in 'diffopt', then execute ":diffoff!".
+	if (diffopt_closeoff() && had_diffmode && curtab == prev_curtab) {
+		int   diffcount = 0;
+		Portal   *dPort;
+		FOR_ALL_PORTALS(dPort) {
+			if (dPort->o.diff)
+				++diffcount;
+		}
+		if (diffcount == 1)
+			executeCommLine(S"diffoff!");
+	}
 
-   redraw_all_later(UPD_NOT_VALID);
-   return OK;
+	redraw_all_later(UPD_NOT_VALID);
+	return OK;
 }
 
 private void
 triggerPortalNewPre(void) {
-   portalLayout_lock();
-   applyAutocomms(EVENT_PORTNEWPRE, NULL, NULL, false, NULL);
-   portalLayout_unlock();
+	portalLayout_lock();
+	applyAutocomms(EVENT_PORTNEWPRE, NULL, NULL, false, NULL);
+	portalLayout_unlock();
 }
 
 private void
 triggerPortalClosed(Portal* port) {
-   static Boole recursive = false;
-   Byte portId[NUMBUFLEN];
+	static Boole recursive = false;
+	Byte portId[NUMBUFLEN];
 
-   if (recursive)
-      return;
-   recursive = true;
-   eeSnprintf(portId, sizeof(portId), "%d", port->id);
-   applyAutocomms(EVENT_WINCLOSED, portId, portId, false, port->book);
-   recursive = false;
+	if (recursive)
+		return;
+	recursive = true;
+	eeSnprintf(portId, sizeof(portId), "%d", port->id);
+	applyAutocomms(EVENT_WINCLOSED, portId, portId, false, port->book);
+	recursive = false;
 }
 
 //directly is true if the portal is closed by ':tabclose' or ':tabonly'.
 //This allows saving the session before closing multi-portal tab.
 pub void
 trigger_tabclosedpre(Tab* t, int directly) {
-   static Boole recursive = false;
-   static Boole skip = false;
-   Tab* ptp = curtab;
+	static Boole recursive = false;
+	static Boole skip = false;
+	Tab* ptp = curtab;
 
-   //Quickly return when no TabClosedPre autocommands to be executed or already executing
-   if (!has_tabclosedpre() || recursive)
-      return;
+	//Quickly return when no TabClosedPre autocommands to be executed or already executing
+	if (!has_tabclosedpre() || recursive)
+		return;
 
-   //Skip if the event have been triggered by ':tabclose' recently
-   if (skip) {
-      skip = false;
-      return;
-   }
+	//Skip if the event have been triggered by ':tabclose' recently
+	if (skip) {
+		skip = false;
+		return;
+	}
 
-   if (isTabValid(t)) {
-      gotoTab(t, false, false);
-      if (directly)
-         skip = true;
-   }
-   recursive = true;
-   portalLayout_lock();
-   applyAutocomms(EVENT_TABCLOSEDPRE, NULL, NULL, false, NULL);
-   portalLayout_unlock();
-   recursive = false;
-   //tabpage may have been modified or deleted by autocmds
-   if (isTabValid(ptp))
-      //try to recover the tappage first
-      gotoTab(ptp, false, false);
-   else
-      //fall back to the first tappage
-      gotoTab(firstTabG, false, false);
+	if (isTabValid(t)) {
+		gotoTab(t, false, false);
+		if (directly)
+			skip = true;
+	}
+	recursive = true;
+	portalLayout_lock();
+	applyAutocomms(EVENT_TABCLOSEDPRE, NULL, NULL, false, NULL);
+	portalLayout_unlock();
+	recursive = false;
+	//tabpage may have been modified or deleted by autocmds
+	if (isTabValid(ptp))
+		//try to recover the tappage first
+		gotoTab(ptp, false, false);
+	else
+		//fall back to the first tappage
+		gotoTab(firstTabG, false, false);
 }
 
 //Make a snapshot of all the portal scroll positions and sizes of the current tab
 pub void
 portSnapshotScrollSizes(void) {
-   Portal* po;
-   FOR_ALL_PORTALS(po) {
-      po->lastTopline = po->topLine;
-      po->lastTopFill = po->topFill;
-      po->lastLeftCol = po->leftCol;
-      po->lastSkipCol = po->skipCol;
-      po->lastWidth = po->width;
-      po->lastHeight = po->height;
-   }
+	Portal* po;
+	FOR_ALL_PORTALS(po) {
+		po->lastTopline = po->topLine;
+		po->lastTopFill = po->topFill;
+		po->lastLeftCol = po->leftCol;
+		po->lastSkipCol = po->skipCol;
+		po->lastWidth = po->width;
+		po->lastHeight = po->height;
+	}
 }
 
 private int did_initial_scroll_size_snapshot = false;
 
 pub void
 may_make_initial_scroll_size_snapshot(void) {
-   if (!did_initial_scroll_size_snapshot) {
-      did_initial_scroll_size_snapshot = true;
-      portSnapshotScrollSizes();
-   }
+	if (!did_initial_scroll_size_snapshot) {
+		did_initial_scroll_size_snapshot = true;
+		portSnapshotScrollSizes();
+	}
 }
 
 //Create a dictionary with information about size and scroll changes in a portal.
 //Return the dictionary with refcount set to one. NULL when out of memory.
 private Bag *
 makePortInfoDict(
-   int width,
-   int height,
-   int topline,
-   int topfill,
-   int leftcol,
-   int skipcol
+	int width,
+	int height,
+	int topline,
+	int topfill,
+	int leftcol,
+	int skipcol
 ) {
-   Bag* d = allocBag();
-   d->refCount = 1;
+	Bag* d = allocBag();
+	d->refCount = 1;
 
-   //not actually looping, for breaking out on error
-   while (1) {
-      Var tv;
-      tv.lock = 0;
-      tv.tag = VAR_NUMBER;
+	//not actually looping, for breaking out on error
+	while (1) {
+		Var tv;
+		tv.lock = 0;
+		tv.tag = VAR_NUMBER;
 
-      tv.number = width;
-      if (bagAddVar(d, S"width", &tv) == FAIL)
-         break;
-      tv.number = height;
-      if (bagAddVar(d, S"height", &tv) == FAIL)
-         break;
-      tv.number = topline;
-      if (bagAddVar(d, S"topline", &tv) == FAIL)
-         break;
-      tv.number = topfill;
-      if (bagAddVar(d, S"topfill", &tv) == FAIL)
-         break;
-      tv.number = leftcol;
-      if (bagAddVar(d, S"leftcol", &tv) == FAIL)
-         break;
-      tv.number = skipcol;
-      if (bagAddVar(d, S"skipcol", &tv) == FAIL)
-         break;
-      return d;
-    }
-    bagUnref(d);
-    return NULL;
+		tv.number = width;
+		if (bagAddVar(d, S"width", &tv) == FAIL)
+			break;
+		tv.number = height;
+		if (bagAddVar(d, S"height", &tv) == FAIL)
+			break;
+		tv.number = topline;
+		if (bagAddVar(d, S"topline", &tv) == FAIL)
+			break;
+		tv.number = topfill;
+		if (bagAddVar(d, S"topfill", &tv) == FAIL)
+			break;
+		tv.number = leftcol;
+		if (bagAddVar(d, S"leftcol", &tv) == FAIL)
+			break;
+		tv.number = skipcol;
+		if (bagAddVar(d, S"skipcol", &tv) == FAIL)
+			break;
+		return d;
+	 }
+	 bagUnref(d);
+	 return NULL;
 }
 
 //Return values of checkWhichPortalsResized():
@@ -2862,134 +2862,134 @@ makePortInfoDict(
 //  information about changed portals is added to "v_event".
 private void
 checkWhichPortalsResized(
-   int* size_count,
-   Portal** firstScrollPort,
-   Portal** firstResizedPort,
-   List* portlist,
-   OUT Bag* v_event
+	int* size_count,
+	Portal** firstScrollPort,
+	Portal** firstResizedPort,
+	List* portlist,
+	OUT Bag* v_event
 ) {
-   int listidx = 0;
-   int tot_width = 0;
-   int tot_height = 0;
-   int tot_topline = 0;
-   int tot_topfill = 0;
-   int tot_leftcol = 0;
-   int tot_skipcol = 0;
+	int listidx = 0;
+	int tot_width = 0;
+	int tot_height = 0;
+	int tot_topline = 0;
+	int tot_topfill = 0;
+	int tot_leftcol = 0;
+	int tot_skipcol = 0;
 
-   Portal* po;
-   FOR_ALL_PORTALS(po) {
-      int ignore_scroll = event_ignored(EVENT_PORTSCROLLED, po->o.eventIgnorePort);
-      int size_changed = !event_ignored(EVENT_WINRESIZED, po->o.eventIgnorePort)
-                && (po->lastWidth != po->width || po->lastHeight != po->height);
-      if (size_changed) {
-         if (portlist) {
-            //Add this portal to the list of changed portals.
-            Var tv;
-            tv.lock = 0;
-            tv.tag = VAR_NUMBER;
-            tv.number = po->id;
-            list_set_item(portlist, listidx++, &tv);
-         } ei (size_count != NULL) {
-            ++*size_count;
-            if (*firstResizedPort == NULL)
-               *firstResizedPort = po;
-            //For WinScrolled the first portal with a size change is used
-            //even when it didn't scroll.
-            if (*firstScrollPort == NULL && !ignore_scroll)
-               *firstScrollPort = po;
-         }
-      }
+	Portal* po;
+	FOR_ALL_PORTALS(po) {
+		int ignore_scroll = event_ignored(EVENT_PORTSCROLLED, po->o.eventIgnorePort);
+		int size_changed = !event_ignored(EVENT_WINRESIZED, po->o.eventIgnorePort)
+					 && (po->lastWidth != po->width || po->lastHeight != po->height);
+		if (size_changed) {
+			if (portlist) {
+				//Add this portal to the list of changed portals.
+				Var tv;
+				tv.lock = 0;
+				tv.tag = VAR_NUMBER;
+				tv.number = po->id;
+				list_set_item(portlist, listidx++, &tv);
+			} ei (size_count != NULL) {
+				++*size_count;
+				if (*firstResizedPort == NULL)
+					*firstResizedPort = po;
+				//For WinScrolled the first portal with a size change is used
+				//even when it didn't scroll.
+				if (*firstScrollPort == NULL && !ignore_scroll)
+					*firstScrollPort = po;
+			}
+		}
 
-      int scroll_changed = !ignore_scroll
-               && (po->lastTopline != po->topLine
-               || po->lastTopFill != po->topFill
-               || po->lastLeftCol != po->leftCol
-               || po->lastSkipCol != po->skipCol);
-      if (scroll_changed
-          && firstScrollPort != NULL && *firstScrollPort == NULL)
-          *firstScrollPort = po;
+		int scroll_changed = !ignore_scroll
+					&& (po->lastTopline != po->topLine
+					|| po->lastTopFill != po->topFill
+					|| po->lastLeftCol != po->leftCol
+					|| po->lastSkipCol != po->skipCol);
+		if (scroll_changed
+			 && firstScrollPort != NULL && *firstScrollPort == NULL)
+			 *firstScrollPort = po;
 
-      if ((size_changed || scroll_changed) && v_event) {
-         //Add info about this portal to the v:event dictionary.
-         int width = po->width - po->lastWidth;
-         int height = po->height - po->lastHeight;
-         int topline = po->topLine - po->lastTopline;
-         int topfill = po->topFill - po->lastTopFill;
-         int leftcol = po->leftCol - po->lastLeftCol;
-         int skipcol = po->skipCol - po->lastSkipCol;
-         Bag *d = makePortInfoDict(width, height, topline, topfill, leftcol, skipcol);
-         if (!d)
-            break;
-         Byte portId[NUMBUFLEN];
-         eeSnprintf(portId, sizeof(portId), "%d", po->id);
-         if (bagAddBag(v_event, portId, d) == FAIL) {
-            bagUnref(d);
-            break;
-         }
-         --d->refCount;
+		if ((size_changed || scroll_changed) && v_event) {
+			//Add info about this portal to the v:event dictionary.
+			int width = po->width - po->lastWidth;
+			int height = po->height - po->lastHeight;
+			int topline = po->topLine - po->lastTopline;
+			int topfill = po->topFill - po->lastTopFill;
+			int leftcol = po->leftCol - po->lastLeftCol;
+			int skipcol = po->skipCol - po->lastSkipCol;
+			Bag *d = makePortInfoDict(width, height, topline, topfill, leftcol, skipcol);
+			if (!d)
+				break;
+			Byte portId[NUMBUFLEN];
+			eeSnprintf(portId, sizeof(portId), "%d", po->id);
+			if (bagAddBag(v_event, portId, d) == FAIL) {
+				bagUnref(d);
+				break;
+			}
+			--d->refCount;
 
-         tot_width += abs(width);
-         tot_height += abs(height);
-         tot_topline += abs(topline);
-         tot_topfill += abs(topfill);
-         tot_leftcol += abs(leftcol);
-         tot_skipcol += abs(skipcol);
-      }
-   }
+			tot_width += abs(width);
+			tot_height += abs(height);
+			tot_topline += abs(topline);
+			tot_topfill += abs(topfill);
+			tot_leftcol += abs(leftcol);
+			tot_skipcol += abs(skipcol);
+		}
+	}
 
-   if (v_event) {
-      Bag *alldict = makePortInfoDict(
-         tot_width, tot_height, tot_topline, tot_topfill, tot_leftcol, tot_skipcol
-      );
-      if (alldict) {
-         if (bagAddBag(v_event, S"all", alldict) == FAIL)
-            bagUnref(alldict);
-         else
-            --alldict->refCount;
-      }
-   }
+	if (v_event) {
+		Bag *alldict = makePortInfoDict(
+			tot_width, tot_height, tot_topline, tot_topfill, tot_leftcol, tot_skipcol
+		);
+		if (alldict) {
+			if (bagAddBag(v_event, S"all", alldict) == FAIL)
+				bagUnref(alldict);
+			else
+				--alldict->refCount;
+		}
+	}
 }
 
 //Trigger WinScrolled and/or WinResized if any portal in the current tab scrolled or changed size
 pub void
 may_trigger_win_scrolled_resized(void) {
-   static Boole recursive = false;
-   int doResizeG = has_winresized();
-   int do_scroll = has_winscrolled();
+	static Boole recursive = false;
+	int doResizeG = has_winresized();
+	int do_scroll = has_winscrolled();
 
-   //Do not trigger WinScrolled or WinResized recursively.  Do not trigger
-   //before the initial snapshot of the w_last_ values was made.
-   if (recursive || !(do_scroll || doResizeG) || !did_initial_scroll_size_snapshot)
-      return;
+	//Do not trigger WinScrolled or WinResized recursively.  Do not trigger
+	//before the initial snapshot of the w_last_ values was made.
+	if (recursive || !(do_scroll || doResizeG) || !did_initial_scroll_size_snapshot)
+		return;
 
-   int size_count = 0;
-   Portal* firstScrollPort = NULL, *firstResizedPort = NULL;
-   checkWhichPortalsResized(&size_count, &firstScrollPort, &firstResizedPort, NULL, NULL);
-   int trigger_resize = doResizeG && size_count > 0;
-   int trigger_scroll = do_scroll && firstScrollPort != NULL;
-   if (!trigger_resize && !trigger_scroll)
-      return;  //no relevant changes
-   List* portalsList = NULL;
-   if (trigger_resize) {
-      //Create the list for v:event.portals before making the snapshot.
-      portalsList = list_alloc_with_items(size_count);
-      if (portalsList)
-         checkWhichPortalsResized(NULL, NULL, NULL, portalsList, NULL);
-   }
+	int size_count = 0;
+	Portal* firstScrollPort = NULL, *firstResizedPort = NULL;
+	checkWhichPortalsResized(&size_count, &firstScrollPort, &firstResizedPort, NULL, NULL);
+	int trigger_resize = doResizeG && size_count > 0;
+	int trigger_scroll = do_scroll && firstScrollPort != NULL;
+	if (!trigger_resize && !trigger_scroll)
+		return;  //no relevant changes
+	List* portalsList = NULL;
+	if (trigger_resize) {
+		//Create the list for v:event.portals before making the snapshot.
+		portalsList = list_alloc_with_items(size_count);
+		if (portalsList)
+			checkWhichPortalsResized(NULL, NULL, NULL, portalsList, NULL);
+	}
 
-   Bag* scroll_dict = NULL;
-   if (trigger_scroll) {
-      //Create the dict with entries for v:event before making the snapshot.
-      scroll_dict = allocBag();
-      scroll_dict->refCount = 1;
-      checkWhichPortalsResized(NULL, NULL, NULL, NULL, scroll_dict);
-   }
+	Bag* scroll_dict = NULL;
+	if (trigger_scroll) {
+		//Create the dict with entries for v:event before making the snapshot.
+		scroll_dict = allocBag();
+		scroll_dict->refCount = 1;
+		checkWhichPortalsResized(NULL, NULL, NULL, NULL, scroll_dict);
+	}
 
-   //WinScrolled/WinResized are triggered only once, even when multiple
-   //portals scrolled or changed size.  Store the current values before
-   //triggering the event, if a scroll or resize happens as a side effect
-   //then WinScrolled/WinResized is triggered for that later.
-   portSnapshotScrollSizes();
+	//WinScrolled/WinResized are triggered only once, even when multiple
+	//portals scrolled or changed size.  Store the current values before
+	//triggering the event, if a scroll or resize happens as a side effect
+	//then WinScrolled/WinResized is triggered for that later.
+	portSnapshotScrollSizes();
 }
 
 //Close portal "port" in tab "t", which is not the current tab. This may be the last portal in
@@ -2997,131 +2997,131 @@ may_trigger_win_scrolled_resized(void) {
 //Caller must check if buffer is hidden.
 pub void
 closePortal_othertab(Portal* port, int free_buf, Tab *t) {
-   Portal* po;
-   Tab* ptp = NULL;
-   int      free_tp = false;
+	Portal* po;
+	Tab* ptp = NULL;
+	int      free_tp = false;
 
-   //Get here with port->book == NULL when closePortal() detects the tab
-   //page changed.
-   if (portalLocked(port) || (port->book != NULL && port->book->locked > 0))
-      return; //portal is already being closed
+	//Get here with port->book == NULL when closePortal() detects the tab
+	//page changed.
+	if (portalLocked(port) || (port->book != NULL && port->book->locked > 0))
+		return; //portal is already being closed
 
-   //Trigger WinClosed just before starting to free portal-related resources.
-   //If the buffer is NULL, it isn't safe to trigger autocommands,
-   //and closePortal() should have already triggered WinClosed.
-   if (port->book) {
-      triggerPortalClosed(port);
-      //autocmd may have freed the portal already.
-      if (!doesPortalExistInAnyTab(port))
-         return;
-   }
+	//Trigger WinClosed just before starting to free portal-related resources.
+	//If the buffer is NULL, it isn't safe to trigger autocommands,
+	//and closePortal() should have already triggered WinClosed.
+	if (port->book) {
+		triggerPortalClosed(port);
+		//autocmd may have freed the portal already.
+		if (!doesPortalExistInAnyTab(port))
+			return;
+	}
 
-   if (t->firstPor == t->lastPor) {
-      trigger_tabclosedpre(t, false);
-      //autocmd may have freed the portal already.
-      if (!doesPortalExistInAnyTab(port))
-         return;
-   }
+	if (t->firstPor == t->lastPor) {
+		trigger_tabclosedpre(t, false);
+		//autocmd may have freed the portal already.
+		if (!doesPortalExistInAnyTab(port))
+			return;
+	}
 
-   if (port->book)
-      //Close the link to the buffer.
-      bookClose(port, port->book, free_buf ? DOBOOK_UNLOAD : 0, false, true);
+	if (port->book)
+		//Close the link to the buffer.
+		bookClose(port, port->book, free_buf ? DOBOOK_UNLOAD : 0, false, true);
 
-   //Careful: Autocommands may have closed the tab or made it the current tab
-   for (ptp = firstTabG; ptp != NULL && ptp != t; ptp = ptp->next)
-      {}
-   if (!ptp || t == curtab) {
-      //If the buffer was removed from the portal we have to give it any buffer.
-      if (doesPortalExistInAnyTab(port) && port->book == NULL) {
-          port->book = firstBook;
-          ++firstBook->countPortals;
-          initEmptyPortal(port);
-      }
-      return;
-   }
+	//Careful: Autocommands may have closed the tab or made it the current tab
+	for (ptp = firstTabG; ptp != NULL && ptp != t; ptp = ptp->next)
+		{}
+	if (!ptp || t == curtab) {
+		//If the buffer was removed from the portal we have to give it any buffer.
+		if (doesPortalExistInAnyTab(port) && port->book == NULL) {
+			 port->book = firstBook;
+			 ++firstBook->countPortals;
+			 initEmptyPortal(port);
+		}
+		return;
+	}
 
-   //Autocommands may have closed the portal already.
-   for (po = t->firstPor; po != NULL && po != port; po = po->next)
-      {}
-   if (!po)
-      return;
+	//Autocommands may have closed the portal already.
+	for (po = t->firstPor; po != NULL && po != port; po = po->next)
+		{}
+	if (!po)
+		return;
 
-   //When closing the last portal in a tab remove the tab
-   if (t->firstPor == t->lastPor) {
-      int h = 0;
+	//When closing the last portal in a tab remove the tab
+	if (t->firstPor == t->lastPor) {
+		int h = 0;
 
-      if (t == firstTabG)
-         firstTabG = t->next;
-      else {
-         for (ptp = firstTabG; ptp != NULL && ptp->next != t; ptp = ptp->next)
-            {}
+		if (t == firstTabG)
+			firstTabG = t->next;
+		else {
+			for (ptp = firstTabG; ptp != NULL && ptp->next != t; ptp = ptp->next)
+				{}
 
-         if (!ptp) {
-            internal_error((CS)"closePortal_othertab()");
-            return;
-         }
-         ptp->next = t->next;
-      }
-      free_tp = true;
-      shell_new_columns();
-      if (h != 0)
-         shell_new_rows();
-   }
+			if (!ptp) {
+				internal_error((CS)"closePortal_othertab()");
+				return;
+			}
+			ptp->next = t->next;
+		}
+		free_tp = true;
+		shell_new_columns();
+		if (h != 0)
+			shell_new_rows();
+	}
 
-   //Free the memory used for the portal.
-   Byte dir;
-   freePortalMem(port, OUT &dir, t);
+	//Free the memory used for the portal.
+	Byte dir;
+	freePortalMem(port, OUT &dir, t);
 
-   if (free_tp)
-      freeTab(t);
+	if (free_tp)
+		freeTab(t);
 }
 
 //Free the memory used for a portal. Returns a pointer to the portal that got the freed up space.
 private Portal *
 freePortalMem(
-   Portal* port,
-   OUT Byte* dirp,      //set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
-   Tab* t      //tab "port" is in, NULL for current
+	Portal* port,
+	OUT Byte* dirp,      //set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
+	Tab* t      //tab "port" is in, NULL for current
 ){
-   Tab* portTab = t == NULL ? curtab : t;
+	Tab* portTab = t == NULL ? curtab : t;
 
-   //Remove the portal and its frame from the tree of frames.
-   Frame* fr = port->frame;
-   Portal* po = portRemoveFrame(port, OUT dirp, t, NULL);
-   eeglFree(fr);
-   freePortal(port, t);
+	//Remove the portal and its frame from the tree of frames.
+	Frame* fr = port->frame;
+	Portal* po = portRemoveFrame(port, OUT dirp, t, NULL);
+	eeglFree(fr);
+	freePortal(port, t);
 
-   //When deleting the current portal in the tab, select a new current portal.
-   if (port == portTab->curPor)
-      portTab->curPor = po;
+	//When deleting the current portal in the tab, select a new current portal.
+	if (port == portTab->curPor)
+		portTab->curPor = po;
 
-   return po;
+	return po;
 }
 
 #if defined(EXITFREE)
 pub void
 portFreeAll(void) {
-   //avoid an error for switching tabpage with the commline portal open
-   commPortTypeG = 0;
-   commPortBookG = NULL;
-   commPortPortG = NULL;
+	//avoid an error for switching tabpage with the commline portal open
+	commPortTypeG = 0;
+	commPortBookG = NULL;
+	commPortPortG = NULL;
 
-   while (firstTabG->next)
-      tabClose();
+	while (firstTabG->next)
+		tabClose();
 
-   Unt dummy;
-   for (Unt i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
-      if (autoCommPortG[i].port) {
-         (void)freePortalMem(autoCommPortG[i].port, &dummy, NULL);
-         autoCommPortG[i].port = NULL;
-      }
-   }
+	Unt dummy;
+	for (Unt i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
+		if (autoCommPortG[i].port) {
+			(void)freePortalMem(autoCommPortG[i].port, &dummy, NULL);
+			autoCommPortG[i].port = NULL;
+		}
+	}
 
-   while (firstPor)
-      (void)freePortalMem(firstPor, &dummy, NULL);
+	while (firstPor)
+		(void)freePortalMem(firstPor, &dummy, NULL);
 
-   //No portal should be used after this. Set curPor to NULL to crash instead of using freed memory
-   curPor = NULL;
+	//No portal should be used after this. Set curPor to NULL to crash instead of using freed memory
+	curPor = NULL;
 }
 #endif
 
@@ -3129,100 +3129,100 @@ portFreeAll(void) {
 //Return a pointer to the portal that got the freed up space.
 pub Portal *
 portRemoveFrame(
-   Portal* port,
-   OUT Byte* dirp,  //set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
-   Tab* t,      //tab "port" is in, NULL for current
-   OUT Frame** unflat_altfr //if not NULL, set to pointer of frame that got the space, and it
-                            //is not flattened
+	Portal* port,
+	OUT Byte* dirp,  //set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
+	Tab* t,      //tab "port" is in, NULL for current
+	OUT Frame** unflat_altfr //if not NULL, set to pointer of frame that got the space, and it
+						          //is not flattened
 ){
-   Frame* fr;
-   Frame* frp3;
-   Frame* frp_close = port->frame;
+	Frame* fr;
+	Frame* frp3;
+	Frame* frp_close = port->frame;
 
-   //If there is only one portal there is nothing to remove.
-   if ((t ? t->firstPor == t->lastPor : ONLY_ONE_PORTAL))
-      return NULL;
+	//If there is only one portal there is nothing to remove.
+	if ((t ? t->firstPor == t->lastPor : ONLY_ONE_PORTAL))
+		return NULL;
 
-   //Save the position of the containing frame (which will also contain the
-   //altframe) before we remove anything, to recompute portal positions later.
-   Portal* po = frameToPort(frp_close->parent);
-   int row = po->windowRow;
-   int col = po->windowCol;
+	//Save the position of the containing frame (which will also contain the
+	//altframe) before we remove anything, to recompute portal positions later.
+	Portal* po = frameToPort(frp_close->parent);
+	int row = po->windowRow;
+	int col = po->windowCol;
 
-   //Remove the portal from its frame.
-   Frame* fr2 = getAltFrame(port, t);
-   po = frameToPort(fr2);
+	//Remove the portal from its frame.
+	Frame* fr2 = getAltFrame(port, t);
+	po = frameToPort(fr2);
 
-   //Remove this frame from the list of frames.
-   frame_remove(frp_close);
+	//Remove this frame from the list of frames.
+	frame_remove(frp_close);
 
-   if (frp_close->parent->layout == FR_COL) {
-      //When 'portfixheight' is set, try to find another frame in the column
-      //(as close to the closed frame as possible) to distribute the height to.
-      if (fr2->port != NULL && fr2->port->o.portFixHeight) {
-         fr = frp_close->prev;
-         frp3 = frp_close->next;
-         while (fr || frp3) {
-         if (fr) {
-            if (!frame_fixed_height(fr)) {
-               fr2 = fr;
-               po = frameToPort(fr2);
-               break;
-            }
-            fr = fr->prev;
-         }
-         if (frp3) {
-            if (frp3->port != NULL && !frp3->port->o.portFixHeight) {
-               fr2 = frp3;
-               po = frp3->port;
-               break;
-            }
-            frp3 = frp3->next;
-         }
-         }
-      }
-      frame_new_height(fr2, fr2->height + frp_close->height, fr2 == frp_close->next, false, false);
-      *dirp = EAD_VERTICAL;
-   } else {
-      //When 'portfixwidth' is set, try to find another frame in the column
-      //(as close to the closed frame as possible) to distribute the width to.
-      if (fr2->port && fr2->port->o.portFixWidth) {
-         fr = frp_close->prev;
-         frp3 = frp_close->next;
-         while (fr || frp3) {
-            if (fr) {
-               if (!frame_fixed_width(fr)) {
-                  fr2 = fr;
-                  po = frameToPort(fr2);
-                  break;
-               }
-               fr = fr->prev;
-            }
-            if (frp3) {
-               if (frp3->port && !frp3->port->o.portFixWidth) {
-                  fr2 = frp3;
-                  po = frp3->port;
-                  break;
-               }
-               frp3 = frp3->next;
-            }
-         }
-      }
-      frameNewWidth(fr2, fr2->width + frp_close->width, fr2 == frp_close->next, false);
-      *dirp = EAD_HORIZONTAL;
-   }
+	if (frp_close->parent->layout == FR_COL) {
+		//When 'portfixheight' is set, try to find another frame in the column
+		//(as close to the closed frame as possible) to distribute the height to.
+		if (fr2->port != NULL && fr2->port->o.portFixHeight) {
+			fr = frp_close->prev;
+			frp3 = frp_close->next;
+			while (fr || frp3) {
+			if (fr) {
+				if (!frame_fixed_height(fr)) {
+					fr2 = fr;
+					po = frameToPort(fr2);
+					break;
+				}
+				fr = fr->prev;
+			}
+			if (frp3) {
+				if (frp3->port != NULL && !frp3->port->o.portFixHeight) {
+					fr2 = frp3;
+					po = frp3->port;
+					break;
+				}
+				frp3 = frp3->next;
+			}
+			}
+		}
+		frame_new_height(fr2, fr2->height + frp_close->height, fr2 == frp_close->next, false, false);
+		*dirp = EAD_VERTICAL;
+	} else {
+		//When 'portfixwidth' is set, try to find another frame in the column
+		//(as close to the closed frame as possible) to distribute the width to.
+		if (fr2->port && fr2->port->o.portFixWidth) {
+			fr = frp_close->prev;
+			frp3 = frp_close->next;
+			while (fr || frp3) {
+				if (fr) {
+					if (!frame_fixed_width(fr)) {
+						fr2 = fr;
+						po = frameToPort(fr2);
+						break;
+					}
+					fr = fr->prev;
+				}
+				if (frp3) {
+					if (frp3->port && !frp3->port->o.portFixWidth) {
+						fr2 = frp3;
+						po = frp3->port;
+						break;
+					}
+					frp3 = frp3->next;
+				}
+			}
+		}
+		frameNewWidth(fr2, fr2->width + frp_close->width, fr2 == frp_close->next, false);
+		*dirp = EAD_HORIZONTAL;
+	}
 
-   //If the altframe wasn't adjacent and left/above, resizing it will have
-   //changed portal positions within the parent frame.  Recompute them.
-   if (fr2 != frp_close->prev)
-      recomputeFramePositions(frp_close->parent, OUT &row, OUT &col);
+	//If the altframe wasn't adjacent and left/above, resizing it will have
+	//changed portal positions within the parent frame.  Recompute them.
+	if (fr2 != frp_close->prev)
+		recomputeFramePositions(frp_close->parent, OUT &row, OUT &col);
 
-   if (!unflat_altfr)
-      frame_flatten(fr2);
-   else
-      *unflat_altfr = fr2;
+	if (!unflat_altfr)
+		frame_flatten(fr2);
+	else
+		*unflat_altfr = fr2;
 
-   return po;
+	return po;
 }
 
 //Flatten "fr" into its parent frame if it's the only child, also merging its
@@ -3230,47 +3230,47 @@ portRemoveFrame(
 //Free "fr" if flattened; also "fr->parent" if it has the same layout.
 private void
 frame_flatten(Frame* fr) {
-   if (fr->next || fr->prev)
-      return;
+	if (fr->next || fr->prev)
+		return;
 
-   //There is no other frame in this list, move its info to the parent and remove it.
-   fr->parent->layout = fr->layout;
-   fr->parent->child = fr->child;
-   Frame* fr2;
-   FOR_ALL_FRAMES(fr2, fr->child) {
-      fr2->parent = fr->parent;
-   }
-   fr->parent->port = fr->port;
-   if (fr->port)
-      fr->port->frame = fr->parent;
+	//There is no other frame in this list, move its info to the parent and remove it.
+	fr->parent->layout = fr->layout;
+	fr->parent->child = fr->child;
+	Frame* fr2;
+	FOR_ALL_FRAMES(fr2, fr->child) {
+		fr2->parent = fr->parent;
+	}
+	fr->parent->port = fr->port;
+	if (fr->port)
+		fr->port->frame = fr->parent;
 
-   fr2 = fr->parent;
-   if (topframeG->child == fr)
-      topframeG->child = fr2;
-   eeglFree(fr);
+	fr2 = fr->parent;
+	if (topframeG->child == fr)
+		topframeG->child = fr2;
+	eeglFree(fr);
 
-   fr = fr2->parent;
-   if (fr && fr->layout == fr2->layout) {
-      //The frame above the parent has the same layout, have to merge
-      //the frames into this list.
-      if (fr->child == fr2)
-         fr->child = fr2->child;
-      fr2->child->prev = fr2->prev;
-      if (fr2->prev != NULL)
-          fr2->prev->next = fr2->child;
-      for (Frame* frp3 = fr2->child; ; frp3 = frp3->next) {
-         frp3->parent = fr;
-         if (!frp3->next) {
-            frp3->next = fr2->next;
-            if (fr2->next)
-               fr2->next->prev = frp3;
-            break;
-         }
-      }
-      if (topframeG->child == fr2)
-          topframeG->child = fr;
-      eeglFree(fr2);
-   }
+	fr = fr2->parent;
+	if (fr && fr->layout == fr2->layout) {
+		//The frame above the parent has the same layout, have to merge
+		//the frames into this list.
+		if (fr->child == fr2)
+			fr->child = fr2->child;
+		fr2->child->prev = fr2->prev;
+		if (fr2->prev != NULL)
+			 fr2->prev->next = fr2->child;
+		for (Frame* frp3 = fr2->child; ; frp3 = frp3->next) {
+			frp3->parent = fr;
+			if (!frp3->next) {
+				frp3->next = fr2->next;
+				if (fr2->next)
+					fr2->next->prev = frp3;
+				break;
+			}
+		}
+		if (topframeG->child == fr2)
+			 topframeG->child = fr;
+		eeglFree(fr2);
+	}
 }
 
 //Undo changes from a prior call to portRemoveFrame, also restoring lost vertical separators and
@@ -3279,39 +3279,39 @@ frame_flatten(Frame* fr) {
 //dir is one of the EAD_* constants
 private void
 restoreFrame(Portal* po, Byte dir, Frame* unflat_altfr) {
-   Frame* fr = po->frame;
+	Frame* fr = po->frame;
 
-   //Put "po"'s frame back where it was.
-   if (fr->prev)
-      frame_append(fr->prev, fr);
-   else
-      frame_insert(fr->next, fr);
+	//Put "po"'s frame back where it was.
+	if (fr->prev)
+		frame_append(fr->prev, fr);
+	else
+		frame_insert(fr->next, fr);
 
-   //Vertical separators to the left may have been lost.  Restore them.
-   if (po->vsepWidth == 0 && fr->parent->layout == FR_ROW && fr->prev)
-      frame_add_vsep(fr->prev);
+	//Vertical separators to the left may have been lost.  Restore them.
+	if (po->vsepWidth == 0 && fr->parent->layout == FR_ROW && fr->prev)
+		frame_add_vsep(fr->prev);
 
-   //Restore the lost room that was redistributed to the altframe.  Also
-   //adjusts portal sizes to fit restored statuslines/separators, if needed.
-   if (dir == EAD_VERTICAL) {
-      frame_new_height(
-         unflat_altfr, unflat_altfr->height - fr->height, unflat_altfr == fr->next, false, false
-      );
-   } ei (dir == EAD_HORIZONTAL) {
-      frameNewWidth(
-         unflat_altfr, unflat_altfr->width - fr->width, unflat_altfr == fr->next, false
-      );
-   }
+	//Restore the lost room that was redistributed to the altframe.  Also
+	//adjusts portal sizes to fit restored statuslines/separators, if needed.
+	if (dir == EAD_VERTICAL) {
+		frame_new_height(
+			unflat_altfr, unflat_altfr->height - fr->height, unflat_altfr == fr->next, false, false
+		);
+	} ei (dir == EAD_HORIZONTAL) {
+		frameNewWidth(
+			unflat_altfr, unflat_altfr->width - fr->width, unflat_altfr == fr->next, false
+		);
+	}
 
-   //Recompute portal positions within the parent frame to restore them.
-   //Positions were unchanged if the altframe was adjacent and left/above.
-   if (unflat_altfr != fr->prev) {
-      Portal* topleft = frameToPort(fr->parent);
-      int row = topleft->windowRow;
-      int col = topleft->windowCol;
+	//Recompute portal positions within the parent frame to restore them.
+	//Positions were unchanged if the altframe was adjacent and left/above.
+	if (unflat_altfr != fr->prev) {
+		Portal* topleft = frameToPort(fr->parent);
+		int row = topleft->windowRow;
+		int col = topleft->windowCol;
 
-      recomputeFramePositions(fr->parent, OUT &row, OUT &col);
-   }
+		recomputeFramePositions(fr->parent, OUT &row, OUT &col);
+	}
 }
 
 //Return a pointer to the frame that will receive the empty screen space that
@@ -3324,89 +3324,89 @@ restoreFrame(Portal* po, Byte dir, Frame* unflat_altfr) {
 //respected when possible.
 private Frame*
 getAltFrame(Portal* port, Tab* t) {     //tab "port" is in, NULL for current
-   if (!t ? ONLY_ONE_PORTAL : t->firstPor == t->lastPor)
-      return altTab()->curPor->frame;
+	if (!t ? ONLY_ONE_PORTAL : t->firstPor == t->lastPor)
+		return altTab()->curPor->frame;
 
-   Frame* fr = port->frame;
+	Frame* fr = port->frame;
 
-   if (!fr->prev)
-      return fr->next;
-   if (!fr->next)
-      return fr->prev;
+	if (!fr->prev)
+		return fr->next;
+	if (!fr->next)
+		return fr->prev;
 
-   //By default the next portal will get the space that was abandoned by this portal
-   Frame* target_fr = fr->next;
-   Frame* other_fr  = fr->prev;
+	//By default the next portal will get the space that was abandoned by this portal
+	Frame* target_fr = fr->next;
+	Frame* other_fr  = fr->prev;
 
-   //If this is part of a column of portals and 'splitbelow' is true then the
-   //previous portal will get the space.
-   if (fr->parent && fr->parent->layout == FR_COL && p_sb) {
-      target_fr = fr->prev;
-      other_fr  = fr->next;
-   }
+	//If this is part of a column of portals and 'splitbelow' is true then the
+	//previous portal will get the space.
+	if (fr->parent && fr->parent->layout == FR_COL && p_sb) {
+		target_fr = fr->prev;
+		other_fr  = fr->next;
+	}
 
-   //If this is part of a row of portals, and 'splitright' is true then the
-   //previous portal will get the space.
-   if (fr->parent && fr->parent->layout == FR_ROW && p_spr) {
-      target_fr = fr->prev;
-      other_fr  = fr->next;
-   }
+	//If this is part of a row of portals, and 'splitright' is true then the
+	//previous portal will get the space.
+	if (fr->parent && fr->parent->layout == FR_ROW && p_spr) {
+		target_fr = fr->prev;
+		other_fr  = fr->next;
+	}
 
-   //If 'wfh' or 'wfw' is set for the target and not for the alternate
-   //portal, reverse the selection.
-   if (fr->parent != NULL && fr->parent->layout == FR_ROW) {
-      if (frame_fixed_width(target_fr) && !frame_fixed_width(other_fr))
-          target_fr = other_fr;
-   } else {
-      if (frame_fixed_height(target_fr) && !frame_fixed_height(other_fr))
-          target_fr = other_fr;
-   }
+	//If 'wfh' or 'wfw' is set for the target and not for the alternate
+	//portal, reverse the selection.
+	if (fr->parent != NULL && fr->parent->layout == FR_ROW) {
+		if (frame_fixed_width(target_fr) && !frame_fixed_width(other_fr))
+			 target_fr = other_fr;
+	} else {
+		if (frame_fixed_height(target_fr) && !frame_fixed_height(other_fr))
+			 target_fr = other_fr;
+	}
 
-   return target_fr;
+	return target_fr;
 }
 
 //Return the tab that will be used if the current one is closed.
 private Tab *
 altTab(void) {
-   //Use the last accessed tab, if possible.
-   if (p_tcl == TCL_USELAST && isTabValid(lastUsedTabG))
-      return lastUsedTabG;
+	//Use the last accessed tab, if possible.
+	if (p_tcl == TCL_USELAST && isTabValid(lastUsedTabG))
+		return lastUsedTabG;
 
-   //Use the next tab, if possible.
-   Boole forward = curtab->next != NULL && (p_tcl != TCL_LEFT || curtab == firstTabG);
+	//Use the next tab, if possible.
+	Boole forward = curtab->next != NULL && (p_tcl != TCL_LEFT || curtab == firstTabG);
 
-   Tab* t = NULL;
-   if (forward)
-      t = curtab->next;
-   else {
-      //Use the previous tab
-      for (t = firstTabG; t->next != curtab; t = t->next)
-          ;
-   }
+	Tab* t = NULL;
+	if (forward)
+		t = curtab->next;
+	else {
+		//Use the previous tab
+		for (t = firstTabG; t->next != curtab; t = t->next)
+			 ;
+	}
 
-   return t;
+	return t;
 }
 
 //Find the left-upper portal in frame "fr".
 private Portal*
 frameToPort(Frame *fr) {
-   while (!fr->port)
-      fr = fr->child;
-   return fr->port;
+	while (!fr->port)
+		fr = fr->child;
+	return fr->port;
 }
 
 //Return true if frame "fr" contains portal "po".
 private int
 frameHasPortal(Frame* fr, Portal* po) {
-   if (fr->layout == FR_LEAF)
-      return fr->port == po;
+	if (fr->layout == FR_LEAF)
+		return fr->port == po;
 
-   Frame* p;
-   FOR_ALL_FRAMES(p, fr->child) {
-      if (frameHasPortal(p, po))
-         return true;
-   }
-   return false;
+	Frame* p;
+	FOR_ALL_FRAMES(p, fr->child) {
+		if (frameHasPortal(p, po))
+			return true;
+	}
+	return false;
 }
 
 //@commheight value explicitly set by the user: portal commands are allowed to
@@ -3417,289 +3417,289 @@ private int min_set_ch = 1;
 //frames and portals.  Caller must take care of positions.
 private void
 frame_new_height(
-   Frame* topFr,
-   int height,
-   Boole topfirst,   //resize topmost contained frame first
-   Boole wfh,  //obey @portfixheight when there is a choice; may cause the height not to be set
-   Boole set_ch      //set @commheight to resize topframe
+	Frame* topFr,
+	int height,
+	Boole topfirst,   //resize topmost contained frame first
+	Boole wfh,  //obey @portfixheight when there is a choice; may cause the height not to be set
+	Boole set_ch      //set @commheight to resize topframe
 ){
-   Frame* fr;
+	Frame* fr;
 
-   if (!topFr->parent && set_ch) {
-      //topframe: update the command line height, with side effects.
-      int new_ch = MAX(min_set_ch, commlineHeightG + topFr->height - height);
-      int save_ch = min_set_ch;
-      if (new_ch != commlineHeightG)
-         optSetByName(S"commheight", (OptionValue){.tag = OPTION_NUM, .num = new_ch}, SET_LOCAL);
-      min_set_ch = save_ch;
-      height = MIN(height, ROWS_AVAIL);
-   }
-   if (topFr->port) {
-      //Simple case: just one portal.
-      portalNewHeight(topFr->port, height - STATUS_HEIGHT);
-   } ei (topFr->layout == FR_ROW) {
-      do {
-         //All frames in this row get the same new height.
-         FOR_ALL_FRAMES(fr, topFr->child) {
-            frame_new_height(fr, height, topfirst, wfh, set_ch);
-            if ((int)fr->height > height) {
-               //Could not fit the portals, make the whole row higher.
-               height = fr->height;
-               break;
-            }
-         }
-      } while (fr);
-   } else {   //layout == FR_COL
-      //Complicated case: Resize a column of frames.  Resize the bottom
-      //frame first, frames above that when needed.
+	if (!topFr->parent && set_ch) {
+		//topframe: update the command line height, with side effects.
+		int new_ch = MAX(min_set_ch, commlineHeightG + topFr->height - height);
+		int save_ch = min_set_ch;
+		if (new_ch != commlineHeightG)
+			optSetByName(S"commheight", (OptionValue){.tag = OPTION_NUM, .num = new_ch}, SET_LOCAL);
+		min_set_ch = save_ch;
+		height = MIN(height, ROWS_AVAIL);
+	}
+	if (topFr->port) {
+		//Simple case: just one portal.
+		portalNewHeight(topFr->port, height - STATUS_HEIGHT);
+	} ei (topFr->layout == FR_ROW) {
+		do {
+			//All frames in this row get the same new height.
+			FOR_ALL_FRAMES(fr, topFr->child) {
+				frame_new_height(fr, height, topfirst, wfh, set_ch);
+				if ((int)fr->height > height) {
+					//Could not fit the portals, make the whole row higher.
+					height = fr->height;
+					break;
+				}
+			}
+		} while (fr);
+	} else {   //layout == FR_COL
+		//Complicated case: Resize a column of frames.  Resize the bottom
+		//frame first, frames above that when needed.
 
-      fr = topFr->child;
-      if (wfh)
-         //Advance past frames with one portal with 'wfh' set.
-         while (frame_fixed_height(fr)) {
-            fr = fr->next;
-            if (!fr)
-               return;       //no frame without 'wfh', give up
-         }
-      if (!topfirst) {
-         //Find the bottom frame of this column
-         while (fr->next)
-            fr = fr->next;
-         if (wfh)
-         //Advance back for frames with one portal with 'wfh' set.
-         while (frame_fixed_height(fr))
-             fr = fr->prev;
-      }
+		fr = topFr->child;
+		if (wfh)
+			//Advance past frames with one portal with 'wfh' set.
+			while (frame_fixed_height(fr)) {
+				fr = fr->next;
+				if (!fr)
+					return;       //no frame without 'wfh', give up
+			}
+		if (!topfirst) {
+			//Find the bottom frame of this column
+			while (fr->next)
+				fr = fr->next;
+			if (wfh)
+			//Advance back for frames with one portal with 'wfh' set.
+			while (frame_fixed_height(fr))
+				 fr = fr->prev;
+		}
 
-      int extra_lines = height - topFr->height;
-      if (extra_lines < 0) {
-         //reduce height of contained frames, bottom or top frame first
-         while (fr) {
-            int h = frame_minheight(fr, NULL);
-            if ((int)fr->height + extra_lines < h) {
-               extra_lines += fr->height - h;
-               frame_new_height(fr, h, topfirst, wfh, set_ch);
-            } else {
-               frame_new_height(fr, fr->height + extra_lines, topfirst, wfh, set_ch);
-               break;
-            }
-            if (topfirst) {
-               do {
-                  fr = fr->next;
-               } while (wfh && fr && frame_fixed_height(fr));
-            } else {
-               do
-                  fr = fr->prev;
-               while (wfh && fr && frame_fixed_height(fr));
-            }
-            //Increase "height" if we could not reduce enough frames.
-            if (!fr)
-                height -= extra_lines;
-         }
-      } ei (extra_lines > 0) {
-          //increase height of bottom or top frame
-          frame_new_height(fr, fr->height + extra_lines, topfirst, wfh, set_ch);
-      }
-   }
-   topFr->height = height;
+		int extra_lines = height - topFr->height;
+		if (extra_lines < 0) {
+			//reduce height of contained frames, bottom or top frame first
+			while (fr) {
+				int h = frame_minheight(fr, NULL);
+				if ((int)fr->height + extra_lines < h) {
+					extra_lines += fr->height - h;
+					frame_new_height(fr, h, topfirst, wfh, set_ch);
+				} else {
+					frame_new_height(fr, fr->height + extra_lines, topfirst, wfh, set_ch);
+					break;
+				}
+				if (topfirst) {
+					do {
+						fr = fr->next;
+					} while (wfh && fr && frame_fixed_height(fr));
+				} else {
+					do
+						fr = fr->prev;
+					while (wfh && fr && frame_fixed_height(fr));
+				}
+				//Increase "height" if we could not reduce enough frames.
+				if (!fr)
+					 height -= extra_lines;
+			}
+		} ei (extra_lines > 0) {
+			 //increase height of bottom or top frame
+			 frame_new_height(fr, fr->height + extra_lines, topfirst, wfh, set_ch);
+		}
+	}
+	topFr->height = height;
 }
 
 //Return true if height of frame "fr" should not be changed because of the 'portfixheight' option.
 private int
 frame_fixed_height(Frame* fr) {
-   //frame with one portal: fixed height if 'portfixheight' set.
-   if (fr->port)
-      return fr->port->o.portFixHeight;
+	//frame with one portal: fixed height if 'portfixheight' set.
+	if (fr->port)
+		return fr->port->o.portFixHeight;
 
-   if (fr->layout == FR_ROW) {
-      //The frame is fixed height if one of the frames in the row is fixed height.
-      FOR_ALL_FRAMES(fr, fr->child) {
-         if (frame_fixed_height(fr))
-            return true;
-      }
-      return false;
-   }
+	if (fr->layout == FR_ROW) {
+		//The frame is fixed height if one of the frames in the row is fixed height.
+		FOR_ALL_FRAMES(fr, fr->child) {
+			if (frame_fixed_height(fr))
+				return true;
+		}
+		return false;
+	}
 
-   //fr->layout == FR_COL: The frame is fixed height if all of the
-   //frames in the row are fixed height.
-   FOR_ALL_FRAMES(fr, fr->child) {
-      if (!frame_fixed_height(fr))
-          return false;
-   }
-   return true;
+	//fr->layout == FR_COL: The frame is fixed height if all of the
+	//frames in the row are fixed height.
+	FOR_ALL_FRAMES(fr, fr->child) {
+		if (!frame_fixed_height(fr))
+			 return false;
+	}
+	return true;
 }
 
 //Return true if width of frame "fr" should not be changed because of the 'portfixwidth' option
 private int
 frame_fixed_width(Frame* fr) {
-   //frame with one portal: fixed width if 'portfixwidth' set.
-   if (fr->port)
-      return fr->port->o.portFixWidth;
+	//frame with one portal: fixed width if 'portfixwidth' set.
+	if (fr->port)
+		return fr->port->o.portFixWidth;
 
-   if (fr->layout == FR_COL) {
-      //The frame is fixed width if one of the frames in the row is fixed width.
-      FOR_ALL_FRAMES(fr, fr->child) {
-         if (frame_fixed_width(fr))
-            return true;
-      }
-      return false;
-   }
+	if (fr->layout == FR_COL) {
+		//The frame is fixed width if one of the frames in the row is fixed width.
+		FOR_ALL_FRAMES(fr, fr->child) {
+			if (frame_fixed_width(fr))
+				return true;
+		}
+		return false;
+	}
 
-   //fr->layout == FR_ROW: The frame is fixed width if all of the
-   //frames in the row are fixed width.
-   FOR_ALL_FRAMES(fr, fr->child) {
-      if (!frame_fixed_width(fr))
-          return false;
-   }
-   return true;
+	//fr->layout == FR_ROW: The frame is fixed width if all of the
+	//frames in the row are fixed width.
+	FOR_ALL_FRAMES(fr, fr->child) {
+		if (!frame_fixed_width(fr))
+			 return false;
+	}
+	return true;
 }
 
 //Add a status line to portals at the bottom of "fr". Note: Does not check if there is room!
 private void
 frame_add_statusline(Frame* fr) {
 
-   if (fr->layout == FR_LEAF) {
-   } ei (fr->layout == FR_ROW) {
-      //Handle all the frames in the row.
-      FOR_ALL_FRAMES(fr, fr->child)
-         frame_add_statusline(fr);
-   } else { //fr->layout == FR_COL
-      //Only need to handle the last frame in the column.
-      for (fr = fr->child; fr->next; fr = fr->next)
-          ;
-      frame_add_statusline(fr);
-   }
+	if (fr->layout == FR_LEAF) {
+	} ei (fr->layout == FR_ROW) {
+		//Handle all the frames in the row.
+		FOR_ALL_FRAMES(fr, fr->child)
+			frame_add_statusline(fr);
+	} else { //fr->layout == FR_COL
+		//Only need to handle the last frame in the column.
+		for (fr = fr->child; fr->next; fr = fr->next)
+			 ;
+		frame_add_statusline(fr);
+	}
 }
 
 //Set width of a frame.  Handles recursively going through contained frames.
 //May remove separator line for portals at the right side (for closePortal()).
 private void
 frameNewWidth(
-   Frame   *topFr,
-   int      width,
-   int      leftfirst,   //resize leftmost contained frame first
-   int      wfw      //obey 'portfixwidth' when there is a choice;
-            //may cause the width not to be set
+	Frame   *topFr,
+	int      width,
+	int      leftfirst,   //resize leftmost contained frame first
+	int      wfw      //obey 'portfixwidth' when there is a choice;
+				//may cause the width not to be set
 ){
-   Frame* fr;
-   int w;
-   Portal* po;
+	Frame* fr;
+	int w;
+	Portal* po;
 
-   if (topFr->layout == FR_LEAF) {
-      //Simple case: just one portal.
-      po = topFr->port;
-      //Find out if there are any portals right of this one.
-      for (fr = topFr; fr->parent; fr = fr->parent) {
-         if (fr->parent->layout == FR_ROW && fr->next != NULL)
-            break;
-      }
-      if (!fr->parent)
-         po->vsepWidth = 0;
-      portalNewWidth(po, width - po->vsepWidth);
-   } ei (topFr->layout == FR_COL) {
-      do {
-         //All frames in this column get the same new width.
-         FOR_ALL_FRAMES(fr, topFr->child) {
-            frameNewWidth(fr, width, leftfirst, wfw);
-            if ((int)fr->width > width) {
-               //Could not fit the portals, make whole column wider.
-               width = fr->width;
-               break;
-            }
-         }
-      } while (fr);
-   } else {   //layout == FR_ROW
-      //Complicated case: Resize a row of frames.  Resize the rightmost
-      //frame first, frames left of it when needed.
+	if (topFr->layout == FR_LEAF) {
+		//Simple case: just one portal.
+		po = topFr->port;
+		//Find out if there are any portals right of this one.
+		for (fr = topFr; fr->parent; fr = fr->parent) {
+			if (fr->parent->layout == FR_ROW && fr->next != NULL)
+				break;
+		}
+		if (!fr->parent)
+			po->vsepWidth = 0;
+		portalNewWidth(po, width - po->vsepWidth);
+	} ei (topFr->layout == FR_COL) {
+		do {
+			//All frames in this column get the same new width.
+			FOR_ALL_FRAMES(fr, topFr->child) {
+				frameNewWidth(fr, width, leftfirst, wfw);
+				if ((int)fr->width > width) {
+					//Could not fit the portals, make whole column wider.
+					width = fr->width;
+					break;
+				}
+			}
+		} while (fr);
+	} else {   //layout == FR_ROW
+		//Complicated case: Resize a row of frames.  Resize the rightmost
+		//frame first, frames left of it when needed.
 
-      fr = topFr->child;
-      if (wfw)
-         //Advance past frames with one portal with 'wfw' set.
-         while (frame_fixed_width(fr)) {
-            fr = fr->next;
-            if (!fr)
-               return;       //no frame without 'wfw', give up
-         }
-      if (!leftfirst) {
-         //Find the rightmost frame of this row
-         while (fr->next)
-            fr = fr->next;
-         if (wfw) {
-            //Advance back for frames with one portal with 'wfw' set.
-            while (frame_fixed_width(fr))
-                fr = fr->prev;
-         }
-      }
+		fr = topFr->child;
+		if (wfw)
+			//Advance past frames with one portal with 'wfw' set.
+			while (frame_fixed_width(fr)) {
+				fr = fr->next;
+				if (!fr)
+					return;       //no frame without 'wfw', give up
+			}
+		if (!leftfirst) {
+			//Find the rightmost frame of this row
+			while (fr->next)
+				fr = fr->next;
+			if (wfw) {
+				//Advance back for frames with one portal with 'wfw' set.
+				while (frame_fixed_width(fr))
+					 fr = fr->prev;
+			}
+		}
 
-      int extra_cols = width - topFr->width;
-      if (extra_cols < 0) {
-          //reduce frame width, rightmost frame first
-          while (fr != NULL) {
-         w = frame_minwidth(fr, NULL);
-         if ((int)fr->width + extra_cols < w) {
-             extra_cols += fr->width - w;
-             frameNewWidth(fr, w, leftfirst, wfw);
-         } else {
-             frameNewWidth(fr, fr->width + extra_cols, leftfirst, wfw);
-             break;
-         }
-         if (leftfirst) {
-            do {
-               fr = fr->next;
-            } while (wfw && fr && frame_fixed_width(fr));
-         } else {
-            do {
-               fr = fr->prev;
-            } while (wfw && fr && frame_fixed_width(fr));
-         }
-         //Increase "width" if we could not reduce enough frames.
-         if (!fr)
-            width -= extra_cols;
-         }
-      } ei (extra_cols > 0) {
-         //increase width of rightmost frame
-         frameNewWidth(fr, fr->width + extra_cols, leftfirst, wfw);
-      }
-   }
-   topFr->width = width;
+		int extra_cols = width - topFr->width;
+		if (extra_cols < 0) {
+			 //reduce frame width, rightmost frame first
+			 while (fr != NULL) {
+			w = frame_minwidth(fr, NULL);
+			if ((int)fr->width + extra_cols < w) {
+				 extra_cols += fr->width - w;
+				 frameNewWidth(fr, w, leftfirst, wfw);
+			} else {
+				 frameNewWidth(fr, fr->width + extra_cols, leftfirst, wfw);
+				 break;
+			}
+			if (leftfirst) {
+				do {
+					fr = fr->next;
+				} while (wfw && fr && frame_fixed_width(fr));
+			} else {
+				do {
+					fr = fr->prev;
+				} while (wfw && fr && frame_fixed_width(fr));
+			}
+			//Increase "width" if we could not reduce enough frames.
+			if (!fr)
+				width -= extra_cols;
+			}
+		} ei (extra_cols > 0) {
+			//increase width of rightmost frame
+			frameNewWidth(fr, fr->width + extra_cols, leftfirst, wfw);
+		}
+	}
+	topFr->width = width;
 }
 
 //Add the vertical separator to portals at the right side of "fr".
 //Note: Does not check if there is room!
 private void
 frame_add_vsep(Frame* fr) {
-   Portal* po;
+	Portal* po;
 
-   if (fr->layout == FR_LEAF) {
-      po = fr->port;
-      if (po->vsepWidth == 0) {
-         if (po->width > 0)   //don't make it negative
-            --po->width;
-         po->vsepWidth = 1;
-      }
-   } ei (fr->layout == FR_COL) {
-      //Handle all the frames in the column.
-      FOR_ALL_FRAMES(fr, fr->child)
-         frame_add_vsep(fr);
-   } else {//fr->layout == FR_ROW
-      //Only need to handle the last frame in the row.
-      fr = fr->child;
-      while (fr->next)
-         fr = fr->next;
-      frame_add_vsep(fr);
-   }
+	if (fr->layout == FR_LEAF) {
+		po = fr->port;
+		if (po->vsepWidth == 0) {
+			if (po->width > 0)   //don't make it negative
+				--po->width;
+			po->vsepWidth = 1;
+		}
+	} ei (fr->layout == FR_COL) {
+		//Handle all the frames in the column.
+		FOR_ALL_FRAMES(fr, fr->child)
+			frame_add_vsep(fr);
+	} else {//fr->layout == FR_ROW
+		//Only need to handle the last frame in the row.
+		fr = fr->child;
+		while (fr->next)
+			fr = fr->next;
+		frame_add_vsep(fr);
+	}
 }
 
 //Set frame width from the portal it contains.
 private void
 frame_fix_width(Portal* po) {
-   po->frame->width = po->width + po->vsepWidth;
+	po->frame->width = po->width + po->vsepWidth;
 }
 
 //Set frame height from the portal it contains.
 private void
 frame_fix_height(Portal* po) {
-   po->frame->height = VISIBLE_HEIGHT(po) + STATUS_HEIGHT;
+	po->frame->height = VISIBLE_HEIGHT(po) + STATUS_HEIGHT;
 }
 
 //Compute the minimal height for frame "topFr".
@@ -3707,33 +3707,33 @@ frame_fix_height(Portal* po) {
 //When "next_curPor" is NOPORT, don't use at least one line for the current portal.
 private Unt
 frame_minheight(Frame* topFr, Portal* next_curPor) {
-   Frame* fr;
-   Unt m;
-   Unt n;
+	Frame* fr;
+	Unt m;
+	Unt n;
 
-   if (topFr->port) {
-      if (topFr->port == next_curPor)
-         m = p_wh + STATUS_HEIGHT;
-      else {
-         //portal: minimal height of the portal plus status line
-         m = MIN_PORTAL_HEIGHT + STATUS_HEIGHT;
-      }
-   } ei (topFr->layout == FR_ROW) {
-      //get the minimal height from each frame in this row
-      m = 0;
-      FOR_ALL_FRAMES(fr, topFr->child) {
-         n = frame_minheight(fr, next_curPor);
-         if (n > m)
-            m = n;
-      }
-   } else {
-      //Add up the minimal heights for all frames in this column.
-      m = 0;
-      FOR_ALL_FRAMES(fr, topFr->child)
-         m += frame_minheight(fr, next_curPor);
-   }
+	if (topFr->port) {
+		if (topFr->port == next_curPor)
+			m = p_wh + STATUS_HEIGHT;
+		else {
+			//portal: minimal height of the portal plus status line
+			m = MIN_PORTAL_HEIGHT + STATUS_HEIGHT;
+		}
+	} ei (topFr->layout == FR_ROW) {
+		//get the minimal height from each frame in this row
+		m = 0;
+		FOR_ALL_FRAMES(fr, topFr->child) {
+			n = frame_minheight(fr, next_curPor);
+			if (n > m)
+				m = n;
+		}
+	} else {
+		//Add up the minimal heights for all frames in this column.
+		m = 0;
+		FOR_ALL_FRAMES(fr, topFr->child)
+			m += frame_minheight(fr, next_curPor);
+	}
 
-   return m;
+	return m;
 }
 
 //Compute the minimal width for frame "topFr".
@@ -3741,35 +3741,35 @@ frame_minheight(Frame* topFr, Portal* next_curPor) {
 //When "next_curPor" is NOPORT, don't use at least one column for the current portal.
 private int
 frame_minwidth(Frame* topFr, Portal* next_curPor) {   //use p_wh and p_wiw for next_curPor
-   Frame* fr;
-   int m, n;
+	Frame* fr;
+	int m, n;
 
-   if (topFr->port) {
-      if (topFr->port == next_curPor)
-         m = p_wiw + topFr->port->vsepWidth;
-      else {
-         //portal: minimal width of the portal plus separator column
-         m = MIN_PORTAL_WIDTH + topFr->port->vsepWidth;
-         //Current portal is minimal one column wide
-         if (MIN_PORTAL_WIDTH == 0 && topFr->port == curPor && next_curPor == NULL)
-            ++m;
-      }
-   } ei (topFr->layout == FR_COL) {
-      //get the minimal width from each frame in this column
-      m = 0;
-      FOR_ALL_FRAMES(fr, topFr->child) {
-         n = frame_minwidth(fr, next_curPor);
-         if (n > m)
-            m = n;
-      }
-   } else {
-      //Add up the minimal widths for all frames in this row.
-      m = 0;
-      FOR_ALL_FRAMES(fr, topFr->child)
-         m += frame_minwidth(fr, next_curPor);
-   }
+	if (topFr->port) {
+		if (topFr->port == next_curPor)
+			m = p_wiw + topFr->port->vsepWidth;
+		else {
+			//portal: minimal width of the portal plus separator column
+			m = MIN_PORTAL_WIDTH + topFr->port->vsepWidth;
+			//Current portal is minimal one column wide
+			if (MIN_PORTAL_WIDTH == 0 && topFr->port == curPor && next_curPor == NULL)
+				++m;
+		}
+	} ei (topFr->layout == FR_COL) {
+		//get the minimal width from each frame in this column
+		m = 0;
+		FOR_ALL_FRAMES(fr, topFr->child) {
+			n = frame_minwidth(fr, next_curPor);
+			if (n > m)
+				m = n;
+		}
+	} else {
+		//Add up the minimal widths for all frames in this row.
+		m = 0;
+		FOR_ALL_FRAMES(fr, topFr->child)
+			m += frame_minwidth(fr, next_curPor);
+	}
 
-   return m;
+	return m;
 }
 
 //Try to close all portals except current one.
@@ -3779,43 +3779,43 @@ frame_minwidth(Frame* topFr, Portal* next_curPor) {   //use p_wh and p_wiw for n
 //Used by ":bdel" and ":only".
 pub void
 portCloseOthers(Boole message) {
-   if (onePortal()) {
-      if (message && !autocmd_busy)
-          msg(_(m_onlyone));
-      return;
-   }
+	if (onePortal()) {
+		if (message && !autocmd_busy)
+			 msg(_(m_onlyone));
+		return;
+	}
 
-   //Be very careful here: autocommands may change the portal layout.
-   Portal* nextwp;
-   for (Portal* po = firstPor; portalIsValid(po); po = nextwp) {
-      nextwp = po->next;
-      if (po == curPor)      //don't close current portal
-          continue;
+	//Be very careful here: autocommands may change the portal layout.
+	Portal* nextwp;
+	for (Portal* po = firstPor; portalIsValid(po); po = nextwp) {
+		nextwp = po->next;
+		if (po == curPor)      //don't close current portal
+			 continue;
 
-      //autoccommands messed this one up
-      if (!bookIsValid(po->book) && portalIsValid(po)) {
-          po->book = NULL;
-          closePortal(po, 0);
-          continue;
-      }
-      if (!portalIsValid(po)) {    //autocommands messed po up
-          nextwp = firstPor;
-          continue;
-      }
-      closePortal(po, false);
-   }
+		//autoccommands messed this one up
+		if (!bookIsValid(po->book) && portalIsValid(po)) {
+			 po->book = NULL;
+			 closePortal(po, 0);
+			 continue;
+		}
+		if (!portalIsValid(po)) {    //autocommands messed po up
+			 nextwp = firstPor;
+			 continue;
+		}
+		closePortal(po, false);
+	}
 
-   if (message && !ONLY_ONE_PORTAL)
-      emsg(_(e_other_portal_contains_changes));
+	if (message && !ONLY_ONE_PORTAL)
+		emsg(_(e_other_portal_contains_changes));
 }
 
 //Store the relevant portal pointers for tab "t".  To be used before loadTab().
 pub void
 unloadTab(Tab *t) {
-   t->topframe = topframeG;
-   t->firstPor = firstPor;
-   t->lastPor = lastPor;
-   t->curPor = curPor;
+	t->topframe = topframeG;
+	t->firstPor = firstPor;
+	t->lastPor = lastPor;
+	t->curPor = curPor;
 }
 
 //When switching tabpage, handle other side-effects in command_height(), but
@@ -3825,24 +3825,24 @@ private int command_frame_height = true;
 //Set the relevant pointers to use tab "t".  May want to call unloadTab() first.
 pub void
 loadTab(Tab* t) {
-   curtab = t;
-   topframeG = curtab->topframe;
-   firstPor = curtab->firstPor;
-   lastPor = curtab->lastPor;
-   curPor = curtab->curPor;
+	curtab = t;
+	topframeG = curtab->topframe;
+	firstPor = curtab->firstPor;
+	lastPor = curtab->lastPor;
+	curPor = curtab->curPor;
 }
 
 //Allocate the first portal and put an empty book in it. Called from main().
 //Return FAIL when something goes wrong (out of memory).
 pub int
 portAllocFirst(void) {
-   allocateFirstPortal(NULL);
-   firstTabG = alloc_tab();
+	allocateFirstPortal(NULL);
+	firstTabG = alloc_tab();
 
-   curtab = firstTabG;
-   unloadTab(firstTabG);
+	curtab = firstTabG;
+	unloadTab(firstTabG);
 
-   return OK;
+	return OK;
 }
 
 //Allocate and init a portal that is not a regular portal.
@@ -3850,27 +3850,27 @@ portAllocFirst(void) {
 //can't be in portAllocFirst().
 pub Portal *
 portAllocPopup(void) {
-   Portal* po = allocPortal(NULL, true);
-   if (!po)
-      return NULL;
+	Portal* po = allocPortal(NULL, true);
+	if (!po)
+		return NULL;
 
-   //We need to initialize options with something, using the current portal makes most sense.
-   initg_some(po, curPor);
+	//We need to initialize options with something, using the current portal makes most sense.
+	initg_some(po, curPor);
 
-   po->o.diff = false;
-   neframe(po);
-   return po;
+	po->o.diff = false;
+	neframe(po);
+	return po;
 }
 
 //Initialize portal "po" to display book "book".
 pub void
 initPopupPortal(Portal* po, Book* book) {
-   po->book = book;
-   ++book->countPortals;
-   initEmptyPortal(po); //set cursor and topline to safe values
+	po->book = book;
+	++book->countPortals;
+	initEmptyPortal(po); //set cursor and topline to safe values
 
-   //Make sure localDir is NULL to avoid a chdir() in enterPortalWorker().
-   EE_CLEAR(po->localDir);
+	//Make sure localDir is NULL to avoid a chdir() in enterPortalWorker().
+	EE_CLEAR(po->localDir);
 }
 
 //Allocate the first portal or the first portal in a new tab.
@@ -3879,94 +3879,94 @@ initPopupPortal(Portal* po, Book* book) {
 //Return FAIL when something goes wrong (out of memory).
 private int
 allocateFirstPortal(Portal* oldPortal) {
-   curPor = allocPortal(NULL, false);
-   if (!curPor)
-      return FAIL;
-   if (!oldPortal) {
-      //Very first portal, need to create an empty book for it and
-      //initialize from scratch.
-      curBook = bookNew(NULL, NULL, 1L, BLN_LISTED);
-      if (!curPor || !curBook)
-          return FAIL;
-      curPor->book = curBook;
-      curPor->ownSyntax = &(curBook->syntax);
-      curBook->countPortals = 1;   //there is one portal
-      curPor->argList = &argListG;
-      curPor_init();      //init current portal
-   } else {
-      //First portal in new tab, initialize it from "oldPortal".
-      init(curPor, oldPortal, 0);
+	curPor = allocPortal(NULL, false);
+	if (!curPor)
+		return FAIL;
+	if (!oldPortal) {
+		//Very first portal, need to create an empty book for it and
+		//initialize from scratch.
+		curBook = bookNew(NULL, NULL, 1L, BLN_LISTED);
+		if (!curPor || !curBook)
+			 return FAIL;
+		curPor->book = curBook;
+		curPor->ownSyntax = &(curBook->syntax);
+		curBook->countPortals = 1;   //there is one portal
+		curPor->argList = &argListG;
+		curPor_init();      //init current portal
+	} else {
+		//First portal in new tab, initialize it from "oldPortal".
+		init(curPor, oldPortal, 0);
 
-      //We don't want cursor- and scroll-binding in the first portal.
-      curPor->o.diff = false;
-   }
+		//We don't want cursor- and scroll-binding in the first portal.
+		curPor->o.diff = false;
+	}
 
-   neframe(curPor);
-   if (!curPor->frame)
-      return FAIL;
-   topframeG = curPor->frame;
-   topframeG->width = COLUMNS_WITHOUT_TPL();
-   topframeG->height = visibleRowsG - commlineHeightG;
+	neframe(curPor);
+	if (!curPor->frame)
+		return FAIL;
+	topframeG = curPor->frame;
+	topframeG->width = COLUMNS_WITHOUT_TPL();
+	topframeG->height = visibleRowsG - commlineHeightG;
 
-   return OK;
+	return OK;
 }
 
 //Create a frame for portal "po".
 private void
 neframe(Portal* po) {
-   Frame *fr = ALLOC_CLEAR_ONE(Frame);
-   fr->layout = FR_LEAF;
-   fr->port = po;
-   po->frame = fr;
+	Frame *fr = ALLOC_CLEAR_ONE(Frame);
+	fr->layout = FR_LEAF;
+	fr->port = po;
+	po->frame = fr;
 }
 
 //Initialize the portal and frame size to the maximum.
 pub void
 portalInitSize(void) {
-   firstPor->height = ROWS_AVAIL;
-   firstPor->prevHeight = ROWS_AVAIL;
-   topframeG->height = ROWS_AVAIL;
-   firstPor->width = topframeG->width;
+	firstPor->height = ROWS_AVAIL;
+	firstPor->prevHeight = ROWS_AVAIL;
+	topframeG->height = ROWS_AVAIL;
+	firstPor->width = topframeG->width;
 }
 
 //Allocate a new Tab and init the values. Return NULL when out of memory.
 private Tab *
 alloc_tab(void) {
-   Tab* t = ALLOC_CLEAR_ONE(Tab);
+	Tab* t = ALLOC_CLEAR_ONE(Tab);
 
-   //init t: variables
-   t->vars = allocBag_id(aid_newtabpage_tvars);
-   if (t->vars == NULL) {
-      eeglFree(t);
-      return NULL;
-   }
-   init_var_dict(t->vars, &t->tabVar, VAR_SCOPE);
+	//init t: variables
+	t->vars = allocBag_id(aid_newtabpage_tvars);
+	if (t->vars == NULL) {
+		eeglFree(t);
+		return NULL;
+	}
+	init_var_dict(t->vars, &t->tabVar, VAR_SCOPE);
 
-   t->diff_invalid = true;
-   t->ch_used = commlineHeightG;
+	t->diff_invalid = true;
+	t->ch_used = commlineHeightG;
 
-   return t;
+	return t;
 }
 
 pub void
 freeTab(Tab *t) {
-   diff_clear(t);
-   while (t->firstPopupPort)
-      popupCloseTab(t, t->firstPopupPort->id, true);
-   for (int idx = 0; idx < SNAP_COUNT; ++idx)
-      clearSnapshot(t, idx);
-   vars_clear(&t->vars->hashTable);   //free all t: variables
-   hash_init(&t->vars->hashTable);
-   unref_var_dict(t->vars);
+	diff_clear(t);
+	while (t->firstPopupPort)
+		popupCloseTab(t, t->firstPopupPort->id, true);
+	for (int idx = 0; idx < SNAP_COUNT; ++idx)
+		clearSnapshot(t, idx);
+	vars_clear(&t->vars->hashTable);   //free all t: variables
+	hash_init(&t->vars->hashTable);
+	unref_var_dict(t->vars);
 
-   if (t == lastUsedTabG)
-      lastUsedTabG = NULL;
+	if (t == lastUsedTabG)
+		lastUsedTabG = NULL;
 
-   eeglFree(t->localdir);
-   eeglFree(t->prevdir);
+	eeglFree(t->localdir);
+	eeglFree(t->prevdir);
 
 
-   eeglFree(t);
+	eeglFree(t);
 }
 
 //Create a new Tab with one portal.
@@ -3976,186 +3976,186 @@ freeTab(Tab *t) {
 //cause dereferencing NULL pointers Return FAIL or OK.
 pub int
 portNewTab(int after) {
-   Tab   *t = curtab;
-   Tab   *prev_tp = curtab;
-   int      n;
-   int prev_columns = COLUMNS_WITHOUT_TPL();
+	Tab   *t = curtab;
+	Tab   *prev_tp = curtab;
+	int      n;
+	int prev_columns = COLUMNS_WITHOUT_TPL();
 
-   if (commPortTypeG != 0) {
-      emsg(_(e_invalid_in_commline_portal));
-      return FAIL;
-   }
-   if (portalLayout_locked(C_tabnew))
-      return FAIL;
+	if (commPortTypeG != 0) {
+		emsg(_(e_invalid_in_commline_portal));
+		return FAIL;
+	}
+	if (portalLayout_locked(C_tabnew))
+		return FAIL;
 
-   Tab* newTab = alloc_tab();
-   if (newTab == NULL)
-      return FAIL;
+	Tab* newTab = alloc_tab();
+	if (newTab == NULL)
+		return FAIL;
 
-   //Remember the current portals in this Tab
-   if (leaveTab(curBook, true) == FAIL) {
-      eeglFree(newTab);
-      return FAIL;
-   }
-   curtab = newTab;
+	//Remember the current portals in this Tab
+	if (leaveTab(curBook, true) == FAIL) {
+		eeglFree(newTab);
+		return FAIL;
+	}
+	curtab = newTab;
 
-   newTab->localdir = (t->localdir == NULL) ? NULL : copyStr(t->localdir);
+	newTab->localdir = (t->localdir == NULL) ? NULL : copyStr(t->localdir);
 
-   //Create a new empty portal.
-   if (allocateFirstPortal(t->curPor) == OK) {
-      //Make the new Tab the new topframe.
-      if (after == 1) {
-         //New tab becomes the first one.
-         newTab->next = firstTabG;
-         firstTabG = newTab;
-      } else {
-         if (after > 0) {
-            //Put new tab before tab "after".
-            n = 2;
-            for (t = firstTabG; t->next != NULL && n < after; t = t->next)
-               ++n;
-         }
-         newTab->next = t->next;
-         t->next = newTab;
-      }
-      newTab->firstPor = newTab->lastPor = newTab->curPor = curPor;
+	//Create a new empty portal.
+	if (allocateFirstPortal(t->curPor) == OK) {
+		//Make the new Tab the new topframe.
+		if (after == 1) {
+			//New tab becomes the first one.
+			newTab->next = firstTabG;
+			firstTabG = newTab;
+		} else {
+			if (after > 0) {
+				//Put new tab before tab "after".
+				n = 2;
+				for (t = firstTabG; t->next != NULL && n < after; t = t->next)
+					++n;
+			}
+			newTab->next = t->next;
+			t->next = newTab;
+		}
+		newTab->firstPor = newTab->lastPor = newTab->curPor = curPor;
 
-      portalInitSize();
-      firstPor->windowRow = 0;
-      firstPor->prevPortRow = firstPor->windowRow;
-      portComputeScroll(curPor);
+		portalInitSize();
+		firstPor->windowRow = 0;
+		firstPor->prevPortRow = firstPor->windowRow;
+		portComputeScroll(curPor);
 
-      newTab->topframe = topframeG;
-      last_status();
+		newTab->topframe = topframeG;
+		last_status();
 
-      lastUsedTabG = prev_tp;
+		lastUsedTabG = prev_tp;
 
-      enteringPortal(curPor);
-      if (prev_columns != COLUMNS_WITHOUT_TPL())
-          shell_new_columns();
-      redraw_all_later(UPD_NOT_VALID);
-      applyAutocomms(EVENT_PORTNEW, NULL, NULL, false, curBook);
-      applyAutocomms(EVENT_PORTENTER, NULL, NULL, false, curBook);
-      applyAutocomms(EVENT_TABNEW, NULL, NULL, false, curBook);
-      applyAutocomms(EVENT_TABENTER, NULL, NULL, false, curBook);
-      return OK;
-   }
+		enteringPortal(curPor);
+		if (prev_columns != COLUMNS_WITHOUT_TPL())
+			 shell_new_columns();
+		redraw_all_later(UPD_NOT_VALID);
+		applyAutocomms(EVENT_PORTNEW, NULL, NULL, false, curBook);
+		applyAutocomms(EVENT_PORTENTER, NULL, NULL, false, curBook);
+		applyAutocomms(EVENT_TABNEW, NULL, NULL, false, curBook);
+		applyAutocomms(EVENT_TABENTER, NULL, NULL, false, curBook);
+		return OK;
+	}
 
-   //Failed, get back the previous Tab
-   enterTab(curtab, curBook, true, true);
-   return FAIL;
+	//Failed, get back the previous Tab
+	enterTab(curtab, curBook, true, true);
+	return FAIL;
 }
 
 //Open a new tab if ":tab cmd" was used. Will edit the same buffer, like with ":split".
 //Return OK if a new tab was created, FAIL otherwise.
 private int
 mayOpenTab(void) {
-   int n = (commModifierG.cmod_tab == 0) ? postponed_split_tab : commModifierG.cmod_tab;
+	int n = (commModifierG.cmod_tab == 0) ? postponed_split_tab : commModifierG.cmod_tab;
 
-   if (n == 0)
-      return FAIL;
+	if (n == 0)
+		return FAIL;
 
-   commModifierG.cmod_tab = 0;       //reset it to avoid doing it twice
-   postponed_split_tab = 0;
-   return portNewTab(n);
+	commModifierG.cmod_tab = 0;       //reset it to avoid doing it twice
+	postponed_split_tab = 0;
+	return portNewTab(n);
 }
 
 //Create up to "maxcount" tabs with empty portals. Returns the number of resulting tabs
 pub int
 portMakeTabs(Unt maxcount) {
-   int count = maxcount;
-   int todo;
+	int count = maxcount;
+	int todo;
 
-   //Limit to 16 tabs.
-   if (count > 16)
-      count = 16;
+	//Limit to 16 tabs.
+	if (count > 16)
+		count = 16;
 
-   //Abstain from executing autocommands while creating the tabs. Must do that when opening
-   //portals into the books
-   block_autocmds();
+	//Abstain from executing autocommands while creating the tabs. Must do that when opening
+	//portals into the books
+	block_autocmds();
 
-   for (todo = count - 1; todo > 0; --todo) {
-      if (portNewTab(0) == FAIL)
-          break;
-   }
+	for (todo = count - 1; todo > 0; --todo) {
+		if (portNewTab(0) == FAIL)
+			 break;
+	}
 
-   unblock_autocmds();
+	unblock_autocmds();
 
-   //return actual number of tabs
-   return (count - todo);
+	//return actual number of tabs
+	return (count - todo);
 }
 
 //Return true when "tpc" points to a valid tab
 pub int
 isTabValid(Tab *tpc) {
-   Tab   *t;
-   FOR_ALL_TABS(t) {
-      if (t == tpc)
-         return true;
-   }
-   return false;
+	Tab   *t;
+	FOR_ALL_TABS(t) {
+		if (t == tpc)
+			return true;
+	}
+	return false;
 }
 
 //Return true when "tpc" points to a valid tab and at least one portal is valid.
 pub int
 areTabAndPortalValid(Tab *tpc) {
-   Tab* t;
-   Portal* po;
-   FOR_ALL_TABS(t) {
-      if (t == tpc) {
-         FOR_ALL_PORTALS_IN_TAB(t, po) {
-            if (doesPortalExistInAnyTab(po))
-               return true;
-         }
-         return false;
-      }
-   }
-   //shouldn't happen
-   return false;
+	Tab* t;
+	Portal* po;
+	FOR_ALL_TABS(t) {
+		if (t == tpc) {
+			FOR_ALL_PORTALS_IN_TAB(t, po) {
+				if (doesPortalExistInAnyTab(po))
+					return true;
+			}
+			return false;
+		}
+	}
+	//shouldn't happen
+	return false;
 }
 
 //Close "tab", assuming it has no portals in it. There must be another tab or this will crash.
 pub void
 closeTab(Tab *tab) {
-   if (p_tcl == TCL_USELAST && lastUsedTabG) {
-      gotoTab(lastUsedTabG, false, false);
-   } else {
-      Tab* prev;
-      if (tab == firstTabG) {
-         firstTabG = tab->next;
-         prev = firstTabG;
-      } else {
-         for (prev = firstTabG; prev && prev->next != tab; prev = prev->next)
-             ;
-         assert(prev != NULL);
-         prev->next = tab->next;
-      }
+	if (p_tcl == TCL_USELAST && lastUsedTabG) {
+		gotoTab(lastUsedTabG, false, false);
+	} else {
+		Tab* prev;
+		if (tab == firstTabG) {
+			firstTabG = tab->next;
+			prev = firstTabG;
+		} else {
+			for (prev = firstTabG; prev && prev->next != tab; prev = prev->next)
+				 ;
+			assert(prev != NULL);
+			prev->next = tab->next;
+		}
 
-      gotoTab(prev, false, false);
-   }
-   freeTab(tab);
+		gotoTab(prev, false, false);
+	}
+	freeTab(tab);
 }
 
 //Find tab "n" (first one is 1).  Returns NULL when not found.
 pub Tab *
 getTab(int n) {
-   if (n == 0)
-      return curtab;
+	if (n == 0)
+		return curtab;
 
-   int i = 1;
-   Tab* t;
-   for (t = firstTabG; t != NULL && i != n; t = t->next)
-      ++i;
-   return t;
+	int i = 1;
+	Tab* t;
+	for (t = firstTabG; t != NULL && i != n; t = t->next)
+		++i;
+	return t;
 }
 
 //Get index of tab "t". First one has index 1. When not found returns number of tabs plus one.
 pub Unt
 indexOfTab(Tab* needle) {
-   Unt      i = 1;
-   for (Tab* t = firstTabG; t && t != needle; t = t->next)
-      ++i;
-   return i;
+	Unt      i = 1;
+	for (Tab* t = firstTabG; t && t != needle; t = t->next)
+		++i;
+	return i;
 }
 
 //Prepare for leaving the current tab.
@@ -4163,36 +4163,36 @@ indexOfTab(Tab* needle) {
 //Careful: When OK is returned need to get a new tab very very soon!
 private int
 leaveTab(NULLABLE Book   *newCurBook, int      trigger_leave_autocmds) {
-   Tab   *t = curtab;
-   leavingPortal(curPor);
-   reset_VIsual_and_resel();   //stop Visual mode
-   if (trigger_leave_autocmds) {
-   if (newCurBook != curBook) {
-      applyAutocomms(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
-      if (curtab != t)
-         return FAIL;
-   }
-   applyAutocomms(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
-   if (curtab != t)
-      return FAIL;
-   applyAutocomms(EVENT_TABLEAVE, NULL, NULL, false, curBook);
-   if (curtab != t)
-      return FAIL;
-   }
+	Tab   *t = curtab;
+	leavingPortal(curPor);
+	reset_VIsual_and_resel();   //stop Visual mode
+	if (trigger_leave_autocmds) {
+	if (newCurBook != curBook) {
+		applyAutocomms(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
+		if (curtab != t)
+			return FAIL;
+	}
+	applyAutocomms(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
+	if (curtab != t)
+		return FAIL;
+	applyAutocomms(EVENT_TABLEAVE, NULL, NULL, false, curBook);
+	if (curtab != t)
+		return FAIL;
+	}
 
-   mouseResetDragPortal();
-   t->curPor = curPor;
-   t->prevPor = prevPor;
-   t->firstPor = firstPor;
-   t->lastPor = lastPor;
-   t->old_Rows = visibleRowsG;
-   if (t->old_Columns != -1) {
-      t->old_Columns = topframeG->width;
-      t->old_coloff = firstPor->windowCol;
-   }
-   firstPor = NULL;
-   lastPor = NULL;
-   return OK;
+	mouseResetDragPortal();
+	t->curPor = curPor;
+	t->prevPor = prevPor;
+	t->firstPor = firstPor;
+	t->lastPor = lastPor;
+	t->old_Rows = visibleRowsG;
+	if (t->old_Columns != -1) {
+		t->old_Columns = topframeG->width;
+		t->old_coloff = firstPor->windowCol;
+	}
+	firstPor = NULL;
+	lastPor = NULL;
+	return OK;
 }
 
 //Start using tab "t".
@@ -4201,112 +4201,112 @@ leaveTab(NULLABLE Book   *newCurBook, int      trigger_leave_autocmds) {
 //Only trigger *Leave autocommands when trigger_leave_autocmds is true.
 private void
 enterTab(Tab* t, Book* oldCurBuf, Boole trigger_enter_autocmds, Boole trigger_leave_autocmds) {
-   int old_off = t->firstPor->windowRow;
-   Portal* next_prevPor = t->prevPor;
-   Tab* last_tab = curtab;
+	int old_off = t->firstPor->windowRow;
+	Portal* next_prevPor = t->prevPor;
+	Tab* last_tab = curtab;
 
-   loadTab(t);
+	loadTab(t);
 
-   if (commlineHeightG != curtab->ch_used) {
-      //Use the stored value of commlineHeightG, so that it can be different for each tab
-      int new_ch = curtab->ch_used;
-      curtab->ch_used = commlineHeightG;
-      command_frame_height = false;
-      optSetByName(S"commheight", (OptionValue){.tag = OPTION_NUM, .num = new_ch}, SET_LOCAL);
-      command_frame_height = true;
-   }
+	if (commlineHeightG != curtab->ch_used) {
+		//Use the stored value of commlineHeightG, so that it can be different for each tab
+		int new_ch = curtab->ch_used;
+		curtab->ch_used = commlineHeightG;
+		command_frame_height = false;
+		optSetByName(S"commheight", (OptionValue){.tag = OPTION_NUM, .num = new_ch}, SET_LOCAL);
+		command_frame_height = true;
+	}
 
-   //We would like doing the TabEnter event first, but we don't have a
-   //valid current portal yet, which may break some commands.
-   //This triggers autocommands, thus may make "t" invalid.
-   (void)enterPortalWorker(t->curPor, WEE_CURWIN_INVALID
-        | (trigger_enter_autocmds ? WEE_TRIGGER_ENTER_AUTOCMDS : 0)
-        | (trigger_leave_autocmds ? WEE_TRIGGER_LEAVE_AUTOCMDS : 0));
-   prevPor = next_prevPor;
+	//We would like doing the TabEnter event first, but we don't have a
+	//valid current portal yet, which may break some commands.
+	//This triggers autocommands, thus may make "t" invalid.
+	(void)enterPortalWorker(t->curPor, WEE_CURWIN_INVALID
+		  | (trigger_enter_autocmds ? WEE_TRIGGER_ENTER_AUTOCMDS : 0)
+		  | (trigger_leave_autocmds ? WEE_TRIGGER_LEAVE_AUTOCMDS : 0));
+	prevPor = next_prevPor;
 
-   last_status();      //status line may appear or disappear
-   computePosPortal();      //recompute windowRow for all portals
-   diff_need_scrollbind = true;
+	last_status();      //status line may appear or disappear
+	computePosPortal();      //recompute windowRow for all portals
+	diff_need_scrollbind = true;
 
-   //If there was a click in a portal, it won't be usable for a following drag.
-   mouseResetDragPortal();
+	//If there was a click in a portal, it won't be usable for a following drag.
+	mouseResetDragPortal();
 
-   //The tabpage line may have appeared or disappeared, may need to resize
-   //the frames for that. When the Eegl portal was resized need to update frame sizes too.
-   if (curtab->old_Rows != visibleRowsG || (old_off != firstPor->windowRow))
-      shell_new_rows();
-   if (curtab->old_Columns != COLUMNS_WITHOUT_TPL()
-         || curtab->old_coloff != tabpanel_leftcol()
-   ) {
-      if (starting == 0) {
-         shell_new_columns();   //update portal widths
-         curtab->old_Columns = topframeG->width;
-         curtab->old_coloff = firstPor->windowCol;
-      } else
-         curtab->old_Columns = -1;  //update portal widths later
-   }
+	//The tabpage line may have appeared or disappeared, may need to resize
+	//the frames for that. When the Eegl portal was resized need to update frame sizes too.
+	if (curtab->old_Rows != visibleRowsG || (old_off != firstPor->windowRow))
+		shell_new_rows();
+	if (curtab->old_Columns != COLUMNS_WITHOUT_TPL()
+			|| curtab->old_coloff != tabpanel_leftcol()
+	) {
+		if (starting == 0) {
+			shell_new_columns();   //update portal widths
+			curtab->old_Columns = topframeG->width;
+			curtab->old_coloff = firstPor->windowCol;
+		} else
+			curtab->old_Columns = -1;  //update portal widths later
+	}
 
-   lastUsedTabG = last_tab;
+	lastUsedTabG = last_tab;
 
-   //Apply autocommands after updating the display, when 'rows' and
-   //'columns' have been set correctly.
-   if (trigger_enter_autocmds) {
-      applyAutocomms(EVENT_TABENTER, NULL, NULL, false, curBook);
-      if (oldCurBuf != curBook)
-          applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
-   }
+	//Apply autocommands after updating the display, when 'rows' and
+	//'columns' have been set correctly.
+	if (trigger_enter_autocmds) {
+		applyAutocomms(EVENT_TABENTER, NULL, NULL, false, curBook);
+		if (oldCurBuf != curBook)
+			 applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
+	}
 
-   redraw_all_later(UPD_NOT_VALID);
+	redraw_all_later(UPD_NOT_VALID);
 }
 
 //Go to tab "n".  For ":tab N" and "Ngt". When "n" is 9999 go to the last tab.
 pub void
 gotoTabById(int n) {
-   Tab   *t = NULL;  //shut up compiler
-   Tab   *ttp;
-   int      i;
+	Tab   *t = NULL;  //shut up compiler
+	Tab   *ttp;
+	int      i;
 
-   if (text_locked()) {
-      //Not allowed when editing the command line.
-      text_locked_msg();
-      return;
-   }
+	if (text_locked()) {
+		//Not allowed when editing the command line.
+		text_locked_msg();
+		return;
+	}
 
-   //If there is only one it can't work.
-   if (firstTabG->next == NULL) {
-      if (n > 1)
-         inpFlushIfNotSilent();
-      return;
-   }
+	//If there is only one it can't work.
+	if (firstTabG->next == NULL) {
+		if (n > 1)
+			inpFlushIfNotSilent();
+		return;
+	}
 
-   if (n == 0) {
-      //No count, go to next tab, wrap around end.
-      if (curtab->next == NULL)
-          t = firstTabG;
-      else
-          t = curtab->next;
-   } ei (n < 0) {
-      //"gT": go to previous tab, wrap around end.  "N gT" repeats this N times.
-      ttp = curtab;
-      for (i = n; i < 0; ++i) {
-         for (t = firstTabG; t->next != ttp && t->next != NULL; t = t->next)
-            {}
-         ttp = t;
-      }
-   } ei (n == 9999) {
-      //Go to last tab.
-      for (t = firstTabG; t->next != NULL; t = t->next)
-         {}
-   } else {
-      //Go to tab "n".
-      t = getTab(n);
-      if (!t) {
-          inpFlushIfNotSilent();
-          return;
-      }
-   }
+	if (n == 0) {
+		//No count, go to next tab, wrap around end.
+		if (curtab->next == NULL)
+			 t = firstTabG;
+		else
+			 t = curtab->next;
+	} ei (n < 0) {
+		//"gT": go to previous tab, wrap around end.  "N gT" repeats this N times.
+		ttp = curtab;
+		for (i = n; i < 0; ++i) {
+			for (t = firstTabG; t->next != ttp && t->next != NULL; t = t->next)
+				{}
+			ttp = t;
+		}
+	} ei (n == 9999) {
+		//Go to last tab.
+		for (t = firstTabG; t->next != NULL; t = t->next)
+			{}
+	} else {
+		//Go to tab "n".
+		t = getTab(n);
+		if (!t) {
+			 inpFlushIfNotSilent();
+			 return;
+		}
+	}
 
-   gotoTab(t, true, true);
+	gotoTab(t, true, true);
 }
 
 //Go to tab "t".
@@ -4314,84 +4314,84 @@ gotoTabById(int n) {
 //Only trigger *Leave autocommands when trigger_leave_autocmds is true.
 pub void
 gotoTab(Tab* t, Boole trigger_enter_autocmds, Boole trigger_leave_autocmds){
-   if (trigger_enter_autocmds || trigger_leave_autocmds)
-      CHECK_COMMPORT;
+	if (trigger_enter_autocmds || trigger_leave_autocmds)
+		CHECK_COMMPORT;
 
-   //Don't repeat a message in another tab
-   set_keep_msg(NULL, 0);
+	//Don't repeat a message in another tab
+	set_keep_msg(NULL, 0);
 
-   skipPortFixScrollG = true;
-   if (t != curtab && leaveTab(t->curPor->book, trigger_leave_autocmds) == OK) {
-      if (isTabValid(t))
-         enterTab(t, curBook, trigger_enter_autocmds, trigger_leave_autocmds);
-      else
-         enterTab(curtab, curBook, trigger_enter_autocmds, trigger_leave_autocmds);
-   }
-   skipPortFixScrollG = false;
+	skipPortFixScrollG = true;
+	if (t != curtab && leaveTab(t->curPor->book, trigger_leave_autocmds) == OK) {
+		if (isTabValid(t))
+			enterTab(t, curBook, trigger_enter_autocmds, trigger_leave_autocmds);
+		else
+			enterTab(curtab, curBook, trigger_enter_autocmds, trigger_leave_autocmds);
+	}
+	skipPortFixScrollG = false;
 }
 
 //Go to the last accessed tab, if there is one. Return OK or FAIL
 pub int
 goto_tabpage_lastused(void) {
-   if (!isTabValid(lastUsedTabG))
-      return FAIL;
+	if (!isTabValid(lastUsedTabG))
+		return FAIL;
 
-   gotoTab(lastUsedTabG, true, true);
-   return OK;
+	gotoTab(lastUsedTabG, true, true);
+	return OK;
 }
 
 //Enter portal "po" in tab "t".
 pub void
 goto_tab_port(Tab *t, Portal* po) {
-   gotoTab(t, true, true);
-   if (curtab == t && portalIsValid(po)) {
-       enterPortal(po, true);
-   }
+	gotoTab(t, true, true);
+	if (curtab == t && portalIsValid(po)) {
+		 enterPortal(po, true);
+	}
 }
 
 //Move the current tab to after tab "nr".
 pub void
 moveTab(Unt nr) {
-   Unt      n = 1;
-   Tab   *t, *dest;
+	Unt      n = 1;
+	Tab   *t, *dest;
 
-   if (firstTabG->next == NULL)
-      return;
+	if (firstTabG->next == NULL)
+		return;
 
-   if (movingTabsForbiddenG)
-      return;
+	if (movingTabsForbiddenG)
+		return;
 
-   for (t = firstTabG; t->next && n < nr; t = t->next, n++)
-      {}
+	for (t = firstTabG; t->next && n < nr; t = t->next, n++)
+		{}
 
-   if (t == curtab || (nr > 0 && t->next && t->next == curtab))
-      return;
+	if (t == curtab || (nr > 0 && t->next && t->next == curtab))
+		return;
 
-   dest = t;
+	dest = t;
 
-   //Remove the current tab from the list of tabs.
-   if (curtab == firstTabG)
-      firstTabG = curtab->next;
-   else {
-      FOR_ALL_TABS(t)
-         if (t->next == curtab)
-            break;
-      if (t == NULL)   //"cannot happen"
-         return;
-      t->next = curtab->next;
-   }
+	//Remove the current tab from the list of tabs.
+	if (curtab == firstTabG)
+		firstTabG = curtab->next;
+	else {
+		FOR_ALL_TABS(t)
+			if (t->next == curtab)
+				break;
+		if (t == NULL)   //"cannot happen"
+			return;
+		t->next = curtab->next;
+	}
 
-   //Re-insert it at the specified position.
-   if (nr <= 0) {
-      curtab->next = firstTabG;
-      firstTabG = curtab;
-   } else {
-      curtab->next = dest->next;
-      dest->next = curtab;
-   }
+	//Re-insert it at the specified position.
+	if (nr <= 0) {
+		curtab->next = firstTabG;
+		firstTabG = curtab;
+	} else {
+		curtab->next = dest->next;
+		dest->next = curtab;
+	}
 
-   //Need to redraw the tabpanel.  Tab contents doesn't change.
-   needRedrawTabpanelG = true;
+	//Need to redraw the tabpanel.  Tab contents doesn't change.
+	needRedrawTabpanelG = true;
 }
 
 
@@ -4402,61 +4402,61 @@ moveTab(Unt nr) {
  //Visual area.
 pub void
 gotoPortal(Portal* po) {
-   if (portErrorIfPopup(true))
-      return;
-   if (portalIsPopup(po)) {
-      emsg(_(e_not_allowed_to_enter_popup_portal));
-      return;
-   }
-   if (text_or_buf_locked()) {
-      inpFlushIfNotSilent();
-      return;
-   }
+	if (portErrorIfPopup(true))
+		return;
+	if (portalIsPopup(po)) {
+		emsg(_(e_not_allowed_to_enter_popup_portal));
+		return;
+	}
+	if (text_or_buf_locked()) {
+		inpFlushIfNotSilent();
+		return;
+	}
 
-   if (po->book != curBook)
-      //careful: triggers ModeChanged autocommand
-      reset_VIsual_and_resel();
-   ei (VIsual_active)
-      po->cursor = curPor->cursor;
+	if (po->book != curBook)
+		//careful: triggers ModeChanged autocommand
+		reset_VIsual_and_resel();
+	ei (VIsual_active)
+		po->cursor = curPor->cursor;
 
-    //autocommand may have made po invalid
-   if (!portalIsValid(po))
-      return;
-   enterPortal(po, true);
+	 //autocommand may have made po invalid
+	if (!portalIsValid(po))
+		return;
+	enterPortal(po, true);
 }
 
 //Make portal "po" the current portal
 pub void
 enterPortal(Portal* po, int undo_sync) {
-   (void)enterPortalWorker(
-      po,
-      (undo_sync ? WEE_UNDO_SYNC : 0) | WEE_TRIGGER_ENTER_AUTOCMDS | WEE_TRIGGER_LEAVE_AUTOCMDS
-   );
+	(void)enterPortalWorker(
+		po,
+		(undo_sync ? WEE_UNDO_SYNC : 0) | WEE_TRIGGER_ENTER_AUTOCMDS | WEE_TRIGGER_LEAVE_AUTOCMDS
+	);
 }
 
 //Used after making another portal the current one: change directory if needed.
 pub void
 portFixCurrentDir(void) {
-   if (curPor->localDir || curtab->localdir) {
-      //Portal or tab has a local directory: Save current directory as
-      //global directory (unless that was done already) and change to the local directory
-      if (!globaldir) {
-         Byte cwd[MAXPATHL];
-         if (mch_dirname(cwd, MAXPATHL) == OK)
-            globaldir = copyStr(cwd);
-      }
-      CS dirname = (curPor->localDir) ? curPor->localDir : curtab->localdir;
+	if (curPor->localDir || curtab->localdir) {
+		//Portal or tab has a local directory: Save current directory as
+		//global directory (unless that was done already) and change to the local directory
+		if (!globaldir) {
+			Byte cwd[MAXPATHL];
+			if (mch_dirname(cwd, MAXPATHL) == OK)
+				globaldir = copyStr(cwd);
+		}
+		CS dirname = (curPor->localDir) ? curPor->localDir : curtab->localdir;
 
-      if (mch_chdir(dirname) == 0) {
-         shorten_fnames(true);
-      }
-   } ei (globaldir) {
-      //Portal doesn't have a local directory and we are not in the global
-      //directory: Change to the global directory.
-      (void)mch_chdir(globaldir);
-      EE_CLEAR(globaldir);
-      shorten_fnames(true);
-   }
+		if (mch_chdir(dirname) == 0) {
+			shorten_fnames(true);
+		}
+	} ei (globaldir) {
+		//Portal doesn't have a local directory and we are not in the global
+		//directory: Change to the global directory.
+		(void)mch_chdir(globaldir);
+		EE_CLEAR(globaldir);
+		shorten_fnames(true);
+	}
 }
 
 //Make portal "po" the current portal.
@@ -4465,135 +4465,135 @@ portFixCurrentDir(void) {
 //Return true when dont_parse_messages was decremented.
 private int
 enterPortalWorker(Portal* po, Unt flags) {
-   int isOtherBook = false;
-   int curPor_invalid = (flags & WEE_CURWIN_INVALID);
-   int did_decrement = false;
+	int isOtherBook = false;
+	int curPor_invalid = (flags & WEE_CURWIN_INVALID);
+	int did_decrement = false;
 
-   if (po == curPor && curPor_invalid == 0)   //nothing to do
-      return false;
+	if (po == curPor && curPor_invalid == 0)   //nothing to do
+		return false;
 
-   if (curPor_invalid == 0)
-      leavingPortal(curPor);
+	if (curPor_invalid == 0)
+		leavingPortal(curPor);
 
-   if (curPor_invalid == 0 && (flags & WEE_TRIGGER_LEAVE_AUTOCMDS) != 0) {
-      //Be careful: If autocommands delete the portal, return now.
-      if (po->book != curBook) {
-         applyAutocomms(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
-         isOtherBook = true;
-         if (!portalIsValid(po))
-            return false;
-      }
-      applyAutocomms(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
-      if (!portalIsValid(po))
-         return false;
-      //autocomms may abort script processing
-      if (aborting())
-         return false;
-   }
+	if (curPor_invalid == 0 && (flags & WEE_TRIGGER_LEAVE_AUTOCMDS) != 0) {
+		//Be careful: If autocommands delete the portal, return now.
+		if (po->book != curBook) {
+			applyAutocomms(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
+			isOtherBook = true;
+			if (!portalIsValid(po))
+				return false;
+		}
+		applyAutocomms(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
+		if (!portalIsValid(po))
+			return false;
+		//autocomms may abort script processing
+		if (aborting())
+			return false;
+	}
 
-   //sync undo before leaving the current book
-   if ((flags & WEE_UNDO_SYNC) && curBook != po->book)
-      u_sync(false);
+	//sync undo before leaving the current book
+	if ((flags & WEE_UNDO_SYNC) && curBook != po->book)
+		u_sync(false);
 
-   //Might need to scroll the old portal before switching, e.g., when the cursor was moved
-   if (curPor_invalid == 0)
-      update_topline();
+	//Might need to scroll the old portal before switching, e.g., when the cursor was moved
+	if (curPor_invalid == 0)
+		update_topline();
 
-   if (po->book != curBook)
-      optsCopyToBook(po->book, BCO_ENTER);
-   if (curPor_invalid == 0) {
-      prevPor = curPor;   //remember for CTRL-W p
-      curPor->statusLineNeedsRedraw = true;
-   }
-   curPor = po;
-   curBook = po->book;
-   check_cursor();
-   if (!virtual_active())
-      curPor->cursor.coladd = 0;
-   changed_line_abv_curs();
-   //Now it is OK to parse messages again, which may be needed in autocommands.
-   if ((flags & WEE_ALLOW_PARSE_MESSAGES) != 0) {
-      --dont_parse_messages;
-      did_decrement = true;
-   }
+	if (po->book != curBook)
+		optsCopyToBook(po->book, BCO_ENTER);
+	if (curPor_invalid == 0) {
+		prevPor = curPor;   //remember for CTRL-W p
+		curPor->statusLineNeedsRedraw = true;
+	}
+	curPor = po;
+	curBook = po->book;
+	check_cursor();
+	if (!virtual_active())
+		curPor->cursor.coladd = 0;
+	changed_line_abv_curs();
+	//Now it is OK to parse messages again, which may be needed in autocommands.
+	if ((flags & WEE_ALLOW_PARSE_MESSAGES) != 0) {
+		--dont_parse_messages;
+		did_decrement = true;
+	}
 
-   portFixCurrentDir();
+	portFixCurrentDir();
 
-   enteringPortal(curPor);
-   //Careful: autocommands may close the portal and make "po" invalid
-   if ((flags & WEE_TRIGGER_NEW_AUTOCMDS) != 0)
-      applyAutocomms(EVENT_PORTNEW, NULL, NULL, false, curBook);
-   if ((flags & WEE_TRIGGER_ENTER_AUTOCMDS) != 0) {
-      applyAutocomms(EVENT_PORTENTER, NULL, NULL, false, curBook);
-      if (isOtherBook)
-         applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
-   }
-   curPor->statusLineNeedsRedraw = true;
-   if (bt_terminal(curPor->book))
-      //terminal is likely in another mode
-      redrawModeG = true;
-   needRedrawTabpanelG = true;
-   if (restart_edit)
-      redraw_later(UPD_VALID);   //causes status line redraw
+	enteringPortal(curPor);
+	//Careful: autocommands may close the portal and make "po" invalid
+	if ((flags & WEE_TRIGGER_NEW_AUTOCMDS) != 0)
+		applyAutocomms(EVENT_PORTNEW, NULL, NULL, false, curBook);
+	if ((flags & WEE_TRIGGER_ENTER_AUTOCMDS) != 0) {
+		applyAutocomms(EVENT_PORTENTER, NULL, NULL, false, curBook);
+		if (isOtherBook)
+			applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
+	}
+	curPor->statusLineNeedsRedraw = true;
+	if (bt_terminal(curPor->book))
+		//terminal is likely in another mode
+		redrawModeG = true;
+	needRedrawTabpanelG = true;
+	if (restart_edit)
+		redraw_later(UPD_VALID);   //causes status line redraw
 
-   //set portal height to desired minimal value
-   if (curPor->height < p_wh && !curPor->o.portFixHeight  && !portalIsPopup(curPor))
-      portSetHeight((int)p_wh, curPor);
-   ei (curPor->height == 0)
-      portSetHeight(1, curPor);
+	//set portal height to desired minimal value
+	if (curPor->height < p_wh && !curPor->o.portFixHeight  && !portalIsPopup(curPor))
+		portSetHeight((int)p_wh, curPor);
+	ei (curPor->height == 0)
+		portSetHeight(1, curPor);
 
-   //set portal width to desired minimal value
-   if (curPor->width < p_wiw && !curPor->o.portFixWidth)
-      portSetWidth((int)p_wiw, curPor);
+	//set portal width to desired minimal value
+	if (curPor->width < p_wiw && !curPor->o.portFixWidth)
+		portSetWidth((int)p_wiw, curPor);
 
-   setmouse();         //in case jumped to/from help book
+	setmouse();         //in case jumped to/from help book
 
-   return did_decrement;
+	return did_decrement;
 }
 
 //Jump to the first open portal into book "book", if one exists.
 //Return a pointer to the portal found, otherwise NULL.
 pub Portal *
 portTryFindOpenBook(Book* book) {
-   Portal* po = null;
+	Portal* po = null;
 
-   if (curPor->book == book)
-      po = curPor;
-   else {
-      FOR_ALL_PORTALS(po) {
-         if (po->book == book)
-            break;
-      }
-   }
-   if (po)
-      enterPortal(po, false);
-   return po;
+	if (curPor->book == book)
+		po = curPor;
+	else {
+		FOR_ALL_PORTALS(po) {
+			if (po->book == book)
+				break;
+		}
+	}
+	if (po)
+		enterPortal(po, false);
+	return po;
 }
 
 //Jump to the first open portal in any tab that contains book "book", if one exists. First search
 //in the portals present in the current tab. Return a pointer to the found portal, otherwise NULL.
 pub Portal *
 buf_jump_open_tab(Book* book) {
-   Portal* po = portTryFindOpenBook(book);
-   if (po)
-      return po;
+	Portal* po = portTryFindOpenBook(book);
+	if (po)
+		return po;
 
-   Tab* t;
-   FOR_ALL_TABS(t) {
-      if (t != curtab) {
-         FOR_ALL_PORTALS_IN_TAB(t, po) {
-            if (po->book == book)
-               break;
-         }
-         if (po) {
-            goto_tab_port(t, po);
-            if (curPor != po)
-               po = NULL;   //something went wrong
-            break;
-          }
-      }
-   }
-   return po;
+	Tab* t;
+	FOR_ALL_TABS(t) {
+		if (t != curtab) {
+			FOR_ALL_PORTALS_IN_TAB(t, po) {
+				if (po->book == book)
+					break;
+			}
+			if (po) {
+				goto_tab_port(t, po);
+				if (curPor != po)
+					po = NULL;   //something went wrong
+				break;
+			 }
+		}
+	}
+	return po;
 }
 
 private int lastPortIdS = MIN_PORT_ID - 1;
@@ -4601,237 +4601,237 @@ private int lastPortIdS = MIN_PORT_ID - 1;
 //Allocate a portal structure and link it in the portal list when "hidden" is false.
 private Portal *
 allocPortal(Portal* after, int hidden) {
-   //allocate portal structure and linesizes arrays
-   Portal* newPort = ALLOC_CLEAR_ONE(Portal);
-   allocLinesPortal(newPort);
+	//allocate portal structure and linesizes arrays
+	Portal* newPort = ALLOC_CLEAR_ONE(Portal);
+	allocLinesPortal(newPort);
 
-   newPort->id = ++lastPortIdS;
+	newPort->id = ++lastPortIdS;
 
-   //init w: variables
-   newPort->internalVars = allocBag_id(aid_newwin_wvars);
-   if (!newPort->internalVars) {
-      freePortalLsizes(newPort);
-      eeglFree(newPort);
-      return NULL;
-   }
-   init_var_dict(newPort->internalVars, &newPort->wVar, VAR_SCOPE);
+	//init w: variables
+	newPort->internalVars = allocBag_id(aid_newwin_wvars);
+	if (!newPort->internalVars) {
+		freePortalLsizes(newPort);
+		eeglFree(newPort);
+		return NULL;
+	}
+	init_var_dict(newPort->internalVars, &newPort->wVar, VAR_SCOPE);
 
-   //Don't execute autocommands while the portal is not properly
-   //initialized yet.  gui_create_scrollbar() may trigger a FocusGained event.
-   block_autocmds();
+	//Don't execute autocommands while the portal is not properly
+	//initialized yet.  gui_create_scrollbar() may trigger a FocusGained event.
+	block_autocmds();
 
-   //link the portal in the portal list
-   if (!hidden)
-      append(after, newPort);
-   newPort->windowCol = tabpanel_leftcol();
-   newPort->width = COLUMNS_WITHOUT_TPL();
+	//link the portal in the portal list
+	if (!hidden)
+		append(after, newPort);
+	newPort->windowCol = tabpanel_leftcol();
+	newPort->width = COLUMNS_WITHOUT_TPL();
 
-   //position the display and the cursor at the top of the file.
-   newPort->topLine = 1;
-   newPort->topFill = 0;
-   newPort->bottomLine = 2;
-   newPort->cursor.lnum = 1;
-   newPort->scbindPos = 1;
+	//position the display and the cursor at the top of the file.
+	newPort->topLine = 1;
+	newPort->topFill = 0;
+	newPort->bottomLine = 2;
+	newPort->cursor.lnum = 1;
+	newPort->scbindPos = 1;
 
-   //We won't calculate fraction until resizing the portal
-   newPort->fraction = 0;
-   newPort->prevFraction = -1;
+	//We won't calculate fraction until resizing the portal
+	newPort->fraction = 0;
+	newPort->prevFraction = -1;
 
-   normInitFoldForPortal(newPort);
-   unblock_autocmds();
-   newPort->nextMatchId = 1000;  //up to 1000 can be picked by the user
-   return newPort;
+	normInitFoldForPortal(newPort);
+	unblock_autocmds();
+	newPort->nextMatchId = 1000;  //up to 1000 can be picked by the user
+	return newPort;
 }
 
 //Remove portal 'po' from the portal list and free the structure.
 private void
 freePortal(Portal* po, Tab* t) { //tab "po" is in, NULL for current
-   PortInfo   *wip;
+	PortInfo   *wip;
 
-   clearFolding(po);
+	clearFolding(po);
 
-   alist_unlink(po->argList);
+	alist_unlink(po->argList);
 
-   //Don't execute autocommands while the portal is halfway being deleted.
-   //gui_mch_destroy_scrollbar() may trigger a FocusGained event.
-   block_autocmds();
+	//Don't execute autocommands while the portal is halfway being deleted.
+	//gui_mch_destroy_scrollbar() may trigger a FocusGained event.
+	block_autocmds();
 
-   optClearPortOptions(&po->o);
+	optClearPortOptions(&po->o);
 
-   vars_clear(&po->internalVars->hashTable);   //free all w: variables
-   hash_init(&po->internalVars->hashTable);
-   unref_var_dict(po->internalVars);
+	vars_clear(&po->internalVars->hashTable);   //free all w: variables
+	hash_init(&po->internalVars->hashTable);
+	unref_var_dict(po->internalVars);
 
-   {
+	{
 
-   if (prevPor == po)
-      prevPor = NULL;
-   Tab* search;
-   FOR_ALL_TABS(search) {
-      if (search->prevPor == po)
-         search->prevPor = NULL;
-   }
-   }
-   freePortalLsizes(po);
+	if (prevPor == po)
+		prevPor = NULL;
+	Tab* search;
+	FOR_ALL_TABS(search) {
+		if (search->prevPor == po)
+			search->prevPor = NULL;
+	}
+	}
+	freePortalLsizes(po);
 
-   for (Unt i = 0; i < po->tagStackLen; ++i)
-      tagstack_clear_entry(&po->tagStack[i]);
-   eeglFree(po->localDir);
-   eeglFree(po->prevdir);
+	for (Unt i = 0; i < po->tagStackLen; ++i)
+		tagstack_clear_entry(&po->tagStack[i]);
+	eeglFree(po->localDir);
+	eeglFree(po->prevdir);
 
-   //Remove the portal from the portInfos lists, it may happen that the
-   //freed memory is re-used for another portal.
-   Book   *book;
-   FOR_ALL_BOOKS(book) {
-      FOR_ALL_BOOK_PORTINFOS(book, wip) {
-         if (wip->portal == po) {
-            PortInfo   *wip2;
+	//Remove the portal from the portInfos lists, it may happen that the
+	//freed memory is re-used for another portal.
+	Book   *book;
+	FOR_ALL_BOOKS(book) {
+		FOR_ALL_BOOK_PORTINFOS(book, wip) {
+			if (wip->portal == po) {
+				PortInfo   *wip2;
 
-            //If there already is an entry with "portal" set to NULL it must be removed, it
-            //would never be used. Skip "wip" itself, otherwise Coverity complains.
-            FOR_ALL_BOOK_PORTINFOS(book, wip2) {
-               if (wip2 != wip && !wip2->portal) {
-                  if (wip2->next)
-                     wip2->next->prev = wip2->prev;
-                  if (!wip2->prev)
-                     book->portInfos = wip2->next;
-                  else
-                     wip2->prev->next = wip2->next;
-                  free_wininfo(wip2);
-                  break;
-               }
-            }
+				//If there already is an entry with "portal" set to NULL it must be removed, it
+				//would never be used. Skip "wip" itself, otherwise Coverity complains.
+				FOR_ALL_BOOK_PORTINFOS(book, wip2) {
+					if (wip2 != wip && !wip2->portal) {
+						if (wip2->next)
+						   wip2->next->prev = wip2->prev;
+						if (!wip2->prev)
+						   book->portInfos = wip2->next;
+						else
+						   wip2->prev->next = wip2->next;
+						free_wininfo(wip2);
+						break;
+					}
+				}
 
-            wip->portal = NULL;
-         }
-      }
-   }
+				wip->portal = NULL;
+			}
+		}
+	}
 
-   clear_matches(po);
-   free_jumplist(po);
+	clear_matches(po);
+	free_jumplist(po);
 
-   evFreeCallback(&po->pup.closeCb);
-   evFreeCallback(&po->pup.filterCb);
-   eeglFree(po->pup.title);
-   list_unref(po->pup.mask);
-   eeglFree(po->pup.maskCells);
+	evFreeCallback(&po->pup.closeCb);
+	evFreeCallback(&po->pup.filterCb);
+	eeglFree(po->pup.title);
+	list_unref(po->pup.mask);
+	eeglFree(po->pup.maskCells);
 
-   if (doesPortalExistInAnyTab(po))
-      removePortal(po, t);
-   if (autocmd_busy) {
-      po->next = auPendingFreePortalsG;
-      auPendingFreePortalsG = po;
-   } else
-      eeglFree(po);
+	if (doesPortalExistInAnyTab(po))
+		removePortal(po, t);
+	if (autocmd_busy) {
+		po->next = auPendingFreePortalsG;
+		auPendingFreePortalsG = po;
+	} else
+		eeglFree(po);
 
-   unblock_autocmds();
+	unblock_autocmds();
 }
 
 //Return true if "po" is not in the list of portals: the autocmd portals or a popup
 pub int
 portUnlisted(Portal* po) {
-   return is_autoCommPort(po) || PORTAL_IS_POPUP(po);
+	return is_autoCommPort(po) || PORTAL_IS_POPUP(po);
 }
 
 //Free a popup portal. This does not take the portal out of the portal list
 //and assumes there is only one toplevel frame, no splits.
 pub void
 portFreePopup(Portal* port) {
-   if (port->book) {
-      if (bt_popup(port->book))
-         closePortalBook(port, DOBOOK_WIPE_REUSE, false);
-      else
-         bookClose(port, port->book, 0, false, false);
-   }
-   //the timer may have been cleared, making the pointer invalid
-   if (timer_valid(port->pup.timer))
-      stop_timer(port->pup.timer);
-   eeglFree(port->frame);
-   freePortal(port, NULL);
+	if (port->book) {
+		if (bt_popup(port->book))
+			closePortalBook(port, DOBOOK_WIPE_REUSE, false);
+		else
+			bookClose(port, port->book, 0, false, false);
+	}
+	//the timer may have been cleared, making the pointer invalid
+	if (timer_valid(port->pup.timer))
+		stop_timer(port->pup.timer);
+	eeglFree(port->frame);
+	freePortal(port, NULL);
 }
 
 //Append portal "po" in the portal list after "after".
 private void
 append(Portal* after, Portal* po) {
-   //after NULL is in front of the first
-   Portal* before = after ? after->next : firstPor;
+	//after NULL is in front of the first
+	Portal* before = after ? after->next : firstPor;
 
-   po->next = before;
-   po->prev = after;
-   if (!after)
-      firstPor = po;
-   else
-      after->next = po;
-   if (!before)
-      lastPor = po;
-   else
-      before->prev = po;
+	po->next = before;
+	po->prev = after;
+	if (!after)
+		firstPor = po;
+	else
+		after->next = po;
+	if (!before)
+		lastPor = po;
+	else
+		before->prev = po;
 }
 
 //Remove a portal from the portal list.
 pub void
 removePortal(Portal* port, Tab* t) { //tab "port" is in, NULL for current
-   if (port->prev)
-      port->prev->next = port->next;
-   ei (!t)
-      firstPor = curtab->firstPor = port->next;
-   else
-      t->firstPor = port->next;
+	if (port->prev)
+		port->prev->next = port->next;
+	ei (!t)
+		firstPor = curtab->firstPor = port->next;
+	else
+		t->firstPor = port->next;
 
-   if (port->next)
-      port->next->prev = port->prev;
-   ei (!t)
-      lastPor = curtab->lastPor = port->prev;
-   else
-      t->lastPor = port->prev;
+	if (port->next)
+		port->next->prev = port->prev;
+	ei (!t)
+		lastPor = curtab->lastPor = port->prev;
+	else
+		t->lastPor = port->prev;
 }
 
 //Append frame "fr" in a frame list after frame "after".
 private void
 frame_append(Frame* after, Frame* frame) {
-   frame->next = after->next;
-   after->next = frame;
-   if (frame->next)
-      frame->next->prev = frame;
-   frame->prev = after;
+	frame->next = after->next;
+	after->next = frame;
+	if (frame->next)
+		frame->next->prev = frame;
+	frame->prev = after;
 }
 
 //Insert frame "fr" in a frame list before frame "before".
 private void
 frame_insert(Frame* before, Frame* fr) {
-   fr->next = before;
-   fr->prev = before->prev;
-   before->prev = fr;
-   if (fr->prev)
-      fr->prev->next = fr;
-   else
-      fr->parent->child = fr;
+	fr->next = before;
+	fr->prev = before->prev;
+	before->prev = fr;
+	if (fr->prev)
+		fr->prev->next = fr;
+	else
+		fr->parent->child = fr;
 }
 
 //Remove a frame from a frame list.
 private void
 frame_remove(Frame* fr) {
-   if (fr->prev)
-      fr->prev->next = fr->next;
-   else
-      fr->parent->child = fr->next;
-   if (fr->next)
-      fr->next->prev = fr->prev;
+	if (fr->prev)
+		fr->prev->next = fr->next;
+	else
+		fr->parent->child = fr->next;
+	if (fr->next)
+		fr->next->prev = fr->prev;
 }
 
 //Allocate lines[] for portal "po". Return FAIL for failure, OK for success.
 pub void
 allocLinesPortal(Portal* po) {
-   po->validLines = 0;
-   po->lines = ALLOC_CLEAR_MULT(PortLine, visibleRowsG);
+	po->validLines = 0;
+	po->lines = ALLOC_CLEAR_MULT(PortLine, visibleRowsG);
 }
 
 //free lsize arrays for a portal
 pub void
 freePortalLsizes(Portal* po) {
-   //TODO: why would po be NULL here?
-   if (po)
-      EE_CLEAR(po->lines);
+	//TODO: why would po be NULL here?
+	if (po)
+		EE_CLEAR(po->lines);
 }
 
 //Called from win_new_shellsize() after visibleRowsG changed.
@@ -4840,109 +4840,109 @@ freePortalLsizes(Portal* po) {
 //first to avoid this function updating firstPor->windowCol first.
 pub void
 shell_new_rows(void) {
-   int h = (int)ROWS_AVAIL;
+	int h = (int)ROWS_AVAIL;
 
-   if (!firstPor)   //not initialized yet
-      return;
-   if ((Unt)h < frame_minheight(topframeG, NULL))
-      h = frame_minheight(topframeG, NULL);
+	if (!firstPor)   //not initialized yet
+		return;
+	if ((Unt)h < frame_minheight(topframeG, NULL))
+		h = frame_minheight(topframeG, NULL);
 
-   //First try setting the heights of portals with 'portfixheight'. If that
-   //doesn't result in the right height, forget about that option.
-   frame_new_height(topframeG, h, false, true, false);
-   if (!frame_check_height(topframeG, h))
-      frame_new_height(topframeG, h, false, false, false);
+	//First try setting the heights of portals with 'portfixheight'. If that
+	//doesn't result in the right height, forget about that option.
+	frame_new_height(topframeG, h, false, true, false);
+	if (!frame_check_height(topframeG, h))
+		frame_new_height(topframeG, h, false, false, false);
 
-   computePosPortal();      //recompute windowRow and windowCol
-   compute_cmdrow();
-   curtab->ch_used = commlineHeightG;
+	computePosPortal();      //recompute windowRow and windowCol
+	compute_cmdrow();
+	curtab->ch_used = commlineHeightG;
 
-   needRedrawTabpanelG = true;
+	needRedrawTabpanelG = true;
 #if 0
-   //Disabled: don't want making the screen smaller make a portal larger.
-   if (p_ea)
-   portEqualizeHeight(curPor, false, EAD_VERTICAL);
+	//Disabled: don't want making the screen smaller make a portal larger.
+	if (p_ea)
+	portEqualizeHeight(curPor, false, EAD_VERTICAL);
 #endif
 }
 
 //Called from win_new_shellsize() after visibleColsG changed.
 pub void
 shell_new_columns(void) {
-   if (!firstPor)   //not initialized yet
-      return;
+	if (!firstPor)   //not initialized yet
+		return;
 
-   int savePortalCol = firstPor->windowCol;
-   Unt save_width = topframeG->width;
-   int w = COLUMNS_WITHOUT_TPL();
+	int savePortalCol = firstPor->windowCol;
+	Unt save_width = topframeG->width;
+	int w = COLUMNS_WITHOUT_TPL();
 
-   //First try setting the widths of portals with 'portfixwidth'.  If that
-   //doesn't result in the right width, forget about that option.
-   frameNewWidth(topframeG, w, false, true);
-   if (!frame_check_width(topframeG, w))
-      frameNewWidth(topframeG, w, false, false);
+	//First try setting the widths of portals with 'portfixwidth'.  If that
+	//doesn't result in the right width, forget about that option.
+	frameNewWidth(topframeG, w, false, true);
+	if (!frame_check_width(topframeG, w))
+		frameNewWidth(topframeG, w, false, false);
 
-   computePosPortal();      //recompute windowRow and windowCol
+	computePosPortal();      //recompute windowRow and windowCol
 
-   if (p_ea && firstPor->windowCol + topframeG->width == savePortalCol + save_width
-         && (firstPor->windowCol != savePortalCol || topframeG->width != save_width))
-      portEqualizeHeight(curPor, false, 0);
+	if (p_ea && firstPor->windowCol + topframeG->width == savePortalCol + save_width
+			&& (firstPor->windowCol != savePortalCol || topframeG->width != save_width))
+		portEqualizeHeight(curPor, false, 0);
 
-   needRedrawTabpanelG = true;
+	needRedrawTabpanelG = true;
 #if 0
-    //Disabled: don't want making the screen smaller make a portal larger.
-   if (p_ea)
-   portEqualizeHeight(curPor, false, EAD_HORIZONTAL);
+	 //Disabled: don't want making the screen smaller make a portal larger.
+	if (p_ea)
+	portEqualizeHeight(curPor, false, EAD_HORIZONTAL);
 #endif
 }
 
 //Save the size of all portals into "gap".
 pub void
 portalSaveSizes(OUT ArrayList *gap) {
-   ga_init2(gap, sizeof(int), 1);
-   if (ga_grow(gap, portCount() * 2 + 1) == FAIL)
-      return;
+	ga_init2(gap, sizeof(int), 1);
+	if (ga_grow(gap, portCount() * 2 + 1) == FAIL)
+		return;
 
-   //first entry is the total lines available for portals
-   ((int *)gap->c)[gap->len++] = ROWS_AVAIL - last_stl_height(false);
+	//first entry is the total lines available for portals
+	((int *)gap->c)[gap->len++] = ROWS_AVAIL - last_stl_height(false);
 
-   Portal* po;
-   FOR_ALL_PORTALS(po) {
-      ((int *)gap->c)[gap->len++] = po->width + po->vsepWidth;
-      ((int *)gap->c)[gap->len++] = po->height;
-   }
+	Portal* po;
+	FOR_ALL_PORTALS(po) {
+		((int *)gap->c)[gap->len++] = po->width + po->vsepWidth;
+		((int *)gap->c)[gap->len++] = po->height;
+	}
 }
 
 //Restore portal sizes, but only if the number of portals is still the same
 //and total lines available for portals didn't change. Does not free the growarray.
 pub void
 portRestoreSize(ArrayList *gap) {
-    Portal* po;
-    int i, j;
+	 Portal* po;
+	 int i, j;
 
-   if (portCount() * 2 + 1 == (Unt)gap->len
-       && ((int *)gap->c)[0] == ROWS_AVAIL - last_stl_height(false)
-   ){
-      //The order matters, because frames contain other frames, but it's
-      //difficult to get right. The easy way out is to do it twice.
-      for (j = 0; j < 2; ++j) {
-         i = 1;
-         FOR_ALL_PORTALS(po) {
-            frame_setwidth(po->frame, ((int *)gap->c)[i++]);
-            portSetHeight(((int *)gap->c)[i++], po);
-         }
-      }
-      //recompute the portal positions
-      computePosPortal();
-   }
+	if (portCount() * 2 + 1 == (Unt)gap->len
+		 && ((int *)gap->c)[0] == ROWS_AVAIL - last_stl_height(false)
+	){
+		//The order matters, because frames contain other frames, but it's
+		//difficult to get right. The easy way out is to do it twice.
+		for (j = 0; j < 2; ++j) {
+			i = 1;
+			FOR_ALL_PORTALS(po) {
+				frame_setwidth(po->frame, ((int *)gap->c)[i++]);
+				portSetHeight(((int *)gap->c)[i++], po);
+			}
+		}
+		//recompute the portal positions
+		computePosPortal();
+	}
 }
 
 //Update the position for all portals, using the width and height of the frames.
 //Return the row just after the last portal.
 pub void
 computePosPortal(void) {
-   int row = 0;
-   int col = tabpanel_leftcol();
-   recomputeFramePositions(topframeG, OUT &row, OUT &col);
+	int row = 0;
+	int col = tabpanel_leftcol();
+	recomputeFramePositions(topframeG, OUT &row, OUT &col);
 }
 
 //Update the position of the portals in frame "topFr", using the width and height of the frames.
@@ -4950,63 +4950,63 @@ computePosPortal(void) {
 //to the bottom-right position plus 1.
 private void
 recomputeFramePositions(Frame* topFr, OUT int* row, OUT int* col) {
-   Frame* fr;
-   int startcol;
-   int startrow;
-   int h;
+	Frame* fr;
+	int startcol;
+	int startrow;
+	int h;
 
-   Portal* po = topFr->port;
-   if (po) {
-      if (po->windowRow != *row || po->windowCol != *col) {
-          //position changed, redraw
-          po->windowRow = *row;
-          po->windowCol = *col;
-          redrawPortLater(po, UPD_NOT_VALID);
-          po->statusLineNeedsRedraw = true;
-      }
-      //WinBar will not show if the portal height is zero
-      h = VISIBLE_HEIGHT(po) + STATUS_HEIGHT;
-      *row += h > (int)topFr->height ? (int)topFr->height : h;
-      *col += po->width + po->vsepWidth;
-   } else {
-      startrow = *row;
-      startcol = *col;
-      FOR_ALL_FRAMES(fr, topFr->child) {
-         if (topFr->layout == FR_ROW)
-            *row = startrow;   //all frames are at the same row
-         else
-            *col = startcol;   //all frames are at the same col
-         recomputeFramePositions(fr, OUT row, OUT col);
-      }
-   }
+	Portal* po = topFr->port;
+	if (po) {
+		if (po->windowRow != *row || po->windowCol != *col) {
+			 //position changed, redraw
+			 po->windowRow = *row;
+			 po->windowCol = *col;
+			 redrawPortLater(po, UPD_NOT_VALID);
+			 po->statusLineNeedsRedraw = true;
+		}
+		//WinBar will not show if the portal height is zero
+		h = VISIBLE_HEIGHT(po) + STATUS_HEIGHT;
+		*row += h > (int)topFr->height ? (int)topFr->height : h;
+		*col += po->width + po->vsepWidth;
+	} else {
+		startrow = *row;
+		startcol = *col;
+		FOR_ALL_FRAMES(fr, topFr->child) {
+			if (topFr->layout == FR_ROW)
+				*row = startrow;   //all frames are at the same row
+			else
+				*col = startcol;   //all frames are at the same col
+			recomputeFramePositions(fr, OUT row, OUT col);
+		}
+	}
 }
 
 //Make the current portal show at least one line and one column.
 pub void
 portEnsureSize(void) {
-   if (curPor->height == 0)
-      portSetHeight(1, curPor);
-   if (curPor->width == 0)
-      portSetWidth(1, curPor);
+	if (curPor->height == 0)
+		portSetHeight(1, curPor);
+	if (curPor->width == 0)
+		portSetWidth(1, curPor);
 }
 
 //Set the height of portal "port" and take care of repositioning other portals to fit around it
 pub void
 portSetHeight(int height, Portal* port) {
-   if (port == curPor) {
-      //Always keep current portal at least one line high, even when 'winminheight' is 0
-      if (height < MIN_PORTAL_HEIGHT)
-         height = MIN_PORTAL_HEIGHT;
-      if (height == 0)
-         height = 1;
-   }
+	if (port == curPor) {
+		//Always keep current portal at least one line high, even when 'winminheight' is 0
+		if (height < MIN_PORTAL_HEIGHT)
+			height = MIN_PORTAL_HEIGHT;
+		if (height == 0)
+			height = 1;
+	}
 
-   frame_setheight(port->frame, height + STATUS_HEIGHT);
+	frame_setheight(port->frame, height + STATUS_HEIGHT);
 
-   //recompute the portal positions
-   computePosPortal();
+	//recompute the portal positions
+	computePosPortal();
 
-   redraw_all_later(UPD_NOT_VALID);
+	redraw_all_later(UPD_NOT_VALID);
 }
 
 //Set the height of a frame to "height" and take care that all frames and
@@ -5022,142 +5022,142 @@ portSetHeight(int height, Portal* port) {
 //At the top level we can also use change the command line height.
 private void
 frame_setheight(Frame *curfrp, int height) {
-   int room;      //total number of lines available
-   int take;      //number of lines taken from other portals
-   int room_cmdline;   //lines available from cmdline
-   int run;
-   Frame* fr;
-   int h;
-   int room_reserved;
+	int room;      //total number of lines available
+	int take;      //number of lines taken from other portals
+	int room_cmdline;   //lines available from cmdline
+	int run;
+	Frame* fr;
+	int h;
+	int room_reserved;
 
-   //If the height already is the desired value, nothing to do.
-   if ((int)curfrp->height == height)
-      return;
+	//If the height already is the desired value, nothing to do.
+	if ((int)curfrp->height == height)
+		return;
 
-   if (!curfrp->parent) {
-      //topframe: can only change the command line height
-      if (height > 0)
-         frame_new_height(curfrp, height, false, false, true);
-   } ei (curfrp->parent->layout == FR_ROW) {
-      //Row of frames: Also need to resize frames left and right of this
-      //one.  First check for the minimal height of these.
-      h = frame_minheight(curfrp->parent, NULL);
-      if (height < h)
-         height = h;
-      frame_setheight(curfrp->parent, height);
-   } else {
-      //Column of frames: try to change only frames in this column.
-      //Do this twice:
-      //1: compute room available, if it's not enough try resizing the
-      //  containing frame.
-      //2: compute the room available and adjust the height to it.
-      //Try not to reduce the height of a portal with 'portfixheight' set.
-      for (run = 1; run <= 2; ++run) {
-         room = 0;
-         room_reserved = 0;
-         FOR_ALL_FRAMES(fr, curfrp->parent->child) {
-            if (fr != curfrp && fr->port && fr->port->o.portFixHeight)
-               room_reserved += fr->height;
-            room += fr->height;
-            if (fr != curfrp)
-               room -= frame_minheight(fr, NULL);
-         }
-         if (curfrp->width != topframeG->width)
-            room_cmdline = 0;
-         else {
-            room_cmdline = visibleRowsG - commlineHeightG - (lastPor->windowRow
-                        + VISIBLE_HEIGHT(lastPor)
-                        + STATUS_HEIGHT);
-            if (room_cmdline < 0)
-                room_cmdline = 0;
-         }
+	if (!curfrp->parent) {
+		//topframe: can only change the command line height
+		if (height > 0)
+			frame_new_height(curfrp, height, false, false, true);
+	} ei (curfrp->parent->layout == FR_ROW) {
+		//Row of frames: Also need to resize frames left and right of this
+		//one.  First check for the minimal height of these.
+		h = frame_minheight(curfrp->parent, NULL);
+		if (height < h)
+			height = h;
+		frame_setheight(curfrp->parent, height);
+	} else {
+		//Column of frames: try to change only frames in this column.
+		//Do this twice:
+		//1: compute room available, if it's not enough try resizing the
+		//  containing frame.
+		//2: compute the room available and adjust the height to it.
+		//Try not to reduce the height of a portal with 'portfixheight' set.
+		for (run = 1; run <= 2; ++run) {
+			room = 0;
+			room_reserved = 0;
+			FOR_ALL_FRAMES(fr, curfrp->parent->child) {
+				if (fr != curfrp && fr->port && fr->port->o.portFixHeight)
+					room_reserved += fr->height;
+				room += fr->height;
+				if (fr != curfrp)
+					room -= frame_minheight(fr, NULL);
+			}
+			if (curfrp->width != topframeG->width)
+				room_cmdline = 0;
+			else {
+				room_cmdline = visibleRowsG - commlineHeightG - (lastPor->windowRow
+						      + VISIBLE_HEIGHT(lastPor)
+						      + STATUS_HEIGHT);
+				if (room_cmdline < 0)
+					 room_cmdline = 0;
+			}
 
-         if (height <= room + room_cmdline)
-            break;
-         if (run == 2 || curfrp->width == topframeG->width) {
-            height = room + room_cmdline;
-            break;
-         }
-         frame_setheight(
-            curfrp->parent,
-            height + frame_minheight(curfrp->parent, NOPORT) - (int)MIN_PORTAL_HEIGHT - 1
-         );
-      }
+			if (height <= room + room_cmdline)
+				break;
+			if (run == 2 || curfrp->width == topframeG->width) {
+				height = room + room_cmdline;
+				break;
+			}
+			frame_setheight(
+				curfrp->parent,
+				height + frame_minheight(curfrp->parent, NOPORT) - (int)MIN_PORTAL_HEIGHT - 1
+			);
+		}
 
-      //Compute the number of lines we will take from others frames (can be negative!).
-      take = height - curfrp->height;
+		//Compute the number of lines we will take from others frames (can be negative!).
+		take = height - curfrp->height;
 
-      //If there is not enough room, also reduce the height of a portal with 'portFixHeight' set.
-      if (height > room + room_cmdline - room_reserved)
-         room_reserved = room + room_cmdline - height;
-      //If there is only a 'portFixHeight' portal and making the
-      //portal smaller, need to make the other portal taller.
-      if (take < 0 && room - (int)curfrp->height < room_reserved)
-          room_reserved = 0;
+		//If there is not enough room, also reduce the height of a portal with 'portFixHeight' set.
+		if (height > room + room_cmdline - room_reserved)
+			room_reserved = room + room_cmdline - height;
+		//If there is only a 'portFixHeight' portal and making the
+		//portal smaller, need to make the other portal taller.
+		if (take < 0 && room - (int)curfrp->height < room_reserved)
+			 room_reserved = 0;
 
-      if (take > 0 && room_cmdline > 0) {
-         //use lines from cmdline first
-         if (take < room_cmdline)
-            room_cmdline = take;
-         take -= room_cmdline;
-         topframeG->height += room_cmdline;
-      }
+		if (take > 0 && room_cmdline > 0) {
+			//use lines from cmdline first
+			if (take < room_cmdline)
+				room_cmdline = take;
+			take -= room_cmdline;
+			topframeG->height += room_cmdline;
+		}
 
-      //set the current frame to the new height
-      frame_new_height(curfrp, height, false, false, true);
+		//set the current frame to the new height
+		frame_new_height(curfrp, height, false, false, true);
 
-      //First take lines from the frames after the current frame.  If
-      //that is not enough, takes lines from frames above the current frame.
-      for (run = 0; run < 2; ++run) {
-         if (run == 0)
-            fr = curfrp->next;   //1st run: start with next portal
-         else
-            fr = curfrp->prev;   //2nd run: start with prev portal
-         while (fr != NULL && take != 0) {
-            h = frame_minheight(fr, NULL);
-            if (room_reserved > 0 && fr->port && fr->port->o.portFixHeight) {
-               if (room_reserved >= (int)fr->height)
-                  room_reserved -= fr->height;
-               else {
-                  if ((int)fr->height - room_reserved > take)
-                     room_reserved = fr->height - take;
-                  take -= fr->height - room_reserved;
-                  frame_new_height(fr, room_reserved, false, false, true);
-                  room_reserved = 0;
-                }
-            } else {
-               if ((int)fr->height - take < h) {
-                  take -= fr->height - h;
-                  frame_new_height(fr, h, false, false, true);
-               } else {
-                  frame_new_height(fr, fr->height - take, false, false, true);
-                  take = 0;
-               }
-            }
-            if (run == 0)
-               fr = fr->next;
-            else
-               fr = fr->prev;
-         }
-      }
-   }
+		//First take lines from the frames after the current frame.  If
+		//that is not enough, takes lines from frames above the current frame.
+		for (run = 0; run < 2; ++run) {
+			if (run == 0)
+				fr = curfrp->next;   //1st run: start with next portal
+			else
+				fr = curfrp->prev;   //2nd run: start with prev portal
+			while (fr != NULL && take != 0) {
+				h = frame_minheight(fr, NULL);
+				if (room_reserved > 0 && fr->port && fr->port->o.portFixHeight) {
+					if (room_reserved >= (int)fr->height)
+						room_reserved -= fr->height;
+					else {
+						if ((int)fr->height - room_reserved > take)
+						   room_reserved = fr->height - take;
+						take -= fr->height - room_reserved;
+						frame_new_height(fr, room_reserved, false, false, true);
+						room_reserved = 0;
+					 }
+				} else {
+					if ((int)fr->height - take < h) {
+						take -= fr->height - h;
+						frame_new_height(fr, h, false, false, true);
+					} else {
+						frame_new_height(fr, fr->height - take, false, false, true);
+						take = 0;
+					}
+				}
+				if (run == 0)
+					fr = fr->next;
+				else
+					fr = fr->prev;
+			}
+		}
+	}
 }
 
 pub void
 portSetWidth(int width, Portal* po) {
-   //Always keep current portal at least one column wide
-   if (po == curPor) {
-      if (width < MIN_PORTAL_WIDTH)
-         width = MIN_PORTAL_WIDTH;
-   } ei (width < 0)
-      width = 0;
+	//Always keep current portal at least one column wide
+	if (po == curPor) {
+		if (width < MIN_PORTAL_WIDTH)
+			width = MIN_PORTAL_WIDTH;
+	} ei (width < 0)
+		width = 0;
 
-   frame_setwidth(po->frame, width + po->vsepWidth);
+	frame_setwidth(po->frame, width + po->vsepWidth);
 
-   //recompute the portal positions
-   computePosPortal();
+	//recompute the portal positions
+	computePosPortal();
 
-   redraw_all_later(UPD_NOT_VALID);
+	redraw_all_later(UPD_NOT_VALID);
 }
 
 //Set the width of a frame to "width" and take care that all frames and
@@ -5169,292 +5169,292 @@ portSetWidth(int width, Portal* po) {
 //Set current portal width and take care of repositioning other portals to fit around it.
 private void
 frame_setwidth(Frame* curfrp, int width) {
-   int room;      //total number of lines available
-   int take;      //number of lines taken from other portals
-   Frame* fr;
-   int w;
-   int room_reserved;
+	int room;      //total number of lines available
+	int take;      //number of lines taken from other portals
+	Frame* fr;
+	int w;
+	int room_reserved;
 
-   //If the width already is the desired value, nothing to do.
-   if (curfrp->width == (Unt)width)
-      return;
+	//If the width already is the desired value, nothing to do.
+	if (curfrp->width == (Unt)width)
+		return;
 
-   if (!curfrp->parent)
-      //topframe: can't change width
-      return;
+	if (!curfrp->parent)
+		//topframe: can't change width
+		return;
 
-   if (curfrp->parent->layout == FR_COL) {
-      //Column of frames: Also need to resize frames above and below of
-      //this one.  First check for the minimal width of these.
-      w = frame_minwidth(curfrp->parent, NULL);
-      if (width < w)
-          width = w;
-      frame_setwidth(curfrp->parent, width);
-   } else {
-      //Row of frames: try to change only frames in this row.
-      //
-      //Do this twice:
-      //1: compute room available, if it's not enough try resizing the
-      //  containing frame.
-      //2: compute the room available and adjust the width to it.
-      for (int run = 1; run <= 2; ++run) {
-         room = 0;
-         room_reserved = 0;
-         FOR_ALL_FRAMES(fr, curfrp->parent->child) {
-         if (fr != curfrp && fr->port && fr->port->o.portFixWidth)
-            room_reserved += fr->width;
-         room += fr->width;
-         if (fr != curfrp)
-            room -= frame_minwidth(fr, NULL);
-         }
+	if (curfrp->parent->layout == FR_COL) {
+		//Column of frames: Also need to resize frames above and below of
+		//this one.  First check for the minimal width of these.
+		w = frame_minwidth(curfrp->parent, NULL);
+		if (width < w)
+			 width = w;
+		frame_setwidth(curfrp->parent, width);
+	} else {
+		//Row of frames: try to change only frames in this row.
+		//
+		//Do this twice:
+		//1: compute room available, if it's not enough try resizing the
+		//  containing frame.
+		//2: compute the room available and adjust the width to it.
+		for (int run = 1; run <= 2; ++run) {
+			room = 0;
+			room_reserved = 0;
+			FOR_ALL_FRAMES(fr, curfrp->parent->child) {
+			if (fr != curfrp && fr->port && fr->port->o.portFixWidth)
+				room_reserved += fr->width;
+			room += fr->width;
+			if (fr != curfrp)
+				room -= frame_minwidth(fr, NULL);
+			}
 
-         if (width <= room)
-            break;
-         if (run == 2 || curfrp->height >= ROWS_AVAIL) {
-            width = room;
-            break;
-         }
-         frame_setwidth(
-            curfrp->parent,
-            width + frame_minwidth(curfrp->parent, NOPORT) - (int)MIN_PORTAL_WIDTH - 1
-         );
-      }
+			if (width <= room)
+				break;
+			if (run == 2 || curfrp->height >= ROWS_AVAIL) {
+				width = room;
+				break;
+			}
+			frame_setwidth(
+				curfrp->parent,
+				width + frame_minwidth(curfrp->parent, NOPORT) - (int)MIN_PORTAL_WIDTH - 1
+			);
+		}
 
-      //Compute the number of lines we will take from others frames (can be negative!).
-      take = width - curfrp->width;
+		//Compute the number of lines we will take from others frames (can be negative!).
+		take = width - curfrp->width;
 
-      //If there is not enough room, also reduce the width of a portal with 'portfixwidth' set.
-      if (width > room - room_reserved)
-         room_reserved = room - width;
-      //If there is only a 'portfixwidth' portal and making the
-      //portal smaller, need to make the other portal narrower.
-      if (take < 0 && room - (int)curfrp->width < room_reserved)
-         room_reserved = 0;
+		//If there is not enough room, also reduce the width of a portal with 'portfixwidth' set.
+		if (width > room - room_reserved)
+			room_reserved = room - width;
+		//If there is only a 'portfixwidth' portal and making the
+		//portal smaller, need to make the other portal narrower.
+		if (take < 0 && room - (int)curfrp->width < room_reserved)
+			room_reserved = 0;
 
-      //set the current frame to the new width
-      frameNewWidth(curfrp, width, false, false);
+		//set the current frame to the new width
+		frameNewWidth(curfrp, width, false, false);
 
-      //First take lines from the frames right of the current frame.  If
-      //that is not enough, takes lines from frames left of the current frame.
-      for (int run = 0; run < 2; ++run) {
-         if (run == 0)
-           fr = curfrp->next;   //1st run: start with next portal
-         else
-           fr = curfrp->prev;   //2nd run: start with prev portal
-         while (fr && take != 0) {
-            w = frame_minwidth(fr, NULL);
-            if (room_reserved > 0 && fr->port && fr->port->o.portFixWidth) {
-               if (room_reserved >= (int)fr->width)
-                  room_reserved -= fr->width;
-               else {
-                  if ((int)fr->width - room_reserved > take)
-                     room_reserved = fr->width - take;
-                  take -= fr->width - room_reserved;
-                  frameNewWidth(fr, room_reserved, false, false);
-                  room_reserved = 0;
-               }
-            } else {
-               if ((int)fr->width - take < w) {
-                  take -= fr->width - w;
-                  frameNewWidth(fr, w, false, false);
-               } else {
-                  frameNewWidth(fr, fr->width - take, false, false);
-                  take = 0;
-               }
-            }
-            if (run == 0)
-               fr = fr->next;
-            else
-               fr = fr->prev;
-         }
-      }
-   }
+		//First take lines from the frames right of the current frame.  If
+		//that is not enough, takes lines from frames left of the current frame.
+		for (int run = 0; run < 2; ++run) {
+			if (run == 0)
+			  fr = curfrp->next;   //1st run: start with next portal
+			else
+			  fr = curfrp->prev;   //2nd run: start with prev portal
+			while (fr && take != 0) {
+				w = frame_minwidth(fr, NULL);
+				if (room_reserved > 0 && fr->port && fr->port->o.portFixWidth) {
+					if (room_reserved >= (int)fr->width)
+						room_reserved -= fr->width;
+					else {
+						if ((int)fr->width - room_reserved > take)
+						   room_reserved = fr->width - take;
+						take -= fr->width - room_reserved;
+						frameNewWidth(fr, room_reserved, false, false);
+						room_reserved = 0;
+					}
+				} else {
+					if ((int)fr->width - take < w) {
+						take -= fr->width - w;
+						frameNewWidth(fr, w, false, false);
+					} else {
+						frameNewWidth(fr, fr->width - take, false, false);
+						take = 0;
+					}
+				}
+				if (run == 0)
+					fr = fr->next;
+				else
+					fr = fr->prev;
+			}
+		}
+	}
 }
 
 //Status line of dragwin is dragged "offset" lines down (negative is up).
 pub void
 portDragStatusLine(Portal* dragwin, int offset) {
-   Boole up;   //if true, drag status line up, otherwise down
-   int n;
+	Boole up;   //if true, drag status line up, otherwise down
+	int n;
 
-   Frame* fr = dragwin->frame;
-   Frame* curfr = fr;
-   if (fr != topframeG) {     //more than one portal
-      fr = fr->parent;
-      //When the parent frame is not a column of frames, its parent should be.
-      if (fr->layout != FR_COL) {
-         curfr = fr;
-         if (fr != topframeG)   //only a row of portals, may drag statusline
-            fr = fr->parent;
-      }
-   }
+	Frame* fr = dragwin->frame;
+	Frame* curfr = fr;
+	if (fr != topframeG) {     //more than one portal
+		fr = fr->parent;
+		//When the parent frame is not a column of frames, its parent should be.
+		if (fr->layout != FR_COL) {
+			curfr = fr;
+			if (fr != topframeG)   //only a row of portals, may drag statusline
+				fr = fr->parent;
+		}
+	}
 
-   //If this is the last frame in a column, may want to resize the parent
-   //frame instead (go two up to skip a row of frames).
-   while (curfr != topframeG && !curfr->next) {
-      if (fr != topframeG)
-         fr = fr->parent;
-      curfr = fr;
-      if (fr != topframeG)
-          fr = fr->parent;
-   }
+	//If this is the last frame in a column, may want to resize the parent
+	//frame instead (go two up to skip a row of frames).
+	while (curfr != topframeG && !curfr->next) {
+		if (fr != topframeG)
+			fr = fr->parent;
+		curfr = fr;
+		if (fr != topframeG)
+			 fr = fr->parent;
+	}
 
-   int room;
-   if (offset < 0) { //drag up
-      up = true;
-      offset = -offset;
-      //sum up the room of the current frame and above it
-      if (fr == curfr) {
-         //only one portal
-         room = fr->height - frame_minheight(fr, NULL);
-      } else {
-         room = 0;
-         for (fr = fr->child; ; fr = fr->next) {
-            room += fr->height - frame_minheight(fr, NULL);
-            if (fr == curfr)
-               break;
-         }
-      }
-      fr = curfr->next;      //put fr at frame that grows
-   } else {   //drag down
-      up = false;
-      //Only dragging the last status line can reduce commlineHeightG.
-      room = visibleRowsG - commlineRowG;
-      if (curfr->next == NULL)
-         --room;
-      else
-         room -= commlineHeightG;
-      if (room < 0)
-         room = 0;
-      //sum up the room of frames below of the current one
-      FOR_ALL_FRAMES(fr, curfr->next) {
-         room += fr->height - frame_minheight(fr, NULL);
-      }
-      fr = curfr;         //put fr at portal that grows
-   }
+	int room;
+	if (offset < 0) { //drag up
+		up = true;
+		offset = -offset;
+		//sum up the room of the current frame and above it
+		if (fr == curfr) {
+			//only one portal
+			room = fr->height - frame_minheight(fr, NULL);
+		} else {
+			room = 0;
+			for (fr = fr->child; ; fr = fr->next) {
+				room += fr->height - frame_minheight(fr, NULL);
+				if (fr == curfr)
+					break;
+			}
+		}
+		fr = curfr->next;      //put fr at frame that grows
+	} else {   //drag down
+		up = false;
+		//Only dragging the last status line can reduce commlineHeightG.
+		room = visibleRowsG - commlineRowG;
+		if (curfr->next == NULL)
+			--room;
+		else
+			room -= commlineHeightG;
+		if (room < 0)
+			room = 0;
+		//sum up the room of frames below of the current one
+		FOR_ALL_FRAMES(fr, curfr->next) {
+			room += fr->height - frame_minheight(fr, NULL);
+		}
+		fr = curfr;         //put fr at portal that grows
+	}
 
-   if (room < offset)      //Not enough room
-      offset = room;      //Move as far as we can
-   if (offset <= 0)
-      return;
+	if (room < offset)      //Not enough room
+		offset = room;      //Move as far as we can
+	if (offset <= 0)
+		return;
 
-   //Grow frame fr by "offset" lines. Doesn't happen when dragging the last status line up.
-   if (fr)
-      frame_new_height(fr, fr->height + offset, up, false, true);
+	//Grow frame fr by "offset" lines. Doesn't happen when dragging the last status line up.
+	if (fr)
+		frame_new_height(fr, fr->height + offset, up, false, true);
 
-   if (up)
-      fr = curfr;      //current frame gets smaller
-   else
-      fr = curfr->next;   //next frame gets smaller
+	if (up)
+		fr = curfr;      //current frame gets smaller
+	else
+		fr = curfr->next;   //next frame gets smaller
 
-   //Now make the other frames smaller.
-   while (fr && offset > 0) {
-      n = frame_minheight(fr, NULL);
-      if ((int)fr->height - offset <= n) {
-         offset -= fr->height - n;
-         frame_new_height(fr, n, !up, false, true);
-      } else {
-         frame_new_height(fr, fr->height - offset, !up, false, true);
-         break;
-      }
-      if (up)
-         fr = fr->prev;
-      else
-         fr = fr->next;
-   }
-   computePosPortal();
+	//Now make the other frames smaller.
+	while (fr && offset > 0) {
+		n = frame_minheight(fr, NULL);
+		if ((int)fr->height - offset <= n) {
+			offset -= fr->height - n;
+			frame_new_height(fr, n, !up, false, true);
+		} else {
+			frame_new_height(fr, fr->height - offset, !up, false, true);
+			break;
+		}
+		if (up)
+			fr = fr->prev;
+		else
+			fr = fr->next;
+	}
+	computePosPortal();
 
-   redraw_all_later(UPD_SOME_VALID);
-   showmode();
+	redraw_all_later(UPD_SOME_VALID);
+	showmode();
 }
 
 //Separator line of dragwin is dragged "offset" lines right (negative is left).
 pub void
 portDragVsepLine(Portal *dragwin, int offset) {
-   int room;
-   int left;   //if true, drag separator line left, otherwise right
-   int n;
+	int room;
+	int left;   //if true, drag separator line left, otherwise right
+	int n;
 
-   Frame* fr = dragwin->frame;
-   if (fr == topframeG)      //only one portal (cannot happen?)
-      return;
-   Frame* curfr = fr;
-   fr = fr->parent;
-   //When the parent frame is not a row of frames, its parent should be.
-   if (fr->layout != FR_ROW) {
-      if (fr == topframeG)   //only a column of portals (cannot happen?)
-         return;
-      curfr = fr;
-      fr = fr->parent;
-   }
+	Frame* fr = dragwin->frame;
+	if (fr == topframeG)      //only one portal (cannot happen?)
+		return;
+	Frame* curfr = fr;
+	fr = fr->parent;
+	//When the parent frame is not a row of frames, its parent should be.
+	if (fr->layout != FR_ROW) {
+		if (fr == topframeG)   //only a column of portals (cannot happen?)
+			return;
+		curfr = fr;
+		fr = fr->parent;
+	}
 
-   //If this is the last frame in a row, may want to resize a parent frame instead.
-   while (!curfr->next) {
-      if (fr == topframeG)
-         break;
-      curfr = fr;
-      fr = fr->parent;
-      if (fr != topframeG) {
-         curfr = fr;
-         fr = fr->parent;
-      }
-   }
+	//If this is the last frame in a row, may want to resize a parent frame instead.
+	while (!curfr->next) {
+		if (fr == topframeG)
+			break;
+		curfr = fr;
+		fr = fr->parent;
+		if (fr != topframeG) {
+			curfr = fr;
+			fr = fr->parent;
+		}
+	}
 
-   if (offset < 0) {//drag left
-      left = true;
-      offset = -offset;
-      //sum up the room of the current frame and left of it
-      room = 0;
-      for (fr = fr->child; ; fr = fr->next) {
-         room += fr->width - frame_minwidth(fr, NULL);
-         if (fr == curfr)
-            break;
-      }
-      fr = curfr->next;      //put fr at frame that grows
-   } else {   //drag right
-      left = false;
-      //sum up the room of frames right of the current one
-      room = 0;
-      FOR_ALL_FRAMES(fr, curfr->next) {
-         room += fr->width - frame_minwidth(fr, NULL);
-      }
-      fr = curfr;         //put fr at portal that grows
-   }
+	if (offset < 0) {//drag left
+		left = true;
+		offset = -offset;
+		//sum up the room of the current frame and left of it
+		room = 0;
+		for (fr = fr->child; ; fr = fr->next) {
+			room += fr->width - frame_minwidth(fr, NULL);
+			if (fr == curfr)
+				break;
+		}
+		fr = curfr->next;      //put fr at frame that grows
+	} else {   //drag right
+		left = false;
+		//sum up the room of frames right of the current one
+		room = 0;
+		FOR_ALL_FRAMES(fr, curfr->next) {
+			room += fr->width - frame_minwidth(fr, NULL);
+		}
+		fr = curfr;         //put fr at portal that grows
+	}
 
-   if (room < offset)      //Not enough room
-      offset = room;      //Move as far as we can
-   if (offset <= 0)      //No room at all, quit.
-      return;
-   if (!fr)
-      //This can happen when calling win_move_separator() on the rightmost
-      //portal. Just don't do anything.
-      return;
+	if (room < offset)      //Not enough room
+		offset = room;      //Move as far as we can
+	if (offset <= 0)      //No room at all, quit.
+		return;
+	if (!fr)
+		//This can happen when calling win_move_separator() on the rightmost
+		//portal. Just don't do anything.
+		return;
 
-   //grow frame fr by offset lines
-   frameNewWidth(fr, fr->width + offset, left, false);
+	//grow frame fr by offset lines
+	frameNewWidth(fr, fr->width + offset, left, false);
 
-   //shrink other frames: current and at the left or at the right
-   if (left)
-      fr = curfr;      //current frame gets smaller
-   else
-      fr = curfr->next;   //next frame gets smaller
+	//shrink other frames: current and at the left or at the right
+	if (left)
+		fr = curfr;      //current frame gets smaller
+	else
+		fr = curfr->next;   //next frame gets smaller
 
-   while (fr != NULL && offset > 0) {
-      n = frame_minwidth(fr, NULL);
-      if ((int)fr->width - offset <= n) {
-         offset -= fr->width - n;
-         frameNewWidth(fr, n, !left, false);
-      } else {
-         frameNewWidth(fr, fr->width - offset, !left, false);
-         break;
-      }
-      if (left)
-         fr = fr->prev;
-      else
-         fr = fr->next;
-   }
-   computePosPortal();
-   redraw_all_later(UPD_NOT_VALID);
+	while (fr != NULL && offset > 0) {
+		n = frame_minwidth(fr, NULL);
+		if ((int)fr->width - offset <= n) {
+			offset -= fr->width - n;
+			frameNewWidth(fr, n, !left, false);
+		} else {
+			frameNewWidth(fr, fr->width - offset, !left, false);
+			break;
+		}
+		if (left)
+			fr = fr->prev;
+		else
+			fr = fr->next;
+	}
+	computePosPortal();
+	redraw_all_later(UPD_NOT_VALID);
 }
 
 #define FRACTION_MULT   16384L
@@ -5463,11 +5463,11 @@ portDragVsepLine(Portal *dragwin, int offset) {
 //Has no effect when the portal is less than two lines.
 pub void
 set_fraction(Portal* po) {
-   if (po->height > 1)
-      //When cursor is in the first line the percentage is computed as if
-      //it's halfway that line.  Thus with two lines it is 25%, with three
-      //lines 17%, etc.  Similarly for the last line: 75%, 83%, etc.
-      po->fraction = ((long)po->cursorRow * FRACTION_MULT + FRACTION_MULT / 2) / (long)po->height;
+	if (po->height > 1)
+		//When cursor is in the first line the percentage is computed as if
+		//it's halfway that line.  Thus with two lines it is 25%, with three
+		//lines 17%, etc.  Similarly for the last line: 75%, 83%, etc.
+		po->fraction = ((long)po->cursorRow * FRACTION_MULT + FRACTION_MULT / 2) / (long)po->height;
 }
 
 //Set the height of a portal. "height" excludes any portal toolbar.
@@ -5475,37 +5475,37 @@ set_fraction(Portal* po) {
 //frame or to other portal.
 private void
 portalNewHeight(Portal* po, int height) {
-   Unt prevHeight = po->height;
+	Unt prevHeight = po->height;
 
-   //Don't want a negative height.  Happens when splitting a tiny portal.
-   //Will equalize heights soon to fix it.
-   if (height < 0)
-      height = 0;
-   if (po->height == (Unt)height)
-      return;       //nothing to do
+	//Don't want a negative height.  Happens when splitting a tiny portal.
+	//Will equalize heights soon to fix it.
+	if (height < 0)
+		height = 0;
+	if (po->height == (Unt)height)
+		return;       //nothing to do
 
-   if (po->height > 0) {
-      if (po == curPor)
-          //cursorRow needs to be valid. When setting 'laststatus' this may
-          //call portalNewHeight() recursively.
-          validate_cursor();
-      if (po->height != prevHeight)
-          return;  //Recursive call already changed the size, bail out here
-              //  to avoid the following to mess things up.
-      if (po->cursorRow != po->prevFraction)
-          set_fraction(po);
-   }
+	if (po->height > 0) {
+		if (po == curPor)
+			 //cursorRow needs to be valid. When setting 'laststatus' this may
+			 //call portalNewHeight() recursively.
+			 validate_cursor();
+		if (po->height != prevHeight)
+			 return;  //Recursive call already changed the size, bail out here
+				  //  to avoid the following to mess things up.
+		if (po->cursorRow != po->prevFraction)
+			 set_fraction(po);
+	}
 
-   po->height = height;
-   po->statusLineNeedsRedraw = true;
-   portComputeScroll(po);
+	po->height = height;
+	po->statusLineNeedsRedraw = true;
+	portComputeScroll(po);
 
-   //There is no point in adjusting the scroll position when exiting.  Some
-   //values might be invalid.
-   if (!isExitingG) {
-      po->skipCol = 0;
-      scroll_to_fraction(po, prevHeight);
-   }
+	//There is no point in adjusting the scroll position when exiting.  Some
+	//values might be invalid.
+	if (!isExitingG) {
+		po->skipCol = 0;
+		scroll_to_fraction(po, prevHeight);
+	}
 }
 
 //{{{cursor functions
@@ -5513,133 +5513,132 @@ portalNewHeight(Portal* po, int height) {
 //Make sure curPor->cursor.lnum is valid.
 pub void
 check_cursor_lnum(void) {
-   if (curPor->cursor.lnum > curBook->mem.lineCount) {
-      //If there is a closed fold at the end of the file, put the cursor in
-      //its first line.  Otherwise in the last line.
-      if (!getFolds(curBook->mem.lineCount, &curPor->cursor.lnum, NULL))
-         curPor->cursor.lnum = curBook->mem.lineCount;
-   }
-   if (curPor->cursor.lnum <= 0)
-      curPor->cursor.lnum = 1;
+	if (curPor->cursor.lnum > curBook->mem.lineCount) {
+		//If there is a closed fold at the end of the file, put the cursor in
+		//its first line.  Otherwise in the last line.
+		if (!getFolds(curBook->mem.lineCount, &curPor->cursor.lnum, NULL))
+			curPor->cursor.lnum = curBook->mem.lineCount;
+	}
+	if (curPor->cursor.lnum <= 0)
+		curPor->cursor.lnum = 1;
 }
-
 
 //Make sure curPor->cursor.col is valid.
 pub void
-check_cursor_col(void) {
-   checkCursorColPort(curPor);
+poRefreshCursorCol(void) {
+	checkCursorColPort(curPor);
 }
 
 //Set "curPor->leftCol" to "leftcol". Adjust the cursor position if needed. Return true if the
 //cursor was moved.
 pub int
 set_leftcol(ColNr leftcol) {
-   int retval = false;
+	int retval = false;
 
-   //Return quickly when there is no change.
-   if (curPor->leftCol == leftcol)
-      return false;
-   curPor->leftCol = leftcol;
+	//Return quickly when there is no change.
+	if (curPor->leftCol == leftcol)
+		return false;
+	curPor->leftCol = leftcol;
 
-   changed_cline_bef_curs();
-   long lastcol = curPor->leftCol + curPor->width - normalPortalColumnOffset(curPor) - 1;
-   validate_virtcol();
+	changed_cline_bef_curs();
+	long lastcol = curPor->leftCol + curPor->width - normalPortalColumnOffset(curPor) - 1;
+	validate_virtcol();
 
-   //If the cursor is right or left of the screen, move it to last or first
-   //visible character.
-   long siso = get_sidescrolloff_value();
-   if (curPor->virtCol > (ColNr)(lastcol - siso)) {
-      retval = true;
-      doColAdvance((ColNr)(lastcol - siso));
-   } ei (curPor->virtCol < curPor->leftCol + siso) {
-      retval = true;
-      (void)doColAdvance((ColNr)(curPor->leftCol + siso));
-   }
+	//If the cursor is right or left of the screen, move it to last or first
+	//visible character.
+	long siso = get_sidescrolloff_value();
+	if (curPor->virtCol > (ColNr)(lastcol - siso)) {
+		retval = true;
+		doColAdvance((ColNr)(lastcol - siso));
+	} ei (curPor->virtCol < curPor->leftCol + siso) {
+		retval = true;
+		(void)doColAdvance((ColNr)(curPor->leftCol + siso));
+	}
 
-    //If the start of the character under the cursor is not on the screen,
-    //advance the cursor one more char.  If this fails (last char of the
-    //line) adjust the scrolling.
-    ColNr   s, e;
-    bookGetVirtualColInVirtualMode(curPor, &curPor->cursor, &s, NULL, &e);
-    if (e > (ColNr)lastcol) {
-      retval = true;
-      doColAdvance(s - 1);
-   } ei (s < curPor->leftCol) {
-      retval = true;
-      if (doColAdvance(e + 1) == FAIL) { //there isn't another character
-         curPor->leftCol = s;   //adjust leftCol instead
-         changed_cline_bef_curs();
-      }
-   }
+	 //If the start of the character under the cursor is not on the screen,
+	 //advance the cursor one more char.  If this fails (last char of the
+	 //line) adjust the scrolling.
+	 ColNr   s, e;
+	 bookGetVirtualColInVirtualMode(curPor, &curPor->cursor, &s, NULL, &e);
+	 if (e > (ColNr)lastcol) {
+		retval = true;
+		doColAdvance(s - 1);
+	} ei (s < curPor->leftCol) {
+		retval = true;
+		if (doColAdvance(e + 1) == FAIL) { //there isn't another character
+			curPor->leftCol = s;   //adjust leftCol instead
+			changed_cline_bef_curs();
+		}
+	}
 
-   if (retval)
-      curPor->setCursWant = true;
-   redraw_later(UPD_NOT_VALID);
-   return retval;
+	if (retval)
+		curPor->setCursWant = true;
+	redraw_later(UPD_NOT_VALID);
+	return retval;
 }
 
 
 //Make sure po->cursor.col is valid.
 private void
 checkCursorColPort(Portal* po) {
-   ColNr      oldcol = po->cursor.col;
+	ColNr oldcol = po->cursor.col;
 
-   ColNr len = memGetBookLen(po->book, po->cursor.lnum);
-   if (len == 0)
-      po->cursor.col = 0;
-   ei (po->cursor.col >= len) {
-      //Allow cursor past end-of-line when:
-      //- in Insert mode or restarting Insert mode
-      //- in Visual mode and 'selection' isn't "old"
-      //- 'virtualedit' is set
-      if ((stateG & MODE_INSERT) || restart_edit || VIsual_active || virtual_active())
-         po->cursor.col = len;
-      else {
-         po->cursor.col = len - 1;
-         //Move the cursor to the head byte.
-         mb_adjustpos(po->book, &po->cursor);
-      }
-   } ei (po->cursor.col < 0)
-      po->cursor.col = 0;
+	ColNr len = memGetBookLen(po->book, po->cursor.lnum);
+	if (len == 0)
+		po->cursor.col = 0;
+	ei (po->cursor.col >= len) {
+		//Allow cursor past end-of-line when:
+		//- in Insert mode or restarting Insert mode
+		//- in Visual mode and 'selection' isn't "old"
+		//- 'virtualedit' is set
+		if ((stateG & MODE_INSERT) || restart_edit || VIsual_active || virtual_active())
+			po->cursor.col = len;
+		else {
+			po->cursor.col = len - 1;
+			//Move the cursor to the head byte.
+			mb_adjustpos(po->book, &po->cursor);
+		}
+	} ei (po->cursor.col < 0)
+		po->cursor.col = 0;
 
-   if (oldcol == MAXCOL)
-      po->cursor.coladd = 0;
+	if (oldcol == MAXCOL)
+		po->cursor.coladd = 0;
 }
 
 //make sure curPor->cursor in on a valid character
 pub void
 check_cursor(void) {
-   check_cursor_lnum();
-   check_cursor_col();
+	check_cursor_lnum();
+	poRefreshCursorCol();
 }
 
 //Check if VIsual position is valid, correct it if not.
 //Can be called when in Visual mode and a change has been made.
 pub void
 check_visual_pos(void) {
-   if (VIsual.lnum > curBook->mem.lineCount) {
-      VIsual.lnum = curBook->mem.lineCount;
-      VIsual.col = 0;
-      VIsual.coladd = 0;
-   } else {
-      int len = ml_get_len(VIsual.lnum);
+	if (VIsual.lnum > curBook->mem.lineCount) {
+		VIsual.lnum = curBook->mem.lineCount;
+		VIsual.col = 0;
+		VIsual.coladd = 0;
+	} else {
+		int len = ml_get_len(VIsual.lnum);
 
-      if (VIsual.col > len) {
-          VIsual.col = len;
-          VIsual.coladd = 0;
-      }
-   }
+		if (VIsual.col > len) {
+			 VIsual.col = len;
+			 VIsual.coladd = 0;
+		}
+	}
 }
 
 //Make sure curPor->cursor is not on the ZERO at the end of the line.
 //Allow it when in Visual mode and 'selection' is not "old".
 pub void
 adjust_cursor_col(void) {
-   if (curPor->cursor.col > 0 && !VIsual_active
-          && gchar_cursor() == ZERO
-   ) {
-      --curPor->cursor.col;
-   }
+	if (curPor->cursor.col > 0 && !VIsual_active
+			 && gchar_cursor() == ZERO
+	) {
+		--curPor->cursor.col;
+	}
 }
 
 
@@ -5649,78 +5648,78 @@ adjust_cursor_col(void) {
 //Return the number of portal lines occupied by book line "lnum". Include any filler lines.
 pub int
 plines(LineNr lnum) {
-   return plines_win(curPor, lnum, true);
+	return plines_win(curPor, lnum, true);
 }
 
 pub int
 plines_win(
-   Portal   *wp,
-   LineNr   lnum,
-   int      limit_winheight)   //when true limit to portal height
+	Portal   *wp,
+	LineNr   lnum,
+	int      limit_winheight)   //when true limit to portal height
 {
-   //Check for filler lines above this book line. When folded the result is one line anyway.
-   return plines_win_nofill(wp, lnum, limit_winheight) + diff_check_fill(wp, lnum);
+	//Check for filler lines above this book line. When folded the result is one line anyway.
+	return plines_win_nofill(wp, lnum, limit_winheight) + diff_check_fill(wp, lnum);
 }
 
 //Return the number of portal lines occupied by book line "lnum". Do not include filler lines.
 pub int
 plines_nofill(LineNr lnum) {
-   return plines_win_nofill(curPor, lnum, true);
+	return plines_win_nofill(curPor, lnum, true);
 }
 
 pub int
 plines_win_nofill(
-    Portal   *wp,
-    LineNr   lnum,
-    int      limit_winheight)   //when true limit to portal height
+	 Portal   *wp,
+	 LineNr   lnum,
+	 int      limit_winheight)   //when true limit to portal height
 {
-    int      lines;
+	 int      lines;
 
-    if (wp->width == 0)
-   return 1;
+	 if (wp->width == 0)
+	return 1;
 
-    //Folded lines are handled just like an empty line.
-    //NOTE: Caller must handle lines that are MAYBE folded.
-    if (lineFolded(wp, lnum) == true)
-   return 1;
+	 //Folded lines are handled just like an empty line.
+	 //NOTE: Caller must handle lines that are MAYBE folded.
+	 if (lineFolded(wp, lnum) == true)
+	return 1;
 
-   if (!wp->o.wrap)
-      //add a line for each "above" and "below" aligned text property
-      lines = 1  + prop_count_above_below(wp->book, lnum);
-   else
-      lines = plines_win_nofold(wp, lnum);
+	if (!wp->o.wrap)
+		//add a line for each "above" and "below" aligned text property
+		lines = 1  + prop_count_above_below(wp->book, lnum);
+	else
+		lines = plines_win_nofold(wp, lnum);
 
-   if (limit_winheight && lines > (int)wp->height)
-      return wp->height;
-   return lines;
+	if (limit_winheight && lines > (int)wp->height)
+		return wp->height;
+	return lines;
 }
 
 //Return number of portal lines physical line "lnum" will occupy in portal
 //"wp". Does not care about folding, 'wrap' or 'diff'.
 pub int
 plines_win_nofold(Portal *wp, LineNr lnum) {
-   CS s = memGetLine(wp->book, lnum, false);
-   CharTableSize cts;
-   bookInitCharsForKeywordsSizeArg(OUT &cts, wp, lnum, 0, s, s);
-   if (*s == ZERO && !cts.cts_has_prop_with_text)
-      return 1; //be quick for an empty line
-   drawLineOnScreentabsize_cts(&cts, (ColNr)MAXCOL);
-   clear_chartabsize_arg(&cts);
-   long col = (int)cts.cts_vcol;
+	CS s = memGetLine(wp->book, lnum, false);
+	CharTableSize cts;
+	bookInitCharsForKeywordsSizeArg(OUT &cts, wp, lnum, 0, s, s);
+	if (*s == ZERO && !cts.cts_has_prop_with_text)
+		return 1; //be quick for an empty line
+	drawLineOnScreentabsize_cts(&cts, (ColNr)MAXCOL);
+	clear_chartabsize_arg(&cts);
+	long col = (int)cts.cts_vcol;
 
-   //If list mode is on, then the '$' at the end of the line may take up one
-   //extra column.
-   if (wp->o.list && listCharsG.eol != ZERO)
-      col += 1;
+	//If list mode is on, then the '$' at the end of the line may take up one
+	//extra column.
+	if (wp->o.list && listCharsG.eol != ZERO)
+		col += 1;
 
-   //Add column offset for 'number', 'relativenumber' and 'foldcolumn'.
-   int width = wp->width - normalPortalColumnOffset(wp);
-   if (width <= 0)
-      return 32000;
-   if (col <= width)
-      return 1;
-   col -= width;
-   return (col + (width - 1)) / width + 1;
+	//Add column offset for 'number', 'relativenumber' and 'foldcolumn'.
+	int width = wp->width - normalPortalColumnOffset(wp);
+	if (width <= 0)
+		return 32000;
+	if (col <= width)
+		return 1;
+	col -= width;
+	return (col + (width - 1)) / width + 1;
 }
 
 //Return number of portal lines the physical line range from "first" until
@@ -5728,28 +5727,28 @@ plines_win_nofold(Portal *wp, LineNr lnum) {
 //topfill and filler lines beyond the end of the book. Limit to "max" lines.
 pub int
 plines_m_win(Portal *wp, LineNr first, LineNr last, int max) {
-   int      count = 0;
+	int      count = 0;
 
-   while (first <= last && count < max) {
-      int   x;
+	while (first <= last && count < max) {
+		int   x;
 
-      //Check if there are any really folded lines, but also included lines
-      //that are maybe folded.
-      x = foldedCount(wp, first, NULL);
-      if (x > 0) {
-         ++count;       //count 1 for "+-- folded" line
-         first += x;
-      } else {
-         if (first == wp->topLine)
-            count += plines_win_nofill(wp, first, false) + wp->topFill;
-         else
-            count += plines_win(wp, first, false);
-         ++first;
-      }
-   }
-   if (first == wp->book->mem.lineCount + 1)
-      count += diff_check_fill(wp, first);
-   return MIN(max, count);
+		//Check if there are any really folded lines, but also included lines
+		//that are maybe folded.
+		x = foldedCount(wp, first, NULL);
+		if (x > 0) {
+			++count;       //count 1 for "+-- folded" line
+			first += x;
+		} else {
+			if (first == wp->topLine)
+				count += plines_win_nofill(wp, first, false) + wp->topFill;
+			else
+				count += plines_win(wp, first, false);
+			++first;
+		}
+	}
+	if (first == wp->book->mem.lineCount + 1)
+		count += diff_check_fill(wp, first);
+	return MIN(max, count);
 }
 
 
@@ -5757,332 +5756,332 @@ plines_m_win(Portal *wp, LineNr first, LineNr last, int max) {
 //used from the start of the line to the given column number.
 private int
 plinesUpToCol(Portal *wp, LineNr lnum, long column) {
-   //Check for filler lines above this book line. When folded, the result is one line anyway.
-   int lines = diff_check_fill(wp, lnum);
+	//Check for filler lines above this book line. When folded, the result is one line anyway.
+	int lines = diff_check_fill(wp, lnum);
 
-   if (!wp->o.wrap)
-      return lines + 1;
+	if (!wp->o.wrap)
+		return lines + 1;
 
-   if (wp->width == 0)
-      return lines + 1;
+	if (wp->width == 0)
+		return lines + 1;
 
-   CS line = memGetLine(wp->book, lnum, false);
+	CS line = memGetLine(wp->book, lnum, false);
 
-   CharTableSize cts;
-   bookInitCharsForKeywordsSizeArg(OUT &cts, wp, lnum, 0, line, line);
-   while (*cts.cts_ptr != ZERO && --column >= 0) {
-      cts.cts_vcol += win_lbr_chartabsize(&cts, NULL);
-      MB_PTR_ADV(cts.cts_ptr);
-   }
+	CharTableSize cts;
+	bookInitCharsForKeywordsSizeArg(OUT &cts, wp, lnum, 0, line, line);
+	while (*cts.cts_ptr != ZERO && --column >= 0) {
+		cts.cts_vcol += win_lbr_chartabsize(&cts, NULL);
+		MB_PTR_ADV(cts.cts_ptr);
+	}
 
-   //If *cts.cts_ptr is a TAB, and the TAB is not displayed as ^I, and we're not in MODE_INSERT
-   //state, then col must be adjusted so that it represents the last screen position of the TAB.
-   //This only fixes an error when the TAB wraps from one screen line to the next (when
-   //'columns' is not a multiple of 'ts') -- webb.
-   long col = cts.cts_vcol;
-   if (*cts.cts_ptr == TAB && (stateG & MODE_NORMAL) && (!wp->o.list || listCharsG.tab1))
-      col += win_lbr_chartabsize(&cts, NULL) - 1;
-   clear_chartabsize_arg(&cts);
+	//If *cts.cts_ptr is a TAB, and the TAB is not displayed as ^I, and we're not in MODE_INSERT
+	//state, then col must be adjusted so that it represents the last screen position of the TAB.
+	//This only fixes an error when the TAB wraps from one screen line to the next (when
+	//'columns' is not a multiple of 'ts') -- webb.
+	long col = cts.cts_vcol;
+	if (*cts.cts_ptr == TAB && (stateG & MODE_NORMAL) && (!wp->o.list || listCharsG.tab1))
+		col += win_lbr_chartabsize(&cts, NULL) - 1;
+	clear_chartabsize_arg(&cts);
 
-   //Add column offset for 'number', 'relativenumber', 'foldcolumn', etc.
-   int width = wp->width - normalPortalColumnOffset(wp);
-   if (width <= 0)
-      return 9999;
+	//Add column offset for 'number', 'relativenumber', 'foldcolumn', etc.
+	int width = wp->width - normalPortalColumnOffset(wp);
+	if (width <= 0)
+		return 9999;
 
-   lines += 1;
-   if (col > width)
-      lines += (col - width) / width + 1;
-   return lines;
+	lines += 1;
+	if (col > width)
+		lines += (col - width) / width + 1;
+	return lines;
 }
 
 //}}}
 
 pub void
 scroll_to_fraction(Portal* po, int prevHeight) {
-   LineNr lnum;
-   int sline, line_size;
-   int height = po->height;
+	LineNr lnum;
+	int sline, line_size;
+	int height = po->height;
 
-   //Don't change topLine in any of these cases:
-   //- portal height is 0
-   //- @diff is set and this isn't the current portal
-   //- portal height is sufficient to display the whole book and first line is visible.
-   if (height > 0
-      && (!po->o.diff || po == curPor)
-      && (height < po->book->mem.lineCount || po->topLine > 1)
-   ) {
-      //Find a value for topLine that shows the cursor at the same
-      //relative position in the portal as before (more or less).
-      lnum = po->cursor.lnum;
-      if (lnum < 1)      //can happen when starting up
-         lnum = 1;
-      po->cursorRow = ((long)po->fraction * (long)height - 1L) / FRACTION_MULT;
-      line_size = plinesUpToCol(po, lnum, (long)(po->cursor.col)) - 1;
-      sline = po->cursorRow - line_size;
+	//Don't change topLine in any of these cases:
+	//- portal height is 0
+	//- @diff is set and this isn't the current portal
+	//- portal height is sufficient to display the whole book and first line is visible.
+	if (height > 0
+		&& (!po->o.diff || po == curPor)
+		&& (height < po->book->mem.lineCount || po->topLine > 1)
+	) {
+		//Find a value for topLine that shows the cursor at the same
+		//relative position in the portal as before (more or less).
+		lnum = po->cursor.lnum;
+		if (lnum < 1)      //can happen when starting up
+			lnum = 1;
+		po->cursorRow = ((long)po->fraction * (long)height - 1L) / FRACTION_MULT;
+		line_size = plinesUpToCol(po, lnum, (long)(po->cursor.col)) - 1;
+		sline = po->cursorRow - line_size;
 
-      if (sline >= 0) {
-         //Make sure the whole cursor line is visible, if possible.
-         int rows = plines_win(po, lnum, false);
-         if (sline > (int)po->height - rows) {
-            sline = po->height - rows;
-            po->cursorRow -= rows - line_size;
-         }
-      }
+		if (sline >= 0) {
+			//Make sure the whole cursor line is visible, if possible.
+			int rows = plines_win(po, lnum, false);
+			if (sline > (int)po->height - rows) {
+				sline = po->height - rows;
+				po->cursorRow -= rows - line_size;
+			}
+		}
 
-      if (sline < 0) {
-         //Cursor line would go off top of screen if cursorRow was this high.
-         //Make cursor line the first line in the portal. If not enough room, use skipCol.
-         po->cursorRow = line_size;
-         if (po->cursorRow >= (int)po->height && (po->width - normalPortalColumnOffset(po)) > 0) {
-            po->skipCol += po->width - normalPortalColumnOffset(po);
-            --po->cursorRow;
-            while (po->cursorRow >= (int)po->height) {
-               po->skipCol += po->width - normalPortalColumnOffset(po);
-               --po->cursorRow;
-            }
-         }
-      } ei (sline > 0) {
-         while (sline > 0 && lnum > 1) {
-            getFoldsPortal(po, lnum, &lnum, NULL, true, NULL);
-            if (lnum == 1) {
-               //first line in book is folded
-               line_size = 1;
-               --sline;
-               break;
-            }
-            --lnum;
-            if (lnum == po->topLine)
-               line_size = plines_win_nofill(po, lnum, true) + po->topFill;
-            else
-               line_size = plines_win(po, lnum, true);
-            sline -= line_size;
-         }
+		if (sline < 0) {
+			//Cursor line would go off top of screen if cursorRow was this high.
+			//Make cursor line the first line in the portal. If not enough room, use skipCol.
+			po->cursorRow = line_size;
+			if (po->cursorRow >= (int)po->height && (po->width - normalPortalColumnOffset(po)) > 0) {
+				po->skipCol += po->width - normalPortalColumnOffset(po);
+				--po->cursorRow;
+				while (po->cursorRow >= (int)po->height) {
+					po->skipCol += po->width - normalPortalColumnOffset(po);
+					--po->cursorRow;
+				}
+			}
+		} ei (sline > 0) {
+			while (sline > 0 && lnum > 1) {
+				getFoldsPortal(po, lnum, &lnum, NULL, true, NULL);
+				if (lnum == 1) {
+					//first line in book is folded
+					line_size = 1;
+					--sline;
+					break;
+				}
+				--lnum;
+				if (lnum == po->topLine)
+					line_size = plines_win_nofill(po, lnum, true) + po->topFill;
+				else
+					line_size = plines_win(po, lnum, true);
+				sline -= line_size;
+			}
 
-         if (sline < 0) {
-            //Line we want at top would go off top of screen.  Use next line instead.
-            getFoldsPortal(po, lnum, NULL, &lnum, true, NULL);
-            lnum++;
-            po->cursorRow -= line_size + sline;
-         } ei (sline > 0) {
-            //First line of file reached, use that as topline.
-            lnum = 1;
-            po->cursorRow -= sline;
-         }
-      }
-      set_topline(po, lnum);
-   }
+			if (sline < 0) {
+				//Line we want at top would go off top of screen.  Use next line instead.
+				getFoldsPortal(po, lnum, NULL, &lnum, true, NULL);
+				lnum++;
+				po->cursorRow -= line_size + sline;
+			} ei (sline > 0) {
+				//First line of file reached, use that as topline.
+				lnum = 1;
+				po->cursorRow -= sline;
+			}
+		}
+		set_topline(po, lnum);
+	}
 
-   if (po == curPor)
-      curs_columns(false);   //validate cursorRow
+	if (po == curPor)
+		curs_columns(false);   //validate cursorRow
 
-   if (prevHeight > 0)
-      po->prevFraction = po->cursorRow;
+	if (prevHeight > 0)
+		po->prevFraction = po->cursorRow;
 
-    redrawPortLater(po, UPD_SOME_VALID);
-    invalidate_botline_win(po);
+	 redrawPortLater(po, UPD_SOME_VALID);
+	 invalidate_botline_win(po);
 }
 
 //Set the width of a portal
 private void
 portalNewWidth(Portal* po, int width) {
-   //Should we give an error if width < 0?
-   po->width = width < 0 ? 0 : width;
-   po->validLines = 0;
-   changed_line_abv_curs_po(po);
-   invalidate_botline_win(po);
+	//Should we give an error if width < 0?
+	po->width = width < 0 ? 0 : width;
+	po->validLines = 0;
+	changed_line_abv_curs_po(po);
+	invalidate_botline_win(po);
 
-   if (po == curPor)
-      curs_columns(true);   //validate cursorRow
+	if (po == curPor)
+		curs_columns(true);   //validate cursorRow
 
-   redrawPortLater(po, UPD_NOT_VALID);
-   po->statusLineNeedsRedraw = true;
+	redrawPortLater(po, UPD_NOT_VALID);
+	po->statusLineNeedsRedraw = true;
 }
 
 pub void
 portComputeScroll(Portal* po) {
-   po->scroll = ((Unt)po->height >> 1);
-   if (po->scroll == 0)
-      po->scroll = 1;
+	po->scroll = ((Unt)po->height >> 1);
+	if (po->scroll == 0)
+		po->scroll = 1;
 }
 
 //Command_height: called whenever commlineHeightG has been changed.
 pub void
 command_height(void) {
-   int      old_p_ch = curtab->ch_used;
+	int      old_p_ch = curtab->ch_used;
 
-   //Find bottom frame with width of screen.
-   Frame *fr = lastPor->frame;
-   while (fr->width != topframeG->width && fr->parent != NULL)
-   fr = fr->parent;
+	//Find bottom frame with width of screen.
+	Frame *fr = lastPor->frame;
+	while (fr->width != topframeG->width && fr->parent != NULL)
+	fr = fr->parent;
 
-   //Avoid changing the height of a portal with 'portfixheight' set.
-   while (fr->prev != NULL && fr->layout == FR_LEAF && fr->port->o.portFixHeight)
-      fr = fr->prev;
+	//Avoid changing the height of a portal with 'portfixheight' set.
+	while (fr->prev != NULL && fr->layout == FR_LEAF && fr->port->o.portFixHeight)
+		fr = fr->prev;
 
-   while (commlineHeightG > old_p_ch && command_frame_height) {
-      if (!fr) {
-         emsg(_(e_not_enough_room));
-         commlineHeightG = old_p_ch;
-         break;
-      }
-      int h = MIN(commlineHeightG - old_p_ch, fr->height - frame_minheight(fr, NULL));
-      frame_add_height(fr, -h);
-      old_p_ch += h;
-      fr = fr->prev;
-   }
-   if (commlineHeightG < old_p_ch && command_frame_height && fr != NULL)
-      frame_add_height(fr, (int)(old_p_ch - commlineHeightG));
+	while (commlineHeightG > old_p_ch && command_frame_height) {
+		if (!fr) {
+			emsg(_(e_not_enough_room));
+			commlineHeightG = old_p_ch;
+			break;
+		}
+		int h = MIN(commlineHeightG - old_p_ch, fr->height - frame_minheight(fr, NULL));
+		frame_add_height(fr, -h);
+		old_p_ch += h;
+		fr = fr->prev;
+	}
+	if (commlineHeightG < old_p_ch && command_frame_height && fr != NULL)
+		frame_add_height(fr, (int)(old_p_ch - commlineHeightG));
 
-   //Recompute portal positions.
-   computePosPortal();
-   commlineRowG = visibleRowsG - commlineHeightG;
-   redrawCommlineG = true;
+	//Recompute portal positions.
+	computePosPortal();
+	commlineRowG = visibleRowsG - commlineHeightG;
+	redrawCommlineG = true;
 
-   //Clear the commheight area.
-   if (msg_scrolled == 0 && fullScreenG) {
-      fillRowsWithTwoChars(
-         commlineRowG, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', getFullDecoration(0)
-      );
-      msgRowG = commlineRowG;
-   }
+	//Clear the commheight area.
+	if (msg_scrolled == 0 && fullScreenG) {
+		fillRowsWithTwoChars(
+			commlineRowG, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', getFullDecoration(0)
+		);
+		msgRowG = commlineRowG;
+	}
 
-    //Use the value of commlineHeightG that we remembered.  This is needed for when the
-    //GUI starts up, we can't be sure in what order things happen.  And when
-    //commlineHeightG was changed in another tab
-    curtab->ch_used = commlineHeightG;
-    min_set_ch = commlineHeightG;
+	 //Use the value of commlineHeightG that we remembered.  This is needed for when the
+	 //GUI starts up, we can't be sure in what order things happen.  And when
+	 //commlineHeightG was changed in another tab
+	 curtab->ch_used = commlineHeightG;
+	 min_set_ch = commlineHeightG;
 }
 
 //Resize frame "fr" to be "n" lines higher (negative for less high).
 //Also resize the frames it is contained in.
 private void
 frame_add_height(Frame *fr, int n) {
-   frame_new_height(fr, fr->height + n, false, false, false);
-   for (;;) {
-      fr = fr->parent;
-      if (!fr)
-         break;
-      fr->height += n;
-   }
+	frame_new_height(fr, fr->height + n, false, false, false);
+	for (;;) {
+		fr = fr->parent;
+		if (!fr)
+			break;
+		fr->height += n;
+	}
 }
 
 //Add or remove a status line for the bottom portal(s), according to the value of 'laststatus'.
 pub void
 last_status() {  //pretend there are two or more portals
-   //Don't make a difference between horizontal or vertical split.
-   last_status_rec(topframeG);
+	//Don't make a difference between horizontal or vertical split.
+	last_status_rec(topframeG);
 }
 
 private void
 last_status_rec(Frame *fr) {
-   Frame   *fp;
-   Portal   *po;
-   if (fr->layout == FR_LEAF) {
-      po = fr->port;
+	Frame   *fp;
+	Portal   *po;
+	if (fr->layout == FR_LEAF) {
+		po = fr->port;
 
-   //Set prevHeight when difference is due to 'laststatus'.
-   if (abs((int)po->height - (int)po->prevHeight) == 1)
-       po->prevHeight = po->height;
-   } ei (fr->layout == FR_ROW) {
-      //vertically split portals, set status line for each one
-      FOR_ALL_FRAMES(fp, fr->child)
-         last_status_rec(fp);
-   } else {
-      //horizontally split portal, set status line for last one
-      for (fp = fr->child; fp->next != NULL; fp = fp->next)
-         {}
-      last_status_rec(fp);
-   }
+	//Set prevHeight when difference is due to 'laststatus'.
+	if (abs((int)po->height - (int)po->prevHeight) == 1)
+		 po->prevHeight = po->height;
+	} ei (fr->layout == FR_ROW) {
+		//vertically split portals, set status line for each one
+		FOR_ALL_FRAMES(fp, fr->child)
+			last_status_rec(fp);
+	} else {
+		//horizontally split portal, set status line for last one
+		for (fp = fr->child; fp->next != NULL; fp = fp->next)
+			{}
+		last_status_rec(fp);
+	}
 }
 
 //Return the height of the last portal's statusline.
 pub int
 last_stl_height(int morePorts) {  //pretend there are two or more portals
-   return (morePorts || !ONLY_ONE_PORTAL) ? STATUS_HEIGHT : 0;
+	return (morePorts || !ONLY_ONE_PORTAL) ? STATUS_HEIGHT : 0;
 }
 
 //Return the minimal number of rows that is needed on the screen to display
 //the current number of portals.
 pub int
 min_rows(void) {
-   if (!firstPor)   //not initialized yet
-      return MIN_LINES;
+	if (!firstPor)   //not initialized yet
+		return MIN_LINES;
 
-   return frame_minheight(curtab->topframe, NULL) + MIN_COMMHEIGHT;
+	return frame_minheight(curtab->topframe, NULL) + MIN_COMMHEIGHT;
 }
 
 //The minimal number of rows that is needed on the screen to display
 //the current number of portals for all tabs. Is no less than 2
 pub Unt
 minRowsForAllTabs(void) {
-   if (!firstPor)   //not initialized yet
-      return MIN_LINES;
+	if (!firstPor)   //not initialized yet
+		return MIN_LINES;
 
-   Unt total = 0;
-   Tab* t;
-   FOR_ALL_TABS(t) {
-      Unt n = frame_minheight(t->topframe, NULL);
-      if (total < n)
-         total = n;
-   }
-   total += MIN_COMMHEIGHT;
-   return total;
+	Unt total = 0;
+	Tab* t;
+	FOR_ALL_TABS(t) {
+		Unt n = frame_minheight(t->topframe, NULL);
+		if (total < n)
+			total = n;
+	}
+	total += MIN_COMMHEIGHT;
+	return total;
 }
 
 //Return true if there is only one portal and only one tab, not counting a help or preview portal,
 //unless it is the current portal. Do not count unlisted portals.
 pub Boole
 onlyOnePortal(void) {
-   //If the current portal is a popup then there always is another portal.
-   if (portalIsPopup(curPor))
-      return false;
+	//If the current portal is a popup then there always is another portal.
+	if (portalIsPopup(curPor))
+		return false;
 
-   //If there is another tab there always is another portal.
-   if (firstTabG->next)
-      return false;
+	//If there is another tab there always is another portal.
+	if (firstTabG->next)
+		return false;
 
-   Unt      count = 0;
-   Portal   *po;
-   FOR_ALL_PORTALS(po) {
-      if (po->book
-         && (!((bookIsHelp(po->book) && !bookIsHelp(curBook))
-             || po->isPreview
-           ) || po == curPor) && !is_autoCommPort(po))
-          ++count;
-   }
-   return (count <= 1);
+	Unt      count = 0;
+	Portal   *po;
+	FOR_ALL_PORTALS(po) {
+		if (po->book
+			&& (!((bookIsHelp(po->book) && !bookIsHelp(curBook))
+				 || po->isPreview
+			  ) || po == curPor) && !is_autoCommPort(po))
+			 ++count;
+	}
+	return (count <= 1);
 }
 
 //Implementation of check_lnums() and check_lnums_nested().
 private void
 check_lnums_both(int do_curPor, int nested) {
-   Portal   *po;
-   Tab   *t;
-   FOR_ALL_TAB_PORTALS(t, po) {
-      if ((do_curPor || po != curPor) && po->book == curBook) {
-         int need_adjust;
+	Portal   *po;
+	Tab   *t;
+	FOR_ALL_TAB_PORTALS(t, po) {
+		if ((do_curPor || po != curPor) && po->book == curBook) {
+			int need_adjust;
 
-         if (!nested) {
-            //save the original cursor position and topline
-            po->cursorSaved.cursor_save = po->cursor;
-            po->cursorSaved.topLineSave = po->topLine;
-         }
+			if (!nested) {
+				//save the original cursor position and topline
+				po->cursorSaved.cursor_save = po->cursor;
+				po->cursorSaved.topLineSave = po->topLine;
+			}
 
-         need_adjust = po->cursor.lnum > curBook->mem.lineCount;
-         if (need_adjust)
-            po->cursor.lnum = curBook->mem.lineCount;
-         if (need_adjust || !nested)
-            //save the (corrected) cursor position
-            po->cursorSaved.cursor_corr = po->cursor;
+			need_adjust = po->cursor.lnum > curBook->mem.lineCount;
+			if (need_adjust)
+				po->cursor.lnum = curBook->mem.lineCount;
+			if (need_adjust || !nested)
+				//save the (corrected) cursor position
+				po->cursorSaved.cursor_corr = po->cursor;
 
-         need_adjust = po->topLine > curBook->mem.lineCount;
-         if (need_adjust)
-            po->topLine = curBook->mem.lineCount;
-         if (need_adjust || !nested)
-            //save the (corrected) topline
-            po->cursorSaved.topLineCorr = po->topLine;
-      }
-   }
+			need_adjust = po->topLine > curBook->mem.lineCount;
+			if (need_adjust)
+				po->topLine = curBook->mem.lineCount;
+			if (need_adjust || !nested)
+				//save the (corrected) topline
+				po->cursorSaved.topLineCorr = po->topLine;
+		}
+	}
 }
 
 //Correct the cursor line number in other portals.  Used after changing the
@@ -6090,37 +6089,37 @@ check_lnums_both(int do_curPor, int nested) {
 //When "do_curPor" is true, also check current portal.
 pub void
 check_lnums(int do_curPor) {
-   check_lnums_both(do_curPor, false);
+	check_lnums_both(do_curPor, false);
 }
 
 //Like check_lnums() but for when check_lnums() was already called.
 pub void
 check_lnums_nested(int do_curPor) {
-   check_lnums_both(do_curPor, true);
+	check_lnums_both(do_curPor, true);
 }
 
 //Reset cursor and topline to its stored values from check_lnums().
 //check_lnums() must have been called first!
 pub void
 reset_lnums(void) {
-   Portal   *po;
-   Tab   *t;
+	Portal   *po;
+	Tab   *t;
 
-   FOR_ALL_TAB_PORTALS(t, po) {
-      if (po->book == curBook) {
-         //Restore the value if the autocommand didn't change it and it was set.
-         //Note: This triggers e.g. on BufReadPre, when the book is not yet
-         //      loaded, so cannot validate the book line
-         if (EQUAL_POS(po->cursorSaved.cursor_corr, po->cursor)
-                 && po->cursorSaved.cursor_save.lnum != 0) {
-            po->cursor = po->cursorSaved.cursor_save;
-         }
-         if (po->cursorSaved.topLineCorr == po->topLine && po->cursorSaved.topLineSave != 0)
-            po->topLine = po->cursorSaved.topLineSave;
-         if (po->cursorSaved.topLineSave > po->book->mem.lineCount)
-            po->cacheState &= ~VALID_TOPLINE;
-      }
-   }
+	FOR_ALL_TAB_PORTALS(t, po) {
+		if (po->book == curBook) {
+			//Restore the value if the autocommand didn't change it and it was set.
+			//Note: This triggers e.g. on BufReadPre, when the book is not yet
+			//      loaded, so cannot validate the book line
+			if (EQUAL_POS(po->cursorSaved.cursor_corr, po->cursor)
+					  && po->cursorSaved.cursor_save.lnum != 0) {
+				po->cursor = po->cursorSaved.cursor_save;
+			}
+			if (po->cursorSaved.topLineCorr == po->topLine && po->cursorSaved.topLineSave != 0)
+				po->topLine = po->cursorSaved.topLineSave;
+			if (po->cursorSaved.topLineSave > po->book->mem.lineCount)
+				po->cacheState &= ~VALID_TOPLINE;
+		}
+	}
 }
 
 //A snapshot of the portal sizes, to restore them after closing the help
@@ -6137,70 +6136,70 @@ reset_lnums(void) {
 //Return FAIL if out of memory, OK otherwise.
 pub int
 make_snapshot(int idx) {
-   clearSnapshot(curtab, idx);
-   if (make_snapshot_rec(topframeG, &curtab->snapshot[idx]) == FAIL) {
-      clearSnapshot(curtab, idx);
-      return FAIL;
-   }
-   return OK;
+	clearSnapshot(curtab, idx);
+	if (make_snapshot_rec(topframeG, &curtab->snapshot[idx]) == FAIL) {
+		clearSnapshot(curtab, idx);
+		return FAIL;
+	}
+	return OK;
 }
 
 private int
 make_snapshot_rec(Frame *source, OUT Frame **fr) {
-   *fr = ALLOC_CLEAR_ONE(Frame);
-   (*fr)->layout = source->layout;
-   (*fr)->width = source->width;
-   (*fr)->height = source->height;
-   if ((source->next && make_snapshot_rec(source->next, &((*fr)->next)) == FAIL)
-       || (source->child && make_snapshot_rec(source->child, &((*fr)->child)) == FAIL)
-   ) {
-      return FAIL;
-   }
-   if (source->layout == FR_LEAF && source->port == curPor)
-      (*fr)->port = curPor;
-   return OK;
+	*fr = ALLOC_CLEAR_ONE(Frame);
+	(*fr)->layout = source->layout;
+	(*fr)->width = source->width;
+	(*fr)->height = source->height;
+	if ((source->next && make_snapshot_rec(source->next, &((*fr)->next)) == FAIL)
+		 || (source->child && make_snapshot_rec(source->child, &((*fr)->child)) == FAIL)
+	) {
+		return FAIL;
+	}
+	if (source->layout == FR_LEAF && source->port == curPor)
+		(*fr)->port = curPor;
+	return OK;
 }
 
 //Remove any existing snapshot.
 private void
 clearSnapshot(Tab *t, int idx) {
-   clearSnapshot_rec(t->snapshot[idx]);
-   t->snapshot[idx] = NULL;
+	clearSnapshot_rec(t->snapshot[idx]);
+	t->snapshot[idx] = NULL;
 }
 
 private void
 clearSnapshot_rec(Frame *fr) {
-   if (!fr)
-      return;
-   clearSnapshot_rec(fr->next);
-   clearSnapshot_rec(fr->child);
-   eeglFree(fr);
+	if (!fr)
+		return;
+	clearSnapshot_rec(fr->next);
+	clearSnapshot_rec(fr->child);
+	eeglFree(fr);
 }
 
 //Traverse a snapshot to find the previous curPor.
 private Portal *
 get_snapshot_curPor_rec(Frame *ft) {
-   Portal   *po;
+	Portal   *po;
 
-   if (ft->next) {
-      if ((po = get_snapshot_curPor_rec(ft->next)) != NULL)
-         return po;
-   }
-   if (ft->child) {
-      if ((po = get_snapshot_curPor_rec(ft->child)) != NULL)
-         return po;
-   }
+	if (ft->next) {
+		if ((po = get_snapshot_curPor_rec(ft->next)) != NULL)
+			return po;
+	}
+	if (ft->child) {
+		if ((po = get_snapshot_curPor_rec(ft->child)) != NULL)
+			return po;
+	}
 
-   return ft->port;
+	return ft->port;
 }
 
 //Return the current portal stored in the snapshot or NULL.
 private Portal *
 get_snapshot_curPor(int idx) {
-   if (curtab->snapshot[idx] == NULL)
-      return NULL;
+	if (curtab->snapshot[idx] == NULL)
+		return NULL;
 
-   return get_snapshot_curPor_rec(curtab->snapshot[idx]);
+	return get_snapshot_curPor_rec(curtab->snapshot[idx]);
 }
 
 //Restore a previously created snapshot, if there is any.
@@ -6208,98 +6207,98 @@ get_snapshot_curPor(int idx) {
 //"idx" is SNAP_HELP_IDX or SNAP_AUCMD_IDX.
 pub void
 restore_snapshot(
-   int      idx,
-   int      close_curPor)       //closing current portal
+	int      idx,
+	int      close_curPor)       //closing current portal
 {
-   if (curtab->snapshot[idx]
-       && curtab->snapshot[idx]->width == topframeG->width
-       && curtab->snapshot[idx]->height == topframeG->height
-       && check_snapshot_rec(curtab->snapshot[idx], topframeG) == OK)
-    {
-      Portal* po = restore_snapshot_rec(curtab->snapshot[idx], topframeG);
-      computePosPortal();
-      if (po && close_curPor)
-         gotoPortal(po);
-      redraw_all_later(UPD_NOT_VALID);
-   }
-   clearSnapshot(curtab, idx);
+	if (curtab->snapshot[idx]
+		 && curtab->snapshot[idx]->width == topframeG->width
+		 && curtab->snapshot[idx]->height == topframeG->height
+		 && check_snapshot_rec(curtab->snapshot[idx], topframeG) == OK)
+	 {
+		Portal* po = restore_snapshot_rec(curtab->snapshot[idx], topframeG);
+		computePosPortal();
+		if (po && close_curPor)
+			gotoPortal(po);
+		redraw_all_later(UPD_NOT_VALID);
+	}
+	clearSnapshot(curtab, idx);
 }
 
 //Check if frames "sn" and "fr" have the same layout, same following frames
 //and same children. And the portal pointer is valid.
 private int
 check_snapshot_rec(Frame *sn, Frame *fr) {
-   if (sn->layout != fr->layout
-          || (!sn->next) != (!fr->next)
-          || (!sn->child) != (!fr->child)
-          || (sn->next && check_snapshot_rec(sn->next, fr->next) == FAIL)
-          || (sn->child && check_snapshot_rec(sn->child, fr->child) == FAIL)
-          || (sn->port && !portalIsValid(sn->port)))
-      return FAIL;
-   return OK;
+	if (sn->layout != fr->layout
+			 || (!sn->next) != (!fr->next)
+			 || (!sn->child) != (!fr->child)
+			 || (sn->next && check_snapshot_rec(sn->next, fr->next) == FAIL)
+			 || (sn->child && check_snapshot_rec(sn->child, fr->child) == FAIL)
+			 || (sn->port && !portalIsValid(sn->port)))
+		return FAIL;
+	return OK;
 }
 
 //Copy the size of snapshot frame "sn" to frame "fr".  Do the same for all following frames and
 //children. Return a pointer to the old current portal, or NULL.
 private Portal *
 restore_snapshot_rec(Frame *sn, Frame *fr) {
-   Portal   *po = NULL;
-   Portal   *po1;
+	Portal   *po = NULL;
+	Portal   *po1;
 
-   fr->height = sn->height;
-   fr->width = sn->width;
-   if (fr->layout == FR_LEAF) {
-      frame_new_height(fr, fr->height, false, false, false);
-      frameNewWidth(fr, fr->width, false, false);
-      po = sn->port;
-   }
-   if (sn->next) {
-      po1 = restore_snapshot_rec(sn->next, fr->next);
-      if (po1)
-         po = po1;
-   }
-   if (sn->child) {
-      po1 = restore_snapshot_rec(sn->child, fr->child);
-      if (po1)
-         po = po1;
-   }
-   return po;
+	fr->height = sn->height;
+	fr->width = sn->width;
+	if (fr->layout == FR_LEAF) {
+		frame_new_height(fr, fr->height, false, false, false);
+		frameNewWidth(fr, fr->width, false, false);
+		po = sn->port;
+	}
+	if (sn->next) {
+		po1 = restore_snapshot_rec(sn->next, fr->next);
+		if (po1)
+			po = po1;
+	}
+	if (sn->child) {
+		po1 = restore_snapshot_rec(sn->child, fr->child);
+		if (po1)
+			po = po1;
+	}
+	return po;
 }
 
 //Return true if "topFr" and its children are at the right height.
 private int
 frame_check_height(Frame *topFr, int height) {
-   Frame *fr;
+	Frame *fr;
 
-   if (topFr->height != (Unt)height)
-      return false;
+	if (topFr->height != (Unt)height)
+		return false;
 
-   if (topFr->layout == FR_ROW) {
-      FOR_ALL_FRAMES(fr, topFr->child) {
-         if (fr->height != (Unt)height)
-            return false;
-      }
-   }
+	if (topFr->layout == FR_ROW) {
+		FOR_ALL_FRAMES(fr, topFr->child) {
+			if (fr->height != (Unt)height)
+				return false;
+		}
+	}
 
-   return true;
+	return true;
 }
 
 //Return true if "topFr" and its children are at the right width.
 private int
 frame_check_width(Frame* topFr, int width) {
-   Frame* fr;
+	Frame* fr;
 
-   if (topFr->width != (Unt)width)
-      return false;
+	if (topFr->width != (Unt)width)
+		return false;
 
-   if (topFr->layout == FR_COL) {
-      FOR_ALL_FRAMES(fr, topFr->child) {
-         if (fr->width != (Unt)width)
-            return false;
-      }
-   }
+	if (topFr->layout == FR_COL) {
+		FOR_ALL_FRAMES(fr, topFr->child) {
+			if (fr->width != (Unt)width)
+				return false;
+		}
+	}
 
-   return true;
+	return true;
 }
 
 //Simple int comparison function for use with qsort()
@@ -6316,13 +6315,13 @@ frame_check_width(Frame* topFr, int width) {
 
 pub int
 getLastPortId(void) {
-   return lastPortIdS;
+	return lastPortIdS;
 }
 
 //Don't let autocommands close the given portal
 pub int
 portalLocked(Portal* po) {
-   return po->locked;
+	return po->locked;
 }
 
 //Call this function when some portal settings have changed, which require the cursor position,
@@ -6330,15 +6329,15 @@ portalLocked(Portal* po) {
 //'wrap' option or folding.
 pub void
 didChangePortalSettingCurPor(void) {
-   didChangePortalSetting(curPor);
+	didChangePortalSetting(curPor);
 }
 
 pub void
 didChangePortalSetting(Portal *po) {
-   po->validLines = 0;
-   changed_line_abv_curs_po(po);
-   po->cacheState &= ~(VALID_BOTLINE|VALID_BOTLINE_AP|VALID_TOPLINE);
-   redrawPortLater(po, UPD_NOT_VALID);
+	po->validLines = 0;
+	changed_line_abv_curs_po(po);
+	po->cacheState &= ~(VALID_BOTLINE|VALID_BOTLINE_AP|VALID_TOPLINE);
+	redrawPortLater(po, UPD_NOT_VALID);
 }
 
 
@@ -6347,855 +6346,855 @@ didChangePortalSetting(Portal *po) {
 
 private int
 getPortalId(Var* argvars) {
-   if (argvars[0].tag == VAR_UNKNOWN)
-      return curPor->id;
-   int portId = tv_get_number(&argvars[0]);
-   if (portId <= 0)
-      return 0;
+	if (argvars[0].tag == VAR_UNKNOWN)
+		return curPor->id;
+	int portId = tv_get_number(&argvars[0]);
+	if (portId <= 0)
+		return 0;
 
-   Portal   *po;
-   if (argvars[1].tag == VAR_UNKNOWN)
-      po = firstPor;
-   else {
-      Tab   *t;
-      int tabnr = tv_get_number(&argvars[1]);
+	Portal   *po;
+	if (argvars[1].tag == VAR_UNKNOWN)
+		po = firstPor;
+	else {
+		Tab   *t;
+		int tabnr = tv_get_number(&argvars[1]);
 
-      FOR_ALL_TABS(t) {
-         if (--tabnr == 0)
-            break;
-      }
-      if (!t)
-         return -1;
-      if (t == curtab)
-         po = firstPor;
-      else
-         po = t->firstPor;
-   }
-   for ( ; po; po = po->next) {
-      if (--portId == 0)
-         return po->id;
-   }
-   return 0;
+		FOR_ALL_TABS(t) {
+			if (--tabnr == 0)
+				break;
+		}
+		if (!t)
+			return -1;
+		if (t == curtab)
+			po = firstPor;
+		else
+			po = t->firstPor;
+	}
+	for ( ; po; po = po->next) {
+		if (--portId == 0)
+			return po->id;
+	}
+	return 0;
 }
 
 private void
 portIdToTabPort(Var* argvars, List* list) {
-   Portal* po;
-   Tab* t;
-   int portId = 1;
-   int tabnr = 1;
-   int id = tv_get_number(&argvars[0]);
+	Portal* po;
+	Tab* t;
+	int portId = 1;
+	int tabnr = 1;
+	int id = tv_get_number(&argvars[0]);
 
-   FOR_ALL_TABS(t) {
-      FOR_ALL_PORTALS_IN_TAB(t, po) {
-         if (po->id == id) {
-            list_append_number(list, tabnr);
-            list_append_number(list, portId);
-            return;
-         }
-         ++portId;
-      }
-      ++tabnr;
-      portId = 1;
-   }
-   list_append_number(list, 0);
-   list_append_number(list, 0);
+	FOR_ALL_TABS(t) {
+		FOR_ALL_PORTALS_IN_TAB(t, po) {
+			if (po->id == id) {
+				list_append_number(list, tabnr);
+				list_append_number(list, portId);
+				return;
+			}
+			++portId;
+		}
+		++tabnr;
+		portId = 1;
+	}
+	list_append_number(list, 0);
+	list_append_number(list, 0);
 }
 
 //Return the portal pointer of portal "id".
 pub Portal *
 getPortalById(int id) {
-   return getPortAndTab(id, NULL);
+	return getPortAndTab(id, NULL);
 }
 
 //Return the portal and tab pointer of portal "id". Return NULL when not found.
 pub Portal *
 getPortAndTab(int id, OUT Tab** result) {
-   Portal* po;
-   Tab* t;
+	Portal* po;
+	Tab* t;
 
-   FOR_ALL_TAB_PORTALS(t, po) {
-      if (po->id == id) {
-         if (result)
-            *result = t;
-         return po;
-      }
-   }
+	FOR_ALL_TAB_PORTALS(t, po) {
+		if (po->id == id) {
+			if (result)
+				*result = t;
+			return po;
+		}
+	}
 
-   //popup portals are in separate lists
-   FOR_ALL_TABS(t) {
-      FOR_ALL_POPUPPORTS_IN_TAB(t, po) {
-         if (po->id == id) {
-            if (result)
-               *result = t;
-            return po;
-         }
-      }
-   }
-   FOR_ALL_POPUPPORTS(po) {
-      if (po->id == id) {
-         if (result)
-            *result = curtab;  //any tabpage would do
-         return po;
-      }
-   }
+	//popup portals are in separate lists
+	FOR_ALL_TABS(t) {
+		FOR_ALL_POPUPPORTS_IN_TAB(t, po) {
+			if (po->id == id) {
+				if (result)
+					*result = t;
+				return po;
+			}
+		}
+	}
+	FOR_ALL_POPUPPORTS(po) {
+		if (po->id == id) {
+			if (result)
+				*result = curtab;  //any tabpage would do
+			return po;
+		}
+	}
 
-   return NULL;
+	return NULL;
 }
 
 private int
 getPortById(Var* argvars) {
-   int nr = 1;
-   int id = tv_get_number(&argvars[0]);
+	int nr = 1;
+	int id = tv_get_number(&argvars[0]);
 
-   Portal* po;
-   FOR_ALL_PORTALS(po) {
-      if (po->id == id)
-          return nr;
-      ++nr;
-   }
-   return 0;
+	Portal* po;
+	FOR_ALL_PORTALS(po) {
+		if (po->id == id)
+			 return nr;
+		++nr;
+	}
+	return 0;
 }
 
 //Find portal specified by "vp" in tab "t".
 //Return current portal if "vp" is number zero. Return NULL if not found.
 pub Portal *
 portFindByNr(Var* vp, Tab* t) {  //NULL for current tab
-   Portal* po;
-   int nr = (int)varGetNumberChk(vp, NULL);
+	Portal* po;
+	int nr = (int)varGetNumberChk(vp, NULL);
 
-   if (nr < 0)
-      return NULL;
-   if (nr == 0)
-      return curPor;
+	if (nr < 0)
+		return NULL;
+	if (nr == 0)
+		return curPor;
 
-   FOR_ALL_PORTALS_IN_TAB(t, po) {
-      if (nr >= MIN_PORT_ID) {
-         if (po->id == nr)
-            return po;
-      } ei (--nr <= 0)
-         break;
-   }
-   if (nr >= MIN_PORT_ID) {
-      //check tab-local popup portals
-      for (po = (t == NULL ? curtab : t)->firstPopupPort; po; po = po->next)
-         if (po->id == nr)
-            return po;
-      //check global popup portals
-      FOR_ALL_POPUPPORTS(po)
-          if (po->id == nr)
-         return po;
-      return NULL;
-   }
-   return po;
+	FOR_ALL_PORTALS_IN_TAB(t, po) {
+		if (nr >= MIN_PORT_ID) {
+			if (po->id == nr)
+				return po;
+		} ei (--nr <= 0)
+			break;
+	}
+	if (nr >= MIN_PORT_ID) {
+		//check tab-local popup portals
+		for (po = (t == NULL ? curtab : t)->firstPopupPort; po; po = po->next)
+			if (po->id == nr)
+				return po;
+		//check global popup portals
+		FOR_ALL_POPUPPORTS(po)
+			 if (po->id == nr)
+			return po;
+		return NULL;
+	}
+	return po;
 }
 
 //Find a portal: When using a Portal ID in any tab, when using a number in the current tab.
 //Return NULL when not found.
 pub Portal *
 portFindByNrOrId(Var *vp) {
-   int   nr = (int)varGetNumberChk(vp, NULL);
+	int   nr = (int)varGetNumberChk(vp, NULL);
 
-   if (nr >= MIN_PORT_ID)
-      return getPortalById(tv_get_number(vp));
-   return portFindByNr(vp, NULL);
+	if (nr >= MIN_PORT_ID)
+		return getPortalById(tv_get_number(vp));
+	return portFindByNr(vp, NULL);
 }
 
 
 //Find portal specified by "po" in tab "tvp". Return the tab in 'ptp'
 pub Portal *
 find_tabwin(
-    Var* needle,   //VAR_UNKNOWN for current portal
-    Var* tvp,   //VAR_UNKNOWN for current tab
-    Tab** ptp
+	 Var* needle,   //VAR_UNKNOWN for current portal
+	 Var* tvp,   //VAR_UNKNOWN for current tab
+	 Tab** ptp
 ) {
-   Portal   *po = NULL;
-   Tab   *t = NULL;
-   long   n;
+	Portal   *po = NULL;
+	Tab   *t = NULL;
+	long   n;
 
-   if (needle->tag != VAR_UNKNOWN) {
-      if (tvp->tag != VAR_UNKNOWN) {
-         n = (long)tv_get_number(tvp);
-         if (n >= 0)
-            t = getTab(n);
-      } else
-         t = curtab;
+	if (needle->tag != VAR_UNKNOWN) {
+		if (tvp->tag != VAR_UNKNOWN) {
+			n = (long)tv_get_number(tvp);
+			if (n >= 0)
+				t = getTab(n);
+		} else
+			t = curtab;
 
-      if (t) {
-         po = portFindByNr(needle, t);
-         if (po == NULL && needle->tag == VAR_NUMBER && needle->number != -1)
-            //A portal with the specified number is not found
-            t = NULL;
-      }
-   } else {
-      po = curPor;
-      t = curtab;
-   }
+		if (t) {
+			po = portFindByNr(needle, t);
+			if (po == NULL && needle->tag == VAR_NUMBER && needle->number != -1)
+				//A portal with the specified number is not found
+				t = NULL;
+		}
+	} else {
+		po = curPor;
+		t = curtab;
+	}
 
-   if (ptp)
-      *ptp = t;
+	if (ptp)
+		*ptp = t;
 
-   return po;
+	return po;
 }
 
 //Get the layout of the given tab for winlayout() and add it to "l".
 private void
 get_framelayout(Frame* fr, List* l, int outer) {
-   if (!fr)
-      return;
+	if (!fr)
+		return;
 
-   List* fr_list;
-   if (outer)
-      //outermost call from f_winlayout()
-      fr_list = l;
-   else {
-      fr_list = list_alloc();
-      if (list_append_list(l, fr_list) == FAIL) {
-         eeglFree(fr_list);
-         return;
-      }
-   }
+	List* fr_list;
+	if (outer)
+		//outermost call from f_winlayout()
+		fr_list = l;
+	else {
+		fr_list = list_alloc();
+		if (list_append_list(l, fr_list) == FAIL) {
+			eeglFree(fr_list);
+			return;
+		}
+	}
 
-   if (fr->layout == FR_LEAF) {
-      if (fr->port) {
-          list_append_string(fr_list, (CS)"leaf", -1);
-          list_append_number(fr_list, fr->port->id);
-      }
-   } else {
-      list_append_string(fr_list,
-           fr->layout == FR_ROW ?  (CS)"row" : (CS)"col", -1);
+	if (fr->layout == FR_LEAF) {
+		if (fr->port) {
+			 list_append_string(fr_list, (CS)"leaf", -1);
+			 list_append_number(fr_list, fr->port->id);
+		}
+	} else {
+		list_append_string(fr_list,
+			  fr->layout == FR_ROW ?  (CS)"row" : (CS)"col", -1);
 
-      List* portList = list_alloc();
-      if (list_append_list(fr_list, portList) == FAIL) {
-         eeglFree(portList);
-         return;
-      }
+		List* portList = list_alloc();
+		if (list_append_list(fr_list, portList) == FAIL) {
+			eeglFree(portList);
+			return;
+		}
 
-      Frame* child = fr->child;
-      while (child) {
-         get_framelayout(child, portList, false);
-         child = child->next;
-      }
-   }
+		Frame* child = fr->child;
+		while (child) {
+			get_framelayout(child, portList, false);
+			child = child->next;
+		}
+	}
 }
 
 //Common code for tabpagewinnr() and winnr().
 private int
 getPortalIdInTab(Tab* t, Var* argvar) {
-   int      nr = 1;
-   Portal* po;
+	int      nr = 1;
+	Portal* po;
 
-   Portal* tPort = (t == curtab) ? curPor : t->curPor;
-   if (argvar->tag != VAR_UNKNOWN) {
-      int   invalid_arg = false;
+	Portal* tPort = (t == curtab) ? curPor : t->curPor;
+	if (argvar->tag != VAR_UNKNOWN) {
+		int   invalid_arg = false;
 
-      CS arg = convertVarToStringSingleUse(argvar);
-      if (!arg)
-         nr = 0;      //type error; errmsg already given
-      ei (STRCMP(arg, "$") == 0)
-         tPort = (t == curtab) ? lastPor : t->lastPor;
-      ei (STRCMP(arg, "#") == 0) {
-         tPort = (t == curtab) ? prevPor : t->prevPor;
-      } else {
-         long   count;
-         CS endp;
+		CS arg = convertVarToStringSingleUse(argvar);
+		if (!arg)
+			nr = 0;      //type error; errmsg already given
+		ei (STRCMP(arg, "$") == 0)
+			tPort = (t == curtab) ? lastPor : t->lastPor;
+		ei (STRCMP(arg, "#") == 0) {
+			tPort = (t == curtab) ? prevPor : t->prevPor;
+		} else {
+			long   count;
+			CS endp;
 
-         //Extract the portal count (if specified). e.g. winnr('3j')
-         count = strtol((char *)arg, (char **)&endp, 10);
-         if (count <= 0)
-            count = 1;   //if count is not specified, default to 1
-         if (endp && *endp != '\0') {
-            if (STRCMP(endp, "j") == 0)
-               tPort = vertNeighbor(t, tPort, false, count);
-            ei (STRCMP(endp, "k") == 0)
-               tPort = vertNeighbor(t, tPort, true, count);
-            ei (STRCMP(endp, "h") == 0)
-               tPort = horizNeighbor(t, tPort, true, count);
-            ei (STRCMP(endp, "l") == 0)
-               tPort = horizNeighbor(t, tPort, false, count);
-            else
-               invalid_arg = true;
-         } else
-            invalid_arg = true;
-      }
-      if (!tPort)
-         nr = 0;
+			//Extract the portal count (if specified). e.g. winnr('3j')
+			count = strtol((char *)arg, (char **)&endp, 10);
+			if (count <= 0)
+				count = 1;   //if count is not specified, default to 1
+			if (endp && *endp != '\0') {
+				if (STRCMP(endp, "j") == 0)
+					tPort = vertNeighbor(t, tPort, false, count);
+				ei (STRCMP(endp, "k") == 0)
+					tPort = vertNeighbor(t, tPort, true, count);
+				ei (STRCMP(endp, "h") == 0)
+					tPort = horizNeighbor(t, tPort, true, count);
+				ei (STRCMP(endp, "l") == 0)
+					tPort = horizNeighbor(t, tPort, false, count);
+				else
+					invalid_arg = true;
+			} else
+				invalid_arg = true;
+		}
+		if (!tPort)
+			nr = 0;
 
-      if (invalid_arg) {
-         showErrFmtMsg(_(e_invalid_expression_str), arg);
-         nr = 0;
-      }
-   }
+		if (invalid_arg) {
+			showErrFmtMsg(_(e_invalid_expression_str), arg);
+			nr = 0;
+		}
+	}
 
-   if (nr <= 0)
-      return 0;
+	if (nr <= 0)
+		return 0;
 
-   for (po = (t == curtab) ? firstPor : t->firstPor; po != tPort; po = po->next) {
-      if (!po) {
-         //didn't find it in this tabpage
-         nr = 0;
-         break;
-      }
-      ++nr;
-   }
-   return nr;
+	for (po = (t == curtab) ? firstPor : t->firstPor; po != tPort; po = po->next) {
+		if (!po) {
+			//didn't find it in this tabpage
+			nr = 0;
+			break;
+		}
+		++nr;
+	}
+	return nr;
 }
 
 //Return information about a portal as a dictionary.
 private Bag *
 get_win_info(Portal* po, short tpnr, short winnr) {
-   Bag* bag = allocBag();
+	Bag* bag = allocBag();
 
-   //make sure bottomLine is valid
-   validate_botline_win(po);
+	//make sure bottomLine is valid
+	validate_botline_win(po);
 
-   bagAddNumber(bag, S"tabnr", tpnr);
-   bagAddNumber(bag, S"winnr", winnr);
-   bagAddNumber(bag, S"winid", po->id);
-   bagAddNumber(bag, S"height", po->height);
-   bagAddNumber(bag, S"winrow", po->windowRow + 1);
-   bagAddNumber(bag, S"topline", po->topLine);
-   bagAddNumber(bag, S"botline", po->bottomLine - 1);
-   bagAddNumber(bag, S"width", po->width);
-   bagAddNumber(bag, S"wincol", po->windowCol + 1);
-   bagAddNumber(bag, S"textoff", normalPortalColumnOffset(po));
-   bagAddNumber(bag, S"bufnr", po->book->fiNum);
-   bagAddNumber(bag, S"leftcol", po->leftCol);
-   bagAddNumber(bag, S"terminal", bt_terminal(po->book));
-   bagAddNumber(bag, S"quickfix", isLocationListBook(po->book));
-   bagAddNumber(bag, S"loclist", (isLocationListBook(po->book) && po->locationStackRef));
+	bagAddNumber(bag, S"tabnr", tpnr);
+	bagAddNumber(bag, S"winnr", winnr);
+	bagAddNumber(bag, S"winid", po->id);
+	bagAddNumber(bag, S"height", po->height);
+	bagAddNumber(bag, S"winrow", po->windowRow + 1);
+	bagAddNumber(bag, S"topline", po->topLine);
+	bagAddNumber(bag, S"botline", po->bottomLine - 1);
+	bagAddNumber(bag, S"width", po->width);
+	bagAddNumber(bag, S"wincol", po->windowCol + 1);
+	bagAddNumber(bag, S"textoff", normalPortalColumnOffset(po));
+	bagAddNumber(bag, S"bufnr", po->book->fiNum);
+	bagAddNumber(bag, S"leftcol", po->leftCol);
+	bagAddNumber(bag, S"terminal", bt_terminal(po->book));
+	bagAddNumber(bag, S"quickfix", isLocationListBook(po->book));
+	bagAddNumber(bag, S"loclist", (isLocationListBook(po->book) && po->locationStackRef));
 
-   //Add a reference to portal variables
-   bagAddBag(bag, S"variables", po->internalVars);
+	//Add a reference to portal variables
+	bagAddBag(bag, S"variables", po->internalVars);
 
-   return bag;
+	return bag;
 }
 
 //Return information (variables, options, etc.) about a tab as a dictionary.
 private Bag *
 getTabInfo(Tab *t, int tp_idx) {
-   Bag* bag = allocBag();
+	Bag* bag = allocBag();
 
-   bagAddNumber(bag, S"tabnr", tp_idx);
+	bagAddNumber(bag, S"tabnr", tp_idx);
 
-   List* l = list_alloc();
-   Portal* po;
-   FOR_ALL_PORTALS_IN_TAB(t, po)
-      list_append_number(l, (Long)po->id);
-   bagAddList(bag, S"portals", l);
+	List* l = list_alloc();
+	Portal* po;
+	FOR_ALL_PORTALS_IN_TAB(t, po)
+		list_append_number(l, (Long)po->id);
+	bagAddList(bag, S"portals", l);
 
-   //Make a reference to tabpage variables
-   bagAddBag(bag, S"variables", t->vars);
+	//Make a reference to tabpage variables
+	bagAddBag(bag, S"variables", t->vars);
 
-   return bag;
+	return bag;
 }
 
 pub void
 f_gettabinfo(Arr(Var) argvars, Var* returnVar) {
-   Tab   *t, *tparg = NULL;
-   int      tpnr = 0;
+	Tab   *t, *tparg = NULL;
+	int      tpnr = 0;
 
-   allocReturnList(returnVar);
+	allocReturnList(returnVar);
 
-   if (argvars[0].tag != VAR_UNKNOWN) {
-      //Information about one tab
-      tparg = getTab((int)varGetNumberChk(argvars, NULL));
-      if (!tparg)
-         return;
-   }
+	if (argvars[0].tag != VAR_UNKNOWN) {
+		//Information about one tab
+		tparg = getTab((int)varGetNumberChk(argvars, NULL));
+		if (!tparg)
+			return;
+	}
 
-   //Get information about a specific tab or all tabs
-   FOR_ALL_TABS(t) {
-      tpnr++;
-      if (tparg != NULL && t != tparg)
-         continue;
-      Bag* b = getTabInfo(t, tpnr);
-      if (b)
-         listAppendBag(returnVar->list, b);
-      if (tparg)
-         return;
-    }
+	//Get information about a specific tab or all tabs
+	FOR_ALL_TABS(t) {
+		tpnr++;
+		if (tparg != NULL && t != tparg)
+			continue;
+		Bag* b = getTabInfo(t, tpnr);
+		if (b)
+			listAppendBag(returnVar->list, b);
+		if (tparg)
+			return;
+	 }
 }
 
 pub void
 f_getwininfo(Arr(Var) argvars, Var* returnVar) {
-   Tab   *t;
-   Portal   *po = NULL, *wparg = NULL;
-   Bag   *d;
-   Short tabnr = 0, portNr;
+	Tab   *t;
+	Portal   *po = NULL, *wparg = NULL;
+	Bag   *d;
+	Short tabnr = 0, portNr;
 
-   allocReturnList(returnVar);
+	allocReturnList(returnVar);
 
-   if (argvars[0].tag != VAR_UNKNOWN) {
-      wparg = getPortalById(tv_get_number(&argvars[0]));
-      if (wparg == NULL)
-         return;
-   }
+	if (argvars[0].tag != VAR_UNKNOWN) {
+		wparg = getPortalById(tv_get_number(&argvars[0]));
+		if (wparg == NULL)
+			return;
+	}
 
-   //Collect information about either all the portals across all the tab
-   //pages or one particular portal.
-   FOR_ALL_TABS(t) {
-      tabnr++;
-      portNr = 0;
-      FOR_ALL_PORTALS_IN_TAB(t, po) {
-         portNr++;
-         if (wparg && po != wparg)
-            continue;
-         d = get_win_info(po, tabnr, portNr);
-         if (d)
-            listAppendBag(returnVar->list, d);
-         if (wparg)
-            //found information about a specific portal
-            return;
-      }
-   }
-   if (wparg) {
-      tabnr = 0;
-      FOR_ALL_TABS(t) {
-         tabnr++;
-         FOR_ALL_POPUPPORTS_IN_TAB(t, po) {
-            if (po == wparg)
-               break;
-         }
-      }
-      d = get_win_info(wparg, t == NULL ? 0 : tabnr, 0);
-      if (d)
-         listAppendBag(returnVar->list, d);
-   }
+	//Collect information about either all the portals across all the tab
+	//pages or one particular portal.
+	FOR_ALL_TABS(t) {
+		tabnr++;
+		portNr = 0;
+		FOR_ALL_PORTALS_IN_TAB(t, po) {
+			portNr++;
+			if (wparg && po != wparg)
+				continue;
+			d = get_win_info(po, tabnr, portNr);
+			if (d)
+				listAppendBag(returnVar->list, d);
+			if (wparg)
+				//found information about a specific portal
+				return;
+		}
+	}
+	if (wparg) {
+		tabnr = 0;
+		FOR_ALL_TABS(t) {
+			tabnr++;
+			FOR_ALL_POPUPPORTS_IN_TAB(t, po) {
+				if (po == wparg)
+					break;
+			}
+		}
+		d = get_win_info(wparg, t == NULL ? 0 : tabnr, 0);
+		if (d)
+			listAppendBag(returnVar->list, d);
+	}
 }
 
 //"getwinpos({timeout})" function
 pub void
 f_getwinpos(Arr(Var) argvars, Var* returnVar) {
-   int x = -1;
-   int y = -1;
+	int x = -1;
+	int y = -1;
 
-   allocReturnList(returnVar);
+	allocReturnList(returnVar);
 
-   Long timeout = 100;
+	Long timeout = 100;
 
-   if (argvars[0].tag != VAR_UNKNOWN)
-      timeout = tv_get_number(&argvars[0]);
+	if (argvars[0].tag != VAR_UNKNOWN)
+		timeout = tv_get_number(&argvars[0]);
 
-   (void)uiGetPortPos(&x, &y, timeout);
-   list_append_number(returnVar->list, (Long)x);
-   list_append_number(returnVar->list, (Long)y);
+	(void)uiGetPortPos(&x, &y, timeout);
+	list_append_number(returnVar->list, (Long)x);
+	list_append_number(returnVar->list, (Long)y);
 }
 
 
 pub void
 f_getwinposx(Arr(Var), Var* returnVar) {
-   returnVar->number = -1;
-   int       x, y;
+	returnVar->number = -1;
+	int       x, y;
 
-   if (uiGetPortPos(&x, &y, 100) == OK)
-       returnVar->number = x;
+	if (uiGetPortPos(&x, &y, 100) == OK)
+		 returnVar->number = x;
 }
 
 pub void
 f_getwinposy(Arr(Var), OUT Var* returnVar) {
-   returnVar->number = -1;
-   int       x, y;
-   if (uiGetPortPos(&x, &y, 100) == OK)
-      returnVar->number = y;
+	returnVar->number = -1;
+	int       x, y;
+	if (uiGetPortPos(&x, &y, 100) == OK)
+		returnVar->number = y;
 }
 
 pub void
 f_tabpagenr(Arr(Var) argvars, Var* returnVar) {
-   int nr = 1;
+	int nr = 1;
 
-   if (argvars[0].tag != VAR_UNKNOWN) {
-      CS arg = convertVarToStringSingleUse(&argvars[0]);
-      nr = 0;
-      if (arg) {
-         if (STRCMP(arg, "$") == 0)
-            nr = indexOfTab(NULL) - 1;
-         ei (STRCMP(arg, "#") == 0)
-            nr = isTabValid(lastUsedTabG) ? indexOfTab(lastUsedTabG) : 0;
-         else
-            showErrFmtMsg(_(e_invalid_expression_str), arg);
-      }
-   } else
-      nr = indexOfTab(curtab);
-   returnVar->number = nr;
+	if (argvars[0].tag != VAR_UNKNOWN) {
+		CS arg = convertVarToStringSingleUse(&argvars[0]);
+		nr = 0;
+		if (arg) {
+			if (STRCMP(arg, "$") == 0)
+				nr = indexOfTab(NULL) - 1;
+			ei (STRCMP(arg, "#") == 0)
+				nr = isTabValid(lastUsedTabG) ? indexOfTab(lastUsedTabG) : 0;
+			else
+				showErrFmtMsg(_(e_invalid_expression_str), arg);
+		}
+	} else
+		nr = indexOfTab(curtab);
+	returnVar->number = nr;
 }
 
 pub void
 f_tabpagewinnr(Arr(Var) argvars, Var* returnVar) {
-   Tab* t = getTab((int)tv_get_number(&argvars[0]));
-   returnVar->number = t ? getPortalIdInTab(t, &argvars[1]) : 0;
+	Tab* t = getTab((int)tv_get_number(&argvars[0]));
+	returnVar->number = t ? getPortalIdInTab(t, &argvars[1]) : 0;
 }
 
 pub void
 f_win_execute(Arr(Var) argvars, Var* returnVar) {
-   Tab   *t;
-   SwitchPort   switchPort;
+	Tab   *t;
+	SwitchPort   switchPort;
 
-   //Return an empty string if something fails.
-   returnVar->tag = VAR_STRING;
-   returnVar->string = NULL;
+	//Return an empty string if something fails.
+	returnVar->tag = VAR_STRING;
+	returnVar->string = NULL;
 
-   int id = (int)tv_get_number(argvars);
-   Portal* po = getPortAndTab(id, &t);
-   if (!po || !t)
-      return;
+	int id = (int)tv_get_number(argvars);
+	Portal* po = getPortAndTab(id, &t);
+	if (!po || !t)
+		return;
 
-   Pos curpos = po->cursor;
-   Byte cwd[MAXPATHL];
-   int cwd_status = FAIL;
+	Pos curpos = po->cursor;
+	Byte cwd[MAXPATHL];
+	int cwd_status = FAIL;
 
-   //Getting and setting directory can be slow on some systems, only do
-   //this when the current or target portal/tab have a local directory or 'acd' is set.
-   if (curPor != po
-          && (curPor->localDir
-               || po->localDir
-               || (curtab != t && (curtab->localdir || t->localdir))
-             )
-   )
-      cwd_status = mch_dirname(cwd, MAXPATHL);
+	//Getting and setting directory can be slow on some systems, only do
+	//this when the current or target portal/tab have a local directory or 'acd' is set.
+	if (curPor != po
+			 && (curPor->localDir
+					|| po->localDir
+					|| (curtab != t && (curtab->localdir || t->localdir))
+				 )
+	)
+		cwd_status = mch_dirname(cwd, MAXPATHL);
 
-   if (portSwitchNoblock(&switchPort, po, t, true) == OK) {
-      check_cursor();
-      execute_common(argvars, returnVar, 1);
-   }
-   portRestoreNoblock(&switchPort, true);
-   if (cwd_status == OK)
-      mch_chdir(cwd);
+	if (portSwitchNoblock(&switchPort, po, t, true) == OK) {
+		check_cursor();
+		execute_common(argvars, returnVar, 1);
+	}
+	portRestoreNoblock(&switchPort, true);
+	if (cwd_status == OK)
+		mch_chdir(cwd);
 
-   //Update the status line if the cursor moved.
-   if (portalIsValid(po) && !EQUAL_POS(curpos, po->cursor))
-      po->statusLineNeedsRedraw = true;
+	//Update the status line if the cursor moved.
+	if (portalIsValid(po) && !EQUAL_POS(curpos, po->cursor))
+		po->statusLineNeedsRedraw = true;
 
-   //In case the command moved the cursor or changed the Visual area, check it is valid.
-   check_cursor();
-   if (VIsual_active)
-      check_pos(curBook, &VIsual);
+	//In case the command moved the cursor or changed the Visual area, check it is valid.
+	check_cursor();
+	if (VIsual_active)
+		check_pos(curBook, &VIsual);
 }
 
 pub void
 f_win_findbuf(Arr(Var) argvars, Var* returnVar) {
-   allocReturnList(returnVar);
+	allocReturnList(returnVar);
 
-   int bufnr = tv_get_number(&argvars[0]);
-   List* list = returnVar->list;
-   Portal   *po;
-   Tab   *t;
-   FOR_ALL_TAB_PORTALS(t, po) {
-      if (po->book->fiNum == bufnr)
-         list_append_number(list, po->id);
-   }
+	int bufnr = tv_get_number(&argvars[0]);
+	List* list = returnVar->list;
+	Portal   *po;
+	Tab   *t;
+	FOR_ALL_TAB_PORTALS(t, po) {
+		if (po->book->fiNum == bufnr)
+			list_append_number(list, po->id);
+	}
 }
 
 pub void
 f_win_getid(Arr(Var) argvars, Var* returnVar) {
-   returnVar->number = getPortalId(argvars);
+	returnVar->number = getPortalId(argvars);
 }
 
 pub void
 f_gotoPortalid(Arr(Var) argvars, Var* returnVar) {
-   int id = tv_get_number(&argvars[0]);
-   if (curPor->id == id) {
-      //Nothing to do.
-      returnVar->number = 1;
-      return;
-   }
+	int id = tv_get_number(&argvars[0]);
+	if (curPor->id == id) {
+		//Nothing to do.
+		returnVar->number = 1;
+		return;
+	}
 
-   if (text_or_buf_locked())
-      return;
-   if (portalIsPopup(curPor) && curBook->term) {
-      emsg(_(e_not_allowed_for_terminal_in_popup_portal));
-      return;
-   }
-   Portal   *po;
-   Tab   *t;
-   FOR_ALL_TAB_PORTALS(t, po)
-   if (po->id == id) {
-       //When jumping to another book, stop Visual mode.
-       if (VIsual_active && po->book != curBook) {
-            end_visual_mode();
-       }
-       goto_tab_port(t, po);
-       returnVar->number = 1;
-       return;
-   }
+	if (text_or_buf_locked())
+		return;
+	if (portalIsPopup(curPor) && curBook->term) {
+		emsg(_(e_not_allowed_for_terminal_in_popup_portal));
+		return;
+	}
+	Portal   *po;
+	Tab   *t;
+	FOR_ALL_TAB_PORTALS(t, po)
+	if (po->id == id) {
+		 //When jumping to another book, stop Visual mode.
+		 if (VIsual_active && po->book != curBook) {
+				whEndVisualMode();
+		 }
+		 goto_tab_port(t, po);
+		 returnVar->number = 1;
+		 return;
+	}
 }
 
 pub void
 f_win_id2tabwin(Arr(Var) argvars, Var* returnVar) {
-   allocReturnList(returnVar);
-   portIdToTabPort(argvars, returnVar->list);
+	allocReturnList(returnVar);
+	portIdToTabPort(argvars, returnVar->list);
 }
 
 pub void
 f_win_id2win(Arr(Var) argvars, Var* returnVar) {
-   returnVar->number = getPortById(argvars);
+	returnVar->number = getPortById(argvars);
 }
 
 pub void
 f_win_move_separator(Arr(Var) argvars, Var* returnVar) {
-   int      offset;
+	int      offset;
 
-   returnVar->number = false;
+	returnVar->number = false;
 
-   Portal* po = portFindByNrOrId(&argvars[0]);
-   if (!po || portalValidPopup(po))
-      return;
-   if (!portalIsValid(po)) {
-      emsg(_(e_cannot_resize_portal_in_another_tab));
-      return;
-   }
+	Portal* po = portFindByNrOrId(&argvars[0]);
+	if (!po || portalValidPopup(po))
+		return;
+	if (!portalIsValid(po)) {
+		emsg(_(e_cannot_resize_portal_in_another_tab));
+		return;
+	}
 
-   offset = (int)tv_get_number(&argvars[1]);
-   portDragVsepLine(po, offset);
-   returnVar->number = true;
+	offset = (int)tv_get_number(&argvars[1]);
+	portDragVsepLine(po, offset);
+	returnVar->number = true;
 }
 
 pub void
 f_win_move_statusline(Arr(Var) argvars, Var* returnVar) {
-   returnVar->number = false;
+	returnVar->number = false;
 
-   Portal* po = portFindByNrOrId(&argvars[0]);
-   if (!po || portalValidPopup(po))
-      return;
-   if (!portalIsValid(po)) {
-      emsg(_(e_cannot_resize_portal_in_another_tab));
-      return;
-   }
+	Portal* po = portFindByNrOrId(&argvars[0]);
+	if (!po || portalValidPopup(po))
+		return;
+	if (!portalIsValid(po)) {
+		emsg(_(e_cannot_resize_portal_in_another_tab));
+		return;
+	}
 
-   int offset = (int)tv_get_number(&argvars[1]);
-   portDragStatusLine(po, offset);
-   returnVar->number = true;
+	int offset = (int)tv_get_number(&argvars[1]);
+	portDragStatusLine(po, offset);
+	returnVar->number = true;
 }
 
 pub void
 f_win_screenpos(Arr(Var) argvars, Var* returnVar) {
-   allocReturnList(returnVar);
-   Portal* po = portFindByNrOrId(&argvars[0]);
-   list_append_number(returnVar->list, po == NULL ? 0 : po->windowRow + 1);
-   list_append_number(returnVar->list, po == NULL ? 0 : po->windowCol + 1);
+	allocReturnList(returnVar);
+	Portal* po = portFindByNrOrId(&argvars[0]);
+	list_append_number(returnVar->list, po == NULL ? 0 : po->windowRow + 1);
+	list_append_number(returnVar->list, po == NULL ? 0 : po->windowCol + 1);
 }
 
 pub void
 f_splitPortalmove(Arr(Var) argvars, Var* returnVar) {
-   Portal   *po, *targetPort;
-   Portal* oldPort = curPor;
-   int     flags = 0, size = 0;
+	Portal   *po, *targetPort;
+	Portal* oldPort = curPor;
+	int     flags = 0, size = 0;
 
-   returnVar->number = -1;
+	returnVar->number = -1;
 
-   po = portFindByNrOrId(&argvars[0]);
-   targetPort = portFindByNrOrId(&argvars[1]);
+	po = portFindByNrOrId(&argvars[0]);
+	targetPort = portFindByNrOrId(&argvars[1]);
 
-   if (!po || !targetPort || po == targetPort
-       || !portalIsValid(po) || !portalIsValid(targetPort)
-       || portalValidPopup(po) || portalValidPopup(targetPort)
-   ) {
-      emsg(_(e_invalid_portal_number));
-      return;
-   }
+	if (!po || !targetPort || po == targetPort
+		 || !portalIsValid(po) || !portalIsValid(targetPort)
+		 || portalValidPopup(po) || portalValidPopup(targetPort)
+	) {
+		emsg(_(e_invalid_portal_number));
+		return;
+	}
 
-   if (argvars[2].tag != VAR_UNKNOWN) {
-      DictItem  *di;
+	if (argvars[2].tag != VAR_UNKNOWN) {
+		DictItem  *di;
 
-      if (check_for_nonnull_dict_arg(argvars, 2) == FAIL)
-          return;
+		if (check_for_nonnull_dict_arg(argvars, 2) == FAIL)
+			 return;
 
-      Bag* b = argvars[2].bag;
-      if (bagGetBool(b, tConst("vertical"), false))
-          flags |= WSP_VERT;
-      if ((di = bagFind(b, tConst("rightbelow"))) != NULL)
-          flags |= tv_get_bool(&di->c) ? WSP_BELOW : WSP_ABOVE;
-      size = (int)bagGetNumber(b, tConst("size"));
-   }
+		Bag* b = argvars[2].bag;
+		if (bagGetBool(b, tConst("vertical"), false))
+			 flags |= WSP_VERT;
+		if ((di = bagFind(b, tConst("rightbelow"))) != NULL)
+			 flags |= tv_get_bool(&di->c) ? WSP_BELOW : WSP_ABOVE;
+		size = (int)bagGetNumber(b, tConst("size"));
+	}
 
-   //Check if we're allowed to continue before we bother switching portals.
-   if (text_or_buf_locked() || check_split_disallowed(po) == FAIL)
-      return;
+	//Check if we're allowed to continue before we bother switching portals.
+	if (text_or_buf_locked() || check_split_disallowed(po) == FAIL)
+		return;
 
-   if (curPor != targetPort)
-      gotoPortal(targetPort);
+	if (curPor != targetPort)
+		gotoPortal(targetPort);
 
-   //Autocommands may have sent us elsewhere or closed "po" or "oldPort".
-   if (curPor == targetPort && portalIsValid(po)) {
-      if (splitPortalmove(po, size, flags) == OK)
-          returnVar->number = 0;
-   } else
-      emsg(_(e_autocommands_caused_command_to_abort));
+	//Autocommands may have sent us elsewhere or closed "po" or "oldPort".
+	if (curPor == targetPort && portalIsValid(po)) {
+		if (splitPortalmove(po, size, flags) == OK)
+			 returnVar->number = 0;
+	} else
+		emsg(_(e_autocommands_caused_command_to_abort));
 
-   if (oldPort != curPor && portalIsValid(oldPort))
-      gotoPortal(oldPort);
+	if (oldPort != curPor && portalIsValid(oldPort))
+		gotoPortal(oldPort);
 }
 
 //"win_gettype(nr)" function
 pub void
 f_win_gettype(Arr(Var) argvars, Var* returnVar) {
-   Portal   *po = curPor;
+	Portal   *po = curPor;
 
-   returnVar->tag = VAR_STRING;
-   returnVar->string = NULL;
+	returnVar->tag = VAR_STRING;
+	returnVar->string = NULL;
 
-   if (argvars[0].tag != VAR_UNKNOWN) {
-      po = portFindByNrOrId(&argvars[0]);
-      if (!po) {
-         returnVar->string = copyStr(S"unknown");
-         return;
-      }
-   }
-   if (is_autoCommPort(po))
-      returnVar->string = copyStr(S"autocmd");
-   ei (po->isPreview)
-      returnVar->string = copyStr(S"preview");
-   ei (PORTAL_IS_POPUP(po))
-      returnVar->string = copyStr(S"popup");
-   ei (po == commPortPortG)
-      returnVar->string = copyStr(S"command");
-   ei (isLocationListBook(po->book))
-      returnVar->string = copyStr(po->locationStackRef ? S"loclist" : S"quickfix");
+	if (argvars[0].tag != VAR_UNKNOWN) {
+		po = portFindByNrOrId(&argvars[0]);
+		if (!po) {
+			returnVar->string = copyStr(S"unknown");
+			return;
+		}
+	}
+	if (is_autoCommPort(po))
+		returnVar->string = copyStr(S"autocmd");
+	ei (po->isPreview)
+		returnVar->string = copyStr(S"preview");
+	ei (PORTAL_IS_POPUP(po))
+		returnVar->string = copyStr(S"popup");
+	ei (po == commPortPortG)
+		returnVar->string = copyStr(S"command");
+	ei (isLocationListBook(po->book))
+		returnVar->string = copyStr(po->locationStackRef ? S"loclist" : S"quickfix");
 
 }
 
 pub void
 f_getcmdwintype(Arr(Var), Var* returnVar) {
-   returnVar->tag = VAR_STRING;
-   returnVar->string = NULL;
-   returnVar->string = alloc(2);
+	returnVar->tag = VAR_STRING;
+	returnVar->string = NULL;
+	returnVar->string = alloc(2);
 
-   returnVar->string[0] = commPortTypeG;
-   returnVar->string[1] = ZERO;
+	returnVar->string[0] = commPortTypeG;
+	returnVar->string[1] = ZERO;
 }
 
 //"winbufnr(nr)" function
 pub void
 f_winbufnr(Arr(Var) argvars, Var* returnVar) {
-   Portal* po = portFindByNrOrId(&argvars[0]);
-   returnVar->number = po ? po->book->fiNum : -1;
+	Portal* po = portFindByNrOrId(&argvars[0]);
+	returnVar->number = po ? po->book->fiNum : -1;
 }
 
 pub void
 f_wincol(Arr(Var), Var* returnVar) {
-   validate_cursor();
-   returnVar->number = curPor->cursorCol + 1;
+	validate_cursor();
+	returnVar->number = curPor->cursorCol + 1;
 }
 
 //"winheight(nr)" function
 pub void
 f_winheight(Arr(Var) argvars, Var* returnVar) {
-   Portal* po = portFindByNrOrId(&argvars[0]);
-   returnVar->number = po ? (Long)po->height : -1;
+	Portal* po = portFindByNrOrId(&argvars[0]);
+	returnVar->number = po ? (Long)po->height : -1;
 }
 
 pub void
 f_winlayout(Arr(Var) argvars, Var* returnVar) {
-   allocReturnList(returnVar);
+	allocReturnList(returnVar);
 
-   Tab   *t;
-   if (argvars[0].tag == VAR_UNKNOWN)
-      t = curtab;
-   else {
-      t = getTab((int)tv_get_number(&argvars[0]));
-      if (!t)
-         return;
-   }
-   get_framelayout(t->topframe, returnVar->list, true);
+	Tab   *t;
+	if (argvars[0].tag == VAR_UNKNOWN)
+		t = curtab;
+	else {
+		t = getTab((int)tv_get_number(&argvars[0]));
+		if (!t)
+			return;
+	}
+	get_framelayout(t->topframe, returnVar->list, true);
 }
 
 pub void
 f_winline(Arr(Var), Var* returnVar) {
-   validate_cursor();
-   returnVar->number = curPor->cursorRow + 1;
+	validate_cursor();
+	returnVar->number = curPor->cursorRow + 1;
 }
 
 pub void
 f_winnr(Arr(Var) argvars, Var* returnVar) {
-   int nr = getPortalIdInTab(curtab, &argvars[0]);
-   returnVar->number = nr;
+	int nr = getPortalIdInTab(curtab, &argvars[0]);
+	returnVar->number = nr;
 }
 
 pub void
 f_winrestcmd(Arr(Var), Var* returnVar) {
-   Portal* po;
-   Byte buf[50];
+	Portal* po;
+	Byte buf[50];
 
-   ArrayList   ga;
-   ga_init2(&ga, sizeof(char), 70);
+	ArrayList   ga;
+	ga_init2(&ga, sizeof(char), 70);
 
-   //Do this twice to handle some portal layouts properly.
-   for (int i = 0; i < 2; ++i) {
-      int portId = 1;
-      FOR_ALL_PORTALS(po) {
-         sprintf((char *)buf, ":%dresize %d|", portId, po->height);
-         ga_concat(&ga, buf);
-         sprintf((char *)buf, "vert :%dresize %d|", portId, po->width);
-         ga_concat(&ga, buf);
-         ++portId;
-      }
-   }
-   ga_append(&ga, ZERO);
+	//Do this twice to handle some portal layouts properly.
+	for (int i = 0; i < 2; ++i) {
+		int portId = 1;
+		FOR_ALL_PORTALS(po) {
+			sprintf((char *)buf, ":%dresize %d|", portId, po->height);
+			ga_concat(&ga, buf);
+			sprintf((char *)buf, "vert :%dresize %d|", portId, po->width);
+			ga_concat(&ga, buf);
+			++portId;
+		}
+	}
+	ga_append(&ga, ZERO);
 
-   returnVar->string = ga.c;
-   returnVar->tag = VAR_STRING;
+	returnVar->string = ga.c;
+	returnVar->tag = VAR_STRING;
 }
 
 pub void
 f_winrestview(Arr(Var) argvars, Var*) {
-   if (check_for_nonnull_dict_arg(argvars, 0) == FAIL)
-      return;
+	if (check_for_nonnull_dict_arg(argvars, 0) == FAIL)
+		return;
 
-   Bag* dict = argvars[0].bag;
-   if (bagHasKey(dict, tConst("lnum")))
-      curPor->cursor.lnum = (LineNr)bagGetNumber(dict, tConst("lnum"));
-   if (bagHasKey(dict, tConst("col")))
-      curPor->cursor.col = (ColNr)bagGetNumber(dict, tConst("col"));
-   if (bagHasKey(dict, tConst("coladd")))
-      curPor->cursor.coladd = (ColNr)bagGetNumber(dict, tConst("coladd"));
-   if (bagHasKey(dict, tConst("curswant"))) {
-      curPor->cursWant = (ColNr)bagGetNumber(dict, tConst("curswant"));
-      curPor->setCursWant = false;
-   }
+	Bag* dict = argvars[0].bag;
+	if (bagHasKey(dict, tConst("lnum")))
+		curPor->cursor.lnum = (LineNr)bagGetNumber(dict, tConst("lnum"));
+	if (bagHasKey(dict, tConst("col")))
+		curPor->cursor.col = (ColNr)bagGetNumber(dict, tConst("col"));
+	if (bagHasKey(dict, tConst("coladd")))
+		curPor->cursor.coladd = (ColNr)bagGetNumber(dict, tConst("coladd"));
+	if (bagHasKey(dict, tConst("curswant"))) {
+		curPor->cursWant = (ColNr)bagGetNumber(dict, tConst("curswant"));
+		curPor->setCursWant = false;
+	}
 
-   if (bagHasKey(dict, tConst("topline")))
-      set_topline(curPor, (LineNr)bagGetNumber(dict, tConst("topline")));
-   if (bagHasKey(dict, tConst("topfill")))
-      curPor->topFill = (int)bagGetNumber(dict, tConst("topfill"));
-   if (bagHasKey(dict, tConst("leftcol")))
-      curPor->leftCol = (ColNr)bagGetNumber(dict, tConst("leftcol"));
-   if (bagHasKey(dict, tConst("skipcol")))
-      curPor->skipCol = (ColNr)bagGetNumber(dict, tConst("skipcol"));
+	if (bagHasKey(dict, tConst("topline")))
+		set_topline(curPor, (LineNr)bagGetNumber(dict, tConst("topline")));
+	if (bagHasKey(dict, tConst("topfill")))
+		curPor->topFill = (int)bagGetNumber(dict, tConst("topfill"));
+	if (bagHasKey(dict, tConst("leftcol")))
+		curPor->leftCol = (ColNr)bagGetNumber(dict, tConst("leftcol"));
+	if (bagHasKey(dict, tConst("skipcol")))
+		curPor->skipCol = (ColNr)bagGetNumber(dict, tConst("skipcol"));
 
-   check_cursor();
-   portalNewHeight(curPor, curPor->height);
-   portalNewWidth(curPor, curPor->width);
-   didChangePortalSettingCurPor();
+	check_cursor();
+	portalNewHeight(curPor, curPor->height);
+	portalNewWidth(curPor, curPor->width);
+	didChangePortalSettingCurPor();
 
-   if (curPor->topLine <= 0)
-      curPor->topLine = 1;
-   if (curPor->topLine > curBook->mem.lineCount)
-      curPor->topLine = curBook->mem.lineCount;
-   check_topfill(curPor, true);
+	if (curPor->topLine <= 0)
+		curPor->topLine = 1;
+	if (curPor->topLine > curBook->mem.lineCount)
+		curPor->topLine = curBook->mem.lineCount;
+	check_topfill(curPor, true);
 }
 
 pub void
 f_winsaveview(Arr(Var), Var* returnVar) {
-   allocReturnDict(returnVar);
+	allocReturnDict(returnVar);
 
-   Bag* dict = returnVar->bag;
-   bagAddNumber(dict, S"lnum", (long)curPor->cursor.lnum);
-   bagAddNumber(dict, S"col", (long)curPor->cursor.col);
-   bagAddNumber(dict, S"coladd", (long)curPor->cursor.coladd);
-   update_curswant();
-   bagAddNumber(dict, S"curswant", (long)curPor->cursWant);
+	Bag* dict = returnVar->bag;
+	bagAddNumber(dict, S"lnum", (long)curPor->cursor.lnum);
+	bagAddNumber(dict, S"col", (long)curPor->cursor.col);
+	bagAddNumber(dict, S"coladd", (long)curPor->cursor.coladd);
+	update_curswant();
+	bagAddNumber(dict, S"curswant", (long)curPor->cursWant);
 
-   bagAddNumber(dict, S"topline", (long)curPor->topLine);
-   bagAddNumber(dict, S"topfill", (long)curPor->topFill);
-   bagAddNumber(dict, S"leftcol", (long)curPor->leftCol);
-   bagAddNumber(dict, S"skipcol", (long)curPor->skipCol);
+	bagAddNumber(dict, S"topline", (long)curPor->topLine);
+	bagAddNumber(dict, S"topfill", (long)curPor->topFill);
+	bagAddNumber(dict, S"leftcol", (long)curPor->leftCol);
+	bagAddNumber(dict, S"skipcol", (long)curPor->skipCol);
 }
 
 //"winwidth(nr)" function
 pub void
 f_winwidth(Arr(Var) argvars, Var* returnVar) {
-   Portal* po = portFindByNrOrId(&argvars[0]);
-   returnVar->number = po ? (Long)po->width : -1;
+	Portal* po = portFindByNrOrId(&argvars[0]);
+	returnVar->number = po ? (Long)po->width : -1;
 }
 
 //Set "port" to be the curPor and "t" to be the current tab. portRestore() MUST be called to
@@ -7204,77 +7203,77 @@ f_winwidth(Arr(Var) argvars, Var* returnVar) {
 //triggered, another tabpage access is limited. Returns FAIL if switching to "port" failed.
 pub int
 portSwitch(SwitchPort *switchPort, Portal* port, Tab* t, int no_display) {
-   block_autocmds();
-   return portSwitchNoblock(switchPort, port, t, no_display);
+	block_autocmds();
+	return portSwitchNoblock(switchPort, port, t, no_display);
 }
 
 //As portSwitch() but without blocking autocommands.
 pub int
 portSwitchNoblock(
-   SwitchPort *switchPort,
-   Portal       *port,
-   Tab   *t,
-   int       no_display)
+	SwitchPort *switchPort,
+	Portal       *port,
+	Tab   *t,
+	int       no_display)
 {
-   CLEAR_POINTER(switchPort);
-   switchPort->curPor = curPor;
-   if (port == curPor)
-      switchPort->samePortal = true;
-   else {
-      //Disable Visual selection, because redrawing may fail.
-      switchPort->isVisualActive = VIsual_active;
-      VIsual_active = false;
-   }
+	CLEAR_POINTER(switchPort);
+	switchPort->curPor = curPor;
+	if (port == curPor)
+		switchPort->samePortal = true;
+	else {
+		//Disable Visual selection, because redrawing may fail.
+		switchPort->isVisualActive = VIsual_active;
+		VIsual_active = false;
+	}
 
-   if (t) {
-      switchPort->currTab = curtab;
-      if (no_display) {
-         unloadTab(curtab);
-         loadTab(t);
-      } else
-         gotoTab(t, false, false);
-   }
-   if (!portalIsValid(port))
-      return FAIL;
-   curPor = port;
-   curBook = curPor->book;
-   return OK;
+	if (t) {
+		switchPort->currTab = curtab;
+		if (no_display) {
+			unloadTab(curtab);
+			loadTab(t);
+		} else
+			gotoTab(t, false, false);
+	}
+	if (!portalIsValid(port))
+		return FAIL;
+	curPor = port;
+	curBook = curPor->book;
+	return OK;
 }
 
 //Restore current tabpage and portal saved by portSwitch(), if still valid.
 //When "no_display" is true the display won't be affected, no redraw is triggered.
 pub void
 portRestore(SwitchPort* switchPort, int no_display) {
-   portRestoreNoblock(switchPort, no_display);
-   unblock_autocmds();
+	portRestoreNoblock(switchPort, no_display);
+	unblock_autocmds();
 }
 
 //As portRestore() but without unblocking autocommands.
 pub void
 portRestoreNoblock(
-   SwitchPort* switchPort,
-   int       no_display)
+	SwitchPort* switchPort,
+	int       no_display)
 {
-   if (switchPort->currTab && isTabValid(switchPort->currTab)) {
-      if (no_display) {
-         Portal   *old_tp_curPor = curtab->curPor;
-         unloadTab(curtab);
-         //Don't change the curPor of the tabpage we temporarily visited.
-         curtab->curPor = old_tp_curPor;
-         loadTab(switchPort->currTab);
-      } else
-         gotoTab(switchPort->currTab, false, false);
-   }
+	if (switchPort->currTab && isTabValid(switchPort->currTab)) {
+		if (no_display) {
+			Portal   *old_tp_curPor = curtab->curPor;
+			unloadTab(curtab);
+			//Don't change the curPor of the tabpage we temporarily visited.
+			curtab->curPor = old_tp_curPor;
+			loadTab(switchPort->currTab);
+		} else
+			gotoTab(switchPort->currTab, false, false);
+	}
 
-   if (!switchPort->samePortal)
-      VIsual_active = switchPort->isVisualActive;
+	if (!switchPort->samePortal)
+		VIsual_active = switchPort->isVisualActive;
 
-   if (portalIsValid(switchPort->curPor)) {
-      curPor = switchPort->curPor;
-      curBook = curPor->book;
-   } ei (PORTAL_IS_POPUP(curPor))
-      //original portal was closed and now we're in a popup portal: Go to the first valid portal
-      gotoPortal(firstPor);
+	if (portalIsValid(switchPort->curPor)) {
+		curPor = switchPort->curPor;
+		curBook = curPor->book;
+	} ei (PORTAL_IS_POPUP(curPor))
+		//original portal was closed and now we're in a popup portal: Go to the first valid portal
+		gotoPortal(firstPor);
 }
 
 //}}}
@@ -7316,16 +7315,16 @@ private int foldendmarkerlen;
 //Copy that folding state from portal "wp_from" to portal "wp_to".
 pub void
 copyFoldingState(Portal* wp_from, Portal* wp_to) {
-   wp_to->foldManual = wp_from->foldManual;
-   wp_to->foldNeedsRecomputation = wp_from->foldNeedsRecomputation;
-   cloneFoldArrayList(&wp_from->folds, &wp_to->folds);
+	wp_to->foldManual = wp_from->foldManual;
+	wp_to->foldNeedsRecomputation = wp_from->foldNeedsRecomputation;
+	cloneFoldArrayList(&wp_from->folds, &wp_to->folds);
 }
 
 //Return true if there may be folded lines in portal "po".
 pub int
 hasAnyFolding(Portal* po) {
-   //very simple now, but can become more complex later
-   return po->o.foldEnable;
+	//very simple now, but can become more complex later
+	return po->o.foldEnable;
 }
 
 //getFolds()
@@ -7334,121 +7333,121 @@ hasAnyFolding(Portal* po) {
 //lnum of the sequence of folded lines (skipped when NULL).
 pub Boole
 getFolds(LineNr lnum, OUT LineNr *firstp, OUT LineNr *lastp) {
-   return getFoldsPortal(curPor, lnum, OUT firstp, OUT lastp, true, NULL);
+	return getFoldsPortal(curPor, lnum, OUT firstp, OUT lastp, true, NULL);
 }
 
 pub Boole
 getFoldsPortal(
-   Portal* po,
-   LineNr lnum,
-   LineNr* firstp,
-   LineNr* lastp,
-   Boole cache,      //when true: use cached values of portal
-   OUT FoldInfo* infop      //where to store fold info
+	Portal* po,
+	LineNr lnum,
+	LineNr* firstp,
+	LineNr* lastp,
+	Boole cache,      //when true: use cached values of portal
+	OUT FoldInfo* infop      //where to store fold info
 ){
-   Boole      had_folded = false;
-   LineNr   first = 0;
-   LineNr   last = 0;
-   LineNr   lnum_rel = lnum;
-   int x;
-   Fold* fp;
-   int  level = 0;
-   Boole use_level = false;
-   Boole maybe_small = false;
-   ArrayList   *gap;
-   int      low_level = 0;
+	Boole      had_folded = false;
+	LineNr   first = 0;
+	LineNr   last = 0;
+	LineNr   lnum_rel = lnum;
+	int x;
+	Fold* fp;
+	int  level = 0;
+	Boole use_level = false;
+	Boole maybe_small = false;
+	ArrayList   *gap;
+	int      low_level = 0;
 
-   checkupdate(po);
+	checkupdate(po);
 
-   //Return quickly when there is no folding at all in this portal.
-   if (!hasAnyFolding(po)) {
-      if (infop)
-         infop->fi_level = 0;
-      return false;
-   }
+	//Return quickly when there is no folding at all in this portal.
+	if (!hasAnyFolding(po)) {
+		if (infop)
+			infop->fi_level = 0;
+		return false;
+	}
 
-   if (cache) {
-      //First look in cached info for displayed lines. This is probably
-      //the fastest, but it can only be used if the entry is still valid.
-      x = find_wl_entry(po, lnum);
-      if (x >= 0) {
-         first = po->lines[x].bookLnum;
-         last = po->lines[x].lastBookLnum;
-         had_folded = po->lines[x].isFolded;
-      }
-   }
+	if (cache) {
+		//First look in cached info for displayed lines. This is probably
+		//the fastest, but it can only be used if the entry is still valid.
+		x = find_wl_entry(po, lnum);
+		if (x >= 0) {
+			first = po->lines[x].bookLnum;
+			last = po->lines[x].lastBookLnum;
+			had_folded = po->lines[x].isFolded;
+		}
+	}
 
-   if (first == 0) {
-      //Recursively search for a fold that contains "lnum".
-      gap = &po->folds;
-      for (;;) {
-         if (!foldFind(gap, lnum_rel, &fp))
-            break;
+	if (first == 0) {
+		//Recursively search for a fold that contains "lnum".
+		gap = &po->folds;
+		for (;;) {
+			if (!foldFind(gap, lnum_rel, &fp))
+				break;
 
-         //Remember lowest level of fold that starts in "lnum".
-         if (lnum_rel == fp->fd_top && low_level == 0)
-            low_level = level + 1;
+			//Remember lowest level of fold that starts in "lnum".
+			if (lnum_rel == fp->fd_top && low_level == 0)
+				low_level = level + 1;
 
-         first += fp->fd_top;
-         last += fp->fd_top;
+			first += fp->fd_top;
+			last += fp->fd_top;
 
-         //is this fold closed?
-         had_folded = check_closed(po, fp, OUT &use_level, level, OUT &maybe_small, lnum - lnum_rel);
-         if (had_folded) {
-            //Fold closed: Set last and quit loop.
-            last += fp->fd_len - 1;
-            break;
-         }
+			//is this fold closed?
+			had_folded = check_closed(po, fp, OUT &use_level, level, OUT &maybe_small, lnum - lnum_rel);
+			if (had_folded) {
+				//Fold closed: Set last and quit loop.
+				last += fp->fd_len - 1;
+				break;
+			}
 
-         //Fold found, but it's open: Check nested folds.  Line number is
-         //relative to containing fold.
-         gap = &fp->fd_nested;
-         lnum_rel -= fp->fd_top;
-         ++level;
-      }
-   }
+			//Fold found, but it's open: Check nested folds.  Line number is
+			//relative to containing fold.
+			gap = &fp->fd_nested;
+			lnum_rel -= fp->fd_top;
+			++level;
+		}
+	}
 
-   if (!had_folded) {
-      if (infop) {
-         infop->fi_level = level;
-         infop->fi_lnum = lnum - lnum_rel;
-         infop->fi_low_level = low_level == 0 ? level : low_level;
-      }
-      return false;
-   }
+	if (!had_folded) {
+		if (infop) {
+			infop->fi_level = level;
+			infop->fi_lnum = lnum - lnum_rel;
+			infop->fi_low_level = low_level == 0 ? level : low_level;
+		}
+		return false;
+	}
 
-   if (last > po->book->mem.lineCount)
-      last = po->book->mem.lineCount;
-   if (lastp)
-      *lastp = last;
-   if (firstp)
-      *firstp = first;
-   if (infop) {
-      infop->fi_level = level + 1;
-      infop->fi_lnum = first;
-      infop->fi_low_level = low_level == 0 ? level + 1 : low_level;
-   }
-   return true;
+	if (last > po->book->mem.lineCount)
+		last = po->book->mem.lineCount;
+	if (lastp)
+		*lastp = last;
+	if (firstp)
+		*firstp = first;
+	if (infop) {
+		infop->fi_level = level + 1;
+		infop->fi_lnum = first;
+		infop->fi_low_level = low_level == 0 ? level + 1 : low_level;
+	}
+	return true;
 }
 
 //foldLevel()
 //Return fold level at line number "lnum" in the current portal.
 private int
 getFoldLevel(LineNr lnum) {
-   //While updating the folds lines between invalid_top and invalid_bot have
-   //an undefined fold level.  Otherwise update the folds first.
-   if (invalid_top == (LineNr)0)
-      checkupdate(curPor);
-   ei (lnum == prev_lnum && prev_lnum_lvl >= 0)
-      return prev_lnum_lvl;
-   ei (lnum >= invalid_top && lnum <= invalid_bot)
-      return -1;
+	//While updating the folds lines between invalid_top and invalid_bot have
+	//an undefined fold level.  Otherwise update the folds first.
+	if (invalid_top == (LineNr)0)
+		checkupdate(curPor);
+	ei (lnum == prev_lnum && prev_lnum_lvl >= 0)
+		return prev_lnum_lvl;
+	ei (lnum >= invalid_top && lnum <= invalid_bot)
+		return -1;
 
-   //Return quickly when there is no folding at all in this portal.
-   if (!hasAnyFolding(curPor))
-      return 0;
+	//Return quickly when there is no folding at all in this portal.
+	if (!hasAnyFolding(curPor))
+		return 0;
 
-   return foldLevelWin(curPor, lnum);
+	return foldLevelWin(curPor, lnum);
 }
 
 //Low level function to check if a line is folded.  Doesn't use any caching.
@@ -7457,7 +7456,7 @@ getFoldLevel(LineNr lnum) {
 //Return MAYBE if the line is folded when next to a folded line.
 pub int
 lineFolded(Portal *po, LineNr lnum) {
-   return foldedCount(po, lnum, NULL) != 0;
+	return foldedCount(po, lnum, NULL) != 0;
 }
 
 //Count the number of lines that are folded at line number "lnum".
@@ -7468,267 +7467,267 @@ lineFolded(Portal *po, LineNr lnum) {
 //When "infop" is not NULL, fills *infop with the fold level info.
 pub long
 foldedCount(Portal* po, LineNr lnum, OUT FoldInfo* infop) {
-   LineNr last;
+	LineNr last;
 
-   if (getFoldsPortal(po, lnum, NULL, OUT &last, false, infop))
-      return (long)(last - lnum + 1);
-   return 0;
+	if (getFoldsPortal(po, lnum, NULL, OUT &last, false, infop))
+		return (long)(last - lnum + 1);
+	return 0;
 }
 
 //Close fold for current portal at line "lnum". Repeat "count" times.
 pub void
 closeFold(LineNr lnum, Long count) {
-   setFoldRepeat(lnum, count, false);
+	setFoldRepeat(lnum, count, false);
 }
 
 //Close fold for current portal at line "lnum" recursively.
 pub void
 closeFoldRecurse(LineNr lnum) {
-   (void)setManualFold(lnum, false, true, NULL);
+	(void)setManualFold(lnum, false, true, NULL);
 }
 
 //Open or Close folds for current portal in lines "first" to "last".
 //Used for "zo", "zO", "zc" and "zC" in Visual mode.
 pub void
 opFoldRange(
-   LineNr first,
-   LineNr last,
-   Boole opening,   //true to open, false to close
-   Boole recurse,   //true to do it recursively
-   Boole had_visual   //true when Visual selection used
+	LineNr first,
+	LineNr last,
+	Boole opening,   //true to open, false to close
+	Boole recurse,   //true to do it recursively
+	Boole had_visual   //true when Visual selection used
 ){
-   Unt done = DONE_NOTHING;   //avoid error messages
-   LineNr lnum_next;
-   for (LineNr lnum = first; lnum <= last; lnum = lnum_next + 1) {
-      lnum_next = lnum;
-      //Opening one level only: next fold to open is after the one going to be opened.
-      if (opening && !recurse)
-         (void)getFolds(lnum, NULL, &lnum_next);
-      (void)setManualFold(lnum, opening, recurse, &done);
-      //Closing one level only: next line to close a fold is after just closed fold.
-      if (!opening && !recurse)
-         (void)getFolds(lnum, NULL, &lnum_next);
-   }
-   if (done == DONE_NOTHING)
-      emsg(_(e_no_fold_found));
-   //Force a redraw to remove the Visual highlighting.
-   if (had_visual)
-      drawCurBookLater(UPD_INVERTED);
+	Unt done = DONE_NOTHING;   //avoid error messages
+	LineNr lnum_next;
+	for (LineNr lnum = first; lnum <= last; lnum = lnum_next + 1) {
+		lnum_next = lnum;
+		//Opening one level only: next fold to open is after the one going to be opened.
+		if (opening && !recurse)
+			(void)getFolds(lnum, NULL, &lnum_next);
+		(void)setManualFold(lnum, opening, recurse, &done);
+		//Closing one level only: next line to close a fold is after just closed fold.
+		if (!opening && !recurse)
+			(void)getFolds(lnum, NULL, &lnum_next);
+	}
+	if (done == DONE_NOTHING)
+		emsg(_(e_no_fold_found));
+	//Force a redraw to remove the Visual highlighting.
+	if (had_visual)
+		drawCurBookLater(UPD_INVERTED);
 }
 
 //Open fold for current portal at line "lnum". Repeat "count" times.
 pub void
 openFold(LineNr lnum, Long count) {
-   setFoldRepeat(lnum, count, true);
+	setFoldRepeat(lnum, count, true);
 }
 
 //Open fold for current portal at line "lnum" recursively.
 pub void
 openFoldRecurse(LineNr lnum) {
-   (void)setManualFold(lnum, true, true, NULL);
+	(void)setManualFold(lnum, true, true, NULL);
 }
 
 //Open folds until the cursor line is not in a closed fold.
 pub void
 foldOpenCursor(void) {
-   Unt done;
+	Unt done;
 
-   checkupdate(curPor);
-   if (hasAnyFolding(curPor)) {
-      for (;;) {
-         done = DONE_NOTHING;
-         (void)setManualFold(curPor->cursor.lnum, true, false, OUT &done);
-         if (!(done & DONE_ACTION))
-            break;
-      }
-   }
+	checkupdate(curPor);
+	if (hasAnyFolding(curPor)) {
+		for (;;) {
+			done = DONE_NOTHING;
+			(void)setManualFold(curPor->cursor.lnum, true, false, OUT &done);
+			if (!(done & DONE_ACTION))
+				break;
+		}
+	}
 }
 
 private void
 newFoldLevelForPortal(Portal* po) {
-   checkupdate(po);
-   if (po->foldManual) {
-      //Set all flags for the first level of folds to FD_LEVEL.  Following
-      //manual open/close will then change the flags to FD_OPEN or
-      //FD_CLOSED for those folds that don't use 'foldlevel'.
-      Fold* fp = (Fold *)po->folds.c;
-      for (int i = 0; i < po->folds.len; ++i)
-         fp[i].fd_flags = FD_LEVEL;
-      po->foldManual = false;
-   }
-   didChangePortalSetting(po);
+	checkupdate(po);
+	if (po->foldManual) {
+		//Set all flags for the first level of folds to FD_LEVEL.  Following
+		//manual open/close will then change the flags to FD_OPEN or
+		//FD_CLOSED for those folds that don't use 'foldlevel'.
+		Fold* fp = (Fold *)po->folds.c;
+		for (int i = 0; i < po->folds.len; ++i)
+			fp[i].fd_flags = FD_LEVEL;
+		po->foldManual = false;
+	}
+	didChangePortalSetting(po);
 }
 
 //Set new foldlevel for current portal.
 pub void
 newFoldLevel(void) {
-   newFoldLevelForPortal(curPor);
-   if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.diff) {
-      Portal* po;
-      //Set the same foldlevel in other portals in diff mode.
-      FOR_ALL_PORTALS(po) {
-         if (po != curPor && po->o.foldMethod == FOLD_DIFF && po->o.diff) {
-            po->o.foldLevel = curPor->o.foldLevel;
-            newFoldLevelForPortal(po);
-         }
-      }
-   }
+	newFoldLevelForPortal(curPor);
+	if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.diff) {
+		Portal* po;
+		//Set the same foldlevel in other portals in diff mode.
+		FOR_ALL_PORTALS(po) {
+			if (po != curPor && po->o.foldMethod == FOLD_DIFF && po->o.diff) {
+				po->o.foldLevel = curPor->o.foldLevel;
+				newFoldLevelForPortal(po);
+			}
+		}
+	}
 }
 
 //Apply @foldlevel to all folds that don't contain the cursor.
 pub void
 foldCheckClose(void) {
-   //@foldclose can only be "all" right now
-   checkupdate(curPor);
-   if (checkCloseRec(&curPor->folds, curPor->cursor.lnum,
-      (int)curPor->o.foldLevel))
-   didChangePortalSettingCurPor();
+	//@foldclose can only be "all" right now
+	checkupdate(curPor);
+	if (checkCloseRec(&curPor->folds, curPor->cursor.lnum,
+		(int)curPor->o.foldLevel))
+	didChangePortalSettingCurPor();
 }
 
 private int
 checkCloseRec(ArrayList* gap, LineNr lnum, int level) {
-   int retval = false;
-   int i;
+	int retval = false;
+	int i;
 
-   Fold* fp = (Fold *)gap->c;
-   for (i = 0; i < gap->len; ++i) {
-      //Only manually opened folds may need to be closed.
-      if (fp[i].fd_flags == FD_OPEN) {
-         if (level <= 0 && (lnum < fp[i].fd_top || lnum >= fp[i].fd_top + fp[i].fd_len)) {
-            fp[i].fd_flags = FD_LEVEL;
-            retval = true;
-         } else
-            retval |= checkCloseRec(&fp[i].fd_nested, lnum - fp[i].fd_top, level - 1);
-      }
-   }
-   return retval;
+	Fold* fp = (Fold *)gap->c;
+	for (i = 0; i < gap->len; ++i) {
+		//Only manually opened folds may need to be closed.
+		if (fp[i].fd_flags == FD_OPEN) {
+			if (level <= 0 && (lnum < fp[i].fd_top || lnum >= fp[i].fd_top + fp[i].fd_len)) {
+				fp[i].fd_flags = FD_LEVEL;
+				retval = true;
+			} else
+				retval |= checkCloseRec(&fp[i].fd_nested, lnum - fp[i].fd_top, level - 1);
+		}
+	}
+	return retval;
 }
 
 //Return true if it's allowed to manually create or delete a fold.
 //Give an error message and return false if not.
 pub int
 foldManualAllowed(int create) {
-   if (curPor->o.foldMethod == FOLD_MARKER && curPor->o.foldMarker)
-      return true;
-   if (create)
-      emsg(_(e_cannot_create_fold_with_current_foldmethod));
-   else
-      emsg(_(e_cannot_delete_fold_with_current_foldmethod));
-   return false;
+	if (curPor->o.foldMethod == FOLD_MARKER && curPor->o.foldMarker)
+		return true;
+	if (create)
+		emsg(_(e_cannot_create_fold_with_current_foldmethod));
+	else
+		emsg(_(e_cannot_delete_fold_with_current_foldmethod));
+	return false;
 }
 
 //Create a fold from line "start" to line "end" (inclusive) in the current portal.
 pub void
 foldCreate(LineNr start, LineNr end) {
-   ArrayList* gap;
-   ArrayList fold_ga;
-   int i, j;
-   int cont;
-   Boole use_level = false;
-   int closed = false;
-   int level = 0;
-   LineNr start_rel = start;
-   LineNr end_rel = end;
+	ArrayList* gap;
+	ArrayList fold_ga;
+	int i, j;
+	int cont;
+	Boole use_level = false;
+	int closed = false;
+	int level = 0;
+	LineNr start_rel = start;
+	LineNr end_rel = end;
 
-   if (start > end) {
-      //reverse the range
-      end = start_rel;
-      start = end_rel;
-      start_rel = start;
-      end_rel = end;
-   }
+	if (start > end) {
+		//reverse the range
+		end = start_rel;
+		start = end_rel;
+		start_rel = start;
+		end_rel = end;
+	}
 
-   //When @foldmethod is "marker", add markers, which creates the folds.
-   if (curPor->o.foldMethod == FOLD_MARKER && curPor->o.foldMarker) {
-      foldCreateMarkers(start, end);
-      return;
-   }
+	//When @foldmethod is "marker", add markers, which creates the folds.
+	if (curPor->o.foldMethod == FOLD_MARKER && curPor->o.foldMarker) {
+		foldCreateMarkers(start, end);
+		return;
+	}
 
-   checkupdate(curPor);
+	checkupdate(curPor);
 
-   //Find the place to insert the new fold.
-   gap = &curPor->folds;
-   Fold* fp;
-   if (gap->len == 0) {
-      i = 0;
-   } else {
-      for (;;) {
-         if (!foldFind(gap, start_rel, &fp))
-            break;
-         if (fp->fd_top + fp->fd_len > end_rel) {
-            //New fold is completely inside this fold: Go one level deeper.
-            gap = &fp->fd_nested;
-            start_rel -= fp->fd_top;
-            end_rel -= fp->fd_top;
-            if (use_level || fp->fd_flags == FD_LEVEL) {
-               use_level = true;
-               if (level >= curPor->o.foldLevel)
-                  closed = true;
-            } ei (fp->fd_flags == FD_CLOSED)
-               closed = true;
-            ++level;
-         } else {
-            //This fold and new fold overlap: Insert here and move some folds inside the new fold
-            break;
-         }
-      }
-      if (gap->len == 0)
-         i = 0;
-      else
-         i = (int)(fp - (Fold *)gap->c);
-   }
+	//Find the place to insert the new fold.
+	gap = &curPor->folds;
+	Fold* fp;
+	if (gap->len == 0) {
+		i = 0;
+	} else {
+		for (;;) {
+			if (!foldFind(gap, start_rel, &fp))
+				break;
+			if (fp->fd_top + fp->fd_len > end_rel) {
+				//New fold is completely inside this fold: Go one level deeper.
+				gap = &fp->fd_nested;
+				start_rel -= fp->fd_top;
+				end_rel -= fp->fd_top;
+				if (use_level || fp->fd_flags == FD_LEVEL) {
+					use_level = true;
+					if (level >= curPor->o.foldLevel)
+						closed = true;
+				} ei (fp->fd_flags == FD_CLOSED)
+					closed = true;
+				++level;
+			} else {
+				//This fold and new fold overlap: Insert here and move some folds inside the new fold
+				break;
+			}
+		}
+		if (gap->len == 0)
+			i = 0;
+		else
+			i = (int)(fp - (Fold *)gap->c);
+	}
 
-   if (ga_grow(gap, 1) == FAIL)
-      return;
+	if (ga_grow(gap, 1) == FAIL)
+		return;
 
-   fp = (Fold *)gap->c + i;
-   ga_init2(&fold_ga, sizeof(Fold), 10);
+	fp = (Fold *)gap->c + i;
+	ga_init2(&fold_ga, sizeof(Fold), 10);
 
-   //Count number of folds that will be contained in the new fold.
-   for (cont = 0; i + cont < gap->len; ++cont) {
-      if (fp[cont].fd_top > end_rel) {
-         break;
-      }
-   }
-   if (cont > 0 && ga_grow(&fold_ga, cont) == OK) {
-      //If the first fold starts before the new fold, let the new fold
-      //start there.  Otherwise the existing fold would change.
-      if (start_rel > fp->fd_top)
-         start_rel = fp->fd_top;
+	//Count number of folds that will be contained in the new fold.
+	for (cont = 0; i + cont < gap->len; ++cont) {
+		if (fp[cont].fd_top > end_rel) {
+			break;
+		}
+	}
+	if (cont > 0 && ga_grow(&fold_ga, cont) == OK) {
+		//If the first fold starts before the new fold, let the new fold
+		//start there.  Otherwise the existing fold would change.
+		if (start_rel > fp->fd_top)
+			start_rel = fp->fd_top;
 
-      //When last contained fold isn't completely contained, adjust end of new fold.
-      if (end_rel < fp[cont - 1].fd_top + fp[cont - 1].fd_len - 1)
-          end_rel = fp[cont - 1].fd_top + fp[cont - 1].fd_len - 1;
-      //Move contained folds to inside new fold.
-      MEMMOVE(fold_ga.c, fp, sizeof(Fold) * cont);
-      fold_ga.len += cont;
-      i += cont;
+		//When last contained fold isn't completely contained, adjust end of new fold.
+		if (end_rel < fp[cont - 1].fd_top + fp[cont - 1].fd_len - 1)
+			 end_rel = fp[cont - 1].fd_top + fp[cont - 1].fd_len - 1;
+		//Move contained folds to inside new fold.
+		MEMMOVE(fold_ga.c, fp, sizeof(Fold) * cont);
+		fold_ga.len += cont;
+		i += cont;
 
-      //Adjust line numbers in contained folds to be relative to the new fold.
-      for (j = 0; j < cont; ++j)
-         ((Fold *)fold_ga.c)[j].fd_top -= start_rel;
-   }
-   //Move remaining entries to after the new fold.
-   if (i < gap->len)
-      MEMMOVE(fp + 1, (Fold *)gap->c + i, sizeof(Fold) * (gap->len - i));
-   gap->len = gap->len + 1 - cont;
+		//Adjust line numbers in contained folds to be relative to the new fold.
+		for (j = 0; j < cont; ++j)
+			((Fold *)fold_ga.c)[j].fd_top -= start_rel;
+	}
+	//Move remaining entries to after the new fold.
+	if (i < gap->len)
+		MEMMOVE(fp + 1, (Fold *)gap->c + i, sizeof(Fold) * (gap->len - i));
+	gap->len = gap->len + 1 - cont;
 
-   //insert new fold
-   fp->fd_nested = fold_ga;
-   fp->fd_top = start_rel;
-   fp->fd_len = end_rel - start_rel + 1;
+	//insert new fold
+	fp->fd_nested = fold_ga;
+	fp->fd_top = start_rel;
+	fp->fd_len = end_rel - start_rel + 1;
 
-   //We want the new fold to be closed.  If it would remain open because
-   //of using 'foldlevel', need to adjust fd_flags of containing folds.
-   if (use_level && !closed && level < curPor->o.foldLevel)
-      closeFold(start, 1L);
-   if (!use_level)
-      curPor->foldManual = true;
-   fp->fd_flags = FD_CLOSED;
-   fp->fd_small = MAYBE;
+	//We want the new fold to be closed.  If it would remain open because
+	//of using 'foldlevel', need to adjust fd_flags of containing folds.
+	if (use_level && !closed && level < curPor->o.foldLevel)
+		closeFold(start, 1L);
+	if (!use_level)
+		curPor->foldManual = true;
+	fp->fd_flags = FD_CLOSED;
+	fp->fd_small = MAYBE;
 
-   //redraw
-   didChangePortalSettingCurPor();
+	//redraw
+	didChangePortalSettingCurPor();
 }
 
 //deleteFold()
@@ -7737,81 +7736,81 @@ foldCreate(LineNr start, LineNr end) {
 //When "recursive" is true delete recursively.
 pub void
 deleteFold(LineNr start, LineNr end, int recursive, int had_visual){ //is Visual selection used?
-   ArrayList   *gap;
-   Fold   *fp;
-   ArrayList   *found_ga;
-   Fold   *found_fp = NULL;
-   LineNr   found_off = 0;
-   Boole      use_level;
-   Boole      maybe_small = false;
-   int      level = 0;
-   LineNr   lnum = start;
-   LineNr   lnum_off;
-   int      did_one = false;
-   LineNr   first_lnum = MAXLNUM;
-   LineNr   last_lnum = 0;
+	ArrayList   *gap;
+	Fold   *fp;
+	ArrayList   *found_ga;
+	Fold   *found_fp = NULL;
+	LineNr   found_off = 0;
+	Boole      use_level;
+	Boole      maybe_small = false;
+	int      level = 0;
+	LineNr   lnum = start;
+	LineNr   lnum_off;
+	int      did_one = false;
+	LineNr   first_lnum = MAXLNUM;
+	LineNr   last_lnum = 0;
 
-   checkupdate(curPor);
+	checkupdate(curPor);
 
-   while (lnum <= end) {
-      //Find the deepest fold for "start".
-      gap = &curPor->folds;
-      found_ga = NULL;
-      lnum_off = 0;
-      use_level = false;
-      for (;;) {
-          if (!foldFind(gap, lnum - lnum_off, &fp))
-             break;
-          //lnum is inside this fold, remember info
-          found_ga = gap;
-          found_fp = fp;
-          found_off = lnum_off;
+	while (lnum <= end) {
+		//Find the deepest fold for "start".
+		gap = &curPor->folds;
+		found_ga = NULL;
+		lnum_off = 0;
+		use_level = false;
+		for (;;) {
+			 if (!foldFind(gap, lnum - lnum_off, &fp))
+				 break;
+			 //lnum is inside this fold, remember info
+			 found_ga = gap;
+			 found_fp = fp;
+			 found_off = lnum_off;
 
-          //if "lnum" is folded, don't check nesting
-          if (check_closed(curPor, fp, OUT &use_level, level, OUT &maybe_small, lnum_off))
-             break;
+			 //if "lnum" is folded, don't check nesting
+			 if (check_closed(curPor, fp, OUT &use_level, level, OUT &maybe_small, lnum_off))
+				 break;
 
-          //check nested folds
-          gap = &fp->fd_nested;
-          lnum_off += fp->fd_top;
-          ++level;
-      }
-      if (found_ga == NULL) {
-         ++lnum;
-      } else {
-         lnum = found_fp->fd_top + found_fp->fd_len + found_off;
+			 //check nested folds
+			 gap = &fp->fd_nested;
+			 lnum_off += fp->fd_top;
+			 ++level;
+		}
+		if (found_ga == NULL) {
+			++lnum;
+		} else {
+			lnum = found_fp->fd_top + found_fp->fd_len + found_off;
 
-         if (first_lnum > found_fp->fd_top + found_off)
-             first_lnum = found_fp->fd_top + found_off;
-         if (last_lnum < lnum)
-             last_lnum = lnum;
-         if (!did_one)
-            parseMarker(curPor);
-         deleteFoldMarkers(found_fp, recursive, found_off);
-         did_one = true;
+			if (first_lnum > found_fp->fd_top + found_off)
+				 first_lnum = found_fp->fd_top + found_off;
+			if (last_lnum < lnum)
+				 last_lnum = lnum;
+			if (!did_one)
+				parseMarker(curPor);
+			deleteFoldMarkers(found_fp, recursive, found_off);
+			did_one = true;
 
-         //redraw portal
-         didChangePortalSettingCurPor();
-      }
-   }
-   if (!did_one) {
-      emsg(_(e_no_fold_found));
-      //Force a redraw to remove the Visual highlighting.
-      if (had_visual)
-         drawCurBookLater(UPD_INVERTED);
-   } else
-      //Deleting markers may make cursor column invalid.
-      check_cursor_col();
+			//redraw portal
+			didChangePortalSettingCurPor();
+		}
+	}
+	if (!did_one) {
+		emsg(_(e_no_fold_found));
+		//Force a redraw to remove the Visual highlighting.
+		if (had_visual)
+			drawCurBookLater(UPD_INVERTED);
+	} else
+		//Deleting markers may make cursor column invalid.
+		poRefreshCursorCol();
 
-   if (last_lnum > 0)
-      doChangedLines(first_lnum, (ColNr)0, last_lnum, 0L);
+	if (last_lnum > 0)
+		doChangedLines(first_lnum, (ColNr)0, last_lnum, 0L);
 }
 
 //Remove all folding for portal "po".
 pub void
 clearFolding(Portal* po) {
-   deleteFoldRecurse(&po->folds);
-   po->foldNeedsRecomputation = false;
+	deleteFoldRecurse(&po->folds);
+	po->foldNeedsRecomputation = false;
 }
 
 //Update folds for changes in the buffer of a portal.
@@ -7821,35 +7820,35 @@ clearFolding(Portal* po) {
 pub void
 foldUpdate(Portal* po, LineNr top, LineNr bot) {
 
-   //if (disable_fold_update > 0)
-   //   return;
-   if (diffNeedsRedrawG)
-      //will update later
-      return;
+	//if (disable_fold_update > 0)
+	//   return;
+	if (diffNeedsRedrawG)
+		//will update later
+		return;
 
-   if (po->folds.len > 0) {
-      LineNr maybe_small_start = top;
-      LineNr maybe_small_end = bot;
+	if (po->folds.len > 0) {
+		LineNr maybe_small_start = top;
+		LineNr maybe_small_end = bot;
 
-      //Mark all folds from top to bot (or bot to top) as maybe-small.
-      if (top > bot) {
-         maybe_small_start = bot;
-         maybe_small_end = top;
-      }
-      Fold* fp;
-      (void)foldFind(&po->folds, maybe_small_start, OUT &fp);
-      while (fp < (Fold *)po->folds.c + po->folds.len && fp->fd_top <= maybe_small_end) {
-         fp->fd_small = MAYBE;
-         ++fp;
-      }
-   }
+		//Mark all folds from top to bot (or bot to top) as maybe-small.
+		if (top > bot) {
+			maybe_small_start = bot;
+			maybe_small_end = top;
+		}
+		Fold* fp;
+		(void)foldFind(&po->folds, maybe_small_start, OUT &fp);
+		while (fp < (Fold *)po->folds.c + po->folds.len && fp->fd_top <= maybe_small_end) {
+			fp->fd_small = MAYBE;
+			++fp;
+		}
+	}
 
-   int save_gotInterruptG = gotInterruptG;
+	int save_gotInterruptG = gotInterruptG;
 
-   //reset gotInterruptG here, otherwise it won't work
-   gotInterruptG = false;
-   foldUpdateIEMS(po, top, bot);
-   gotInterruptG |= save_gotInterruptG;
+	//reset gotInterruptG here, otherwise it won't work
+	gotInterruptG = false;
+	foldUpdateIEMS(po, top, bot);
+	gotInterruptG |= save_gotInterruptG;
 }
 
 //Update all lines in a portal for folding.
@@ -7858,119 +7857,119 @@ foldUpdate(Portal* po, LineNr top, LineNr bot) {
 //every time a setting is changed or a syntax item is added.
 pub void
 foldUpdateAll(Portal* po) {
-   po->foldNeedsRecomputation = true;
-   redrawPortLater(po, UPD_NOT_VALID);
+	po->foldNeedsRecomputation = true;
+	redrawPortLater(po, UPD_NOT_VALID);
 }
 
 //If "updown" is false: Move to the start or end of the fold.
 //If "updown" is true: move to fold at the same level. dir = FORWARD or BACKWARD
 pub int
 foldMoveTo(Boole updown, Unt dir,  long count) {
-   Long   n;
-   int retval = FAIL;
-   LineNr lnum;
-   ArrayList* gap;
-   Fold* fp;
+	Long   n;
+	int retval = FAIL;
+	LineNr lnum;
+	ArrayList* gap;
+	Fold* fp;
 
-   checkupdate(curPor);
+	checkupdate(curPor);
 
-   //Repeat "count" times.
-   for (n = 0; n < count; ++n) {
-      //Find nested folds. Stop when a fold is closed. The deepest fold that moves the cursor
-      //is used.
-      LineNr lnum_off = 0;
-      gap = &curPor->folds;
-      if (gap->len == 0)
-         break;
-      Boole use_level = false;
-      Boole maybe_small = false;
-      LineNr lnum_found = curPor->cursor.lnum;
-      int level = 0;
-      int last = false;
-      for (;;) {
-         if (!foldFind(gap, curPor->cursor.lnum - lnum_off, &fp)) {
-            if (!updown || gap->len == 0)
-               break;
+	//Repeat "count" times.
+	for (n = 0; n < count; ++n) {
+		//Find nested folds. Stop when a fold is closed. The deepest fold that moves the cursor
+		//is used.
+		LineNr lnum_off = 0;
+		gap = &curPor->folds;
+		if (gap->len == 0)
+			break;
+		Boole use_level = false;
+		Boole maybe_small = false;
+		LineNr lnum_found = curPor->cursor.lnum;
+		int level = 0;
+		int last = false;
+		for (;;) {
+			if (!foldFind(gap, curPor->cursor.lnum - lnum_off, &fp)) {
+				if (!updown || gap->len == 0)
+					break;
 
-            //When moving up, consider a fold above the cursor; when
-            //moving down consider a fold below the cursor.
-            if (dir == FORWARD) {
-               if (fp - (Fold *)gap->c >= gap->len)
-                  break;
-               --fp;
-            } else {
-               if (fp == (Fold *)gap->c)
-                  break;
-            }
-            //don't look for contained folds, they will always move
-            //the cursor too far.
-            last = true;
-         }
+				//When moving up, consider a fold above the cursor; when
+				//moving down consider a fold below the cursor.
+				if (dir == FORWARD) {
+					if (fp - (Fold *)gap->c >= gap->len)
+						break;
+					--fp;
+				} else {
+					if (fp == (Fold *)gap->c)
+						break;
+				}
+				//don't look for contained folds, they will always move
+				//the cursor too far.
+				last = true;
+			}
 
-         if (!last) {
-            //Check if this fold is closed.
-            if (check_closed(curPor, fp, OUT &use_level, level, OUT &maybe_small, lnum_off))
-               last = true;
+			if (!last) {
+				//Check if this fold is closed.
+				if (check_closed(curPor, fp, OUT &use_level, level, OUT &maybe_small, lnum_off))
+					last = true;
 
-            //"[z" and "]z" stop at closed fold
-            if (last && !updown)
-                break;
-         }
+				//"[z" and "]z" stop at closed fold
+				if (last && !updown)
+					 break;
+			}
 
-         if (updown) {
-            if (dir == FORWARD) {
-                //to start of next fold if there is one
-                if (fp + 1 - (Fold *)gap->c < gap->len) {
-                   lnum = fp[1].fd_top + lnum_off;
-                   if (lnum > curPor->cursor.lnum)
-                       lnum_found = lnum;
-                }
-            } else {
-                //to end of previous fold if there is one
-                if (fp > (Fold *)gap->c) {
-                   lnum = fp[-1].fd_top + lnum_off + fp[-1].fd_len - 1;
-                   if (lnum < curPor->cursor.lnum)
-                       lnum_found = lnum;
-                }
-            }
-         } else {
-            //Open fold found, set cursor to its start/end and then check nested folds.
-            if (dir == FORWARD) {
-                lnum = fp->fd_top + lnum_off + fp->fd_len - 1;
-                if (lnum > curPor->cursor.lnum)
-               lnum_found = lnum;
-            } else {
-                lnum = fp->fd_top + lnum_off;
-                if (lnum < curPor->cursor.lnum)
-               lnum_found = lnum;
-            }
-         }
+			if (updown) {
+				if (dir == FORWARD) {
+					 //to start of next fold if there is one
+					 if (fp + 1 - (Fold *)gap->c < gap->len) {
+						 lnum = fp[1].fd_top + lnum_off;
+						 if (lnum > curPor->cursor.lnum)
+						     lnum_found = lnum;
+					 }
+				} else {
+					 //to end of previous fold if there is one
+					 if (fp > (Fold *)gap->c) {
+						 lnum = fp[-1].fd_top + lnum_off + fp[-1].fd_len - 1;
+						 if (lnum < curPor->cursor.lnum)
+						     lnum_found = lnum;
+					 }
+				}
+			} else {
+				//Open fold found, set cursor to its start/end and then check nested folds.
+				if (dir == FORWARD) {
+					 lnum = fp->fd_top + lnum_off + fp->fd_len - 1;
+					 if (lnum > curPor->cursor.lnum)
+					lnum_found = lnum;
+				} else {
+					 lnum = fp->fd_top + lnum_off;
+					 if (lnum < curPor->cursor.lnum)
+					lnum_found = lnum;
+				}
+			}
 
-         if (last)
-            break;
+			if (last)
+				break;
 
-         //Check nested folds (if any).
-         gap = &fp->fd_nested;
-         lnum_off += fp->fd_top;
-         ++level;
-      }
-      if (lnum_found != curPor->cursor.lnum) {
-         if (retval == FAIL)
-            setpcmark();
-         curPor->cursor.lnum = lnum_found;
-         curPor->cursor.col = 0;
-         retval = OK;
-      } else
-         break;
-   }
+			//Check nested folds (if any).
+			gap = &fp->fd_nested;
+			lnum_off += fp->fd_top;
+			++level;
+		}
+		if (lnum_found != curPor->cursor.lnum) {
+			if (retval == FAIL)
+				setpcmark();
+			curPor->cursor.lnum = lnum_found;
+			curPor->cursor.col = 0;
+			retval = OK;
+		} else
+			break;
+	}
 
-   return retval;
+	return retval;
 }
 
 //Init the fold info in a new portal.
 pub void
 normInitFoldForPortal(Portal* newPort) {
-   ga_init2(&newPort->folds, sizeof(Fold), 10);
+	ga_init2(&newPort->folds, sizeof(Fold), 10);
 }
 
 //Find an entry in the po->lines[] array for buffer line "lnum".
@@ -7978,46 +7977,46 @@ normInitFoldForPortal(Portal* newPort) {
 //line number can be wrong). Return index of entry or -1 if not found.
 pub int
 find_wl_entry(Portal* po, LineNr lnum) {
-    for (int i = 0; i < po->validLines; ++i) {
-       if (po->lines[i].isValid) {
-          if (lnum < po->lines[i].bookLnum)
-             return -1;
-          if (lnum <= po->lines[i].lastBookLnum)
-             return i;
-       }
-   }
-   return -1;
+	 for (int i = 0; i < po->validLines; ++i) {
+		 if (po->lines[i].isValid) {
+			 if (lnum < po->lines[i].bookLnum)
+				 return -1;
+			 if (lnum <= po->lines[i].lastBookLnum)
+				 return i;
+		 }
+	}
+	return -1;
 }
 
 //Adjust the Visual area to include any fold at the start or end completely.
 pub void
 foldAdjustVisual(void) {
-   if (!VIsual_active || !hasAnyFolding(curPor))
-      return;
+	if (!VIsual_active || !hasAnyFolding(curPor))
+		return;
 
-   Pos   *start, *end;
-   if (LTOREQ_POS(VIsual, curPor->cursor)) {
-      start = &VIsual;
-      end = &curPor->cursor;
-   } else {
-      start = &curPor->cursor;
-      end = &VIsual;
-   }
-   if (getFolds(start->lnum, &start->lnum, NULL))
-      start->col = 0;
+	Pos   *start, *end;
+	if (LTOREQ_POS(VIsual, curPor->cursor)) {
+		start = &VIsual;
+		end = &curPor->cursor;
+	} else {
+		start = &curPor->cursor;
+		end = &VIsual;
+	}
+	if (getFolds(start->lnum, &start->lnum, NULL))
+		start->col = 0;
 
-   if (!getFolds(end->lnum, NULL, &end->lnum))
-       return;
+	if (!getFolds(end->lnum, NULL, &end->lnum))
+		 return;
 
-   end->col = ml_get_len(end->lnum);
-   //prevent cursor from moving on the trail byte
-   mb_adjust_cursor();
+	end->col = ml_get_len(end->lnum);
+	//prevent cursor from moving on the trail byte
+	mb_adjust_cursor();
 }
 
 //Move the cursor to the first line of a closed fold.
 pub void
 foldAdjustCursor(void) {
-   (void)getFolds(curPor->cursor.lnum, &curPor->cursor.lnum, NULL);
+	(void)getFolds(curPor->cursor.lnum, &curPor->cursor.lnum, NULL);
 }
 
 //Internal functions for "Fold"
@@ -8025,23 +8024,23 @@ foldAdjustCursor(void) {
 //Return FAIL if the operation cannot be completed, otherwise OK.
 pub void
 cloneFoldArrayList(ArrayList* from, ArrayList* to) {
-   ga_init2(to, from->ga_itemsize, from->ga_growsize);
-   if (from->len == 0 || ga_grow(to, from->len) == FAIL)
-      return;
+	ga_init2(to, from->ga_itemsize, from->ga_growsize);
+	if (from->len == 0 || ga_grow(to, from->len) == FAIL)
+		return;
 
-   Fold* from_p = (Fold *)from->c;
-   Fold* to_p = (Fold *)to->c;
+	Fold* from_p = (Fold *)from->c;
+	Fold* to_p = (Fold *)to->c;
 
-   for (int i = 0; i < from->len; i++) {
-      to_p->fd_top = from_p->fd_top;
-      to_p->fd_len = from_p->fd_len;
-      to_p->fd_flags = from_p->fd_flags;
-      to_p->fd_small = from_p->fd_small;
-      cloneFoldArrayList(&from_p->fd_nested, &to_p->fd_nested);
-      ++to->len;
-      ++from_p;
-      ++to_p;
-   }
+	for (int i = 0; i < from->len; i++) {
+		to_p->fd_top = from_p->fd_top;
+		to_p->fd_len = from_p->fd_len;
+		to_p->fd_flags = from_p->fd_flags;
+		to_p->fd_small = from_p->fd_small;
+		cloneFoldArrayList(&from_p->fd_nested, &to_p->fd_nested);
+		++to->len;
+		++from_p;
+		++to_p;
+	}
 }
 
 //Search for line "lnum" in folds of growarray "gap".
@@ -8050,79 +8049,79 @@ cloneFoldArrayList(ArrayList* from, ArrayList* to) {
 //Return false when there is no fold that contains "lnum".
 private int
 foldFind(ArrayList* gap, LineNr lnum, Fold **fpp) {
-   if (gap->len == 0) {
-      *fpp = NULL;
-      return false;
-   }
+	if (gap->len == 0) {
+		*fpp = NULL;
+		return false;
+	}
 
-   //Perform a binary search.
-   //"low" is lowest index of possible match. "high" is highest index of possible match.
-   Fold* fp = (Fold *)gap->c;
-   LineNr low = 0;
-   LineNr high = gap->len - 1;
-   while (low <= high) {
-      int i = (low + high) / 2;
-      if (fp[i].fd_top > lnum)
-         //fold below lnum, adjust high
-         high = i - 1;
-      ei (fp[i].fd_top + fp[i].fd_len <= lnum)
-         //fold above lnum, adjust low
-         low = i + 1;
-      else {
-         //lnum is inside this fold
-         *fpp = fp + i;
-         return true;
-      }
-   }
-   *fpp = fp + low;
-   return false;
+	//Perform a binary search.
+	//"low" is lowest index of possible match. "high" is highest index of possible match.
+	Fold* fp = (Fold *)gap->c;
+	LineNr low = 0;
+	LineNr high = gap->len - 1;
+	while (low <= high) {
+		int i = (low + high) / 2;
+		if (fp[i].fd_top > lnum)
+			//fold below lnum, adjust high
+			high = i - 1;
+		ei (fp[i].fd_top + fp[i].fd_len <= lnum)
+			//fold above lnum, adjust low
+			low = i + 1;
+		else {
+			//lnum is inside this fold
+			*fpp = fp + i;
+			return true;
+		}
+	}
+	*fpp = fp + low;
+	return false;
 }
 
 //Return fold level at line number "lnum" in portal "po".
 private int
 foldLevelWin(Portal *po, LineNr lnum) {
-   Fold   *fp;
-   LineNr   lnum_rel = lnum;
-   int      level =  0;
+	Fold   *fp;
+	LineNr   lnum_rel = lnum;
+	int      level =  0;
 
-   //Recursively search for a fold that contains "lnum".
-   ArrayList* gap = &po->folds;
-   for (;;) {
-      if (!foldFind(gap, lnum_rel, &fp))
-         break;
-      //Check nested folds.  Line number is relative to containing fold.
-      gap = &fp->fd_nested;
-      lnum_rel -= fp->fd_top;
-      ++level;
-   }
+	//Recursively search for a fold that contains "lnum".
+	ArrayList* gap = &po->folds;
+	for (;;) {
+		if (!foldFind(gap, lnum_rel, &fp))
+			break;
+		//Check nested folds.  Line number is relative to containing fold.
+		gap = &fp->fd_nested;
+		lnum_rel -= fp->fd_top;
+		++level;
+	}
 
-   return level;
+	return level;
 }
 
 //checkupdate()
 //Check if the folds in portal "po" are invalid and update them if needed.
 private void
 checkupdate(Portal* po) {
-   if (!po->foldNeedsRecomputation)
-      return;
+	if (!po->foldNeedsRecomputation)
+		return;
 
-   foldUpdate(po, (LineNr)1, (LineNr)MAXLNUM); //will update all
-   po->foldNeedsRecomputation = false;
+	foldUpdate(po, (LineNr)1, (LineNr)MAXLNUM); //will update all
+	po->foldNeedsRecomputation = false;
 }
 
 //Open or close fold for current portal at line "lnum". Repeat "count" times.
 private void
 setFoldRepeat(LineNr lnum, Long count, Boole do_open) {
-   for (Long n = 0; n < count; ++n) {
-      Unt done = DONE_NOTHING;
-      (void)setManualFold(lnum, do_open, false, OUT &done);
-      if (!(done & DONE_ACTION)) {
-          //Only give an error message when no fold could be opened.
-          if (n == 0 && !(done & DONE_FOLD))
-             emsg(_(e_no_fold_found));
-          break;
-      }
-   }
+	for (Long n = 0; n < count; ++n) {
+		Unt done = DONE_NOTHING;
+		(void)setManualFold(lnum, do_open, false, OUT &done);
+		if (!(done & DONE_ACTION)) {
+			 //Only give an error message when no fold could be opened.
+			 if (n == 0 && !(done & DONE_FOLD))
+				 emsg(_(e_no_fold_found));
+			 break;
+		}
+	}
 }
 
 //Open or close the fold in portal "po" which contains "lnum". "donep", when not NULL, points to
@@ -8133,129 +8132,129 @@ setFoldRepeat(LineNr lnum, Long count, Boole do_open) {
 //It's only valid when "opening" is true!
 private LineNr
 setManualFoldPort(
-   Portal* po,
-   LineNr lnum,
-   Boole opening,    //true when opening, false when closing
-   Boole recurse,    //true when closing/opening recursive
-   OUT Unt* donep
+	Portal* po,
+	LineNr lnum,
+	Boole opening,    //true when opening, false when closing
+	Boole recurse,    //true when closing/opening recursive
+	OUT Unt* donep
 ){
-   Fold   *fp;
-   Fold   *fp2;
-   Fold   *found = NULL;
-   int      j;
-   int      level = 0;
-   int      use_level = false;
-   int      found_fold = false;
-   LineNr   next = MAXLNUM;
-   LineNr   off = 0;
-   int      done = 0;
+	Fold   *fp;
+	Fold   *fp2;
+	Fold   *found = NULL;
+	int      j;
+	int      level = 0;
+	int      use_level = false;
+	int      found_fold = false;
+	LineNr   next = MAXLNUM;
+	LineNr   off = 0;
+	int      done = 0;
 
-   checkupdate(po);
+	checkupdate(po);
 
-   //Find the fold, open or close it.
-   ArrayList* gap = &po->folds;
-   for (;;) {
-      if (!foldFind(gap, lnum, &fp)) {
-         //If there is a following fold, continue there next time.
-         if (fp != NULL && fp < (Fold *)gap->c + gap->len)
-            next = fp->fd_top + off;
-         break;
-      }
+	//Find the fold, open or close it.
+	ArrayList* gap = &po->folds;
+	for (;;) {
+		if (!foldFind(gap, lnum, &fp)) {
+			//If there is a following fold, continue there next time.
+			if (fp != NULL && fp < (Fold *)gap->c + gap->len)
+				next = fp->fd_top + off;
+			break;
+		}
 
-      //lnum is inside this fold
-      found_fold = true;
+		//lnum is inside this fold
+		found_fold = true;
 
-      //If there is a following fold, continue there next time.
-      if (fp + 1 < (Fold *)gap->c + gap->len)
-         next = fp[1].fd_top + off;
+		//If there is a following fold, continue there next time.
+		if (fp + 1 < (Fold *)gap->c + gap->len)
+			next = fp[1].fd_top + off;
 
-      //Change from level-dependent folding to manual.
-      if (use_level || fp->fd_flags == FD_LEVEL) {
-         use_level = true;
-         if (level >= po->o.foldLevel)
-            fp->fd_flags = FD_CLOSED;
-         else
-            fp->fd_flags = FD_OPEN;
-         fp2 = (Fold *)fp->fd_nested.c;
-         for (j = 0; j < fp->fd_nested.len; ++j)
-            fp2[j].fd_flags = FD_LEVEL;
-      }
+		//Change from level-dependent folding to manual.
+		if (use_level || fp->fd_flags == FD_LEVEL) {
+			use_level = true;
+			if (level >= po->o.foldLevel)
+				fp->fd_flags = FD_CLOSED;
+			else
+				fp->fd_flags = FD_OPEN;
+			fp2 = (Fold *)fp->fd_nested.c;
+			for (j = 0; j < fp->fd_nested.len; ++j)
+				fp2[j].fd_flags = FD_LEVEL;
+		}
 
-      //Simple case: Close recursively means closing the fold.
-      if (!opening && recurse) {
-         if (fp->fd_flags != FD_CLOSED) {
-            done |= DONE_ACTION;
-            fp->fd_flags = FD_CLOSED;
-         }
-      } ei (fp->fd_flags == FD_CLOSED) {
-         //When opening, open topmost closed fold.
-         if (opening) {
-            fp->fd_flags = FD_OPEN;
-            done |= DONE_ACTION;
-            if (recurse)
-               foldOpenNested(fp);
-         }
-         break;
-      }
+		//Simple case: Close recursively means closing the fold.
+		if (!opening && recurse) {
+			if (fp->fd_flags != FD_CLOSED) {
+				done |= DONE_ACTION;
+				fp->fd_flags = FD_CLOSED;
+			}
+		} ei (fp->fd_flags == FD_CLOSED) {
+			//When opening, open topmost closed fold.
+			if (opening) {
+				fp->fd_flags = FD_OPEN;
+				done |= DONE_ACTION;
+				if (recurse)
+					foldOpenNested(fp);
+			}
+			break;
+		}
 
-      //fold is open, check nested folds
-      found = fp;
-      gap = &fp->fd_nested;
-      lnum -= fp->fd_top;
-      off += fp->fd_top;
-      ++level;
-   }
-   if (found_fold) {
-      //When closing and not recurse, close deepest open fold.
-      if (!opening && found != NULL) {
-         found->fd_flags = FD_CLOSED;
-         done |= DONE_ACTION;
-      }
-      po->foldManual = true;
-      if ((done & DONE_ACTION) != 0)
-         didChangePortalSetting(po);
-      done |= DONE_FOLD;
-   } ei (!donep && po == curPor)
-      emsg(_(e_no_fold_found));
+		//fold is open, check nested folds
+		found = fp;
+		gap = &fp->fd_nested;
+		lnum -= fp->fd_top;
+		off += fp->fd_top;
+		++level;
+	}
+	if (found_fold) {
+		//When closing and not recurse, close deepest open fold.
+		if (!opening && found != NULL) {
+			found->fd_flags = FD_CLOSED;
+			done |= DONE_ACTION;
+		}
+		po->foldManual = true;
+		if ((done & DONE_ACTION) != 0)
+			didChangePortalSetting(po);
+		done |= DONE_FOLD;
+	} ei (!donep && po == curPor)
+		emsg(_(e_no_fold_found));
 
-   if (donep)
-      *donep |= done;
+	if (donep)
+		*donep |= done;
 
-   return next;
+	return next;
 }
 
 //Open or close the fold in the current portal which contains "lnum".
 //Also does this for other portals in diff mode when needed.
 private LineNr
 setManualFold(
-   LineNr lnum,
-   Boole opening,    //true when opening, false when closing
-   Boole recurse,    //true when closing/opening recursive
-   OUT Unt* donep
+	LineNr lnum,
+	Boole opening,    //true when opening, false when closing
+	Boole recurse,    //true when closing/opening recursive
+	OUT Unt* donep
 ) {
-   if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.diff) {
-      //Do the same operation in other portals in diff mode. Calculate line number from the diffs
-      Portal* po;
-      FOR_ALL_PORTALS(po) {
-         if (po != curPor && po->o.foldMethod == FOLD_DIFF && po->o.diff) {
-            LineNr dlnum = diffLnumPort(curPor->cursor.lnum, po);
-            if (dlnum != 0)
-               (void)setManualFoldPort(po, dlnum, opening, recurse, NULL);
-         }
-      }
-   }
+	if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.diff) {
+		//Do the same operation in other portals in diff mode. Calculate line number from the diffs
+		Portal* po;
+		FOR_ALL_PORTALS(po) {
+			if (po != curPor && po->o.foldMethod == FOLD_DIFF && po->o.diff) {
+				LineNr dlnum = diffLnumPort(curPor->cursor.lnum, po);
+				if (dlnum != 0)
+					(void)setManualFoldPort(po, dlnum, opening, recurse, NULL);
+			}
+		}
+	}
 
-   return setManualFoldPort(curPor, lnum, opening, recurse, OUT donep);
+	return setManualFoldPort(curPor, lnum, opening, recurse, OUT donep);
 }
 
 //Open all nested folds in fold "fpr" recursively.
 private void
 foldOpenNested(Fold* fpr) {
-   Fold* fp = (Fold *)fpr->fd_nested.c;
-   for (int i = 0; i < fpr->fd_nested.len; ++i) {
-      foldOpenNested(&fp[i]);
-      fp[i].fd_flags = FD_OPEN;
-   }
+	Fold* fp = (Fold *)fpr->fd_nested.c;
+	for (int i = 0; i < fpr->fd_nested.len; ++i) {
+		foldOpenNested(&fp[i]);
+		fp[i].fd_flags = FD_OPEN;
+	}
 }
 
 //Delete fold "idx" from growarray "gap".
@@ -8263,52 +8262,52 @@ foldOpenNested(Fold* fpr) {
 //When "recursive" is false contained folds are moved one level up.
 private void
 deleteFoldEntry(ArrayList *gap, int idx, int recursive) {
-   int      i;
-   long   moved;
-   Fold   *nfp;
+	int      i;
+	long   moved;
+	Fold   *nfp;
 
-   Fold* fp = (Fold *)gap->c + idx;
-   if (recursive || fp->fd_nested.len == 0) {
-      //recursively delete the contained folds
-      deleteFoldRecurse(&fp->fd_nested);
-      --gap->len;
-      if (idx < gap->len)
-          MEMMOVE(fp, fp + 1, sizeof(Fold) * (gap->len - idx));
-   } else {
-   //Move nested folds one level up, to overwrite the fold that is
-   //deleted.
-   moved = fp->fd_nested.len;
-   if (ga_grow(gap, (int)(moved - 1)) == OK) {
-       //Get "fp" again, the array may have been reallocated.
-       fp = (Fold *)gap->c + idx;
+	Fold* fp = (Fold *)gap->c + idx;
+	if (recursive || fp->fd_nested.len == 0) {
+		//recursively delete the contained folds
+		deleteFoldRecurse(&fp->fd_nested);
+		--gap->len;
+		if (idx < gap->len)
+			 MEMMOVE(fp, fp + 1, sizeof(Fold) * (gap->len - idx));
+	} else {
+	//Move nested folds one level up, to overwrite the fold that is
+	//deleted.
+	moved = fp->fd_nested.len;
+	if (ga_grow(gap, (int)(moved - 1)) == OK) {
+		 //Get "fp" again, the array may have been reallocated.
+		 fp = (Fold *)gap->c + idx;
 
-       //adjust fd_top and fd_flags for the moved folds
-       nfp = (Fold *)fp->fd_nested.c;
-       for (i = 0; i < moved; ++i) {
-          nfp[i].fd_top += fp->fd_top;
-          if (fp->fd_flags == FD_LEVEL)
-             nfp[i].fd_flags = FD_LEVEL;
-          if (fp->fd_small == MAYBE)
-             nfp[i].fd_small = MAYBE;
-       }
+		 //adjust fd_top and fd_flags for the moved folds
+		 nfp = (Fold *)fp->fd_nested.c;
+		 for (i = 0; i < moved; ++i) {
+			 nfp[i].fd_top += fp->fd_top;
+			 if (fp->fd_flags == FD_LEVEL)
+				 nfp[i].fd_flags = FD_LEVEL;
+			 if (fp->fd_small == MAYBE)
+				 nfp[i].fd_small = MAYBE;
+		 }
 
-       //move the existing folds down to make room
-       if (idx + 1 < gap->len)
-          MEMMOVE(fp + moved, fp + 1, sizeof(Fold) * (gap->len - (idx + 1)));
-       //move the contained folds one level up
-       MEMMOVE(fp, nfp, (Unt)(sizeof(Fold) * moved));
-       eeglFree(nfp);
-       gap->len += moved - 1;
-   }
-   }
+		 //move the existing folds down to make room
+		 if (idx + 1 < gap->len)
+			 MEMMOVE(fp + moved, fp + 1, sizeof(Fold) * (gap->len - (idx + 1)));
+		 //move the contained folds one level up
+		 MEMMOVE(fp, nfp, (Unt)(sizeof(Fold) * moved));
+		 eeglFree(nfp);
+		 gap->len += moved - 1;
+	}
+	}
 }
 
 //Delete nested folds in a fold.
 pub void
 deleteFoldRecurse(ArrayList *gap) {
-    for (int i = 0; i < gap->len; ++i)
-       deleteFoldRecurse(&(((Fold *)(gap->c))[i].fd_nested));
-    ga_clear(gap);
+	 for (int i = 0; i < gap->len; ++i)
+		 deleteFoldRecurse(&(((Fold *)(gap->c))[i].fd_nested));
+	 ga_clear(gap);
 }
 
 //Update line numbers of folds for inserted/deleted lines.
@@ -8317,278 +8316,278 @@ deleteFoldRecurse(ArrayList *gap) {
 //make sure that line2 does not get smaller than line1
 pub void
 foldMarkAdjust(
-    Portal* po,
-    LineNr line1,
-    LineNr line2,
-    long amount,
-    long amount_after
+	 Portal* po,
+	 LineNr line1,
+	 LineNr line2,
+	 long amount,
+	 long amount_after
 ) {
-   //If deleting marks from line1 to line2, but not deleting all those
-   //lines, set line2 so that only deleted lines have their folds removed.
-   if (amount == MAXLNUM && line2 >= line1 && line2 - line1 >= -amount_after)
-       line2 = line1 - amount_after - 1;
-   if (line2 < line1)
-       line2 = line1;
-   //If appending a line in Insert mode, it should be included in the fold
-   //just above the line.
-   if ((stateG & MODE_INSERT) && amount == (LineNr)1 && line2 == MAXLNUM)
-       --line1;
-   foldMarkAdjustRecurse(&po->folds, line1, line2, amount, amount_after);
+	//If deleting marks from line1 to line2, but not deleting all those
+	//lines, set line2 so that only deleted lines have their folds removed.
+	if (amount == MAXLNUM && line2 >= line1 && line2 - line1 >= -amount_after)
+		 line2 = line1 - amount_after - 1;
+	if (line2 < line1)
+		 line2 = line1;
+	//If appending a line in Insert mode, it should be included in the fold
+	//just above the line.
+	if ((stateG & MODE_INSERT) && amount == (LineNr)1 && line2 == MAXLNUM)
+		 --line1;
+	foldMarkAdjustRecurse(&po->folds, line1, line2, amount, amount_after);
 }
 
 //foldMarkAdjustRecurse()
 private void
 foldMarkAdjustRecurse(
-   ArrayList   *gap,
-   LineNr   line1,
-   LineNr   line2,
-   long   amount,
-   long   amount_after
+	ArrayList   *gap,
+	LineNr   line1,
+	LineNr   line2,
+	long   amount,
+	long   amount_after
 ) {
-   Fold   *fp;
-   int      i;
-   LineNr   last;
-   LineNr   top;
+	Fold   *fp;
+	int      i;
+	LineNr   last;
+	LineNr   top;
 
-   if (gap->len == 0)
-       return;
+	if (gap->len == 0)
+		 return;
 
-   //In Insert mode an inserted line at the top of a fold is considered part
-   //of the fold, otherwise it isn't.
-   if ((stateG & MODE_INSERT) && amount == (LineNr)1 && line2 == MAXLNUM)
-      top = line1 + 1;
-   else
-      top = line1;
+	//In Insert mode an inserted line at the top of a fold is considered part
+	//of the fold, otherwise it isn't.
+	if ((stateG & MODE_INSERT) && amount == (LineNr)1 && line2 == MAXLNUM)
+		top = line1 + 1;
+	else
+		top = line1;
 
-   //Find the fold containing or just below "line1".
-   (void)foldFind(gap, line1, &fp);
+	//Find the fold containing or just below "line1".
+	(void)foldFind(gap, line1, &fp);
 
-   //Adjust all folds below "line1" that are affected.
-   for (i = (int)(fp - (Fold *)gap->c); i < gap->len; ++i, ++fp) {
-      //Check for these situations:
-      //   1  2   3
-      //   1  2   3
-      //line1     2   3  4  5
-      //      2   3  4  5
-      //      2   3  4  5
-      //line2     2   3  4  5
-      //    3     5  6
-      //    3     5  6
+	//Adjust all folds below "line1" that are affected.
+	for (i = (int)(fp - (Fold *)gap->c); i < gap->len; ++i, ++fp) {
+		//Check for these situations:
+		//   1  2   3
+		//   1  2   3
+		//line1     2   3  4  5
+		//      2   3  4  5
+		//      2   3  4  5
+		//line2     2   3  4  5
+		//    3     5  6
+		//    3     5  6
 
-      last = fp->fd_top + fp->fd_len - 1; //last line of fold
+		last = fp->fd_top + fp->fd_len - 1; //last line of fold
 
-      //1. fold completely above line1: nothing to do
-      if (last < line1)
-          continue;
+		//1. fold completely above line1: nothing to do
+		if (last < line1)
+			 continue;
 
-      //6. fold below line2: only adjust for amount_after
-      if (fp->fd_top > line2) {
-          if (amount_after == 0)
-         break;
-          fp->fd_top += amount_after;
-      } else {
-          if (fp->fd_top >= top && last <= line2) {
-             //4. fold completely contained in range
-             if (amount == MAXLNUM) {
-                 //Deleting lines: delete the fold completely
-                 deleteFoldEntry(gap, i, true);
-                 --i;    //adjust index for deletion
-                 --fp;
-             } else
-                 fp->fd_top += amount;
-         } else {
-            if (fp->fd_top < top) {
-               //2 or 3: need to correct nested folds too
-               foldMarkAdjustRecurse(&fp->fd_nested, line1 - fp->fd_top,
-                     line2 - fp->fd_top, amount, amount_after);
-               if (last <= line2) {
-                    //2. fold contains line1, line2 is below fold
-                    if (amount == MAXLNUM)
-                       fp->fd_len = line1 - fp->fd_top;
-                    else
-                       fp->fd_len += amount;
-               } else {
-                    //3. fold contains line1 and line2
-                    fp->fd_len += amount_after;
-               }
-             } else {
-               //5. fold is below line1 and contains line2; need to
-               //correct nested folds too
-               if (amount == MAXLNUM) {
-                    foldMarkAdjustRecurse(&fp->fd_nested,
-                         0,
-                         line2 - fp->fd_top,
-                         amount,
-                         amount_after + (fp->fd_top - top));
-                    fp->fd_len -= line2 - fp->fd_top + 1;
-                    fp->fd_top = line1;
-               } else {
-                    foldMarkAdjustRecurse(&fp->fd_nested,
-                         0,
-                         line2 - fp->fd_top,
-                         amount,
-                         amount_after - amount);
-                    fp->fd_len += amount_after - amount;
-                    fp->fd_top += amount;
-               }
-            }
-         }
-      }
-   }
+		//6. fold below line2: only adjust for amount_after
+		if (fp->fd_top > line2) {
+			 if (amount_after == 0)
+			break;
+			 fp->fd_top += amount_after;
+		} else {
+			 if (fp->fd_top >= top && last <= line2) {
+				 //4. fold completely contained in range
+				 if (amount == MAXLNUM) {
+					  //Deleting lines: delete the fold completely
+					  deleteFoldEntry(gap, i, true);
+					  --i;    //adjust index for deletion
+					  --fp;
+				 } else
+					  fp->fd_top += amount;
+			} else {
+				if (fp->fd_top < top) {
+					//2 or 3: need to correct nested folds too
+					foldMarkAdjustRecurse(&fp->fd_nested, line1 - fp->fd_top,
+						   line2 - fp->fd_top, amount, amount_after);
+					if (last <= line2) {
+						  //2. fold contains line1, line2 is below fold
+						  if (amount == MAXLNUM)
+						     fp->fd_len = line1 - fp->fd_top;
+						  else
+						     fp->fd_len += amount;
+					} else {
+						  //3. fold contains line1 and line2
+						  fp->fd_len += amount_after;
+					}
+				 } else {
+					//5. fold is below line1 and contains line2; need to
+					//correct nested folds too
+					if (amount == MAXLNUM) {
+						  foldMarkAdjustRecurse(&fp->fd_nested,
+						       0,
+						       line2 - fp->fd_top,
+						       amount,
+						       amount_after + (fp->fd_top - top));
+						  fp->fd_len -= line2 - fp->fd_top + 1;
+						  fp->fd_top = line1;
+					} else {
+						  foldMarkAdjustRecurse(&fp->fd_nested,
+						       0,
+						       line2 - fp->fd_top,
+						       amount,
+						       amount_after - amount);
+						  fp->fd_len += amount_after - amount;
+						  fp->fd_top += amount;
+					}
+				}
+			}
+		}
+	}
 }
 
 //Get the lowest 'foldlevel' value that makes the deepest nested fold in the current portal open
 pub int
 getDeepestNesting(void) {
-   checkupdate(curPor);
-   return getDeepestNestingRecurse(&curPor->folds);
+	checkupdate(curPor);
+	return getDeepestNestingRecurse(&curPor->folds);
 }
 
 private int
 getDeepestNestingRecurse(ArrayList* gap) {
-   int maxlevel = 0;
+	int maxlevel = 0;
 
-   Fold* fp = (Fold *)gap->c;
-   for (int i = 0; i < gap->len; ++i) {
-      int level = getDeepestNestingRecurse(&fp[i].fd_nested) + 1;
-      if (level > maxlevel)
-          maxlevel = level;
-   }
+	Fold* fp = (Fold *)gap->c;
+	for (int i = 0; i < gap->len; ++i) {
+		int level = getDeepestNestingRecurse(&fp[i].fd_nested) + 1;
+		if (level > maxlevel)
+			 maxlevel = level;
+	}
 
-   return maxlevel;
+	return maxlevel;
 }
 
 //Check if a fold is closed and update the info needed to check nested folds.
 private Boole
 check_closed(
-   Portal* po,
-   Fold* fp,
-   OUT Boole* use_levelp,       //true: outer fold had FD_LEVEL
-   int level,          //folding depth
-   OUT Boole* maybe_smallp,       //true: outer this had fd_small == MAYBE
-   LineNr   lnum_off       //line number offset for fp->fd_top
+	Portal* po,
+	Fold* fp,
+	OUT Boole* use_levelp,       //true: outer fold had FD_LEVEL
+	int level,          //folding depth
+	OUT Boole* maybe_smallp,       //true: outer this had fd_small == MAYBE
+	LineNr   lnum_off       //line number offset for fp->fd_top
 ){
-   Boole closed = false;
+	Boole closed = false;
 
-   //Check if this fold is closed.  If the flag is FD_LEVEL this
-   //fold and all folds it contains depend on 'foldlevel'.
-   if (*use_levelp || fp->fd_flags == FD_LEVEL) {
-      *use_levelp = true;
-      if (level >= po->o.foldLevel)
-         closed = true;
-   } ei (fp->fd_flags == FD_CLOSED)
-      closed = true;
+	//Check if this fold is closed.  If the flag is FD_LEVEL this
+	//fold and all folds it contains depend on 'foldlevel'.
+	if (*use_levelp || fp->fd_flags == FD_LEVEL) {
+		*use_levelp = true;
+		if (level >= po->o.foldLevel)
+			closed = true;
+	} ei (fp->fd_flags == FD_CLOSED)
+		closed = true;
 
-   //Small fold isn't closed anyway.
-   if (fp->fd_small == MAYBE)
-       *maybe_smallp = true;
-   if (closed) {
-       if (*maybe_smallp)
-          fp->fd_small = MAYBE;
-       checkSmall(po, fp, lnum_off);
-       if (fp->fd_small == true)
-          closed = false;
-   }
-   return closed;
+	//Small fold isn't closed anyway.
+	if (fp->fd_small == MAYBE)
+		 *maybe_smallp = true;
+	if (closed) {
+		 if (*maybe_smallp)
+			 fp->fd_small = MAYBE;
+		 checkSmall(po, fp, lnum_off);
+		 if (fp->fd_small == true)
+			 closed = false;
+	}
+	return closed;
 }
 
 //Update fd_small field of fold "fp".
 private void
 checkSmall(Portal* po, Fold* fp, LineNr lnum_off){   //offset for fp->fd_top
-   int count;
-   int n;
+	int count;
+	int n;
 
-   if (fp->fd_small != MAYBE)
-      return;
+	if (fp->fd_small != MAYBE)
+		return;
 
-   //Mark any nested folds to maybe-small
-   setSmallMaybe(&fp->fd_nested);
+	//Mark any nested folds to maybe-small
+	setSmallMaybe(&fp->fd_nested);
 
-   if (fp->fd_len > 1)
-      fp->fd_small = false;
-   else {
-      count = 0;
-      for (n = 0; n < fp->fd_len; ++n) {
-          count += plines_win_nofold(po, fp->fd_top + lnum_off + n);
-          if (count > 1) {
-             fp->fd_small = false;
-             return;
-          }
-      }
-      fp->fd_small = true;
-   }
+	if (fp->fd_len > 1)
+		fp->fd_small = false;
+	else {
+		count = 0;
+		for (n = 0; n < fp->fd_len; ++n) {
+			 count += plines_win_nofold(po, fp->fd_top + lnum_off + n);
+			 if (count > 1) {
+				 fp->fd_small = false;
+				 return;
+			 }
+		}
+		fp->fd_small = true;
+	}
 }
 
 //Set small flags in "gap" to MAYBE.
 private void
 setSmallMaybe(ArrayList* gap) {
-   Fold* fp = (Fold *)gap->c;
-   for (int i = 0; i < gap->len; ++i)
-      fp[i].fd_small = MAYBE;
+	Fold* fp = (Fold *)gap->c;
+	for (int i = 0; i < gap->len; ++i)
+		fp[i].fd_small = MAYBE;
 }
 
 //Create a fold from line "start" to line "end" (inclusive) in the current
 //portal by adding markers.
 private void
 foldCreateMarkers(LineNr start, LineNr end) {
-   if (IMMUTABLE) {
-      emsg(_(e_cannot_make_changes_modifiable_is_off));
-      return;
-   }
-   parseMarker(curPor);
+	if (IMMUTABLE) {
+		emsg(_(e_cannot_make_changes_modifiable_is_off));
+		return;
+	}
+	parseMarker(curPor);
 
-   foldAddMarker(start, curPor->o.foldMarker, foldstartmarkerlen);
-   foldAddMarker(end, foldendmarker, foldendmarkerlen);
+	foldAddMarker(start, curPor->o.foldMarker, foldstartmarkerlen);
+	foldAddMarker(end, foldendmarker, foldendmarkerlen);
 
-   //Update both changes here, to avoid all folds after the start are
-   //changed when the start marker is inserted and the end isn't.
-   doChangedLines(start, (ColNr)0, end, 0L);
+	//Update both changes here, to avoid all folds after the start are
+	//changed when the start marker is inserted and the end isn't.
+	doChangedLines(start, (ColNr)0, end, 0L);
 }
 
 //Add "marker[markerlen]" in 'commentstring' to line "lnum".
 private void
 foldAddMarker(LineNr lnum, CS marker, int markerlen) {
-   CS cms = curBook->o.commentString;
-   if (!cms)
-      return;
-   CS p = STRSTR(curBook->o.commentString, "%s");
-   Boole lineIsComment = false;
+	CS cms = curBook->o.commentString;
+	if (!cms)
+		return;
+	CS p = STRSTR(curBook->o.commentString, "%s");
+	Boole lineIsComment = false;
 
-   //Allocate a new line: old-line + 'cms'-start + marker + 'cms'-end
-   CS line = ml_get(lnum);
-   Unt line_len = ml_get_len(lnum);
+	//Allocate a new line: old-line + 'cms'-start + marker + 'cms'-end
+	CS line = ml_get(lnum);
+	Unt line_len = ml_get_len(lnum);
 
-   if (u_save(lnum - 1, lnum + 1) != OK)
-       return;
+	if (u_save(lnum - 1, lnum + 1) != OK)
+		 return;
 
-   //Check if the line ends with an unclosed comment
-   (void)skip_comment(line, false, false, OUT &lineIsComment);
-   CS newline = alloc(line_len + markerlen + STRLEN(cms) + 1);
-   STRCPY(OUT newline, line);
+	//Check if the line ends with an unclosed comment
+	(void)skip_comment(line, false, false, OUT &lineIsComment);
+	CS newline = alloc(line_len + markerlen + STRLEN(cms) + 1);
+	STRCPY(OUT newline, line);
 
-   //Append the marker to the end of the line
-   if (!p || lineIsComment)
-      copySubstrToAllocation(newline + line_len, (Text){marker, markerlen});
-   else {
-      STRCPY(newline + line_len, cms);
-      STRNCPY(newline + line_len + (p - cms), marker, markerlen);
-      STRCPY(newline + line_len + (p - cms) + markerlen, p + 2);
-   }
+	//Append the marker to the end of the line
+	if (!p || lineIsComment)
+		copySubstrToAllocation(newline + line_len, (Text){marker, markerlen});
+	else {
+		STRCPY(newline + line_len, cms);
+		STRNCPY(newline + line_len + (p - cms), marker, markerlen);
+		STRCPY(newline + line_len + (p - cms) + markerlen, p + 2);
+	}
 
-   ml_replace(lnum, newline, false);
+	ml_replace(lnum, newline, false);
 }
 
 //Delete the markers for a fold, causing it to be deleted.
 private void
 deleteFoldMarkers(Fold* fp, int recursive, LineNr lnum_off) {  //offset for fp->fd_top
 
-   if (recursive) {
-      for (int i = 0; i < fp->fd_nested.len; ++i) {
-          deleteFoldMarkers((Fold *)fp->fd_nested.c + i, true, lnum_off + fp->fd_top);
-      }
-   }
-   foldDelMarker(fp->fd_top + lnum_off, curPor->o.foldMarker, foldstartmarkerlen);
-   foldDelMarker(fp->fd_top + lnum_off + fp->fd_len - 1, foldendmarker, foldendmarkerlen);
+	if (recursive) {
+		for (int i = 0; i < fp->fd_nested.len; ++i) {
+			 deleteFoldMarkers((Fold *)fp->fd_nested.c + i, true, lnum_off + fp->fd_top);
+		}
+	}
+	foldDelMarker(fp->fd_top + lnum_off, curPor->o.foldMarker, foldstartmarkerlen);
+	foldDelMarker(fp->fd_top + lnum_off + fp->fd_len - 1, foldendmarker, foldendmarkerlen);
 }
 
 //Delete marker "marker[markerlen]" at the end of line "lnum".
@@ -8596,40 +8595,40 @@ deleteFoldMarkers(Fold* fp, int recursive, LineNr lnum_off) {  //offset for fp->
 //If the marker is not found, there is no error message. Could be a missing close-marker.
 private void
 foldDelMarker(LineNr lnum, CS marker, int markerlen) {
-   int len;
-   CS cms = curBook->o.commentString;
+	int len;
+	CS cms = curBook->o.commentString;
 
-   //end marker may be missing and fold extends below the last line
-   if (lnum > curBook->mem.lineCount)
-      return;
-   CS line = ml_get(lnum);
-   for (CS p = line; *p != ZERO; ++p) {
-      if (STRNCMP(p, marker, markerlen) == 0) {
-         //Found the marker, include a digit if it's there.
-         len = markerlen;
-         if (EE_ISDIGIT(p[len]))
-            ++len;
-         if (cms) {
-            //Also delete 'commentstring' if it matches.
-            CS cms2 = (CS)STRSTR(cms, "%s");
-            if (cms2 && p - line >= cms2 - cms
-                  && STRNCMP(p - (cms2 - cms), cms, cms2 - cms) == 0
-                  && STRNCMP(p + len, cms2 + 2, STRLEN(cms2 + 2)) == 0
-            ) {
-               p -= cms2 - cms;
-               len += (int)STRLEN(cms) - 2;
-            }
-         }
-         if (u_save(lnum - 1, lnum + 1) == OK) {
-            //Make new line: text-before-marker + text-after-marker
-            CS newline = alloc(ml_get_len(lnum) - len + 1);
-            STRNCPY(newline, line, p - line);
-            STRCPY(newline + (p - line), p + len);
-            ml_replace(lnum, newline, false);
-         }
-         break;
-      }
-   }
+	//end marker may be missing and fold extends below the last line
+	if (lnum > curBook->mem.lineCount)
+		return;
+	CS line = ml_get(lnum);
+	for (CS p = line; *p != ZERO; ++p) {
+		if (STRNCMP(p, marker, markerlen) == 0) {
+			//Found the marker, include a digit if it's there.
+			len = markerlen;
+			if (EE_ISDIGIT(p[len]))
+				++len;
+			if (cms) {
+				//Also delete 'commentstring' if it matches.
+				CS cms2 = (CS)STRSTR(cms, "%s");
+				if (cms2 && p - line >= cms2 - cms
+						&& STRNCMP(p - (cms2 - cms), cms, cms2 - cms) == 0
+						&& STRNCMP(p + len, cms2 + 2, STRLEN(cms2 + 2)) == 0
+				) {
+					p -= cms2 - cms;
+					len += (int)STRLEN(cms) - 2;
+				}
+			}
+			if (u_save(lnum - 1, lnum + 1) == OK) {
+				//Make new line: text-before-marker + text-after-marker
+				CS newline = alloc(ml_get_len(lnum) - len + 1);
+				STRNCPY(newline, line, p - line);
+				STRCPY(newline + (p - line), p + len);
+				ml_replace(lnum, newline, false);
+			}
+			break;
+		}
+	}
 }
 
 //Return the text for a closed fold at line "lnum", with last line "lnume".
@@ -8637,170 +8636,170 @@ foldDelMarker(LineNr lnum, CS marker, int markerlen) {
 //Otherwise the result is in allocated memory.
 pub CS
 get_foldtext(
-   Portal* po,
-   LineNr lnum,
-   LineNr lnume,
-   FoldInfo* foldinfo,
-   CS buffer
+	Portal* po,
+	LineNr lnum,
+	LineNr lnume,
+	FoldInfo* foldinfo,
+	CS buffer
 ) {
-   CS text = NULL;
-     //an error occurred when evaluating 'fdt' setting
-   static int       got_fdt_error = false;
-   int          save_anyEmsgG = anyEmsgG;
-   static Portal    *last_wp = NULL;
-   static LineNr last_lnum = 0;
+	CS text = NULL;
+	  //an error occurred when evaluating 'fdt' setting
+	static int       got_fdt_error = false;
+	int          save_anyEmsgG = anyEmsgG;
+	static Portal    *last_wp = NULL;
+	static LineNr last_lnum = 0;
 
-   if (last_wp != po || last_wp == NULL || last_lnum > lnum || last_lnum == 0)
-      //portal changed, try evaluating foldtext setting once again
-      got_fdt_error = false;
+	if (last_wp != po || last_wp == NULL || last_lnum > lnum || last_lnum == 0)
+		//portal changed, try evaluating foldtext setting once again
+		got_fdt_error = false;
 
-   if (!got_fdt_error)
-       //a previous error should not abort evaluating
-       anyEmsgG = false;
+	if (!got_fdt_error)
+		 //a previous error should not abort evaluating
+		 anyEmsgG = false;
 
-   if (po->o.foldText) {
-       Byte dashes[MAX_LEVEL + 2];
-       CS p;
+	if (po->o.foldText) {
+		 Byte dashes[MAX_LEVEL + 2];
+		 CS p;
 
-       //Set "v:folddashes" to a string of "level" dashes.
-       //Set "v:foldlevel" to "level".
-       int level = foldinfo->fi_level;
-       if (level > (int)sizeof(dashes) - 1)
-          level = (int)sizeof(dashes) - 1;
-       memset(dashes, '-', (Unt)level);
-       dashes[level] = ZERO;
+		 //Set "v:folddashes" to a string of "level" dashes.
+		 //Set "v:foldlevel" to "level".
+		 int level = foldinfo->fi_level;
+		 if (level > (int)sizeof(dashes) - 1)
+			 level = (int)sizeof(dashes) - 1;
+		 memset(dashes, '-', (Unt)level);
+		 dashes[level] = ZERO;
 
-       //skip evaluating @foldtext on errors
-       if (!got_fdt_error) {
-           Portal* save_curPor = curPor;
-           ScriptPos saved_sctx = scriptPosG;
+		 //skip evaluating @foldtext on errors
+		 if (!got_fdt_error) {
+			  Portal* save_curPor = curPor;
+			  ScriptPos saved_sctx = scriptPosG;
 
-           curPor = po;
-           curBook = po->book;
-           scriptPosG = po->o.scriptLocs[PORTAL_foldText];
+			  curPor = po;
+			  curBook = po->book;
+			  scriptPosG = po->o.scriptLocs[PORTAL_foldText];
 
-           ++emsg_off; //handle exceptions, but don't display errors
-           text = eval_to_string_safe(po->o.foldText, true);
-           --emsg_off;
+			  ++emsg_off; //handle exceptions, but don't display errors
+			  text = eval_to_string_safe(po->o.foldText, true);
+			  --emsg_off;
 
-           if (!text || anyEmsgG)
-              got_fdt_error = true;
+			  if (!text || anyEmsgG)
+				  got_fdt_error = true;
 
-           curPor = save_curPor;
-           curBook = curPor->book;
-           scriptPosG = saved_sctx;
-      }
-      last_lnum = lnum;
-      last_wp   = po;
+			  curPor = save_curPor;
+			  curBook = curPor->book;
+			  scriptPosG = saved_sctx;
+		}
+		last_lnum = lnum;
+		last_wp   = po;
 
-      if (!anyEmsgG && save_anyEmsgG)
-          anyEmsgG = save_anyEmsgG;
+		if (!anyEmsgG && save_anyEmsgG)
+			 anyEmsgG = save_anyEmsgG;
 
-      if (text) {
-         //Replace unprintable characters, if there are any. But replace a TAB with a space.
-         for (p = text; *p != ZERO; ++p) {
-            int   len;
+		if (text) {
+			//Replace unprintable characters, if there are any. But replace a TAB with a space.
+			for (p = text; *p != ZERO; ++p) {
+				int   len;
 
-            if ((len = utfCharLen(p)) > 1) {
-               if (!bookIsCharPrintable((*mb_ptr2char)(p)))
-                  break;
-               p += len - 1;
-            } ei (*p == TAB)
-               *p = ' ';
-            ei (bookPtr2Cells(p) > 1)
-               break;
-         }
-         if (*p != ZERO) {
-             p = sanitizeStr(text);
-             eeglFree(text);
-             text = p;
-         }
-      }
-   }
-   if (!text) {
-      long count = (long)(lnume - lnum + 1);
-      eeSnprintf(buffer, FOLD_TEXT_LEN,
-              NGETTEXT("+--%3ld line folded ", "+--%3ld lines folded ", count),
-              count);
-      text = buffer;
-   }
-   return text;
+				if ((len = utfCharLen(p)) > 1) {
+					if (!bookIsCharPrintable((*mb_ptr2char)(p)))
+						break;
+					p += len - 1;
+				} ei (*p == TAB)
+					*p = ' ';
+				ei (bookPtr2Cells(p) > 1)
+					break;
+			}
+			if (*p != ZERO) {
+				 p = sanitizeStr(text);
+				 eeglFree(text);
+				 text = p;
+			}
+		}
+	}
+	if (!text) {
+		long count = (long)(lnume - lnum + 1);
+		eeSnprintf(buffer, FOLD_TEXT_LEN,
+				  NGETTEXT("+--%3ld line folded ", "+--%3ld lines folded ", count),
+				  count);
+		text = buffer;
+	}
+	return text;
 }
 
 //Remove 'foldmarker' and 'commentstring' from "str" (in-place).
 private void
 foldtext_cleanup(CS str) {
-   CS s;
-   CS p;
-   int len;
-   int did1 = false;
-   int did2 = false;
-   CS cmsStart = null;   //first part or the whole comment
-   CS cmsEnd = null;  //last part of the comment or NULL
-   int cms_slen = 0; //length of cmsStart
-   int cms_elen = 0;   //length of cmsEnd
-   //Ignore leading and trailing white space in 'commentstring'.
-   if (curBook->o.commentString) {
-      cmsStart = skipwhite(curBook->o.commentString);   //first part or the whole comment
-      cms_slen = (int)STRLEN(cmsStart);
-      while (cms_slen > 0 && SPACE_OR_TAB(cmsStart[cms_slen - 1]))
-         --cms_slen;
+	CS s;
+	CS p;
+	int len;
+	int did1 = false;
+	int did2 = false;
+	CS cmsStart = null;   //first part or the whole comment
+	CS cmsEnd = null;  //last part of the comment or NULL
+	int cms_slen = 0; //length of cmsStart
+	int cms_elen = 0;   //length of cmsEnd
+	//Ignore leading and trailing white space in 'commentstring'.
+	if (curBook->o.commentString) {
+		cmsStart = skipwhite(curBook->o.commentString);   //first part or the whole comment
+		cms_slen = (int)STRLEN(cmsStart);
+		while (cms_slen > 0 && SPACE_OR_TAB(cmsStart[cms_slen - 1]))
+			--cms_slen;
 
-      //locate "%s" in 'commentstring', use the part before and after it.
-      CS cmsEnd = (CS)STRSTR(cmsStart, "%s");  //last part of the comment or NULL
-      if (cmsEnd) {
-         cms_elen = cms_slen - (int)(cmsEnd - cmsStart);
-         cms_slen = (int)(cmsEnd - cmsStart);
+		//locate "%s" in 'commentstring', use the part before and after it.
+		CS cmsEnd = (CS)STRSTR(cmsStart, "%s");  //last part of the comment or NULL
+		if (cmsEnd) {
+			cms_elen = cms_slen - (int)(cmsEnd - cmsStart);
+			cms_slen = (int)(cmsEnd - cmsStart);
 
-         //exclude white space before "%s"
-         while (cms_slen > 0 && SPACE_OR_TAB(cmsStart[cms_slen - 1]))
-            --cms_slen;
+			//exclude white space before "%s"
+			while (cms_slen > 0 && SPACE_OR_TAB(cmsStart[cms_slen - 1]))
+				--cms_slen;
 
-         //skip "%s" and white space after it
-         s = skipwhite(cmsEnd + 2);
-         cms_elen -= (int)(s - cmsEnd);
-         cmsEnd = s;
-      }
-   }
-   if (!curPor->o.foldMarker) {
-      return;
-   }
-   parseMarker(curPor);
+			//skip "%s" and white space after it
+			s = skipwhite(cmsEnd + 2);
+			cms_elen -= (int)(s - cmsEnd);
+			cmsEnd = s;
+		}
+	}
+	if (!curPor->o.foldMarker) {
+		return;
+	}
+	parseMarker(curPor);
 
-   for (s = str; *s != ZERO; ) {
-      len = 0;
-      if (STRNCMP(s, curPor->o.foldMarker, foldstartmarkerlen) == 0)
-         len = foldstartmarkerlen;
-      ei (STRNCMP(s, foldendmarker, foldendmarkerlen) == 0)
-         len = foldendmarkerlen;
-      if (len > 0) {
-         if (EE_ISDIGIT(s[len]))
-            ++len;
+	for (s = str; *s != ZERO; ) {
+		len = 0;
+		if (STRNCMP(s, curPor->o.foldMarker, foldstartmarkerlen) == 0)
+			len = foldstartmarkerlen;
+		ei (STRNCMP(s, foldendmarker, foldendmarkerlen) == 0)
+			len = foldendmarkerlen;
+		if (len > 0) {
+			if (EE_ISDIGIT(s[len]))
+				++len;
 
-         //May remove @commentstring start.  Useful when it's a double
-         //quote and we already removed a double quote.
-         for (p = s; p > str && SPACE_OR_TAB(p[-1]); --p) {}
-         if (p >= str + cms_slen && cmsStart && STRNCMP(p - cms_slen, cmsStart, cms_slen) == 0) {
-            len += (int)(s - p) + cms_slen;
-            s = p - cms_slen;
-         }
-      } ei (cmsEnd) {
-          if (!did1 && cms_slen > 0 && STRNCMP(s, cmsStart, cms_slen) == 0) {
-             len = cms_slen;
-             did1 = true;
-          } ei (!did2 && cms_elen > 0 && STRNCMP(s, cmsEnd, cms_elen) == 0) {
-             len = cms_elen;
-             did2 = true;
-          }
-      }
-      if (len != 0) {
-         while (SPACE_OR_TAB(s[len]))
-            ++len;
-         STRMOVE(s, s + len);
-      } else {
-         MB_PTR_ADV(s);
-      }
-   }
+			//May remove @commentstring start.  Useful when it's a double
+			//quote and we already removed a double quote.
+			for (p = s; p > str && SPACE_OR_TAB(p[-1]); --p) {}
+			if (p >= str + cms_slen && cmsStart && STRNCMP(p - cms_slen, cmsStart, cms_slen) == 0) {
+				len += (int)(s - p) + cms_slen;
+				s = p - cms_slen;
+			}
+		} ei (cmsEnd) {
+			 if (!did1 && cms_slen > 0 && STRNCMP(s, cmsStart, cms_slen) == 0) {
+				 len = cms_slen;
+				 did1 = true;
+			 } ei (!did2 && cms_elen > 0 && STRNCMP(s, cmsEnd, cms_elen) == 0) {
+				 len = cms_elen;
+				 did2 = true;
+			 }
+		}
+		if (len != 0) {
+			while (SPACE_OR_TAB(s[len]))
+				++len;
+			STRMOVE(s, s + len);
+		} else {
+			MB_PTR_ADV(s);
+		}
+	}
 }
 
 //Flag is set when redrawing is needed.
@@ -8810,157 +8809,157 @@ private int fold_changed;
 //Return true if any folds did change.
 private void
 foldUpdateIEMS(Portal* po, LineNr top, LineNr bot) {
-   LineNr   start;
-   LineNr   end;
-   FoldLine   fline;
-   void   (*getlevel)(FoldLine *);
-   int      level;
-   Fold   *fp;
+	LineNr   start;
+	LineNr   end;
+	FoldLine   fline;
+	void   (*getlevel)(FoldLine *);
+	int      level;
+	Fold   *fp;
 
-   //Avoid problems when being called recursively.
-   if (invalid_top != (LineNr)0)
-      return;
+	//Avoid problems when being called recursively.
+	if (invalid_top != (LineNr)0)
+		return;
 
-   if (po->foldNeedsRecomputation) {
-      //Need to update all folds.
-      top = 1;
-      bot = po->book->mem.lineCount;
-      po->foldNeedsRecomputation = false;
+	if (po->foldNeedsRecomputation) {
+		//Need to update all folds.
+		top = 1;
+		bot = po->book->mem.lineCount;
+		po->foldNeedsRecomputation = false;
 
-      //Mark all folds as maybe-small.
-      setSmallMaybe(&po->folds);
-   }
+		//Mark all folds as maybe-small.
+		setSmallMaybe(&po->folds);
+	}
 
-   //add the context for "diff" folding
-   if (po->o.foldMethod == FOLD_DIFF) {
-      if (top > diff_context)
-         top -= diff_context;
-      else
-         top = 1;
-      bot += diff_context;
-   }
+	//add the context for "diff" folding
+	if (po->o.foldMethod == FOLD_DIFF) {
+		if (top > diff_context)
+			top -= diff_context;
+		else
+			top = 1;
+		bot += diff_context;
+	}
 
-   //When deleting lines at the end of the buffer "top" can be past the end of the buffer.
-   if (top > po->book->mem.lineCount)
-      top = po->book->mem.lineCount;
+	//When deleting lines at the end of the buffer "top" can be past the end of the buffer.
+	if (top > po->book->mem.lineCount)
+		top = po->book->mem.lineCount;
 
-   fold_changed = false;
-   fline.po = po;
-   fline.off = 0;
-   fline.lvl = 0;
-   fline.lvl_next = -1;
-   fline.start = 0;
-   fline.end = MAX_LEVEL + 1;
-   fline.had_end = MAX_LEVEL + 1;
+	fold_changed = false;
+	fline.po = po;
+	fline.off = 0;
+	fline.lvl = 0;
+	fline.lvl_next = -1;
+	fline.start = 0;
+	fline.end = MAX_LEVEL + 1;
+	fline.had_end = MAX_LEVEL + 1;
 
-   invalid_top = top;
-   invalid_bot = bot;
+	invalid_top = top;
+	invalid_bot = bot;
 
-   if (po->o.foldMethod == FOLD_MARKER && po->o.foldMarker) {
-      getlevel = foldlevelMarker;
+	if (po->o.foldMethod == FOLD_MARKER && po->o.foldMarker) {
+		getlevel = foldlevelMarker;
 
-      //Init marker variables to speed up foldlevelMarker().
-      parseMarker(po);
+		//Init marker variables to speed up foldlevelMarker().
+		parseMarker(po);
 
-      //Need to get the level of the line above top, it is used if there is
-      //no marker at the top.
-      if (top > 1) {
-         //Get the fold level at top - 1.
-         level = foldLevelWin(po, top - 1);
+		//Need to get the level of the line above top, it is used if there is
+		//no marker at the top.
+		if (top > 1) {
+			//Get the fold level at top - 1.
+			level = foldLevelWin(po, top - 1);
 
-         //The fold may end just above the top, check for that.
-         fline.lnum = top - 1;
-         fline.lvl = level;
-         getlevel(&fline);
+			//The fold may end just above the top, check for that.
+			fline.lnum = top - 1;
+			fline.lvl = level;
+			getlevel(&fline);
 
-         //If a fold started here, we already had the level, if it stops
-         //here, we need to use lvl_next.  Could also start and end a fold
-         //in the same line.
-         if (fline.lvl > level)
-            fline.lvl = level - (fline.lvl - fline.lvl_next);
-         else
-            fline.lvl = fline.lvl_next;
-      }
-      fline.lnum = top;
-      getlevel(&fline);
-   } else {
-      fline.lnum = top;
-      if (po->o.foldMethod == FOLD_DIFF)
-         getlevel = foldlevelDiff;
-      else {
-         getlevel = foldlevelIndent;
-         //Start one line back, because if the line above "top" has an
-         //undefined fold level, folding it relies on the line under it, which is "top".
-         if (top > 1)
-            --fline.lnum;
-      }
+			//If a fold started here, we already had the level, if it stops
+			//here, we need to use lvl_next.  Could also start and end a fold
+			//in the same line.
+			if (fline.lvl > level)
+				fline.lvl = level - (fline.lvl - fline.lvl_next);
+			else
+				fline.lvl = fline.lvl_next;
+		}
+		fline.lnum = top;
+		getlevel(&fline);
+	} else {
+		fline.lnum = top;
+		if (po->o.foldMethod == FOLD_DIFF)
+			getlevel = foldlevelDiff;
+		else {
+			getlevel = foldlevelIndent;
+			//Start one line back, because if the line above "top" has an
+			//undefined fold level, folding it relies on the line under it, which is "top".
+			if (top > 1)
+				--fline.lnum;
+		}
 
-      //Backup to a line for which the fold level is defined.  Since it's
-      //always defined for line one, we will stop there.
-      fline.lvl = -1;
-      for ( ; !gotInterruptG; --fline.lnum) {
-          //Reset lvl_next each time, because it will be set to a value for
-          //the next line, but we search backwards here.
-          fline.lvl_next = -1;
-          getlevel(&fline);
-          if (fline.lvl >= 0)
-         break;
-      }
-   }
+		//Backup to a line for which the fold level is defined.  Since it's
+		//always defined for line one, we will stop there.
+		fline.lvl = -1;
+		for ( ; !gotInterruptG; --fline.lnum) {
+			 //Reset lvl_next each time, because it will be set to a value for
+			 //the next line, but we search backwards here.
+			 fline.lvl_next = -1;
+			 getlevel(&fline);
+			 if (fline.lvl >= 0)
+			break;
+		}
+	}
 
-   start = fline.lnum;
-   end = bot;
-   //Do at least one line.
-   if (start > end && end < po->book->mem.lineCount)
-      end = start;
-   while (!gotInterruptG) {
-      //Always stop at the end of the file ("end" can be past the end of the file).
-      if (fline.lnum > po->book->mem.lineCount)
-         break;
-      if (fline.lnum > end) {
-         //For "marker" method: If a change caused
-         //a fold to be removed, we need to continue at least until where it ended.
-         if (getlevel != foldlevelMarker)
-            break;
-         if ((start <= end
-            && foldFind(&po->folds, end, &fp)
-            && fp->fd_top + fp->fd_len - 1 > end)
-             || (fline.lvl == 0 && foldFind(&po->folds, fline.lnum, &fp) && fp->fd_top < fline.lnum)
-         )
-            end = fp->fd_top + fp->fd_len - 1;
-         else
-            break;
-      }
+	start = fline.lnum;
+	end = bot;
+	//Do at least one line.
+	if (start > end && end < po->book->mem.lineCount)
+		end = start;
+	while (!gotInterruptG) {
+		//Always stop at the end of the file ("end" can be past the end of the file).
+		if (fline.lnum > po->book->mem.lineCount)
+			break;
+		if (fline.lnum > end) {
+			//For "marker" method: If a change caused
+			//a fold to be removed, we need to continue at least until where it ended.
+			if (getlevel != foldlevelMarker)
+				break;
+			if ((start <= end
+				&& foldFind(&po->folds, end, &fp)
+				&& fp->fd_top + fp->fd_len - 1 > end)
+				 || (fline.lvl == 0 && foldFind(&po->folds, fline.lnum, &fp) && fp->fd_top < fline.lnum)
+			)
+				end = fp->fd_top + fp->fd_len - 1;
+			else
+				break;
+		}
 
-      //A level 1 fold starts at a line with foldlevel > 0.
-      if (fline.lvl > 0) {
-         invalid_top = fline.lnum;
-         invalid_bot = end;
-         end = foldUpdateIEMSRecurse(&po->folds, 1, start, &fline, getlevel, end, FD_LEVEL);
-         start = fline.lnum;
-      } else {
-         if (fline.lnum == po->book->mem.lineCount)
-            break;
-         ++fline.lnum;
-         fline.lvl = fline.lvl_next;
-         getlevel(&fline);
-      }
-   }
+		//A level 1 fold starts at a line with foldlevel > 0.
+		if (fline.lvl > 0) {
+			invalid_top = fline.lnum;
+			invalid_bot = end;
+			end = foldUpdateIEMSRecurse(&po->folds, 1, start, &fline, getlevel, end, FD_LEVEL);
+			start = fline.lnum;
+		} else {
+			if (fline.lnum == po->book->mem.lineCount)
+				break;
+			++fline.lnum;
+			fline.lvl = fline.lvl_next;
+			getlevel(&fline);
+		}
+	}
 
-   //There can't be any folds from start until end now.
-   foldRemove(&po->folds, start, end);
+	//There can't be any folds from start until end now.
+	foldRemove(&po->folds, start, end);
 
-   //If some fold changed, need to redraw and position cursor.
-   if (fold_changed && po->o.foldEnable)
-      didChangePortalSetting(po);
+	//If some fold changed, need to redraw and position cursor.
+	if (fold_changed && po->o.foldEnable)
+		didChangePortalSetting(po);
 
-   //If we updated folds past "bot", need to redraw more lines. Don't do this in other
-   //situations, the changed lines will be redrawn anyway and this method can cause the whole
-   //portal to be updated.
-   if (end != bot)
-      redrawPortRangeLater(po, top, end);
+	//If we updated folds past "bot", need to redraw more lines. Don't do this in other
+	//situations, the changed lines will be redrawn anyway and this method can cause the whole
+	//portal to be updated.
+	if (end != bot)
+		redrawPortRangeLater(po, top, end);
 
-   invalid_top = (LineNr)0;
+	invalid_top = (LineNr)0;
 }
 
 //Update a fold that starts at "flp->lnum". At this line there is always a valid foldlevel, and
@@ -8984,375 +8983,375 @@ foldUpdateIEMS(Portal* po, LineNr top, LineNr bot) {
 //updated as a result of a detected change in the fold.
 private LineNr
 foldUpdateIEMSRecurse(
-   ArrayList   *gap,
-   int      level,
-   LineNr   startlnum,
-   FoldLine   *flp,
-   void   (*getlevel)(FoldLine *),
-   LineNr   bot,
-   int      topflags   //flags used by containing fold
+	ArrayList   *gap,
+	int      level,
+	LineNr   startlnum,
+	FoldLine   *flp,
+	void   (*getlevel)(FoldLine *),
+	LineNr   bot,
+	int      topflags   //flags used by containing fold
 ){
-   LineNr   ll;
-   Fold   *fp = NULL;
-   Fold   *fp2;
-   int      lvl = level;
-   LineNr   startlnum2 = startlnum;
-   LineNr   firstlnum = flp->lnum;   //first lnum we got
-   int      i;
-   int      finish = false;
-   LineNr   linecount = flp->po->book->mem.lineCount - flp->off;
-   int      concat;
+	LineNr   ll;
+	Fold   *fp = NULL;
+	Fold   *fp2;
+	int      lvl = level;
+	LineNr   startlnum2 = startlnum;
+	LineNr   firstlnum = flp->lnum;   //first lnum we got
+	int      i;
+	int      finish = false;
+	LineNr   linecount = flp->po->book->mem.lineCount - flp->off;
+	int      concat;
 
-   //If using the marker method, the start line is not the start of a fold at the level we're
-   //dealing with and the level is non-zero, we must use the previous fold. But ignore a fold that
-   //starts at or below startlnum, it must be deleted.
-   if (getlevel == foldlevelMarker && flp->start <= flp->lvl - level && flp->lvl > 0) {
-       (void)foldFind(gap, startlnum - 1, &fp);
-       if (fp && (fp >= ((Fold*)gap->c) + gap->len || fp->fd_top >= startlnum)) {
-          fp = NULL;
-       }
-   }
+	//If using the marker method, the start line is not the start of a fold at the level we're
+	//dealing with and the level is non-zero, we must use the previous fold. But ignore a fold that
+	//starts at or below startlnum, it must be deleted.
+	if (getlevel == foldlevelMarker && flp->start <= flp->lvl - level && flp->lvl > 0) {
+		 (void)foldFind(gap, startlnum - 1, &fp);
+		 if (fp && (fp >= ((Fold*)gap->c) + gap->len || fp->fd_top >= startlnum)) {
+			 fp = NULL;
+		 }
+	}
 
-   //Loop over all lines in this fold, or until "bot" is hit. Handle nested folds inside of this
-   //fold. "flp->lnum" is the current line.  When finding the end of the fold, it is just below
-   //the end of the fold. "*flp" contains the level of the line "flp->lnum" or a following one if
-   //there are lines with an invalid fold level.  "flp->lnum_save" is the
-   //line number that was used to get the fold level (below "flp->lnum" when
-   //it has an invalid fold level).  When called the fold level is always
-   //valid, thus "flp->lnum_save" is equal to "flp->lnum".
-   flp->lnum_save = flp->lnum;
-   while (!gotInterruptG) {
-      //Updating folds can be slow, check for CTRL-C.
-      line_breakcheck();
+	//Loop over all lines in this fold, or until "bot" is hit. Handle nested folds inside of this
+	//fold. "flp->lnum" is the current line.  When finding the end of the fold, it is just below
+	//the end of the fold. "*flp" contains the level of the line "flp->lnum" or a following one if
+	//there are lines with an invalid fold level.  "flp->lnum_save" is the
+	//line number that was used to get the fold level (below "flp->lnum" when
+	//it has an invalid fold level).  When called the fold level is always
+	//valid, thus "flp->lnum_save" is equal to "flp->lnum".
+	flp->lnum_save = flp->lnum;
+	while (!gotInterruptG) {
+		//Updating folds can be slow, check for CTRL-C.
+		line_breakcheck();
 
-      //Set "lvl" to the level of line "flp->lnum".  When flp->start is set
-      //and after the first line of the fold, set the level to zero to
-      //force the fold to end.  Do the same when had_end is set: Previous
-      //line was marked as end of a fold.
-      lvl = flp->lvl;
-      if (lvl > MAX_LEVEL)
-         lvl = MAX_LEVEL;
-      if (flp->lnum > firstlnum && (level > lvl - flp->start || level >= flp->had_end))
-         lvl = 0;
+		//Set "lvl" to the level of line "flp->lnum".  When flp->start is set
+		//and after the first line of the fold, set the level to zero to
+		//force the fold to end.  Do the same when had_end is set: Previous
+		//line was marked as end of a fold.
+		lvl = flp->lvl;
+		if (lvl > MAX_LEVEL)
+			lvl = MAX_LEVEL;
+		if (flp->lnum > firstlnum && (level > lvl - flp->start || level >= flp->had_end))
+			lvl = 0;
 
-      if (flp->lnum > bot && !finish && fp) {
-         //For "marker" method:
-         //- If a change caused a nested fold to be removed, we need to
-         //  delete it and continue at least until where it ended.
-         //- If a change caused a nested fold to be created, or this fold
-         //  to continue below its original end, need to finish this fold.
-         if (getlevel != foldlevelMarker)
-            break;
-         i = 0;
-         fp2 = fp;
-         if (lvl >= level) {
-            //Compute how deep the folds currently are, if it's deeper than "lvl" then some
-            //must be deleted, need to update at least one nested fold.
-            ll = flp->lnum - fp->fd_top;
-            while (foldFind(&fp2->fd_nested, ll, &fp2)) {
-                ++i;
-                ll -= fp2->fd_top;
-            }
-         }
-         if (lvl < level + i) {
-            (void)foldFind(&fp->fd_nested, flp->lnum - fp->fd_top, &fp2);
-            if (fp2)
-               bot = fp2->fd_top + fp2->fd_len - 1 + fp->fd_top;
-         } ei (fp->fd_top + fp->fd_len <= flp->lnum && lvl >= level)
-            finish = true;
-         else
-            break;
-      }
+		if (flp->lnum > bot && !finish && fp) {
+			//For "marker" method:
+			//- If a change caused a nested fold to be removed, we need to
+			//  delete it and continue at least until where it ended.
+			//- If a change caused a nested fold to be created, or this fold
+			//  to continue below its original end, need to finish this fold.
+			if (getlevel != foldlevelMarker)
+				break;
+			i = 0;
+			fp2 = fp;
+			if (lvl >= level) {
+				//Compute how deep the folds currently are, if it's deeper than "lvl" then some
+				//must be deleted, need to update at least one nested fold.
+				ll = flp->lnum - fp->fd_top;
+				while (foldFind(&fp2->fd_nested, ll, &fp2)) {
+					 ++i;
+					 ll -= fp2->fd_top;
+				}
+			}
+			if (lvl < level + i) {
+				(void)foldFind(&fp->fd_nested, flp->lnum - fp->fd_top, &fp2);
+				if (fp2)
+					bot = fp2->fd_top + fp2->fd_len - 1 + fp->fd_top;
+			} ei (fp->fd_top + fp->fd_len <= flp->lnum && lvl >= level)
+				finish = true;
+			else
+				break;
+		}
 
-      //At the start of the first nested fold and at the end of the current
-      //fold: check if existing folds at this level, before the current
-      //one, need to be deleted or truncated.
-      if (fp == NULL
-         && (lvl != level
-             || flp->lnum_save >= bot
-             || flp->start != 0
-             || flp->had_end <= MAX_LEVEL
-             || flp->lnum == linecount))
-      {
-         //Remove or update folds that have lines between startlnum and firstlnum.
-         while (!gotInterruptG) {
-            //set concat to 1 if it's allowed to concatenate this fold
-            //with a previous one that touches it.
-            if (flp->start != 0 || flp->had_end <= MAX_LEVEL)
-               concat = 0;
-            else
-               concat = 1;
+		//At the start of the first nested fold and at the end of the current
+		//fold: check if existing folds at this level, before the current
+		//one, need to be deleted or truncated.
+		if (fp == NULL
+			&& (lvl != level
+				 || flp->lnum_save >= bot
+				 || flp->start != 0
+				 || flp->had_end <= MAX_LEVEL
+				 || flp->lnum == linecount))
+		{
+			//Remove or update folds that have lines between startlnum and firstlnum.
+			while (!gotInterruptG) {
+				//set concat to 1 if it's allowed to concatenate this fold
+				//with a previous one that touches it.
+				if (flp->start != 0 || flp->had_end <= MAX_LEVEL)
+					concat = 0;
+				else
+					concat = 1;
 
-            //Find an existing fold to re-use. Preferably one that
-            //includes startlnum, otherwise one that ends just before
-            //startlnum or starts after it.
-            if (gap->len > 0 && (foldFind(gap, startlnum, &fp)
-               || (fp < ((Fold *)gap->c) + gap->len
-                   && fp->fd_top <= firstlnum)
-               || foldFind(gap, firstlnum - concat, &fp)
-               || (fp < ((Fold *)gap->c) + gap->len
-                   && ((lvl < level && fp->fd_top < flp->lnum)
-                  || (lvl >= level && fp->fd_top <= flp->lnum_save))))
-            ) {
-               if (fp->fd_top + fp->fd_len + concat > firstlnum) {
-                  //Use existing fold for the new fold.  If it starts
-                  //before where we started looking, extend it.  If it
-                  //starts at another line, update nested folds to keep
-                  //their position, compensating for the new fd_top.
-                  if (fp->fd_top == firstlnum) {
-                      //have found a fold beginning where we want
-                  } ei (fp->fd_top >= startlnum) {
-                     if (fp->fd_top > firstlnum) {
-                        //like lines are inserted
-                        foldMarkAdjustRecurse(&fp->fd_nested,
-                           (LineNr)0, (LineNr)MAXLNUM,
-                           (long)(fp->fd_top - firstlnum), 0L);
-                     } else {
-                        //like lines are deleted
-                        foldMarkAdjustRecurse(&fp->fd_nested,
-                           (LineNr)0,
-                           (long)(firstlnum - fp->fd_top - 1),
-                           (LineNr)MAXLNUM,
-                           (long)(fp->fd_top - firstlnum));
-                     }
-                     fp->fd_len += fp->fd_top - firstlnum;
-                     fp->fd_top = firstlnum;
-                     fp->fd_small = MAYBE;
-                     fold_changed = true;
-                  } ei ((flp->start != 0 && lvl == level) || firstlnum != startlnum) {
-                     LineNr breakstart;
-                     LineNr breakend;
+				//Find an existing fold to re-use. Preferably one that
+				//includes startlnum, otherwise one that ends just before
+				//startlnum or starts after it.
+				if (gap->len > 0 && (foldFind(gap, startlnum, &fp)
+					|| (fp < ((Fold *)gap->c) + gap->len
+						 && fp->fd_top <= firstlnum)
+					|| foldFind(gap, firstlnum - concat, &fp)
+					|| (fp < ((Fold *)gap->c) + gap->len
+						 && ((lvl < level && fp->fd_top < flp->lnum)
+						|| (lvl >= level && fp->fd_top <= flp->lnum_save))))
+				) {
+					if (fp->fd_top + fp->fd_len + concat > firstlnum) {
+						//Use existing fold for the new fold.  If it starts
+						//before where we started looking, extend it.  If it
+						//starts at another line, update nested folds to keep
+						//their position, compensating for the new fd_top.
+						if (fp->fd_top == firstlnum) {
+						    //have found a fold beginning where we want
+						} ei (fp->fd_top >= startlnum) {
+						   if (fp->fd_top > firstlnum) {
+						      //like lines are inserted
+						      foldMarkAdjustRecurse(&fp->fd_nested,
+						         (LineNr)0, (LineNr)MAXLNUM,
+						         (long)(fp->fd_top - firstlnum), 0L);
+						   } else {
+						      //like lines are deleted
+						      foldMarkAdjustRecurse(&fp->fd_nested,
+						         (LineNr)0,
+						         (long)(firstlnum - fp->fd_top - 1),
+						         (LineNr)MAXLNUM,
+						         (long)(fp->fd_top - firstlnum));
+						   }
+						   fp->fd_len += fp->fd_top - firstlnum;
+						   fp->fd_top = firstlnum;
+						   fp->fd_small = MAYBE;
+						   fold_changed = true;
+						} ei ((flp->start != 0 && lvl == level) || firstlnum != startlnum) {
+						   LineNr breakstart;
+						   LineNr breakend;
 
-                     //Before there was a fold spanning from above startlnum to below firstlnum.
-                     //This fold is valid above startlnum (because we are not updating
-                     //that range), but there should now be a break in it. If the break is because
-                     //we are now forced to start a new fold at the level "level" at line
-                     //fline->lnum, then we need to split the fold at fline->lnum.
-                     //If the break is because the range [startlnum, firstlnum) is now at a lower
-                     //indent than "level", we need to split the fold in this range.
-                     //Any splits have to be done recursively.
-                     if (firstlnum != startlnum) {
-                        breakstart = startlnum;
-                        breakend = firstlnum;
-                     } else {
-                        breakstart = flp->lnum;
-                        breakend = flp->lnum;
-                     }
-                     foldRemove(&fp->fd_nested, breakstart - fp->fd_top, breakend - fp->fd_top);
-                     i = (int)(fp - (Fold *)gap->c);
-                     foldSplit(gap, i, breakstart, breakend - 1);
-                     fp = (Fold *)gap->c + i + 1;
+						   //Before there was a fold spanning from above startlnum to below firstlnum.
+						   //This fold is valid above startlnum (because we are not updating
+						   //that range), but there should now be a break in it. If the break is because
+						   //we are now forced to start a new fold at the level "level" at line
+						   //fline->lnum, then we need to split the fold at fline->lnum.
+						   //If the break is because the range [startlnum, firstlnum) is now at a lower
+						   //indent than "level", we need to split the fold in this range.
+						   //Any splits have to be done recursively.
+						   if (firstlnum != startlnum) {
+						      breakstart = startlnum;
+						      breakend = firstlnum;
+						   } else {
+						      breakstart = flp->lnum;
+						      breakend = flp->lnum;
+						   }
+						   foldRemove(&fp->fd_nested, breakstart - fp->fd_top, breakend - fp->fd_top);
+						   i = (int)(fp - (Fold *)gap->c);
+						   foldSplit(gap, i, breakstart, breakend - 1);
+						   fp = (Fold *)gap->c + i + 1;
 
-                     //If using the "marker" method, we
-                     //need to continue until the end of the fold is found.
-                     if (getlevel == foldlevelMarker)
-                        finish = true;
-                  }
+						   //If using the "marker" method, we
+						   //need to continue until the end of the fold is found.
+						   if (getlevel == foldlevelMarker)
+						      finish = true;
+						}
 
-                  if (fp->fd_top == startlnum && concat) {
-                     i = (int)(fp - (Fold *)gap->c);
-                     if (i != 0) {
-                        fp2 = fp - 1;
-                        if (fp2->fd_top + fp2->fd_len == fp->fd_top) {
-                           foldMerge(fp2, gap, fp);
-                           fp = fp2;
-                        }
-                      }
-                  }
-                  break;
-               }
-               if (fp->fd_top >= startlnum) {
-                  //A fold that starts at or after startlnum and stops
-                  //before the new fold must be deleted.  Continue
-                  //looking for the next one.
-                  deleteFoldEntry(gap, (int)(fp - (Fold *)gap->c), true);
-               } else {
-                  //A fold has some lines above startlnum, truncate it
-                  //to stop just above startlnum.
-                  fp->fd_len = startlnum - fp->fd_top;
-                  foldMarkAdjustRecurse(
-                        &fp->fd_nested, fp->fd_len, (LineNr)MAXLNUM, (LineNr)MAXLNUM, 0L
-                  );
-                  fold_changed = true;
-               }
-            } else {
-               //Insert new fold.  Careful: c may be NULL and it may change!
-               if (gap->len == 0)
-                  i = 0;
-               else
-                  i = (int)(fp - (Fold *)gap->c);
-               if (foldInsert(gap, i) != OK)
-                  return bot;
-               fp = (Fold *)gap->c + i;
-               //The new fold continues until bot, unless we find the end earlier.
-               fp->fd_top = firstlnum;
-               fp->fd_len = bot - firstlnum + 1;
-               //When the containing fold is open, the new fold is open.
-               //The new fold is closed if the fold above it is closed.
-               //The first fold depends on the containing fold.
-               if (topflags == FD_OPEN) {
-                  flp->po->foldManual = true;
-                  fp->fd_flags = FD_OPEN;
-               } ei (i <= 0) {
-                  fp->fd_flags = topflags;
-                  if (topflags != FD_LEVEL)
-                      flp->po->foldManual = true;
-               } else
-                  fp->fd_flags = (fp - 1)->fd_flags;
-               fp->fd_small = MAYBE;
-               //If using the "marker" method, we
-               //need to continue until the end of the fold is found.
-               if (getlevel == foldlevelMarker)
-                  finish = true;
-               fold_changed = true;
-               break;
-            }
-         }
-      }
+						if (fp->fd_top == startlnum && concat) {
+						   i = (int)(fp - (Fold *)gap->c);
+						   if (i != 0) {
+						      fp2 = fp - 1;
+						      if (fp2->fd_top + fp2->fd_len == fp->fd_top) {
+						         foldMerge(fp2, gap, fp);
+						         fp = fp2;
+						      }
+						    }
+						}
+						break;
+					}
+					if (fp->fd_top >= startlnum) {
+						//A fold that starts at or after startlnum and stops
+						//before the new fold must be deleted.  Continue
+						//looking for the next one.
+						deleteFoldEntry(gap, (int)(fp - (Fold *)gap->c), true);
+					} else {
+						//A fold has some lines above startlnum, truncate it
+						//to stop just above startlnum.
+						fp->fd_len = startlnum - fp->fd_top;
+						foldMarkAdjustRecurse(
+						      &fp->fd_nested, fp->fd_len, (LineNr)MAXLNUM, (LineNr)MAXLNUM, 0L
+						);
+						fold_changed = true;
+					}
+				} else {
+					//Insert new fold.  Careful: c may be NULL and it may change!
+					if (gap->len == 0)
+						i = 0;
+					else
+						i = (int)(fp - (Fold *)gap->c);
+					if (foldInsert(gap, i) != OK)
+						return bot;
+					fp = (Fold *)gap->c + i;
+					//The new fold continues until bot, unless we find the end earlier.
+					fp->fd_top = firstlnum;
+					fp->fd_len = bot - firstlnum + 1;
+					//When the containing fold is open, the new fold is open.
+					//The new fold is closed if the fold above it is closed.
+					//The first fold depends on the containing fold.
+					if (topflags == FD_OPEN) {
+						flp->po->foldManual = true;
+						fp->fd_flags = FD_OPEN;
+					} ei (i <= 0) {
+						fp->fd_flags = topflags;
+						if (topflags != FD_LEVEL)
+						    flp->po->foldManual = true;
+					} else
+						fp->fd_flags = (fp - 1)->fd_flags;
+					fp->fd_small = MAYBE;
+					//If using the "marker" method, we
+					//need to continue until the end of the fold is found.
+					if (getlevel == foldlevelMarker)
+						finish = true;
+					fold_changed = true;
+					break;
+				}
+			}
+		}
 
-      if (lvl < level || flp->lnum > linecount) {
-         //Found a line with a lower foldlevel, this fold ends just above "flp->lnum".
-         break;
-      }
+		if (lvl < level || flp->lnum > linecount) {
+			//Found a line with a lower foldlevel, this fold ends just above "flp->lnum".
+			break;
+		}
 
-      //The fold includes the line "flp->lnum" and "flp->lnum_save". Check "fp" for safety.
-      if (lvl > level && fp != NULL) {
-         //There is a nested fold, handle it recursively.
-         //At least do one line (can happen when finish is true).
-         if (bot < flp->lnum)
-            bot = flp->lnum;
+		//The fold includes the line "flp->lnum" and "flp->lnum_save". Check "fp" for safety.
+		if (lvl > level && fp != NULL) {
+			//There is a nested fold, handle it recursively.
+			//At least do one line (can happen when finish is true).
+			if (bot < flp->lnum)
+				bot = flp->lnum;
 
-         //Line numbers in the nested fold are relative to the start of this fold.
-         flp->lnum = flp->lnum_save - fp->fd_top;
-         flp->off += fp->fd_top;
-         i = (int)(fp - (Fold *)gap->c);
-         bot = foldUpdateIEMSRecurse(
-            &fp->fd_nested, level + 1, startlnum2 - fp->fd_top, flp, getlevel, bot - fp->fd_top,
-            fp->fd_flags
-         );
-         fp = (Fold *)gap->c + i;
-         flp->lnum += fp->fd_top;
-         flp->lnum_save += fp->fd_top;
-         flp->off -= fp->fd_top;
-         bot += fp->fd_top;
-         startlnum2 = flp->lnum;
+			//Line numbers in the nested fold are relative to the start of this fold.
+			flp->lnum = flp->lnum_save - fp->fd_top;
+			flp->off += fp->fd_top;
+			i = (int)(fp - (Fold *)gap->c);
+			bot = foldUpdateIEMSRecurse(
+				&fp->fd_nested, level + 1, startlnum2 - fp->fd_top, flp, getlevel, bot - fp->fd_top,
+				fp->fd_flags
+			);
+			fp = (Fold *)gap->c + i;
+			flp->lnum += fp->fd_top;
+			flp->lnum_save += fp->fd_top;
+			flp->off -= fp->fd_top;
+			bot += fp->fd_top;
+			startlnum2 = flp->lnum;
 
-         //This fold may end at the same line, don't incr. flp->lnum.
-      } else {
-         //Get the level of the next line, then continue the loop to check
-         //if it ends there.
-         //Skip over undefined lines, to find the foldlevel after it.
-         //For the last line in the file the foldlevel is always valid.
-         flp->lnum = flp->lnum_save;
-         ll = flp->lnum + 1;
-         while (!gotInterruptG) {
-            //Make the previous level available to foldlevel().
-            prev_lnum = flp->lnum;
-            prev_lnum_lvl = flp->lvl;
+			//This fold may end at the same line, don't incr. flp->lnum.
+		} else {
+			//Get the level of the next line, then continue the loop to check
+			//if it ends there.
+			//Skip over undefined lines, to find the foldlevel after it.
+			//For the last line in the file the foldlevel is always valid.
+			flp->lnum = flp->lnum_save;
+			ll = flp->lnum + 1;
+			while (!gotInterruptG) {
+				//Make the previous level available to foldlevel().
+				prev_lnum = flp->lnum;
+				prev_lnum_lvl = flp->lvl;
 
-            if (++flp->lnum > linecount)
-               break;
-            flp->lvl = flp->lvl_next;
-            getlevel(flp);
-            if (flp->lvl >= 0 || flp->had_end <= MAX_LEVEL)
-                break;
-         }
-         prev_lnum = 0;
-         if (flp->lnum > linecount)
-            break;
+				if (++flp->lnum > linecount)
+					break;
+				flp->lvl = flp->lvl_next;
+				getlevel(flp);
+				if (flp->lvl >= 0 || flp->had_end <= MAX_LEVEL)
+					 break;
+			}
+			prev_lnum = 0;
+			if (flp->lnum > linecount)
+				break;
 
-         //leave flp->lnum_save to lnum of the line that was used to get
-         //the level, flp->lnum to the lnum of the next line.
-         flp->lnum_save = flp->lnum;
-         flp->lnum = ll;
-      }
-   }
+			//leave flp->lnum_save to lnum of the line that was used to get
+			//the level, flp->lnum to the lnum of the next line.
+			flp->lnum_save = flp->lnum;
+			flp->lnum = ll;
+		}
+	}
 
-   if (fp == NULL)   //only happens when gotInterruptG is set
-      return bot;
+	if (fp == NULL)   //only happens when gotInterruptG is set
+		return bot;
 
-   //Get here when:
-   //lvl < level: the folds ends just above "flp->lnum"
-   //lvl >= level: fold continues below "bot"
+	//Get here when:
+	//lvl < level: the folds ends just above "flp->lnum"
+	//lvl >= level: fold continues below "bot"
 
-   //Current fold at least extends until lnum.
-   if (fp->fd_len < flp->lnum - fp->fd_top) {
-      fp->fd_len = flp->lnum - fp->fd_top;
-      fp->fd_small = MAYBE;
-      fold_changed = true;
-   } ei (fp->fd_top + fp->fd_len > linecount)
-      //running into the end of the buffer (deleted last line)
-      fp->fd_len = linecount - fp->fd_top + 1;
+	//Current fold at least extends until lnum.
+	if (fp->fd_len < flp->lnum - fp->fd_top) {
+		fp->fd_len = flp->lnum - fp->fd_top;
+		fp->fd_small = MAYBE;
+		fold_changed = true;
+	} ei (fp->fd_top + fp->fd_len > linecount)
+		//running into the end of the buffer (deleted last line)
+		fp->fd_len = linecount - fp->fd_top + 1;
 
-   //Delete contained folds from the end of the last one found until where we stopped looking.
-   foldRemove(&fp->fd_nested, startlnum2 - fp->fd_top, flp->lnum - 1 - fp->fd_top);
+	//Delete contained folds from the end of the last one found until where we stopped looking.
+	foldRemove(&fp->fd_nested, startlnum2 - fp->fd_top, flp->lnum - 1 - fp->fd_top);
 
-   if (lvl < level) {
-      //End of fold found, update the length when it got shorter.
-      if (fp->fd_len != flp->lnum - fp->fd_top) {
-         if (fp->fd_top + fp->fd_len - 1 > bot) {
-            //fold continued below bot
-            if (getlevel == foldlevelMarker) {
-                //marker method: truncate the fold and make sure the
-                //previously included lines are processed again
-                bot = fp->fd_top + fp->fd_len - 1;
-                fp->fd_len = flp->lnum - fp->fd_top;
-            } else {
-                //indent or expr method: split fold to create a new one below bot
-                i = (int)(fp - (Fold *)gap->c);
-                foldSplit(gap, i, flp->lnum, bot);
-                fp = (Fold *)gap->c + i;
-            }
-         } else
-            fp->fd_len = flp->lnum - fp->fd_top;
-         fold_changed = true;
-      }
-   }
+	if (lvl < level) {
+		//End of fold found, update the length when it got shorter.
+		if (fp->fd_len != flp->lnum - fp->fd_top) {
+			if (fp->fd_top + fp->fd_len - 1 > bot) {
+				//fold continued below bot
+				if (getlevel == foldlevelMarker) {
+					 //marker method: truncate the fold and make sure the
+					 //previously included lines are processed again
+					 bot = fp->fd_top + fp->fd_len - 1;
+					 fp->fd_len = flp->lnum - fp->fd_top;
+				} else {
+					 //indent or expr method: split fold to create a new one below bot
+					 i = (int)(fp - (Fold *)gap->c);
+					 foldSplit(gap, i, flp->lnum, bot);
+					 fp = (Fold *)gap->c + i;
+				}
+			} else
+				fp->fd_len = flp->lnum - fp->fd_top;
+			fold_changed = true;
+		}
+	}
 
-    //delete following folds that end before the current line
-    for (;;) {
-      fp2 = fp + 1;
-      if (fp2 >= (Fold *)gap->c + gap->len || fp2->fd_top > flp->lnum)
-          break;
-      if (fp2->fd_top + fp2->fd_len > flp->lnum) {
-          if (fp2->fd_top < flp->lnum) {
-            //Make fold that includes lnum start at lnum.
-            foldMarkAdjustRecurse(&fp2->fd_nested,
-               (LineNr)0, (long)(flp->lnum - fp2->fd_top - 1),
-               (LineNr)MAXLNUM, (long)(fp2->fd_top - flp->lnum));
-            fp2->fd_len -= flp->lnum - fp2->fd_top;
-            fp2->fd_top = flp->lnum;
-            fold_changed = true;
-          }
+	 //delete following folds that end before the current line
+	 for (;;) {
+		fp2 = fp + 1;
+		if (fp2 >= (Fold *)gap->c + gap->len || fp2->fd_top > flp->lnum)
+			 break;
+		if (fp2->fd_top + fp2->fd_len > flp->lnum) {
+			 if (fp2->fd_top < flp->lnum) {
+				//Make fold that includes lnum start at lnum.
+				foldMarkAdjustRecurse(&fp2->fd_nested,
+					(LineNr)0, (long)(flp->lnum - fp2->fd_top - 1),
+					(LineNr)MAXLNUM, (long)(fp2->fd_top - flp->lnum));
+				fp2->fd_len -= flp->lnum - fp2->fd_top;
+				fp2->fd_top = flp->lnum;
+				fold_changed = true;
+			 }
 
-         if (lvl >= level) {
-            //merge new fold with existing fold that follows
-            foldMerge(fp, gap, fp2);
-         }
-         break;
-      }
-      fold_changed = true;
-      deleteFoldEntry(gap, (int)(fp2 - (Fold *)gap->c), true);
-   }
+			if (lvl >= level) {
+				//merge new fold with existing fold that follows
+				foldMerge(fp, gap, fp2);
+			}
+			break;
+		}
+		fold_changed = true;
+		deleteFoldEntry(gap, (int)(fp2 - (Fold *)gap->c), true);
+	}
 
-   //Need to redraw the lines we inspected, which might be further down than was asked for.
-   if (bot < flp->lnum - 1)
-      bot = flp->lnum - 1;
+	//Need to redraw the lines we inspected, which might be further down than was asked for.
+	if (bot < flp->lnum - 1)
+		bot = flp->lnum - 1;
 
-   return bot;
+	return bot;
 }
 
 //Insert a new fold in "gap" at position "i". Return OK for success, FAIL for failure.
 private int
 foldInsert(ArrayList* gap, int i) {
-   if (ga_grow(gap, 1) == FAIL)
-      return FAIL;
-   Fold* fp = (Fold*)gap->c + i;
-   if (gap->len > 0 && i < gap->len)
-      MEMMOVE(fp + 1, fp, sizeof(Fold) * (gap->len - i));
-   ++gap->len;
-   ga_init2(&fp->fd_nested, sizeof(Fold), 10);
-   return OK;
+	if (ga_grow(gap, 1) == FAIL)
+		return FAIL;
+	Fold* fp = (Fold*)gap->c + i;
+	if (gap->len > 0 && i < gap->len)
+		MEMMOVE(fp + 1, fp, sizeof(Fold) * (gap->len - i));
+	++gap->len;
+	ga_init2(&fp->fd_nested, sizeof(Fold), 10);
+	return OK;
 }
 
 //Split the "i"th fold in "gap", which starts before "top" and ends below
@@ -9360,35 +9359,35 @@ foldInsert(ArrayList* gap, int i) {
 //The caller must first have taken care of any nested folds from "top" to "bot"!
 private void
 foldSplit(ArrayList* gap, int i, LineNr top, LineNr bot){
-   //The fold continues below bot, need to split it.
-   if (foldInsert(gap, i + 1) == FAIL)
-      return;
-   Fold* fp = (Fold *)gap->c + i;
-   fp[1].fd_top = bot + 1;
-   fp[1].fd_len = fp->fd_len - (fp[1].fd_top - fp->fd_top);
-   fp[1].fd_flags = fp->fd_flags;
-   fp[1].fd_small = MAYBE;
-   fp->fd_small = MAYBE;
+	//The fold continues below bot, need to split it.
+	if (foldInsert(gap, i + 1) == FAIL)
+		return;
+	Fold* fp = (Fold *)gap->c + i;
+	fp[1].fd_top = bot + 1;
+	fp[1].fd_len = fp->fd_len - (fp[1].fd_top - fp->fd_top);
+	fp[1].fd_flags = fp->fd_flags;
+	fp[1].fd_small = MAYBE;
+	fp->fd_small = MAYBE;
 
-   //Move nested folds below bot to new fold.  There can't be
-   //any between top and bot, they have been removed by the caller.
-   ArrayList* gap1 = &fp->fd_nested;
-   ArrayList* gap2 = &fp[1].fd_nested;
-   Fold* fp2;
-   (void)foldFind(gap1, bot + 1 - fp->fd_top, OUT &fp2);
-   if (fp2 != NULL) {
-      int len = (int)((Fold *)gap1->c + gap1->len - fp2);
-      if (len > 0 && ga_grow(gap2, len) == OK) {
-         for (int idx = 0; idx < len; ++idx) {
-            ((Fold *)gap2->c)[idx] = fp2[idx];
-            ((Fold *)gap2->c)[idx].fd_top -= fp[1].fd_top - fp->fd_top;
-         }
-         gap2->len = len;
-         gap1->len -= len;
-      }
-   }
-   fp->fd_len = top - fp->fd_top;
-   fold_changed = true;
+	//Move nested folds below bot to new fold.  There can't be
+	//any between top and bot, they have been removed by the caller.
+	ArrayList* gap1 = &fp->fd_nested;
+	ArrayList* gap2 = &fp[1].fd_nested;
+	Fold* fp2;
+	(void)foldFind(gap1, bot + 1 - fp->fd_top, OUT &fp2);
+	if (fp2 != NULL) {
+		int len = (int)((Fold *)gap1->c + gap1->len - fp2);
+		if (len > 0 && ga_grow(gap2, len) == OK) {
+			for (int idx = 0; idx < len; ++idx) {
+				((Fold *)gap2->c)[idx] = fp2[idx];
+				((Fold *)gap2->c)[idx].fd_top -= fp[1].fd_top - fp->fd_top;
+			}
+			gap2->len = len;
+			gap1->len -= len;
+		}
+	}
+	fp->fd_len = top - fp->fd_top;
+	fold_changed = true;
 }
 
 //Remove folds within the range "top" to and including "bot".
@@ -9409,62 +9408,62 @@ foldSplit(ArrayList* gap, int i, LineNr top, LineNr bot){
 //6: not changed
 private void
 foldRemove(ArrayList *gap, LineNr top, LineNr bot) {
-   if (bot < top)
-      return;      //nothing to do
+	if (bot < top)
+		return;      //nothing to do
 
-   Fold   *fp = NULL;
-   while (gap->len > 0) {
-      //Find fold that includes top or a following one.
-      if (foldFind(gap, top, &fp) && fp->fd_top < top) {
-         //2: or 3: need to delete nested folds
-         foldRemove(&fp->fd_nested, top - fp->fd_top, bot - fp->fd_top);
-         if (fp->fd_top + fp->fd_len - 1 > bot) {
-            //3: need to split it.
-            foldSplit(gap, (int)(fp - (Fold *)gap->c), top, bot);
-         } else {
-            //2: truncate fold at "top".
-            fp->fd_len = top - fp->fd_top;
-         }
-         fold_changed = true;
-         continue;
-      }
-      if (fp >= (Fold *)(gap->c) + gap->len || fp->fd_top > bot) {
-         //6: Found a fold below bot, can stop looking.
-         break;
-      }
-      if (fp->fd_top >= top) {
-         //Found an entry below top.
-         fold_changed = true;
-         if (fp->fd_top + fp->fd_len - 1 > bot) {
-            //5: Make fold that includes bot start below bot.
-            foldMarkAdjustRecurse(&fp->fd_nested,
-               (LineNr)0, (long)(bot - fp->fd_top),
-               (LineNr)MAXLNUM, (long)(fp->fd_top - bot - 1));
-            fp->fd_len -= bot - fp->fd_top + 1;
-            fp->fd_top = bot + 1;
-            break;
-         }
+	Fold   *fp = NULL;
+	while (gap->len > 0) {
+		//Find fold that includes top or a following one.
+		if (foldFind(gap, top, &fp) && fp->fd_top < top) {
+			//2: or 3: need to delete nested folds
+			foldRemove(&fp->fd_nested, top - fp->fd_top, bot - fp->fd_top);
+			if (fp->fd_top + fp->fd_len - 1 > bot) {
+				//3: need to split it.
+				foldSplit(gap, (int)(fp - (Fold *)gap->c), top, bot);
+			} else {
+				//2: truncate fold at "top".
+				fp->fd_len = top - fp->fd_top;
+			}
+			fold_changed = true;
+			continue;
+		}
+		if (fp >= (Fold *)(gap->c) + gap->len || fp->fd_top > bot) {
+			//6: Found a fold below bot, can stop looking.
+			break;
+		}
+		if (fp->fd_top >= top) {
+			//Found an entry below top.
+			fold_changed = true;
+			if (fp->fd_top + fp->fd_len - 1 > bot) {
+				//5: Make fold that includes bot start below bot.
+				foldMarkAdjustRecurse(&fp->fd_nested,
+					(LineNr)0, (long)(bot - fp->fd_top),
+					(LineNr)MAXLNUM, (long)(fp->fd_top - bot - 1));
+				fp->fd_len -= bot - fp->fd_top + 1;
+				fp->fd_top = bot + 1;
+				break;
+			}
 
-         //4: Delete completely contained fold.
-         deleteFoldEntry(gap, (int)(fp - (Fold *)gap->c), true);
-      }
-   }
+			//4: Delete completely contained fold.
+			deleteFoldEntry(gap, (int)(fp - (Fold *)gap->c), true);
+		}
+	}
 }
 
 private void
 foldReverseOrder(ArrayList* gap, LineNr start_arg, LineNr end_arg) {
-   Fold *left, *right;
-   Fold tmp;
-   LineNr start = start_arg;
-   LineNr end = end_arg;
+	Fold *left, *right;
+	Fold tmp;
+	LineNr start = start_arg;
+	LineNr end = end_arg;
 
-   for (; start < end; start++, end--) {
-      left = (Fold *)gap->c + start;
-      right = (Fold *)gap->c + end;
-      tmp  = *left;
-      *left = *right;
-      *right = tmp;
-   }
+	for (; start < end; start++, end--) {
+		left = (Fold *)gap->c + start;
+		right = (Fold *)gap->c + end;
+		tmp  = *left;
+		*left = *right;
+		*right = tmp;
+	}
 }
 
 //Move folds within the inclusive range "line1" to "line2" to after "dest"
@@ -9497,9 +9496,9 @@ foldReverseOrder(ArrayList* gap, LineNr start_arg, LineNr end_arg) {
 //10. not changed
 private void
 truncate_fold(Fold* fp, LineNr end) {
-   end += 1;
-   foldRemove(&fp->fd_nested, end - fp->fd_top, MAXLNUM);
-   fp->fd_len = end - fp->fd_top;
+	end += 1;
+	foldRemove(&fp->fd_nested, end - fp->fd_top, MAXLNUM);
+	fp->fd_len = end - fp->fd_top;
 }
 
 #define fold_end(fp) ((fp)->fd_top + (fp)->fd_len - 1)
@@ -9508,97 +9507,97 @@ truncate_fold(Fold* fp, LineNr end) {
 
 pub void
 foldMoveRange(ArrayList* gap, LineNr line1, LineNr line2, LineNr dest) {
-   Fold *fp;
-   LineNr range_len = line2 - line1 + 1;
-   LineNr move_len = dest - line2;
-   int at_start = foldFind(gap, line1 - 1, &fp);
-   Unt move_start = 0, move_end = 0, dest_index = 0;
+	Fold *fp;
+	LineNr range_len = line2 - line1 + 1;
+	LineNr move_len = dest - line2;
+	int at_start = foldFind(gap, line1 - 1, &fp);
+	Unt move_start = 0, move_end = 0, dest_index = 0;
 
-   if (at_start) {
-      if (fold_end(fp) > dest) {
-         //Case 4
-         //don't have to change this fold, but have to move nested folds.
-         foldMoveRange(&fp->fd_nested, line1 - fp->fd_top, line2 - fp->fd_top, dest - fp->fd_top);
-         return;
-      } ei (fold_end(fp) > line2) {
-         //Case 3
-         //Remove nested folds between line1 and line2 & reduce the
-         //length of fold by "range_len".
-         //Folds after this one must be dealt with.
-         foldMarkAdjustRecurse(&fp->fd_nested, line1 - fp->fd_top, line2 -
-             fp->fd_top, MAXLNUM, -range_len
-         );
-         fp->fd_len -= range_len;
-      } else
-         //Case 2 truncate fold, folds after this one must be dealt with.
-         truncate_fold(fp, line1 - 1);
+	if (at_start) {
+		if (fold_end(fp) > dest) {
+			//Case 4
+			//don't have to change this fold, but have to move nested folds.
+			foldMoveRange(&fp->fd_nested, line1 - fp->fd_top, line2 - fp->fd_top, dest - fp->fd_top);
+			return;
+		} ei (fold_end(fp) > line2) {
+			//Case 3
+			//Remove nested folds between line1 and line2 & reduce the
+			//length of fold by "range_len".
+			//Folds after this one must be dealt with.
+			foldMarkAdjustRecurse(&fp->fd_nested, line1 - fp->fd_top, line2 -
+				 fp->fd_top, MAXLNUM, -range_len
+			);
+			fp->fd_len -= range_len;
+		} else
+			//Case 2 truncate fold, folds after this one must be dealt with.
+			truncate_fold(fp, line1 - 1);
 
-      //Look at the next fold, and treat that one as if it were the first
-      //after "line1" (because now it is).
-      fp = fp + 1;
-   }
+		//Look at the next fold, and treat that one as if it were the first
+		//after "line1" (because now it is).
+		fp = fp + 1;
+	}
 
-   if (!valid_fold(fp, gap) || fp->fd_top > dest) {
-      //Case 10
-      //No folds after "line1" and before "dest"
-      return;
-   } ei (fp->fd_top > line2) {
-      for (; valid_fold(fp, gap) && fold_end(fp) <= dest; fp++)
-      //Case 9. (for all case 9's) -- shift up.
-          fp->fd_top -= range_len;
+	if (!valid_fold(fp, gap) || fp->fd_top > dest) {
+		//Case 10
+		//No folds after "line1" and before "dest"
+		return;
+	} ei (fp->fd_top > line2) {
+		for (; valid_fold(fp, gap) && fold_end(fp) <= dest; fp++)
+		//Case 9. (for all case 9's) -- shift up.
+			 fp->fd_top -= range_len;
 
-      if (valid_fold(fp, gap) && fp->fd_top <= dest) {
-          //Case 8. -- ensure truncated at dest, shift up
-          truncate_fold(fp, dest);
-          fp->fd_top -= range_len;
-      }
-      return;
-   } ei (fold_end(fp) > dest) {
-      //Case 7 -- remove nested folds and shrink
-      foldMarkAdjustRecurse(&fp->fd_nested, line2 + 1 - fp->fd_top, dest -
-         fp->fd_top, MAXLNUM, -move_len);
-      fp->fd_len -= move_len;
-      fp->fd_top += move_len;
-      return;
-   }
+		if (valid_fold(fp, gap) && fp->fd_top <= dest) {
+			 //Case 8. -- ensure truncated at dest, shift up
+			 truncate_fold(fp, dest);
+			 fp->fd_top -= range_len;
+		}
+		return;
+	} ei (fold_end(fp) > dest) {
+		//Case 7 -- remove nested folds and shrink
+		foldMarkAdjustRecurse(&fp->fd_nested, line2 + 1 - fp->fd_top, dest -
+			fp->fd_top, MAXLNUM, -move_len);
+		fp->fd_len -= move_len;
+		fp->fd_top += move_len;
+		return;
+	}
 
-   //Case 5 or 6
-   //changes rely on whether there are folds between the end of
-   //this fold and "dest".
-   move_start = fold_index(fp, gap);
+	//Case 5 or 6
+	//changes rely on whether there are folds between the end of
+	//this fold and "dest".
+	move_start = fold_index(fp, gap);
 
-   for (; valid_fold(fp, gap) && fp->fd_top <= dest; fp++) {
-      if (fp->fd_top <= line2) {
-          //1. 2. or 3.
-          if (fold_end(fp) > line2)
-         //2. or 3., truncate before moving
-         truncate_fold(fp, line2);
+	for (; valid_fold(fp, gap) && fp->fd_top <= dest; fp++) {
+		if (fp->fd_top <= line2) {
+			 //1. 2. or 3.
+			 if (fold_end(fp) > line2)
+			//2. or 3., truncate before moving
+			truncate_fold(fp, line2);
 
-          fp->fd_top += move_len;
-          continue;
-      }
+			 fp->fd_top += move_len;
+			 continue;
+		}
 
-      //Record index of the first fold after the moved range.
-      if (move_end == 0)
-          move_end = fold_index(fp, gap);
+		//Record index of the first fold after the moved range.
+		if (move_end == 0)
+			 move_end = fold_index(fp, gap);
 
-      if (fold_end(fp) > dest)
-          truncate_fold(fp, dest);
+		if (fold_end(fp) > dest)
+			 truncate_fold(fp, dest);
 
-      fp->fd_top -= range_len;
-   }
+		fp->fd_top -= range_len;
+	}
 
-   dest_index = fold_index(fp, gap);
+	dest_index = fold_index(fp, gap);
 
-   //All folds are now correct, but not necessarily in the correct order.  We
-   //must swap folds in the range [move_end, dest_index) with those in the
-   //range [move_start, move_end).
-   if (move_end == 0)
-      //There are no folds after those moved, hence no folds have been moved out of order.
-      return;
-   foldReverseOrder(gap, (LineNr)move_start, (LineNr)dest_index - 1);
-   foldReverseOrder(gap, (LineNr)move_start, (LineNr)(move_start + dest_index - move_end - 1));
-   foldReverseOrder(gap, (LineNr)(move_start + dest_index - move_end), (LineNr)(dest_index - 1));
+	//All folds are now correct, but not necessarily in the correct order.  We
+	//must swap folds in the range [move_end, dest_index) with those in the
+	//range [move_start, move_end).
+	if (move_end == 0)
+		//There are no folds after those moved, hence no folds have been moved out of order.
+		return;
+	foldReverseOrder(gap, (LineNr)move_start, (LineNr)dest_index - 1);
+	foldReverseOrder(gap, (LineNr)move_start, (LineNr)(move_start + dest_index - move_end - 1));
+	foldReverseOrder(gap, (LineNr)(move_start + dest_index - move_end), (LineNr)(dest_index - 1));
 }
 #undef fold_end
 #undef valid_fold
@@ -9611,70 +9610,70 @@ foldMoveRange(ArrayList* gap, LineNr line1, LineNr line2, LineNr dest) {
 //Fold entry "fp2" in "gap" is deleted.
 private void
 foldMerge(Fold *fp1, ArrayList *gap, Fold *fp2) {
-   Fold   *fp3;
-   Fold   *fp4;
-   ArrayList   *gap1 = &fp1->fd_nested;
-   ArrayList   *gap2 = &fp2->fd_nested;
+	Fold   *fp3;
+	Fold   *fp4;
+	ArrayList   *gap1 = &fp1->fd_nested;
+	ArrayList   *gap2 = &fp2->fd_nested;
 
-   //If the last nested fold in fp1 touches the first nested fold in fp2, merge them recursively.
-   if (foldFind(gap1, fp1->fd_len - 1L, OUT &fp3) && foldFind(gap2, 0L, OUT &fp4))
-       foldMerge(fp3, gap2, fp4);
+	//If the last nested fold in fp1 touches the first nested fold in fp2, merge them recursively.
+	if (foldFind(gap1, fp1->fd_len - 1L, OUT &fp3) && foldFind(gap2, 0L, OUT &fp4))
+		 foldMerge(fp3, gap2, fp4);
 
-   //Move nested folds in fp2 to the end of fp1.
-   if (gap2->len > 0 && ga_grow(gap1, gap2->len) == OK) {
-       for (Unt idx = 0; idx < (Unt)gap2->len; ++idx) {
-           ((Fold *)gap1->c)[gap1->len] = ((Fold *)gap2->c)[idx];
-           ((Fold *)gap1->c)[gap1->len].fd_top += fp1->fd_len;
-           ++gap1->len;
-       }
-       gap2->len = 0;
-   }
+	//Move nested folds in fp2 to the end of fp1.
+	if (gap2->len > 0 && ga_grow(gap1, gap2->len) == OK) {
+		 for (Unt idx = 0; idx < (Unt)gap2->len; ++idx) {
+			  ((Fold *)gap1->c)[gap1->len] = ((Fold *)gap2->c)[idx];
+			  ((Fold *)gap1->c)[gap1->len].fd_top += fp1->fd_len;
+			  ++gap1->len;
+		 }
+		 gap2->len = 0;
+	}
 
-   fp1->fd_len += fp2->fd_len;
-   deleteFoldEntry(gap, (int)(fp2 - (Fold *)gap->c), true);
-   fold_changed = true;
+	fp1->fd_len += fp2->fd_len;
+	deleteFoldEntry(gap, (int)(fp2 - (Fold *)gap->c), true);
+	fold_changed = true;
 }
 
 //Low-level function to get the foldlevel for the "indent" method. Don't use any caching.
 //Return a level of -1 if the foldlevel depends on surrounding lines.
 private void
 foldlevelIndent(FoldLine* flp) {
-   LineNr lnum = flp->lnum + flp->off;
-   Book* book = flp->po->book;
-   CS s = skipwhite(memGetLine(book, lnum, false));
+	LineNr lnum = flp->lnum + flp->off;
+	Book* book = flp->po->book;
+	CS s = skipwhite(memGetLine(book, lnum, false));
 
-   //empty line or lines starting with a character in 'foldignore': level
-   //depends on surrounding lines
-   if (*s == ZERO || (flp->po->o.foldIgnore && firstOccurrence(flp->po->o.foldIgnore, *s) != NULL)
-   ) {
-      //first and last line can't be undefined, use level 0
-      if (lnum == 1 || lnum == book->mem.lineCount)
-         flp->lvl = 0;
-      else
-         flp->lvl = -1;
-   } else
-      flp->lvl = get_indent_buf(book, lnum) / get_sw_value(book);
-   if (flp->lvl > FOLD_NEST_MAX) {
-      flp->lvl = FOLD_NEST_MAX;
-   }
+	//empty line or lines starting with a character in 'foldignore': level
+	//depends on surrounding lines
+	if (*s == ZERO || (flp->po->o.foldIgnore && firstOccurrence(flp->po->o.foldIgnore, *s) != NULL)
+	) {
+		//first and last line can't be undefined, use level 0
+		if (lnum == 1 || lnum == book->mem.lineCount)
+			flp->lvl = 0;
+		else
+			flp->lvl = -1;
+	} else
+		flp->lvl = get_indent_buf(book, lnum) / get_sw_value(book);
+	if (flp->lvl > FOLD_NEST_MAX) {
+		flp->lvl = FOLD_NEST_MAX;
+	}
 }
 
 //Low level function to get the foldlevel for the "diff" method. Doesn't use any caching.
 private void
 foldlevelDiff(FoldLine* flp) {
-   if (diff_infold(flp->po, flp->lnum + flp->off))
-      flp->lvl = 1;
-   else
-      flp->lvl = 0;
+	if (diff_infold(flp->po, flp->lnum + flp->off))
+		flp->lvl = 1;
+	else
+		flp->lvl = 0;
 }
 
 //Parse @foldmarker and set "foldendmarker", "foldstartmarkerlen" and "foldendmarkerlen".
 //Rely on the option value to have been checked for correctness already.
 private void
 parseMarker(Portal* po) {
-   foldendmarker = firstOccurrence(po->o.foldMarker, ',');
-   foldstartmarkerlen = (int)(foldendmarker++ - po->o.foldMarker);
-   foldendmarkerlen = (int)STRLEN(foldendmarker);
+	foldendmarker = firstOccurrence(po->o.foldMarker, ',');
+	foldstartmarkerlen = (int)(foldendmarker++ - po->o.foldMarker);
+	foldendmarkerlen = (int)STRLEN(foldendmarker);
 }
 
 //Low-level function to get the foldlevel for the "marker" method.
@@ -9684,62 +9683,62 @@ parseMarker(Portal* po) {
 //Set flp->start when a start marker was found.
 private void
 foldlevelMarker(FoldLine *flp) {
-   int cstart;
-   int cend;
-   int start_lvl = flp->lvl;
-   int      n;
+	int cstart;
+	int cend;
+	int start_lvl = flp->lvl;
+	int      n;
 
-   //cache a few values for speed
-   CS startmarker = flp->po->o.foldMarker;
-   cstart = *startmarker;
-   ++startmarker;
-   cend = *foldendmarker;
+	//cache a few values for speed
+	CS startmarker = flp->po->o.foldMarker;
+	cstart = *startmarker;
+	++startmarker;
+	cend = *foldendmarker;
 
-   //Default: no start found, next level is same as current level
-   flp->start = 0;
-   flp->lvl_next = flp->lvl;
+	//Default: no start found, next level is same as current level
+	flp->start = 0;
+	flp->lvl_next = flp->lvl;
 
-   CS s = memGetLine(flp->po->book, flp->lnum + flp->off, false);
-   while (*s != ZERO) {
-      if (*s == cstart && STRNCMP(s + 1, startmarker, foldstartmarkerlen - 1) == 0) {
-         //found startmarker: set flp->lvl
-         s += foldstartmarkerlen;
-         if (EE_ISDIGIT(*s)) {
-            n = atoi((char *)s);
-            if (n > 0) {
-                flp->lvl = n;
-                flp->lvl_next = n;
-                if (n <= start_lvl)
-               flp->start = 1;
-                else
-               flp->start = n - start_lvl;
-            }
-         } else {
-            ++flp->lvl;
-            ++flp->lvl_next;
-            ++flp->start;
-         }
-      } ei (*s == cend && STRNCMP(s + 1, foldendmarker + 1, foldendmarkerlen - 1) == 0) {
-         //found endmarker: set flp->lvl_next
-         s += foldendmarkerlen;
-         if (EE_ISDIGIT(*s)) {
-            n = atoi((char *)s);
-            if (n > 0) {
-               flp->lvl = n;
-               flp->lvl_next = n - 1;
-               //never start a fold with an end marker
-               if (flp->lvl_next > start_lvl)
-                  flp->lvl_next = start_lvl;
-            }
-         } else
-            --flp->lvl_next;
-      } else
-         MB_PTR_ADV(s);
-   }
+	CS s = memGetLine(flp->po->book, flp->lnum + flp->off, false);
+	while (*s != ZERO) {
+		if (*s == cstart && STRNCMP(s + 1, startmarker, foldstartmarkerlen - 1) == 0) {
+			//found startmarker: set flp->lvl
+			s += foldstartmarkerlen;
+			if (EE_ISDIGIT(*s)) {
+				n = atoi((char *)s);
+				if (n > 0) {
+					 flp->lvl = n;
+					 flp->lvl_next = n;
+					 if (n <= start_lvl)
+					flp->start = 1;
+					 else
+					flp->start = n - start_lvl;
+				}
+			} else {
+				++flp->lvl;
+				++flp->lvl_next;
+				++flp->start;
+			}
+		} ei (*s == cend && STRNCMP(s + 1, foldendmarker + 1, foldendmarkerlen - 1) == 0) {
+			//found endmarker: set flp->lvl_next
+			s += foldendmarkerlen;
+			if (EE_ISDIGIT(*s)) {
+				n = atoi((char *)s);
+				if (n > 0) {
+					flp->lvl = n;
+					flp->lvl_next = n - 1;
+					//never start a fold with an end marker
+					if (flp->lvl_next > start_lvl)
+						flp->lvl_next = start_lvl;
+				}
+			} else
+				--flp->lvl_next;
+		} else
+			MB_PTR_ADV(s);
+	}
 
-   //The level can't go negative, must be missing a start marker.
-   if (flp->lvl_next < 0)
-      flp->lvl_next = 0;
+	//The level can't go negative, must be missing a start marker.
+	if (flp->lvl_next < 0)
+		flp->lvl_next = 0;
 }
 
 //{{{ functions for storing the fold state in a View
@@ -9751,60 +9750,60 @@ private int put_fold_open_close(FILE *fd, Fold *fp, LineNr off);
 //Return FAIL if writing fails.
 pub int
 put_folds(FILE* fd, Portal* po) {
-   //If some folds are manually opened/closed, need to restore that.
-   if (po->foldManual)
-      return put_foldopen_recurse(fd, po, &po->folds, (LineNr)0);
+	//If some folds are manually opened/closed, need to restore that.
+	if (po->foldManual)
+		return put_foldopen_recurse(fd, po, &po->folds, (LineNr)0);
 
-   return OK;
+	return OK;
 }
 
 //Write commands to "fd" to open and close manually opened/closed folds.
 //Return FAIL when writing failed.
 private int
 put_foldopen_recurse(FILE* fd, Portal* po, ArrayList* gap, LineNr off) {
-   Fold* fp = (Fold *)gap->c;
-   for (int i = 0; i < gap->len; i++, fp++) {
-      if (fp->fd_flags == FD_LEVEL) {
-         continue;
-      }
-      if (fp->fd_nested.len > 0) {
-            //open nested folds while this fold is open ignore errors
-            if (fprintf(fd, FMT_INT, fp->fd_top + off) < 0
-                  || put_eol(fd) == FAIL
-                  || put_line(fd, S"sil! normal! zo") == FAIL)
-               return FAIL;
-            if (put_foldopen_recurse(fd, po, &fp->fd_nested, off + fp->fd_top) == FAIL)
-               return FAIL;
-            //close the parent when needed
-            if (fp->fd_flags == FD_CLOSED && put_fold_open_close(fd, fp, off) == FAIL)
-               return FAIL;
-      } else {
-         //Open or close the leaf according to the portal foldlevel.
-         //Do not close a leaf that is already closed, as it will close the parent.
-         int level = foldLevelWin(po, off + fp->fd_top);
-         if (((fp->fd_flags == FD_CLOSED && po->o.foldLevel >= level)
-               || (fp->fd_flags != FD_CLOSED && po->o.foldLevel < level)
-             )
-             && put_fold_open_close(fd, fp, off) == FAIL
-         )
-            return FAIL;
-      }
-   }
+	Fold* fp = (Fold *)gap->c;
+	for (int i = 0; i < gap->len; i++, fp++) {
+		if (fp->fd_flags == FD_LEVEL) {
+			continue;
+		}
+		if (fp->fd_nested.len > 0) {
+				//open nested folds while this fold is open ignore errors
+				if (fprintf(fd, FMT_INT, fp->fd_top + off) < 0
+						|| put_eol(fd) == FAIL
+						|| put_line(fd, S"sil! normal! zo") == FAIL)
+					return FAIL;
+				if (put_foldopen_recurse(fd, po, &fp->fd_nested, off + fp->fd_top) == FAIL)
+					return FAIL;
+				//close the parent when needed
+				if (fp->fd_flags == FD_CLOSED && put_fold_open_close(fd, fp, off) == FAIL)
+					return FAIL;
+		} else {
+			//Open or close the leaf according to the portal foldlevel.
+			//Do not close a leaf that is already closed, as it will close the parent.
+			int level = foldLevelWin(po, off + fp->fd_top);
+			if (((fp->fd_flags == FD_CLOSED && po->o.foldLevel >= level)
+					|| (fp->fd_flags != FD_CLOSED && po->o.foldLevel < level)
+				 )
+				 && put_fold_open_close(fd, fp, off) == FAIL
+			)
+				return FAIL;
+		}
+	}
 
-   return OK;
+	return OK;
 }
 
 //Write the open or close command to "fd". Return FAIL when writing failed.
 private int
 put_fold_open_close(FILE *fd, Fold *fp, LineNr off) {
-   if (fprintf(fd, FMT_INT, fp->fd_top + off) < 0
-       || put_eol(fd) == FAIL
-       || fprintf(fd, "sil! normal! z%c", fp->fd_flags == FD_CLOSED ? 'c' : 'o') < 0
-       || put_eol(fd) == FAIL
-   ) {
-      return FAIL;
-   }
-   return OK;
+	if (fprintf(fd, FMT_INT, fp->fd_top + off) < 0
+		 || put_eol(fd) == FAIL
+		 || fprintf(fd, "sil! normal! z%c", fp->fd_flags == FD_CLOSED ? 'c' : 'o') < 0
+		 || put_eol(fd) == FAIL
+	) {
+		return FAIL;
+	}
+	return OK;
 }
 
 //}}}
@@ -9812,114 +9811,114 @@ put_fold_open_close(FILE *fd, Fold *fp, LineNr off) {
 //"foldclosed()" and "foldclosedend()" functions
 private void
 foldclosed_both(Var* argvars, Var* returnVar, int end) {
-   LineNr   first, last;
+	LineNr   first, last;
 
-   LineNr lnum = tv_get_lnum(argvars);
-   if (lnum >= 1 && lnum <= curBook->mem.lineCount) {
-      if (getFoldsPortal(curPor, lnum, OUT &first, OUT &last, false, NULL)) {
-         if (end)
-            returnVar->number = (Long)last;
-         else
-            returnVar->number = (Long)first;
-         return;
-      }
-   }
-   returnVar->number = -1;
+	LineNr lnum = tv_get_lnum(argvars);
+	if (lnum >= 1 && lnum <= curBook->mem.lineCount) {
+		if (getFoldsPortal(curPor, lnum, OUT &first, OUT &last, false, NULL)) {
+			if (end)
+				returnVar->number = (Long)last;
+			else
+				returnVar->number = (Long)first;
+			return;
+		}
+	}
+	returnVar->number = -1;
 }
 
 pub void
 f_foldclosed(Arr(Var) argvars, Var* returnVar) {
-   foldclosed_both(argvars, returnVar, false);
+	foldclosed_both(argvars, returnVar, false);
 }
 
 pub void
 f_foldclosedend(Arr(Var) argvars, Var* returnVar) {
-   foldclosed_both(argvars, returnVar, true);
+	foldclosed_both(argvars, returnVar, true);
 }
 
 pub void
 f_foldlevel(Arr(Var) argvars, Var* returnVar) {
-   LineNr lnum = tv_get_lnum(argvars);
-   if (lnum >= 1 && lnum <= curBook->mem.lineCount)
-      returnVar->number = getFoldLevel(lnum);
+	LineNr lnum = tv_get_lnum(argvars);
+	if (lnum >= 1 && lnum <= curBook->mem.lineCount)
+		returnVar->number = getFoldLevel(lnum);
 }
 
 pub void
 f_foldtext(Arr(Var), Var* returnVar) {
-   CS r;
-   int len;
+	CS r;
+	int len;
 
-   returnVar->tag = VAR_STRING;
-   returnVar->string = NULL;
-   //TODO re-implement without vimvars
-   int foldstart = 0;
-   int foldend = 10;
-   CS dashes = S"--";
-   if (foldstart <= 0 || foldend > curBook->mem.lineCount || dashes) {
-      return;
-   }
-   //Find first non-empty line in the fold.
-   LineNr lnum;
-   for (lnum = foldstart; lnum < foldend; ++lnum) {
-      if (!linewhite(lnum))
-         break;
-   }
+	returnVar->tag = VAR_STRING;
+	returnVar->string = NULL;
+	//TODO re-implement without vimvars
+	int foldstart = 0;
+	int foldend = 10;
+	CS dashes = S"--";
+	if (foldstart <= 0 || foldend > curBook->mem.lineCount || dashes) {
+		return;
+	}
+	//Find first non-empty line in the fold.
+	LineNr lnum;
+	for (lnum = foldstart; lnum < foldend; ++lnum) {
+		if (!linewhite(lnum))
+			break;
+	}
 
-   //Find interesting text in this line.
-   CS s = skipwhite(ml_get(lnum));
-   //skip C comment-start
-   if (s[0] == '/' && (s[1] == '*' || s[1] == '/')) {
-      s = skipwhite(s + 2);
-      if (*skipwhite(s) == ZERO) {
-         s = skipwhite(ml_get(lnum + 1));
-         if (*s == '*')
-            s = skipwhite(s + 1);
-      }
-   }
-   Long count = (long)(foldend - foldstart + 1);
-   CS txt = NGETTEXT("+-%s%3ld line: ", "+-%s%3ld lines: ", count);
-   r = alloc(STRLEN(txt)
-          + STRLEN(dashes)       //for %s
-          + 20          //for %3ld
-          + STRLEN(s));       //concatenated
-   if (r) {
-       SPRINTF(r, txt, dashes, count);
-       len = (int)STRLEN(r);
-       STRCAT(r, s);
-       //remove 'foldmarker' and 'commentstring'
-       foldtext_cleanup(r + len);
-       returnVar->string = r;
-   }
+	//Find interesting text in this line.
+	CS s = skipwhite(ml_get(lnum));
+	//skip C comment-start
+	if (s[0] == '/' && (s[1] == '*' || s[1] == '/')) {
+		s = skipwhite(s + 2);
+		if (*skipwhite(s) == ZERO) {
+			s = skipwhite(ml_get(lnum + 1));
+			if (*s == '*')
+				s = skipwhite(s + 1);
+		}
+	}
+	Long count = (long)(foldend - foldstart + 1);
+	CS txt = NGETTEXT("+-%s%3ld line: ", "+-%s%3ld lines: ", count);
+	r = alloc(STRLEN(txt)
+			 + STRLEN(dashes)       //for %s
+			 + 20          //for %3ld
+			 + STRLEN(s));       //concatenated
+	if (r) {
+		 SPRINTF(r, txt, dashes, count);
+		 len = (int)STRLEN(r);
+		 STRCAT(r, s);
+		 //remove 'foldmarker' and 'commentstring'
+		 foldtext_cleanup(r + len);
+		 returnVar->string = r;
+	}
 }
 
 //"foldtextresult(lnum)" function
 pub void
 f_foldtextresult(Arr(Var) argvars, Var* returnVar) {
-   Byte buffer[FOLD_TEXT_LEN];
-   FoldInfo  foldinfo;
-   int      fold_count;
-   static int   entered = false;
+	Byte buffer[FOLD_TEXT_LEN];
+	FoldInfo  foldinfo;
+	int      fold_count;
+	static int   entered = false;
 
-   returnVar->tag = VAR_STRING;
-   returnVar->string = NULL;
+	returnVar->tag = VAR_STRING;
+	returnVar->string = NULL;
 
-   if (entered)
-      return; //reject recursive use
-   entered = true;
+	if (entered)
+		return; //reject recursive use
+	entered = true;
 
-   LineNr lnum = tv_get_lnum(argvars);
-   //treat illegal types and illegal string values for {lnum} the same
-   if (lnum < 0)
-      lnum = 0;
-   fold_count = foldedCount(curPor, lnum, OUT &foldinfo);
-   if (fold_count > 0) {
-      CS text = get_foldtext(curPor, lnum, lnum + fold_count - 1, &foldinfo, buffer);
-      if (text == buffer)
-         text = copyStr(text);
-      returnVar->string = text;
-   }
+	LineNr lnum = tv_get_lnum(argvars);
+	//treat illegal types and illegal string values for {lnum} the same
+	if (lnum < 0)
+		lnum = 0;
+	fold_count = foldedCount(curPor, lnum, OUT &foldinfo);
+	if (fold_count > 0) {
+		CS text = get_foldtext(curPor, lnum, lnum + fold_count - 1, &foldinfo, buffer);
+		if (text == buffer)
+			text = copyStr(text);
+		returnVar->string = text;
+	}
 
-   entered = false;
+	entered = false;
 }
 
 //}}}
@@ -9946,16 +9945,16 @@ private Tab* popupMaskTabS INIT(= NULL);
 #define POPF_POSINVERT  0x800   //vertical position can be inverted
 
 typedef struct {
-   CS pp_name;
-   PopupPosition pp_val;
+	CS pp_name;
+	PopupPosition pp_val;
 } PopposEntry;
 
 private PopposEntry popposEntriesS[] = {
-   {S"botleft", POPPOS_BOTLEFT},
-   {S"topleft", POPPOS_TOPLEFT},
-   {S"botright", POPPOS_BOTRIGHT},
-   {S"topright", POPPOS_TOPRIGHT},
-   {S"center", POPPOS_CENTER}
+	{S"botleft", POPPOS_BOTLEFT},
+	{S"topleft", POPPOS_TOPLEFT},
+	{S"botright", POPPOS_BOTRIGHT},
+	{S"topright", POPPOS_TOPRIGHT},
+	{S"center", POPPOS_CENTER}
 };
 
 private int const defaultBorderChars[] = { 9472, 9474, 9472, 9474, 9484, 9488, 9496, 9492 };
@@ -9980,153 +9979,153 @@ private void adjustPosition(Portal* po);
 //Return MAXCOL if the entry is not present.
 private int
 popup_options_one(Bag *dict, CS key) {
-   DictItem* di = bagFind(dict, mbText(key));
-   if (!di)
-      return MAXCOL;
+	DictItem* di = bagFind(dict, mbText(key));
+	if (!di)
+		return MAXCOL;
 
-   CS s;
-   CS endp;
-   int n = 0;
-   CS val = tv_get_string(&di->c);
-   if (STRNCMP(val, "cursor", 6) != 0)
-      return bagGetNumber_check(dict, mbText(key));
+	CS s;
+	CS endp;
+	int n = 0;
+	CS val = tv_get_string(&di->c);
+	if (STRNCMP(val, "cursor", 6) != 0)
+		return bagGetNumber_check(dict, mbText(key));
 
-   setcursor_mayforce(true);
-   s = val + 6;
-   if (*s != ZERO) {
-      endp = s;
-      if (*skipwhite(s) == '+' || *skipwhite(s) == '-')
-          n = strtol((char *)s, (char **)&endp, 10);
-      if (endp != NULL && *skipwhite(endp) != ZERO) {
-          showErrFmtMsg(_(e_invalid_expression_str), val);
-          return 0;
-      }
-   }
+	setcursor_mayforce(true);
+	s = val + 6;
+	if (*s != ZERO) {
+		endp = s;
+		if (*skipwhite(s) == '+' || *skipwhite(s) == '-')
+			 n = strtol((char *)s, (char **)&endp, 10);
+		if (endp != NULL && *skipwhite(endp) != ZERO) {
+			 showErrFmtMsg(_(e_invalid_expression_str), val);
+			 return 0;
+		}
+	}
 
-   if (STRCMP(key, "line") == 0)
-      n = screen_screenrow() + 1 + n;
-   else //"col"
-      n = screen_screencol() + 1 + n;
+	if (STRCMP(key, "line") == 0)
+		n = screen_screenrow() + 1 + n;
+	else //"col"
+		n = screen_screencol() + 1 + n;
 
-   //Zero means "not set", use -1 instead.
-   if (n == 0)
-      n = -1;
-   return n;
+	//Zero means "not set", use -1 instead.
+	if (n == 0)
+		n = -1;
+	return n;
 }
 
 private int
 set_padding_border(Bag* dict, int* array, CS name, int max_val) {
-   DictItem* di = bagFind(dict, mbText(name));
-   if (!di)
-      return OK;
+	DictItem* di = bagFind(dict, mbText(name));
+	if (!di)
+		return OK;
 
-   if (di->c.tag != VAR_LIST) {
-      emsg(_(e_list_required));
-      return FAIL;
-   }
+	if (di->c.tag != VAR_LIST) {
+		emsg(_(e_list_required));
+		return FAIL;
+	}
 
-   List   *list = di->c.list;
-   if (!list)
-      return OK;
+	List   *list = di->c.list;
+	if (!list)
+		return OK;
 
-   for (int i = 0; i < 4; ++i)
-      array[i] = 1;
+	for (int i = 0; i < 4; ++i)
+		array[i] = 1;
 
-   CHECK_LIST_MATERIALIZE(list);
-   ListItem* li;
-   int i = 0;
-   for (li = list->first; i < 4 && i < list->len; ++i, li = li->next) {
-      int nr = (int)tv_get_number(&li->c);
-      if (nr >= 0)
-         array[i] = nr > max_val ? max_val : nr;
-   }
+	CHECK_LIST_MATERIALIZE(list);
+	ListItem* li;
+	int i = 0;
+	for (li = list->first; i < 4 && i < list->len; ++i, li = li->next) {
+		int nr = (int)tv_get_number(&li->c);
+		if (nr >= 0)
+			array[i] = nr > max_val ? max_val : nr;
+	}
 
-   return OK;
+	return OK;
 }
 
 //Used when popup options contain "moved": set default moved values.
 private void
 set_moved_values(Portal* po) {
-   po->pup.curPor = curPor;
-   po->pup.lnum = curPor->cursor.lnum;
-   po->pup.minCol = curPor->cursor.col;
-   po->pup.maxCol = curPor->cursor.col;
+	po->pup.curPor = curPor;
+	po->pup.lnum = curPor->cursor.lnum;
+	po->pup.minCol = curPor->cursor.col;
+	po->pup.maxCol = curPor->cursor.col;
 }
 
 //Used when popup options contain "moved" with "word" or "WORD"
 private void
 set_moved_columns(Portal* po, int flags) {
-   CS ptr;
-   int len = find_ident_under_cursor(&ptr, flags | FIND_NOERROR);
+	CS ptr;
+	int len = find_ident_under_cursor(&ptr, flags | FIND_NOERROR);
 
-   if (len <= 0)
-      return;
+	if (len <= 0)
+		return;
 
-   po->pup.minCol = (int)(ptr - ml_get_curline());
-   po->pup.maxCol = po->pup.minCol + len - 1;
+	po->pup.minCol = (int)(ptr - ml_get_curline());
+	po->pup.maxCol = po->pup.minCol + len - 1;
 }
 
 //Used when popup options contain "mousemoved": set default moved values.
 private void
 set_mousemoved_values(Portal* po) {
-   po->pup.mouseRow = mouseRowG;
-   po->pup.mouseMinCol = mouseColG;
-   po->pup.mouseMaxCol = mouseColG;
+	po->pup.mouseRow = mouseRowG;
+	po->pup.mouseMinCol = mouseColG;
+	po->pup.mouseMaxCol = mouseColG;
 }
 
 private void
 update_popup_uses_mouse_move(void) {
-   popup_uses_mouse_move = false;
-   if (!popup_visible)
-      return;
+	popup_uses_mouse_move = false;
+	if (!popup_visible)
+		return;
 
-   Portal* po;
-   FOR_ALL_POPUPPORTS(po) {
-      if (po->pup.mouseRow != 0) {
-         popup_uses_mouse_move = true;
-         return;
-      }
-   }
-   FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
-      if (po->pup.mouseRow != 0) {
-         popup_uses_mouse_move = true;
-         return;
-      }
-   }
+	Portal* po;
+	FOR_ALL_POPUPPORTS(po) {
+		if (po->pup.mouseRow != 0) {
+			popup_uses_mouse_move = true;
+			return;
+		}
+	}
+	FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
+		if (po->pup.mouseRow != 0) {
+			popup_uses_mouse_move = true;
+			return;
+		}
+	}
 }
 
 //Used when popup options contain "moved" with "word" or "WORD".
 private void
 set_mousemoved_columns(Portal* po, Unt flags) {
-   Portal* textwp;
-   CS text;
-   int col;
-   Pos pos;
-   ColNr   mcol;
+	Portal* textwp;
+	CS text;
+	int col;
+	Pos pos;
+	ColNr   mcol;
 
-   if (find_word_under_cursor(mouseRowG, mouseColG, true, flags,
-              &textwp, &pos.lnum, &text, NULL, &col) != OK)
-      return;
+	if (find_word_under_cursor(mouseRowG, mouseColG, true, flags,
+				  &textwp, &pos.lnum, &text, NULL, &col) != OK)
+		return;
 
-   //convert text column to mouse column
-   pos.col = col;
-   pos.coladd = 0;
-   getvcol(textwp, &pos, &mcol, NULL, NULL);
-   po->pup.mouseMinCol = mcol;
+	//convert text column to mouse column
+	pos.col = col;
+	pos.coladd = 0;
+	getvcol(textwp, &pos, &mcol, NULL, NULL);
+	po->pup.mouseMinCol = mcol;
 
-   pos.col = col + (ColNr)STRLEN(text) - 1;
-   getvcol(textwp, &pos, NULL, NULL, &mcol);
-   po->pup.mouseMaxCol = mcol;
-   eeglFree(text);
+	pos.col = col + (ColNr)STRLEN(text) - 1;
+	getvcol(textwp, &pos, NULL, NULL, &mcol);
+	po->pup.mouseMaxCol = mcol;
+	eeglFree(text);
 }
 
 //true if "row"/"col" is on the border of the popup. The values are relative to the top-left corner
 pub int
 popup_on_border(Portal* po, int row, int col) {
-   return (row == 0 && po->pup.border[0] > 0)
-       || (row == popup_height(po) - 1 && po->pup.border[2] > 0)
-       || (col == 0 && po->pup.border[3] > 0)
-       || (col == popup_width(po) - 1 && po->pup.border[1] > 0);
+	return (row == 0 && po->pup.border[0] > 0)
+		 || (row == popup_height(po) - 1 && po->pup.border[2] > 0)
+		 || (col == 0 && po->pup.border[3] > 0)
+		 || (col == popup_width(po) - 1 && po->pup.border[1] > 0);
 }
 
 //Return true and close the popup if "row"/"col" is on the "X" button of the popup and pup.close is
@@ -10134,11 +10133,11 @@ popup_on_border(Portal* po, int row, int col) {
 //mouse button was clicked. Return true if the popup was closed.
 pub int
 popup_close_if_on_X(Portal* po, int row, int col) {
-   if (po->pup.close == POPCLOSE_BUTTON && row == 0 && col == popup_width(po) - 1) {
-      popup_close_for_mouse_click(po);
-      return true;
-   }
-   return false;
+	if (po->pup.close == POPCLOSE_BUTTON && row == 0 && col == popup_width(po) - 1) {
+		popup_close_for_mouse_click(po);
+		return true;
+	}
+	return false;
 }
 
 //Values set when dragging a popup portal starts.
@@ -10151,368 +10150,368 @@ private int drag_on_resize_handle;
 //Mouse down on border of popup portal: start dragging it. Uses mouseCol and mouseRow.
 pub void
 popup_start_drag(Portal* po, int row, int col) {
-   drag_start_row = mouseRowG;
-   drag_start_col = mouseColG;
-   if (po->pup.wantLine <= 0)
-      drag_start_wantline = po->windowRow + 1;
-   else
-      drag_start_wantline = po->pup.wantLine;
-   if (po->pup.wantCol == 0)
-      drag_start_wantcol = po->windowCol + 1;
-   else
-      drag_start_wantcol = po->pup.wantCol;
+	drag_start_row = mouseRowG;
+	drag_start_col = mouseColG;
+	if (po->pup.wantLine <= 0)
+		drag_start_wantline = po->windowRow + 1;
+	else
+		drag_start_wantline = po->pup.wantLine;
+	if (po->pup.wantCol == 0)
+		drag_start_wantcol = po->windowCol + 1;
+	else
+		drag_start_wantcol = po->pup.wantCol;
 
-   //Stop centering the popup
-   if (po->pup.pos == POPPOS_CENTER)
-      po->pup.pos = POPPOS_TOPLEFT;
+	//Stop centering the popup
+	if (po->pup.pos == POPPOS_CENTER)
+		po->pup.pos = POPPOS_TOPLEFT;
 
-    drag_on_resize_handle = po->pup.border[1] > 0
-             && po->pup.border[2] > 0
-             && row == popup_height(po) - 1
-             && col == popup_width(po) - 1;
+	 drag_on_resize_handle = po->pup.border[1] > 0
+				 && po->pup.border[2] > 0
+				 && row == popup_height(po) - 1
+				 && col == popup_width(po) - 1;
 
-   if (po->pup.pos != POPPOS_TOPLEFT && drag_on_resize_handle) {
-      if (po->pup.pos == POPPOS_TOPRIGHT || po->pup.pos == POPPOS_BOTRIGHT)
-         po->pup.wantCol = po->windowCol + 1;
-      if (po->pup.pos == POPPOS_BOTLEFT)
-         po->pup.wantLine = po->windowRow + 1;
-      po->pup.pos = POPPOS_TOPLEFT;
-   }
+	if (po->pup.pos != POPPOS_TOPLEFT && drag_on_resize_handle) {
+		if (po->pup.pos == POPPOS_TOPRIGHT || po->pup.pos == POPPOS_BOTRIGHT)
+			po->pup.wantCol = po->windowCol + 1;
+		if (po->pup.pos == POPPOS_BOTLEFT)
+			po->pup.wantLine = po->windowRow + 1;
+		po->pup.pos = POPPOS_TOPLEFT;
+	}
 }
 
 //Mouse moved while dragging a popup portal: adjust the portal popup position or resize.
 pub void
 popup_drag(Portal* po) {
-   //The popup may be closed before dragging stops.
-   if (!portalValidPopup(po))
-      return;
+	//The popup may be closed before dragging stops.
+	if (!portalValidPopup(po))
+		return;
 
-   if ((po->pup.flags & POPF_RESIZE) && drag_on_resize_handle) {
-      int width_inc = mouseColG - drag_start_col;
-      int height_inc = mouseRowG - drag_start_row;
+	if ((po->pup.flags & POPF_RESIZE) && drag_on_resize_handle) {
+		int width_inc = mouseColG - drag_start_col;
+		int height_inc = mouseRowG - drag_start_row;
 
-      if (width_inc != 0) {
-         int width = po->width + width_inc;
+		if (width_inc != 0) {
+			int width = po->width + width_inc;
 
-         if (width < 1)
-            width = 1;
-         po->pup.minWidth = width;
-         po->pup.maxWidth = width;
-         drag_start_col = mouseColG;
-      }
+			if (width < 1)
+				width = 1;
+			po->pup.minWidth = width;
+			po->pup.maxWidth = width;
+			drag_start_col = mouseColG;
+		}
 
-      if (height_inc != 0) {
-         int height = po->height + height_inc;
+		if (height_inc != 0) {
+			int height = po->height + height_inc;
 
-         if (height < 1)
-            height = 1;
-         po->pup.minHeight = height;
-         po->pup.maxHeight = height;
-         drag_start_row = mouseRowG;
-      }
+			if (height < 1)
+				height = 1;
+			po->pup.minHeight = height;
+			po->pup.maxHeight = height;
+			drag_start_row = mouseRowG;
+		}
 
-      adjustPosition(po);
-      return;
-   }
+		adjustPosition(po);
+		return;
+	}
 
-   if (!(po->pup.flags & (POPF_DRAG | POPF_DRAGALL)))
-      return;
-   po->pup.wantLine = drag_start_wantline + (mouseRowG - drag_start_row);
-   if (po->pup.wantLine < 1)
-      po->pup.wantLine = 1;
-   if (po->pup.wantLine > visibleRowsG)
-      po->pup.wantLine = visibleRowsG;
-   po->pup.wantCol = drag_start_wantcol + (mouseColG - drag_start_col);
-   if (po->pup.wantCol < 1)
-      po->pup.wantCol = 1;
-   if (po->pup.wantCol > visibleColsG)
-      po->pup.wantCol = visibleColsG;
+	if (!(po->pup.flags & (POPF_DRAG | POPF_DRAGALL)))
+		return;
+	po->pup.wantLine = drag_start_wantline + (mouseRowG - drag_start_row);
+	if (po->pup.wantLine < 1)
+		po->pup.wantLine = 1;
+	if (po->pup.wantLine > visibleRowsG)
+		po->pup.wantLine = visibleRowsG;
+	po->pup.wantCol = drag_start_wantcol + (mouseColG - drag_start_col);
+	if (po->pup.wantCol < 1)
+		po->pup.wantCol = 1;
+	if (po->pup.wantCol > visibleColsG)
+		po->pup.wantCol = visibleColsG;
 
-   adjustPosition(po);
+	adjustPosition(po);
 }
 
 //Set pup.firstLine to match the current "po->topLine".
 pub void
 popup_set_firstline(Portal* po) {
-   Unt height = po->height;
+	Unt height = po->height;
 
-   po->pup.firstLine = po->topLine;
-   adjustPosition(po);
+	po->pup.firstLine = po->topLine;
+	adjustPosition(po);
 
-   //we don't want the popup to get smaller, decrement the first line until it doesn't
-   while (po->pup.firstLine > 1 && po->height < height) {
-      --po->pup.firstLine;
-      adjustPosition(po);
-   }
+	//we don't want the popup to get smaller, decrement the first line until it doesn't
+	while (po->pup.firstLine > 1 && po->height < height) {
+		--po->pup.firstLine;
+		adjustPosition(po);
+	}
 }
 
 //true if the position is in the popup portal scrollbar.
 pub int
 popup_is_in_scrollbar(Portal* po, int row, int col) {
-   return po->pup.hasScrollbar
-      && row >= po->pup.border[0]
-      && row < popup_height(po) - po->pup.border[2]
-      && col == popup_width(po) - po->pup.border[1] - 1;
+	return po->pup.hasScrollbar
+		&& row >= po->pup.border[0]
+		&& row < popup_height(po) - po->pup.border[2]
+		&& col == popup_width(po) - po->pup.border[1] - 1;
 }
 
 
 //Handle a click in a popup portal, if it is in the scrollbar.
 pub void
 popup_handle_scrollbar_click(Portal* po, int row, int col) {
-   if (!popup_is_in_scrollbar(po, row, col))
-      return;
+	if (!popup_is_in_scrollbar(po, row, col))
+		return;
 
-   int height = popup_height(po);
-   int netopLine = po->topLine;
+	int height = popup_height(po);
+	int netopLine = po->topLine;
 
-   if (row >= height / 2) {
-      //Click in lower half, scroll down.
-      if (po->topLine < po->book->mem.lineCount)
-         ++netopLine;
-   } ei (po->topLine > 1)
-      //click on upper half, scroll up.
-      --netopLine;
+	if (row >= height / 2) {
+		//Click in lower half, scroll down.
+		if (po->topLine < po->book->mem.lineCount)
+			++netopLine;
+	} ei (po->topLine > 1)
+		//click on upper half, scroll up.
+		--netopLine;
 
-   if (netopLine == po->topLine)
-      return;
+	if (netopLine == po->topLine)
+		return;
 
-   set_topline(po, netopLine);
-   if (po == curPor) {
-      if (po->cursor.lnum < po->topLine) {
-         po->cursor.lnum = po->topLine;
-         check_cursor();
-      } ei (po->cursor.lnum >= po->bottomLine) {
-         po->cursor.lnum = po->bottomLine - 1;
-         check_cursor();
-      }
-   }
-   popup_set_firstline(po);
-   redrawPortLater(po, UPD_NOT_VALID);
+	set_topline(po, netopLine);
+	if (po == curPor) {
+		if (po->cursor.lnum < po->topLine) {
+			po->cursor.lnum = po->topLine;
+			check_cursor();
+		} ei (po->cursor.lnum >= po->bottomLine) {
+			po->cursor.lnum = po->bottomLine - 1;
+			check_cursor();
+		}
+	}
+	popup_set_firstline(po);
+	redrawPortLater(po, UPD_NOT_VALID);
 }
 
 //Add a timer to "po" with "time" (milliseconds).
 //If "close" is true use popup_close(), otherwise popup_hide().
 private void
 addTimeout(Portal* po, int time, int close) {
-   Byte cbbuf[50];
+	Byte cbbuf[50];
 
-   eeSnprintf(cbbuf, sizeof(cbbuf),
-      close ? "(_) => popup_close(%d)" : "(_) => popup_hide(%d)",
-      po->id
-   );
+	eeSnprintf(cbbuf, sizeof(cbbuf),
+		close ? "(_) => popup_close(%d)" : "(_) => popup_hide(%d)",
+		po->id
+	);
 
-   po->pup.timer = create_timer(time, 0);
-   Var tv;
-   Callback cb = get_callback(&tv);
-   if (cb.name != NULL && !cb.needsFreeing) {
-      cb.name = copyStr(cb.name);
-      cb.needsFreeing = true;
-   }
-   po->pup.timer->callback = cb;
-   clearVar(&tv);
+	po->pup.timer = create_timer(time, 0);
+	Var tv;
+	Callback cb = get_callback(&tv);
+	if (cb.name != NULL && !cb.needsFreeing) {
+		cb.name = copyStr(cb.name);
+		cb.needsFreeing = true;
+	}
+	po->pup.timer->callback = cb;
+	clearVar(&tv);
 }
 
 private PopupPosition
 get_pos_entry(Bag *d, int give_error) {
-   CS str = bagGetString(d, tConst("pos"), false);
+	CS str = bagGetString(d, tConst("pos"), false);
 
-   if (!str)
-      return POPPOS_NONE;
+	if (!str)
+		return POPPOS_NONE;
 
-   for (int nr = 0; nr < (int)ARRAY_LENGTH(popposEntriesS); ++nr) {
-      if (STRCMP(str, popposEntriesS[nr].pp_name) == 0)
-         return popposEntriesS[nr].pp_val;
-   }
+	for (int nr = 0; nr < (int)ARRAY_LENGTH(popposEntriesS); ++nr) {
+		if (STRCMP(str, popposEntriesS[nr].pp_name) == 0)
+			return popposEntriesS[nr].pp_val;
+	}
 
-   if (give_error)
-      showErrFmtMsg(_(e_invalid_argument_str), str);
-   return POPPOS_NONE;
+	if (give_error)
+		showErrFmtMsg(_(e_invalid_argument_str), str);
+	return POPPOS_NONE;
 }
 
 //Shared between createPopup() and f_popup_move().
 private void
 applyMoveParams(Portal* po, Bag* params) {
-   int      nr;
-   Boole boolVal;
-   DictItem   *di;
+	int      nr;
+	Boole boolVal;
+	DictItem   *di;
 
-   if ((nr = bagGetNumber_def(params, tConst("minwidth"), -1)) >= 0)
-      po->pup.minWidth = nr;
-   if ((nr = bagGetNumber_def(params, tConst("minheight"), -1)) >= 0)
-      po->pup.minHeight = nr;
-   if ((nr = bagGetNumber_def(params, tConst("maxwidth"), -1)) >= 0)
-      po->pup.maxWidth = nr;
-   if ((nr = bagGetNumber_def(params, tConst("maxheight"), -1)) >= 0)
-      po->pup.maxHeight = nr;
+	if ((nr = bagGetNumber_def(params, tConst("minwidth"), -1)) >= 0)
+		po->pup.minWidth = nr;
+	if ((nr = bagGetNumber_def(params, tConst("minheight"), -1)) >= 0)
+		po->pup.minHeight = nr;
+	if ((nr = bagGetNumber_def(params, tConst("maxwidth"), -1)) >= 0)
+		po->pup.maxWidth = nr;
+	if ((nr = bagGetNumber_def(params, tConst("maxheight"), -1)) >= 0)
+		po->pup.maxHeight = nr;
 
-   nr = popup_options_one(params, (CS)"line");
-   if (nr != MAXCOL)
-      po->pup.wantLine = nr;
-   nr = popup_options_one(params, (CS)"col");
-   if (nr != MAXCOL)
-      po->pup.wantCol = nr;
+	nr = popup_options_one(params, (CS)"line");
+	if (nr != MAXCOL)
+		po->pup.wantLine = nr;
+	nr = popup_options_one(params, (CS)"col");
+	if (nr != MAXCOL)
+		po->pup.wantCol = nr;
 
-   boolVal = bagGetBool(params, tConst("fixed"), false);
-   po->pup.fixed = boolVal;
+	boolVal = bagGetBool(params, tConst("fixed"), false);
+	po->pup.fixed = boolVal;
 
-   PopupPosition ppt = get_pos_entry(params, true);
-   if (ppt != POPPOS_NONE)
-      po->pup.pos = ppt;
+	PopupPosition ppt = get_pos_entry(params, true);
+	if (ppt != POPPOS_NONE)
+		po->pup.pos = ppt;
 
-   CS str = bagGetString(params, tConst("textprop"), false);
-   if (str) {
-      po->pup.propType = 0;
-      if (*str != ZERO) {
-         po->pup.propPort = curPor;
-         di = bagFind(params, tConst("textpropwin"));
-         if (di) {
-            po->pup.propPort = portFindByNrOrId(&di->c);
-            if (!doesPortalExistInAnyTab(po->pup.propPort))
-               po->pup.propPort = curPor;
-         }
-         Text t = text(str);
-         nr = findPropTypeIdByName(t, po->pup.propPort->book);
-         if (nr <= 0)
-            nr = findPropTypeIdByName(t, NULL);
-         if (nr <= 0)
-            showErrFmtMsg(_(e_invalid_argument_str), str);
-         else
-            po->pup.propType = nr;
-      }
-   }
+	CS str = bagGetString(params, tConst("textprop"), false);
+	if (str) {
+		po->pup.propType = 0;
+		if (*str != ZERO) {
+			po->pup.propPort = curPor;
+			di = bagFind(params, tConst("textpropwin"));
+			if (di) {
+				po->pup.propPort = portFindByNrOrId(&di->c);
+				if (!doesPortalExistInAnyTab(po->pup.propPort))
+					po->pup.propPort = curPor;
+			}
+			Text t = text(str);
+			nr = findPropTypeIdByName(t, po->pup.propPort->book);
+			if (nr <= 0)
+				nr = findPropTypeIdByName(t, NULL);
+			if (nr <= 0)
+				showErrFmtMsg(_(e_invalid_argument_str), str);
+			else
+				po->pup.propType = nr;
+		}
+	}
 
-   di = bagFind(params, tConst("textpropid"));
-   if (di)
-      po->pup.propId = bagGetNumber(params, tConst("textpropid"));
+	di = bagFind(params, tConst("textpropid"));
+	if (di)
+		po->pup.propId = bagGetNumber(params, tConst("textpropid"));
 }
 
 //Handle "moved" and "mousemoved" arguments.
 private void
 handle_moved_argument(Portal* po, DictItem* di, int mousemoved) {
-   if (di->c.tag == VAR_STRING && di->c.string != NULL) {
-      CS s = di->c.string;
-      Unt   flags = 0;
+	if (di->c.tag == VAR_STRING && di->c.string != NULL) {
+		CS s = di->c.string;
+		Unt   flags = 0;
 
-      if (STRCMP(s, "word") == 0)
-          flags = FIND_IDENT | FIND_STRING;
-      ei (STRCMP(s, "WORD") == 0)
-          flags = FIND_STRING;
-      ei (STRCMP(s, "expr") == 0)
-          flags = FIND_IDENT | FIND_STRING | FIND_EVAL;
-      ei (STRCMP(s, "any") != 0)
-          showErrFmtMsg(_(e_invalid_argument_str), s);
-      if (flags != 0) {
-         if (mousemoved)
-            set_mousemoved_columns(po, flags);
-         else
-            set_moved_columns(po, flags);
-      }
-   } ei (di->c.tag == VAR_LIST
-       && di->c.list
-       && (di->c.list->len == 2 || di->c.list->len == 3)
-   ) {
-      List       *l = di->c.list;
-      ListItem  *li;
-      int       mincol;
-      int       maxcol;
+		if (STRCMP(s, "word") == 0)
+			 flags = FIND_IDENT | FIND_STRING;
+		ei (STRCMP(s, "WORD") == 0)
+			 flags = FIND_STRING;
+		ei (STRCMP(s, "expr") == 0)
+			 flags = FIND_IDENT | FIND_STRING | FIND_EVAL;
+		ei (STRCMP(s, "any") != 0)
+			 showErrFmtMsg(_(e_invalid_argument_str), s);
+		if (flags != 0) {
+			if (mousemoved)
+				set_mousemoved_columns(po, flags);
+			else
+				set_moved_columns(po, flags);
+		}
+	} ei (di->c.tag == VAR_LIST
+		 && di->c.list
+		 && (di->c.list->len == 2 || di->c.list->len == 3)
+	) {
+		List       *l = di->c.list;
+		ListItem  *li;
+		int       mincol;
+		int       maxcol;
 
-      CHECK_LIST_MATERIALIZE(l);
-      li = l->first;
-      if (l->len == 3) {
-         Long nr = tv_get_number(&l->first->c);
+		CHECK_LIST_MATERIALIZE(l);
+		li = l->first;
+		if (l->len == 3) {
+			Long nr = tv_get_number(&l->first->c);
 
-         //Three numbers, might be from popup_getoptions().
-         if (mousemoved)
-            po->pup.mouseRow = nr;
-         else
-            po->pup.lnum = nr;
-         li = li->next;
-         if (nr == 0)
-            po->pup.curPor = NULL;
-      }
+			//Three numbers, might be from popup_getoptions().
+			if (mousemoved)
+				po->pup.mouseRow = nr;
+			else
+				po->pup.lnum = nr;
+			li = li->next;
+			if (nr == 0)
+				po->pup.curPor = NULL;
+		}
 
-      mincol = tv_get_number(&li->c);
-      maxcol = tv_get_number(&li->next->c);
-      if (mousemoved) {
-         po->pup.mouseMinCol = mincol;
-         po->pup.mouseMaxCol = maxcol;
-      } else {
-         po->pup.minCol = mincol;
-         po->pup.maxCol = maxcol;
-      }
-   } else
-      showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&di->c));
+		mincol = tv_get_number(&li->c);
+		maxcol = tv_get_number(&li->next->c);
+		if (mousemoved) {
+			po->pup.mouseMinCol = mincol;
+			po->pup.mouseMaxCol = maxcol;
+		} else {
+			po->pup.minCol = mincol;
+			po->pup.maxCol = maxcol;
+		}
+	} else
+		showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&di->c));
 }
 
 private void
 check_highlight(Bag* dict, CS name, OUT Unt* pval) {
-   DictItem* di = bagFind(dict, mbText(name));
-   if (!di)
-      return;
+	DictItem* di = bagFind(dict, mbText(name));
+	if (!di)
+		return;
 
-   if (di->c.tag != VAR_NUMBER)
-      showErrFmtMsg(_(e_invalid_value_for_argument_str), name);
-   else {
-      Short hiId = (Short)tv_get_number(&di->c);
-      *pval = hiId;
-   }
+	if (di->c.tag != VAR_NUMBER)
+		showErrFmtMsg(_(e_invalid_value_for_argument_str), name);
+	else {
+		Short hiId = (Short)tv_get_number(&di->c);
+		*pval = hiId;
+	}
 }
 
 //Scroll to show the line with the cursor.
 private void
 scrollToCurrent(Portal* po) {
-   if (po->cursor.lnum < po->topLine)
-      po->topLine = po->cursor.lnum;
-   ei (po->cursor.lnum >= po->bottomLine && (po->cacheState & VALID_BOTLINE)) {
-      po->topLine = po->cursor.lnum - po->height + 1;
-      if (po->topLine < 1)
-          po->topLine = 1;
-      ei (po->topLine > po->book->mem.lineCount)
-          po->topLine = po->book->mem.lineCount;
-      while (po->topLine < po->cursor.lnum
-            && po->topLine < po->book->mem.lineCount
-            && plines_m_win(po, po->topLine, po->cursor.lnum, po->height + 1) > (int)po->height)
-         ++po->topLine;
-   }
+	if (po->cursor.lnum < po->topLine)
+		po->topLine = po->cursor.lnum;
+	ei (po->cursor.lnum >= po->bottomLine && (po->cacheState & VALID_BOTLINE)) {
+		po->topLine = po->cursor.lnum - po->height + 1;
+		if (po->topLine < 1)
+			 po->topLine = 1;
+		ei (po->topLine > po->book->mem.lineCount)
+			 po->topLine = po->book->mem.lineCount;
+		while (po->topLine < po->cursor.lnum
+				&& po->topLine < po->book->mem.lineCount
+				&& plines_m_win(po, po->topLine, po->cursor.lnum, po->height + 1) > (int)po->height)
+			++po->topLine;
+	}
 
-   //Don't let "firstline" cause a scroll.
-   if (po->pup.firstLine > 0)
-      po->pup.firstLine = po->topLine;
+	//Don't let "firstline" cause a scroll.
+	if (po->pup.firstLine > 0)
+		po->pup.firstLine = po->topLine;
 }
 
 //Get the sign group name for portal "po". Return a pointer to a static buffer, overwritten on the
 //next call.
 private CS
 popup_get_sign_name(Portal* po) {
-   static Byte buf[30];
+	static Byte buf[30];
 
-   eeSnprintf(buf, sizeof(buf), "popup-%d", po->id);
-   return buf;
+	eeSnprintf(buf, sizeof(buf), "popup-%d", po->id);
+	return buf;
 }
 
 //Highlight the line with the cursor. Also scroll the text to put the cursor line in view.
 private void
 highlightCurrentLine(Portal* po) {
-   int       sign_id = 0;
-   CS sign_name = popup_get_sign_name(po);
+	int       sign_id = 0;
+	CS sign_name = popup_get_sign_name(po);
 
-   llDeleteSigns(po->book, (CS)"PopUpMenu");
+	llDeleteSigns(po->book, (CS)"PopUpMenu");
 
-   if ((po->pup.flags & POPF_CURSORLINE) != 0) {
-      scrollToCurrent(po);
+	if ((po->pup.flags & POPF_CURSORLINE) != 0) {
+		scrollToCurrent(po);
 
-      if (!sign_exists_by_name(sign_name)) {
-         char *linehl = "PopupSelected";
-         sign_define_by_name( sign_name, NULL, (CS)linehl, NULL, NULL, NULL, SIGN_DEF_PRIO);
-      }
+		if (!sign_exists_by_name(sign_name)) {
+			char *linehl = "PopupSelected";
+			sign_define_by_name( sign_name, NULL, (CS)linehl, NULL, NULL, NULL, SIGN_DEF_PRIO);
+		}
 
-      sign_place(
-         &sign_id, (CS)"PopUpMenu", sign_name, po->book, po->cursor.lnum, SIGN_DEF_PRIO
-      );
-      redrawPortLater(po, UPD_NOT_VALID);
-   } else
-      sign_undefine_by_name(sign_name, false);
-   po->pup.lastCurline = po->cursor.lnum;
+		sign_place(
+			&sign_id, (CS)"PopUpMenu", sign_name, po->book, po->cursor.lnum, SIGN_DEF_PRIO
+		);
+		redrawPortLater(po, UPD_NOT_VALID);
+	} else
+		sign_undefine_by_name(sign_name, false);
+	po->pup.lastCurline = po->cursor.lnum;
 }
 
 pub
@@ -10525,1011 +10524,1011 @@ pub
 private int
 apply_general_options(Portal* po, Bag* dict) {
 
-   //TODO: flip
+	//TODO: flip
 
-   DictItem* di = bagFind(dict, tConst("firstline"));
-   if (di) {
-      po->pup.firstLine = bagGetNumber(dict, tConst("firstline"));
-      if (po->pup.firstLine < 0)
-         po->pup.firstLine = -1;
-   }
+	DictItem* di = bagFind(dict, tConst("firstline"));
+	if (di) {
+		po->pup.firstLine = bagGetNumber(dict, tConst("firstline"));
+		if (po->pup.firstLine < 0)
+			po->pup.firstLine = -1;
+	}
 
-   Boole nr = bagGetBool(dict, tConst("scrollbar"), false);
-   po->pup.wantScrollbar = nr;
+	Boole nr = bagGetBool(dict, tConst("scrollbar"), false);
+	po->pup.wantScrollbar = nr;
 
-   CS str = bagGetString(dict, tConst("title"), false);
-   if (str) {
-      eeglFree(po->pup.title);
-      po->pup.title = copyStr(str);
-   }
+	CS str = bagGetString(dict, tConst("title"), false);
+	if (str) {
+		eeglFree(po->pup.title);
+		po->pup.title = copyStr(str);
+	}
 
-   Boole bl = bagGetBool(dict, tConst("wrap"), false);
-   po->o.wrap = bl;
+	Boole bl = bagGetBool(dict, tConst("wrap"), false);
+	po->o.wrap = bl;
 
-   bl = bagGetBool(dict, tConst("drag"), false);
-   if (bl)
-      po->pup.flags |= POPF_DRAG;
-   else
-      po->pup.flags &= ~POPF_DRAG;
+	bl = bagGetBool(dict, tConst("drag"), false);
+	if (bl)
+		po->pup.flags |= POPF_DRAG;
+	else
+		po->pup.flags &= ~POPF_DRAG;
 
-   bl = bagGetBool(dict, tConst("dragall"), false);
-   if (bl)
-      po->pup.flags |= POPF_DRAGALL;
-   else
-      po->pup.flags &= ~POPF_DRAGALL;
+	bl = bagGetBool(dict, tConst("dragall"), false);
+	if (bl)
+		po->pup.flags |= POPF_DRAGALL;
+	else
+		po->pup.flags &= ~POPF_DRAGALL;
 
-   bl = bagGetBool(dict, tConst("posinvert"), false);
-   if (bl)
-      po->pup.flags |= POPF_POSINVERT;
-   else
-      po->pup.flags &= ~POPF_POSINVERT;
+	bl = bagGetBool(dict, tConst("posinvert"), false);
+	if (bl)
+		po->pup.flags |= POPF_POSINVERT;
+	else
+		po->pup.flags &= ~POPF_POSINVERT;
 
-   bl = bagGetBool(dict, tConst("resize"), false);
-   if (bl)
-      po->pup.flags |= POPF_RESIZE;
-   else
-      po->pup.flags &= ~POPF_RESIZE;
+	bl = bagGetBool(dict, tConst("resize"), false);
+	if (bl)
+		po->pup.flags |= POPF_RESIZE;
+	else
+		po->pup.flags &= ~POPF_RESIZE;
 
-   di = bagFind(dict, tConst("close"));
-   if (di) {
-      int ok = true;
+	di = bagFind(dict, tConst("close"));
+	if (di) {
+		int ok = true;
 
-      if (di->c.tag == VAR_STRING && di->c.string != NULL) {
-         CS s = di->c.string;
-         if (STRCMP(s, "none") == 0)
-            po->pup.close = POPCLOSE_NONE;
-         ei (STRCMP(s, "button") == 0)
-            po->pup.close = POPCLOSE_BUTTON;
-         ei (STRCMP(s, "click") == 0)
-            po->pup.close = POPCLOSE_CLICK;
-         else
-            ok = false;
-      } else
-         ok = false;
-      if (!ok)
-         showErrFmtMsg(_(e_invalid_value_for_argument_str_str), "close", tv_get_string(&di->c));
-   }
+		if (di->c.tag == VAR_STRING && di->c.string != NULL) {
+			CS s = di->c.string;
+			if (STRCMP(s, "none") == 0)
+				po->pup.close = POPCLOSE_NONE;
+			ei (STRCMP(s, "button") == 0)
+				po->pup.close = POPCLOSE_BUTTON;
+			ei (STRCMP(s, "click") == 0)
+				po->pup.close = POPCLOSE_CLICK;
+			else
+				ok = false;
+		} else
+			ok = false;
+		if (!ok)
+			showErrFmtMsg(_(e_invalid_value_for_argument_str_str), "close", tv_get_string(&di->c));
+	}
 
-   if (set_padding_border(dict, po->pup.padding, S"padding", 999) == FAIL
-         || set_padding_border(dict, po->pup.border, S"border", 1) == FAIL
-   )
-      return FAIL;
+	if (set_padding_border(dict, po->pup.padding, S"padding", 999) == FAIL
+			|| set_padding_border(dict, po->pup.border, S"border", 1) == FAIL
+	)
+		return FAIL;
 
-   di = bagFind(dict, tConst("borderhilite"));
-   if (di) {
-      if (di->c.tag != VAR_LIST || di->c.list == NULL) {
-          emsg(_(e_list_required));
-          return FAIL;
-      } else {
-         List* list = di->c.list;
+	di = bagFind(dict, tConst("borderhilite"));
+	if (di) {
+		if (di->c.tag != VAR_LIST || di->c.list == NULL) {
+			 emsg(_(e_list_required));
+			 return FAIL;
+		} else {
+			List* list = di->c.list;
 
-         CHECK_LIST_MATERIALIZE(list);
-      }
-   }
+			CHECK_LIST_MATERIALIZE(list);
+		}
+	}
 
-   di = bagFind(dict, tConst("borderchars"));
-   if (di) {
-      if (di->c.tag != VAR_LIST) {
-         emsg(_(e_list_required));
-         return FAIL;
-      } else {
-         List   *list = di->c.list;
-         ListItem   *li;
-         int      i;
+	di = bagFind(dict, tConst("borderchars"));
+	if (di) {
+		if (di->c.tag != VAR_LIST) {
+			emsg(_(e_list_required));
+			return FAIL;
+		} else {
+			List   *list = di->c.list;
+			ListItem   *li;
+			int      i;
 
-         if (list) {
-            CHECK_LIST_MATERIALIZE(list);
-            for (i = 0, li = list->first; i < 8 && i < list->len; ++i, li = li->next) {
-               str = tv_get_string(&li->c);
-               if (*str != ZERO)
-                  po->pup.borderChar[i] = mb_ptr2char(str);
-            }
-            if (list->len == 1)
-               for (i = 1; i < 8; ++i)
-                  po->pup.borderChar[i] = po->pup.borderChar[0];
-            if (list->len == 2) {
-               for (i = 4; i < 8; ++i)
-                  po->pup.borderChar[i] = po->pup.borderChar[1];
-               for (i = 1; i < 4; ++i)
-                  po->pup.borderChar[i] = po->pup.borderChar[0];
-            }
-         }
-      }
-   } else {
-      for (int i = 0; i < 8; ++i) {
-         po->pup.borderChar[i] = defaultBorderChars[i];
-      }
-   }
+			if (list) {
+				CHECK_LIST_MATERIALIZE(list);
+				for (i = 0, li = list->first; i < 8 && i < list->len; ++i, li = li->next) {
+					str = tv_get_string(&li->c);
+					if (*str != ZERO)
+						po->pup.borderChar[i] = mb_ptr2char(str);
+				}
+				if (list->len == 1)
+					for (i = 1; i < 8; ++i)
+						po->pup.borderChar[i] = po->pup.borderChar[0];
+				if (list->len == 2) {
+					for (i = 4; i < 8; ++i)
+						po->pup.borderChar[i] = po->pup.borderChar[1];
+					for (i = 1; i < 4; ++i)
+						po->pup.borderChar[i] = po->pup.borderChar[0];
+				}
+			}
+		}
+	} else {
+		for (int i = 0; i < 8; ++i) {
+			po->pup.borderChar[i] = defaultBorderChars[i];
+		}
+	}
 
-   check_highlight(dict, S"scrollbarhilite", &po->pup.scrollbarHilite);
-   check_highlight(dict, S"thumbhighlilite", &po->pup.thumbHilite);
+	check_highlight(dict, S"scrollbarhilite", &po->pup.scrollbarHilite);
+	check_highlight(dict, S"thumbhighlilite", &po->pup.thumbHilite);
 
-   di = bagFind(dict, tConst("zindex"));
-   if (di) {
-      po->pup.zIndex = bagGetNumber(dict, tConst("zindex"));
-   if (po->pup.zIndex < 1)
-      po->pup.zIndex = POPUPWIN_DEFAULT_ZINDEX;
-   if (po->pup.zIndex > 32000)
-      po->pup.zIndex = 32000;
-   }
+	di = bagFind(dict, tConst("zindex"));
+	if (di) {
+		po->pup.zIndex = bagGetNumber(dict, tConst("zindex"));
+	if (po->pup.zIndex < 1)
+		po->pup.zIndex = POPUPWIN_DEFAULT_ZINDEX;
+	if (po->pup.zIndex > 32000)
+		po->pup.zIndex = 32000;
+	}
 
-   di = bagFind(dict, tConst("mask"));
-   if (di) {
-      int ok = false;
-      if (di->c.tag == VAR_LIST && di->c.list != NULL) {
-         ListItem *li;
+	di = bagFind(dict, tConst("mask"));
+	if (di) {
+		int ok = false;
+		if (di->c.tag == VAR_LIST && di->c.list != NULL) {
+			ListItem *li;
 
-         ok = true;
-         FOR_ALL_LIST_ITEMS(di->c.list, li) {
-            if (li->c.tag != VAR_LIST || !li->c.list || li->c.list->len != 4) {
-               ok = false;
-               break;
-            } else
-               CHECK_LIST_MATERIALIZE(li->c.list);
-         }
-      }
-      if (ok) {
-         po->pup.mask = di->c.list;
-         ++po->pup.mask->refCount;
-         EE_CLEAR(po->pup.maskCells);
-      } else {
-         showErrFmtMsg(_(e_invalid_value_for_argument_str), "mask");
-         return FAIL;
-      }
-   }
+			ok = true;
+			FOR_ALL_LIST_ITEMS(di->c.list, li) {
+				if (li->c.tag != VAR_LIST || !li->c.list || li->c.list->len != 4) {
+					ok = false;
+					break;
+				} else
+					CHECK_LIST_MATERIALIZE(li->c.list);
+			}
+		}
+		if (ok) {
+			po->pup.mask = di->c.list;
+			++po->pup.mask->refCount;
+			EE_CLEAR(po->pup.maskCells);
+		} else {
+			showErrFmtMsg(_(e_invalid_value_for_argument_str), "mask");
+			return FAIL;
+		}
+	}
 
-   //Add timer to close the popup after some time.
-   nr = bagGetNumber(dict, tConst("time"));
-   if (nr > 0)
-      addTimeout(po, nr, true);
+	//Add timer to close the popup after some time.
+	nr = bagGetNumber(dict, tConst("time"));
+	if (nr > 0)
+		addTimeout(po, nr, true);
 
-   di = bagFind(dict, tConst("moved"));
-   if (di) {
-      set_moved_values(po);
-      handle_moved_argument(po, di, false);
-   }
+	di = bagFind(dict, tConst("moved"));
+	if (di) {
+		set_moved_values(po);
+		handle_moved_argument(po, di, false);
+	}
 
-   di = bagFind(dict, tConst("mousemoved"));
-   if (di) {
-      set_mousemoved_values(po);
-      handle_moved_argument(po, di, true);
-   }
+	di = bagFind(dict, tConst("mousemoved"));
+	if (di) {
+		set_mousemoved_values(po);
+		handle_moved_argument(po, di, true);
+	}
 
-   bl = bagGetBool(dict, tConst("cursorline"), false);
-   if (bl)
-      po->pup.flags |= POPF_CURSORLINE;
-   else
-      po->pup.flags &= ~POPF_CURSORLINE;
+	bl = bagGetBool(dict, tConst("cursorline"), false);
+	if (bl)
+		po->pup.flags |= POPF_CURSORLINE;
+	else
+		po->pup.flags &= ~POPF_CURSORLINE;
 
-   di = bagFind(dict, tConst("filter"));
-   if (di) {
-      Callback callback = get_callback(&di->c);
+	di = bagFind(dict, tConst("filter"));
+	if (di) {
+		Callback callback = get_callback(&di->c);
 
-      if (callback.name != NULL) {
-         evFreeCallback(&po->pup.filterCb);
-         set_callback(&po->pup.filterCb, &callback);
-         if (callback.needsFreeing)
-            eeglFree(callback.name);
-      }
-   }
-   bl = bagGetBool(dict, tConst("mapping"), false);
-   if (bl)
-      po->pup.flags |= POPF_MAPPING;
-   else
-      po->pup.flags &= ~POPF_MAPPING;
+		if (callback.name != NULL) {
+			evFreeCallback(&po->pup.filterCb);
+			set_callback(&po->pup.filterCb, &callback);
+			if (callback.needsFreeing)
+				eeglFree(callback.name);
+		}
+	}
+	bl = bagGetBool(dict, tConst("mapping"), false);
+	if (bl)
+		po->pup.flags |= POPF_MAPPING;
+	else
+		po->pup.flags &= ~POPF_MAPPING;
 
-   str = bagGetString(dict, tConst("filtermode"), false);
-   if (str) {
-      if (STRCMP(str, "a") == 0)
-         po->pup.filterMode = MODE_ALL;
-      else
-         po->pup.filterMode = mode_str2flags(str);
-   }
+	str = bagGetString(dict, tConst("filtermode"), false);
+	if (str) {
+		if (STRCMP(str, "a") == 0)
+			po->pup.filterMode = MODE_ALL;
+		else
+			po->pup.filterMode = mode_str2flags(str);
+	}
 
-   di = bagFind(dict, tConst("callback"));
-   if (!di)
-      return OK;
+	di = bagFind(dict, tConst("callback"));
+	if (!di)
+		return OK;
 
-   Callback   callback = get_callback(&di->c);
-   if (!callback.name)
-      return OK;
+	Callback   callback = get_callback(&di->c);
+	if (!callback.name)
+		return OK;
 
-   evFreeCallback(&po->pup.closeCb);
-   set_callback(&po->pup.closeCb, &callback);
-   if (callback.needsFreeing)
-      eeglFree(callback.name);
+	evFreeCallback(&po->pup.closeCb);
+	set_callback(&po->pup.closeCb, &callback);
+	if (callback.needsFreeing)
+		eeglFree(callback.name);
 
-   return OK;
+	return OK;
 }
 
 //Go through the params in "dict" and apply them to popup portal "po".
 //"create" is true when creating a new popup portal.
 private int
 applyParams(Portal* po, Bag* params, int create) {
-   applyMoveParams(po, params);
+	applyMoveParams(po, params);
 
-   if (create) {
-      optSetStringOptionDirectInPort(po, S"signcolumn", S"no", OPT_LOCAL, 0);
-   }
+	if (create) {
+		optSetStringOptionDirectInPort(po, S"signcolumn", S"no", OPT_LOCAL, 0);
+	}
 
-   if (apply_general_options(po, params) == FAIL)
-      return FAIL;
+	if (apply_general_options(po, params) == FAIL)
+		return FAIL;
 
-   Boole bl = bagGetBool(params, tConst("hidden"), false);
-   if (bl)
-      po->pup.flags |= POPF_HIDDEN | POPF_HIDDEN_FORCE;
+	Boole bl = bagGetBool(params, tConst("hidden"), false);
+	if (bl)
+		po->pup.flags |= POPF_HIDDEN | POPF_HIDDEN_FORCE;
 
-   //when "firstline" and "cursorline" are both set and the cursor would be
-   //above or below the displayed lines, move the cursor to "firstline".
-   if (po->pup.firstLine > 0 && (po->pup.flags & POPF_CURSORLINE)) {
-      if (po->pup.firstLine > po->book->mem.lineCount)
-          po->cursor.lnum = po->book->mem.lineCount;
-      ei (po->cursor.lnum < po->pup.firstLine
-         || po->cursor.lnum >= (int)(po->pup.firstLine + po->height))
-          po->cursor.lnum = po->pup.firstLine;
-      po->topLine = po->pup.firstLine;
-      po->cacheState &= ~VALID_BOTLINE;
-   }
+	//when "firstline" and "cursorline" are both set and the cursor would be
+	//above or below the displayed lines, move the cursor to "firstline".
+	if (po->pup.firstLine > 0 && (po->pup.flags & POPF_CURSORLINE)) {
+		if (po->pup.firstLine > po->book->mem.lineCount)
+			 po->cursor.lnum = po->book->mem.lineCount;
+		ei (po->cursor.lnum < po->pup.firstLine
+			|| po->cursor.lnum >= (int)(po->pup.firstLine + po->height))
+			 po->cursor.lnum = po->pup.firstLine;
+		po->topLine = po->pup.firstLine;
+		po->cacheState &= ~VALID_BOTLINE;
+	}
 
-   needRefreshPopupMaskG = true;
-   highlightCurrentLine(po);
+	needRefreshPopupMaskG = true;
+	highlightCurrentLine(po);
 
-   return OK;
+	return OK;
 }
 
 //Add lines to the popup from a list of strings.
 private void
 add_popup_strings(Book* book, List* l) {
-   ListItem  *li;
-   LineNr    lnum = 0;
-   FOR_ALL_LIST_ITEMS(l, li) {
-      if (li->c.tag == VAR_STRING) {
-         CS p = li->c.string;
-         memAppendBook(book, lnum++, p == NULL ? S"" : p, (ColNr)0, true);
-      }
-   }
+	ListItem  *li;
+	LineNr    lnum = 0;
+	FOR_ALL_LIST_ITEMS(l, li) {
+		if (li->c.tag == VAR_STRING) {
+			CS p = li->c.string;
+			memAppendBook(book, lnum++, p == NULL ? S"" : p, (ColNr)0, true);
+		}
+	}
 }
 
 //Add lines to the popup from a list of dictionaries.
 private void
 add_popup_dicts(Book* book, List *l) {
-   ListItem* li;
-   ListItem* pli;
-   LineNr    lnum = 0;
-   CS p;
-   Bag* dict;
+	ListItem* li;
+	ListItem* pli;
+	LineNr    lnum = 0;
+	CS p;
+	Bag* dict;
 
-   //first add the text lines
-   FOR_ALL_LIST_ITEMS(l, li) {
-      if (li->c.tag != VAR_BAG) {
-         showErrFmtMsg(_(e_argument_1_list_item_nr_dictionary_required), lnum + 1);
-         return;
-      }
-      dict = li->c.bag;
-      p = dict == NULL ? NULL : bagGetString(dict, tConst("text"), false);
-      memAppendBook(book, lnum++, p == NULL ? (CS)"" : p, (ColNr)0, true);
-   }
+	//first add the text lines
+	FOR_ALL_LIST_ITEMS(l, li) {
+		if (li->c.tag != VAR_BAG) {
+			showErrFmtMsg(_(e_argument_1_list_item_nr_dictionary_required), lnum + 1);
+			return;
+		}
+		dict = li->c.bag;
+		p = dict == NULL ? NULL : bagGetString(dict, tConst("text"), false);
+		memAppendBook(book, lnum++, p == NULL ? (CS)"" : p, (ColNr)0, true);
+	}
 
-   //add the text properties
-   lnum = 1;
-   for (li = l->first; li != NULL; li = li->next, ++lnum) {
-      dict = li->c.bag;
-      DictItem* di = bagFind(dict, tConst("props"));
-      if (!di) {
-         continue;
-      }
-      if (di->c.tag != VAR_LIST) {
-         emsg(_(e_list_required));
-         return;
-      }
-      List* plist = di->c.list;
-      if (plist) {
-         FOR_ALL_LIST_ITEMS(plist, pli) {
-            if (pli->c.tag != VAR_BAG) {
-               emsg(_(e_dictionary_required));
-               return;
-            }
-            dict = pli->c.bag;
-            if (dict) {
-               int col = bagGetNumber(dict, tConst("col"));
-               prop_add_common(lnum, col, dict, book, NULL);
-            }
-         }
-      }
-   }
+	//add the text properties
+	lnum = 1;
+	for (li = l->first; li != NULL; li = li->next, ++lnum) {
+		dict = li->c.bag;
+		DictItem* di = bagFind(dict, tConst("props"));
+		if (!di) {
+			continue;
+		}
+		if (di->c.tag != VAR_LIST) {
+			emsg(_(e_list_required));
+			return;
+		}
+		List* plist = di->c.list;
+		if (plist) {
+			FOR_ALL_LIST_ITEMS(plist, pli) {
+				if (pli->c.tag != VAR_BAG) {
+					emsg(_(e_dictionary_required));
+					return;
+				}
+				dict = pli->c.bag;
+				if (dict) {
+					int col = bagGetNumber(dict, tConst("col"));
+					prop_add_common(lnum, col, dict, book, NULL);
+				}
+			}
+		}
+	}
 }
 
 //Get the padding plus border at the top, adjusted to 1 if there is a title.
 pub int
 popup_top_extra(Portal* po) {
-   int   extra = po->pup.border[0] + po->pup.padding[0];
+	int   extra = po->pup.border[0] + po->pup.padding[0];
 
-   if (extra == 0 && po->pup.title != NULL && *po->pup.title != ZERO)
-      return 1;
-   return extra;
+	if (extra == 0 && po->pup.title != NULL && *po->pup.title != ZERO)
+		return 1;
+	return extra;
 }
 
 //Get the padding plus border at the left.
 pub int
 popup_left_extra(Portal* po) {
-   return po->pup.border[3] + po->pup.padding[3];
+	return po->pup.border[3] + po->pup.padding[3];
 }
 
 //Return the height of popup portal "po", including border and padding.
 pub int
 popup_height(Portal* po) {
-   return po->height + popup_top_extra(po) + po->pup.padding[2] + po->pup.border[2];
+	return po->height + popup_top_extra(po) + po->pup.padding[2] + po->pup.border[2];
 }
 
 //Return the width of popup portal "po", including border, padding and scrollbar.
 pub int
 popup_width(Portal* po) {
-   //leftCol is how many columns of the core are left of the screen
-   //pup.rightOff is how many columns of the core are right of the screen
-   return po->width + po->leftCol + popup_extra_width(po) + po->pup.rightOff;
+	//leftCol is how many columns of the core are left of the screen
+	//pup.rightOff is how many columns of the core are right of the screen
+	return po->width + po->leftCol + popup_extra_width(po) + po->pup.rightOff;
 }
 
 //Return the extra width of popup portal "po": border, padding and scrollbar.
 pub int
 popup_extra_width(Portal* po) {
-   return po->pup.padding[3] + po->pup.border[3]
-       + po->pup.padding[1] + po->pup.border[1]
-       + po->pup.hasScrollbar;
+	return po->pup.padding[3] + po->pup.border[3]
+		 + po->pup.padding[1] + po->pup.border[1]
+		 + po->pup.hasScrollbar;
 }
 
 //Adjust the position and size of the popup to fit on the screen.
 private void
 adjustPosition(Portal* po) {
-   LineNr lnum;
-   int wrapped = 0;
-   int maxwidth;
-   int maxwidth_no_scrollbar;
-   int width_with_scrollbar = 0;
-   int used_maxwidth = false;
-   int margin_width = 0;
-   int maxspace;
-   int center_vert = false;
-   int center_hor = false;
-   int allow_adjust_left = !po->pup.fixed;
-   int top_extra = popup_top_extra(po);
-   int right_extra = po->pup.border[1] + po->pup.padding[1];
-   int bot_extra = po->pup.border[2] + po->pup.padding[2];
-   int left_extra = po->pup.border[3] + po->pup.padding[3];
-   int extra_height = top_extra + bot_extra;
-   int extra_width = left_extra + right_extra;
-   int w_height_before_limit;
-   int org_winrow = po->windowRow;
-   int org_wincol = po->windowCol;
-   int org_width = po->width;
-   int org_height = po->height;
-   int org_leftcol = po->leftCol;
-   int org_leftoff = po->pup.leftOff;
-   int minwidth, minheight;
-   int maxheight = visibleRowsG;
-   int wantline = po->pup.wantLine;  //adjusted for textprop
-   int wantcol = po->pup.wantCol;    //adjusted for textprop
-   int use_wantcol = wantcol != 0;
-   int adjust_height_for_top_aligned = false;
+	LineNr lnum;
+	int wrapped = 0;
+	int maxwidth;
+	int maxwidth_no_scrollbar;
+	int width_with_scrollbar = 0;
+	int used_maxwidth = false;
+	int margin_width = 0;
+	int maxspace;
+	int center_vert = false;
+	int center_hor = false;
+	int allow_adjust_left = !po->pup.fixed;
+	int top_extra = popup_top_extra(po);
+	int right_extra = po->pup.border[1] + po->pup.padding[1];
+	int bot_extra = po->pup.border[2] + po->pup.padding[2];
+	int left_extra = po->pup.border[3] + po->pup.padding[3];
+	int extra_height = top_extra + bot_extra;
+	int extra_width = left_extra + right_extra;
+	int w_height_before_limit;
+	int org_winrow = po->windowRow;
+	int org_wincol = po->windowCol;
+	int org_width = po->width;
+	int org_height = po->height;
+	int org_leftcol = po->leftCol;
+	int org_leftoff = po->pup.leftOff;
+	int minwidth, minheight;
+	int maxheight = visibleRowsG;
+	int wantline = po->pup.wantLine;  //adjusted for textprop
+	int wantcol = po->pup.wantCol;    //adjusted for textprop
+	int use_wantcol = wantcol != 0;
+	int adjust_height_for_top_aligned = false;
 
-   po->windowRow = 0;
-   po->windowCol = 0;
-   po->leftCol = 0;
-   po->pup.leftOff = 0;
-   po->pup.rightOff = 0;
+	po->windowRow = 0;
+	po->windowCol = 0;
+	po->leftCol = 0;
+	po->pup.leftOff = 0;
+	po->pup.rightOff = 0;
 
-   //May need to update the "cursorline" highlighting, which may also change "topline"
-   if (po->pup.lastCurline != po->cursor.lnum)
-      highlightCurrentLine(po);
+	//May need to update the "cursorline" highlighting, which may also change "topline"
+	if (po->pup.lastCurline != po->cursor.lnum)
+		highlightCurrentLine(po);
 
-   if (po->pup.propType > 0 && portalIsValid(po->pup.propPort)) {
-      Portal* propP = po->pup.propPort;
-      TextProp  prop;
-      LineNr prop_lnum;
-      Pos pos;
-      int screen_row;
-      int screen_scol;
-      int screen_ccol;
-      int screen_ecol;
+	if (po->pup.propType > 0 && portalIsValid(po->pup.propPort)) {
+		Portal* propP = po->pup.propPort;
+		TextProp  prop;
+		LineNr prop_lnum;
+		Pos pos;
+		int screen_row;
+		int screen_scol;
+		int screen_ccol;
+		int screen_ecol;
 
-      //Popup portal is positioned relative to a text property.
-      if (find_visible_prop(propP, po->pup.propType, po->pup.propId, &prop, &prop_lnum) == FAIL) {
-         //Text property is no longer visible, hide the popup.
-         //Unhiding the popup is done in check_popup_unhidden().
-         if ((po->pup.flags & POPF_HIDDEN) == 0) {
-            po->pup.flags |= POPF_HIDDEN;
-            if (portalIsValid(po->pup.propPort))
-                redrawPortLater(po->pup.propPort, UPD_SOME_VALID);
-         }
-         return;
-      }
+		//Popup portal is positioned relative to a text property.
+		if (find_visible_prop(propP, po->pup.propType, po->pup.propId, &prop, &prop_lnum) == FAIL) {
+			//Text property is no longer visible, hide the popup.
+			//Unhiding the popup is done in check_popup_unhidden().
+			if ((po->pup.flags & POPF_HIDDEN) == 0) {
+				po->pup.flags |= POPF_HIDDEN;
+				if (portalIsValid(po->pup.propPort))
+					 redrawPortLater(po->pup.propPort, UPD_SOME_VALID);
+			}
+			return;
+		}
 
-      //Compute the desired position from the position of the text property. Use "wantline" and
-      //"wantcol" as offsets.
-      pos.lnum = prop_lnum;
-      pos.col = prop.col;
-      if (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT)
-         pos.col += prop.len - 1;
-      textpos2screenpos(propP, &pos, &screen_row, &screen_scol, &screen_ccol, &screen_ecol);
+		//Compute the desired position from the position of the text property. Use "wantline" and
+		//"wantcol" as offsets.
+		pos.lnum = prop_lnum;
+		pos.col = prop.col;
+		if (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT)
+			pos.col += prop.len - 1;
+		textpos2screenpos(propP, &pos, &screen_row, &screen_scol, &screen_ccol, &screen_ecol);
 
-      if (screen_scol == 0) {
-          //position is off screen, make the width zero to hide it.
-          po->width = 0;
-          return;
-      }
-      if (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_TOPRIGHT)
-         //below the text
-         wantline = screen_row + wantline + 1;
-      else
-         //above the text
-         wantline = screen_row + wantline - 1;
-      center_vert = false;
-      if (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT)
-         //right of the text
-         wantcol = screen_ecol + wantcol;
-      else
-         //left of the text
-         wantcol = screen_scol + wantcol - 2;
-      use_wantcol = true;
-   } else {
-      //If no line was specified default to vertical centering.
-      if (wantline == 0)
-         center_vert = true;
-      ei (wantline < 0)
-         //If "wantline" is negative it actually means zero.
-         wantline = 0;
-      if (wantcol < 0)
-         //If "wantcol" is negative it actually means zero.
-         wantcol = 0;
-   }
+		if (screen_scol == 0) {
+			 //position is off screen, make the width zero to hide it.
+			 po->width = 0;
+			 return;
+		}
+		if (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_TOPRIGHT)
+			//below the text
+			wantline = screen_row + wantline + 1;
+		else
+			//above the text
+			wantline = screen_row + wantline - 1;
+		center_vert = false;
+		if (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT)
+			//right of the text
+			wantcol = screen_ecol + wantcol;
+		else
+			//left of the text
+			wantcol = screen_scol + wantcol - 2;
+		use_wantcol = true;
+	} else {
+		//If no line was specified default to vertical centering.
+		if (wantline == 0)
+			center_vert = true;
+		ei (wantline < 0)
+			//If "wantline" is negative it actually means zero.
+			wantline = 0;
+		if (wantcol < 0)
+			//If "wantcol" is negative it actually means zero.
+			wantcol = 0;
+	}
 
-   if (po->pup.pos == POPPOS_CENTER) {
-      //center after computing the size
-      center_vert = true;
-      center_hor = true;
-   } else {
-      if (wantline > 0 && (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_TOPRIGHT)) {
-         po->windowRow = wantline - 1;
-         if (po->windowRow >= visibleRowsG)
-            po->windowRow = visibleRowsG - 1;
-      }
-      if (po->pup.pos == POPPOS_BOTTOM) {
-          //Assume that each book line takes one screen line, and one line for the top border.
-          //First make sure commlineRowG is valid, calling drawUpdateScreen() will set it only later.
-          compute_cmdrow();
-          po->windowRow = MAX(commlineRowG - po->book->mem.lineCount - 1, 0);
-      }
+	if (po->pup.pos == POPPOS_CENTER) {
+		//center after computing the size
+		center_vert = true;
+		center_hor = true;
+	} else {
+		if (wantline > 0 && (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_TOPRIGHT)) {
+			po->windowRow = wantline - 1;
+			if (po->windowRow >= visibleRowsG)
+				po->windowRow = visibleRowsG - 1;
+		}
+		if (po->pup.pos == POPPOS_BOTTOM) {
+			 //Assume that each book line takes one screen line, and one line for the top border.
+			 //First make sure commlineRowG is valid, calling drawUpdateScreen() will set it only later.
+			 compute_cmdrow();
+			 po->windowRow = MAX(commlineRowG - po->book->mem.lineCount - 1, 0);
+		}
 
-      if (!use_wantcol)
-         center_hor = true;
-      ei (wantcol > 0 && (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT)) {
-         po->windowCol = wantcol - 1;
-         //Need to see at least one character after the decoration.
-         if (po->windowCol > firstPor->windowCol + (int)topframeG->width - left_extra - 1)
-            po->windowCol = firstPor->windowCol + topframeG->width - left_extra - 1;
-      }
-   }
+		if (!use_wantcol)
+			center_hor = true;
+		ei (wantcol > 0 && (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT)) {
+			po->windowCol = wantcol - 1;
+			//Need to see at least one character after the decoration.
+			if (po->windowCol > firstPor->windowCol + (int)topframeG->width - left_extra - 1)
+				po->windowCol = firstPor->windowCol + topframeG->width - left_extra - 1;
+		}
+	}
 
-   //When centering or right aligned, use maximum width. When left aligned use the space
-   //available, but shift to the left when we hit the right of the screen.
-   maxspace = firstPor->windowCol + topframeG->width - po->windowCol - left_extra;
-   maxwidth = maxspace;
-   if (po->pup.maxWidth > 0 && maxwidth > po->pup.maxWidth) {
-      allow_adjust_left = false;
-      maxwidth = po->pup.maxWidth;
-   }
+	//When centering or right aligned, use maximum width. When left aligned use the space
+	//available, but shift to the left when we hit the right of the screen.
+	maxspace = firstPor->windowCol + topframeG->width - po->windowCol - left_extra;
+	maxwidth = maxspace;
+	if (po->pup.maxWidth > 0 && maxwidth > po->pup.maxWidth) {
+		allow_adjust_left = false;
+		maxwidth = po->pup.maxWidth;
+	}
 
-   margin_width = COL_PROLOGUE_WIDTH + 1; //for the line number column
-   if (po->o.signColumn)
-      margin_width++;
-   if (margin_width >= maxwidth)
-      margin_width = maxwidth - 1;
+	margin_width = COL_PROLOGUE_WIDTH + 1; //for the line number column
+	if (po->o.signColumn)
+		margin_width++;
+	if (margin_width >= maxwidth)
+		margin_width = maxwidth - 1;
 
-   minwidth = po->pup.minWidth;
-   minheight = po->pup.minHeight;
-   //A terminal popup initially does not have content, use a default minimal width of 20
-   //characters and height of 5 lines.
-   if (po->book->term != NULL) {
-      if (minwidth == 0)
-          minwidth = 20;
-      if (minheight == 0)
-          minheight = 5;
-   }
+	minwidth = po->pup.minWidth;
+	minheight = po->pup.minHeight;
+	//A terminal popup initially does not have content, use a default minimal width of 20
+	//characters and height of 5 lines.
+	if (po->book->term != NULL) {
+		if (minwidth == 0)
+			 minwidth = 20;
+		if (minheight == 0)
+			 minheight = 5;
+	}
 
-   if (po->pup.maxHeight > 0)
-      maxheight = po->pup.maxHeight;
-   ei (po->pup.pos == POPPOS_BOTTOM)
-      maxheight = commlineRowG - 1;
+	if (po->pup.maxHeight > 0)
+		maxheight = po->pup.maxHeight;
+	ei (po->pup.pos == POPPOS_BOTTOM)
+		maxheight = commlineRowG - 1;
 
-   //start at the desired first line
-   if (po->pup.firstLine > 0)
-      po->topLine = po->pup.firstLine;
-   if (po->topLine < 1)
-      po->topLine = 1;
-   ei (po->topLine > po->book->mem.lineCount)
-      po->topLine = po->book->mem.lineCount;
+	//start at the desired first line
+	if (po->pup.firstLine > 0)
+		po->topLine = po->pup.firstLine;
+	if (po->topLine < 1)
+		po->topLine = 1;
+	ei (po->topLine > po->book->mem.lineCount)
+		po->topLine = po->book->mem.lineCount;
 
-   //Compute width based on longest text line and the 'wrap' option. Use a minimum width of one,
-   //so that something shows when there is no text. When "firstline" is -1 then start with the
-   //last book line and go backwards. TODO: more accurate wrapping
-   po->width = 1;
-   if (po->pup.firstLine < 0)
-      lnum = po->book->mem.lineCount;
-   else
-      lnum = po->topLine;
-   while (lnum >= 1 && lnum <= po->book->mem.lineCount) {
-      int len;
-      int width = po->width;
+	//Compute width based on longest text line and the 'wrap' option. Use a minimum width of one,
+	//so that something shows when there is no text. When "firstline" is -1 then start with the
+	//last book line and go backwards. TODO: more accurate wrapping
+	po->width = 1;
+	if (po->pup.firstLine < 0)
+		lnum = po->book->mem.lineCount;
+	else
+		lnum = po->topLine;
+	while (lnum >= 1 && lnum <= po->book->mem.lineCount) {
+		int len;
+		int width = po->width;
 
-      //Count Tabs for what they are worth and compute the length based on the maximum width
-      //(matters when 'showbreak' is set). "margin_width" is added to "len" where it matters.
-      if ((int)po->width < maxwidth)
-          po->width = maxwidth;
-      len = linetabsize(po, lnum);
-      po->width = width;
+		//Count Tabs for what they are worth and compute the length based on the maximum width
+		//(matters when 'showbreak' is set). "margin_width" is added to "len" where it matters.
+		if ((int)po->width < maxwidth)
+			 po->width = maxwidth;
+		len = linetabsize(po, lnum);
+		po->width = width;
 
-      if (len + margin_width > maxwidth
-         && allow_adjust_left
-         && (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT)
-      ){
-         //adjust leftwise to fit text on screen
-         int shift_by = len + margin_width - maxwidth;
+		if (len + margin_width > maxwidth
+			&& allow_adjust_left
+			&& (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT)
+		){
+			//adjust leftwise to fit text on screen
+			int shift_by = len + margin_width - maxwidth;
 
-         if (shift_by > po->windowCol) {
-            int truncate_shift = shift_by - po->windowCol;
+			if (shift_by > po->windowCol) {
+				int truncate_shift = shift_by - po->windowCol;
 
-            shift_by -= truncate_shift;
-         }
+				shift_by -= truncate_shift;
+			}
 
-         po->windowCol -= shift_by;
-         maxwidth += shift_by;
-         po->width = maxwidth;
-      }
-      if (po->o.wrap) {
-         while (len + margin_width > maxwidth) {
-            ++wrapped;
-            len -= maxwidth - margin_width;
-            po->width = maxwidth;
-            used_maxwidth = true;
-         }
-      }
-      if ((int)po->width < len + margin_width) {
-         po->width = len + margin_width;
-         if (po->pup.maxWidth > 0 && po->width > (Unt)po->pup.maxWidth)
-            po->width = po->pup.maxWidth;
-      }
+			po->windowCol -= shift_by;
+			maxwidth += shift_by;
+			po->width = maxwidth;
+		}
+		if (po->o.wrap) {
+			while (len + margin_width > maxwidth) {
+				++wrapped;
+				len -= maxwidth - margin_width;
+				po->width = maxwidth;
+				used_maxwidth = true;
+			}
+		}
+		if ((int)po->width < len + margin_width) {
+			po->width = len + margin_width;
+			if (po->pup.maxWidth > 0 && po->width > (Unt)po->pup.maxWidth)
+				po->width = po->pup.maxWidth;
+		}
 
-      if (po->pup.firstLine < 0)
-         --lnum;
-      else
-         ++lnum;
+		if (po->pup.firstLine < 0)
+			--lnum;
+		else
+			++lnum;
 
-      //do not use the width of lines we're not going to show
-      if (maxheight > 0
-            && ((po->pup.firstLine >= 0 ? lnum - po->topLine : po->book->mem.lineCount - lnum)
-                  + wrapped) >= maxheight
-      ) {
-          break;
-      }
-   }
+		//do not use the width of lines we're not going to show
+		if (maxheight > 0
+				&& ((po->pup.firstLine >= 0 ? lnum - po->topLine : po->book->mem.lineCount - lnum)
+						+ wrapped) >= maxheight
+		) {
+			 break;
+		}
+	}
 
-   if (po->pup.firstLine < 0)
-      po->topLine = lnum + 1;
+	if (po->pup.firstLine < 0)
+		po->topLine = lnum + 1;
 
-   po->pup.hasScrollbar = po->pup.wantScrollbar
-      && (po->topLine > 1 || lnum <= po->book->mem.lineCount);
-   if (po->book->term != NULL && !term_is_finished(po->book))
-   //Terminal portal with running job never has a scrollbar, adjusts to window height.
-   po->pup.hasScrollbar = false;
-   maxwidth_no_scrollbar = maxwidth;
-   if (po->pup.hasScrollbar) {
-      ++right_extra;
-      ++extra_width;
-      //make space for the scrollbar if needed, when lines wrap and when applying minwidth
-      if (maxwidth + right_extra >= maxspace
-         && (used_maxwidth || (minwidth > 0 && (int)po->width < minwidth))
-      ) {
-          maxwidth -= po->pup.padding[1] + 1;
-      }
-   }
+	po->pup.hasScrollbar = po->pup.wantScrollbar
+		&& (po->topLine > 1 || lnum <= po->book->mem.lineCount);
+	if (po->book->term != NULL && !term_is_finished(po->book))
+	//Terminal portal with running job never has a scrollbar, adjusts to window height.
+	po->pup.hasScrollbar = false;
+	maxwidth_no_scrollbar = maxwidth;
+	if (po->pup.hasScrollbar) {
+		++right_extra;
+		++extra_width;
+		//make space for the scrollbar if needed, when lines wrap and when applying minwidth
+		if (maxwidth + right_extra >= maxspace
+			&& (used_maxwidth || (minwidth > 0 && (int)po->width < minwidth))
+		) {
+			 maxwidth -= po->pup.padding[1] + 1;
+		}
+	}
 
-   if (po->pup.title != NULL && *po->pup.title != ZERO) {
-   int title_len = eeglStrSize(po->pup.title) + 2 - extra_width;
+	if (po->pup.title != NULL && *po->pup.title != ZERO) {
+	int title_len = eeglStrSize(po->pup.title) + 2 - extra_width;
 
-   if (minwidth < title_len)
-      minwidth = title_len;
-   }
+	if (minwidth < title_len)
+		minwidth = title_len;
+	}
 
-   if (minwidth > 0 && (int)po->width < minwidth)
-      po->width = minwidth;
-   if (po->width > (Unt)maxwidth) {
-      if (po->width > (Unt)maxspace && !po->o.wrap)
-         //some columns cut off on the right
-         po->pup.rightOff = po->width - maxspace;
+	if (minwidth > 0 && (int)po->width < minwidth)
+		po->width = minwidth;
+	if (po->width > (Unt)maxwidth) {
+		if (po->width > (Unt)maxspace && !po->o.wrap)
+			//some columns cut off on the right
+			po->pup.rightOff = po->width - maxspace;
 
-      //If the portal doesn't fit because 'minwidth' is set then the
-      //scrollbar is at the far right of the screen, use the size without the scrollbar.
-      if (po->pup.hasScrollbar && po->pup.minWidth > 0) {
-          int off = po->width - maxwidth;
+		//If the portal doesn't fit because 'minwidth' is set then the
+		//scrollbar is at the far right of the screen, use the size without the scrollbar.
+		if (po->pup.hasScrollbar && po->pup.minWidth > 0) {
+			 int off = po->width - maxwidth;
 
-          if (off > right_extra)
-         extra_width -= right_extra;
-          else
-         extra_width -= off;
-          po->width = maxwidth_no_scrollbar;
-      } else {
-          po->width = maxwidth;
+			 if (off > right_extra)
+			extra_width -= right_extra;
+			 else
+			extra_width -= off;
+			 po->width = maxwidth_no_scrollbar;
+		} else {
+			 po->width = maxwidth;
 
-          //when adding a scrollbar below need to adjust the width
-          width_with_scrollbar = maxwidth_no_scrollbar - right_extra;
-      }
-   }
-   if (center_hor) {
-      po->windowCol = (firstPor->windowCol + topframeG->width - po->width - extra_width) / 2;
-      if (po->windowCol < 0)
-         po->windowCol = 0;
-   } ei (po->pup.pos == POPPOS_BOTRIGHT || po->pup.pos == POPPOS_TOPRIGHT) {
-      int leftOff = wantcol - (po->width + extra_width);
+			 //when adding a scrollbar below need to adjust the width
+			 width_with_scrollbar = maxwidth_no_scrollbar - right_extra;
+		}
+	}
+	if (center_hor) {
+		po->windowCol = (firstPor->windowCol + topframeG->width - po->width - extra_width) / 2;
+		if (po->windowCol < 0)
+			po->windowCol = 0;
+	} ei (po->pup.pos == POPPOS_BOTRIGHT || po->pup.pos == POPPOS_TOPRIGHT) {
+		int leftOff = wantcol - (po->width + extra_width);
 
-      //Right aligned: move to the right if needed. No truncation: that would change the height.
-      if (leftOff >= 0)
-          po->windowCol = leftOff;
-      ei (po->pup.fixed) {
-         //"col" specifies the right edge, but popup doesn't fit, skip some
-         //columns when displaying the portal, minus left border and padding.
-         if (-leftOff > left_extra)
-            po->leftCol = -leftOff - left_extra;
-         po->width -= po->leftCol;
-         po->pup.leftOff = -leftOff;
-         if (po->width == UNT)
-            po->width = 0;
-      }
-   }
+		//Right aligned: move to the right if needed. No truncation: that would change the height.
+		if (leftOff >= 0)
+			 po->windowCol = leftOff;
+		ei (po->pup.fixed) {
+			//"col" specifies the right edge, but popup doesn't fit, skip some
+			//columns when displaying the portal, minus left border and padding.
+			if (-leftOff > left_extra)
+				po->leftCol = -leftOff - left_extra;
+			po->width -= po->leftCol;
+			po->pup.leftOff = -leftOff;
+			if (po->width == UNT)
+				po->width = 0;
+		}
+	}
 
-   if (po->o.wrap
-         || (!po->pup.fixed && (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT))
-   ) {
-      int want_col = 0;
+	if (po->o.wrap
+			|| (!po->pup.fixed && (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT))
+	) {
+		int want_col = 0;
 
-      //try to show the right border and any scrollbar
-      want_col = left_extra + po->width + right_extra;
-      if (want_col > 0 && po->windowCol > 0
-             && po->windowCol + want_col >= (int)(firstPor->windowCol + topframeG->width)
-      ){
-         po->windowCol = firstPor->windowCol + topframeG->width - want_col;
-         if (po->windowCol < 0)
-            po->windowCol = 0;
-      }
-   }
+		//try to show the right border and any scrollbar
+		want_col = left_extra + po->width + right_extra;
+		if (want_col > 0 && po->windowCol > 0
+				 && po->windowCol + want_col >= (int)(firstPor->windowCol + topframeG->width)
+		){
+			po->windowCol = firstPor->windowCol + topframeG->width - want_col;
+			if (po->windowCol < 0)
+				po->windowCol = 0;
+		}
+	}
 
-   po->height = po->book->mem.lineCount - po->topLine
-                         + 1 + wrapped;
-   if (minheight > 0 && po->height < (Unt)minheight)
-      po->height = minheight;
-   if (maxheight > 0 && po->height > (Unt)maxheight)
-      po->height = maxheight;
-   w_height_before_limit = po->height;
-   if (po->height > visibleRowsG - po->windowRow)
-      po->height = visibleRowsG - po->windowRow;
+	po->height = po->book->mem.lineCount - po->topLine
+						       + 1 + wrapped;
+	if (minheight > 0 && po->height < (Unt)minheight)
+		po->height = minheight;
+	if (maxheight > 0 && po->height > (Unt)maxheight)
+		po->height = maxheight;
+	w_height_before_limit = po->height;
+	if (po->height > visibleRowsG - po->windowRow)
+		po->height = visibleRowsG - po->windowRow;
 
-   if (center_vert) {
-      po->windowRow = (visibleRowsG - po->height - extra_height) / 2;
-      if (po->windowRow < 0)
-          po->windowRow = 0;
-   } ei (po->pup.pos == POPPOS_BOTRIGHT || po->pup.pos == POPPOS_BOTLEFT) {
-      if ((po->height + extra_height) <= (Unt)wantline)
-          //bottom aligned: may move down
-          po->windowRow = wantline - (po->height + extra_height);
-      ei (wantline * 2 >= visibleRowsG || !(po->pup.flags & POPF_POSINVERT)) {
-          //Bottom aligned but does not fit, and less space on the other
-          //side or "posinvert" is off: reduce height.
-          po->windowRow = 0;
-          po->height = wantline - extra_height;
-      } else {
-          //Not enough space and more space on the other side: make top aligned.
-          po->windowRow = (wantline < 0 ? 0 : wantline) + 1;
-          adjust_height_for_top_aligned = true;
-      }
-   } ei (po->pup.pos == POPPOS_TOPRIGHT || po->pup.pos == POPPOS_TOPLEFT) {
-      if (po != popupDragPortG
-         && wantline + (po->height + extra_height) - 1 > visibleRowsG
-         && wantline * 2 > visibleRowsG
-         && (po->pup.flags & POPF_POSINVERT)
-      ){
-         //top aligned and not enough space below but there is space above:
-         //make bottom aligned and recompute the height
-         po->height = w_height_before_limit;
-         po->windowRow = wantline - 2 - po->height - extra_height;
-         if (po->windowRow < 0) {
-            po->height += po->windowRow;
-            po->windowRow = 0;
-         }
-      } else {
-         po->windowRow = wantline - 1;
-         adjust_height_for_top_aligned = true;
-      }
-   }
+	if (center_vert) {
+		po->windowRow = (visibleRowsG - po->height - extra_height) / 2;
+		if (po->windowRow < 0)
+			 po->windowRow = 0;
+	} ei (po->pup.pos == POPPOS_BOTRIGHT || po->pup.pos == POPPOS_BOTLEFT) {
+		if ((po->height + extra_height) <= (Unt)wantline)
+			 //bottom aligned: may move down
+			 po->windowRow = wantline - (po->height + extra_height);
+		ei (wantline * 2 >= visibleRowsG || !(po->pup.flags & POPF_POSINVERT)) {
+			 //Bottom aligned but does not fit, and less space on the other
+			 //side or "posinvert" is off: reduce height.
+			 po->windowRow = 0;
+			 po->height = wantline - extra_height;
+		} else {
+			 //Not enough space and more space on the other side: make top aligned.
+			 po->windowRow = (wantline < 0 ? 0 : wantline) + 1;
+			 adjust_height_for_top_aligned = true;
+		}
+	} ei (po->pup.pos == POPPOS_TOPRIGHT || po->pup.pos == POPPOS_TOPLEFT) {
+		if (po != popupDragPortG
+			&& wantline + (po->height + extra_height) - 1 > visibleRowsG
+			&& wantline * 2 > visibleRowsG
+			&& (po->pup.flags & POPF_POSINVERT)
+		){
+			//top aligned and not enough space below but there is space above:
+			//make bottom aligned and recompute the height
+			po->height = w_height_before_limit;
+			po->windowRow = wantline - 2 - po->height - extra_height;
+			if (po->windowRow < 0) {
+				po->height += po->windowRow;
+				po->windowRow = 0;
+			}
+		} else {
+			po->windowRow = wantline - 1;
+			adjust_height_for_top_aligned = true;
+		}
+	}
 
-   if (adjust_height_for_top_aligned && po->pup.wantScrollbar
-           && po->windowRow + po->height + extra_height > visibleRowsG
-   ){
-      //Bottom of the popup goes below the last line, reduce the height and add a scrollbar.
-      po->height = visibleRowsG - po->windowRow - extra_height;
-      if (po->book->term == NULL || term_is_finished(po->book)) {
-          po->pup.hasScrollbar = true;
-          if (width_with_scrollbar > 0)
-         po->width = width_with_scrollbar;
-      }
-   }
+	if (adjust_height_for_top_aligned && po->pup.wantScrollbar
+			  && po->windowRow + po->height + extra_height > visibleRowsG
+	){
+		//Bottom of the popup goes below the last line, reduce the height and add a scrollbar.
+		po->height = visibleRowsG - po->windowRow - extra_height;
+		if (po->book->term == NULL || term_is_finished(po->book)) {
+			 po->pup.hasScrollbar = true;
+			 if (width_with_scrollbar > 0)
+			po->width = width_with_scrollbar;
+		}
+	}
 
-   //make sure windowRow is valid
-   if (po->windowRow >= visibleRowsG)
-      po->windowRow = visibleRowsG - 1;
-   ei (po->windowRow < 0)
-      po->windowRow = 0;
+	//make sure windowRow is valid
+	if (po->windowRow >= visibleRowsG)
+		po->windowRow = visibleRowsG - 1;
+	ei (po->windowRow < 0)
+		po->windowRow = 0;
 
-   if (po->windowCol + po->width > firstPor->windowCol + topframeG->width)
-      po->windowCol = firstPor->windowCol + topframeG->width - po->width;
-   ei (po->windowCol < firstPor->windowCol)
-      po->windowCol = firstPor->windowCol;
-   if (po->windowCol < 0)
-      po->windowCol = 0;
+	if (po->windowCol + po->width > firstPor->windowCol + topframeG->width)
+		po->windowCol = firstPor->windowCol + topframeG->width - po->width;
+	ei (po->windowCol < firstPor->windowCol)
+		po->windowCol = firstPor->windowCol;
+	if (po->windowCol < 0)
+		po->windowCol = 0;
 
-   if ((int)po->height != org_height)
-      portComputeScroll(po);
+	if ((int)po->height != org_height)
+		portComputeScroll(po);
 
-   po->pup.lastChangedTick = CHANGEDTICK(po->book);
-   if (portalIsValid(po->pup.propPort)) {
-      po->pup.propChangedTick = CHANGEDTICK(po->pup.propPort->book);
-      po->pup.propTopline = po->pup.propPort->topLine;
-   }
+	po->pup.lastChangedTick = CHANGEDTICK(po->book);
+	if (portalIsValid(po->pup.propPort)) {
+		po->pup.propChangedTick = CHANGEDTICK(po->pup.propPort->book);
+		po->pup.propTopline = po->pup.propPort->topLine;
+	}
 
-   //Need to update popupMaskG if the position or size changed.
-   //And redraw portals and statuslines that were behind the popup.
-   if (org_winrow != po->windowRow
-       || org_wincol != po->windowCol
-       || org_leftcol != po->leftCol
-       || org_leftoff != po->pup.leftOff
-       || org_width != (int)po->width
-       || org_height != (int)po->height
-   ){
-      redrawPortLater(po, UPD_NOT_VALID);
-      if (po->pup.flags & POPF_ON_CMDLINE)
-         mustClearCommlineG = true;
-      needRefreshPopupMaskG = true;
-   }
+	//Need to update popupMaskG if the position or size changed.
+	//And redraw portals and statuslines that were behind the popup.
+	if (org_winrow != po->windowRow
+		 || org_wincol != po->windowCol
+		 || org_leftcol != po->leftCol
+		 || org_leftoff != po->pup.leftOff
+		 || org_width != (int)po->width
+		 || org_height != (int)po->height
+	){
+		redrawPortLater(po, UPD_NOT_VALID);
+		if (po->pup.flags & POPF_ON_CMDLINE)
+			mustClearCommlineG = true;
+		needRefreshPopupMaskG = true;
+	}
 }
 
 //Return true if "type" is POPUP_NOTIFICATION or POPUP_MESSAGE_WIN.
 private int
 isNotification(PopupKind kind) {
-   return kind == POPUP_NOTIFICATION || kind == POPUP_MESSAGE_WIN;
+	return kind == POPUP_NOTIFICATION || kind == POPUP_MESSAGE_WIN;
 }
 
 //Make "book" empty and set the contents to "text". Used by createPopup() and popup_settext().
 private inline void
 setBookText(Book* book, Var text) {
-   //Clear the book, then replace the lines.
-   for (int lnum = book->mem.lineCount; lnum > 0; --lnum)
-      ml_deleteBufLine(book, lnum);
+	//Clear the book, then replace the lines.
+	for (int lnum = book->mem.lineCount; lnum > 0; --lnum)
+		ml_deleteBufLine(book, lnum);
 
-   //Add text to the book.
-   if (text.tag == VAR_STRING) {
-      CS s = text.string ? text.string : S"";
-      Unt len = STRLEN(s) + 1;
+	//Add text to the book.
+	if (text.tag == VAR_STRING) {
+		CS s = text.string ? text.string : S"";
+		Unt len = STRLEN(s) + 1;
 
-      //just a string
-      memAppendBook(book, 0, s, len, false);
-   } else {
-      List *l = text.list;
+		//just a string
+		memAppendBook(book, 0, s, len, false);
+	} else {
+		List *l = text.list;
 
-      if (l != NULL && l->len > 0) {
-         if (l->first == &range_list_item)
-            emsg(_(e_using_number_as_string));
-         ei (l->first->c.tag == VAR_STRING)
-            //list of strings
-            add_popup_strings(book, l);
-         else
-            //list of dictionaries
-            add_popup_dicts(book, l);
-      }
-   }
+		if (l != NULL && l->len > 0) {
+			if (l->first == &range_list_item)
+				emsg(_(e_using_number_as_string));
+			ei (l->first->c.tag == VAR_STRING)
+				//list of strings
+				add_popup_strings(book, l);
+			else
+				//list of dictionaries
+				add_popup_dicts(book, l);
+		}
+	}
 
-   //delete the line that was in the empty book
-   ml_deleteBufLine(book, book->mem.lineCount);
+	//delete the line that was in the empty book
+	ml_deleteBufLine(book, book->mem.lineCount);
 }
 
 //Parse the 'previewpopup' or 'completepopup' option and apply the values to
 //portal "po" if it is not NULL. Return FAIL if the parsing fails.
 private int
 parse_popup_option(Portal* po, Boole is_preview) {
-   if (is_preview)
-      return FAIL;
-   if (!p_cpp)
-      return OK;
+	if (is_preview)
+		return FAIL;
+	if (!p_cpp)
+		return OK;
 
-   CS p = p_cpp;
+	CS p = p_cpp;
 
-   if (po)
-      po->pup.flags &= ~POPF_INFO_MENU;
+	if (po)
+		po->pup.flags &= ~POPF_INFO_MENU;
 
-   for ( ; *p != ZERO; p += (*p == ',' ? 1 : 0)) {
-      CS s = p;
-      int x;
+	for ( ; *p != ZERO; p += (*p == ',' ? 1 : 0)) {
+		CS s = p;
+		int x;
 
-      CS e = firstOccurrence(p, ':');
-      if (!e || e[1] == ZERO)
-         return FAIL;
+		CS e = firstOccurrence(p, ':');
+		if (!e || e[1] == ZERO)
+			return FAIL;
 
-      p = firstOccurrence(e, ',');
-      if (!p)
-         p = e + STRLEN(e);
-      CS dig = e + 1;
-      x = parseLong(&dig);
+		p = firstOccurrence(e, ',');
+		if (!p)
+			p = e + STRLEN(e);
+		CS dig = e + 1;
+		x = parseLong(&dig);
 
-      //Note: Keep this in sync with p_popup_option_values.
-      if (STRNCMP(s, "height:", 7) == 0) {
-         if (dig != p)
-            return FAIL;
-         if (po) {
-            if (is_preview)
-               po->pup.minHeight = x;
-            po->pup.maxHeight = x;
-         }
-      } ei (STRNCMP(s, "width:", 6) == 0) {
-         if (dig != p)
-            return FAIL;
-         if (po) {
-            if (is_preview)
-                po->pup.minWidth = x;
-            po->pup.maxWidth = x;
-            po->pup.maxWidthOpt = x;
-         }
-      } ei (STRNCMP(s, "highlight:", 10) == 0) {
-         if (po) {
-            int c = *p;
+		//Note: Keep this in sync with p_popup_option_values.
+		if (STRNCMP(s, "height:", 7) == 0) {
+			if (dig != p)
+				return FAIL;
+			if (po) {
+				if (is_preview)
+					po->pup.minHeight = x;
+				po->pup.maxHeight = x;
+			}
+		} ei (STRNCMP(s, "width:", 6) == 0) {
+			if (dig != p)
+				return FAIL;
+			if (po) {
+				if (is_preview)
+					 po->pup.minWidth = x;
+				po->pup.maxWidth = x;
+				po->pup.maxWidthOpt = x;
+			}
+		} ei (STRNCMP(s, "highlight:", 10) == 0) {
+			if (po) {
+				int c = *p;
 
-            *p = ZERO;
-            optSetStringOptionDirectInPort(po, S"portcolor", s + 10, OPT_LOCAL, 0);
-            *p = c;
-         }
-      } ei (STRNCMP(s, "border:", 7) == 0) {
-          //Note: Keep this in sync with p_popup_option_border_values.
-          CS arg = s + 7;
-          int on = STRNCMP(arg, "on", 2) == 0 && arg + 2 == p;
-          int off = STRNCMP(arg, "off", 3) == 0 && arg + 3 == p;
-          int i;
+				*p = ZERO;
+				optSetStringOptionDirectInPort(po, S"portcolor", s + 10, OPT_LOCAL, 0);
+				*p = c;
+			}
+		} ei (STRNCMP(s, "border:", 7) == 0) {
+			 //Note: Keep this in sync with p_popup_option_border_values.
+			 CS arg = s + 7;
+			 int on = STRNCMP(arg, "on", 2) == 0 && arg + 2 == p;
+			 int off = STRNCMP(arg, "off", 3) == 0 && arg + 3 == p;
+			 int i;
 
-         if (!on && !off)
-            return FAIL;
-         if (po != NULL) {
-            for (i = 0; i < 4; ++i)
-                po->pup.border[i] = on ? 1 : 0;
-            if (off)
-                //only show the X for close when there is a border
-                po->pup.close = POPCLOSE_NONE;
-         }
-      } ei (STRNCMP(s, "align:", 6) == 0) {
-         //Note: Keep this in sync with p_popup_option_align_values.
-         CS arg = s + 6;
-         int      item = STRNCMP(arg, "item", 4) == 0 && arg + 4 == p;
-         int      menu = STRNCMP(arg, "menu", 4) == 0 && arg + 4 == p;
+			if (!on && !off)
+				return FAIL;
+			if (po != NULL) {
+				for (i = 0; i < 4; ++i)
+					 po->pup.border[i] = on ? 1 : 0;
+				if (off)
+					 //only show the X for close when there is a border
+					 po->pup.close = POPCLOSE_NONE;
+			}
+		} ei (STRNCMP(s, "align:", 6) == 0) {
+			//Note: Keep this in sync with p_popup_option_align_values.
+			CS arg = s + 6;
+			int      item = STRNCMP(arg, "item", 4) == 0 && arg + 4 == p;
+			int      menu = STRNCMP(arg, "menu", 4) == 0 && arg + 4 == p;
 
-         if (!menu && !item)
-            return FAIL;
-         if (po != NULL && menu)
-            po->pup.flags |= POPF_INFO_MENU;
-      } else
-          return FAIL;
-   }
-   return OK;
+			if (!menu && !item)
+				return FAIL;
+			if (po != NULL && menu)
+				po->pup.flags |= POPF_INFO_MENU;
+		} else
+			 return FAIL;
+	}
+	return OK;
 }
 
 //Parse the 'previewpopup' option and apply the values to portal "po" if it is not NULL.
 //Return FAIL if the parsing fails.
 pub int
 parse_previewpopup(Portal* po) {
-   return parse_popup_option(po, true);
+	return parse_popup_option(po, true);
 }
 
 //Parse the 'completepopup' option and apply the values to portal "po" if it is not NULL.
 //Return FAIL if the parsing fails.
 pub int
 parse_completepopup(Portal* po) {
-   return parse_popup_option(po, false);
+	return parse_popup_option(po, false);
 }
 
 //Set pup.wantLine and pup.wantCol for the cursor position in the current portal.
 //Keep at least "width" columns from the right of the screen.
 pub void
 popup_set_wantpos_cursor(Portal* po, int width, Bag *d) {
-   PopupPosition ppt = POPPOS_NONE;
+	PopupPosition ppt = POPPOS_NONE;
 
-   if (d != NULL)
-      ppt = get_pos_entry(d, false);
+	if (d != NULL)
+		ppt = get_pos_entry(d, false);
 
-    setcursor_mayforce(true);
-   if (ppt == POPPOS_TOPRIGHT || ppt == POPPOS_TOPLEFT) {
-      po->pup.wantLine = curPor->windowRow + curPor->cursorRow + 2;
-   } else {
-      po->pup.wantLine = curPor->windowRow + curPor->cursorRow;
-      if (po->pup.wantLine == 0) { //cursor in first line
-          po->pup.wantLine = 2;
-          po->pup.pos = ppt == POPPOS_BOTRIGHT ? POPPOS_TOPRIGHT : POPPOS_TOPLEFT;
-      }
-   }
+	 setcursor_mayforce(true);
+	if (ppt == POPPOS_TOPRIGHT || ppt == POPPOS_TOPLEFT) {
+		po->pup.wantLine = curPor->windowRow + curPor->cursorRow + 2;
+	} else {
+		po->pup.wantLine = curPor->windowRow + curPor->cursorRow;
+		if (po->pup.wantLine == 0) { //cursor in first line
+			 po->pup.wantLine = 2;
+			 po->pup.pos = ppt == POPPOS_BOTRIGHT ? POPPOS_TOPRIGHT : POPPOS_TOPLEFT;
+		}
+	}
 
-   po->pup.wantCol = curPor->windowCol + curPor->cursorCol + 1;
-   if (po->pup.wantCol > visibleColsG - width) {
-      po->pup.wantCol = visibleColsG - width;
-      if (po->pup.wantCol < 1)
-          po->pup.wantCol = 1;
-   }
+	po->pup.wantCol = curPor->windowCol + curPor->cursorCol + 1;
+	if (po->pup.wantCol > visibleColsG - width) {
+		po->pup.wantCol = visibleColsG - width;
+		if (po->pup.wantCol < 1)
+			 po->pup.wantCol = 1;
+	}
 
-   adjustPosition(po);
+	adjustPosition(po);
 }
 
 //Set pup.wantLine and pup.wantCol for the a given screen position.
 //Caller must take care of running into the portal border.
 pub void
 popup_set_wantpos_rowcol(Portal* po, int row, int col) {
-   po->pup.wantLine = row;
-   po->pup.wantCol = col;
-   adjustPosition(po);
+	po->pup.wantLine = row;
+	po->pup.wantCol = col;
+	adjustPosition(po);
 }
 
 //Add a border and left&right padding.
 private void
 add_border_left_right_padding(Portal* po) {
-   for (int i = 0; i < 4; ++i) {
-      po->pup.border[i] = 1;
-      po->pup.padding[i] = (i & 1) ? 1 : 0;
-   }
+	for (int i = 0; i < 4; ++i) {
+		po->pup.border[i] = 1;
+		po->pup.padding[i] = (i & 1) ? 1 : 0;
+	}
 }
 
 //Return true if there is any popup portal with a terminal book.
 private Boole
 popup_terminal_exists(void) {
-   Portal   *po;
-   FOR_ALL_POPUPPORTS(po) {
-      if (po->book->term)
-         return true;
-   }
-   Tab   *t;
-   FOR_ALL_TABS(t) {
-      FOR_ALL_POPUPPORTS_IN_TAB(t, po) {
-         if (po->book->term)
-            return true;
-      }
-   }
-   return false;
+	Portal   *po;
+	FOR_ALL_POPUPPORTS(po) {
+		if (po->book->term)
+			return true;
+	}
+	Tab   *t;
+	FOR_ALL_TABS(t) {
+		FOR_ALL_POPUPPORTS_IN_TAB(t, po) {
+			if (po->book->term)
+				return true;
+		}
+	}
+	return false;
 }
 
 //Mark all popup portals in the current tab and global for redrawing.
 pub void
 popup_redraw_all(void) {
-   Portal   *po;
-   FOR_ALL_POPUPPORTS(po)
-      po->redrawType = UPD_NOT_VALID;
-   FOR_ALL_POPUPPORTS_IN_TAB(curtab, po)
-      po->redrawType = UPD_NOT_VALID;
+	Portal   *po;
+	FOR_ALL_POPUPPORTS(po)
+		po->redrawType = UPD_NOT_VALID;
+	FOR_ALL_POPUPPORTS_IN_TAB(curtab, po)
+		po->redrawType = UPD_NOT_VALID;
 }
 
 //Set the color for a notification portal
 private void
 updateNotificationColor(Portal* po, PopupKind type) {
-   Arr(char) hiname = type == POPUP_MESSAGE_WIN ? "InfoMsg" : "PopupNotification";
-   optSetStringOptionDirectInPort(po, S"portcolor", (CS)hiname, OPT_LOCAL, 0);
+	Arr(char) hiname = type == POPUP_MESSAGE_WIN ? "InfoMsg" : "PopupNotification";
+	optSetStringOptionDirectInPort(po, S"portcolor", (CS)hiname, OPT_LOCAL, 0);
 }
 
 private void
 initPopupBook(Book* book) {
-   optSetStringOptionDirectInBook( book, S"booktype", S"popup", OPT_LOCAL, 0);
-   book->o.swapFile = false;   //no swap file
-   book->o.bookListed = false;    //unlisted book
-   book->locked = true;   //prevent deleting the book
+	optSetStringOptionDirectInBook( book, S"booktype", S"popup", OPT_LOCAL, 0);
+	book->o.swapFile = false;   //no swap file
+	book->o.bookListed = false;    //unlisted book
+	book->locked = true;   //prevent deleting the book
 
-   //Avoid that 'buftype' is reset when this book is entered.
-   book->o.initialized = true;
+	//Avoid that 'buftype' is reset when this book is entered.
+	book->o.initialized = true;
 }
 
 //createPopup({text}, {options})
@@ -11539,540 +11538,540 @@ initPopupBook(Book* book) {
 //If it's a string, then a new book is created and filled with that string.
 private Portal*
 createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind) { //:createPopup
-   Portal* po;
-   Tab* tab = NULL;
-   int tabnr = 0;
-   Book* book = NULL;
-   Bag* params = NULL;
-   int i;
+	Portal* po;
+	Tab* tab = NULL;
+	int tabnr = 0;
+	Book* book = NULL;
+	Bag* params = NULL;
+	int i;
 
-   if (argvars) {
-      //Check that arguments look OK.
-      if (argvars[0].tag == VAR_NUMBER) {
-         book = bookFindFileByBookNr(argvars[0].number);
-         if (!book) {
-            showErrFmtMsg(_(e_book_nr_does_not_exist), argvars[0].number);
-            return NULL;
-         }
-         if (book->term && popup_terminal_exists()) {
-            emsg(_(e_cannot_open_second_popup_with_terminal));
-            return NULL;
-         }
-      } ei (!(argvars[0].tag == VAR_STRING && argvars[0].string != NULL)
-             && !(argvars[0].tag == VAR_LIST && argvars[0].list != NULL)
-      ) {
-         emsg(_(e_buffer_number_text_or_list_required));
-         return NULL;
-      }
-      if (check_for_nonnull_dict_arg(argvars, 1) == FAIL)
-         return NULL;
-      params = argvars[1].bag;
-   }
+	if (argvars) {
+		//Check that arguments look OK.
+		if (argvars[0].tag == VAR_NUMBER) {
+			book = bookFindFileByBookNr(argvars[0].number);
+			if (!book) {
+				showErrFmtMsg(_(e_book_nr_does_not_exist), argvars[0].number);
+				return NULL;
+			}
+			if (book->term && popup_terminal_exists()) {
+				emsg(_(e_cannot_open_second_popup_with_terminal));
+				return NULL;
+			}
+		} ei (!(argvars[0].tag == VAR_STRING && argvars[0].string != NULL)
+				 && !(argvars[0].tag == VAR_LIST && argvars[0].list != NULL)
+		) {
+			emsg(_(e_buffer_number_text_or_list_required));
+			return NULL;
+		}
+		if (check_for_nonnull_dict_arg(argvars, 1) == FAIL)
+			return NULL;
+		params = argvars[1].bag;
+	}
 
-   if (isNotification(kind)) {
-      tabnr = -1;  //notifications are global by default
-   } ei (params != NULL) {
-      if (bagHasKey(params, tConst("tabpage"))) {
-         tabnr = (int)bagGetNumber(params, tConst("tabpage"));
-         if (tabnr > 0) {
-            tab = getTab(tabnr);
-            if (!tab) {
-               showErrFmtMsg(_(e_tabpage_not_found_nr), tabnr);
-               return NULL;
-            }
-         }
-      } else
-         tabnr = 0;
-   }
+	if (isNotification(kind)) {
+		tabnr = -1;  //notifications are global by default
+	} ei (params != NULL) {
+		if (bagHasKey(params, tConst("tabpage"))) {
+			tabnr = (int)bagGetNumber(params, tConst("tabpage"));
+			if (tabnr > 0) {
+				tab = getTab(tabnr);
+				if (!tab) {
+					showErrFmtMsg(_(e_tabpage_not_found_nr), tabnr);
+					return NULL;
+				}
+			}
+		} else
+			tabnr = 0;
+	}
 
-   if (book && book->lockedSplit) {
-      //disallow opening a popup to a closing book, which like splitting,
-      //can result in more portals displaying it
-      emsg(_(e_cannot_open_a_popup_portal_to_a_closing_buffer));
-      return NULL;
-   }
+	if (book && book->lockedSplit) {
+		//disallow opening a popup to a closing book, which like splitting,
+		//can result in more portals displaying it
+		emsg(_(e_cannot_open_a_popup_portal_to_a_closing_buffer));
+		return NULL;
+	}
 
-   //Create the portal and book.
-   po = portAllocPopup();
-   if (!po)
-      return NULL;
+	//Create the portal and book.
+	po = portAllocPopup();
+	if (!po)
+		return NULL;
 
-   if (returnVar)
-      returnVar->number = po->id;
+	if (returnVar)
+		returnVar->number = po->id;
 
-   po->pup.pos = POPPOS_TOPLEFT;
-   po->pup.flags = POPF_IS_POPUP | POPF_MAPPING | POPF_POSINVERT;
+	po->pup.pos = POPPOS_TOPLEFT;
+	po->pup.flags = POPF_IS_POPUP | POPF_MAPPING | POPF_POSINVERT;
 
-   Boole createdNewBook;
-   if (book) {
-      //use existing book
-      createdNewBook = false;
-      initPopupPortal(po, book);
-      optSetLocalOptionsToDefault(po, false);
-      swap_exists_action = SEA_READONLY;
-      bookEnsureLoaded(book);
-      swap_exists_action = SEA_NONE;
-   } else {
-      //create a new book associated with the popup
-      createdNewBook = true;
-      book = bookNew(NULL, NULL, (LineNr)0, BLN_NEW|BLN_DUMMY|BLN_REUSE);
-      if (!book) {
-         portFreePopup(po);
-         return NULL;
-      }
-      ml_open(book);
+	Boole createdNewBook;
+	if (book) {
+		//use existing book
+		createdNewBook = false;
+		initPopupPortal(po, book);
+		optSetLocalOptionsToDefault(po, false);
+		swap_exists_action = SEA_READONLY;
+		bookEnsureLoaded(book);
+		swap_exists_action = SEA_NONE;
+	} else {
+		//create a new book associated with the popup
+		createdNewBook = true;
+		book = bookNew(NULL, NULL, (LineNr)0, BLN_NEW|BLN_DUMMY|BLN_REUSE);
+		if (!book) {
+			portFreePopup(po);
+			return NULL;
+		}
+		ml_open(book);
 
-      initPopupPortal(po, book);
+		initPopupPortal(po, book);
 
-      optSetLocalOptionsToDefault(po, true);
-      initPopupBook(book);
-   }
-   po->o.wrap = true;   //'wrap' is default on
-   po->o.scrollOff = 0;      //'scrolloff' zero
+		optSetLocalOptionsToDefault(po, true);
+		initPopupBook(book);
+	}
+	po->o.wrap = true;   //'wrap' is default on
+	po->o.scrollOff = 0;      //'scrolloff' zero
 
-   if (tab) {
-      //popup on specified tab
-      po->next = tab->firstPopupPort;
-      tab->firstPopupPort = po;
-   } ei (tabnr == 0) {
-      //popup on current tab
-      po->next = curtab->firstPopupPort;
-      curtab->firstPopupPort = po;
-   } else { //(tabnr < 0)
-      Portal *prev = firstPopupPortG;
+	if (tab) {
+		//popup on specified tab
+		po->next = tab->firstPopupPort;
+		tab->firstPopupPort = po;
+	} ei (tabnr == 0) {
+		//popup on current tab
+		po->next = curtab->firstPopupPort;
+		curtab->firstPopupPort = po;
+	} else { //(tabnr < 0)
+		Portal *prev = firstPopupPortG;
 
-      //Global popup: add at the end, so that it gets displayed on top of
-      //older ones with the same zindex. Matters for notifications.
-      if (!firstPopupPortG)
-         firstPopupPortG = po;
-      else {
-         while (prev->next)
-            prev = prev->next;
-         prev->next = po;
-      }
-   }
+		//Global popup: add at the end, so that it gets displayed on top of
+		//older ones with the same zindex. Matters for notifications.
+		if (!firstPopupPortG)
+			firstPopupPortG = po;
+		else {
+			while (prev->next)
+				prev = prev->next;
+			prev->next = po;
+		}
+	}
 
-   if (createdNewBook && argvars != NULL) {
-      setBookText(book, argvars[0]);
-   }
+	if (createdNewBook && argvars != NULL) {
+		setBookText(book, argvars[0]);
+	}
 
-   if (kind == POPUP_ATCURSOR || kind == POPUP_PREVIEW) {
-      po->pup.pos = POPPOS_BOTLEFT;
-   }
-   if (kind == POPUP_ATCURSOR) {
-      popup_set_wantpos_cursor(po, 0, params);
-      set_moved_values(po);
-      set_moved_columns(po, FIND_STRING);
-   }
+	if (kind == POPUP_ATCURSOR || kind == POPUP_PREVIEW) {
+		po->pup.pos = POPPOS_BOTLEFT;
+	}
+	if (kind == POPUP_ATCURSOR) {
+		popup_set_wantpos_cursor(po, 0, params);
+		set_moved_values(po);
+		set_moved_columns(po, FIND_STRING);
+	}
 
-   if (kind == POPUP_BEVAL) {
-      po->pup.pos = POPPOS_BOTLEFT;
+	if (kind == POPUP_BEVAL) {
+		po->pup.pos = POPPOS_BOTLEFT;
 
-      //by default use the mouse position
-      po->pup.wantLine = mouseRowG;
-      if (po->pup.wantLine <= 0) { //mouse on first line
-         po->pup.wantLine = 2;
-         po->pup.pos = POPPOS_TOPLEFT;
-      }
-      po->pup.wantCol = mouseColG + 1;
-      set_mousemoved_values(po);
-      set_mousemoved_columns(po, FIND_IDENT + FIND_STRING + FIND_EVAL);
-   }
+		//by default use the mouse position
+		po->pup.wantLine = mouseRowG;
+		if (po->pup.wantLine <= 0) { //mouse on first line
+			po->pup.wantLine = 2;
+			po->pup.pos = POPPOS_TOPLEFT;
+		}
+		po->pup.wantCol = mouseColG + 1;
+		set_mousemoved_values(po);
+		set_mousemoved_columns(po, FIND_IDENT + FIND_STRING + FIND_EVAL);
+	}
 
-   //set default values
-   po->pup.zIndex = POPUPWIN_DEFAULT_ZINDEX;
-   po->pup.close = POPCLOSE_NONE;
+	//set default values
+	po->pup.zIndex = POPUPWIN_DEFAULT_ZINDEX;
+	po->pup.close = POPCLOSE_NONE;
 
-   if (isNotification(kind)) {
-      Portal* twp;
-      Portal* nextPort;
-      int height = book->mem.lineCount + 3;
+	if (isNotification(kind)) {
+		Portal* twp;
+		Portal* nextPort;
+		int height = book->mem.lineCount + 3;
 
-      po->pup.pos = POPPOS_BOTRIGHT;
-      //Try to not overlap with another global popup. Guess we need 3
-      //more screen lines than book lines.
-      po->pup.wantLine = 1;
-      for (twp = firstPopupPortG; twp; twp = nextPort) {
-         nextPort = twp->next;
-         if (twp != po
-             && twp->pup.zIndex == POPUPWIN_NOTIFICATION_ZINDEX
-             && twp->windowRow <= po->pup.wantLine - 1 + height
-             && twp->windowRow + popup_height(twp) > po->pup.wantLine - 1
-         ){
-            //move to below this popup and restart the loop to check for
-            //overlap with other popups
-            po->pup.wantLine = twp->windowRow + popup_height(twp) + 1;
-            nextPort = firstPopupPortG;
-         }
-      }
-      if (po->pup.wantLine + height > visibleRowsG) {
-         //can't avoid overlap, put on top in the hope that message goes away soon.
-         po->pup.wantLine = 1;
-      }
+		po->pup.pos = POPPOS_BOTRIGHT;
+		//Try to not overlap with another global popup. Guess we need 3
+		//more screen lines than book lines.
+		po->pup.wantLine = 1;
+		for (twp = firstPopupPortG; twp; twp = nextPort) {
+			nextPort = twp->next;
+			if (twp != po
+				 && twp->pup.zIndex == POPUPWIN_NOTIFICATION_ZINDEX
+				 && twp->windowRow <= po->pup.wantLine - 1 + height
+				 && twp->windowRow + popup_height(twp) > po->pup.wantLine - 1
+			){
+				//move to below this popup and restart the loop to check for
+				//overlap with other popups
+				po->pup.wantLine = twp->windowRow + popup_height(twp) + 1;
+				nextPort = firstPopupPortG;
+			}
+		}
+		if (po->pup.wantLine + height > visibleRowsG) {
+			//can't avoid overlap, put on top in the hope that message goes away soon.
+			po->pup.wantLine = 1;
+		}
 
-      po->pup.wantCol = 10;
-      po->pup.zIndex = POPUPWIN_NOTIFICATION_ZINDEX;
-      po->pup.minWidth = 20;
-      po->pup.flags |= POPF_DRAG;
-      po->pup.close = POPCLOSE_CLICK;
-      for (i = 0; i < 4; ++i)
-         po->pup.border[i] = 1;
-      po->pup.padding[1] = 1;
-      po->pup.padding[3] = 1;
+		po->pup.wantCol = 10;
+		po->pup.zIndex = POPUPWIN_NOTIFICATION_ZINDEX;
+		po->pup.minWidth = 20;
+		po->pup.flags |= POPF_DRAG;
+		po->pup.close = POPCLOSE_CLICK;
+		for (i = 0; i < 4; ++i)
+			po->pup.border[i] = 1;
+		po->pup.padding[1] = 1;
+		po->pup.padding[3] = 1;
 
-      updateNotificationColor(po, kind);
-   } ei (kind == POPUP_DIALOG || kind == POPUP_MENU) {
-      po->pup.pos = POPPOS_CENTER;
-      po->pup.zIndex = POPUPWIN_DIALOG_ZINDEX;
-      po->pup.flags |= POPF_DRAG;
-      po->pup.flags &= ~POPF_MAPPING;
-      add_border_left_right_padding(po);
-   } ei (kind == POPUP_MENU) {
-      Var   tv;
-      tv.tag = VAR_STRING;
-      tv.string = (CS)"popup_filter_menu";
-      Callback callback = get_callback(&tv);
-      if (callback.name != NULL) {
-         set_callback(&po->pup.filterCb, &callback);
-         if (callback.needsFreeing)
-            eeglFree(callback.name);
-      }
+		updateNotificationColor(po, kind);
+	} ei (kind == POPUP_DIALOG || kind == POPUP_MENU) {
+		po->pup.pos = POPPOS_CENTER;
+		po->pup.zIndex = POPUPWIN_DIALOG_ZINDEX;
+		po->pup.flags |= POPF_DRAG;
+		po->pup.flags &= ~POPF_MAPPING;
+		add_border_left_right_padding(po);
+	} ei (kind == POPUP_MENU) {
+		Var   tv;
+		tv.tag = VAR_STRING;
+		tv.string = (CS)"popup_filter_menu";
+		Callback callback = get_callback(&tv);
+		if (callback.name != NULL) {
+			set_callback(&po->pup.filterCb, &callback);
+			if (callback.needsFreeing)
+				eeglFree(callback.name);
+		}
 
-      po->o.wrap = 0;
-      po->pup.flags |= POPF_CURSORLINE;
-   } ei (kind == POPUP_PREVIEW) {
-         po->pup.flags |= POPF_DRAG | POPF_RESIZE;
-         po->pup.close = POPCLOSE_BUTTON;
-      for (i = 0; i < 4; ++i)
-          po->pup.border[i] = 1;
-      parse_previewpopup(po);
-      popup_set_wantpos_cursor(po, po->pup.minWidth, params);
-   } ei (kind == POPUP_INFO) {
-      po->pup.pos = POPPOS_TOPLEFT;
-      po->pup.flags |= POPF_DRAG | POPF_RESIZE;
-      po->pup.close = POPCLOSE_BUTTON;
-      add_border_left_right_padding(po);
-      parse_completepopup(po);
-   }
+		po->o.wrap = 0;
+		po->pup.flags |= POPF_CURSORLINE;
+	} ei (kind == POPUP_PREVIEW) {
+			po->pup.flags |= POPF_DRAG | POPF_RESIZE;
+			po->pup.close = POPCLOSE_BUTTON;
+		for (i = 0; i < 4; ++i)
+			 po->pup.border[i] = 1;
+		parse_previewpopup(po);
+		popup_set_wantpos_cursor(po, po->pup.minWidth, params);
+	} ei (kind == POPUP_INFO) {
+		po->pup.pos = POPPOS_TOPLEFT;
+		po->pup.flags |= POPF_DRAG | POPF_RESIZE;
+		po->pup.close = POPCLOSE_BUTTON;
+		add_border_left_right_padding(po);
+		parse_completepopup(po);
+	}
 
-   for (i = 0; i < 8; ++i)
-      po->pup.borderChar[i] = 0;
-   po->pup.wantScrollbar = 1;
-   po->pup.fixed = 0;
-   po->pup.filterMode = MODE_ALL;
+	for (i = 0; i < 8; ++i)
+		po->pup.borderChar[i] = 0;
+	po->pup.wantScrollbar = 1;
+	po->pup.fixed = 0;
+	po->pup.filterMode = MODE_ALL;
 
-   if (params) {
-      if (applyParams(po, params, true) == FAIL) {
-         (void)popup_close(po->id, false);
-         return NULL;
-      }
-   }
+	if (params) {
+		if (applyParams(po, params, true) == FAIL) {
+			(void)popup_close(po->id, false);
+			return NULL;
+		}
+	}
 
-   if (isNotification(kind) && po->pup.timer == NULL) {
-      addTimeout(po, NOTIFICATION_TIMEOUT, kind == POPUP_NOTIFICATION);
-   }
+	if (isNotification(kind) && po->pup.timer == NULL) {
+		addTimeout(po, NOTIFICATION_TIMEOUT, kind == POPUP_NOTIFICATION);
+	}
 
-   adjustPosition(po);
+	adjustPosition(po);
 
-   po->vsepWidth = 0;
+	po->vsepWidth = 0;
 
-   redraw_all_later(UPD_NOT_VALID);
-   needRefreshPopupMaskG = true;
+	redraw_all_later(UPD_NOT_VALID);
+	needRefreshPopupMaskG = true;
 
-   //When running a terminal in the popup it becomes the current portal.
-   if (book->term)
-      enterPortal(po, false);
+	//When running a terminal in the popup it becomes the current portal.
+	if (book->term)
+		enterPortal(po, false);
 
-   return po;
+	return po;
 }
 
 //popup_clear()
 pub void
 f_popup_clear(Arr(Var) argvars, Var*) {
-   int force = false;
+	int force = false;
 
-   if (argvars[0].tag != VAR_UNKNOWN)
-      force = (int)tv_get_bool(&argvars[0]);
-   close_all_popups(force);
+	if (argvars[0].tag != VAR_UNKNOWN)
+		force = (int)tv_get_bool(&argvars[0]);
+	close_all_popups(force);
 }
 
 //createPopup({text}, {options})
 pub void
 f_createPopup(Arr(Var) argvars, OUT Var* returnVar) {
-   createPopup(argvars, returnVar, POPUP_NORMAL);
+	createPopup(argvars, returnVar, POPUP_NORMAL);
 }
 
 //popup_atcursor({text}, {options})
 pub void
 f_popup_atcursor(Arr(Var) argvars, OUT Var* returnVar) {
-   createPopup(argvars, OUT returnVar, POPUP_ATCURSOR);
+	createPopup(argvars, OUT returnVar, POPUP_ATCURSOR);
 }
 
 //popup_beval({text}, {options})
 pub void
 f_popup_beval(Arr(Var) argvars, OUT Var* returnVar) {
-   createPopup(argvars, OUT returnVar, POPUP_BEVAL);
+	createPopup(argvars, OUT returnVar, POPUP_BEVAL);
 }
 
 //Invoke the close callback for portal "po" with value "result".
 //Careful: The callback may make "po" invalid!
 private void
 invokeCallback(Portal* po, Var *result) {
-   Var returnVar;
-   returnVar.tag = VAR_UNKNOWN;
+	Var returnVar;
+	returnVar.tag = VAR_UNKNOWN;
 
-   Var argv[3];
-   argv[0].tag = VAR_NUMBER;
-   argv[0].number = (Long)po->id;
+	Var argv[3];
+	argv[0].tag = VAR_NUMBER;
+	argv[0].number = (Long)po->id;
 
-   if (result && result->tag != VAR_UNKNOWN)
-      copy_tv(OUT &argv[1], result);
-   else {
-      argv[1].tag = VAR_NUMBER;
-      argv[1].number = 0;
-   }
+	if (result && result->tag != VAR_UNKNOWN)
+		copy_tv(OUT &argv[1], result);
+	else {
+		argv[1].tag = VAR_NUMBER;
+		argv[1].number = 0;
+	}
 
-   argv[2].tag = VAR_UNKNOWN;
+	argv[2].tag = VAR_UNKNOWN;
 
-   call_callback(&po->pup.closeCb, -1, &returnVar, 2, argv);
-   if (result)
-      clearVar(&argv[1]);
-   clearVar(&returnVar);
+	call_callback(&po->pup.closeCb, -1, &returnVar, 2, argv);
+	if (result)
+		clearVar(&argv[1]);
+	clearVar(&returnVar);
 }
 
 //Make "prevPor" the current portal, unless it's equal to "po".
 //Otherwise make "firstPor" the current portal.
 private void
 back_to_prevPor(Portal* po) {
-   if (portalIsValid(prevPor) && po != prevPor)
-      enterPortal(prevPor, false);
-   else
-      enterPortal(firstPor, false);
+	if (portalIsValid(prevPor) && po != prevPor)
+		enterPortal(prevPor, false);
+	else
+		enterPortal(firstPor, false);
 }
 
 //Close popup "po" and invoke any close callback for it.
 //Careful: callback function might have freed the popup portal already
 private void
 popup_close_and_callback(Portal* po, Var *arg) {
-   if (!portalIsValid(po))
-      return;
+	if (!portalIsValid(po))
+		return;
 
-   int id = po->id;
+	int id = po->id;
 
-   if (po == curPor && curBook->term != NULL) {
-      Portal *owp;
+	if (po == curPor && curBook->term != NULL) {
+		Portal *owp;
 
-      //Closing popup portal with a terminal: put focus back on the first that works:
-      //- another popup portal with a terminal
-      //- the previous portal
-      //- the first one.
-      FOR_ALL_POPUPPORTS(owp) {
-         if (owp != curPor && owp->book->term != NULL)
-            break;
-      }
-      if (owp)
-         enterPortal(owp, false);
-      else {
-         FOR_ALL_POPUPPORTS_IN_TAB(curtab, owp) {
-            if (owp != curPor && owp->book->term != NULL)
-               break;
-         }
-         if (owp)
-            enterPortal(owp, false);
-         else
-            back_to_prevPor(po);
-      }
-   }
+		//Closing popup portal with a terminal: put focus back on the first that works:
+		//- another popup portal with a terminal
+		//- the previous portal
+		//- the first one.
+		FOR_ALL_POPUPPORTS(owp) {
+			if (owp != curPor && owp->book->term != NULL)
+				break;
+		}
+		if (owp)
+			enterPortal(owp, false);
+		else {
+			FOR_ALL_POPUPPORTS_IN_TAB(curtab, owp) {
+				if (owp != curPor && owp->book->term != NULL)
+					break;
+			}
+			if (owp)
+				enterPortal(owp, false);
+			else
+				back_to_prevPor(po);
+		}
+	}
 
-   //Just in case a check higher up is missing.
-   if (po == curPor && portErrorIfPopup(false)) {
-      //To avoid getting stuck when win_execute() does something that causes
-      //an error, stop calling the filter callback.
-      evFreeCallback(&po->pup.filterCb);
-      return;
-   }
+	//Just in case a check higher up is missing.
+	if (po == curPor && portErrorIfPopup(false)) {
+		//To avoid getting stuck when win_execute() does something that causes
+		//an error, stop calling the filter callback.
+		evFreeCallback(&po->pup.filterCb);
+		return;
+	}
 
-   CHECK_CURBOOK;
-   if (po->pup.closeCb.name != NULL)
-      //Careful: This may make "po" invalid.
-      invokeCallback(po, arg);
+	CHECK_CURBOOK;
+	if (po->pup.closeCb.name != NULL)
+		//Careful: This may make "po" invalid.
+		invokeCallback(po, arg);
 
-   popup_close(id, false);
-   CHECK_CURBOOK;
+	popup_close(id, false);
+	CHECK_CURBOOK;
 }
 
 pub void
 popup_close_with_retval(Portal* po, int retval) {
-   Var res;
+	Var res;
 
-   res.tag = VAR_NUMBER;
-   res.number = retval;
-   popup_close_and_callback(po, &res);
+	res.tag = VAR_NUMBER;
+	res.number = retval;
+	popup_close_and_callback(po, &res);
 }
 
 //Close popup "po" because of a mouse click.
 pub void
 popup_close_for_mouse_click(Portal* po) {
-   popup_close_with_retval(po, -2);
+	popup_close_with_retval(po, -2);
 }
 
 private void
 check_mouse_moved(Portal* po, Portal *mouse_wp) {
-   //Close the popup when all if these are true:
-   //- the mouse is not on this popup
-   //- "mousemoved" was used
-   //- the mouse is no longer on the same screen row or the mouse column is
-   //  outside of the relevant text
-   if (po != mouse_wp
-       && po->pup.mouseRow != 0
-       && (po->pup.mouseRow != mouseRowG
-         || mouseColG < po->pup.mouseMinCol
-         || mouseColG > po->pup.mouseMaxCol)
-   ) {
-      //Careful: this makes "po" invalid.
-      popup_close_with_retval(po, -2);
-   }
+	//Close the popup when all if these are true:
+	//- the mouse is not on this popup
+	//- "mousemoved" was used
+	//- the mouse is no longer on the same screen row or the mouse column is
+	//  outside of the relevant text
+	if (po != mouse_wp
+		 && po->pup.mouseRow != 0
+		 && (po->pup.mouseRow != mouseRowG
+			|| mouseColG < po->pup.mouseMinCol
+			|| mouseColG > po->pup.mouseMaxCol)
+	) {
+		//Careful: this makes "po" invalid.
+		popup_close_with_retval(po, -2);
+	}
 }
 
 //Called when the mouse moved: may close a popup with "mousemoved".
 pub void
 popup_handle_mouse_moved(void) {
-   Portal* nextwp;
-   int       row = mouseRowG;
-   int       col = mouseColG;
+	Portal* nextwp;
+	int       row = mouseRowG;
+	int       col = mouseColG;
 
-   //find the portal where the mouse is in
-   Portal* mouse_wp = mouseFindPortal(&row, &col, FIND_POPUP);
+	//find the portal where the mouse is in
+	Portal* mouse_wp = mouseFindPortal(&row, &col, FIND_POPUP);
 
-   for (Portal* po = firstPopupPortG; po; po = nextwp) {
-      nextwp = po->next;
-      check_mouse_moved(po, mouse_wp);
-   }
-   for (Portal* po = curtab->firstPopupPort; po; po = nextwp) {
-      nextwp = po->next;
-      check_mouse_moved(po, mouse_wp);
-   }
+	for (Portal* po = firstPopupPortG; po; po = nextwp) {
+		nextwp = po->next;
+		check_mouse_moved(po, mouse_wp);
+	}
+	for (Portal* po = curtab->firstPopupPort; po; po = nextwp) {
+		nextwp = po->next;
+		check_mouse_moved(po, mouse_wp);
+	}
 }
 
 //In a filter: check if the typed key is a mouse event that is used for dragging the popup.
 private void
 filter_handle_drag(Portal* po, int c, Var* returnVar) {
-   int   row = mouseRowG;
-   int   col = mouseColG;
+	int   row = mouseRowG;
+	int   col = mouseColG;
 
-   if ((po->pup.flags & (POPF_DRAG | POPF_DRAGALL))
-          && is_mouse_key(c)
-          && (po == popupDragPortG
-              || po == mouseFindPortal(&row, &col, FIND_POPUP)))
-      //do not consume the key, allow for dragging the popup
-      returnVar->number = 0;
+	if ((po->pup.flags & (POPF_DRAG | POPF_DRAGALL))
+			 && is_mouse_key(c)
+			 && (po == popupDragPortG
+				  || po == mouseFindPortal(&row, &col, FIND_POPUP)))
+		//do not consume the key, allow for dragging the popup
+		returnVar->number = 0;
 }
 
 //popup_filter_menu({id}, {key})
 pub void
 f_popup_filter_menu(Arr(Var) argvars, Var* returnVar) {
-   int id = tv_get_number(&argvars[0]);
-   Portal* po = getPortalById(id);
-   //If the popup has been closed, do not consume the key.
-   if (!po)
-      return;
+	int id = tv_get_number(&argvars[0]);
+	Portal* po = getPortalById(id);
+	//If the popup has been closed, do not consume the key.
+	if (!po)
+		return;
 
-   CS key = tv_get_string(&argvars[1]);
-   Unt c = *key;
-   if (c == K_SPECIAL && key[1] != ZERO)
-      c = TO_SPECIAL(key[1], key[2]);
+	CS key = tv_get_string(&argvars[1]);
+	Unt c = *key;
+	if (c == K_SPECIAL && key[1] != ZERO)
+		c = TO_SPECIAL(key[1], key[2]);
 
-   //consume all keys until done
-   returnVar->tag = VAR_BOOL;
-   returnVar->number = VVAL_TRUE;
-   Var   res;
-   res.tag = VAR_NUMBER;
+	//consume all keys until done
+	returnVar->tag = VAR_BOOL;
+	returnVar->number = VVAL_TRUE;
+	Var   res;
+	res.tag = VAR_NUMBER;
 
-   LineNr old_lnum = po->cursor.lnum;
-   if (c == 'k' || c == 'K' || c == K_UP || c == Ctrl_P) {
-      if (po->cursor.lnum > 1)
-         --po->cursor.lnum;
-      else
-         po->cursor.lnum = po->book->mem.lineCount;
-   }
-   if (c == 'j' || c == 'J' || c == K_DOWN || c == Ctrl_N) {
-      if (po->cursor.lnum < po->book->mem.lineCount)
-         ++po->cursor.lnum;
-      else
-         po->cursor.lnum = 1;
-   }
-   if (old_lnum != po->cursor.lnum) {
-      //caller will call highlightCurrentLine()
-      return;
-   }
+	LineNr old_lnum = po->cursor.lnum;
+	if (c == 'k' || c == 'K' || c == K_UP || c == Ctrl_P) {
+		if (po->cursor.lnum > 1)
+			--po->cursor.lnum;
+		else
+			po->cursor.lnum = po->book->mem.lineCount;
+	}
+	if (c == 'j' || c == 'J' || c == K_DOWN || c == Ctrl_N) {
+		if (po->cursor.lnum < po->book->mem.lineCount)
+			++po->cursor.lnum;
+		else
+			po->cursor.lnum = 1;
+	}
+	if (old_lnum != po->cursor.lnum) {
+		//caller will call highlightCurrentLine()
+		return;
+	}
 
-   if (c == 'x' || c == 'X' || c == ESC || c == Ctrl_C) {
-      //Cancelled, invoke callback with -1
-      res.number = -1;
-      popup_close_and_callback(po, &res);
-      return;
-   }
-   if (c == ' ' || c == K_KENTER || c == ENTER || c == NL) {
-      //Invoke callback with current index.
-      res.number = po->cursor.lnum;
-      popup_close_and_callback(po, &res);
-      return;
-   }
+	if (c == 'x' || c == 'X' || c == ESC || c == Ctrl_C) {
+		//Cancelled, invoke callback with -1
+		res.number = -1;
+		popup_close_and_callback(po, &res);
+		return;
+	}
+	if (c == ' ' || c == K_KENTER || c == ENTER || c == NL) {
+		//Invoke callback with current index.
+		res.number = po->cursor.lnum;
+		popup_close_and_callback(po, &res);
+		return;
+	}
 
-    filter_handle_drag(po, c, returnVar);
+	 filter_handle_drag(po, c, returnVar);
 }
 
 //popup_filter_yesno({id}, {key})
 pub void
 f_popup_filter_yesno(Arr(Var) argvars, Var* returnVar) {
-   int id = tv_get_number(&argvars[0]);
-   Portal* po = getPortalById(id);
-   CS key = tv_get_string(&argvars[1]);
-   //If the popup has been closed don't consume the key.
-   if (!po)
-      return;
+	int id = tv_get_number(&argvars[0]);
+	Portal* po = getPortalById(id);
+	CS key = tv_get_string(&argvars[1]);
+	//If the popup has been closed don't consume the key.
+	if (!po)
+		return;
 
-   int c = *key;
-   if (c == ENTER && need_wait_return)
-      return;
-   if (c == K_SPECIAL && key[1] != ZERO)
-      c = TO_SPECIAL(key[1], key[2]);
+	int c = *key;
+	if (c == ENTER && need_wait_return)
+		return;
+	if (c == K_SPECIAL && key[1] != ZERO)
+		c = TO_SPECIAL(key[1], key[2]);
 
-   //consume all keys until done
-   returnVar->tag = VAR_BOOL;
-   returnVar->number = VVAL_TRUE;
+	//consume all keys until done
+	returnVar->tag = VAR_BOOL;
+	returnVar->number = VVAL_TRUE;
 
-   Var res;
-   if (c == 'y' || c == 'Y')
-      res.number = 1;
-   ei (c == 'n' || c == 'N' || c == 'x' || c == 'X' || c == ESC)
-      res.number = 0;
-   else {
-      filter_handle_drag(po, c, returnVar);
-      return;
-   }
+	Var res;
+	if (c == 'y' || c == 'Y')
+		res.number = 1;
+	ei (c == 'n' || c == 'N' || c == 'x' || c == 'X' || c == ESC)
+		res.number = 0;
+	else {
+		filter_handle_drag(po, c, returnVar);
+		return;
+	}
 
-   //Invoke callback
-   res.tag = VAR_NUMBER;
-   popup_close_and_callback(po, &res);
+	//Invoke callback
+	res.tag = VAR_NUMBER;
+	popup_close_and_callback(po, &res);
 }
 
 //popup_dialog({text}, {options})
 pub void
 f_popup_dialog(Arr(Var) argvars, Var* returnVar) {
-   createPopup(argvars, returnVar, POPUP_DIALOG);
+	createPopup(argvars, returnVar, POPUP_DIALOG);
 }
 
 //popup_menu({text}, {options})
 pub void
 f_popup_menu(Arr(Var) argvars, Var* returnVar) {
-   createPopup(argvars, returnVar, POPUP_MENU);
+	createPopup(argvars, returnVar, POPUP_MENU);
 }
 
 //popup_notification({text}, {options})
 pub void
 f_popup_notification(Arr(Var) argvars, Var* returnVar) {
-   createPopup(argvars, returnVar, POPUP_NOTIFICATION);
+	createPopup(argvars, returnVar, POPUP_NOTIFICATION);
 }
 
 //Find the popup portal with portal-ID "id".
@@ -12080,501 +12079,501 @@ f_popup_notification(Arr(Var) argvars, Var* returnVar) {
 //If the portal is not a popup portal, and error message is given.
 private Portal *
 findPopupPortal(int id) {
-   Portal* po = getPortalById(id);
+	Portal* po = getPortalById(id);
 
-   if (po && !PORTAL_IS_POPUP(po)) {
-      showErrFmtMsg(_(e_window_nr_is_not_popup_portal), id);
-      return NULL;
-   }
-   return po;
+	if (po && !PORTAL_IS_POPUP(po)) {
+		showErrFmtMsg(_(e_window_nr_is_not_popup_portal), id);
+		return NULL;
+	}
+	return po;
 }
 
 //popup_close({id})
 pub void
 f_popup_close(Arr(Var) argvars, Var*) {
-   Portal* po;
+	Portal* po;
 
-   int id = (int)tv_get_number(argvars);
-   if (curBook->term == NULL && portErrorIfPopup(true))
-      //if the popup contains a terminal, it will become hidden
-      return;
+	int id = (int)tv_get_number(argvars);
+	if (curBook->term == NULL && portErrorIfPopup(true))
+		//if the popup contains a terminal, it will become hidden
+		return;
 
-   po = findPopupPortal(id);
-   if (po)
-      popup_close_and_callback(po, &argvars[1]);
+	po = findPopupPortal(id);
+	if (po)
+		popup_close_and_callback(po, &argvars[1]);
 }
 
 pub void
 popup_hide(Portal* po) {
-   if (portErrorIfTermPopup() || (po->pup.flags & POPF_HIDDEN) != 0)
-      return;
+	if (portErrorIfTermPopup() || (po->pup.flags & POPF_HIDDEN) != 0)
+		return;
 
-   po->pup.flags |= POPF_HIDDEN;
-   //Do not decrement countPortals, we still reference the book.
-   if (po->windowRow + popup_height(po) >= (int)commlineRowG)
-      mustClearCommlineG = true;
-   redraw_all_later(UPD_NOT_VALID);
-   needRefreshPopupMaskG = true;
+	po->pup.flags |= POPF_HIDDEN;
+	//Do not decrement countPortals, we still reference the book.
+	if (po->windowRow + popup_height(po) >= (int)commlineRowG)
+		mustClearCommlineG = true;
+	redraw_all_later(UPD_NOT_VALID);
+	needRefreshPopupMaskG = true;
 }
 
 //popup_hide({id})
 pub void
 f_popup_hide(Arr(Var) argvars, Var*) {
-   int id = (int)tv_get_number(argvars);
-   Portal* po = findPopupPortal(id);
-   if (!po)
-      return;
+	int id = (int)tv_get_number(argvars);
+	Portal* po = findPopupPortal(id);
+	if (!po)
+		return;
 
-   popup_hide(po);
-   po->pup.flags |= POPF_HIDDEN_FORCE;
+	popup_hide(po);
+	po->pup.flags |= POPF_HIDDEN_FORCE;
 }
 
 pub void
 popup_show(Portal* po) {
-   if ((po->pup.flags & POPF_HIDDEN) == 0)
-      return;
+	if ((po->pup.flags & POPF_HIDDEN) == 0)
+		return;
 
-   po->pup.flags &= ~POPF_HIDDEN;
-   redraw_all_later(UPD_NOT_VALID);
-   needRefreshPopupMaskG = true;
+	po->pup.flags &= ~POPF_HIDDEN;
+	redraw_all_later(UPD_NOT_VALID);
+	needRefreshPopupMaskG = true;
 }
 
 //popup_show({id})
 pub void
 f_popup_show(Arr(Var) argvars, Var*) {
-   int id = (int)tv_get_number(argvars);
-   Portal* po = findPopupPortal(id);
-   if (!po)
-      return;
+	int id = (int)tv_get_number(argvars);
+	Portal* po = findPopupPortal(id);
+	if (!po)
+		return;
 
-   po->pup.flags &= ~POPF_HIDDEN_FORCE;
-   popup_show(po);
-   if (po->pup.flags & POPF_INFO)
-      pum_position_info_popup(po);
+	po->pup.flags &= ~POPF_HIDDEN_FORCE;
+	popup_show(po);
+	if (po->pup.flags & POPF_INFO)
+		pum_position_info_popup(po);
 }
 
 //popup_settext({id}, {text})
 pub void
 f_popup_settext(Arr(Var) argvars, Var*) {
-   int id = (int)tv_get_number(&argvars[0]);
-   Portal* po = findPopupPortal(id);
-   if (!po || check_for_string_or_list_arg(argvars, 1) == FAIL)
-      return;
+	int id = (int)tv_get_number(&argvars[0]);
+	Portal* po = findPopupPortal(id);
+	if (!po || check_for_string_or_list_arg(argvars, 1) == FAIL)
+		return;
 
-   setBookText(po->book, argvars[1]);
-   redrawPortLater(po, UPD_NOT_VALID);
-   adjustPosition(po);
+	setBookText(po->book, argvars[1]);
+	redrawPortLater(po, UPD_NOT_VALID);
+	adjustPosition(po);
 }
 
 //popup_setbuf({id}, {bufnr})
 pub void
 f_popup_setbuf(Arr(Var) argvars, Var* returnVar) {
-   returnVar->tag = VAR_BOOL;
-   returnVar->number = VVAL_FALSE;
+	returnVar->tag = VAR_BOOL;
+	returnVar->number = VVAL_FALSE;
 
-   if (check_for_number_arg(argvars, 0) == FAIL || check_for_buffer_arg(argvars, 1) == FAIL)
-      return;
+	if (check_for_number_arg(argvars, 0) == FAIL || check_for_buffer_arg(argvars, 1) == FAIL)
+		return;
 
-   int id = (int)tv_get_number(&argvars[0]);
-   Portal* po = findPopupPortal(id);
-   if (po == NULL)
-      return;
+	int id = (int)tv_get_number(&argvars[0]);
+	Portal* po = findPopupPortal(id);
+	if (po == NULL)
+		return;
 
-   Book* book = daGetBookFromArg(&argvars[1]);
+	Book* book = daGetBookFromArg(&argvars[1]);
 
-   if (!book)
-      return;
-   if (book->term && popup_terminal_exists()) {
-      emsg(_(e_cannot_open_second_popup_with_terminal));
-      return;
-   }
+	if (!book)
+		return;
+	if (book->term && popup_terminal_exists()) {
+		emsg(_(e_cannot_open_second_popup_with_terminal));
+		return;
+	}
 
-   if (po->book != book) {
-      po->book->countPortals--;
-      initPopupPortal(po, book);
-      optSetLocalOptionsToDefault(po, false);
-      swap_exists_action = SEA_READONLY;
-      bookEnsureLoaded(book);
-      swap_exists_action = SEA_NONE;
-      redrawPortLater(po, UPD_NOT_VALID);
-      adjustPosition(po);
-   }
-   returnVar->number = VVAL_TRUE;
+	if (po->book != book) {
+		po->book->countPortals--;
+		initPopupPortal(po, book);
+		optSetLocalOptionsToDefault(po, false);
+		swap_exists_action = SEA_READONLY;
+		bookEnsureLoaded(book);
+		swap_exists_action = SEA_NONE;
+		redrawPortLater(po, UPD_NOT_VALID);
+		adjustPosition(po);
+	}
+	returnVar->number = VVAL_TRUE;
 }
 
 private void
 popup_free(Portal* po) {
-   sign_undefine_by_name(popup_get_sign_name(po), false);
-   po->book->locked = false;
-   if (po->windowRow + popup_height(po) >= (int)commlineRowG)
-      mustClearCommlineG = true;
-   portFreePopup(po);
+	sign_undefine_by_name(popup_get_sign_name(po), false);
+	po->book->locked = false;
+	if (po->windowRow + popup_height(po) >= (int)commlineRowG)
+		mustClearCommlineG = true;
+	portFreePopup(po);
 
-   if (po == messagePortP)
-      messagePortP = NULL;
+	if (po == messagePortP)
+		messagePortP = NULL;
 
-   redraw_all_later(UPD_NOT_VALID);
-   needRefreshPopupMaskG = true;
+	redraw_all_later(UPD_NOT_VALID);
+	needRefreshPopupMaskG = true;
 }
 
 private void
 error_for_popup_portal(void) {
-   emsg(_(e_not_allowed_in_popup_portal));
+	emsg(_(e_not_allowed_in_popup_portal));
 }
 
 pub Boole
 portErrorIfPopup(Boole also_with_term) {
-   //win_execute() may set "curPor" to a popup portal temporarily, but many
-   //commands are disallowed then. When a terminal runs in the popup, most
-   //things are allowed. When a terminal is finished it can be closed.
-   if (PORTAL_IS_POPUP(curPor) && (also_with_term || curBook->term == NULL)) {
-      error_for_popup_portal();
-      return true;
-   }
-   return false;
+	//win_execute() may set "curPor" to a popup portal temporarily, but many
+	//commands are disallowed then. When a terminal runs in the popup, most
+	//things are allowed. When a terminal is finished it can be closed.
+	if (PORTAL_IS_POPUP(curPor) && (also_with_term || curBook->term == NULL)) {
+		error_for_popup_portal();
+		return true;
+	}
+	return false;
 }
 
 //Close a popup portal by Portal-id. Does not invoke the callback.
 //Return OK if the popup was closed, FAIL otherwise.
 pub int
 popup_close(int id, int force) {
-   Portal   *prev = NULL;
-   //go through global popups
-   for (Portal* po = firstPopupPortG; po; prev = po, po = po->next) {
-      if (po->id == id) {
-         if (po == curPor) {
-            if (!force) {
-               error_for_popup_portal();
-               return FAIL;
-            }
-            back_to_prevPor(po);
-         }
-         if (!prev)
-            firstPopupPortG = po->next;
-         else
-            prev->next = po->next;
-         popup_free(po);
-         return OK;
-      }
-   }
+	Portal   *prev = NULL;
+	//go through global popups
+	for (Portal* po = firstPopupPortG; po; prev = po, po = po->next) {
+		if (po->id == id) {
+			if (po == curPor) {
+				if (!force) {
+					error_for_popup_portal();
+					return FAIL;
+				}
+				back_to_prevPor(po);
+			}
+			if (!prev)
+				firstPopupPortG = po->next;
+			else
+				prev->next = po->next;
+			popup_free(po);
+			return OK;
+		}
+	}
 
-   //go through tab-local popups
-   Tab *t;
-   FOR_ALL_TABS(t) {
-      if (popupCloseTab(t, id, force) == OK)
-          return OK;
-   }
-   return FAIL;
+	//go through tab-local popups
+	Tab *t;
+	FOR_ALL_TABS(t) {
+		if (popupCloseTab(t, id, force) == OK)
+			 return OK;
+	}
+	return FAIL;
 }
 
 //Close a popup portal with Portal-id "id" in tab "tab".
 pub int
 popupCloseTab(Tab* tab, int id, int force) {
-   Portal* po;
-   Portal** root = &tab->firstPopupPort;
-   Portal* prev = NULL;
+	Portal* po;
+	Portal** root = &tab->firstPopupPort;
+	Portal* prev = NULL;
 
-   for (po = *root; po; prev = po, po = po->next) {
-      if (po->id == id) {
-         if (po == curPor) {
-            if (!force) {
-               error_for_popup_portal();
-               return FAIL;
-            }
-            back_to_prevPor(po);
-         }
-         if (!prev)
-            *root = po->next;
-         else
-            prev->next = po->next;
-         popup_free(po);
-         return OK;
-      }
-   }
-   return FAIL;
+	for (po = *root; po; prev = po, po = po->next) {
+		if (po->id == id) {
+			if (po == curPor) {
+				if (!force) {
+					error_for_popup_portal();
+					return FAIL;
+				}
+				back_to_prevPor(po);
+			}
+			if (!prev)
+				*root = po->next;
+			else
+				prev->next = po->next;
+			popup_free(po);
+			return OK;
+		}
+	}
+	return FAIL;
 }
 
 pub void
 close_all_popups(int force) {
-   if (!force && portErrorIfPopup(true))
-      return;
-   while (firstPopupPortG) {
-      if (popup_close(firstPopupPortG->id, force) == FAIL)
-         return;
-   }
-   while (curtab->firstPopupPort) {
-      if (popup_close(curtab->firstPopupPort->id, force) == FAIL)
-          return;
-   }
+	if (!force && portErrorIfPopup(true))
+		return;
+	while (firstPopupPortG) {
+		if (popup_close(firstPopupPortG->id, force) == FAIL)
+			return;
+	}
+	while (curtab->firstPopupPort) {
+		if (popup_close(curtab->firstPopupPort->id, force) == FAIL)
+			 return;
+	}
 }
 
 //popup_move({id}, {options})
 pub void
 f_popup_move(Arr(Var) argvars, Var*) {
-   int id = (int)tv_get_number(argvars);
-   Portal* po = findPopupPortal(id);
-   if (po == NULL)
-      return;  //invalid {id}
+	int id = (int)tv_get_number(argvars);
+	Portal* po = findPopupPortal(id);
+	if (po == NULL)
+		return;  //invalid {id}
 
-   if (check_for_nonnull_dict_arg(argvars, 1) == FAIL)
-      return;
-   Bag* params = argvars[1].bag;
+	if (check_for_nonnull_dict_arg(argvars, 1) == FAIL)
+		return;
+	Bag* params = argvars[1].bag;
 
-   applyMoveParams(po, params);
+	applyMoveParams(po, params);
 
-   if (po->windowRow + po->height >= commlineRowG)
-      mustClearCommlineG = true;
-   adjustPosition(po);
+	if (po->windowRow + po->height >= commlineRowG)
+		mustClearCommlineG = true;
+	adjustPosition(po);
 }
 
 //popup_setoptions({id}, {options})
 pub void
 f_popup_setoptions(Arr(Var) argvars, Var*) {
-   int id = (int)tv_get_number(argvars);
-   Portal* po = findPopupPortal(id);
-   if (!po)
-      return;  //invalid {id}
+	int id = (int)tv_get_number(argvars);
+	Portal* po = findPopupPortal(id);
+	if (!po)
+		return;  //invalid {id}
 
-   if (check_for_nonnull_dict_arg(argvars, 1) == FAIL)
-      return;
-   Bag* params = argvars[1].bag;
-   LineNr old_firstline = po->pup.firstLine;
+	if (check_for_nonnull_dict_arg(argvars, 1) == FAIL)
+		return;
+	Bag* params = argvars[1].bag;
+	LineNr old_firstline = po->pup.firstLine;
 
-   (void)applyParams(po, params, false);
+	(void)applyParams(po, params, false);
 
-   if (old_firstline != po->pup.firstLine)
-      redrawPortLater(po, UPD_NOT_VALID);
-   adjustPosition(po);
+	if (old_firstline != po->pup.firstLine)
+		redrawPortLater(po, UPD_NOT_VALID);
+	adjustPosition(po);
 }
 
 //popup_getpos({id})
 pub void
 f_popup_getpos(Arr(Var) argvars, Var* returnVar) {
-   allocReturnDict(returnVar);
+	allocReturnDict(returnVar);
 
-   int id = (int)tv_get_number(argvars);
-   Portal* po = findPopupPortal(id);
-   if (!po)
-      return;  //invalid {id}
-   int top_extra = popup_top_extra(po);
-   int left_extra = po->pup.border[3] + po->pup.padding[3];
+	int id = (int)tv_get_number(argvars);
+	Portal* po = findPopupPortal(id);
+	if (!po)
+		return;  //invalid {id}
+	int top_extra = popup_top_extra(po);
+	int left_extra = po->pup.border[3] + po->pup.padding[3];
 
-   //we know how much space we need, avoid resizing halfway
-   Bag* dict = returnVar->bag;
-   hash_lock_size(&dict->hashTable, 11);
+	//we know how much space we need, avoid resizing halfway
+	Bag* dict = returnVar->bag;
+	hash_lock_size(&dict->hashTable, 11);
 
-   bagAddNumber(dict, S"line", po->windowRow + 1);
-   bagAddNumber(dict, S"col", po->windowCol + 1);
-   bagAddNumber(dict, S"width", po->width + left_extra
-       + po->pup.border[1] + po->pup.padding[1]);
-   bagAddNumber(dict, S"height", po->height + top_extra
-       + po->pup.border[2] + po->pup.padding[2]);
+	bagAddNumber(dict, S"line", po->windowRow + 1);
+	bagAddNumber(dict, S"col", po->windowCol + 1);
+	bagAddNumber(dict, S"width", po->width + left_extra
+		 + po->pup.border[1] + po->pup.padding[1]);
+	bagAddNumber(dict, S"height", po->height + top_extra
+		 + po->pup.border[2] + po->pup.padding[2]);
 
-    bagAddNumber(dict, S"core_line", po->windowRow + 1 + top_extra);
-    bagAddNumber(dict, S"core_col", po->windowCol + 1 + left_extra);
-    bagAddNumber(dict, S"core_width", po->width);
-    bagAddNumber(dict, S"core_height", po->height);
+	 bagAddNumber(dict, S"core_line", po->windowRow + 1 + top_extra);
+	 bagAddNumber(dict, S"core_col", po->windowCol + 1 + left_extra);
+	 bagAddNumber(dict, S"core_width", po->width);
+	 bagAddNumber(dict, S"core_height", po->height);
 
-    bagAddNumber(dict, S"scrollbar", po->pup.hasScrollbar);
-    bagAddNumber(dict, S"firstline", po->topLine);
-    bagAddNumber(dict, S"lastline", po->bottomLine - 1);
-    bagAddNumber(dict, S"visible",
-       portalIsValid(po) && (po->pup.flags & POPF_HIDDEN) == 0);
+	 bagAddNumber(dict, S"scrollbar", po->pup.hasScrollbar);
+	 bagAddNumber(dict, S"firstline", po->topLine);
+	 bagAddNumber(dict, S"lastline", po->bottomLine - 1);
+	 bagAddNumber(dict, S"visible",
+		 portalIsValid(po) && (po->pup.flags & POPF_HIDDEN) == 0);
 
-    hash_unlock(&dict->hashTable);
+	 hash_unlock(&dict->hashTable);
 }
 
 //popup_list()
 pub void
 f_popup_list(Arr(Var), OUT Var* returnVar) {
-   allocReturnList(returnVar);
+	allocReturnList(returnVar);
 
-   Portal   *po;
-   FOR_ALL_POPUPPORTS(po)
-      list_append_number(returnVar->list, po->id);
+	Portal   *po;
+	FOR_ALL_POPUPPORTS(po)
+		list_append_number(returnVar->list, po->id);
 
-   Tab   *t;
-   FOR_ALL_TABS(t) {
-      FOR_ALL_POPUPPORTS_IN_TAB(t, po)
-         list_append_number(returnVar->list, po->id);
-   }
+	Tab   *t;
+	FOR_ALL_TABS(t) {
+		FOR_ALL_POPUPPORTS_IN_TAB(t, po)
+			list_append_number(returnVar->list, po->id);
+	}
 }
 
 //popup_locate({row}, {col})
 pub void
 f_popup_locate(Arr(Var) argvars, Var* returnVar) {
-   int row = tv_get_number(&argvars[0]) - 1;
-   int col = tv_get_number(&argvars[1]) - 1;
-   Portal* po = mouseFindPortal(&row, &col, FIND_POPUP);
-   if (po && PORTAL_IS_POPUP(po))
-      returnVar->number = po->id;
+	int row = tv_get_number(&argvars[0]) - 1;
+	int col = tv_get_number(&argvars[1]) - 1;
+	Portal* po = mouseFindPortal(&row, &col, FIND_POPUP);
+	if (po && PORTAL_IS_POPUP(po))
+		returnVar->number = po->id;
 }
 
 //For popup_getoptions(): add a "border" or "padding" entry to "dict".
 private void
 get_padding_border(Bag* dict, int* array, CS name) {
-   if (array[0] == 0 && array[1] == 0 && array[2] == 0 && array[3] == 0)
-      return;
+	if (array[0] == 0 && array[1] == 0 && array[2] == 0 && array[3] == 0)
+		return;
 
-   List* list = list_alloc();
-   bagAddList(dict, name, list);
-   if (array[0] != 1 || array[1] != 1 || array[2] != 1 || array[3] != 1) {
-      for (int i = 0; i < 4; ++i)
-         list_append_number(list, array[i]);
-   }
+	List* list = list_alloc();
+	bagAddList(dict, name, list);
+	if (array[0] != 1 || array[1] != 1 || array[2] != 1 || array[3] != 1) {
+		for (int i = 0; i < 4; ++i)
+			list_append_number(list, array[i]);
+	}
 }
 
 //For popup_getoptions(): add a "borderhilite" entry to "dict".
 private void
 getBorderHilite(Bag* dict, Portal* po) {
-   int i;
-   for (i = 0; i < 4; ++i) {
-      if (po->pup.borderHilite[i] != HILITE_NULL)
-         break;
-   }
-   if (i == 4)
-      return;
+	int i;
+	for (i = 0; i < 4; ++i) {
+		if (po->pup.borderHilite[i] != HILITE_NULL)
+			break;
+	}
+	if (i == 4)
+		return;
 
-   List* list = list_alloc();
-   bagAddList(dict, S"borderhilite", list);
-   for (i = 0; i < 4; ++i)
-      list_append_number(list, po->pup.borderHilite[i]);
+	List* list = list_alloc();
+	bagAddList(dict, S"borderhilite", list);
+	for (i = 0; i < 4; ++i)
+		list_append_number(list, po->pup.borderHilite[i]);
 }
 
 //For popup_getoptions(): add a "borderchars" entry to "dict".
 private void
 get_borderchars(Bag* bag, Portal* po) {
-   Byte buf[NUMBUFLEN];
+	Byte buf[NUMBUFLEN];
 
-   int i;
-   for (i = 0; i < 8; ++i) {
-      if (po->pup.borderChar[i] != 0)
-         break;
-   }
-   if (i == 8)
-      return;
+	int i;
+	for (i = 0; i < 8; ++i) {
+		if (po->pup.borderChar[i] != 0)
+			break;
+	}
+	if (i == 8)
+		return;
 
-   List* list = list_alloc();
-   bagAddList(bag, S"borderchars", list);
-   for (i = 0; i < 8; ++i) {
-      int len = mb_char2bytes(po->pup.borderChar[i], buf);
-      list_append_string(list, buf, len);
-   }
+	List* list = list_alloc();
+	bagAddList(bag, S"borderchars", list);
+	for (i = 0; i < 8; ++i) {
+		int len = mb_char2bytes(po->pup.borderChar[i], buf);
+		list_append_string(list, buf, len);
+	}
 }
 
 //For popup_getoptions(): add a "moved" and "mousemoved" entry to "dict".
 private void
 get_moved_list(Bag* bag, Portal* po) {
-   List* list = list_alloc();
-   bagAddList(bag, S"moved", list);
-   list_append_number(list, po->pup.lnum);
-   list_append_number(list, po->pup.minCol);
-   list_append_number(list, po->pup.maxCol);
+	List* list = list_alloc();
+	bagAddList(bag, S"moved", list);
+	list_append_number(list, po->pup.lnum);
+	list_append_number(list, po->pup.minCol);
+	list_append_number(list, po->pup.maxCol);
 
-   list = list_alloc();
-   bagAddList(bag, S"mousemoved", list);
-   list_append_number(list, po->pup.mouseRow);
-   list_append_number(list, po->pup.mouseMinCol);
-   list_append_number(list, po->pup.mouseMaxCol);
+	list = list_alloc();
+	bagAddList(bag, S"mousemoved", list);
+	list_append_number(list, po->pup.mouseRow);
+	list_append_number(list, po->pup.mouseMinCol);
+	list_append_number(list, po->pup.mouseMaxCol);
 }
 
 //popup_getoptions({id})
 pub void
 f_popup_getoptions(Arr(Var) argvars, OUT Var* returnVar) {
-   allocReturnDict(returnVar);
+	allocReturnDict(returnVar);
 
-   int id = (int)tv_get_number(argvars);
-   Portal* po = findPopupPortal(id);
-   if (!po)
-      return;
+	int id = (int)tv_get_number(argvars);
+	Portal* po = findPopupPortal(id);
+	if (!po)
+		return;
 
-   Bag* b = returnVar->bag;
-   bagAddNumber(b, S"line", po->pup.wantLine);
-   bagAddNumber(b, S"col", po->pup.wantCol);
-   bagAddNumber(b, S"minwidth", po->pup.minWidth);
-   bagAddNumber(b, S"minheight", po->pup.minHeight);
-   bagAddNumber(b, S"maxheight", po->pup.maxHeight);
-   bagAddNumber(b, S"maxwidth", po->pup.maxWidth);
-   bagAddNumber(b, S"firstline", po->pup.firstLine);
-   bagAddNumber(b, S"scrollbar", po->pup.wantScrollbar);
-   bagAddNumber(b, S"zindex", po->pup.zIndex);
-   bagAddNumber(b, S"fixed", po->pup.fixed);
-   if (po->pup.propType && doesPortalExistInAnyTab(po->pup.propPort)) {
-      PropType* pt = text_prop_type_by_id(po->pup.propPort->book, po->pup.propType);
+	Bag* b = returnVar->bag;
+	bagAddNumber(b, S"line", po->pup.wantLine);
+	bagAddNumber(b, S"col", po->pup.wantCol);
+	bagAddNumber(b, S"minwidth", po->pup.minWidth);
+	bagAddNumber(b, S"minheight", po->pup.minHeight);
+	bagAddNumber(b, S"maxheight", po->pup.maxHeight);
+	bagAddNumber(b, S"maxwidth", po->pup.maxWidth);
+	bagAddNumber(b, S"firstline", po->pup.firstLine);
+	bagAddNumber(b, S"scrollbar", po->pup.wantScrollbar);
+	bagAddNumber(b, S"zindex", po->pup.zIndex);
+	bagAddNumber(b, S"fixed", po->pup.fixed);
+	if (po->pup.propType && doesPortalExistInAnyTab(po->pup.propPort)) {
+		PropType* pt = text_prop_type_by_id(po->pup.propPort->book, po->pup.propType);
 
-      if (pt != NULL)
-         bagAddString(b, S"textprop", pt->name);
-      bagAddNumber(b, S"textpropwin", po->pup.propPort->id);
-      bagAddNumber(b, S"textpropid", po->pup.propId);
-   }
-   bagAddString(b, S"title", po->pup.title);
-   bagAddNumber(b, S"wrap", po->o.wrap);
-   bagAddNumber(b, S"drag", (po->pup.flags & POPF_DRAG) != 0);
-   bagAddNumber(b, S"dragall", (po->pup.flags & POPF_DRAGALL) != 0);
-   bagAddNumber(b, S"mapping", (po->pup.flags & POPF_MAPPING) != 0);
-   bagAddNumber(b, S"resize", (po->pup.flags & POPF_RESIZE) != 0);
-   bagAddNumber(b, S"posinvert", (po->pup.flags & POPF_POSINVERT) != 0);
-   bagAddNumber(b, S"cursorline", (po->pup.flags & POPF_CURSORLINE) != 0);
-   if (po->pup.scrollbarHilite)
-      bagAddNumber(b, S"scrollbarhilite", po->pup.scrollbarHilite);
-   if (po->pup.thumbHilite)
-      bagAddNumber(b, S"thumbhilite", po->pup.thumbHilite);
+		if (pt != NULL)
+			bagAddString(b, S"textprop", pt->name);
+		bagAddNumber(b, S"textpropwin", po->pup.propPort->id);
+		bagAddNumber(b, S"textpropid", po->pup.propId);
+	}
+	bagAddString(b, S"title", po->pup.title);
+	bagAddNumber(b, S"wrap", po->o.wrap);
+	bagAddNumber(b, S"drag", (po->pup.flags & POPF_DRAG) != 0);
+	bagAddNumber(b, S"dragall", (po->pup.flags & POPF_DRAGALL) != 0);
+	bagAddNumber(b, S"mapping", (po->pup.flags & POPF_MAPPING) != 0);
+	bagAddNumber(b, S"resize", (po->pup.flags & POPF_RESIZE) != 0);
+	bagAddNumber(b, S"posinvert", (po->pup.flags & POPF_POSINVERT) != 0);
+	bagAddNumber(b, S"cursorline", (po->pup.flags & POPF_CURSORLINE) != 0);
+	if (po->pup.scrollbarHilite)
+		bagAddNumber(b, S"scrollbarhilite", po->pup.scrollbarHilite);
+	if (po->pup.thumbHilite)
+		bagAddNumber(b, S"thumbhilite", po->pup.thumbHilite);
 
-   //find the tab that holds this popup
-   int i = 1;
-   Tab* t;
-   FOR_ALL_TABS(t) {
-      Portal *twp;
-      FOR_ALL_POPUPPORTS_IN_TAB(t, twp) {
-         if (twp->id == id)
-            break;
-      }
-      if (twp)
-         break;
-      ++i;
-   }
-   if (!t)
-      i = -1;  //must be global
-   ei (t == curtab)
-      i = 0;
-   bagAddNumber(b, S"tabpage", i);
+	//find the tab that holds this popup
+	int i = 1;
+	Tab* t;
+	FOR_ALL_TABS(t) {
+		Portal *twp;
+		FOR_ALL_POPUPPORTS_IN_TAB(t, twp) {
+			if (twp->id == id)
+				break;
+		}
+		if (twp)
+			break;
+		++i;
+	}
+	if (!t)
+		i = -1;  //must be global
+	ei (t == curtab)
+		i = 0;
+	bagAddNumber(b, S"tabpage", i);
 
-   get_padding_border(b, po->pup.padding, S"padding");
-   get_padding_border(b, po->pup.border, S"border");
-   getBorderHilite(b, po);
-   get_borderchars(b, po);
-   get_moved_list(b, po);
+	get_padding_border(b, po->pup.padding, S"padding");
+	get_padding_border(b, po->pup.border, S"border");
+	getBorderHilite(b, po);
+	get_borderchars(b, po);
+	get_moved_list(b, po);
 
-   if (po->pup.filterCb.name)
-      bagAddCallback(b, S"filter", &po->pup.filterCb);
-   if (po->pup.closeCb.name)
-      bagAddCallback(b, S"callback", &po->pup.closeCb);
+	if (po->pup.filterCb.name)
+		bagAddCallback(b, S"filter", &po->pup.filterCb);
+	if (po->pup.closeCb.name)
+		bagAddCallback(b, S"callback", &po->pup.closeCb);
 
-   for (i = 0; i < (int)ARRAY_LENGTH(popposEntriesS); ++i) {
-      if (po->pup.pos == popposEntriesS[i].pp_val) {
-         bagAddString(b, S"pos", (CS)popposEntriesS[i].pp_name);
-         break;
-      }
-   }
+	for (i = 0; i < (int)ARRAY_LENGTH(popposEntriesS); ++i) {
+		if (po->pup.pos == popposEntriesS[i].pp_val) {
+			bagAddString(b, S"pos", (CS)popposEntriesS[i].pp_name);
+			break;
+		}
+	}
 
-   bagAddString(b, S"close",
-      (CS)( po->pup.close == POPCLOSE_BUTTON
-         ? "button" : po->pup.close == POPCLOSE_CLICK ? "click" : "none"
-      )
-   );
+	bagAddString(b, S"close",
+		(CS)( po->pup.close == POPCLOSE_BUTTON
+			? "button" : po->pup.close == POPCLOSE_CLICK ? "click" : "none"
+		)
+	);
 
-   bagAddNumber(b, S"time", po->pup.timer ? (long)po->pup.timer->tr_interval : 0L);
+	bagAddNumber(b, S"time", po->pup.timer ? (long)po->pup.timer->tr_interval : 0L);
 }
 
 //Return true if the current portal is running a terminal in a popup portal.
 //false when the job has ended.
 pub Boole
 portErrorIfTermPopup(void) {
-   if (PORTAL_IS_POPUP(curPor) && curBook->term && term_job_running(curBook->term)) {
-      emsg(_(e_not_allowed_for_terminal_in_popup_portal));
-      return true;
-   }
-   return false;
+	if (PORTAL_IS_POPUP(curPor) && curBook->term && term_job_running(curBook->term)) {
+		emsg(_(e_not_allowed_for_terminal_in_popup_portal));
+		return true;
+	}
+	return false;
 }
 
 //Reset all the "handled_flag" flags in global popup portals and popup portals in the current tab
@@ -12582,14 +12581,14 @@ portErrorIfTermPopup(void) {
 //POPUP_HANDLED_1.  This won't work with recursive calls though.
 pub void
 popup_reset_handled(int handled_flag) {
-   Portal* po;
+	Portal* po;
 
-   FOR_ALL_POPUPPORTS(po) {
-      po->pup.handled &= ~handled_flag;
-   }
-   FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
-      po->pup.handled &= ~handled_flag;
-   }
+	FOR_ALL_POPUPPORTS(po) {
+		po->pup.handled &= ~handled_flag;
+	}
+	FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
+		po->pup.handled &= ~handled_flag;
+	}
 }
 
 //Find the next visible popup where "handled_flag" is not set. Must have called
@@ -12597,32 +12596,32 @@ popup_reset_handled(int handled_flag) {
 //otherwise the popup with the highest zindex.
 pub Portal *
 find_next_popup(int lowest, int handled_flag) {
-   Portal* po;
+	Portal* po;
 
-   int found_zindex = lowest ? INT_MAX : 0;
-   Portal* found_wp = NULL;
-   FOR_ALL_POPUPPORTS(po) {
-      if ((po->pup.handled & handled_flag) == 0
-         && (po->pup.flags & POPF_HIDDEN) == 0
-         && (lowest ? po->pup.zIndex < found_zindex : po->pup.zIndex > found_zindex)
-      ){
-          found_zindex = po->pup.zIndex;
-          found_wp = po;
-      }
-   }
-   FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
-      if ((po->pup.handled & handled_flag) == 0
-            && (po->pup.flags & POPF_HIDDEN) == 0
-            && (lowest ? po->pup.zIndex < found_zindex : po->pup.zIndex > found_zindex)
-      ){
-         found_zindex = po->pup.zIndex;
-         found_wp = po;
-      }
-   }
+	int found_zindex = lowest ? INT_MAX : 0;
+	Portal* found_wp = NULL;
+	FOR_ALL_POPUPPORTS(po) {
+		if ((po->pup.handled & handled_flag) == 0
+			&& (po->pup.flags & POPF_HIDDEN) == 0
+			&& (lowest ? po->pup.zIndex < found_zindex : po->pup.zIndex > found_zindex)
+		){
+			 found_zindex = po->pup.zIndex;
+			 found_wp = po;
+		}
+	}
+	FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
+		if ((po->pup.handled & handled_flag) == 0
+				&& (po->pup.flags & POPF_HIDDEN) == 0
+				&& (lowest ? po->pup.zIndex < found_zindex : po->pup.zIndex > found_zindex)
+		){
+			found_zindex = po->pup.zIndex;
+			found_wp = po;
+		}
+	}
 
-   if (found_wp)
-      found_wp->pup.handled |= handled_flag;
-   return found_wp;
+	if (found_wp)
+		found_wp->pup.handled |= handled_flag;
+	return found_wp;
 }
 
 //Invoke the filter callback for portal "po" with typed character "c". Uses the global "modMaskG"
@@ -12630,281 +12629,281 @@ find_next_popup(int lowest, int handled_flag) {
 //Careful: The filter may make "po" invalid!
 private int
 invoke_popup_filter(Portal* po, int c) {
-   int      res;
-   Var   returnVar;
-   Var   argv[3];
-   Byte   buf[NUMBUFLEN];
-   LineNr   old_lnum = po->cursor.lnum;
-   int      prev_anyEmsgG = anyEmsgG;
+	int      res;
+	Var   returnVar;
+	Var   argv[3];
+	Byte   buf[NUMBUFLEN];
+	LineNr   old_lnum = po->cursor.lnum;
+	int      prev_anyEmsgG = anyEmsgG;
 
-   //Emergency exit: CTRL-C closes the popup.
-   if (c == Ctrl_C) {
-      int save_gotInterruptG = gotInterruptG;
-      int was_curPor = po == curPor;
+	//Emergency exit: CTRL-C closes the popup.
+	if (c == Ctrl_C) {
+		int save_gotInterruptG = gotInterruptG;
+		int was_curPor = po == curPor;
 
-      //Reset gotInterruptG to avoid the callback isn't called.
-      gotInterruptG = false;
-      popup_close_with_retval(po, -1);
-      gotInterruptG |= save_gotInterruptG;
+		//Reset gotInterruptG to avoid the callback isn't called.
+		gotInterruptG = false;
+		popup_close_with_retval(po, -1);
+		gotInterruptG |= save_gotInterruptG;
 
-      //If the popup is the current portal it probably fails to close.  Then
-      //do not consume the key.
-      if (was_curPor && po == curPor)
-         return -1;
-      return true;
-   }
+		//If the popup is the current portal it probably fails to close.  Then
+		//do not consume the key.
+		if (was_curPor && po == curPor)
+			return -1;
+		return true;
+	}
 
-   argv[0].tag = VAR_NUMBER;
-   argv[0].number = (Long)po->id;
+	argv[0].tag = VAR_NUMBER;
+	argv[0].number = (Long)po->id;
 
-   //Convert the number to a string, so that the function can use:
-   //      if a:c == "\<F2>"
-   buf[special_to_buf(c, modMaskG, false, buf)] = ZERO;
-   argv[1].tag = VAR_STRING;
-   argv[1].string = copyStr(buf);
+	//Convert the number to a string, so that the function can use:
+	//      if a:c == "\<F2>"
+	buf[special_to_buf(c, modMaskG, false, buf)] = ZERO;
+	argv[1].tag = VAR_STRING;
+	argv[1].string = copyStr(buf);
 
-   argv[2].tag = VAR_UNKNOWN;
+	argv[2].tag = VAR_UNKNOWN;
 
-   //NOTE: The callback might close the popup and make "po" invalid.
-   if (call_callback(&po->pup.filterCb, -1, &returnVar, 2, argv) == FAIL) {
-      //Cannot call the function, close the popup to avoid that the filter
-      //eats keys and the user is stuck.  Might as well eat the key.
-      popup_close_with_retval(po, -1);
-      res = true;
-   } else {
-      if (portalValidPopup(po) && old_lnum != po->cursor.lnum)
-         highlightCurrentLine(po);
+	//NOTE: The callback might close the popup and make "po" invalid.
+	if (call_callback(&po->pup.filterCb, -1, &returnVar, 2, argv) == FAIL) {
+		//Cannot call the function, close the popup to avoid that the filter
+		//eats keys and the user is stuck.  Might as well eat the key.
+		popup_close_with_retval(po, -1);
+		res = true;
+	} else {
+		if (portalValidPopup(po) && old_lnum != po->cursor.lnum)
+			highlightCurrentLine(po);
 
-      //If an error message was given always return false, so that keys are
-      //not consumed and the user can type something.
-      //If we get three errors in a row then close the popup.  Decrement the
-      //error count by 1/10 if there are no errors, thus allowing up to 1 in
-      //10 calls to cause an error.
-      if (portalValidPopup(po) && anyEmsgG > prev_anyEmsgG) {
-         po->pup.filterErrors += 10;
-         if (po->pup.filterErrors >= 30)
-            popup_close_with_retval(po, -1);
-         res = false;
-      } else {
-         if (portalValidPopup(po) && po->pup.filterErrors > 0)
-            --po->pup.filterErrors;
-         res = tv_get_bool(&returnVar);
-      }
-   }
+		//If an error message was given always return false, so that keys are
+		//not consumed and the user can type something.
+		//If we get three errors in a row then close the popup.  Decrement the
+		//error count by 1/10 if there are no errors, thus allowing up to 1 in
+		//10 calls to cause an error.
+		if (portalValidPopup(po) && anyEmsgG > prev_anyEmsgG) {
+			po->pup.filterErrors += 10;
+			if (po->pup.filterErrors >= 30)
+				popup_close_with_retval(po, -1);
+			res = false;
+		} else {
+			if (portalValidPopup(po) && po->pup.filterErrors > 0)
+				--po->pup.filterErrors;
+			res = tv_get_bool(&returnVar);
+		}
+	}
 
-   eeglFree(argv[1].string);
-   clearVar(&returnVar);
-   return res;
+	eeglFree(argv[1].string);
+	clearVar(&returnVar);
+	return res;
 }
 
 //Called when "c" was typed: invoke popup filter callbacks. Return true when the character was
 //consumed
 pub int
 popup_do_filter(Unt c) {
-   static Boole recursive = false;
-   int res = false;
-   Boole keyWasTypedSaved = keyWasTypedG;
-   int state;
-   Unt mustRedrawSaved = mustRedrawG;
+	static Boole recursive = false;
+	int res = false;
+	Boole keyWasTypedSaved = keyWasTypedG;
+	int state;
+	Unt mustRedrawSaved = mustRedrawG;
 
-   //Popup portal with terminal always gets focus.
-   if (portalIsPopup(curPor) && curBook->term != NULL)
-      return false;
+	//Popup portal with terminal always gets focus.
+	if (portalIsPopup(curPor) && curBook->term != NULL)
+		return false;
 
-   if (recursive)
-      return false;
-   recursive = true;
+	if (recursive)
+		return false;
+	recursive = true;
 
-   Portal* po;
-   if (c == K_LEFTMOUSE) {
-      int row = mouseRowG;
-      int col = mouseColG;
+	Portal* po;
+	if (c == K_LEFTMOUSE) {
+		int row = mouseRowG;
+		int col = mouseColG;
 
-      po = mouseFindPortal(&row, &col, FIND_POPUP);
-      if (po && popup_close_if_on_X(po, row, col))
-         res = 1;
-   }
+		po = mouseFindPortal(&row, &col, FIND_POPUP);
+		if (po && popup_close_if_on_X(po, row, col))
+			res = 1;
+	}
 
-   popup_reset_handled(POPUP_HANDLED_2);
-   state = get_real_state();
-   while (!res && (po = find_next_popup(false, POPUP_HANDLED_2)) != NULL) {
-      if (po->pup.filterCb.name != NULL && (po->pup.filterMode & state) != 0)
-         res = invoke_popup_filter(po, c);
-   }
+	popup_reset_handled(POPUP_HANDLED_2);
+	state = get_real_state();
+	while (!res && (po = find_next_popup(false, POPUP_HANDLED_2)) != NULL) {
+		if (po->pup.filterCb.name != NULL && (po->pup.filterMode & state) != 0)
+			res = invoke_popup_filter(po, c);
+	}
 
-   //when Ctrl-C and no popup has been processed (res is still false)
-   //Try to find and close a popup that has no filter callback
-   if (c == Ctrl_C && !res) {
-      popup_reset_handled(POPUP_HANDLED_2);
-      po = find_next_popup(false, POPUP_HANDLED_2);
-      if (po) {
-         popup_close_with_retval(po, -1);
-         res = true;
-      }
-   }
+	//when Ctrl-C and no popup has been processed (res is still false)
+	//Try to find and close a popup that has no filter callback
+	if (c == Ctrl_C && !res) {
+		popup_reset_handled(POPUP_HANDLED_2);
+		po = find_next_popup(false, POPUP_HANDLED_2);
+		if (po) {
+			popup_close_with_retval(po, -1);
+			res = true;
+		}
+	}
 
 
-   if (mustRedrawG > mustRedrawSaved) {
-      int save_gotInterruptG = gotInterruptG;
+	if (mustRedrawG > mustRedrawSaved) {
+		int save_gotInterruptG = gotInterruptG;
 
-      //Reset gotInterruptG to avoid a function used in the statusline aborts.
-      gotInterruptG = false;
-      redraw_after_callback(false, false);
-      gotInterruptG |= save_gotInterruptG;
-   }
-   recursive = false;
-   keyWasTypedG = keyWasTypedSaved;
+		//Reset gotInterruptG to avoid a function used in the statusline aborts.
+		gotInterruptG = false;
+		redraw_after_callback(false, false);
+		gotInterruptG |= save_gotInterruptG;
+	}
+	recursive = false;
+	keyWasTypedG = keyWasTypedSaved;
 
-   //When interrupted return false to avoid looping.
-   return res == -1 ? 0 : res;
+	//When interrupted return false to avoid looping.
+	return res == -1 ? 0 : res;
 }
 
 //Return true if there is a popup visible with a filter callback and the "mapping" property off.
 pub int
 popup_no_mapping(void) {
-   Portal   *po;
-   for (int round = 1; round <= 2; ++round) {
-      for (po = round == 1 ? firstPopupPortG : curtab->firstPopupPort; po; po = po->next) {
-         if (po->pup.filterCb.name != NULL
-               && (po->pup.flags & (POPF_HIDDEN | POPF_MAPPING)) == 0
-         )
-            return true;
-      }
-   }
-   return false;
+	Portal   *po;
+	for (int round = 1; round <= 2; ++round) {
+		for (po = round == 1 ? firstPopupPortG : curtab->firstPopupPort; po; po = po->next) {
+			if (po->pup.filterCb.name != NULL
+					&& (po->pup.flags & (POPF_HIDDEN | POPF_MAPPING)) == 0
+			)
+				return true;
+		}
+	}
+	return false;
 }
 
 //When the cursor moved: check if any popup needs to be closed if the cursor moved far enough
 pub void
 popup_check_cursor_pos(void) {
-   Portal* po;
+	Portal* po;
 
-   popup_reset_handled(POPUP_HANDLED_3);
-   while ((po = find_next_popup(true, POPUP_HANDLED_3)) != NULL) {
-      if (po->pup.curPor != NULL
-            && (curPor != po->pup.curPor
-                || curPor->cursor.lnum != po->pup.lnum
-                || curPor->cursor.col < po->pup.minCol
-                || curPor->cursor.col > po->pup.maxCol)
-      )
-         popup_close_with_retval(po, -1);
-   }
+	popup_reset_handled(POPUP_HANDLED_3);
+	while ((po = find_next_popup(true, POPUP_HANDLED_3)) != NULL) {
+		if (po->pup.curPor != NULL
+				&& (curPor != po->pup.curPor
+					 || curPor->cursor.lnum != po->pup.lnum
+					 || curPor->cursor.col < po->pup.minCol
+					 || curPor->cursor.col > po->pup.maxCol)
+		)
+			popup_close_with_retval(po, -1);
+	}
 }
 
 //Update "maskCells".
 private void
 popup_update_mask(Portal* po, int width, int height) {
-   ListItem* lio;
-   ListItem* li;
-   int row, col;
+	ListItem* lio;
+	ListItem* li;
+	int row, col;
 
-   if (po->pup.mask == NULL || width == 0 || height == 0) {
-      EE_CLEAR(po->pup.maskCells);
-      return;
-   }
-   if (po->pup.maskCells && po->pup.maskHeight == height && po->pup.maskWidth == width) {
-      return;  //cache is still valid
-   }
+	if (po->pup.mask == NULL || width == 0 || height == 0) {
+		EE_CLEAR(po->pup.maskCells);
+		return;
+	}
+	if (po->pup.maskCells && po->pup.maskHeight == height && po->pup.maskWidth == width) {
+		return;  //cache is still valid
+	}
 
-   eeglFree(po->pup.maskCells);
-   po->pup.maskCells = allocZeroed((Unt)width * height);
-   if (!po->pup.maskCells)
-      return;
-   Arr(Byte) cells = po->pup.maskCells;
+	eeglFree(po->pup.maskCells);
+	po->pup.maskCells = allocZeroed((Unt)width * height);
+	if (!po->pup.maskCells)
+		return;
+	Arr(Byte) cells = po->pup.maskCells;
 
-   FOR_ALL_LIST_ITEMS(po->pup.mask, lio) {
-      int cols, cole;
-      int lines, linee;
+	FOR_ALL_LIST_ITEMS(po->pup.mask, lio) {
+		int cols, cole;
+		int lines, linee;
 
-      li = lio->c.list->first;
-      cols = tv_get_number(&li->c);
-      if (cols < 0)
-          cols = width + cols + 1;
-      if (cols <= 0)
-          cols = 1;
-      li = li->next;
-      cole = tv_get_number(&li->c);
-      if (cole < 0)
-          cole = width + cole + 1;
-      if (cole > width)
-          cole = width;
-      li = li->next;
-      lines = tv_get_number(&li->c);
-      if (lines < 0)
-          lines = height + lines + 1;
-      if (lines <= 0)
-          lines = 1;
-      li = li->next;
-      linee = tv_get_number(&li->c);
-      if (linee < 0)
-          linee = height + linee + 1;
-      if (linee > height)
-          linee = height;
+		li = lio->c.list->first;
+		cols = tv_get_number(&li->c);
+		if (cols < 0)
+			 cols = width + cols + 1;
+		if (cols <= 0)
+			 cols = 1;
+		li = li->next;
+		cole = tv_get_number(&li->c);
+		if (cole < 0)
+			 cole = width + cole + 1;
+		if (cole > width)
+			 cole = width;
+		li = li->next;
+		lines = tv_get_number(&li->c);
+		if (lines < 0)
+			 lines = height + lines + 1;
+		if (lines <= 0)
+			 lines = 1;
+		li = li->next;
+		linee = tv_get_number(&li->c);
+		if (linee < 0)
+			 linee = height + linee + 1;
+		if (linee > height)
+			 linee = height;
 
-      for (row = lines - 1; row < linee; ++row)
-         for (col = cols - 1; col < cole; ++col)
-            cells[row * width + col] = 1;
-   }
+		for (row = lines - 1; row < linee; ++row)
+			for (col = cols - 1; col < cole; ++col)
+				cells[row * width + col] = 1;
+	}
 }
 
 //Return true if "col" / "line" matches with an entry in pup.mask.
 //"col" and "line" are screen coordinates.
 private int
 popupMaskGed(Portal* po, int width, int height, int screencol, int screenline) {
-   int col = screencol - po->windowCol + po->pup.leftOff;
-   int line = screenline - po->windowRow;
+	int col = screencol - po->windowCol + po->pup.leftOff;
+	int line = screenline - po->windowRow;
 
-   return col >= 0 && col < width
-       && line >= 0 && line < height
-       && po->pup.maskCells[line * width + col];
+	return col >= 0 && col < width
+		 && line >= 0 && line < height
+		 && po->pup.maskCells[line * width + col];
 }
 
 //Set flags in popupTransparencyG[] for portal "po" to "val".
 private void
 update_popupTransparencyG(Portal* po, int val) {
-   if (!po->pup.mask)
-      return;
+	if (!po->pup.mask)
+		return;
 
-   int width = popup_width(po);
-   int height = popup_height(po);
-   ListItem *lio, *li;
-   int cols, cole;
-   int lines, linee;
-   int col, line;
+	int width = popup_width(po);
+	int height = popup_height(po);
+	ListItem *lio, *li;
+	int cols, cole;
+	int lines, linee;
+	int col, line;
 
-   FOR_ALL_LIST_ITEMS(po->pup.mask, lio) {
-      li = lio->c.list->first;
-      cols = tv_get_number(&li->c);
-      if (cols < 0)
-         cols = width + cols + 1;
-      li = li->next;
-      cole = tv_get_number(&li->c);
-      if (cole < 0)
-         cole = width + cole + 1;
-      li = li->next;
-      lines = tv_get_number(&li->c);
-      if (lines < 0)
-         lines = height + lines + 1;
-      li = li->next;
-      linee = tv_get_number(&li->c);
-      if (linee < 0)
-         linee = height + linee + 1;
+	FOR_ALL_LIST_ITEMS(po->pup.mask, lio) {
+		li = lio->c.list->first;
+		cols = tv_get_number(&li->c);
+		if (cols < 0)
+			cols = width + cols + 1;
+		li = li->next;
+		cole = tv_get_number(&li->c);
+		if (cole < 0)
+			cole = width + cole + 1;
+		li = li->next;
+		lines = tv_get_number(&li->c);
+		if (lines < 0)
+			lines = height + lines + 1;
+		li = li->next;
+		linee = tv_get_number(&li->c);
+		if (linee < 0)
+			linee = height + linee + 1;
 
-      --cols;
-      cols -= po->pup.leftOff;
-      if (cols < 0)
-          cols = 0;
-      cole -= po->pup.leftOff;
-      --lines;
-      if (lines < 0)
-         lines = 0;
-      for (line = lines; line < linee && line + po->windowRow < screenLinesRowsG; ++line) {
-         for (col = cols; col < cole && col + po->windowCol < screenLinesColsG; ++col) {
-            popupTransparencyG[(line + po->windowRow) * screenLinesColsG + col + po->windowCol]
-               = val;
-         }
-      }
-   }
+		--cols;
+		cols -= po->pup.leftOff;
+		if (cols < 0)
+			 cols = 0;
+		cole -= po->pup.leftOff;
+		--lines;
+		if (lines < 0)
+			lines = 0;
+		for (line = lines; line < linee && line + po->windowRow < screenLinesRowsG; ++line) {
+			for (col = cols; col < cole && col + po->windowCol < screenLinesColsG; ++col) {
+				popupTransparencyG[(line + po->windowRow) * screenLinesColsG + col + po->windowCol]
+					= val;
+			}
+		}
+	}
 }
 
 //Only called when popup portal "po" is hidden: If the portal is positioned next to a text property,
@@ -12912,21 +12911,21 @@ update_popupTransparencyG(Portal* po, int val) {
 //that is done in adjustPosition(). Return true if the popup became unhidden.
 private int
 check_popup_unhidden(Portal* po) {
-   if (po->pup.propType > 0 && portalIsValid(po->pup.propPort)) {
-      TextProp  prop;
-      LineNr    lnum;
+	if (po->pup.propType > 0 && portalIsValid(po->pup.propPort)) {
+		TextProp  prop;
+		LineNr    lnum;
 
-      if ((po->pup.flags & POPF_HIDDEN_FORCE) == 0
-         && find_visible_prop(
-               po->pup.propPort, po->pup.propType, po->pup.propId, &prop, &lnum
-            ) == OK
-      ){
-         po->pup.flags &= ~POPF_HIDDEN;
-         po->pup.propTopline = 0; //force repositioning
-         return true;
-      }
-   }
-   return false;
+		if ((po->pup.flags & POPF_HIDDEN_FORCE) == 0
+			&& find_visible_prop(
+					po->pup.propPort, po->pup.propType, po->pup.propId, &prop, &lnum
+				) == OK
+		){
+			po->pup.flags &= ~POPF_HIDDEN;
+			po->pup.propTopline = 0; //force repositioning
+			return true;
+		}
+	}
+	return false;
 }
 
 //Return true if adjustPosition() needs to be called for "po".
@@ -12934,525 +12933,525 @@ check_popup_unhidden(Portal* po) {
 //referenced book was changed. Or when the cursor line changed and "cursorline" is set.
 private inline int
 popup_need_position_adjust(Portal* po) {
-   if (po->pup.lastChangedTick != CHANGEDTICK(po->book))
-      return true;
-   if (portalIsValid(po->pup.propPort)
-          && (po->pup.propChangedTick != CHANGEDTICK(po->pup.propPort->book)
-             || po->pup.propTopline != po->pup.propPort->topLine))
-      return true;
+	if (po->pup.lastChangedTick != CHANGEDTICK(po->book))
+		return true;
+	if (portalIsValid(po->pup.propPort)
+			 && (po->pup.propChangedTick != CHANGEDTICK(po->pup.propPort->book)
+				 || po->pup.propTopline != po->pup.propPort->topLine))
+		return true;
 
-   //May need to adjust the width if the cursor moved.
-   return po->cursor.lnum != po->pup.lastCurline;
+	//May need to adjust the width if the cursor moved.
+	return po->cursor.lnum != po->pup.lastCurline;
 }
 
 //Update "popupMaskG" if needed. Also recompute the popup size and positions.
 //Also update "popup_visible" and "popup_uses_mouse_move". Also mark portal lines for redrawing
 pub void
 may_update_popup_mask(int type) {
-   Portal   *po;
-   Arr(Short) mask;
-   int line, col;
-   int redraw_all_popups = false;
-   Boole redrawingAllPortals;
+	Portal   *po;
+	Arr(Short) mask;
+	int line, col;
+	int redraw_all_popups = false;
+	Boole redrawingAllPortals;
 
-   //Need to recompute when switching tabs. Also recompute when the type is UPD_CLEAR or
-   //UPD_NOT_VALID, something basic (such as the screen size) must have changed.
-   if (popupMaskTabS != curtab || type >= UPD_NOT_VALID) {
-      needRefreshPopupMaskG = true;
-      redraw_all_popups = true;
-   }
+	//Need to recompute when switching tabs. Also recompute when the type is UPD_CLEAR or
+	//UPD_NOT_VALID, something basic (such as the screen size) must have changed.
+	if (popupMaskTabS != curtab || type >= UPD_NOT_VALID) {
+		needRefreshPopupMaskG = true;
+		redraw_all_popups = true;
+	}
 
-   //Check if any popup portal book has changed and if any popup connected
-   //to a text property has become visible.
-   FOR_ALL_POPUPPORTS(po) {
-      if (po->pup.flags & POPF_HIDDEN)
-         needRefreshPopupMaskG |= check_popup_unhidden(po);
-      ei (popup_need_position_adjust(po))
-         needRefreshPopupMaskG = true;
-   }
-   FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
-      if (po->pup.flags & POPF_HIDDEN)
-         needRefreshPopupMaskG |= check_popup_unhidden(po);
-      ei (popup_need_position_adjust(po))
-         needRefreshPopupMaskG = true;
-   }
+	//Check if any popup portal book has changed and if any popup connected
+	//to a text property has become visible.
+	FOR_ALL_POPUPPORTS(po) {
+		if (po->pup.flags & POPF_HIDDEN)
+			needRefreshPopupMaskG |= check_popup_unhidden(po);
+		ei (popup_need_position_adjust(po))
+			needRefreshPopupMaskG = true;
+	}
+	FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
+		if (po->pup.flags & POPF_HIDDEN)
+			needRefreshPopupMaskG |= check_popup_unhidden(po);
+		ei (popup_need_position_adjust(po))
+			needRefreshPopupMaskG = true;
+	}
 
-   if (!needRefreshPopupMaskG)
-      return;
+	if (!needRefreshPopupMaskG)
+		return;
 
-   //Need to update the mask, something has changed.
-   needRefreshPopupMaskG = false;
-   popupMaskTabS = curtab;
-   popup_visible = false;
+	//Need to update the mask, something has changed.
+	needRefreshPopupMaskG = false;
+	popupMaskTabS = curtab;
+	popup_visible = false;
 
-   //If redrawing all portals, just update "popupMaskG".
-   //If redrawing only what is needed, update "popupMaskNextG" and then
-   //compare with "popupMaskG" to see what changed.
-   redrawingAllPortals = true;
-   FOR_ALL_PORTALS(po) {
-      if (po->redrawType < UPD_SOME_VALID)
-         redrawingAllPortals = false;
-   }
-   if (redrawingAllPortals)
-      mask = popupMaskG;
-   else
-      mask = popupMaskNextG;
-   memset(mask, 0, (Unt)screenLinesRowsG * screenLinesColsG * sizeof(short));
+	//If redrawing all portals, just update "popupMaskG".
+	//If redrawing only what is needed, update "popupMaskNextG" and then
+	//compare with "popupMaskG" to see what changed.
+	redrawingAllPortals = true;
+	FOR_ALL_PORTALS(po) {
+		if (po->redrawType < UPD_SOME_VALID)
+			redrawingAllPortals = false;
+	}
+	if (redrawingAllPortals)
+		mask = popupMaskG;
+	else
+		mask = popupMaskNextG;
+	memset(mask, 0, (Unt)screenLinesRowsG * screenLinesColsG * sizeof(short));
 
-   //Find the portal with the lowest zindex that hasn't been handled yet,
-   //so that the portal with a higher zindex overwrites the value in popupMaskG.
-   popup_reset_handled(POPUP_HANDLED_4);
-   while ((po = find_next_popup(true, POPUP_HANDLED_4)) != NULL) {
-      int width;
-      int height;
+	//Find the portal with the lowest zindex that hasn't been handled yet,
+	//so that the portal with a higher zindex overwrites the value in popupMaskG.
+	popup_reset_handled(POPUP_HANDLED_4);
+	while ((po = find_next_popup(true, POPUP_HANDLED_4)) != NULL) {
+		int width;
+		int height;
 
-      popup_visible = true;
+		popup_visible = true;
 
-      //Recompute the position if the text changed. It may make the popup
-      //hidden if it's attach to a text property that is no longer visible.
-      if (redraw_all_popups || popup_need_position_adjust(po)) {
-         adjustPosition(po);
-         if (po->pup.flags & POPF_HIDDEN)
-            continue;
-      }
+		//Recompute the position if the text changed. It may make the popup
+		//hidden if it's attach to a text property that is no longer visible.
+		if (redraw_all_popups || popup_need_position_adjust(po)) {
+			adjustPosition(po);
+			if (po->pup.flags & POPF_HIDDEN)
+				continue;
+		}
 
-      width = popup_width(po);
-      height = popup_height(po);
-      popup_update_mask(po, width, height);
-      for (line = po->windowRow;
-         line < po->windowRow + height && line < screenLinesRowsG; ++line)
-         for (col = po->windowCol;
-          col < po->windowCol + width - po->pup.leftOff && col < screenLinesColsG;
-          ++col
-         ) {
-            if (po->pup.zIndex < POPUPMENU_ZINDEX
-                  && pum_visible()
-                  && pum_under_menu(line, col, false))
-               mask[line * screenLinesColsG + col] = POPUPMENU_ZINDEX;
-            ei (po->pup.maskCells == NULL || !popupMaskGed(po, width, height, col, line))
-               mask[line * screenLinesColsG + col] = po->pup.zIndex;
-         }
-   }
+		width = popup_width(po);
+		height = popup_height(po);
+		popup_update_mask(po, width, height);
+		for (line = po->windowRow;
+			line < po->windowRow + height && line < screenLinesRowsG; ++line)
+			for (col = po->windowCol;
+			 col < po->windowCol + width - po->pup.leftOff && col < screenLinesColsG;
+			 ++col
+			) {
+				if (po->pup.zIndex < POPUPMENU_ZINDEX
+						&& pum_visible()
+						&& pum_under_menu(line, col, false))
+					mask[line * screenLinesColsG + col] = POPUPMENU_ZINDEX;
+				ei (po->pup.maskCells == NULL || !popupMaskGed(po, width, height, col, line))
+					mask[line * screenLinesColsG + col] = po->pup.zIndex;
+			}
+	}
 
-   //Only check which lines are to be updated if not already updating all lines.
-   if (mask == popupMaskNextG) {
-      int       *plines_cache = ALLOC_CLEAR_MULT(int, visibleRowsG);
-      Portal       *prev_wp = NULL;
+	//Only check which lines are to be updated if not already updating all lines.
+	if (mask == popupMaskNextG) {
+		int       *plines_cache = ALLOC_CLEAR_MULT(int, visibleRowsG);
+		Portal       *prev_wp = NULL;
 
-      for (line = 0; line < screenLinesRowsG; ++line) {
-         int       col_done = 0;
+		for (line = 0; line < screenLinesRowsG; ++line) {
+			int       col_done = 0;
 
-         for (col = 0; col < screenLinesColsG; ++col) {
-            int off = line * screenLinesColsG + col;
+			for (col = 0; col < screenLinesColsG; ++col) {
+				int off = line * screenLinesColsG + col;
 
-            if (popupMaskG[off] != popupMaskNextG[off]) {
-               popupMaskG[off] = popupMaskNextG[off];
+				if (popupMaskG[off] != popupMaskNextG[off]) {
+					popupMaskG[off] = popupMaskNextG[off];
 
-               if (line >= (int)commlineRowG) {
-                  //the command line needs to be cleared if text below the popup is now visible.
-                  if (!msg_scrolled && popupMaskNextG[off] == 0)
-                      mustClearCommlineG = true;
-               } ei (col >= col_done) {
-                  LineNr   lnum;
-                  int      line_cp = line;
-                  int      col_cp = col;
+					if (line >= (int)commlineRowG) {
+						//the command line needs to be cleared if text below the popup is now visible.
+						if (!msg_scrolled && popupMaskNextG[off] == 0)
+						    mustClearCommlineG = true;
+					} ei (col >= col_done) {
+						LineNr   lnum;
+						int      line_cp = line;
+						int      col_cp = col;
 
-                  //The screen position "line" / "col" needs to be redrawn.  Figure out what portal that
-                  //is and update redrawTop and redrawBott.  Only needs to be done once for each
-                  //portal line.
-                  po = mouseFindPortal(&line_cp, &col_cp, IGNORE_POPUP);
-                  if (po != NULL) {
-                      //A terminal portal needs to be redrawn.
-                     if (bt_terminal(po->book))
-                        redrawPortLater(po, UPD_NOT_VALID);
-                     else {
-                        if (po != prev_wp) {
-                           memset(plines_cache, 0, sizeof(int) * visibleRowsG);
-                           prev_wp = po;
-                        }
+						//The screen position "line" / "col" needs to be redrawn.  Figure out what portal that
+						//is and update redrawTop and redrawBott.  Only needs to be done once for each
+						//portal line.
+						po = mouseFindPortal(&line_cp, &col_cp, IGNORE_POPUP);
+						if (po != NULL) {
+						    //A terminal portal needs to be redrawn.
+						   if (bt_terminal(po->book))
+						      redrawPortLater(po, UPD_NOT_VALID);
+						   else {
+						      if (po != prev_wp) {
+						         memset(plines_cache, 0, sizeof(int) * visibleRowsG);
+						         prev_wp = po;
+						      }
 
-                        if (line_cp >= (int)po->height)
-                           //In (or below) status line
-                           po->statusLineNeedsRedraw = true;
-                        else {
-                           //compute position in the book line from the position in the portal
-                           (void)mouse_comp_pos(po, &line_cp, &col_cp, &lnum, plines_cache);
-                           drawPortLineLater(po, lnum);
-                        }
-                     }
+						      if (line_cp >= (int)po->height)
+						         //In (or below) status line
+						         po->statusLineNeedsRedraw = true;
+						      else {
+						         //compute position in the book line from the position in the portal
+						         (void)mouse_comp_pos(po, &line_cp, &col_cp, &lnum, plines_cache);
+						         drawPortLineLater(po, lnum);
+						      }
+						   }
 
-                     //This line is going to be redrawn, no need to check until the right
-                     //side of the portal
-                     col_done = po->windowCol + po->width - 1;
-                  }
-               }
-            }
-         }
-      }
+						   //This line is going to be redrawn, no need to check until the right
+						   //side of the portal
+						   col_done = po->windowCol + po->width - 1;
+						}
+					}
+				}
+			}
+		}
 
-      eeglFree(plines_cache);
-   }
+		eeglFree(plines_cache);
+	}
 
-   update_popup_uses_mouse_move();
+	update_popup_uses_mouse_move();
 }
 
 //If the current portal is a popup and something relevant changed, recompute the position and size
 pub void
 may_update_popup_position(void) {
-   if (portalIsPopup(curPor) && popup_need_position_adjust(curPor))
-      adjustPosition(curPor);
+	if (portalIsPopup(curPor) && popup_need_position_adjust(curPor))
+		adjustPosition(curPor);
 }
 
 //Return a string of "len" spaces in ioBuffG.
 private CS
 get_spaces(int len) {
-    memset(ioBuffG, ' ', (Unt)len);
-    ioBuffG[len] = ZERO;
-   return ioBuffG;
+	 memset(ioBuffG, ' ', (Unt)len);
+	 ioBuffG[len] = ZERO;
+	return ioBuffG;
 }
 
 //Update popup portals.  They are drawn on top of normal portals.
 //"portUpdate" is called for each popup portal, lowest zindex first.
 pub void
 update_popups(void (*portUpdate)(Portal* po, Boole *)) {
-   Portal* po;
-   Decoration borderDeco[4];
-   Unt border_char[8];
-   Byte buf[MB_MAXBYTES];
-   int row;
-   int padcol = 0;
-   int padendcol = 0;
-   int sb_thumb_top = 0;
-   int sb_thumb_height = 0;
-   Byte scrollDeco = 0;
-   Byte thumbFlags = 0;
+	Portal* po;
+	Decoration borderDeco[4];
+	Unt border_char[8];
+	Byte buf[MB_MAXBYTES];
+	int row;
+	int padcol = 0;
+	int padendcol = 0;
+	int sb_thumb_top = 0;
+	int sb_thumb_height = 0;
+	Byte scrollDeco = 0;
+	Byte thumbFlags = 0;
 
-   //hide the cursor until redrawing is done.
-   cursor_off();
+	//hide the cursor until redrawing is done.
+	cursor_off();
 
-   //Find the portal with the lowest zindex that hasn't been updated yet,
-   //so that the portal with a higher zindex is drawn later, thus goes on top.
-   popup_reset_handled(POPUP_HANDLED_5);
-   while ((po = find_next_popup(true, POPUP_HANDLED_5)) != NULL) {
-      int title_len = 0;
-      int title_wincol;
+	//Find the portal with the lowest zindex that hasn't been updated yet,
+	//so that the portal with a higher zindex is drawn later, thus goes on top.
+	popup_reset_handled(POPUP_HANDLED_5);
+	while ((po = find_next_popup(true, POPUP_HANDLED_5)) != NULL) {
+		int title_len = 0;
+		int title_wincol;
 
-      //This drawing uses the zindex of the popup portal, so that it's on top of the text but
-      //doesn't draw when another popup with higher zindex is on top of the character.
-      screenZindexG = po->pup.zIndex;
+		//This drawing uses the zindex of the popup portal, so that it's on top of the text but
+		//doesn't draw when another popup with higher zindex is on top of the character.
+		screenZindexG = po->pup.zIndex;
 
-      //Set flags in popupTransparencyG[] for masked cells.
-      update_popupTransparencyG(po, 1);
+		//Set flags in popupTransparencyG[] for masked cells.
+		update_popupTransparencyG(po, 1);
 
-      //adjust windowRow and windowCol for border and padding, since
-      //portUpdate() doesn't handle them.
-      int top_off = popup_top_extra(po);
-      int left_extra = po->pup.padding[3] + po->pup.border[3] - po->pup.leftOff;
-      if (po->windowCol + left_extra < 0)
-         left_extra = -po->windowCol;
-      po->windowRow += top_off;
-      po->windowCol += left_extra;
+		//adjust windowRow and windowCol for border and padding, since
+		//portUpdate() doesn't handle them.
+		int top_off = popup_top_extra(po);
+		int left_extra = po->pup.padding[3] + po->pup.border[3] - po->pup.leftOff;
+		if (po->windowCol + left_extra < 0)
+			left_extra = -po->windowCol;
+		po->windowRow += top_off;
+		po->windowCol += left_extra;
 
-      //Draw the popup text, unless it's off screen.
-      if (po->windowRow < screenLinesRowsG && po->windowCol < screenLinesColsG) {
-         //May need to update the "cursorline" highlighting, which may also change "topline"
-         if (po->pup.lastCurline != po->cursor.lnum)
-            highlightCurrentLine(po);
+		//Draw the popup text, unless it's off screen.
+		if (po->windowRow < screenLinesRowsG && po->windowCol < screenLinesColsG) {
+			//May need to update the "cursorline" highlighting, which may also change "topline"
+			if (po->pup.lastCurline != po->cursor.lnum)
+				highlightCurrentLine(po);
 
-         Boole didUpdateOnePortal;
-         portUpdate(po, OUT &didUpdateOnePortal);
+			Boole didUpdateOnePortal;
+			portUpdate(po, OUT &didUpdateOnePortal);
 
-         //move the cursor into the visible lines, otherwise executing
-         //commands with win_execute() may cause the text to jump.
-         if (po->cursor.lnum < po->topLine)
-            po->cursor.lnum = po->topLine;
-         ei (po->cursor.lnum >= po->bottomLine)
-            po->cursor.lnum = po->bottomLine - 1;
-      }
+			//move the cursor into the visible lines, otherwise executing
+			//commands with win_execute() may cause the text to jump.
+			if (po->cursor.lnum < po->topLine)
+				po->cursor.lnum = po->topLine;
+			ei (po->cursor.lnum >= po->bottomLine)
+				po->cursor.lnum = po->bottomLine - 1;
+		}
 
-      po->windowRow -= top_off;
-      po->windowCol -= left_extra;
+		po->windowRow -= top_off;
+		po->windowCol -= left_extra;
 
-      //Add offset for border and padding if not done already.
-      if ((po->flags & WFLAG_WCOL_OFF_ADDED) == 0) {
-         po->cursorCol += left_extra;
-         po->flags |= WFLAG_WCOL_OFF_ADDED;
-      }
-      if ((po->flags & WFLAG_WROW_OFF_ADDED) == 0) {
-         po->cursorRow += top_off;
-         po->flags |= WFLAG_WROW_OFF_ADDED;
-      }
+		//Add offset for border and padding if not done already.
+		if ((po->flags & WFLAG_WCOL_OFF_ADDED) == 0) {
+			po->cursorCol += left_extra;
+			po->flags |= WFLAG_WCOL_OFF_ADDED;
+		}
+		if ((po->flags & WFLAG_WROW_OFF_ADDED) == 0) {
+			po->cursorRow += top_off;
+			po->flags |= WFLAG_WROW_OFF_ADDED;
+		}
 
-      int total_width = popup_width(po) - po->pup.rightOff;
-      int total_height = popup_height(po);
-      Decoration popupDeco = getFullDecoration(HILITE_None);
+		int total_width = popup_width(po) - po->pup.rightOff;
+		int total_height = popup_height(po);
+		Decoration popupDeco = getFullDecoration(HILITE_None);
 
-      if (po->windowRow + total_height > (int)commlineRowG)
-         po->pup.flags |= POPF_ON_CMDLINE;
-      else
-         po->pup.flags &= ~POPF_ON_CMDLINE;
+		if (po->windowRow + total_height > (int)commlineRowG)
+			po->pup.flags |= POPF_ON_CMDLINE;
+		else
+			po->pup.flags &= ~POPF_ON_CMDLINE;
 
-      border_char[0] = border_char[2] = 0x2550;
-      border_char[1] = border_char[3] = 0x2551;
-      border_char[4] = 0x2554;
-      border_char[5] = 0x2557;
-      border_char[6] = (po->pup.flags & POPF_RESIZE) ? 0x21f2 : 0x255d;
-      border_char[7] = 0x255a;
-      for (Unt i = 0; i < 8; ++i) {
-         if (po->pup.borderChar[i] != 0)
-            border_char[i] = po->pup.borderChar[i];
-      }
+		border_char[0] = border_char[2] = 0x2550;
+		border_char[1] = border_char[3] = 0x2551;
+		border_char[4] = 0x2554;
+		border_char[5] = 0x2557;
+		border_char[6] = (po->pup.flags & POPF_RESIZE) ? 0x21f2 : 0x255d;
+		border_char[7] = 0x255a;
+		for (Unt i = 0; i < 8; ++i) {
+			if (po->pup.borderChar[i] != 0)
+				border_char[i] = po->pup.borderChar[i];
+		}
 
-      for (Unt i = 0; i < 4; ++i) {
-         borderDeco[i] = popupDeco;
-         if (po->pup.borderHilite[i] != HILITE_NULL)
-            borderDeco[i] = getFullDecoration(po->pup.borderHilite[i]);
-      }
+		for (Unt i = 0; i < 4; ++i) {
+			borderDeco[i] = popupDeco;
+			if (po->pup.borderHilite[i] != HILITE_NULL)
+				borderDeco[i] = getFullDecoration(po->pup.borderHilite[i]);
+		}
 
-      //Title goes on top of border or padding.
-      title_wincol = po->windowCol + 1;
-      if (po->pup.title) {
-         title_len = eeglStrSize(po->pup.title);
+		//Title goes on top of border or padding.
+		title_wincol = po->windowCol + 1;
+		if (po->pup.title) {
+			title_len = eeglStrSize(po->pup.title);
 
-         //truncate the title if too long
-         if (title_len > total_width - 2) {
-            int title_byte_len = (int)STRLEN(po->pup.title);
-            CS title_text = alloc(title_byte_len + 1);
+			//truncate the title if too long
+			if (title_len > total_width - 2) {
+				int title_byte_len = (int)STRLEN(po->pup.title);
+				CS title_text = alloc(title_byte_len + 1);
 
-            trunc_string(po->pup.title, title_text, total_width - 2, title_byte_len + 1);
-            drawText(
-               title_text, po->windowRow, title_wincol,
-               po->pup.border[0] > 0 ? borderDeco[0].flags : popupDeco.flags
-            );
-            eeglFree(title_text);
+				trunc_string(po->pup.title, title_text, total_width - 2, title_byte_len + 1);
+				drawText(
+					title_text, po->windowRow, title_wincol,
+					po->pup.border[0] > 0 ? borderDeco[0].flags : popupDeco.flags
+				);
+				eeglFree(title_text);
 
-            title_len = total_width - 2;
-         } else {
-            drawText(po->pup.title, po->windowRow, title_wincol,
-                  po->pup.border[0] > 0 ? borderDeco[0].flags : popupDeco.flags);
-         }
-      }
+				title_len = total_width - 2;
+			} else {
+				drawText(po->pup.title, po->windowRow, title_wincol,
+						po->pup.border[0] > 0 ? borderDeco[0].flags : popupDeco.flags);
+			}
+		}
 
-      int wincol = po->windowCol - po->pup.leftOff;
-      int top_padding = po->pup.padding[0];
-      if (po->pup.border[0] > 0) {
-         //top border; do not draw over the title
-         if (title_len > 0) {
-            fillRowsWithTwoChars(
-               po->windowRow, po->windowRow + 1, wincol < 0 ? 0 : wincol, title_wincol,
-               po->pup.border[3] != 0
-                  && po->pup.leftOff == 0 ? border_char[4] : border_char[0],
-               border_char[0], borderDeco[0]
-            );
-            fillRowsWithTwoChars(
-               po->windowRow, po->windowRow + 1, title_wincol + title_len, wincol + total_width,
-               border_char[0], border_char[0], borderDeco[0]
-            );
-         } else {
-            fillRowsWithTwoChars(po->windowRow, po->windowRow + 1,
-               wincol < 0 ? 0 : wincol, wincol + total_width,
-               po->pup.border[3] != 0 && po->pup.leftOff == 0 ? border_char[4] : border_char[0],
-               border_char[0], borderDeco[0]
-            );
-         }
-         if (po->pup.border[1] > 0) {
-            buf[mb_char2bytes(border_char[5], buf)] = ZERO;
-            drawText(buf, po->windowRow, wincol + total_width - 1, borderDeco[1].flags);
-         }
-      } ei (po->pup.padding[0] == 0 && popup_top_extra(po) > 0)
-         top_padding = 1;
+		int wincol = po->windowCol - po->pup.leftOff;
+		int top_padding = po->pup.padding[0];
+		if (po->pup.border[0] > 0) {
+			//top border; do not draw over the title
+			if (title_len > 0) {
+				fillRowsWithTwoChars(
+					po->windowRow, po->windowRow + 1, wincol < 0 ? 0 : wincol, title_wincol,
+					po->pup.border[3] != 0
+						&& po->pup.leftOff == 0 ? border_char[4] : border_char[0],
+					border_char[0], borderDeco[0]
+				);
+				fillRowsWithTwoChars(
+					po->windowRow, po->windowRow + 1, title_wincol + title_len, wincol + total_width,
+					border_char[0], border_char[0], borderDeco[0]
+				);
+			} else {
+				fillRowsWithTwoChars(po->windowRow, po->windowRow + 1,
+					wincol < 0 ? 0 : wincol, wincol + total_width,
+					po->pup.border[3] != 0 && po->pup.leftOff == 0 ? border_char[4] : border_char[0],
+					border_char[0], borderDeco[0]
+				);
+			}
+			if (po->pup.border[1] > 0) {
+				buf[mb_char2bytes(border_char[5], buf)] = ZERO;
+				drawText(buf, po->windowRow, wincol + total_width - 1, borderDeco[1].flags);
+			}
+		} ei (po->pup.padding[0] == 0 && popup_top_extra(po) > 0)
+			top_padding = 1;
 
-      if (top_padding > 0 || po->pup.padding[2] > 0) {
-         padcol = wincol + po->pup.border[3];
-         padendcol = po->windowCol + total_width - po->pup.border[1] - po->pup.hasScrollbar;
-         if (padcol < 0) {
-            padendcol += padcol;
-            padcol = 0;
-         }
-      }
-      if (top_padding > 0) {
-         row = po->windowRow + po->pup.border[0];
-         if (title_len > 0 && row == po->windowRow) {
-            //top padding and no border; do not draw over the title
-            fillRowsWithTwoChars(row, row + 1, padcol, title_wincol, ' ', ' ', popupDeco);
-            fillRowsWithTwoChars(
-               row, row + 1, title_wincol + title_len, padendcol, ' ', ' ', popupDeco
-            );
-            row += 1;
-            top_padding -= 1;
-         }
-         fillRowsWithTwoChars(row, row + top_padding, padcol, padendcol, ' ', ' ', popupDeco);
-      }
+		if (top_padding > 0 || po->pup.padding[2] > 0) {
+			padcol = wincol + po->pup.border[3];
+			padendcol = po->windowCol + total_width - po->pup.border[1] - po->pup.hasScrollbar;
+			if (padcol < 0) {
+				padendcol += padcol;
+				padcol = 0;
+			}
+		}
+		if (top_padding > 0) {
+			row = po->windowRow + po->pup.border[0];
+			if (title_len > 0 && row == po->windowRow) {
+				//top padding and no border; do not draw over the title
+				fillRowsWithTwoChars(row, row + 1, padcol, title_wincol, ' ', ' ', popupDeco);
+				fillRowsWithTwoChars(
+					row, row + 1, title_wincol + title_len, padendcol, ' ', ' ', popupDeco
+				);
+				row += 1;
+				top_padding -= 1;
+			}
+			fillRowsWithTwoChars(row, row + top_padding, padcol, padendcol, ' ', ' ', popupDeco);
+		}
 
-      //Compute scrollbar thumb position and size.
-      if (po->pup.hasScrollbar) {
-         LineNr linecount = po->book->mem.lineCount;
-         int height = po->height;
+		//Compute scrollbar thumb position and size.
+		if (po->pup.hasScrollbar) {
+			LineNr linecount = po->book->mem.lineCount;
+			int height = po->height;
 
-         sb_thumb_height = ((LineNr)height * height + linecount / 2) / linecount;
-         if (po->topLine > 1 && sb_thumb_height == height)
-            --sb_thumb_height;  //scrolled, no full thumb
-         if (sb_thumb_height == 0)
-            sb_thumb_height = 1;
-         if (linecount <= (int)po->height || po->height == 0)
-            //it just fits, avoid divide by zero
-            sb_thumb_top = 0;
-         else
-            sb_thumb_top = (po->topLine - 1 + (linecount / po->height) / 2)
-                  * (po->height - sb_thumb_height) / (linecount - po->height);
-         if (po->topLine > 1 && sb_thumb_top == 0 && height > 1)
-            sb_thumb_top = 1;  //show it's scrolled
-         int last = total_height - top_off - po->pup.border[2];
-         if (sb_thumb_top >= last)
-            //show at least one character
-            sb_thumb_top = last - 1;
+			sb_thumb_height = ((LineNr)height * height + linecount / 2) / linecount;
+			if (po->topLine > 1 && sb_thumb_height == height)
+				--sb_thumb_height;  //scrolled, no full thumb
+			if (sb_thumb_height == 0)
+				sb_thumb_height = 1;
+			if (linecount <= (int)po->height || po->height == 0)
+				//it just fits, avoid divide by zero
+				sb_thumb_top = 0;
+			else
+				sb_thumb_top = (po->topLine - 1 + (linecount / po->height) / 2)
+						* (po->height - sb_thumb_height) / (linecount - po->height);
+			if (po->topLine > 1 && sb_thumb_top == 0 && height > 1)
+				sb_thumb_top = 1;  //show it's scrolled
+			int last = total_height - top_off - po->pup.border[2];
+			if (sb_thumb_top >= last)
+				//show at least one character
+				sb_thumb_top = last - 1;
 
-         if (po->pup.scrollbarHilite)
-            scrollDeco = getFullDecoration(po->pup.scrollbarHilite).flags;
-         else
-            scrollDeco = getDecoFlags(HILITE_PmenuScrollbar);
-         if (po->pup.thumbHilite)
-            thumbFlags = getFullDecoration(po->pup.thumbHilite).flags;
-         else
-            thumbFlags = getDecoFlags(HILITE_PmenuScrollBarThumb);
-      }
+			if (po->pup.scrollbarHilite)
+				scrollDeco = getFullDecoration(po->pup.scrollbarHilite).flags;
+			else
+				scrollDeco = getDecoFlags(HILITE_PmenuScrollbar);
+			if (po->pup.thumbHilite)
+				thumbFlags = getFullDecoration(po->pup.thumbHilite).flags;
+			else
+				thumbFlags = getDecoFlags(HILITE_PmenuScrollBarThumb);
+		}
 
-      for (int i = po->pup.border[0]; i < total_height - po->pup.border[2]; ++i) {
-         int pad_left;
-         //left and right padding only needed next to the body
-         Boole do_padding = i >= po->pup.border[0] + po->pup.padding[0]
-             && i < total_height - po->pup.border[2] - po->pup.padding[2];
+		for (int i = po->pup.border[0]; i < total_height - po->pup.border[2]; ++i) {
+			int pad_left;
+			//left and right padding only needed next to the body
+			Boole do_padding = i >= po->pup.border[0] + po->pup.padding[0]
+				 && i < total_height - po->pup.border[2] - po->pup.padding[2];
 
-         row = po->windowRow + i;
+			row = po->windowRow + i;
 
-         //left border
-         if (po->pup.border[3] > 0 && wincol >= 0) {
-            buf[mb_char2bytes(border_char[3], buf)] = ZERO;
-            drawText(buf, row, wincol, borderDeco[3].flags);
-         }
-         if (do_padding && po->pup.padding[3] > 0) {
-            int col = wincol + po->pup.border[3];
+			//left border
+			if (po->pup.border[3] > 0 && wincol >= 0) {
+				buf[mb_char2bytes(border_char[3], buf)] = ZERO;
+				drawText(buf, row, wincol, borderDeco[3].flags);
+			}
+			if (do_padding && po->pup.padding[3] > 0) {
+				int col = wincol + po->pup.border[3];
 
-            //left padding
-            pad_left = po->pup.padding[3];
-            if (col < 0) {
-               pad_left += col;
-               col = 0;
-            }
-            if (pad_left > 0)
-               drawText(get_spaces(pad_left), row, col, popupDeco.flags);
-         }
-         //scrollbar
-         if (po->pup.hasScrollbar) {
-            int line = i - top_off;
-            int scroll_col = po->windowCol + total_width - 1 - po->pup.border[1];
+				//left padding
+				pad_left = po->pup.padding[3];
+				if (col < 0) {
+					pad_left += col;
+					col = 0;
+				}
+				if (pad_left > 0)
+					drawText(get_spaces(pad_left), row, col, popupDeco.flags);
+			}
+			//scrollbar
+			if (po->pup.hasScrollbar) {
+				int line = i - top_off;
+				int scroll_col = po->windowCol + total_width - 1 - po->pup.border[1];
 
-            if (line >= 0 && line < (int)po->height)
-               screen_putchar(
-                  ' ', row, scroll_col,
-                  (line >= sb_thumb_top && line < sb_thumb_top + sb_thumb_height)
-                     ? thumbFlags : scrollDeco
-               );
-            else
-               screen_putchar(' ', row, scroll_col, popupDeco.flags);
-         }
-         //right border
-         if (po->pup.border[1] > 0) {
-            buf[mb_char2bytes(border_char[1], buf)] = ZERO;
-            drawText(buf, row, wincol + total_width - 1, borderDeco[1].flags);
-         }
-         //right padding
-         if (do_padding && po->pup.padding[1] > 0) {
-            drawText(
-               get_spaces( po->pup.padding[1]),
-               row,
-               wincol + po->pup.border[3] + po->pup.padding[3] + po->width + po->leftCol,
-               popupDeco.flags
-            );
-         }
-      }
+				if (line >= 0 && line < (int)po->height)
+					screen_putchar(
+						' ', row, scroll_col,
+						(line >= sb_thumb_top && line < sb_thumb_top + sb_thumb_height)
+						   ? thumbFlags : scrollDeco
+					);
+				else
+					screen_putchar(' ', row, scroll_col, popupDeco.flags);
+			}
+			//right border
+			if (po->pup.border[1] > 0) {
+				buf[mb_char2bytes(border_char[1], buf)] = ZERO;
+				drawText(buf, row, wincol + total_width - 1, borderDeco[1].flags);
+			}
+			//right padding
+			if (do_padding && po->pup.padding[1] > 0) {
+				drawText(
+					get_spaces( po->pup.padding[1]),
+					row,
+					wincol + po->pup.border[3] + po->pup.padding[3] + po->width + po->leftCol,
+					popupDeco.flags
+				);
+			}
+		}
 
-      if (po->pup.padding[2] > 0) {
-         //bottom padding
-         row = po->windowRow + po->pup.border[0] + po->pup.padding[0] + po->height;
-         fillRowsWithTwoChars(
-            row, row + po->pup.padding[2], padcol, padendcol, ' ', ' ', popupDeco
-         );
-      }
+		if (po->pup.padding[2] > 0) {
+			//bottom padding
+			row = po->windowRow + po->pup.border[0] + po->pup.padding[0] + po->height;
+			fillRowsWithTwoChars(
+				row, row + po->pup.padding[2], padcol, padendcol, ' ', ' ', popupDeco
+			);
+		}
 
-      if (po->pup.border[2] > 0) {
-         //bottom border
-         row = po->windowRow + total_height - 1;
-         fillRowsWithTwoChars(
-            row , row + 1, wincol < 0 ? 0 : wincol, wincol + total_width,
-            po->pup.border[3] != 0 && po->pup.leftOff == 0 ? border_char[7] : border_char[2],
-            border_char[2], borderDeco[2]
-         );
-         if (po->pup.border[1] > 0) {
-            buf[mb_char2bytes(border_char[6], buf)] = ZERO;
-            drawText(buf, row, wincol + total_width - 1, borderDeco[2].flags);
-         }
-      }
+		if (po->pup.border[2] > 0) {
+			//bottom border
+			row = po->windowRow + total_height - 1;
+			fillRowsWithTwoChars(
+				row , row + 1, wincol < 0 ? 0 : wincol, wincol + total_width,
+				po->pup.border[3] != 0 && po->pup.leftOff == 0 ? border_char[7] : border_char[2],
+				border_char[2], borderDeco[2]
+			);
+			if (po->pup.border[1] > 0) {
+				buf[mb_char2bytes(border_char[6], buf)] = ZERO;
+				drawText(buf, row, wincol + total_width - 1, borderDeco[2].flags);
+			}
+		}
 
-      if (po->pup.close == POPCLOSE_BUTTON) {
-          //close button goes on top of anything at the top-right corner
-          buf[mb_char2bytes('X', buf)] = ZERO;
-          drawText(buf, po->windowRow, wincol + total_width - 1,
-               po->pup.border[0] > 0 ? borderDeco[0].flags : popupDeco.flags);
-      }
+		if (po->pup.close == POPCLOSE_BUTTON) {
+			 //close button goes on top of anything at the top-right corner
+			 buf[mb_char2bytes('X', buf)] = ZERO;
+			 drawText(buf, po->windowRow, wincol + total_width - 1,
+					po->pup.border[0] > 0 ? borderDeco[0].flags : popupDeco.flags);
+		}
 
-      update_popupTransparencyG(po, 0);
+		update_popupTransparencyG(po, 0);
 
-      //Back to the normal zindex.
-      screenZindexG = 0;
+		//Back to the normal zindex.
+		screenZindexG = 0;
 
-      //if this was the message portal popup may start the timer now
-      mayStartMessagePortalTimer(po);
-   }
+		//if this was the message portal popup may start the timer now
+		mayStartMessagePortalTimer(po);
+	}
 
-   //In case portUpdate() called draw.c:start_search_hl().
-   end_search_hl();
+	//In case portUpdate() called draw.c:start_search_hl().
+	end_search_hl();
 }
 
 pub int
 portalIsPopup(Portal* po) {
-   return po->pup.flags != 0;
+	return po->pup.flags != 0;
 }
 
 //Find an existing popup used as the preview portal, in the current tab. Return NULL if not found.
 pub Portal *
 popupFindPreviewPortal(void) {
-   return curtab->previewPortal;
+	return curtab->previewPortal;
 }
 
 //Find an existing popup used as the info portal, in the current tab. Return NULL if not found.
 pub Portal *
 popupFindInfoPortal(void) {
-   Portal* po;
+	Portal* po;
 
-   //info portal popup is always local to tab
-   FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
-      if (po->pup.flags & POPF_INFO)
-          return po;
-   }
-   return NULL;
+	//info portal popup is always local to tab
+	FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
+		if (po->pup.flags & POPF_INFO)
+			 return po;
+	}
+	return NULL;
 }
 
 pub void
 f_popup_findecho(Arr(Var), OUT Var* returnVar) {
-   returnVar->number = messagePortP ? messagePortP->id : 0;
+	returnVar->number = messagePortP ? messagePortP->id : 0;
 }
 
 pub void
 f_popup_findinfo(Arr(Var), OUT Var* returnVar) {
-   Portal* po = popupFindInfoPortal();
-   returnVar->number = po == NULL ? 0 : po->id;
+	Portal* po = popupFindInfoPortal();
+	returnVar->number = po == NULL ? 0 : po->id;
 }
 
 pub void
 f_popup_findpreview(Arr(Var), OUT Var* returnVar) {
-   Portal* po = popupFindPreviewPortal();
-   returnVar->number = po? po->id : 0;
+	Portal* po = popupFindPreviewPortal();
+	returnVar->number = po? po->id : 0;
 }
 
 //Create a popup to be used as the preview or info portal.
@@ -13460,129 +13459,129 @@ f_popup_findpreview(Arr(Var), OUT Var* returnVar) {
 //must not remain the current portal, which the caller must make sure of.
 pub int
 portalCreatePreviewPortal(int info) {
-   Portal* po = createPopup(NULL, NULL, info ? POPUP_INFO : POPUP_PREVIEW);
-   if (!po)
-      return FAIL;
+	Portal* po = createPopup(NULL, NULL, info ? POPUP_INFO : POPUP_PREVIEW);
+	if (!po)
+		return FAIL;
 
-   if (info)
-      po->pup.flags |= POPF_INFO;
-   else
-      po->isPreview = true;
-   curtab->previewPortal = po;
+	if (info)
+		po->pup.flags |= POPF_INFO;
+	else
+		po->isPreview = true;
+	curtab->previewPortal = po;
 
-   //Set the width to a reasonable value, so that topLine can be computed.
-   if (po->pup.minWidth > 0)
-      po->width = po->pup.minWidth;
-   ei (po->pup.maxWidth > 0)
-      po->width = po->pup.maxWidth;
-   else
-      po->width = curPor->width;
+	//Set the width to a reasonable value, so that topLine can be computed.
+	if (po->pup.minWidth > 0)
+		po->width = po->pup.minWidth;
+	ei (po->pup.maxWidth > 0)
+		po->width = po->pup.maxWidth;
+	else
+		po->width = curPor->width;
 
-   //Will switch to another book soon, dummy one can be wiped.
-   po->book->locked = false;
+	//Will switch to another book soon, dummy one can be wiped.
+	po->book->locked = false;
 
-   enterPortal(po, false);
-   return OK;
+	enterPortal(po, false);
+	return OK;
 }
 
 //Close any preview popup.
 pub void
 popup_close_preview(void) {
-   Portal* po = popupFindPreviewPortal();
-   if (po)
-      popup_close_with_retval(po, -1);
+	Portal* po = popupFindPreviewPortal();
+	if (po)
+		popup_close_with_retval(po, -1);
 }
 
 //Hide the info popup.
 private void
 popup_hide_info(void) {
-   Portal* po = popupFindInfoPortal();
-   if (po) {
-      popup_on_cmdline = po->pup.flags & POPF_ON_CMDLINE;
-      popup_hide(po);
-   }
+	Portal* po = popupFindInfoPortal();
+	if (po) {
+		popup_on_cmdline = po->pup.flags & POPF_ON_CMDLINE;
+		popup_hide(po);
+	}
 }
 
 //Close any info popup.
 pub void
 popup_close_info(void) {
-   Portal* po = popupFindInfoPortal();
-   if (po)
-      popup_close_with_retval(po, -1);
+	Portal* po = popupFindInfoPortal();
+	if (po)
+		popup_close_with_retval(po, -1);
 }
 
 //Return true if a popup extends into the cmdline area.
 pub int
 popup_overlaps_cmdline(void) {
-   return popup_on_cmdline;
+	return popup_on_cmdline;
 }
 
 //Get the message portal. Return NULL if something failed.
 pub Portal*
 popup_get_messagePort(void) {
-   if (messagePortP)
-      return messagePortP;
+	if (messagePortP)
+		return messagePortP;
 
-   messagePortP = createPopup(NULL, NULL, POPUP_MESSAGE_WIN);
-   if (!messagePortP)
-      return NULL;
+	messagePortP = createPopup(NULL, NULL, POPUP_MESSAGE_WIN);
+	if (!messagePortP)
+		return NULL;
 
-   //use the full screen width
-   messagePortP->width = visibleColsG;
+	//use the full screen width
+	messagePortP->width = visibleColsG;
 
-   //position at bottom of screen
-   messagePortP->pup.pos = POPPOS_BOTTOM;
-   messagePortP->pup.wantCol = 1;
-   messagePortP->pup.minWidth = 9999;
-   messagePortP->pup.firstLine = -1;
+	//position at bottom of screen
+	messagePortP->pup.pos = POPPOS_BOTTOM;
+	messagePortP->pup.wantCol = 1;
+	messagePortP->pup.minWidth = 9999;
+	messagePortP->pup.firstLine = -1;
 
-   //no padding, border at the top
-   for (Unt i = 0; i < 4; ++i)
-      messagePortP->pup.padding[i] = 0;
-   for (Unt i = 1; i < 4; ++i)
-      messagePortP->pup.border[i] = 0;
+	//no padding, border at the top
+	for (Unt i = 0; i < 4; ++i)
+		messagePortP->pup.padding[i] = 0;
+	for (Unt i = 1; i < 4; ++i)
+		messagePortP->pup.border[i] = 0;
 
-   if (messagePortP->pup.timer)
-      messagePortP->pup.timer->tr_keep = true;
-   return messagePortP;
+	if (messagePortP->pup.timer)
+		messagePortP->pup.timer->tr_keep = true;
+	return messagePortP;
 }
 
 //If the message portal is not visible: show it. If the message portal is visible: reset the timeout
 pub void
 popup_show_messagePort(void) {
-   if (!messagePortP)
-      return;
+	if (!messagePortP)
+		return;
 
-   if ((messagePortP->pup.flags & POPF_HIDDEN) != 0) {
-      //the highlight may have changed.
-      updateNotificationColor(messagePortP, POPUP_MESSAGE_WIN);
-      popup_show(messagePortP);
-   }
-   start_message_win_timer = true;
+	if ((messagePortP->pup.flags & POPF_HIDDEN) != 0) {
+		//the highlight may have changed.
+		updateNotificationColor(messagePortP, POPUP_MESSAGE_WIN);
+		popup_show(messagePortP);
+	}
+	start_message_win_timer = true;
 }
 
 private void
 mayStartMessagePortalTimer(Portal* po) {
-   if (po == messagePortP && start_message_win_timer) {
-      if (messagePortP->pup.timer) {
-         messagePortP->pup.timer->tr_interval = message_win_time;
-         timer_start(messagePortP->pup.timer);
-         message_win_time = 3000;
-      }
-      start_message_win_timer = false;
-   }
+	if (po == messagePortP && start_message_win_timer) {
+		if (messagePortP->pup.timer) {
+			messagePortP->pup.timer->tr_interval = message_win_time;
+			timer_start(messagePortP->pup.timer);
+			message_win_time = 3000;
+		}
+		start_message_win_timer = false;
+	}
 }
 
 pub int
 popup_message_win_visible(void) {
-   return messagePortP && (messagePortP->pup.flags & POPF_HIDDEN) == 0;
+	return messagePortP && (messagePortP->pup.flags & POPF_HIDDEN) == 0;
 }
 
 //If the message portal is visible, hide it.
 pub void
 popup_hide_messagePort(void) {
-   if (messagePortP)
-      popup_hide(messagePortP);
+	if (messagePortP)
+		popup_hide(messagePortP);
 }
 
 //Values saved in start_echowindow() and restored in end_echowindow()
@@ -13596,93 +13595,93 @@ private int echoPortMsgColS = 0;
 //using the default 3 sec.
 pub void
 start_echowindow(int time_sec) {
-   inEchoPortalG = true;
-   save_msg_didout = msg_didout;
-   saveMsgCol = msgColG;
-   msg_didout = ew_msg_didout;
-   msgColG = echoPortMsgColS;
-   if (time_sec != 0)
-      message_win_time = time_sec * 1000;
+	inEchoPortalG = true;
+	save_msg_didout = msg_didout;
+	saveMsgCol = msgColG;
+	msg_didout = ew_msg_didout;
+	msgColG = echoPortMsgColS;
+	if (time_sec != 0)
+		message_win_time = time_sec * 1000;
 }
 
 //Invoked after outputting a message for ":echowindow".
 pub void
 end_echowindow(void) {
-   inEchoPortalG = false;
+	inEchoPortalG = false;
 
-   if ((stateG & MODE_HITRETURN) == 0)
-      //show the message portal now
-      redraw_cmd(false);
+	if ((stateG & MODE_HITRETURN) == 0)
+		//show the message portal now
+		redraw_cmd(false);
 
-   //do not overwrite messages
-   ew_msg_didout = true;
-   echoPortMsgColS = msgColG == 0 ? 1 : msgColG;
-   msg_didout = save_msg_didout;
-   msgColG = saveMsgCol;
+	//do not overwrite messages
+	ew_msg_didout = true;
+	echoPortMsgColS = msgColG == 0 ? 1 : msgColG;
+	msg_didout = save_msg_didout;
+	msgColG = saveMsgCol;
 }
 
 //Close any popup for a text property associated with "port". Return true if a popup was closed.
 private int
 popup_closePortal(Portal* port) {
-   int ret = false;
+	int ret = false;
 
-   for (int round = 1; round <= 2; ++round) {
-      Portal* next;
-      for (Portal* po = round == 1 ? firstPopupPortG : curtab->firstPopupPort; po; po = next) {
-         next = po->next;
-         if (po->pup.propPort == port) {
-            popup_close_with_retval(po, -1);
-            ret = true;
-         }
-      }
-   }
-   return ret;
+	for (int round = 1; round <= 2; ++round) {
+		Portal* next;
+		for (Portal* po = round == 1 ? firstPopupPortG : curtab->firstPopupPort; po; po = next) {
+			next = po->next;
+			if (po->pup.propPort == port) {
+				popup_close_with_retval(po, -1);
+				ret = true;
+			}
+		}
+	}
+	return ret;
 }
 
 //Set the title of the popup portal to the file name.
 pub void
 setPopupTitle(Portal* po) {
-   if (!po->book->currFileName)
-      return;
+	if (!po->book->currFileName)
+		return;
 
-   Byte dirname[MAXPATHL];
+	Byte dirname[MAXPATHL];
 
-   mch_dirname(dirname, MAXPATHL);
-   bookShortenName(po->book, dirname, false);
+	mch_dirname(dirname, MAXPATHL);
+	bookShortenName(po->book, dirname, false);
 
-   eeglFree(po->pup.title);
-   Unt len = STRLEN(po->book->currFileName) + 3;
-   po->pup.title = alloc((int)len);
-   eeSnprintf(po->pup.title, len, " %s ", po->book->currFileName);
-   redrawPortLater(po, UPD_VALID);
+	eeglFree(po->pup.title);
+	Unt len = STRLEN(po->book->currFileName) + 3;
+	po->pup.title = alloc((int)len);
+	eeSnprintf(po->pup.title, len, " %s ", po->book->currFileName);
+	redrawPortLater(po, UPD_VALID);
 }
 
 //If there is a preview popup, update the title. Used after changing directory.
 pub void
 popup_update_preview_title(void) {
-   Portal* port = popupFindPreviewPortal();
-   if (port)
-      setPopupTitle(port);
+	Portal* port = popupFindPreviewPortal();
+	if (port)
+		setPopupTitle(port);
 }
 
 //Show a popup notification (like a toast) with a timeout.
 pub void
 showNotification(CS text) {
-   Var vars[2];
-   vars[0] = *allocStringVar(text);
-   Bag* emptyBag = allocBag();
-   Var dictVar = (Var){.tag = VAR_BAG, .bag = emptyBag};
-   vars[1] = dictVar;
-   createPopup(vars, NULL, POPUP_MESSAGE_WIN);
+	Var vars[2];
+	vars[0] = *allocStringVar(text);
+	Bag* emptyBag = allocBag();
+	Var dictVar = (Var){.tag = VAR_BAG, .bag = emptyBag};
+	vars[1] = dictVar;
+	createPopup(vars, NULL, POPUP_MESSAGE_WIN);
 }
 
 pub Boole canStartDrag(Portal* po, int row, int col) {
-   return ((po->pup.flags & (POPF_DRAG | POPF_RESIZE)) && popup_on_border(po, row, col))
-                      || (po->pup.flags & POPF_DRAGALL);
+	return ((po->pup.flags & (POPF_DRAG | POPF_RESIZE)) && popup_on_border(po, row, col))
+						    || (po->pup.flags & POPF_DRAGALL);
 }
 
 pub Boole isInfoPopup(Portal* po) {
-   return (po->pup.flags & POPF_INFO) > 0;
+	return (po->pup.flags & POPF_INFO) > 0;
 }
 
 //{{{pop-up menus (pum)
@@ -13722,29 +13721,29 @@ private int pum_set_selected(int n, int repeat);
 
 private void
 computeSize(void) {
-   int w;
+	int w;
 
-   //Compute the width of the widest match and the widest extra.
-   pum_base_width = 0;
-   pum_kind_width = 0;
-   pum_extra_width = 0;
-   for (Unt i = 0; i < menuLen; ++i) {
-      if (displayedItemsS[i].pum_text != NULL) {
-          w = eeglStrSize(displayedItemsS[i].pum_text);
-          if (pum_base_width < w)
-         pum_base_width = w;
-      }
-      if (displayedItemsS[i].pum_kind != NULL) {
-         w = eeglStrSize(displayedItemsS[i].pum_kind) + 1;
-         if (pum_kind_width < w)
-            pum_kind_width = w;
-      }
-      if (displayedItemsS[i].pum_extra != NULL) {
-         w = eeglStrSize(displayedItemsS[i].pum_extra) + 1;
-         if (pum_extra_width < w)
-            pum_extra_width = w;
-      }
-   }
+	//Compute the width of the widest match and the widest extra.
+	pum_base_width = 0;
+	pum_kind_width = 0;
+	pum_extra_width = 0;
+	for (Unt i = 0; i < menuLen; ++i) {
+		if (displayedItemsS[i].pum_text != NULL) {
+			 w = eeglStrSize(displayedItemsS[i].pum_text);
+			 if (pum_base_width < w)
+			pum_base_width = w;
+		}
+		if (displayedItemsS[i].pum_kind != NULL) {
+			w = eeglStrSize(displayedItemsS[i].pum_kind) + 1;
+			if (pum_kind_width < w)
+				pum_kind_width = w;
+		}
+		if (displayedItemsS[i].pum_extra != NULL) {
+			w = eeglStrSize(displayedItemsS[i].pum_extra) + 1;
+			if (pum_extra_width < w)
+				pum_extra_width = w;
+		}
+	}
 }
 
 //Show the popup menu with items "array[size]". "array" must remain valid until pum_undisplay() is
@@ -13752,425 +13751,425 @@ computeSize(void) {
 //above the screen line "row" or at "row" + "height" - 1.
 pub void
 pum_display(PopupItem* array, Unt size, int selected) {   //index of initially selected item, none if out of range
-   int def_width;
-   int max_width;
-   int context_lines;
-   int cursor_col;
-   int above_row;
-   int below_row;
-   int cline_visible_offset;
-   int content_width;
-   int right_edge_col;
-   int redo_count = 0;
-   Portal* pvPort;
+	int def_width;
+	int max_width;
+	int context_lines;
+	int cursor_col;
+	int above_row;
+	int below_row;
+	int cline_visible_offset;
+	int content_width;
+	int right_edge_col;
+	int redo_count = 0;
+	Portal* pvPort;
 
-   do {
-      def_width = p_pw;
-      if (p_pmw > 0 && def_width > p_pmw)
-         def_width = p_pmw;
-      above_row = 0;
-      below_row = commlineRowG;
+	do {
+		def_width = p_pw;
+		if (p_pmw > 0 && def_width > p_pmw)
+			def_width = p_pmw;
+		above_row = 0;
+		below_row = commlineRowG;
 
-      //Pretend the pum is already there to avoid that mustRedrawG is set when 'cuc' is on.
-      displayedItemsS = (PopupItem *)1;
-      validate_cursor_col();
-      displayedItemsS = NULL;
+		//Pretend the pum is already there to avoid that mustRedrawG is set when 'cuc' is on.
+		displayedItemsS = (PopupItem *)1;
+		validate_cursor_col();
+		displayedItemsS = NULL;
 
-      //Remember the essential parts of the portal position and size, so we
-      //can decide when to reposition the popup menu.
-      pumPort = curPor;
-      if (stateG & MODE_COMMLINE)
-         //cmdline completion popup menu
-         pumPortRow = commlineRowG;
-      else
-         pumPortRow = curPor->cursorRow + curPor->windowRow;
-      pumPortHeight = curPor->height;
-      pumPortCol = curPor->windowCol;
-      pumPortWCol = curPor->cursorCol;
-      pumPortWWidth = curPor->width;
+		//Remember the essential parts of the portal position and size, so we
+		//can decide when to reposition the popup menu.
+		pumPort = curPor;
+		if (stateG & MODE_COMMLINE)
+			//cmdline completion popup menu
+			pumPortRow = commlineRowG;
+		else
+			pumPortRow = curPor->cursorRow + curPor->windowRow;
+		pumPortHeight = curPor->height;
+		pumPortCol = curPor->windowCol;
+		pumPortWCol = curPor->cursorCol;
+		pumPortWWidth = curPor->width;
 
-      FOR_ALL_PORTALS(pvPort) {
-         if (pvPort->isPreview)
-            break;
-      }
-      if (pvPort) {
-         if ((int)pvPort->windowRow < curPor->windowRow)
-            above_row = pvPort->windowRow + pvPort->height;
-         ei (pvPort->windowRow > (int)(curPor->windowRow + curPor->height))
-            below_row = pvPort->windowRow;
-      }
+		FOR_ALL_PORTALS(pvPort) {
+			if (pvPort->isPreview)
+				break;
+		}
+		if (pvPort) {
+			if ((int)pvPort->windowRow < curPor->windowRow)
+				above_row = pvPort->windowRow + pvPort->height;
+			ei (pvPort->windowRow > (int)(curPor->windowRow + curPor->height))
+				below_row = pvPort->windowRow;
+		}
 
-      //Figure out the size and position of the pum.
-      pum_height = MIN(size, PUM_DEF_HEIGHT);
-      if (p_ph > 0 && pum_height > p_ph)
-          pum_height = p_ph;
+		//Figure out the size and position of the pum.
+		pum_height = MIN(size, PUM_DEF_HEIGHT);
+		if (p_ph > 0 && pum_height > p_ph)
+			 pum_height = p_ph;
 
-      //Put the pum below "pumPortRow" if possible.  If there are few lines
-      //decide on where there is more room.
-      if ((int)pumPortRow + 2 >= below_row - pum_height
-            && (int)pumPortRow - above_row > (below_row - above_row) / 2
-      ) {
-         //pum above "pumPortRow"
-         if ((stateG & MODE_COMMLINE) != 0)
-            //for cmdline pum, no need for context lines
-            context_lines = 0;
-         else
-            //Leave two lines of context if possible
-            context_lines = MIN(2, curPor->cursorRow - curPor->cursorLineRow);
+		//Put the pum below "pumPortRow" if possible.  If there are few lines
+		//decide on where there is more room.
+		if ((int)pumPortRow + 2 >= below_row - pum_height
+				&& (int)pumPortRow - above_row > (below_row - above_row) / 2
+		) {
+			//pum above "pumPortRow"
+			if ((stateG & MODE_COMMLINE) != 0)
+				//for cmdline pum, no need for context lines
+				context_lines = 0;
+			else
+				//Leave two lines of context if possible
+				context_lines = MIN(2, curPor->cursorRow - curPor->cursorLineRow);
 
-         if (pumPortRow >= size + context_lines) {
-            pumRowP = pumPortRow - size - context_lines;
-            pum_height = size;
-         } else {
-            pumRowP = 0;
-            pum_height = pumPortRow - context_lines;
-         }
-         if (p_ph > 0 && pum_height > p_ph) {
-            pumRowP += pum_height - p_ph;
-            pum_height = p_ph;
-         }
-      } else {
-         //pum below "pumPortRow"
-         if ((stateG & MODE_COMMLINE) & 0)
-            //for cmdline pum, no need for context lines
-            context_lines = 0;
-         else {
-            //Leave three lines of context if possible
-            validate_cheight();
-            cline_visible_offset = curPor->cursorLineRow
-                      + curPor->cursorLineHeight - curPor->cursorRow;
-            context_lines = MIN(3, cline_visible_offset);
-         }
+			if (pumPortRow >= size + context_lines) {
+				pumRowP = pumPortRow - size - context_lines;
+				pum_height = size;
+			} else {
+				pumRowP = 0;
+				pum_height = pumPortRow - context_lines;
+			}
+			if (p_ph > 0 && pum_height > p_ph) {
+				pumRowP += pum_height - p_ph;
+				pum_height = p_ph;
+			}
+		} else {
+			//pum below "pumPortRow"
+			if ((stateG & MODE_COMMLINE) & 0)
+				//for cmdline pum, no need for context lines
+				context_lines = 0;
+			else {
+				//Leave three lines of context if possible
+				validate_cheight();
+				cline_visible_offset = curPor->cursorLineRow
+						    + curPor->cursorLineHeight - curPor->cursorRow;
+				context_lines = MIN(3, cline_visible_offset);
+			}
 
-         pumRowP = pumPortRow + context_lines;
-         pum_height = MIN(below_row - pumRowP, (int)size);
-         if (p_ph > 0 && pum_height > p_ph)
-            pum_height = p_ph;
-      }
+			pumRowP = pumPortRow + context_lines;
+			pum_height = MIN(below_row - pumRowP, (int)size);
+			if (p_ph > 0 && pum_height > p_ph)
+				pum_height = p_ph;
+		}
 
-      //don't display when we only have room for one line
-      if (pum_height < 1 || (pum_height == 1 && size > 1))
-         return;
+		//don't display when we only have room for one line
+		if (pum_height < 1 || (pum_height == 1 && size > 1))
+			return;
 
-      //If there is a preview portal above, avoid drawing over it.
-      if (pvPort && pumRowP < above_row && pum_height > above_row) {
-         pumRowP = above_row;
-         pum_height = pumPortRow - above_row;
-      }
+		//If there is a preview portal above, avoid drawing over it.
+		if (pvPort && pumRowP < above_row && pum_height > above_row) {
+			pumRowP = above_row;
+			pum_height = pumPortRow - above_row;
+		}
 
-      displayedItemsS = array;
-      menuLen = size;
-      computeSize();
-      max_width = pum_base_width;
-      if (p_pmw > 0 && max_width > p_pmw)
-         max_width = p_pmw;
+		displayedItemsS = array;
+		menuLen = size;
+		computeSize();
+		max_width = pum_base_width;
+		if (p_pmw > 0 && max_width > p_pmw)
+			max_width = p_pmw;
 
-      //Calculate column
-      if (stateG & MODE_COMMLINE)
-         //cmdline completion popup menu
-         cursor_col = cmdline_compl_startcol();
-      else {
-         //cursorCol includes virtual text "above"
-         int wcol = curPor->cursorCol % curPor->width;
-         cursor_col = curPor->windowCol + wcol;
-      }
+		//Calculate column
+		if (stateG & MODE_COMMLINE)
+			//cmdline completion popup menu
+			cursor_col = cmdline_compl_startcol();
+		else {
+			//cursorCol includes virtual text "above"
+			int wcol = curPor->cursorCol % curPor->width;
+			cursor_col = curPor->windowCol + wcol;
+		}
 
-      //if there are more items than room we need a scrollbar
-      if (pum_height < (int)size) {
-         pum_scrollbar = 1;
-         ++max_width;
-      } else
-         pum_scrollbar = 0;
+		//if there are more items than room we need a scrollbar
+		if (pum_height < (int)size) {
+			pum_scrollbar = 1;
+			++max_width;
+		} else
+			pum_scrollbar = 0;
 
-      if (def_width < max_width)
-          def_width = max_width;
+		if (def_width < max_width)
+			 def_width = max_width;
 
-      if (((cursor_col < visibleColsG - p_pw || cursor_col < visibleColsG - max_width))) {
-         //align pum with "cursor_col"
-         pumColP = cursor_col;
+		if (((cursor_col < visibleColsG - p_pw || cursor_col < visibleColsG - max_width))) {
+			//align pum with "cursor_col"
+			pumColP = cursor_col;
 
-         //start with the maximum space available
-         pum_width = visibleColsG - pumColP - pum_scrollbar;
+			//start with the maximum space available
+			pum_width = visibleColsG - pumColP - pum_scrollbar;
 
-         content_width = max_width + pum_kind_width + pum_extra_width + 1;
-         if (pum_width > content_width && pum_width > p_pw) {
-            //Reduce width to fit item
-            pum_width = MAX(content_width, p_pw);
-            if (p_pmw > 0 && pum_width > p_pmw)
-               pum_width = p_pmw;
-         } ei (((cursor_col > p_pw || cursor_col > max_width))) {
-            //align pum edge with "cursor_col"
-            {
-               right_edge_col = visibleColsG - max_width - pum_scrollbar;
-               if (curPor->windowCol > right_edge_col && max_width <= p_pw)
-                  //use full width to end of the screen
-                  pumColP = MAX(0, right_edge_col);
-            }
+			content_width = max_width + pum_kind_width + pum_extra_width + 1;
+			if (pum_width > content_width && pum_width > p_pw) {
+				//Reduce width to fit item
+				pum_width = MAX(content_width, p_pw);
+				if (p_pmw > 0 && pum_width > p_pmw)
+					pum_width = p_pmw;
+			} ei (((cursor_col > p_pw || cursor_col > max_width))) {
+				//align pum edge with "cursor_col"
+				{
+					right_edge_col = visibleColsG - max_width - pum_scrollbar;
+					if (curPor->windowCol > right_edge_col && max_width <= p_pw)
+						//use full width to end of the screen
+						pumColP = MAX(0, right_edge_col);
+				}
 
-            pum_width = visibleColsG - pumColP - pum_scrollbar;
+				pum_width = visibleColsG - pumColP - pum_scrollbar;
 
-            if (pum_width < p_pw) {
-               pum_width = p_pw;
-               if (p_pmw > 0 && pum_width > p_pmw)
-                  pum_width = p_pmw;
-               if (pum_width >= visibleColsG - pumColP)
-                  pum_width = visibleColsG - pumColP - 1;
-            } ei (pum_width > content_width && pum_width > p_pw) {
-               pum_width = MAX(content_width, p_pw);
-               if (p_pmw > 0 && pum_width > p_pmw)
-                  pum_width = p_pmw;
-            } ei (p_pmw > 0 && pum_width > p_pmw) {
-               pum_width = p_pmw;
-            }
-         }
+				if (pum_width < p_pw) {
+					pum_width = p_pw;
+					if (p_pmw > 0 && pum_width > p_pmw)
+						pum_width = p_pmw;
+					if (pum_width >= visibleColsG - pumColP)
+						pum_width = visibleColsG - pumColP - 1;
+				} ei (pum_width > content_width && pum_width > p_pw) {
+					pum_width = MAX(content_width, p_pw);
+					if (p_pmw > 0 && pum_width > p_pmw)
+						pum_width = p_pmw;
+				} ei (p_pmw > 0 && pum_width > p_pmw) {
+					pum_width = p_pmw;
+				}
+			}
 
-      } ei (visibleColsG < def_width) {
-         //not enough room, will use what we have
-         pumColP = 0;
-         pum_width = visibleColsG - 1;
-         if (p_pmw > 0 && pum_width > p_pmw)
-            pum_width = p_pmw;
-      } else {
-         if (max_width > p_pw)
-            max_width = p_pw;   //truncate
-         if (p_pmw > 0 && max_width > p_pmw)
-            max_width = p_pmw;
-         pumColP = visibleColsG - max_width;
-         pum_width = max_width - pum_scrollbar;
-      }
+		} ei (visibleColsG < def_width) {
+			//not enough room, will use what we have
+			pumColP = 0;
+			pum_width = visibleColsG - 1;
+			if (p_pmw > 0 && pum_width > p_pmw)
+				pum_width = p_pmw;
+		} else {
+			if (max_width > p_pw)
+				max_width = p_pw;   //truncate
+			if (p_pmw > 0 && max_width > p_pmw)
+				max_width = p_pmw;
+			pumColP = visibleColsG - max_width;
+			pum_width = max_width - pum_scrollbar;
+		}
 
-      //Set selected item and redraw.  If the window size changed need to
-      //redo the positioning.  Limit this to two times, when there is not
-      //much room the window size will keep changing.
-   } while (pum_set_selected(selected, redo_count) && ++redo_count <= 2);
+		//Set selected item and redraw.  If the window size changed need to
+		//redo the positioning.  Limit this to two times, when there is not
+		//much room the window size will keep changing.
+	} while (pum_set_selected(selected, redo_count) && ++redo_count <= 2);
 
-    pum_redraw();
+	 pum_redraw();
 }
 
 //Set a flag that when pum_redraw() is called it first calls drawUpdateScreen().
 //This will avoid clearing and redrawing the popup menu, prevent flicker.
 pub void
 pum_callUpdateScreen(void) {
-   callUpdateScreen = true;
+	callUpdateScreen = true;
 
-   //Update the cursor position to be able to compute the popup menu
-   //position.  The cursor line length may have changed because of the
-   //inserted completion.
-   curPor->cacheState &= ~(VALID_CROW|VALID_CHEIGHT);
-   validate_cursor();
+	//Update the cursor position to be able to compute the popup menu
+	//position.  The cursor line length may have changed because of the
+	//inserted completion.
+	curPor->cacheState &= ~(VALID_CROW|VALID_CHEIGHT);
+	validate_cursor();
 }
 
 //Return true if we are going to redraw the popup menu and the screen position
 //"row"/"col" is under the popup menu.
 pub int
 pum_under_menu(int row, int col, int only_redrawing) {
-   return (!only_redrawing || pum_will_redraw)
-       && row >= pumRowP
-       && row < pumRowP + pum_height
-       && col >= pumColP - 1
-       && col < pumColP + pum_width + pum_scrollbar;
+	return (!only_redrawing || pum_will_redraw)
+		 && row >= pumRowP
+		 && row < pumRowP + pum_height
+		 && col >= pumColP - 1
+		 && col < pumColP + pum_width + pum_scrollbar;
 }
 
 //Computes decorations of text on the popup menu.
 //Return decorations for every cell, or NULL if all decorations are the same.
 private Arr(Decoration)
 computeTextDeco(CS text, Short hiId, Decoration userDeco) {
-   if (*text == ZERO || (hiId != HILITE_PmenuSelected && hiId != HILITE_Pmenu)
-          || (getFullDecoration(HILITE_PmenuMatchedInSelected).hiId
-                == getFullDecoration(HILITE_PmenuSelected).hiId
-                 && getDecoFlags(HILITE_PmenuMatchedText) == getDecoFlags(HILITE_Pmenu)
-             )
-   )
-      return NULL;
+	if (*text == ZERO || (hiId != HILITE_PmenuSelected && hiId != HILITE_Pmenu)
+			 || (getFullDecoration(HILITE_PmenuMatchedInSelected).hiId
+					 == getFullDecoration(HILITE_PmenuSelected).hiId
+					  && getDecoFlags(HILITE_PmenuMatchedText) == getDecoFlags(HILITE_Pmenu)
+				 )
+	)
+		return NULL;
 
-   Boole isSelect = hiId == HILITE_PmenuSelected;
-   CS leader = (stateG & MODE_COMMLINE) ? cmdline_compl_pattern() : ins_compl_leader();
-   if (!leader || *leader == ZERO)
-      return NULL;
+	Boole isSelect = hiId == HILITE_PmenuSelected;
+	CS leader = (stateG & MODE_COMMLINE) ? cmdline_compl_pattern() : ins_compl_leader();
+	if (!leader || *leader == ZERO)
+		return NULL;
 
-   Arr(Decoration) decos = ALLOC_MULT(Decoration, eeglStrSize(text));
-   if (!decos)
-      return NULL;
+	Arr(Decoration) decos = ALLOC_MULT(Decoration, eeglStrSize(text));
+	if (!decos)
+		return NULL;
 
-   Boole inFuzzy = (stateG & MODE_COMMLINE)
-      ? cmdline_compl_is_fuzzy() : (curBook->o.completeOpt & COT_FUZZY) != 0;
-   Unt leaderLen = STRLEN(leader);
+	Boole inFuzzy = (stateG & MODE_COMMLINE)
+		? cmdline_compl_is_fuzzy() : (curBook->o.completeOpt & COT_FUZZY) != 0;
+	Unt leaderLen = STRLEN(leader);
 
-   ArrayList* ga = NULL;
-   if (inFuzzy)
-      ga = fuzzyMatchStr_with_pos(text, leader);
+	ArrayList* ga = NULL;
+	if (inFuzzy)
+		ga = fuzzyMatchStr_with_pos(text, leader);
 
-   Decoration newDeco;
-   int cellIdx = 0;
-   int matchedLen = -1;
-   Unt char_pos = 0;
-   CS ptr = text;
-   while (*ptr != ZERO) {
-      newDeco = decorationsG[hiId];
+	Decoration newDeco;
+	int cellIdx = 0;
+	int matchedLen = -1;
+	Unt char_pos = 0;
+	CS ptr = text;
+	while (*ptr != ZERO) {
+		newDeco = decorationsG[hiId];
 
-      if (ga) {
-         //Handle fuzzy matching
-         for (int i = 0; i < ga->len; i++) {
-            if (char_pos == ((Unt *)ga->c)[i]) {
-               newDeco = decorationsG[isSelect
-                  ? HILITE_PmenuMatchedInSelected : HILITE_PmenuMatchedText
-               ];
-               break;
-            }
-         }
-      } else {
-         if (matchedLen < 0 && caseInsensitiveCompareNChars(ptr, leader, leaderLen) == 0)
-            matchedLen = (int)leaderLen;
-         if (matchedLen > 0) {
-            newDeco = decorationsG[isSelect
-               ? HILITE_PmenuMatchedInSelected : HILITE_PmenuMatchedText
-            ];
-            matchedLen--;
-         }
-      }
+		if (ga) {
+			//Handle fuzzy matching
+			for (int i = 0; i < ga->len; i++) {
+				if (char_pos == ((Unt *)ga->c)[i]) {
+					newDeco = decorationsG[isSelect
+						? HILITE_PmenuMatchedInSelected : HILITE_PmenuMatchedText
+					];
+					break;
+				}
+			}
+		} else {
+			if (matchedLen < 0 && caseInsensitiveCompareNChars(ptr, leader, leaderLen) == 0)
+				matchedLen = (int)leaderLen;
+			if (matchedLen > 0) {
+				newDeco = decorationsG[isSelect
+					? HILITE_PmenuMatchedInSelected : HILITE_PmenuMatchedText
+				];
+				matchedLen--;
+			}
+		}
 
-      newDeco = getFullDecoration(HILITE_Pmenu);
-      if (userDeco.hiId != HILITE_NULL)
-         newDeco = userDeco;
+		newDeco = getFullDecoration(HILITE_Pmenu);
+		if (userDeco.hiId != HILITE_NULL)
+			newDeco = userDeco;
 
-      int charCells = mb_ptr2cells(ptr);
-      for (int i = 0; i < charCells; i++)
-         decos[cellIdx + i] = newDeco;
-      cellIdx += charCells;
+		int charCells = mb_ptr2cells(ptr);
+		for (int i = 0; i < charCells; i++)
+			decos[cellIdx + i] = newDeco;
+		cellIdx += charCells;
 
-      MB_PTR_ADV(ptr);
-      char_pos++;
-   }
+		MB_PTR_ADV(ptr);
+		char_pos++;
+	}
 
-   if (ga) {
-      ga_clear(ga);
-      eeglFree(ga);
-   }
-   return decos;
+	if (ga) {
+		ga_clear(ga);
+		eeglFree(ga);
+	}
+	return decos;
 }
 
 //Display text on the popup menu with specific decorations
 private void
 pum_drawText_withDecos(
-   int row,
-   int col,
-   int,
-   CS text,
-   int textlen,
-   Arr(Decoration) decos)
+	int row,
+	int col,
+	int,
+	CS text,
+	int textlen,
+	Arr(Decoration) decos)
 {
-   int col_start = col;
-   CS ptr = text;
-   int char_len;
-   //Render text with proper decorations
-   while (*ptr != ZERO && ptr < text + textlen) {
-      char_len = utfCharLen(ptr);
-      drawTextLen(ptr, char_len, row, col, decos[col - col_start].flags);
-      col += mb_ptr2cells(ptr);
-      ptr += char_len;
-   }
+	int col_start = col;
+	CS ptr = text;
+	int char_len;
+	//Render text with proper decorations
+	while (*ptr != ZERO && ptr < text + textlen) {
+		char_len = utfCharLen(ptr);
+		drawTextLen(ptr, char_len, row, col, decos[col - col_start].flags);
+		col += mb_ptr2cells(ptr);
+		ptr += char_len;
+	}
 }
 
 private inline void
 pum_align_order(int* order) {
-   int is_default = p_cia == 0;
-   order[0] = is_default ? CPT_ABBR : p_cia / 100;
-   order[1] = is_default ? CPT_KIND : (p_cia / 10) % 10;
-   order[2] = is_default ? CPT_MENU : p_cia % 10;
+	int is_default = p_cia == 0;
+	order[0] = is_default ? CPT_ABBR : p_cia / 100;
+	order[1] = is_default ? CPT_KIND : (p_cia / 10) % 10;
+	order[2] = is_default ? CPT_MENU : p_cia % 10;
 }
 
 private inline CS
 pum_get_item(int index, int type) {
-   switch(type) {
-   case CPT_ABBR: return displayedItemsS[index].pum_text;
-   case CPT_KIND: return displayedItemsS[index].pum_kind;
-   case CPT_MENU: return displayedItemsS[index].pum_extra;
-   }
-   return NULL;
+	switch(type) {
+	case CPT_ABBR: return displayedItemsS[index].pum_text;
+	case CPT_KIND: return displayedItemsS[index].pum_kind;
+	case CPT_MENU: return displayedItemsS[index].pum_extra;
+	}
+	return NULL;
 }
 
 private inline Decoration
 combineUserDecos(int idx, int type, Decoration defaultDeco) {
-   Decoration userDecos[] = {
-      displayedItemsS[idx].abbreviationDeco,
-      displayedItemsS[idx].kindDeco
-   };
+	Decoration userDecos[] = {
+		displayedItemsS[idx].abbreviationDeco,
+		displayedItemsS[idx].kindDeco
+	};
 
-   return userDecos[type].hiId != HILITE_NULL ? userDecos[type] : defaultDeco;
+	return userDecos[type].hiId != HILITE_NULL ? userDecos[type] : defaultDeco;
 }
 
 //Display text with proper decorations in the popup menu.
 //Return the adjusted column position after drawing.
 private int
 displayText(
-   int row,
-   int col,
-   CS text,
-   Decoration deco,
-   Arr(Decoration) decos,
-   int width,        //width already calculated in outer loop
-   int widthLimit,
-   int totwidth,
-   int next_isempty,
-   int selected
+	int row,
+	int col,
+	CS text,
+	Decoration deco,
+	Arr(Decoration) decos,
+	int width,        //width already calculated in outer loop
+	int widthLimit,
+	int totwidth,
+	int next_isempty,
+	int selected
 ) {
-   CS st_end = NULL;
-   int over_cell = 0;
-   int pad = next_isempty ? 0 : 2;
-   int truncated = false;
-   int remaining = 0;
-   char truncDeco = decorationsG[selected ? HILITE_PmenuSelected : HILITE_Pmenu].flags;
-   Unt trunc = fillCharsG.trunc != ZERO ? fillCharsG.trunc : '>';
+	CS st_end = NULL;
+	int over_cell = 0;
+	int pad = next_isempty ? 0 : 2;
+	int truncated = false;
+	int remaining = 0;
+	char truncDeco = decorationsG[selected ? HILITE_PmenuSelected : HILITE_Pmenu].flags;
+	Unt trunc = fillCharsG.trunc != ZERO ? fillCharsG.trunc : '>';
 
-   if (!text)
-      return col;
+	if (!text)
+		return col;
 
-   int size = (int)STRLEN(text);
-   int cells = mb_string2cells(text, size);
-   truncated = widthLimit == p_pmw && widthLimit - totwidth < cells + pad;
+	int size = (int)STRLEN(text);
+	int cells = mb_string2cells(text, size);
+	truncated = widthLimit == p_pmw && widthLimit - totwidth < cells + pad;
 
-   //only draw the text that fits
-   while (size > 0 && col + cells > widthLimit + pumColP) {
-      --size;
-      size -= mb_head_off(text, text + size);
-      cells -= mb_ptr2cells(text + size);
-   }
+	//only draw the text that fits
+	while (size > 0 && col + cells > widthLimit + pumColP) {
+		--size;
+		size -= mb_head_off(text, text + size);
+		cells -= mb_ptr2cells(text + size);
+	}
 
-   //truncated
-   if (truncated) {
-      remaining = widthLimit - totwidth - 1;
-      if (cells > remaining) {
-         st_end = text + size;
-         while (st_end > text && cells > remaining) {
-            MB_PTR_BACK(text, st_end);
-            cells -= mb_ptr2cells(st_end);
-         }
-         size = st_end - text;
-      }
+	//truncated
+	if (truncated) {
+		remaining = widthLimit - totwidth - 1;
+		if (cells > remaining) {
+			st_end = text + size;
+			while (st_end > text && cells > remaining) {
+				MB_PTR_BACK(text, st_end);
+				cells -= mb_ptr2cells(st_end);
+			}
+			size = st_end - text;
+		}
 
-      if (cells < remaining)
-         over_cell = remaining - cells;
-      cells = mb_string2cells(text, size);
-      width = cells + over_cell + 1;
-   }
+		if (cells < remaining)
+			over_cell = remaining - cells;
+		cells = mb_string2cells(text, size);
+		width = cells + over_cell + 1;
+	}
 
-   if (!decos)
-      drawTextLen(text, size, row, col, deco.flags);
-   else
-      pum_drawText_withDecos(row, col, cells, text, size, decos);
+	if (!decos)
+		drawTextLen(text, size, row, col, deco.flags);
+	else
+		pum_drawText_withDecos(row, col, cells, text, size, decos);
 
-   if (truncated) {
-      if (over_cell > 0) {
-         fillRowsWithTwoChars(
-            row, row + 1, col + cells, col + cells + over_cell, ' ', ' ', deco
-         );
-      }
+	if (truncated) {
+		if (over_cell > 0) {
+			fillRowsWithTwoChars(
+				row, row + 1, col + cells, col + cells + over_cell, ' ', ' ', deco
+			);
+		}
 
-      screen_putchar(trunc, row, col + cells + over_cell, truncDeco);
-   }
+		screen_putchar(trunc, row, col + cells + over_cell, truncDeco);
+	}
 
-   EE_CLEAR(text);
-   return col + width;
+	EE_CLEAR(text);
+	return col + width;
 }
 
 
@@ -14178,231 +14177,231 @@ displayText(
 //Return the new column position after drawing.
 private int
 drawMenuItem(
-   int row,
-   int col,
-   int idx,
-   int j,         //Current position in order array
-   int* order,    //Order array
-   Short hiId,
-   Decoration deco,
-   int* totwidth_ptr,
-   int next_isempty
+	int row,
+	int col,
+	int idx,
+	int j,         //Current position in order array
+	int* order,    //Order array
+	Short hiId,
+	Decoration deco,
+	int* totwidth_ptr,
+	int next_isempty
 ){
-   int item_type = order[j];
-   CS s = NULL;
-   CS p = pum_get_item(idx, item_type);
-   int width = 0; //item width
-   int w;         //char width
-   int selected = idx == selectedItemInd;
+	int item_type = order[j];
+	CS s = NULL;
+	CS p = pum_get_item(idx, item_type);
+	int width = 0; //item width
+	int w;         //char width
+	int selected = idx == selectedItemInd;
 
-   for ( ; ; MB_PTR_ADV(p)) {
-      if (!s)
-         s = p;
-      w = bookPtr2Cells(p);
-      if (*p != ZERO && *p != TAB && *totwidth_ptr + w <= pum_width) {
-         width += w;
-         continue;
-      }
+	for ( ; ; MB_PTR_ADV(p)) {
+		if (!s)
+			s = p;
+		w = bookPtr2Cells(p);
+		if (*p != ZERO && *p != TAB && *totwidth_ptr + w <= pum_width) {
+			width += w;
+			continue;
+		}
 
-      //Display the text that fits or comes before a Tab. First convert it to printable characters
-      Arr(Decoration) decos = NULL;
-      int saved = *p;
+		//Display the text that fits or comes before a Tab. First convert it to printable characters
+		Arr(Decoration) decos = NULL;
+		int saved = *p;
 
-      if (saved != ZERO)
-         *p = ZERO;
-      CS sanitizedText = sanitizeStr(s);
-      if (saved != ZERO)
-         *p = saved;
+		if (saved != ZERO)
+			*p = ZERO;
+		CS sanitizedText = sanitizeStr(s);
+		if (saved != ZERO)
+			*p = saved;
 
-      if (item_type == CPT_ABBR)
-         decos = computeTextDeco(sanitizedText, hiId, displayedItemsS[idx].abbreviationDeco);
-      col = displayText(
-            row, col, sanitizedText, deco, decos, width, pum_width, *totwidth_ptr, next_isempty,
-            selected
-      );
+		if (item_type == CPT_ABBR)
+			decos = computeTextDeco(sanitizedText, hiId, displayedItemsS[idx].abbreviationDeco);
+		col = displayText(
+				row, col, sanitizedText, deco, decos, width, pum_width, *totwidth_ptr, next_isempty,
+				selected
+		);
 
-      if (decos)
-         EE_CLEAR(decos);
+		if (decos)
+			EE_CLEAR(decos);
 
-      if (*p != TAB)
-          break;
+		if (*p != TAB)
+			 break;
 
-      //Display two spaces for a Tab.
-      drawTextLen(S"  ", 2, row, col, deco.flags);
-      col += 2;
-      *totwidth_ptr += 2;
-      s = NULL;  //start text at next char
-      width = 0;
-   }
+		//Display two spaces for a Tab.
+		drawTextLen(S"  ", 2, row, col, deco.flags);
+		col += 2;
+		*totwidth_ptr += 2;
+		s = NULL;  //start text at next char
+		width = 0;
+	}
 
-   return col;
+	return col;
 }
 
 //Draw the scrollbar for the popup menu.
 private void
 pum_draw_scrollbar(int row, int i, int thumb_pos, int thumb_height){
-   if (pum_scrollbar <= 0)
-      return;
-   char deco = (i >= thumb_pos && i < thumb_pos + thumb_height) ?
-         getDecoFlags(HILITE_PmenuScrollBarThumb) : getDecoFlags(HILITE_PmenuScrollbar);
-   screen_putchar(' ', row, pumColP + pum_width, deco);
+	if (pum_scrollbar <= 0)
+		return;
+	char deco = (i >= thumb_pos && i < thumb_pos + thumb_height) ?
+			getDecoFlags(HILITE_PmenuScrollBarThumb) : getDecoFlags(HILITE_PmenuScrollbar);
+	screen_putchar(' ', row, pumColP + pum_width, deco);
 }
 
 //Redraw the popup menu, using "firstItemIndS" and "selectedItemInd".
 pub void
 pum_redraw(void) {
-   int row = pumRowP;
-   int col;
-   Arr(Short) hiIds; //array used for highlights
-   Short hiId;
-   Decoration deco;
-   int i, j;
-   int idx;
-   CS p = NULL;
-   int thumb_pos = 0;
-   int thumb_height = 1;
-   int item_type;
-   int order[3];
-   int next_isempty = false;
-   int n;
-   int items_width_array[3] = { pum_base_width, pum_kind_width, pum_extra_width };
-   int basic_width;  //first item width
-   int last_isabbr = false;
-   Decoration origDeco;
-   int scroll_range = menuLen - pum_height;
+	int row = pumRowP;
+	int col;
+	Arr(Short) hiIds; //array used for highlights
+	Short hiId;
+	Decoration deco;
+	int i, j;
+	int idx;
+	CS p = NULL;
+	int thumb_pos = 0;
+	int thumb_height = 1;
+	int item_type;
+	int order[3];
+	int next_isempty = false;
+	int n;
+	int items_width_array[3] = { pum_base_width, pum_kind_width, pum_extra_width };
+	int basic_width;  //first item width
+	int last_isabbr = false;
+	Decoration origDeco;
+	int scroll_range = menuLen - pum_height;
 
-   Short hisNorm[3]; //hilite ids for normal
-   Short hisSel[3];  //hilite ids for selections
-   //"word"/"abbr"
-   hisNorm[0] = HILITE_Pmenu;
-   hisSel[0] = HILITE_PmenuSelected;
-   //"kind"
-   hisNorm[1] = HILITE_PmenuNormalItem;
-   hisSel[1] = HILITE_PmenuSelectedItem;
-   //"extra text"
-   hisNorm[2] = HILITE_PmenuExtraText;
-   hisSel[2] = HILITE_PmenuSelectedExtraText;
+	Short hisNorm[3]; //hilite ids for normal
+	Short hisSel[3];  //hilite ids for selections
+	//"word"/"abbr"
+	hisNorm[0] = HILITE_Pmenu;
+	hisSel[0] = HILITE_PmenuSelected;
+	//"kind"
+	hisNorm[1] = HILITE_PmenuNormalItem;
+	hisSel[1] = HILITE_PmenuSelectedItem;
+	//"extra text"
+	hisNorm[2] = HILITE_PmenuExtraText;
+	hisSel[2] = HILITE_PmenuSelectedExtraText;
 
-   if (callUpdateScreen) {
-      callUpdateScreen = false;
-      //Do not redraw in pum_may_redraw() and don't draw in the area where the popup menu will be
-      pum_will_redraw = true;
-      drawUpdateScreen(0);
-      pum_will_redraw = false;
-   }
+	if (callUpdateScreen) {
+		callUpdateScreen = false;
+		//Do not redraw in pum_may_redraw() and don't draw in the area where the popup menu will be
+		pum_will_redraw = true;
+		drawUpdateScreen(0);
+		pum_will_redraw = false;
+	}
 
-   //never display more than we have
-   firstItemIndS = MIN(firstItemIndS, scroll_range);
+	//never display more than we have
+	firstItemIndS = MIN(firstItemIndS, scroll_range);
 
-   if (pum_scrollbar) {
-      thumb_height = pum_height * pum_height / menuLen;
-      if (thumb_height == 0)
-         thumb_height = 1;
-      thumb_pos = (firstItemIndS * (pum_height - thumb_height) + scroll_range / 2) / scroll_range;
-   }
+	if (pum_scrollbar) {
+		thumb_height = pum_height * pum_height / menuLen;
+		if (thumb_height == 0)
+			thumb_height = 1;
+		thumb_pos = (firstItemIndS * (pum_height - thumb_height) + scroll_range / 2) / scroll_range;
+	}
 
-   //The popup menu is drawn over popup menus with zindex under POPUPMENU_ZINDEX.
-   screenZindexG = POPUPMENU_ZINDEX;
+	//The popup menu is drawn over popup menus with zindex under POPUPMENU_ZINDEX.
+	screenZindexG = POPUPMENU_ZINDEX;
 
-   for (i = 0; i < pum_height; ++i) {
-      idx = i + firstItemIndS;
-      hiIds = (idx == selectedItemInd) ? hisSel : hisNorm;
-      hiId = hiIds[0]; //start with "word" highlight
-      deco = decorationsG[hiId];
+	for (i = 0; i < pum_height; ++i) {
+		idx = i + firstItemIndS;
+		hiIds = (idx == selectedItemInd) ? hisSel : hisNorm;
+		hiId = hiIds[0]; //start with "word" highlight
+		deco = decorationsG[hiId];
 
-      //prepend a space if there is room
-      if (pumColP > 0)
-         screen_putchar(' ', row, pumColP - 1, deco.flags);
+		//prepend a space if there is room
+		if (pumColP > 0)
+			screen_putchar(' ', row, pumColP - 1, deco.flags);
 
-      //Display each entry, use 2 spaces for a Tab. Do this 3 times and order from p_cia
-      col = pumColP;
-      int totwidth = 0;
-      pum_align_order(order);
-      basic_width = items_width_array[order[0]];
-      last_isabbr = order[2] == CPT_ABBR;
-      for (j = 0; j < 3; ++j) {
-         item_type = order[j];
-         hiId = hiIds[item_type];
-         deco = decorationsG[hiId];
-         origDeco = deco;
-         if (item_type < 2)  //try combine decoration with user custom
-            deco = combineUserDecos(idx, item_type, deco);
-         p = pum_get_item(idx, item_type);
+		//Display each entry, use 2 spaces for a Tab. Do this 3 times and order from p_cia
+		col = pumColP;
+		int totwidth = 0;
+		pum_align_order(order);
+		basic_width = items_width_array[order[0]];
+		last_isabbr = order[2] == CPT_ABBR;
+		for (j = 0; j < 3; ++j) {
+			item_type = order[j];
+			hiId = hiIds[item_type];
+			deco = decorationsG[hiId];
+			origDeco = deco;
+			if (item_type < 2)  //try combine decoration with user custom
+				deco = combineUserDecos(idx, item_type, deco);
+			p = pum_get_item(idx, item_type);
 
-         if (j + 1 < 3)
-            next_isempty = pum_get_item(idx, order[j + 1]) == NULL;
+			if (j + 1 < 3)
+				next_isempty = pum_get_item(idx, order[j + 1]) == NULL;
 
-         if (p)
-            //Process and display the item
-            col = drawMenuItem(row, col, idx, j, order, hiId, deco, &totwidth, next_isempty);
+			if (p)
+				//Process and display the item
+				col = drawMenuItem(row, col, idx, j, order, hiId, deco, &totwidth, next_isempty);
 
-         if (j > 0)
-            n = items_width_array[order[1]] + (last_isabbr ? 0 : 1);
-         else
-            n = order[j] == CPT_ABBR ? 1 : 0;
+			if (j > 0)
+				n = items_width_array[order[1]] + (last_isabbr ? 0 : 1);
+			else
+				n = order[j] == CPT_ABBR ? 1 : 0;
 
-         //Stop when there is nothing more to display.
-         if (j == 2
-                || (next_isempty
-                      && (j == 1 || (j == 0 && pum_get_item(idx, order[j + 2]) == NULL)))
-                || basic_width + n >= pum_width)
-            break;
-         fillRowsWithTwoChars( row, row + 1, col, pumColP + basic_width + n, ' ', ' ', origDeco);
-         col = pumColP + basic_width + n;
-         totwidth = basic_width + n;
-      }
+			//Stop when there is nothing more to display.
+			if (j == 2
+					 || (next_isempty
+						    && (j == 1 || (j == 0 && pum_get_item(idx, order[j + 2]) == NULL)))
+					 || basic_width + n >= pum_width)
+				break;
+			fillRowsWithTwoChars( row, row + 1, col, pumColP + basic_width + n, ' ', ' ', origDeco);
+			col = pumColP + basic_width + n;
+			totwidth = basic_width + n;
+		}
 
-      fillRowsWithTwoChars( row, row + 1, col, pumColP + pum_width, ' ', ' ', origDeco);
-      pum_draw_scrollbar(row, i, thumb_pos, thumb_height);
+		fillRowsWithTwoChars( row, row + 1, col, pumColP + pum_width, ' ', ' ', origDeco);
+		pum_draw_scrollbar(row, i, thumb_pos, thumb_height);
 
-      ++row;
-   }
+		++row;
+	}
 
-   screenZindexG = 0;
+	screenZindexG = 0;
 }
 
 //Position the info popup relative to the popup menu item.
 private void
 pum_position_info_popup(Portal* po) {
-   int col = pumColP + pum_width + pum_scrollbar + 1;
-   int botpos = POPPOS_BOTLEFT;
-   int used_maxwidth_opt = false;
+	int col = pumColP + pum_width + pum_scrollbar + 1;
+	int botpos = POPPOS_BOTLEFT;
+	int used_maxwidth_opt = false;
 
-   po->pup.pos = POPPOS_TOPLEFT;
-   if (visibleColsG - col < 20 && visibleColsG - col < pumColP) {
-      col = pumColP - 1;
-      po->pup.pos = POPPOS_TOPRIGHT;
-      botpos = POPPOS_BOTRIGHT;
-      po->pup.maxWidth = pumColP - 1;
-   } else
-      po->pup.maxWidth = visibleColsG - col + 1;
-   po->pup.maxWidth -= popup_extra_width(po);
-   if (po->pup.maxWidthOpt > 0 && po->pup.maxWidth > po->pup.maxWidthOpt) {
-      //option value overrules computed value
-      po->pup.maxWidth = po->pup.maxWidthOpt;
-      used_maxwidth_opt = true;
-   }
+	po->pup.pos = POPPOS_TOPLEFT;
+	if (visibleColsG - col < 20 && visibleColsG - col < pumColP) {
+		col = pumColP - 1;
+		po->pup.pos = POPPOS_TOPRIGHT;
+		botpos = POPPOS_BOTRIGHT;
+		po->pup.maxWidth = pumColP - 1;
+	} else
+		po->pup.maxWidth = visibleColsG - col + 1;
+	po->pup.maxWidth -= popup_extra_width(po);
+	if (po->pup.maxWidthOpt > 0 && po->pup.maxWidth > po->pup.maxWidthOpt) {
+		//option value overrules computed value
+		po->pup.maxWidth = po->pup.maxWidthOpt;
+		used_maxwidth_opt = true;
+	}
 
-   int row = pumRowP - popup_top_extra(po);
-   if (po->pup.flags & POPF_INFO_MENU) {
-      if (pumRowP < (int)pumPortRow) {
-         //menu above cursor line, align with bottom
-         row += pum_height;
-         po->pup.pos = botpos;
-      }
-      else
-          //menu below cursor line, align with top
-          row += 1;
-   } else
-      //align with the selected item
-      row += selectedItemInd - firstItemIndS + 1;
+	int row = pumRowP - popup_top_extra(po);
+	if (po->pup.flags & POPF_INFO_MENU) {
+		if (pumRowP < (int)pumPortRow) {
+			//menu above cursor line, align with bottom
+			row += pum_height;
+			po->pup.pos = botpos;
+		}
+		else
+			 //menu below cursor line, align with top
+			 row += 1;
+	} else
+		//align with the selected item
+		row += selectedItemInd - firstItemIndS + 1;
 
-   po->pup.flags &= ~POPF_HIDDEN;
-   if (po->pup.maxWidth < 10 && !used_maxwidth_opt)
-      //The popup is not going to fit or will overlap with the cursor position, hide the popup.
-      po->pup.flags |= POPF_HIDDEN;
-   else
-      popup_set_wantpos_rowcol(po, row, col);
+	po->pup.flags &= ~POPF_HIDDEN;
+	if (po->pup.maxWidth < 10 && !used_maxwidth_opt)
+		//The popup is not going to fit or will overlap with the cursor position, hide the popup.
+		po->pup.flags |= POPF_HIDDEN;
+	else
+		popup_set_wantpos_rowcol(po, row, col);
 }
 
 //Set the index of the currently selected item. The menu will scroll when necessary. When "n" is
@@ -14413,347 +14412,347 @@ pum_position_info_popup(Portal* po) {
 //Return true when the window was resized and the location of the popup menu must be recomputed.
 private int
 pum_set_selected(int n, int repeat) {
-   int resized = false;
-   int context = pum_height / 2;
-   int scroll_offset;
-   int prev_selected = selectedItemInd;
-   Unt cur_cot_flags = curBook->o.completeOpt;
-   int has_info = false;
+	int resized = false;
+	int context = pum_height / 2;
+	int scroll_offset;
+	int prev_selected = selectedItemInd;
+	Unt cur_cot_flags = curBook->o.completeOpt;
+	int has_info = false;
 
-   selectedItemInd = n;
-   scroll_offset = selectedItemInd - pum_height;
+	selectedItemInd = n;
+	scroll_offset = selectedItemInd - pum_height;
 
-   if (selectedItemInd >= 0 && selectedItemInd < (int)menuLen) {
-      if (firstItemIndS > selectedItemInd - 4) {
-         //scroll down; when we did a jump it's probably a PageUp then scroll a whole page
-         if (firstItemIndS > selectedItemInd - 2) {
-            firstItemIndS -= pum_height - 2;
-            if (firstItemIndS < 0)
-               firstItemIndS = 0;
-            ei (firstItemIndS > selectedItemInd)
-               firstItemIndS = selectedItemInd;
-         } else
-            firstItemIndS = selectedItemInd;
-      } ei (firstItemIndS < scroll_offset + 5) {
-         //scroll up; when we did a jump it's probably a PageDown then
-         //scroll a whole page
-         if (firstItemIndS < scroll_offset + 3)
-            firstItemIndS = MAX(firstItemIndS + pum_height - 2, scroll_offset + 1);
-         else
-            firstItemIndS = scroll_offset + 1;
-      }
+	if (selectedItemInd >= 0 && selectedItemInd < (int)menuLen) {
+		if (firstItemIndS > selectedItemInd - 4) {
+			//scroll down; when we did a jump it's probably a PageUp then scroll a whole page
+			if (firstItemIndS > selectedItemInd - 2) {
+				firstItemIndS -= pum_height - 2;
+				if (firstItemIndS < 0)
+					firstItemIndS = 0;
+				ei (firstItemIndS > selectedItemInd)
+					firstItemIndS = selectedItemInd;
+			} else
+				firstItemIndS = selectedItemInd;
+		} ei (firstItemIndS < scroll_offset + 5) {
+			//scroll up; when we did a jump it's probably a PageDown then
+			//scroll a whole page
+			if (firstItemIndS < scroll_offset + 3)
+				firstItemIndS = MAX(firstItemIndS + pum_height - 2, scroll_offset + 1);
+			else
+				firstItemIndS = scroll_offset + 1;
+		}
 
-      //Give a few lines of context when possible.
-      context = MIN(context, 3);
-      if (pum_height > 2) {
-         if (firstItemIndS > selectedItemInd - context)
-            firstItemIndS = MAX(selectedItemInd - context, 0);  //scroll down
-         ei (firstItemIndS < selectedItemInd + context - pum_height + 1)
-            firstItemIndS = selectedItemInd + context - pum_height + 1;  //up
-      }
-      //adjust for the number of lines displayed
-      firstItemIndS = MIN(firstItemIndS, (int)menuLen - pum_height);
+		//Give a few lines of context when possible.
+		context = MIN(context, 3);
+		if (pum_height > 2) {
+			if (firstItemIndS > selectedItemInd - context)
+				firstItemIndS = MAX(selectedItemInd - context, 0);  //scroll down
+			ei (firstItemIndS < selectedItemInd + context - pum_height + 1)
+				firstItemIndS = selectedItemInd + context - pum_height + 1;  //up
+		}
+		//adjust for the number of lines displayed
+		firstItemIndS = MIN(firstItemIndS, (int)menuLen - pum_height);
 
-      //Show extra info in the preview portal if there is something and
-      //'completeopt' contains "preview" or "popup" or "popuphidden".
-      //Skip this when tried twice already.
-      //Skip this also when there is not much room.
-      //Skip this for command-portal when 'completeopt' contains "preview".
-      //NOTE: Be very careful not to sync undo!
-      if (displayedItemsS[selectedItemInd].pum_info != NULL
-         && visibleRowsG > 10
-         && repeat <= 1
-         && (cur_cot_flags & COT_ANY_PREVIEW)
-         && !((cur_cot_flags & COT_PREVIEW) && commPortTypeG != 0))
-      {
-         Portal   *curPor_save = curPor;
-         Tab   *curtab_save = curtab;
-         UsePopup   use_popup;
-         has_info = true;
-         if (cur_cot_flags & COT_POPUPHIDDEN)
-            use_popup = USEPOPUP_HIDDEN;
-         ei (cur_cot_flags & COT_POPUP)
-            use_popup = USEPOPUP_NORMAL;
-         else
-            use_popup = USEPOPUP_NONE;
-         if (use_popup != USEPOPUP_NONE)
-            //don't use WinEnter or WinLeave autocommands for the info popup
-            block_autocmds();
-         //Open a preview portal and set "curPor" to it.
-         //3 lines by default, prefer 'previewheight' if set and smaller.
-         g_do_tagpreview = 3;
-         if (p_pvh > 0 && p_pvh < g_do_tagpreview)
-            g_do_tagpreview = p_pvh;
-         ++isRedrawingDisabledG;
-         //Prevent undo sync here, if an autocommand syncs undo weird
-         //things can happen to the undo tree.
-         ++no_u_sync;
-         resized = prepare_tagpreview(false, false, use_popup);
-         --no_u_sync;
-         if (isRedrawingDisabledG > 0)
-            --isRedrawingDisabledG;
-         g_do_tagpreview = 0;
+		//Show extra info in the preview portal if there is something and
+		//'completeopt' contains "preview" or "popup" or "popuphidden".
+		//Skip this when tried twice already.
+		//Skip this also when there is not much room.
+		//Skip this for command-portal when 'completeopt' contains "preview".
+		//NOTE: Be very careful not to sync undo!
+		if (displayedItemsS[selectedItemInd].pum_info != NULL
+			&& visibleRowsG > 10
+			&& repeat <= 1
+			&& (cur_cot_flags & COT_ANY_PREVIEW)
+			&& !((cur_cot_flags & COT_PREVIEW) && commPortTypeG != 0))
+		{
+			Portal   *curPor_save = curPor;
+			Tab   *curtab_save = curtab;
+			UsePopup   use_popup;
+			has_info = true;
+			if (cur_cot_flags & COT_POPUPHIDDEN)
+				use_popup = USEPOPUP_HIDDEN;
+			ei (cur_cot_flags & COT_POPUP)
+				use_popup = USEPOPUP_NORMAL;
+			else
+				use_popup = USEPOPUP_NONE;
+			if (use_popup != USEPOPUP_NONE)
+				//don't use WinEnter or WinLeave autocommands for the info popup
+				block_autocmds();
+			//Open a preview portal and set "curPor" to it.
+			//3 lines by default, prefer 'previewheight' if set and smaller.
+			g_do_tagpreview = 3;
+			if (p_pvh > 0 && p_pvh < g_do_tagpreview)
+				g_do_tagpreview = p_pvh;
+			++isRedrawingDisabledG;
+			//Prevent undo sync here, if an autocommand syncs undo weird
+			//things can happen to the undo tree.
+			++no_u_sync;
+			resized = prepare_tagpreview(false, false, use_popup);
+			--no_u_sync;
+			if (isRedrawingDisabledG > 0)
+				--isRedrawingDisabledG;
+			g_do_tagpreview = 0;
 
-         if (curPor->isPreview || (curPor->pup.flags & POPF_INFO)) {
-            //Don't want to sync undo in the current book.
-            ++no_u_sync;
-            int res = bookStartEditingFile(0, NULL, NULL, NULL, ECMD_ONE, 0, NULL);
-            --no_u_sync;
-            if (res == OK) {
-               //Edit a new, empty book. Set options for a "wipeout" book.
-               optChangeAndReportError(
-                  S"swapfile", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
-               );
-               optChangeAndReportError(
-                  S"book.listed", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
-               );
-               optChangeAndReportError(S"book.type", optStr("nofile"), OPT_LOCAL);
-               optChangeAndReportError(
-                  S"diff", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
-               );
-            }
-            if (res == OK) {
-               CS e;
-               LineNr   lnum = 0;
+			if (curPor->isPreview || (curPor->pup.flags & POPF_INFO)) {
+				//Don't want to sync undo in the current book.
+				++no_u_sync;
+				int res = bookStartEditingFile(0, NULL, NULL, NULL, ECMD_ONE, 0, NULL);
+				--no_u_sync;
+				if (res == OK) {
+					//Edit a new, empty book. Set options for a "wipeout" book.
+					optChangeAndReportError(
+						S"swapfile", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
+					);
+					optChangeAndReportError(
+						S"book.listed", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
+					);
+					optChangeAndReportError(S"book.type", optStr("nofile"), OPT_LOCAL);
+					optChangeAndReportError(
+						S"diff", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
+					);
+				}
+				if (res == OK) {
+					CS e;
+					LineNr   lnum = 0;
 
-               for (CS p = displayedItemsS[selectedItemInd].pum_info; *p != ZERO; ) {
-                  e = firstOccurrence(p, '\n');
-                  if (!e) {
-                     ml_append(lnum++, p, 0, false);
-                     break;
-                  }
-                  *e = ZERO;
-                  ml_append(lnum++, p, (int)(e - p + 1), false);
-                  *e = '\n';
-                  p = e + 1;
-               }
-               //delete the empty last line
-               ml_delete(curBook->mem.lineCount);
+					for (CS p = displayedItemsS[selectedItemInd].pum_info; *p != ZERO; ) {
+						e = firstOccurrence(p, '\n');
+						if (!e) {
+						   ml_append(lnum++, p, 0, false);
+						   break;
+						}
+						*e = ZERO;
+						ml_append(lnum++, p, (int)(e - p + 1), false);
+						*e = '\n';
+						p = e + 1;
+					}
+					//delete the empty last line
+					ml_delete(curBook->mem.lineCount);
 
-               //Increase the height of the preview portal to show the text, but no more than
-               //'previewheight' lines.
-               if (repeat == 0 && use_popup == USEPOPUP_NONE) {
-                  lnum = MIN(lnum, p_pvh);
-                  if ((int)curPor->height < lnum) {
-                      portSetHeight((int)lnum, curPor);
-                      resized = true;
-                  }
-               }
+					//Increase the height of the preview portal to show the text, but no more than
+					//'previewheight' lines.
+					if (repeat == 0 && use_popup == USEPOPUP_NONE) {
+						lnum = MIN(lnum, p_pvh);
+						if ((int)curPor->height < lnum) {
+						    portSetHeight((int)lnum, curPor);
+						    resized = true;
+						}
+					}
 
-               curBook->wasModified = false;
-               curBook->o.modifiable = false;
+					curBook->wasModified = false;
+					curBook->o.modifiable = false;
 
-               if (selectedItemInd != prev_selected) {
-                  curPor->pup.firstLine = 0;
-                  curPor->topLine = 1;
-               } ei (curPor->topLine > curBook->mem.lineCount)
-                  curPor->topLine = curBook->mem.lineCount;
-               curPor->cursor.lnum = curPor->topLine;
-               curPor->cursor.col = 0;
-               if (use_popup != USEPOPUP_NONE) {
-                  pum_position_info_popup(curPor);
-                  if (portalIsValid(curPor_save))
-                     redrawPortLater(curPor_save, UPD_SOME_VALID);
-               }
-               if ((curPor != curPor_save && portalIsValid(curPor_save))
-                   || (curtab != curtab_save && isTabValid(curtab_save))
-               ){
-                  int save_redr_status;
+					if (selectedItemInd != prev_selected) {
+						curPor->pup.firstLine = 0;
+						curPor->topLine = 1;
+					} ei (curPor->topLine > curBook->mem.lineCount)
+						curPor->topLine = curBook->mem.lineCount;
+					curPor->cursor.lnum = curPor->topLine;
+					curPor->cursor.col = 0;
+					if (use_popup != USEPOPUP_NONE) {
+						pum_position_info_popup(curPor);
+						if (portalIsValid(curPor_save))
+						   redrawPortLater(curPor_save, UPD_SOME_VALID);
+					}
+					if ((curPor != curPor_save && portalIsValid(curPor_save))
+						 || (curtab != curtab_save && isTabValid(curtab_save))
+					){
+						int save_redr_status;
 
-                  if (curtab != curtab_save && isTabValid(curtab_save))
-                      gotoTab(curtab_save, false, false);
+						if (curtab != curtab_save && isTabValid(curtab_save))
+						    gotoTab(curtab_save, false, false);
 
-                  //When the first completion is done and the preview
-                  //portal is not resized, skip the preview portal's status line redrawing.
-                  if (ins_compl_active() && !resized)
-                      curPor->statusLineNeedsRedraw = false;
+						//When the first completion is done and the preview
+						//portal is not resized, skip the preview portal's status line redrawing.
+						if (ins_compl_active() && !resized)
+						    curPor->statusLineNeedsRedraw = false;
 
-                  //Return cursor to where we were
-                  validate_cursor();
-                  redraw_later(UPD_SOME_VALID);
+						//Return cursor to where we were
+						validate_cursor();
+						redraw_later(UPD_SOME_VALID);
 
-                  //When the preview portal was resized we need to update the view on the book.
-                  //Only go back to the portal when needed, otherwise it will always be redrawn.
-                  if (resized && portalIsValid(curPor_save)) {
-                      ++no_u_sync;
-                      enterPortal(curPor_save, true);
-                      --no_u_sync;
-                      update_topline();
-                  }
+						//When the preview portal was resized we need to update the view on the book.
+						//Only go back to the portal when needed, otherwise it will always be redrawn.
+						if (resized && portalIsValid(curPor_save)) {
+						    ++no_u_sync;
+						    enterPortal(curPor_save, true);
+						    --no_u_sync;
+						    update_topline();
+						}
 
-                  //Update the screen before drawing the popup menu.
-                  //Enable updating the status lines.
-                  pum_pretend_not_visible = true;
+						//Update the screen before drawing the popup menu.
+						//Enable updating the status lines.
+						pum_pretend_not_visible = true;
 
-                  //But don't draw text at the new popup menu position, it causes flicker. When
-                  //resizing we need to draw anyway, the position may change later.
-                  //Also do not redraw the status line of the original current portal here, to
-                  //avoid it gets drawn with StatusLineNC for a moment and cause flicker.
-                  pum_will_redraw = !resized;
-                  save_redr_status = curPor_save->statusLineNeedsRedraw;
-                  curPor_save->statusLineNeedsRedraw = false;
-                  drawUpdateScreen(0);
-                  pum_pretend_not_visible = false;
-                  pum_will_redraw = false;
-                  curPor_save->statusLineNeedsRedraw = save_redr_status;
+						//But don't draw text at the new popup menu position, it causes flicker. When
+						//resizing we need to draw anyway, the position may change later.
+						//Also do not redraw the status line of the original current portal here, to
+						//avoid it gets drawn with StatusLineNC for a moment and cause flicker.
+						pum_will_redraw = !resized;
+						save_redr_status = curPor_save->statusLineNeedsRedraw;
+						curPor_save->statusLineNeedsRedraw = false;
+						drawUpdateScreen(0);
+						pum_pretend_not_visible = false;
+						pum_will_redraw = false;
+						curPor_save->statusLineNeedsRedraw = save_redr_status;
 
-                  if (!resized && portalIsValid(curPor_save)) {
-                     Portal* po = curPor;
-                     ++no_u_sync;
-                     enterPortal(curPor_save, true);
-                     --no_u_sync;
-                     if (use_popup == USEPOPUP_HIDDEN && portalIsValid(po))
-                        popup_hide(po);
-                  }
+						if (!resized && portalIsValid(curPor_save)) {
+						   Portal* po = curPor;
+						   ++no_u_sync;
+						   enterPortal(curPor_save, true);
+						   --no_u_sync;
+						   if (use_popup == USEPOPUP_HIDDEN && portalIsValid(po))
+						      popup_hide(po);
+						}
 
-                  //May need to update the screen again when there are autocommands involved.
-                  pum_pretend_not_visible = true;
-                  pum_will_redraw = !resized;
-                  drawUpdateScreen(0);
-                  pum_pretend_not_visible = false;
-                  pum_will_redraw = false;
-                  callUpdateScreen = false;
-               }
-            }
-         }
-         if (PORTAL_IS_POPUP(curPor))
-            //can't keep focus in a popup portal
-            enterPortal(firstPor, true);
-         if (use_popup != USEPOPUP_NONE)
-            unblock_autocmds();
-      }
-   }
-   if (!has_info)
-      //hide any popup info portal
-      popup_hide_info();
+						//May need to update the screen again when there are autocommands involved.
+						pum_pretend_not_visible = true;
+						pum_will_redraw = !resized;
+						drawUpdateScreen(0);
+						pum_pretend_not_visible = false;
+						pum_will_redraw = false;
+						callUpdateScreen = false;
+					}
+				}
+			}
+			if (PORTAL_IS_POPUP(curPor))
+				//can't keep focus in a popup portal
+				enterPortal(firstPor, true);
+			if (use_popup != USEPOPUP_NONE)
+				unblock_autocmds();
+		}
+	}
+	if (!has_info)
+		//hide any popup info portal
+		popup_hide_info();
 
-   return resized;
+	return resized;
 }
 
 //Undisplay the popup menu (later).
 pub void
 pum_undisplay(void) {
-   displayedItemsS = NULL;
-   redraw_all_later(UPD_NOT_VALID);
-   needRedrawTabpanelG = true;
-   if (pum_in_cmdline) {
-      mustClearCommlineG = true;
-      pum_in_cmdline = false;
-   }
-   status_redraw_all();
-   //hide any popup info portal
-   popup_hide_info();
+	displayedItemsS = NULL;
+	redraw_all_later(UPD_NOT_VALID);
+	needRedrawTabpanelG = true;
+	if (pum_in_cmdline) {
+		mustClearCommlineG = true;
+		pum_in_cmdline = false;
+	}
+	status_redraw_all();
+	//hide any popup info portal
+	popup_hide_info();
 }
 
 //Clear the popup menu.  Currently only resets the offset to the first displayed item.
 pub void
 pum_clear(void) {
-   firstItemIndS = 0;
+	firstItemIndS = 0;
 }
 
 //Return true if the popup menu is displayed. Used to avoid some redrawing that could overwrite
 //it. Overruled when "pum_pretend_not_visible" is set, used to redraw the status lines.
 pub int
 pum_visible(void) {
-   return !pum_pretend_not_visible && displayedItemsS != NULL;
+	return !pum_pretend_not_visible && displayedItemsS != NULL;
 }
 
 //Return true if the popup can be redrawn in the same position.
 private int
 pum_in_same_position(void) {
-   return pumPort != curPor
-       || ((int)pumPortRow == curPor->cursorRow + curPor->windowRow
-            && pumPortHeight == curPor->height
-            && (int)pumPortCol == curPor->windowCol
-            && pumPortWWidth == curPor->width
-         );
+	return pumPort != curPor
+		 || ((int)pumPortRow == curPor->cursorRow + curPor->windowRow
+				&& pumPortHeight == curPor->height
+				&& (int)pumPortCol == curPor->windowCol
+				&& pumPortWWidth == curPor->width
+			);
 }
 
 //Return true when pum_may_redraw() will call pum_redraw().
 //This means that the pum area should not be overwritten to avoid flicker.
 pub int
 pum_redraw_in_same_position(void) {
-   if (!pum_visible() || pum_will_redraw)
-      return false;  //nothing to do
+	if (!pum_visible() || pum_will_redraw)
+		return false;  //nothing to do
 
-   return pum_in_same_position();
+	return pum_in_same_position();
 }
 
 //Reposition the popup menu to adjust for portal layout changes.
 pub void
 pum_may_redraw(void) {
-   PopupItem   *array = displayedItemsS;
-   Unt      len = menuLen;
-   int      selected = selectedItemInd;
+	PopupItem   *array = displayedItemsS;
+	Unt      len = menuLen;
+	int      selected = selectedItemInd;
 
-   if (!pum_visible() || pum_will_redraw)
-      return;  //nothing to do
+	if (!pum_visible() || pum_will_redraw)
+		return;  //nothing to do
 
-   if (pum_in_same_position()) {
-      pum_redraw();  //Redraw portal in same position
-   } else {
-      int wcol = curPor->cursorCol;
+	if (pum_in_same_position()) {
+		pum_redraw();  //Redraw portal in same position
+	} else {
+		int wcol = curPor->cursorCol;
 
-      //Portal layout changed, recompute the position.
-      //Use the remembered cursorCol value, the cursor may have moved when a
-      //completion was inserted, but we want the menu in the same position.
-      pum_undisplay();
-      curPor->cursorCol = pumPortWCol;
-      curPor->cacheState |= VALID_WCOL;
-      pum_display(array, len, selected);
-      curPor->cursorCol = wcol;
-   }
+		//Portal layout changed, recompute the position.
+		//Use the remembered cursorCol value, the cursor may have moved when a
+		//completion was inserted, but we want the menu in the same position.
+		pum_undisplay();
+		curPor->cursorCol = pumPortWCol;
+		curPor->cacheState |= VALID_WCOL;
+		pum_display(array, len, selected);
+		curPor->cursorCol = wcol;
+	}
 }
 
 //Return the height of the popup menu, the number of entries visible.
 //Only valid when pum_visible() returns true!
 pub int
 pum_get_height(void) {
-   return pum_height;
+	return pum_height;
 }
 
 //Add size information about the pum to "dict".
 pub void
 pum_set_event_info(Bag *bag) {
-   if (!pum_visible())
-      return;
-   (void)bagAddNumber(bag, S"height", pum_height);
-   (void)bagAddNumber(bag, S"width", pum_width);
-   (void)bagAddNumber(bag, S"row", pumRowP);
-   (void)bagAddNumber(bag, S"col", pumColP);
-   (void)bagAddNumber(bag, S"size", menuLen);
-   (void)bagAdd_bool(bag, S"scrollbar", pum_scrollbar ? VVAL_TRUE : VVAL_FALSE);
+	if (!pum_visible())
+		return;
+	(void)bagAddNumber(bag, S"height", pum_height);
+	(void)bagAddNumber(bag, S"width", pum_width);
+	(void)bagAddNumber(bag, S"row", pumRowP);
+	(void)bagAddNumber(bag, S"col", pumColP);
+	(void)bagAddNumber(bag, S"size", menuLen);
+	(void)bagAdd_bool(bag, S"scrollbar", pum_scrollbar ? VVAL_TRUE : VVAL_FALSE);
 }
 
 private void
 pum_position_at_mouse(int min_width) {
-   if (visibleRowsG - mouseRowG > menuLen || visibleRowsG - mouseRowG > mouseRowG) {
-      //Enough space below the mouse row, or there is more space below the mouse row than above.
-      pumRowP = mouseRowG + 1;
-      if (pum_height > visibleRowsG - pumRowP)
-          pum_height = visibleRowsG - pumRowP;
-      if (pumRowP + pum_height > (int)commlineRowG)
-          pum_in_cmdline = true;
-   } else {
-   //Show above the mouse row, reduce height if it does not fit.
-   pumRowP = mouseRowG - menuLen;
-   if (pumRowP < 0) {
-       pum_height += pumRowP;
-       pumRowP = 0;
-   }
-   }
+	if (visibleRowsG - mouseRowG > menuLen || visibleRowsG - mouseRowG > mouseRowG) {
+		//Enough space below the mouse row, or there is more space below the mouse row than above.
+		pumRowP = mouseRowG + 1;
+		if (pum_height > visibleRowsG - pumRowP)
+			 pum_height = visibleRowsG - pumRowP;
+		if (pumRowP + pum_height > (int)commlineRowG)
+			 pum_in_cmdline = true;
+	} else {
+	//Show above the mouse row, reduce height if it does not fit.
+	pumRowP = mouseRowG - menuLen;
+	if (pumRowP < 0) {
+		 pum_height += pumRowP;
+		 pumRowP = 0;
+	}
+	}
 
-   if (visibleColsG - mouseColG >= pum_base_width || visibleColsG - mouseColG > min_width)
-      //Enough space to show at mouse column.
-      pumColP = mouseColG;
-   else
-       //Not enough space, right align with portal.
-       pumColP = visibleColsG -  MIN(pum_base_width, min_width);
-   pum_width = visibleColsG - pumColP;
+	if (visibleColsG - mouseColG >= pum_base_width || visibleColsG - mouseColG > min_width)
+		//Enough space to show at mouse column.
+		pumColP = mouseColG;
+	else
+		 //Not enough space, right align with portal.
+		 pumColP = visibleColsG -  MIN(pum_base_width, min_width);
+	pum_width = visibleColsG - pumColP;
 
-   pum_width = MIN(pum_width, pum_base_width + 1);
-   //Do not redraw at cursor position.
-   pumPort = NULL;
+	pum_width = MIN(pum_width, pum_base_width + 1);
+	//Do not redraw at cursor position.
+	pumPort = NULL;
 }
 
 
@@ -14764,10 +14763,10 @@ private Unt balloonArraySizeS;
 # define BALLOON_MIN_HEIGHT 10
 
 typedef struct {
-   CS start;
-   int bytelen;
-   int cells;
-   int indent;
+	CS start;
+	int bytelen;
+	int cells;
+	int indent;
 } BalPart;
 
 //Split a string into parts to display in the balloon. Aimed at output from gdb. Attempt to split
@@ -14775,180 +14774,180 @@ typedef struct {
 //in "array" and its the size is returned. Return value is at least 1
 pub Unt
 balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
-   ArrayList   ga;
-   BalPart   *item;
-   int quoted = false;
-   int indent = 0;
-   int max_cells = 0;
-   Unt max_height = MIN(visibleRowsG, 4) / 2 - 1;
-   int long_item_count = 0;
-   int split_long_items = false;
+	ArrayList   ga;
+	BalPart   *item;
+	int quoted = false;
+	int indent = 0;
+	int max_cells = 0;
+	Unt max_height = MIN(visibleRowsG, 4) / 2 - 1;
+	int long_item_count = 0;
+	int split_long_items = false;
 
-   ga_init2(&ga, sizeof(BalPart), 20);
-   CS p = mesg;
+	ga_init2(&ga, sizeof(BalPart), 20);
+	CS p = mesg;
 
-   while (*p != ZERO) {
-      if (ga_grow(&ga, 1) == FAIL)
-         goto failed;
-      item = ((BalPart *)ga.c) + ga.len;
-      item->start = p;
-      item->indent = indent;
-      item->cells = indent * 2;
-      ++ga.len;
-      while (*p != ZERO) {
-         if (*p == '"')
-            quoted = !quoted;
-         ei (*p == '\n')
-            break;
-         ei (*p == '\\' && p[1] != ZERO)
-            ++p;
-         ei (!quoted) {
-            if ((*p == ',' && p[1] == ' ') || *p == '{' || *p == '}') {
-               //Looks like a good point to break.
-               if (*p == '{')
-                  ++indent;
-               ei (*p == '}' && indent > 0)
-                  --indent;
-               ++item->cells;
-               p = skipwhite(p + 1);
-               break;
-            }
-         }
-         item->cells += bookPtr2Cells(p);
-         p += utfCharLen(p);
-      }
-      item->bytelen = p - item->start;
-      if (*p == '\n')
-         ++p;
-      if (item->cells > max_cells)
-         max_cells = item->cells;
-      long_item_count += (item->cells - 1) / BALLOON_MIN_WIDTH;
-   }
+	while (*p != ZERO) {
+		if (ga_grow(&ga, 1) == FAIL)
+			goto failed;
+		item = ((BalPart *)ga.c) + ga.len;
+		item->start = p;
+		item->indent = indent;
+		item->cells = indent * 2;
+		++ga.len;
+		while (*p != ZERO) {
+			if (*p == '"')
+				quoted = !quoted;
+			ei (*p == '\n')
+				break;
+			ei (*p == '\\' && p[1] != ZERO)
+				++p;
+			ei (!quoted) {
+				if ((*p == ',' && p[1] == ' ') || *p == '{' || *p == '}') {
+					//Looks like a good point to break.
+					if (*p == '{')
+						++indent;
+					ei (*p == '}' && indent > 0)
+						--indent;
+					++item->cells;
+					p = skipwhite(p + 1);
+					break;
+				}
+			}
+			item->cells += bookPtr2Cells(p);
+			p += utfCharLen(p);
+		}
+		item->bytelen = p - item->start;
+		if (*p == '\n')
+			++p;
+		if (item->cells > max_cells)
+			max_cells = item->cells;
+		long_item_count += (item->cells - 1) / BALLOON_MIN_WIDTH;
+	}
 
-   Unt height = 2 + ga.len;
+	Unt height = 2 + ga.len;
 
-   //If there are long items and the height is below the limit: split lines
-   if (long_item_count > 0 && height + long_item_count <= max_height) {
-      split_long_items = true;
-      height += long_item_count;
-   }
+	//If there are long items and the height is below the limit: split lines
+	if (long_item_count > 0 && height + long_item_count <= max_height) {
+		split_long_items = true;
+		height += long_item_count;
+	}
 
-   //Limit to half the portal height, it has to fit above or below the mouse position.
-   if (height > max_height)
-      height = max_height;
-   *array = ALLOC_CLEAR_MULT(PopupItem, height);
-   if (*array == NULL)
-      goto failed;
+	//Limit to half the portal height, it has to fit above or below the mouse position.
+	if (height > max_height)
+		height = max_height;
+	*array = ALLOC_CLEAR_MULT(PopupItem, height);
+	if (*array == NULL)
+		goto failed;
 
-   //Add an empty line above and below, looks better.
-   (*array)->pum_text = copyStr(S"");
-   (*array + height - 1)->pum_text = copyStr(S"");
+	//Add an empty line above and below, looks better.
+	(*array)->pum_text = copyStr(S"");
+	(*array + height - 1)->pum_text = copyStr(S"");
 
-   for (Unt line = 1, item_idx = 0; line < height - 1; ++item_idx) {
-      int   skip;
-      int   thislen;
-      int   copylen;
-      int   ind;
-      int   cells;
+	for (Unt line = 1, item_idx = 0; line < height - 1; ++item_idx) {
+		int   skip;
+		int   thislen;
+		int   copylen;
+		int   ind;
+		int   cells;
 
-      item = ((BalPart *)ga.c) + item_idx;
-      if (item->bytelen == 0)
-         (*array)[line++].pum_text = copyStr((CS)"");
-      else {
-         for (skip = 0; skip < item->bytelen; skip += thislen) {
-            if (split_long_items && item->cells >= BALLOON_MIN_WIDTH) {
-               cells = item->indent * 2;
-               for (p = item->start + skip;
-                    p < item->start + item->bytelen;
-                    p += utfCharLen(p)
-               ) {
-                  if ((cells += bookPtr2Cells(p)) > BALLOON_MIN_WIDTH)
-                     break;
-               }
-               thislen = p - (item->start + skip);
-            } else
-               thislen = item->bytelen;
+		item = ((BalPart *)ga.c) + item_idx;
+		if (item->bytelen == 0)
+			(*array)[line++].pum_text = copyStr((CS)"");
+		else {
+			for (skip = 0; skip < item->bytelen; skip += thislen) {
+				if (split_long_items && item->cells >= BALLOON_MIN_WIDTH) {
+					cells = item->indent * 2;
+					for (p = item->start + skip;
+						  p < item->start + item->bytelen;
+						  p += utfCharLen(p)
+					) {
+						if ((cells += bookPtr2Cells(p)) > BALLOON_MIN_WIDTH)
+						   break;
+					}
+					thislen = p - (item->start + skip);
+				} else
+					thislen = item->bytelen;
 
-            //put indent at the start
-            p = alloc(thislen + item->indent * 2 + 1);
-            for (ind = 0; ind < item->indent * 2; ++ind)
-               p[ind] = ' ';
+				//put indent at the start
+				p = alloc(thislen + item->indent * 2 + 1);
+				for (ind = 0; ind < item->indent * 2; ++ind)
+					p[ind] = ' ';
 
-            //exclude spaces at the end of the string
-            for (copylen = thislen; copylen > 0; --copylen) {
-               if (item->start[skip + copylen - 1] != ' ')
-                  break;
-            }
+				//exclude spaces at the end of the string
+				for (copylen = thislen; copylen > 0; --copylen) {
+					if (item->start[skip + copylen - 1] != ' ')
+						break;
+				}
 
-            copySubstrToAllocation(p + ind, (Text){item->start + skip, copylen});
-            (*array)[line].pum_text = p;
-            item->indent = 0;  //wrapped line has no indent
-            ++line;
-         }
-      }
-   }
-   ga_clear(&ga);
-   return height;
+				copySubstrToAllocation(p + ind, (Text){item->start + skip, copylen});
+				(*array)[line].pum_text = p;
+				item->indent = 0;  //wrapped line has no indent
+				++line;
+			}
+		}
+	}
+	ga_clear(&ga);
+	return height;
 
 failed:
-   ga_clear(&ga);
-   return 0;
+	ga_clear(&ga);
+	return 0;
 }
 
 pub void
 ui_remove_balloon(void) {
-   if (!balloon_array)
-      return;
+	if (!balloon_array)
+		return;
 
-   pum_undisplay();
-   while (balloonArraySizeS > 0)
-      eeglFree(balloon_array[--balloonArraySizeS].pum_text);
-   EE_CLEAR(balloon_array);
+	pum_undisplay();
+	while (balloonArraySizeS > 0)
+		eeglFree(balloon_array[--balloonArraySizeS].pum_text);
+	EE_CLEAR(balloon_array);
 }
 
 //Terminal version of a balloon, uses the popup menu code.
 pub void
 ui_post_balloon(CS mesg, List* list) {
-   ui_remove_balloon();
+	ui_remove_balloon();
 
-   if (!mesg && !list) {
-      pum_undisplay();
-      return;
-   }
-   if (list) {
-      balloonArraySizeS = list->len;
-      balloon_array = ALLOC_CLEAR_MULT(PopupItem, list->len);
-      if (!balloon_array)
-         return;
-      CHECK_LIST_MATERIALIZE(list);
-      ListItem  *li = list->first;
-      for (int idx = 0; li; li = li->next, ++idx) {
-         CS text = convertVarToStringSingleUse(&li->c);
-         balloon_array[idx].pum_text = copyStr(text == NULL ? (CS)"" : text);
-      }
-   } else
-      balloonArraySizeS = balloonSplitMessage(mesg, &balloon_array);
+	if (!mesg && !list) {
+		pum_undisplay();
+		return;
+	}
+	if (list) {
+		balloonArraySizeS = list->len;
+		balloon_array = ALLOC_CLEAR_MULT(PopupItem, list->len);
+		if (!balloon_array)
+			return;
+		CHECK_LIST_MATERIALIZE(list);
+		ListItem  *li = list->first;
+		for (int idx = 0; li; li = li->next, ++idx) {
+			CS text = convertVarToStringSingleUse(&li->c);
+			balloon_array[idx].pum_text = copyStr(text == NULL ? (CS)"" : text);
+		}
+	} else
+		balloonArraySizeS = balloonSplitMessage(mesg, &balloon_array);
 
-   if (balloonArraySizeS == 0)
-      return;
+	if (balloonArraySizeS == 0)
+		return;
 
-   displayedItemsS = balloon_array;
-   menuLen = balloonArraySizeS;
-   computeSize();
-   pum_scrollbar = 0;
-   pum_height = balloonArraySizeS;
+	displayedItemsS = balloon_array;
+	menuLen = balloonArraySizeS;
+	computeSize();
+	pum_scrollbar = 0;
+	pum_height = balloonArraySizeS;
 
-   pum_position_at_mouse(BALLOON_MIN_WIDTH);
-   selectedItemInd = -1;
-   firstItemIndS = 0;
-   pum_redraw();
+	pum_position_at_mouse(BALLOON_MIN_WIDTH);
+	selectedItemInd = -1;
+	firstItemIndS = 0;
+	pum_redraw();
 }
 
 //Called when the mouse moved, may remove any displayed balloon.
 pub void
 ui_may_remove_balloon(void) {
-   //For now: remove the balloon whenever the mouse moves to another screen cell.
-   ui_remove_balloon();
+	//For now: remove the balloon whenever the mouse moves to another screen cell.
+	ui_remove_balloon();
 }
 
 //}}}
@@ -14961,97 +14960,97 @@ ui_may_remove_balloon(void) {
 //Return FAIL if not found, no text at the mouse position.
 pub int
 find_word_under_cursor(
-   int mouserow,
-   int mousecol,
-   int getword,
-   Unt flags,   //flags for find_ident_at_pos()
-   Portal** winp,   //may be NULL
-   LineNr* lnump,   //may be NULL
-   OUT CS* textp,
-   int* colp,   //column where mouse hovers, can be NULL
-   int* startcolp //column where text starts, can be NULL
+	int mouserow,
+	int mousecol,
+	int getword,
+	Unt flags,   //flags for find_ident_at_pos()
+	Portal** winp,   //may be NULL
+	LineNr* lnump,   //may be NULL
+	OUT CS* textp,
+	int* colp,   //column where mouse hovers, can be NULL
+	int* startcolp //column where text starts, can be NULL
 ){
-   int row = mouserow;
-   int col = mousecol;
-   int      scol;
-   LineNr   lnum;
+	int row = mouserow;
+	int col = mousecol;
+	int      scol;
+	LineNr   lnum;
 
-   *textp = NULL;
-   Portal* po = mouseFindPortal(OUT &row, OUT &col, FAIL_POPUP);
-   if (!po || row < 0 || row >= (int)po->height || col >= (int)po->width)
-      return FAIL;
+	*textp = NULL;
+	Portal* po = mouseFindPortal(OUT &row, OUT &col, FAIL_POPUP);
+	if (!po || row < 0 || row >= (int)po->height || col >= (int)po->width)
+		return FAIL;
 
-   //Found a portal and the cursor is in the text. Now find the line number.
-   if (mouse_comp_pos(po, OUT &row, OUT &col, &lnum, NULL))
-      return FAIL;      //position is below the last line
+	//Found a portal and the cursor is in the text. Now find the line number.
+	if (mouse_comp_pos(po, OUT &row, OUT &col, &lnum, NULL))
+		return FAIL;      //position is below the last line
 
-   //Not past end of the file.
-   CS lbuf = memGetLine(po->book, lnum, false);
-   if (col > (int)drawLineOnScreentabsize(po, lnum, lbuf, (ColNr)MAXCOL))
-      return FAIL;      //past end of line
+	//Not past end of the file.
+	CS lbuf = memGetLine(po->book, lnum, false);
+	if (col > (int)drawLineOnScreentabsize(po, lnum, lbuf, (ColNr)MAXCOL))
+		return FAIL;      //past end of line
 
-   //Not past end of line.
-   if (getword) {
-      int len;
-      Pos* spos = NULL, *epos = NULL;
+	//Not past end of line.
+	if (getword) {
+		int len;
+		Pos* spos = NULL, *epos = NULL;
 
-      if (VIsual_active) {
-         if (LT_POS(VIsual, curPor->cursor)) {
-            spos = &VIsual;
-            epos = &curPor->cursor;
-         } else {
-            spos = &curPor->cursor;
-            epos = &VIsual;
-         }
-      }
+		if (VIsual_active) {
+			if (LT_POS(VIsual, curPor->cursor)) {
+				spos = &VIsual;
+				epos = &curPor->cursor;
+			} else {
+				spos = &curPor->cursor;
+				epos = &VIsual;
+			}
+		}
 
-      col = vcol2col(po, lnum, col, NULL);
-      scol = col;
+		col = vcol2col(po, lnum, col, NULL);
+		scol = col;
 
-      if (VIsual_active
-         && po->book == curPor->book
-         && (lnum == spos->lnum
-             ? col >= spos->col
-             : lnum > spos->lnum)
-         && (lnum == epos->lnum
-             ? col <= epos->col
-             : lnum < epos->lnum))
-      {
-         //Visual mode and pointing to the line with the
-         //Visual selection: return selected text, with a maximum of one line.
-         if (spos->lnum != epos->lnum || spos->col == epos->col)
-            return FAIL;
+		if (VIsual_active
+			&& po->book == curPor->book
+			&& (lnum == spos->lnum
+				 ? col >= spos->col
+				 : lnum > spos->lnum)
+			&& (lnum == epos->lnum
+				 ? col <= epos->col
+				 : lnum < epos->lnum))
+		{
+			//Visual mode and pointing to the line with the
+			//Visual selection: return selected text, with a maximum of one line.
+			if (spos->lnum != epos->lnum || spos->col == epos->col)
+				return FAIL;
 
-         lbuf = memGetLine(curPor->book, VIsual.lnum, false);
-         len = epos->col - spos->col;
-         len += utfCharLen(lbuf + epos->col);
-         lbuf = copySubstr(lbuf + spos->col, len);
-         lnum = spos->lnum;
-         col = spos->col;
-         scol = col;
-      } else {
-         //Find the word under the cursor.
-         ++emsg_off;
-         len = find_ident_at_pos(po, lnum, (ColNr)col, &lbuf, &scol, flags);
-         --emsg_off;
-         if (len == 0)
-            return FAIL;
-         lbuf = copySubstr(lbuf, len);
-      }
-   } else
-      scol = col;
+			lbuf = memGetLine(curPor->book, VIsual.lnum, false);
+			len = epos->col - spos->col;
+			len += utfCharLen(lbuf + epos->col);
+			lbuf = copySubstr(lbuf + spos->col, len);
+			lnum = spos->lnum;
+			col = spos->col;
+			scol = col;
+		} else {
+			//Find the word under the cursor.
+			++emsg_off;
+			len = find_ident_at_pos(po, lnum, (ColNr)col, &lbuf, &scol, flags);
+			--emsg_off;
+			if (len == 0)
+				return FAIL;
+			lbuf = copySubstr(lbuf, len);
+		}
+	} else
+		scol = col;
 
-   if (winp)
-      *winp = po;
-   if (lnump)
-      *lnump = lnum;
-   *textp = lbuf;
-   if (colp)
-      *colp = col;
-   if (startcolp)
-      *startcolp = scol;
+	if (winp)
+		*winp = po;
+	if (lnump)
+		*lnump = lnum;
+	*textp = lbuf;
+	if (colp)
+		*colp = col;
+	if (startcolp)
+		*startcolp = scol;
 
-   return OK;
+	return OK;
 }
 
 
@@ -15060,34 +15059,34 @@ find_word_under_cursor(
 //memory. OK or FAIL.
 pub int
 get_beval_info(
-   BalloonEval* beval,
-   int getword,
-   Portal**winp,
-   LineNr* lnump,
-   OUT CS* textp,
-   int* colp
+	BalloonEval* beval,
+	int getword,
+	Portal**winp,
+	LineNr* lnump,
+	OUT CS* textp,
+	int* colp
 ) {
-   int row = mouseRowG;
-   int col = mouseColG;
-   if (row < 0 || col < 0)
-      return FAIL;
+	int row = mouseRowG;
+	int col = mouseColG;
+	if (row < 0 || col < 0)
+		return FAIL;
 
-   if (find_word_under_cursor(
-         row, col, getword, FIND_IDENT + FIND_STRING + FIND_EVAL, winp, lnump, textp,
-         colp, NULL
-       ) == OK
-   ) {
-      beval->ts = (*winp)->book->o.shiftWidth;
-      return OK;
-   }
+	if (find_word_under_cursor(
+			row, col, getword, FIND_IDENT + FIND_STRING + FIND_EVAL, winp, lnump, textp,
+			colp, NULL
+		 ) == OK
+	) {
+		beval->ts = (*winp)->book->o.shiftWidth;
+		return OK;
+	}
 
-   return FAIL;
+	return FAIL;
 }
 
 //Show a balloon with "mesg" or "list". Hide the balloon when both are NULL.
 pub void
 post_balloon(BalloonEval*, CS mesg, List* list) {
-   ui_post_balloon(mesg, list);
+	ui_post_balloon(mesg, list);
 }
 
 //true if the balloon eval has been enabled:
@@ -15095,99 +15094,99 @@ post_balloon(BalloonEval*, CS mesg, List* list) {
 //Also checks if the screen isn't scrolled up.
 private int
 can_use_beval(void) {
-   return (0 || (p_bevalterm)) && msg_scrolled == 0;
+	return (0 || (p_bevalterm)) && msg_scrolled == 0;
 }
 
 //Evaluate the expression 'bexpr' and set the text in the balloon 'beval'.
 private void
 bexpr_eval(
-   BalloonEval* beval,
-   CS bexpr,
-   Portal* po,
-   LineNr,
-   int,
-   CS text
+	BalloonEval* beval,
+	CS bexpr,
+	Portal* po,
+	LineNr,
+	int,
+	CS text
 ) {
-   //Long portNr = 0;
-   Book* curBookSaved;
-   static CS result = NULL;
-   Unt len;
+	//Long portNr = 0;
+	Book* curBookSaved;
+	static CS result = NULL;
+	Unt len;
 
-   ScriptPos save_sctx = scriptPosG;
+	ScriptPos save_sctx = scriptPosG;
 
-   //Convert portal pointer to number.
-   //for (Portal* pitm = firstPor; pitm != po; pitm = pitm->next)
-   //  ++portNr;
+	//Convert portal pointer to number.
+	//for (Portal* pitm = firstPor; pitm != po; pitm = pitm->next)
+	//  ++portNr;
 
-   eeglFree(text);
+	eeglFree(text);
 
-   //Temporarily change the curBook, so that we can determine whether
-   //the book-local balloonexpr option was set insecurely.
-   curBookSaved = curBook;
-   curBook = po->book;
-   curBook = curBookSaved;
-   ++textlock;
+	//Temporarily change the curBook, so that we can determine whether
+	//the book-local balloonexpr option was set insecurely.
+	curBookSaved = curBook;
+	curBook = po->book;
+	curBook = curBookSaved;
+	++textlock;
 
-   if (bexpr == curBook->o.balloonExpr) {
-      ScriptPos* sp = optGetScriptPos(S"balloonexpr");
-      if (sp)
-         scriptPosG = *sp;
-   } else
-      scriptPosG = curBook->o.scriptLocs[BOOK_balloonExpr];
+	if (bexpr == curBook->o.balloonExpr) {
+		ScriptPos* sp = optGetScriptPos(S"balloonexpr");
+		if (sp)
+			scriptPosG = *sp;
+	} else
+		scriptPosG = curBook->o.scriptLocs[BOOK_balloonExpr];
 
-   eeglFree(result);
-   result = eval_to_string(bexpr, true, true);
+	eeglFree(result);
+	result = eval_to_string(bexpr, true, true);
 
-   //Remove one trailing newline, it is added when the result was a
-   //list and it's hardly ever useful.  If the user really wants a
-   //trailing newline he can add two and one remains.
-   if (result) {
-      len = STRLEN(result);
-      if (len > 0 && result[len - 1] == NL)
-         result[len - 1] = ZERO;
-   }
+	//Remove one trailing newline, it is added when the result was a
+	//list and it's hardly ever useful.  If the user really wants a
+	//trailing newline he can add two and one remains.
+	if (result) {
+		len = STRLEN(result);
+		if (len > 0 && result[len - 1] == NL)
+			result[len - 1] = ZERO;
+	}
 
-   --textlock;
-   scriptPosG = save_sctx;
+	--textlock;
+	scriptPosG = save_sctx;
 
-   if (result && result[0] != ZERO)
-      post_balloon(beval, result, NULL);
+	if (result && result[0] != ZERO)
+		post_balloon(beval, result, NULL);
 
-   //The 'balloonexpr' evaluation may show something on the screen that requires a screen update
-   if (mustRedrawG)
-      redraw_after_callback(false, false);
+	//The 'balloonexpr' evaluation may show something on the screen that requires a screen update
+	if (mustRedrawG)
+		redraw_after_callback(false, false);
 }
 
 //Common code, invoked when the cursor is resting for a moment.
 pub void
 general_beval_cb(BalloonEval* beval, int) {
-   int col;
-   static Boole recursive = false;
+	int col;
+	static Boole recursive = false;
 
-   //Don't do anything when 'ballooneval' is off, messages scrolled the
-   //portals up or we have no beval area.
-   if (!can_use_beval() || beval == NULL)
-      return;
+	//Don't do anything when 'ballooneval' is off, messages scrolled the
+	//portals up or we have no beval area.
+	if (!can_use_beval() || beval == NULL)
+		return;
 
-   //Don't do this recursively.  Happens when the expression evaluation
-   //takes a long time and invokes something that checks for CTRL-C typed.
-   if (recursive)
-      return;
-   recursive = true;
+	//Don't do this recursively.  Happens when the expression evaluation
+	//takes a long time and invokes something that checks for CTRL-C typed.
+	if (recursive)
+		return;
+	recursive = true;
 
-   CS text;
-   LineNr lnum;
-   Portal* po;
-   if (get_beval_info(beval, true, &po, &lnum, &text, &col) == OK) {
-      CS bexpr = po->book->o.balloonExpr;
-      if (*bexpr != ZERO) {
-         bexpr_eval(beval, bexpr, po, lnum, col, text);
-         recursive = false;
-         return;
-      }
-   }
+	CS text;
+	LineNr lnum;
+	Portal* po;
+	if (get_beval_info(beval, true, &po, &lnum, &text, &col) == OK) {
+		CS bexpr = po->book->o.balloonExpr;
+		if (*bexpr != ZERO) {
+			bexpr_eval(beval, bexpr, po, lnum, col, text);
+			recursive = false;
+			return;
+		}
+	}
 
-   recursive = false;
+	recursive = false;
 }
 
 //}}}

@@ -21,12 +21,12 @@ HI(CurrentLineNr, HI_IS_LINK, 0, 0, 0, HILITE_None)      //current line number
 HI(CurrentSign, HI_IS_LINK, 0, 0, 0, HILITE_None)        //current line sign column
 HI(CurrentFold, HI_IS_LINK, 0, 0, 0, HILITE_None)        //current line fold
 HI(YesNoQuestions, HI_IS_LINK, 0, 0, 0, HILITE_None)     //return to continue message
-                                                         //and yes/no questions
+						                                       //and yes/no questions
 HI(StatusLine, HI_HAS_DECO, 0, 0, DECO_INVERSE, 0)       //status lines
 HI(StatusLinesInactive, HI_HAS_DECO, 0, 0, DECO_INVERSE, 0) //status line of non-current portal
 HI(VertSplit, HI_HAS_DECO, 0, 0, DECO_INVERSE, 0) //column to separate vertically split portals
 HI(OutputOfAutocmd, HI_IS_LINK, 0, 0, 0, HILITE_None)    //Titles for output from
-                                                         //";set all", ";autocmd" etc
+						                                       //";set all", ";autocmd" etc
 HI(VisualMode, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)          //Visual mode
 HI(WildcardMenu, HI_IS_LINK, 0, 0, 0, HILITE_None)       //Wildmenu hilite
 HI(FoldedLine, HI_IS_LINK, 0, 0, 0, HILITE_None)         //Folded line
@@ -40,13 +40,13 @@ HI(Pmenu, HI_HAS_FG|HI_HAS_BG, 0, 4, 0, 0)               //popup menu normal ite
 HI(PmenuSelected, HI_HAS_BG, 0, 4 + 232, 0, 0)           //popup menu selected item
 HI(PmenuMatchedText, HI_IS_LINK, 0, 0, 0, HILITE_None)   //popup menu matched text in normal item
 HI(PmenuMatchedInSelected, HI_IS_LINK, 0, 0, 0, HILITE_None) //popup menu matched text in
-                                                             //selected item
+						                                           //selected item
 HI(PmenuNormalItem, HI_IS_LINK, 0, 0, 0, HILITE_None)    //popup menu normal item "kind"
 HI(PmenuSelectedItem, HI_IS_LINK, 0, 0, 0, HILITE_None)  //popup menu selected item "kind"
 HI(PmenuExtraText, HI_IS_LINK, 0, 0, 0, HILITE_None)     //popup menu normal item "menu"
-                                                         //(extra text)
-HI(PmenuSelectedExtraText, HI_IS_LINK, 0, 0, 0, HILITE_None) //popup menu selected item "menu"
-                                                             //(extra text)
+						                                       //(extra text)
+HI(PmenuSelectedExtraText, HI_IS_LINK, 0, 0, 0, HILITE_None)//popup menu selected item "menu"
+																				//(extra text)
 HI(PmenuScrollbar, HI_HAS_BG, 0, 12 + 232, 0, 0)         //popup menu scrollbar
 HI(PmenuScrollBarThumb, HI_HAS_BG, 0, 7, 0, 0) //40 popup menu scrollbar thumb
 HI(Tabpanel, HI_HAS_BG, 0, 4, 0, 0)                      //tabpanel
@@ -54,19 +54,19 @@ HI(TabpanelSelected, HI_IS_LINK, 0, 0, 0, HILITE_None)   //tabpanel selected
 HI(TabpanelFill, HI_IS_LINK, 0, 0, 0, HILITE_None)       //tabpanel filler
 HI(CursorLine, HI_HAS_BG, 0, 8 + 232, 0, 0)              //@cursorline
 HI(LocationPortalSelected, HI_IS_LINK, 0, 0, 0, HILITE_PmenuSelectedItem) //location portal line
-                                                                          //currently selected
+						                                                        //currently selected
 HI(TerminalStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None)  //status lines of terminal portals
-HI(TerminalNoncurrentStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None) //status lines of
-                                                                    //not-current terminal
-                                                                    //portals
+HI(TerminalNoncurrentStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None)//status lines of
+																						//not-current terminal
+																						//portals
 HI(TerminalRed, HI_HAS_FG, 1, 0, 0, 0)       //status lines of not-current terminal portals
 HI(TerminalGreen, HI_HAS_FG, 10, 0, 0, 0)    //status lines of not-current terminal portals
 HI(TerminalBlue, HI_HAS_FG, 4, 0, 0, 0)      //status lines of not-current terminal portals
 HI(MessageArea, HI_IS_LINK, 0, 0, 0, HILITE_None)        //message area
 HI(MetaSpecialKeys, HI_IS_LINK, 0, 0, 0, HILITE_None)    //Meta & special keys listed with
-                                                         //";map", text that is
-                                                         //displayed different
-HI(LineNr, HI_HAS_FG, 3, 0, 0, 0)             //line number for ";number" and ";#" commands
+						                                       //";map", text that is
+						                                       //displayed different
+HI(LineNr, HI_HAS_FG, 3, 0, 0, 0)              //line number for ";number" and ";#" commands
 HI(LineNrAbove, HI_IS_LINK, 0, 0, 0, HILITE_LineNr)
 HI(LineNrBelow, HI_IS_LINK, 0, 0, 0, HILITE_LineNr)
 HI(Directory, HI_HAS_FG, 14, 0, 0, 0)
@@ -119,10 +119,10 @@ void setCompletionContextInHiliteCommand(OUT Expand* xp, CS arg);
 Text getHiliteGroupName(Expand*, int id);
 CS getHiliteGroupNameAsCString(Expand *xp, int id);
 int expandHiliteGroup(
-   CS pattern,
-   Expand* xp,
-   RegMatch* rmp,
-   OUT ExpandMatch* matches
+	CS pattern,
+	Expand* xp,
+	RegMatch* rmp,
+	OUT ExpandMatch* matches
 );
 void f_hlget(Arr(Var) argvars, OUT Var* returnVar);
 char getDecoFlags(Short hiId);
@@ -137,8 +137,8 @@ void syn_stack_apply_changes(Book* book);
 void syntax_end_parsing(Portal *wp, LineNr lnum);
 int syntax_check_changed(LineNr lnum);
 Decoration syntGetDeco(
-   ColNr col,
-   int keep_state   //keep state of char at "col"
+	ColNr col,
+	int keep_state   //keep state of char at "col"
 );
 void syntax_clear(SyntaxBlock *block);
 void reset_synblock(Portal* wp);
@@ -151,11 +151,11 @@ void set_context_in_echohl_cmd(Expand* xp, CS arg);
 void set_context_in_syntax_cmd(Expand *xp, CS arg);
 CS get_syntax_name(Expand* xp, int idx);
 int syn_get_id(
-   Portal* wp,
-   Long lnum,
-   ColNr col,
-   int trans,      //remove transparency
-   int keep_state  //keep state of char at "col"
+	Portal* wp,
+	Long lnum,
+	ColNr col,
+	int trans,      //remove transparency
+	int keep_state  //keep state of char at "col"
 );
 int syn_get_stack_item(int i);
 int syn_get_foldlevel(Portal *po, Long lnum);

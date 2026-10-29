@@ -16,11 +16,11 @@ void doPortal(int nchar, Long prenum, Unt xchar);
 void getPortCommAddressType(CS arg, Invocation* invo);
 int splitPortal(int size, Unt flags);
 int splitPortal_ins(
-   int size,
-   Unt flags,
-   Portal* newPort,
-   int dir,
-   Frame* to_flatten
+	int size,
+	Unt flags,
+	Portal* newPort,
+	int dir,
+	Frame* to_flatten
 );
 int portalIsValid(Portal* port);
 Portal * portFindById(int id);
@@ -30,9 +30,9 @@ Unt portMakePortals(Unt count, Boole vertical);
 int splitPortalmove(Portal* po, int size, Unt flags);
 void portMoveAfter(Portal* port0, Portal* port1);
 void portEqualizeHeight(
-   Portal* next_curPor,   //pointer to current portal to be or NULL
-   int current,   //do only frame with current portal
-   Byte dir   //EAD_* constants, or 0 for using p_ead
+	Portal* next_curPor,   //pointer to current portal to be or NULL
+	int current,   //do only frame with current portal
+	Byte dir   //EAD_* constants, or 0 for using p_ead
 );
 void leavingPortal(Portal* port);
 void enteringPortal(Portal* port);
@@ -48,11 +48,11 @@ void may_trigger_win_scrolled_resized(void);
 void closePortal_othertab(Portal* port, int free_buf, Tab *t);
 void portFreeAll(void);
 Portal * portRemoveFrame(
-   Portal* port,
-   OUT Byte* dirp,  //set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
-   Tab* t,      //tab "port" is in, NULL for current
-   OUT Frame** unflat_altfr //if not NULL, set to pointer of frame that got the space, and it
-                            //is not flattened
+	Portal* port,
+	OUT Byte* dirp,  //set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
+	Tab* t,      //tab "port" is in, NULL for current
+	OUT Frame** unflat_altfr //if not NULL, set to pointer of frame that got the space, and it
+						          //is not flattened
 );
 void portCloseOthers(Boole message);
 void unloadTab(Tab *t);
@@ -96,22 +96,22 @@ void portDragStatusLine(Portal* dragwin, int offset);
 void portDragVsepLine(Portal *dragwin, int offset);
 void set_fraction(Portal* po);
 void check_cursor_lnum(void);
-void check_cursor_col(void);
+void poRefreshCursorCol(void);
 int set_leftcol(ColNr leftcol);
 void check_cursor(void);
 void check_visual_pos(void);
 void adjust_cursor_col(void);
 int plines(LineNr lnum);
 int plines_win(
-   Portal   *wp,
-   LineNr   lnum,
-   int      limit_winheight)   //when true limit to portal height
+	Portal   *wp,
+	LineNr   lnum,
+	int      limit_winheight)   //when true limit to portal height
 ;
 int plines_nofill(LineNr lnum);
 int plines_win_nofill(
-    Portal   *wp,
-    LineNr   lnum,
-    int      limit_winheight)   //when true limit to portal height
+	 Portal   *wp,
+	 LineNr   lnum,
+	 int      limit_winheight)   //when true limit to portal height
 ;
 int plines_win_nofold(Portal *wp, LineNr lnum);
 int plines_m_win(Portal *wp, LineNr first, LineNr last, int max);
@@ -128,8 +128,8 @@ void check_lnums_nested(int do_curPor);
 void reset_lnums(void);
 int make_snapshot(int idx);
 void restore_snapshot(
-   int      idx,
-   int      close_curPor)       //closing current portal
+	int      idx,
+	int      close_curPor)       //closing current portal
 ;
 int getLastPortId(void);
 int portalLocked(Portal* po);
@@ -140,9 +140,9 @@ Portal * getPortAndTab(int id, OUT Tab** result);
 Portal * portFindByNr(Var* vp, Tab* t);
 Portal * portFindByNrOrId(Var *vp);
 Portal * find_tabwin(
-    Var* needle,   //VAR_UNKNOWN for current portal
-    Var* tvp,   //VAR_UNKNOWN for current tab
-    Tab** ptp
+	 Var* needle,   //VAR_UNKNOWN for current portal
+	 Var* tvp,   //VAR_UNKNOWN for current tab
+	 Tab** ptp
 );
 void f_gettabinfo(Arr(Var) argvars, Var* returnVar);
 void f_getwininfo(Arr(Var) argvars, Var* returnVar);
@@ -175,37 +175,37 @@ void f_winsaveview(Arr(Var), Var* returnVar);
 void f_winwidth(Arr(Var) argvars, Var* returnVar);
 int portSwitch(SwitchPort *switchPort, Portal* port, Tab* t, int no_display);
 int portSwitchNoblock(
-   SwitchPort *switchPort,
-   Portal       *port,
-   Tab   *t,
-   int       no_display)
+	SwitchPort *switchPort,
+	Portal       *port,
+	Tab   *t,
+	int       no_display)
 ;
 void portRestore(SwitchPort* switchPort, int no_display);
 void portRestoreNoblock(
-   SwitchPort* switchPort,
-   int       no_display)
+	SwitchPort* switchPort,
+	int       no_display)
 ;
 void copyFoldingState(Portal* wp_from, Portal* wp_to);
 int hasAnyFolding(Portal* po);
 Boole getFolds(LineNr lnum, OUT LineNr *firstp, OUT LineNr *lastp);
 Boole getFoldsPortal(
-   Portal* po,
-   LineNr lnum,
-   LineNr* firstp,
-   LineNr* lastp,
-   Boole cache,      //when true: use cached values of portal
-   OUT FoldInfo* infop      //where to store fold info
+	Portal* po,
+	LineNr lnum,
+	LineNr* firstp,
+	LineNr* lastp,
+	Boole cache,      //when true: use cached values of portal
+	OUT FoldInfo* infop      //where to store fold info
 );
 int lineFolded(Portal *po, LineNr lnum);
 long foldedCount(Portal* po, LineNr lnum, OUT FoldInfo* infop);
 void closeFold(LineNr lnum, Long count);
 void closeFoldRecurse(LineNr lnum);
 void opFoldRange(
-   LineNr first,
-   LineNr last,
-   Boole opening,   //true to open, false to close
-   Boole recurse,   //true to do it recursively
-   Boole had_visual   //true when Visual selection used
+	LineNr first,
+	LineNr last,
+	Boole opening,   //true to open, false to close
+	Boole recurse,   //true to do it recursively
+	Boole had_visual   //true when Visual selection used
 );
 void openFold(LineNr lnum, Long count);
 void openFoldRecurse(LineNr lnum);
@@ -226,19 +226,19 @@ void foldAdjustCursor(void);
 void cloneFoldArrayList(ArrayList* from, ArrayList* to);
 void deleteFoldRecurse(ArrayList *gap);
 void foldMarkAdjust(
-    Portal* po,
-    LineNr line1,
-    LineNr line2,
-    long amount,
-    long amount_after
+	 Portal* po,
+	 LineNr line1,
+	 LineNr line2,
+	 long amount,
+	 long amount_after
 );
 int getDeepestNesting(void);
 CS get_foldtext(
-   Portal* po,
-   LineNr lnum,
-   LineNr lnume,
-   FoldInfo* foldinfo,
-   CS buffer
+	Portal* po,
+	LineNr lnum,
+	LineNr lnume,
+	FoldInfo* foldinfo,
+	CS buffer
 );
 void foldMoveRange(ArrayList* gap, LineNr line1, LineNr line2, LineNr dest);
 int put_folds(FILE* fd, Portal* po);
@@ -339,23 +339,23 @@ void ui_remove_balloon(void);
 void ui_post_balloon(CS mesg, List* list);
 void ui_may_remove_balloon(void);
 int find_word_under_cursor(
-   int mouserow,
-   int mousecol,
-   int getword,
-   Unt flags,   //flags for find_ident_at_pos()
-   Portal** winp,   //may be NULL
-   LineNr* lnump,   //may be NULL
-   OUT CS* textp,
-   int* colp,   //column where mouse hovers, can be NULL
-   int* startcolp //column where text starts, can be NULL
+	int mouserow,
+	int mousecol,
+	int getword,
+	Unt flags,   //flags for find_ident_at_pos()
+	Portal** winp,   //may be NULL
+	LineNr* lnump,   //may be NULL
+	OUT CS* textp,
+	int* colp,   //column where mouse hovers, can be NULL
+	int* startcolp //column where text starts, can be NULL
 );
 int get_beval_info(
-   BalloonEval* beval,
-   int getword,
-   Portal**winp,
-   LineNr* lnump,
-   OUT CS* textp,
-   int* colp
+	BalloonEval* beval,
+	int getword,
+	Portal**winp,
+	LineNr* lnump,
+	OUT CS* textp,
+	int* colp
 );
 void post_balloon(BalloonEval*, CS mesg, List* list);
 void general_beval_cb(BalloonEval* beval, int);

@@ -9,24 +9,24 @@ void evalInitGlobals(void);
 void eval_clear(void);
 void fillEvalArgFromInvo(OUT EvalCtx *evalarg, Invocation* invo, int skip);
 int eval_to_bool(
-   CS arg,
-   OUT Boole* error,
-   Invocation* invo,
-   Boole skip,       //only parse, don't execute
-   Boole use_simple_function
+	CS arg,
+	OUT Boole* error,
+	Invocation* invo,
+	Boole skip,       //only parse, don't execute
+	Boole use_simple_function
 );
 Boole eval_expr_valid_arg(Var *tv);
 int eval_expr_typval(
-   Var    *expr,
-   int       want_func,
-   Var    *argv,
-   int       argc,
-   Var    *returnVar)
+	Var    *expr,
+	int       want_func,
+	Var    *argv,
+	int       argc,
+	Var    *returnVar)
 ;
 CS eval_to_string_skip(
-   CS arg,
-   Invocation* invo,
-   int      skip)       //only parse, don't execute
+	CS arg,
+	Invocation* invo,
+	int      skip)       //only parse, don't execute
 ;
 void init_evalarg(EvalCtx *evalarg);
 void clear_evalarg(EvalCtx* evalarg, Invocation* invo);
@@ -43,11 +43,11 @@ void * call_func_retlist(Byte* func, int argc, Var* argv);
 CS getLval( OUT Lval* retVal, GetLval arg);
 void clear_lval(OUT Lval* lp);
 Boole letImpl(
-   OUT Lval* lval,
-   Var* returnVar,
-   Boole copy,
-   Unt flags, //ASSIGN_CONST, ASSIGN_NO_DECL
-   NULLABLE CS op
+	OUT Lval* lval,
+	Var* returnVar,
+	Boole copy,
+	Unt flags, //ASSIGN_CONST, ASSIGN_NO_DECL
+	NULLABLE CS op
 );
 Boole evalLetVarSimple(CS name, Var* newValue);
 int tv_op(Var *tv1, Var *tv2, CS op);
@@ -67,37 +67,37 @@ CS partial_name(PartiallyApplied* pt);
 void partial_unref(PartiallyApplied *pt);
 void f_test_option_not_set(Arr(Var) argvars, Var*);
 CS echo_string_core(
-   Var* tv,
-   Byte** tofree,
-   Byte* numbuf,
-   Unt copyID,
-   int echo_style,
-   int restore_copyID,
-   int composite_val
+	Var* tv,
+	Byte** tofree,
+	Byte* numbuf,
+	Unt copyID,
+	int echo_style,
+	int restore_copyID,
+	int composite_val
 );
 CS echo_string(Var* tv, Byte** tofree, Byte* numbuf, Unt copyID);
 Pos* var2fpos(
-   Var* varp,
-   int dollar_lnum,   //true when $ is last line
-   int* fnum,      //set to fnum for '0, 'A, etc.
-   int charcol   //return character column
+	Var* varp,
+	int dollar_lnum,   //true when $ is last line
+	int* fnum,      //set to fnum for '0, 'A, etc.
+	int charcol   //return character column
 );
 int list2fpos(
-   Var* arg,
-   Pos* posp,
-   int* fnump,
-   ColNr* curswantp,
-   int charcol
+	Var* arg,
+	Pos* posp,
+	int* fnump,
+	ColNr* curswantp,
+	int charcol
 );
 int readEnvNameAndGetItsLen(OUT CS* arg);
 int get_id_len(OUT CS* arg);
 int get_name_len(Byte** arg, Byte** alias, int evaluate, int verbose);
 Text findNameEnd(Text const arg, OUT Text* expr, Unt flags);
 int handle_subscript(
-   OUT CS* arg,
-   Var* returnVar,
-   EvalCtx* evalarg,
-   Boole verbose   //give error messages
+	OUT CS* arg,
+	Var* returnVar,
+	EvalCtx* evalarg,
+	Boole verbose   //give error messages
 );
 int evCopyItem(Var* from, Var* to, int deep, int top, Unt copyID);
 int mch_get_random(OUT CS buf, int len);
@@ -108,13 +108,13 @@ void c_execute(Invocation* invo);
 CS find_option_end(OUT CS* arg, OUT int *scope);
 void lastSetMsg(ScriptPos script_ctx);
 CS do_string_sub(
-   CS str,
-   Unt len,
-   CS pat,
-   CS sub,
-   Var* expr,
-   Byte* flags,
-   Unt* ret_len      //length of returned buffer
+	CS str,
+	Unt len,
+	CS pat,
+	CS sub,
+	Var* expr,
+	Byte* flags,
+	Unt* ret_len      //length of returned buffer
 );
 void evalvars_clear(void);
 void set_internal_string_var(CS name, CS value);
@@ -130,11 +130,11 @@ void list_hashtable_vars(EeSet* ht, CS prefix, int empty, int* first);
 void c_unlet(Invocation* invo);
 void c_lockvar(Invocation* invo);
 void list_unlet_range(
-   List* l,
-   ListItem* li_first,
-   long n1_arg,
-   int has_n2,
-   long n2
+	List* l,
+	ListItem* li_first,
+	long n1_arg,
+	int has_n2,
+	long n2
 );
 int unletVarFromHashTable(CS name, CS nameWithPrefix, EeSet* ht, Boole forceit);
 int unletImpl(CS nameWithPrefix, Boole forceit);
@@ -149,10 +149,10 @@ int eval_variable_import(CS name, Var* returnVar);
 DictItem * findVar(CS name, Boole noAutoload);
 DictItem * findVar_also_in_script(CS name, OUT EeSet** htp, Boole no_autoload);
 DictItem * findVar_in_ht(
-   EeSet* ht,
-   VarLevel level,
-   Text varname,
-   Boole no_autoload
+	EeSet* ht,
+	VarLevel level,
+	Text varname,
+	Boole no_autoload
 );
 EeSet * get_script_local_ht(void);
 int lookup_scriptitem(Text name, int cmd);
@@ -204,11 +204,11 @@ int check_internal_func(int idx, int argcount);
 FnError call_internal_func(CS name, int argcount, Var* argvars, Var* returnVar);
 void call_internal_func_by_idx(int idx, Var* argvars, Var* returnVar);
 FnError call_internal_method(
-   CS name,
-   int argcount,
-   Var* argvars,
-   Var* returnVar,
-   Var* basetv
+	CS name,
+	int argcount,
+	Var* argvars,
+	Var* returnVar,
+	Var* basetv
 );
 int non_zero_arg(Var* argvars);
 Book * evGetBookArg(Var* arg);
@@ -226,15 +226,15 @@ void f_id(Arr(Var) argvars, Var* returnVar);
 void f_len(Arr(Var) argvars, Var* returnVar);
 void range_list_materialize(List *list);
 long do_searchpair(
-   CS spat,       //start pattern
-   CS mpat,       //middle pattern
-   CS epat,       //end pattern
-   Unt dir,       //BACKWARD or FORWARD
-   Var* skip,       //skip expression
-   Unt flags,       //SP_SETPCMARK and other SP_ values
-   Pos* match_pos,
-   LineNr lnum_stop,  //stop at this line if not zero
-   long time_limit //stop after this many msec
+	CS spat,       //start pattern
+	CS mpat,       //middle pattern
+	CS epat,       //end pattern
+	Unt dir,       //BACKWARD or FORWARD
+	Var* skip,       //skip expression
+	Unt flags,       //SP_SETPCMARK and other SP_ values
+	Pos* match_pos,
+	LineNr lnum_stop,  //stop at this line if not zero
+	long time_limit //stop after this many msec
 );
 int aborting(void);
 void update_force_abort(void);

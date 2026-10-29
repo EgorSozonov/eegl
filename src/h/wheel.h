@@ -12,44 +12,44 @@
 
 int findsent(int dir, long count);
 int normFindNextParagraf(
-   OUT Boole* pincl,       //Return: true if last char is to be included
-   int dir,
-   long count,
-   int what,
-   int both
+	OUT Boole* pincl,       //Return: true if last char is to be included
+	int dir,
+	long count,
+	int what,
+	int both
 );
 int startPS(LineNr lnum, int para, int both);
 int fwd_word(
-   long   count,
-   int      bigword,    //"W", "E" or "B"
-   int      eol)
+	long   count,
+	int      bigword,    //"W", "E" or "B"
+	int      eol)
 ;
 int bck_word(long count, int bigword, int stop);
 int end_word(long count, int bigword, int stop, int      empty);
 int bckend_word(
-   long   count,
-   int      bigword,    //true for "B"
-   int      eol)       //true: stop at end of line.
+	long   count,
+	int      bigword,    //true for "B"
+	int      eol)       //true: stop at end of line.
 ;
 int current_word(
-   Operator* oper,
-   long   count,
-   int      include,   //true: include word and white space
-   int      bigword)   //false == word, true == WORD
+	Operator* oper,
+	long   count,
+	int      include,   //true: include word and white space
+	int      bigword)   //false == word, true == WORD
 ;
 int current_sent(Operator *oper, long count, int include);
 int current_tagblock(Operator* oper, long count_arg, Boole includeWhiteSpace);
 int current_par(
-   Operator* oper,
-   Long count,
-   Boole includeWhitespace,
-   int type      //'p' for paragraph, 'S' for section
+	Operator* oper,
+	Long count,
+	Boole includeWhitespace,
+	int type      //'p' for paragraph, 'S' for section
 );
 int current_quote(
-   Operator* oper,
-   long count,
-   Boole includeQuote,
-   int quotechar   //Quote character
+	Operator* oper,
+	long count,
+	Boole includeQuote,
+	int quotechar   //Quote character
 );
 int virtual_active(void);
 void get_mode(CS buf);
@@ -58,38 +58,38 @@ int get_real_state(void);
 int check_text_or_curbuf_locked(Operator *oper);
 void normalAction(Operator* oper);
 void check_visual_highlight(void);
-void end_visual_mode(void);
-void end_visual_mode_keep_button(void);
+void whEndVisualMode(void);
+void whEndVisualMode_keep_button(void);
 void reset_VIsual_and_resel(void);
 void reset_VIsual(void);
-void restore_visual_mode(void);
+void whRestoreVisualMode(void);
 int find_ident_under_cursor(OUT CS* text, int find_type);
 int find_ident_at_pos(
-   Portal* po,
-   LineNr lnum,
-   ColNr startcol,
-   OUT CS* text,
-   int* textcol,   //column where "text" starts, can be NULL
-   int find_type
+	Portal* po,
+	LineNr lnum,
+	ColNr startcol,
+	OUT CS* text,
+	int* textcol,   //column where "text" starts, can be NULL
+	int find_type
 );
 void prep_redo(
-   int regname,
-   long num,
-   int cmd1,
-   int cmd2,
-   int cmd3,
-   int cmd4,
-   int cmd5
+	int regname,
+	long num,
+	int cmd1,
+	int cmd2,
+	int cmd3,
+	int cmd4,
+	int cmd5
 );
 void prep_redo_num2(
-    int       regname,
-    long    num1,
-    int       cmd1,
-    int       cmd2,
-    long    num2,
-    int       cmd3,
-    int       cmd4,
-    int       cmd5)
+	 int       regname,
+	 long    num1,
+	 int       cmd1,
+	 int       cmd2,
+	 long    num2,
+	 int       cmd3,
+	 int       cmd4,
+	 int       cmd5)
 ;
 void clearop(Operator *oper);
 void clearopbeep(Operator *oper);
@@ -102,16 +102,16 @@ void pop_showcmd(void);
 void normPostProcessScrollbind(int check);
 void check_scrollbind(LineNr topline_diff, long leftcol_diff);
 int find_decl(
-   CS ptr,
-   int len,
-   int locally,
-   int thisblock,
-   Unt flags_arg   //flags passed to searchit()
+	CS ptr,
+	int len,
+	int locally,
+	int thisblock,
+	Unt flags_arg   //flags passed to searchit()
 );
 int get_visual_text(
-   ActionArg* aArg,
-   OUT CS* pp,       //return: start of selected text
-   OUT int* lenp       //return: length of selected text
+	ActionArg* aArg,
+	OUT CS* pp,       //return: start of selected text
+	OUT int* lenp       //return: length of selected text
 );
 void start_selection(void);
 int unadjust_for_sel_inner(Pos *pp);
@@ -149,12 +149,12 @@ void validate_cursor_col(void);
 int normalPortalColumnOffset(Portal *po);
 void curs_columns(int may_scroll);
 void textpos2screenpos(
-   Portal* po,
-   Pos* pos,
-   int* rowp,   //screen row
-   int* scolp,   //start screen column
-   int* ccolp,   //cursor screen column
-   int* ecolp   //end screen column
+	Portal* po,
+	Pos* pos,
+	int* rowp,   //screen row
+	int* scolp,   //start screen column
+	int* ccolp,   //cursor screen column
+	int* ecolp   //end screen column
 );
 void f_screenpos(Var* argvars, Var* returnVar);
 void f_virtcol2col(Var* argvars, Var* returnVar);
@@ -175,27 +175,27 @@ MapBlock * whGetBufMappingTableList(int state, Unt c);
 int isMappingTableValid(void);
 int do_map(int maptype, CS arg, Unt mode, int abbrev);
 void mapClearAllMappingsInMode(
-   Book* book,      //book for local mappings
-   int modeClearFrom,      //mode in which to delete
-   Boole localOnly,      //true for buffer-local mappings
-   Boole abbr      //true for abbreviations
+	Book* book,      //book for local mappings
+	int modeClearFrom,      //mode in which to delete
+	Boole localOnly,      //true for buffer-local mappings
+	Boole abbr      //true for abbreviations
 );
 int mode_str2flags(CS modechars);
 int map_to_exists(CS str, CS modechars, int abbr);
 Boole map_to_exists_mode(CS rhs, int mode, int abbr);
 CS set_context_in_map_cmd(
-   Expand* xp,
-   CS cmd,
-   CS arg,
-   Boole forceit,   //true if '!' given
-   Boole isabbrev,   //true if abbreviation
-   Boole isunmap,   //true if unmap/unabbrev command
-   CommIndex   id
+	Expand* xp,
+	CS cmd,
+	CS arg,
+	Boole forceit,   //true if '!' given
+	Boole isabbrev,   //true if abbreviation
+	Boole isunmap,   //true if unmap/unabbrev command
+	CommIndex   id
 );
 int expandMappings(
-   CS pat,
-   RegMatch* regmatch,
-   OUT ExpandMatch* matches
+	CS pat,
+	RegMatch* regmatch,
+	OUT ExpandMatch* matches
 );
 Boole check_abbr(Unt c, CS ptr, int col, int mincol);
 CS eval_map_expr(MapBlock* mp, int);
@@ -205,13 +205,13 @@ int makemap(FILE* fd, NULLABLE Book* book);
 int put_escstr(FILE* fd, CS strstart, int what);
 void check_map_keycodes(void);
 CS norCheckMapping(
-   CS keys,
-   int mode,
-   int exact,      //require exact match
-   int ign_mod,   //ignore preceding modifier
-   int abbr,      //do abbreviations
-   OUT MapBlock** mp_ptr,   //return: pointer to mapblock or NULL
-   OUT int* local_ptr   //return: buffer-local mapping or NULL
+	CS keys,
+	int mode,
+	int exact,      //require exact match
+	int ign_mod,   //ignore preceding modifier
+	int abbr,      //do abbreviations
+	OUT MapBlock** mp_ptr,   //return: pointer to mapblock or NULL
+	OUT int* local_ptr   //return: buffer-local mapping or NULL
 );
 void f_hasmapto(Var* argvars, Var* returnVar);
 void f_maplist(Arr(Var) argvars, Var* returnVar);
@@ -236,9 +236,9 @@ void truncate_spaces(CS line, Unt len);
 void backspace_until_column(int col);
 int get_literal(int noReduceKeys);
 void insertchar0(
-   Unt c,         //character to insert or ZERO
-   Unt flags,         //INSCHAR_FORMAT, etc.
-   int second_indent      //indent for second line if >= 0
+	Unt c,         //character to insert or ZERO
+	Unt flags,         //INSCHAR_FORMAT, etc.
+	int second_indent      //indent for second line if >= 0
 );
 void start_arrow(Pos* end_insert_pos);
 int stop_arrow(void);
@@ -253,9 +253,9 @@ int cursor_up(long   n, Boole upd_topline);
 void cursor_down_inner(Portal* wp, long n);
 int cursor_down(long n, int upd_topline);
 int stuff_inserted(
-   Unt c,      //Command character to be inserted
-   Long count,   //Repeat this many times
-   int no_esc   //Don't add an ESC at the end
+	Unt c,      //Command character to be inserted
+	Long count,   //Repeat this many times
+	int no_esc   //Don't add an ESC at the end
 );
 Text get_last_insert(void);
 CS get_last_insert_save(void);
@@ -265,7 +265,7 @@ ColNr get_nolist_virtcol(void);
 void whSetCanIndentExpr(int val);
 int ins_applyAutocomms(AutoEvent event);
 void ins_ctrl_x(void);
-int ctrl_x_mode_whole_line(void)    ;
+int ctrl_x_mode_whole_line(void) 	;
 int ctrl_x_mode_not_default(void);
 int ctrl_x_mode_not_defined_yet(void);
 int compl_status_adding(void);
@@ -273,13 +273,13 @@ int compl_status_sol(void);
 int compl_status_local(void);
 int eeIsCtrlXKey(Unt c);
 Unt ins_compl_add_infercase(
-   CS str_arg,
-   int len,
-   int icase,
-   CS fname,
-   Unt dir,
-   int cont_s_ipos,  //next ^X<> will set initial_pos
-   int score
+	CS str_arg,
+	int len,
+	int icase,
+	CS fname,
+	Unt dir,
+	int cont_s_ipos,  //next ^X<> will set initial_pos
+	int score
 );
 Decoration getDecorationIfColumnIsWithinCompletion(LineNr lnum, int col);
 Boole ins_compl_lnum_in_range(LineNr lnum);
@@ -306,11 +306,11 @@ CS setOmnifunc(OptionChange* cha);
 Unt setCompletionCallbacks(OptionChange *cha);
 Boole has_format_option(int x);
 void internal_format(
-   int textwidth,
-   int second_indent,
-   int flags,
-   int format_only,
-   Unt c //character to be inserted (can be ZERO)
+	int textwidth,
+	int second_indent,
+	int flags,
+	int format_only,
+	Unt c //character to be inserted (can be ZERO)
 );
 int fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComments);
 void whAutoFormat(Boole trailblank, Boole prev_line);

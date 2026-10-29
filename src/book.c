@@ -412,8 +412,8 @@ private int do_arglist(
 private void argAllCloseUnusedPortals(ArgAllState *aall);
 private void openPortalsIntoFiles(ArgAllState *aall, int count);
 private void openAllArgs(
-	 int   count,
-	 int   forceit,      //hide books in current portals
+	 int count,
+	 int forceit,      //hide books in current portals
 	 int keep_tabs      //keep current tabs, for ":tab drop file"
 );
 private void get_arglist_as_returnVar(ArgFileEntry *arglist, Unt argcount, OUT Var* returnVar);
@@ -454,8 +454,8 @@ private AdjustRes adjust(
 	int       flags
 );
 #define add(a, b) _Generic((a),\
-	LBufMatch*: add_LBufMatch\
-	)(a, b)
+   LBufMatch*: add_LBufMatch\
+   )(a, b)
 //}}}
 //{{{memline
 
@@ -5169,7 +5169,7 @@ updateLinesFromVars(
 			) {
 				changed_bytes(lnum, 0);
 				if (isCurBook && lnum == curPor->cursor.lnum)
-					check_cursor_col();
+					poRefreshCursorCol();
 				returnVar->number = OK;
 			}
 		} ei (added > 0 || u_save(lnum - 1, lnum) == OK) {
@@ -5199,7 +5199,7 @@ updateLinesFromVars(
 					 && po->cursor.lnum > appendLnum)
 				po->cursor.lnum += added;
 		}
-		check_cursor_col();
+		poRefreshCursorCol();
 
 		//Only update the portal view if book matches curBook, otherwise
 		//the computations will be wrong.
@@ -5390,7 +5390,7 @@ f_deletebufline(Var *argvars, OUT Var* returnVar) {
 				po->topLine = 1;
 		}
 	}
-	check_cursor_col();
+	poRefreshCursorCol();
 	deleted_lines_mark(first, count);
 	returnVar->number = 0; //OK
 
@@ -7127,7 +7127,7 @@ bookClose(
 		 && !entered_free_all_mem
 #endif
 	)
-		end_visual_mode();
+		whEndVisualMode();
 
 	//Free all things allocated for this book.
 	//Also calls the "BufDelete" autocommands when del_buf is true.
@@ -7687,7 +7687,7 @@ bookDo(
 
 		//When closing the current book stop Visual mode.
 		if (book == curBook && VIsual_active)
-			end_visual_mode();
+			whEndVisualMode();
 
 		//If deleting the last (listed) book, make it empty. The last (listed) book cannot be unloaded
 		Book* bp;
@@ -8016,7 +8016,7 @@ enterBook(Book* book){
 		 && !entered_free_all_mem
 #endif
 	)
-		end_visual_mode();
+		whEndVisualMode();
 
 	//Get the book in the current portal.
 	curPor->book = book;
@@ -8393,7 +8393,7 @@ booklistGetFile(
 		//cursor is at to BOL and cursor.lnum is checked due to getfile()
 		if (!p_sol && col != 0) {
 			curPor->cursor.col = col;
-			check_cursor_col();
+			poRefreshCursorCol();
 			curPor->cursor.coladd = 0;
 			curPor->setCursWant = true;
 		}
@@ -8417,7 +8417,7 @@ getLastKnownLineNumber(void) {
 		curPor->cursor.col = 0;
 	else {
 		curPor->cursor.col = fpos->col;
-		check_cursor_col();
+		poRefreshCursorCol();
 		curPor->cursor.coladd = 0;
 		curPor->setCursWant = true;
 	}
@@ -11181,7 +11181,7 @@ bookStartEditingFile(
 			 if (solcol >= 0 && !p_sol) {
 				//'sol' is off: Use last known column.
 				curPor->cursor.col = solcol;
-				check_cursor_col();
+				poRefreshCursorCol();
 				curPor->cursor.coladd = 0;
 				curPor->setCursWant = true;
 			}

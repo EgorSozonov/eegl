@@ -1,59 +1,59 @@
 #ifndef AVOID_DUPLICATION
 #define GEN_TYPE_L(T) typedef struct {\
-   T* c;\
-   Unt len;\
-   Unt cap;\
-   Arena* a;\
+	T* c;\
+	Unt len;\
+	Unt cap;\
+	Arena* a;\
 } L##T;
 typedef enum {
-   FILTERMAP_FILTER,
-   FILTERMAP_MAP,
-   FILTERMAP_MAPNEW,
-   FILTERMAP_FOREACH
+	FILTERMAP_FILTER,
+	FILTERMAP_MAP,
+	FILTERMAP_MAPNEW,
+	FILTERMAP_FOREACH
 } FilterMap;
 #define getRefCount(a) _Generic((a),\
-   Job*: _getRefCount,\
-   Channel*: _getRefCount\
+	Job*: _getRefCount,\
+	Channel*: _getRefCount\
 )(a)
 #define incRefCount(a) _Generic((a),\
-   Job*: _incRefCount,\
-   Channel*: _incRefCount\
+	Job*: _incRefCount,\
+	Channel*: _incRefCount\
 )(a)
 #define decRefCount(a) _Generic((a),\
-   Job*: _decRefCount,\
-   Channel*: _decRefCount\
+	Job*: _decRefCount,\
+	Channel*: _decRefCount\
 )(a)
 #define GEN_add_L(acc, T) p##acc void add_L##T (L##T * l, T newItem) {\
-   if (l->len < l->cap) {\
-      l->c[l->len] = newItem;\
-   } else {\
-      T* newCont = allocateArray(2*(l->cap), T, l->a);\
-      memcpy(newCont, l->c, l->len*sizeof(T));\
-      newCont[l->len] = newItem;\
-      l->c = newCont;\
-      l->cap *= 2;\
-   }\
-   l->len++;\
+	if (l->len < l->cap) {\
+		l->c[l->len] = newItem;\
+	} else {\
+		T* newCont = allocateArray(2*(l->cap), T, l->a);\
+		memcpy(newCont, l->c, l->len*sizeof(T));\
+		newCont[l->len] = newItem;\
+		l->c = newCont;\
+		l->cap *= 2;\
+	}\
+	l->len++;\
 }
 #define GEN_create_L(acc, T)\
 p##acc L##T * create_L##T (int initCapacity, Arena* a) {\
-   int capacity = initCapacity < 4 ? 4 : initCapacity;\
-   L##T * result = allocate(L##T, a);\
-   result->cap = capacity;\
-   result->len = 0;\
-   result->a = a;\
-   T* arr = allocateArray(capacity, T, a);\
-   result->c = arr;\
-   return result;\
+	int capacity = initCapacity < 4 ? 4 : initCapacity;\
+	L##T * result = allocate(L##T, a);\
+	result->cap = capacity;\
+	result->len = 0;\
+	result->a = a;\
+	T* arr = allocateArray(capacity, T, a);\
+	result->c = arr;\
+	return result;\
 }
 #define last(l) (l)->c[(l)->len - 1]
 #define sLast(l) (l).c[(l).len - 1]
 #define eq(a, b) _Generic((a),\
-   Text: _Generic((b),\
-         Text: eq_Text_Text,\
-         CS: eq_Text_CString\
-      ),\
-   CS: eq_CString_CString\
+	Text: _Generic((b),\
+			Text: eq_Text_Text,\
+			CS: eq_Text_CString\
+		),\
+	CS: eq_CString_CString\
 )(a, b)
 #endif
 
@@ -89,13 +89,13 @@ void list_insert(List *l, ListItem *ni, ListItem *item);
 ListItem * check_range_index_one(List* l, long* n1, int quiet);
 int check_range_index_two(List* l, long* n1, ListItem* li1, long* n2, int quiet);
 int list_assign_range(
-   List* dest,
-   List* src,
-   long idx1_arg,
-   long idx2,
-   int empty_idx2,
-   CS op,
-   Text varname
+	List* dest,
+	List* src,
+	long idx1_arg,
+	long idx2,
+	int empty_idx2,
+	CS op,
+	Text varname
 );
 void f_flatten(Arr(Var) argvars, Var* returnVar);
 void f_flattennew(Arr(Var) argvars, Var* returnVar);
@@ -105,24 +105,24 @@ int list_extend(List *l1, List *l2, ListItem *bef);
 int list_concat(List *l1, List *l2, Var *tv);
 List * list_slice(List *ol, long n1, long n2);
 int list_slice_or_index(
-   List* list,
-   int range,
-   Long n1_arg,
-   Long n2_arg,
-   int exclusive,
-   Var* returnVar,
-   int verbose
+	List* list,
+	int range,
+	Long n1_arg,
+	Long n2_arg,
+	int exclusive,
+	Var* returnVar,
+	int verbose
 );
 List * list_copy(List *orig, int deep, int top, Unt copyID);
 void list_remove(List* l, ListItem* item, ListItem* item2);
 CS list2string(Var* tv, Unt copyID, int restore_copyID);
 int list_join(
-    ArrayList* gap,
-    List* l,
-    CS sep,
-    int echo_style,
-    int restore_copyID,
-    Unt copyID
+	 ArrayList* gap,
+	 List* l,
+	 CS sep,
+	 int echo_style,
+	 int restore_copyID,
+	 Unt copyID
 );
 void f_join(Arr(Var) argvars, Var* returnVar);
 int eval_list(Byte **arg, Var* returnVar, EvalCtx *evalarg, int do_error);
@@ -132,11 +132,11 @@ void f_list2str(Arr(Var) argvars, Var* returnVar);
 void f_sort(Arr(Var) argvars, Var* returnVar);
 void f_uniq(Arr(Var) argvars, Var* returnVar);
 int filter_map_one(
-   Var*,         //original value
-   Var* expr,       //callback
-   FilterMap filtermap,
-   Var* newtv,       //for map() and mapnew(): new value
-   int* remp      //for filter(): remove flag
+	Var*,         //original value
+	Var* expr,       //callback
+	FilterMap filtermap,
+	Var* newtv,       //for map() and mapnew(): new value
+	int* remp      //for filter(): remove flag
 );
 void f_filter(Arr(Var) argvars, Var* returnVar);
 void f_map(Arr(Var) argvars, Var* returnVar);
@@ -235,39 +235,39 @@ CS tv_stringify(Var* varp, CS buf);
 int tv_check_lock(Var* tv, Text name, Boole use_gettext);
 void copy_tv(OUT Var* to, Var* from);
 int daCompareVars(
-   Var* tv1,   //first operand
-   Var* tv2,   //second operand
-   ExprType type,   //operator
-   Boole ignoreCase
+	Var* tv1,   //first operand
+	Var* tv2,   //second operand
+	ExprType type,   //operator
+	Boole ignoreCase
 );
 int daCompareVars_list(
-   Var    *tv1,
-   Var    *tv2,
-   ExprType  type,
-   Boole ic,
-   OUT int* res
+	Var    *tv1,
+	Var    *tv2,
+	ExprType  type,
+	Boole ic,
+	OUT int* res
 );
 int daCompareVars_blob(Var* tv1, Var* tv2, ExprType type, int* res);
 int daCompareVars_dict(
-   Var* tv1,
-   Var* tv2,
-   ExprType  type,
-   int ic,
-   int* res
+	Var* tv1,
+	Var* tv2,
+	ExprType  type,
+	int ic,
+	int* res
 );
 int daCompareVars_func(
-   Var* tv1,
-   Var* tv2,
-   ExprType type,
-   int ic,
-   int* res
+	Var* tv1,
+	Var* tv2,
+	ExprType type,
+	int ic,
+	int* res
 );
 int daCompareVars_string(
-   Var* tv1,
-   Var* tv2,
-   ExprType type,
-   Boole ignoreCase,
-   int* res
+	Var* tv1,
+	Var* tv2,
+	ExprType type,
+	Boole ignoreCase,
+	int* res
 );
 CS daStringOfVar(Var *arg, int quotes);
 int tv_islocked(Var *tv);
@@ -302,7 +302,7 @@ int bagAddCallback(Bag* d, CS key, Callback* cb);
 int bagAddFn(Bag* d, CS key, UserFunc* fp);
 void bagIterateStart(Var* var, DictIterator* iter);
 CS bagIterateNext(DictIterator* iter, Var** tv_result);
-int bagAddBag(Bag* d, CS key, Bag* dict);
+int bagAddBag(Bag* b, CS key, Bag* dict);
 Ulong bagSize(Bag* b);
 DictItem* bagFind(Bag* b, Text const key);
 int bagHasKey(Bag* b, Text key);
@@ -321,11 +321,11 @@ int bagEqual(Bag* d1, Bag* d2, int ic);
 long bagCount(Bag* d, Var* needle, int ic);
 void bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar);
 void bagFilterMap(
-   Bag* d,
-   FilterMap filtermap,
-   CS arg_errmsg,
-   Var* expr,
-   Var* returnVar
+	Bag* d,
+	FilterMap filtermap,
+	CS arg_errmsg,
+	Var* expr,
+	Var* returnVar
 );
 void bagRemove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg);
 void f_items(Arr(Var) argvars, Var* returnVar);
@@ -398,14 +398,14 @@ void f_test_setmouse(Arr(Var) argvars, Var*);
 void f_test_settime(Arr(Var) argvars, Var*);
 int check_can_index(Var* var, int evaluate, int verbose);
 int eval_index_inner(
-   Var* returnVar,
-   int is_range,
-   Var* var1,
-   Var* var2,
-   int exclusive,
-   CS key,
-   int keylen,
-   int verbose
+	Var* returnVar,
+	int is_range,
+	Var* var1,
+	Var* var2,
+	int exclusive,
+	CS key,
+	int keylen,
+	int verbose
 );
 Blob * blob_alloc(void);
 int returnVar_blob_alloc(Var* returnVar);
@@ -421,12 +421,12 @@ int blob_equal(Blob   *b1, Blob   *b2);
 CS blob2string(Blob *blob, Byte **tofree, Byte *numbuf);
 Blob* string2blob(CS str);
 int blob_slice_or_index(
-   Blob      *blob,
-   int      is_range,
-   Long   n1,
-   Long   n2,
-   int      exclusive,
-   Var   *returnVar)
+	Blob      *blob,
+	int      is_range,
+	Long   n1,
+	Long   n2,
+	int      exclusive,
+	Var   *returnVar)
 ;
 int check_blob_index(long bloblen, Long n1, int quiet);
 int check_blob_range(long bloblen, Long n1, Long n2, int quiet);
@@ -434,11 +434,11 @@ int blob_set_range(Blob *dest, long n1, long n2, Var *src);
 void blob_add(Arr(Var) argvars, Var* returnVar);
 void blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg);
 void blob_filter_map(
-   Blob* blob_arg,
-   FilterMap filtermap,
-   Var* expr,
-   CS arg_errmsg,
-   Var* returnVar
+	Blob* blob_arg,
+	FilterMap filtermap,
+	Var* expr,
+	CS arg_errmsg,
+	Var* returnVar
 );
 void blob_insert_func(Arr(Var) argvars, Var* returnVar);
 void blob_reduce(Var* argvars, Var* expr, Var* returnVar);
@@ -449,12 +449,12 @@ void f_blob2str(Arr(Var) argvars, OUT Var* returnVar);
 void f_str2blob(Arr(Var) argvars, OUT Var* returnVar);
 void addFuzzyMatch(FuzzyMatch m, OUT Fuzzy* t);
 int fuzzy_match(
-   CS str,
-   CS pat_arg,
-   int matchseq,
-   int* outScore,
-   Arr(Unt) matches,
-   int maxMatches
+	CS str,
+	CS pat_arg,
+	int matchseq,
+	int* outScore,
+	Arr(Unt) matches,
+	int maxMatches
 );
 void f_matchfuzzy(Arr(Var) argvars, OUT Var* returnVar);
 void f_matchfuzzypos(Arr(Var) argvars, OUT Var* returnVar);
@@ -464,17 +464,17 @@ ArrayList * fuzzyMatchStr_with_pos(CS str, CS pat);
 CS find_word_end(CS ptr);
 CS find_line_end(CS ptr);
 int fuzzyMatchStr_in_line(
-   Byte   **ptr,
-   CS pat,
-   int* len,
-   Pos* current_pos,
-   int* score)
+	Byte   **ptr,
+	CS pat,
+	int* len,
+	Pos* current_pos,
+	int* score)
 ;
 void fuzmatch_str_free(FuzzyMatch *fuzmatch, int count);
 int defuzz(
-   OUT ExpandMatch* matches,
-   Fuzzy fuzzy,
-   Boole funcsort
+	OUT ExpandMatch* matches,
+	Fuzzy fuzzy,
+	Boole funcsort
 );
 void string_filter_map(CS str, FilterMap filtermap, Var* expr, Var* returnVar);
 void f_byteidx(Arr(Var) argvars, OUT Var* returnVar);
@@ -499,11 +499,11 @@ void f_toupper(Arr(Var) argvars, OUT Var* returnVar);
 void f_tr(Arr(Var) argvars, OUT Var* returnVar);
 void f_trim(Arr(Var) argvars, OUT Var* returnVar);
 int eeVarPrintf0(
-   CS str,
-   Unt str_m,
-   char const* fmt,
-   va_list ap_start,
-   Var* tvs
+	CS str,
+	Unt str_m,
+	char const* fmt,
+	va_list ap_start,
+	Var* tvs
 );
 int fex_format();
 CS copyStr_shellescape(CS string, int do_special, int do_newline);
