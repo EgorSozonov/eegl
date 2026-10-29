@@ -2440,7 +2440,7 @@ of lines of the display, the display may be messed up.
 @@list                   Portal. Boolean. Default = off
 
 List mode: By default show tabs as CTRL-I is displayed, display $ after end of line.  Useful to
-see the difference between tabs and spaces and for trailing blanks.  Further changed by the
+see the difference between tabs and spaces and for trailing blanks. Further changed by the
 @listchars option.
 
 The cursor is displayed at the start of the space a Tab character occupies, not at the end as

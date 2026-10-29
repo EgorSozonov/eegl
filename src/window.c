@@ -485,15 +485,15 @@ execreg_line_continuation(Arr(Text) lines, Long *idx) {
 //Return FAIL for failure, OK otherwise.
 pub int
 do_execreg(
-    int       regname,
-    int       colon,      // insert ':' before each line
-    int       addcr,      // always add '\n' to end of line
-    int       silent)      // set "silent" flag in typeahead buffer
-{
-    Long   i;
-    Byte   *p;
-    int      retval = OK;
-    int      remap;
+    int regname,
+    int colon,      // insert ':' before each line
+    int addcr,      // always add '\n' to end of line
+    int silent      // set "silent" flag in typeahead buffer
+){
+   Long i;
+   Byte* p;
+   int retval = OK;
+   int remap;
 
    // repeat previous one
    if (regname == '@') {
@@ -606,7 +606,7 @@ do_execreg(
 //used only after other typeahead has been processed.
 private void
 put_reedit_in_typeBufG(int silent) {
-   Byte   buf[3];
+   Byte buf[3];
 
    if (restart_edit == ZERO)
       return;
@@ -628,11 +628,11 @@ put_reedit_in_typeBufG(int silent) {
 private int
 put_in_typeBufG(
     CS s,
-    int      esc,
-    int      colon,       // add ':' before the line
-    int      silent)
-{
-    int      retval = OK;
+    int esc,
+    int colon,       // add ':' before the line
+    int silent
+){
+   int retval = OK;
 
    put_reedit_in_typeBufG(silent);
    if (colon)
@@ -1192,17 +1192,17 @@ do_put(
    Long   count,
    Unt      flags
 ) {
-   Byte   *ptr;
-   Byte   *newp;
-   Byte   *oldp;
-   int      yanklen;
-   int      totlen = 0;      // init for gcc
-   LineNr   lnum;
-   ColNr   col;
-   Long   i;         // index in y_array[]
-   int      y_type;
-   Long   y_size;
-   int      oldlen;
+   Byte* ptr;
+   Byte* newp;
+   Byte* oldp;
+   int yanklen;
+   int totlen = 0;      // init for gcc
+   LineNr lnum;
+   ColNr col;
+   Long i;         // index in y_array[]
+   int y_type;
+   Long y_size;
+   int oldlen;
    Long   y_width = 0;
    ColNr   vcol;
    Text* y_array = NULL;
