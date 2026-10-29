@@ -5550,10 +5550,10 @@ set_leftcol(ColNr leftcol) {
    long siso = get_sidescrolloff_value();
    if (curPor->virtCol > (ColNr)(lastcol - siso)) {
       retval = true;
-      coladvance((ColNr)(lastcol - siso));
+      doColAdvance((ColNr)(lastcol - siso));
    } ei (curPor->virtCol < curPor->leftCol + siso) {
       retval = true;
-      (void)coladvance((ColNr)(curPor->leftCol + siso));
+      (void)doColAdvance((ColNr)(curPor->leftCol + siso));
    }
 
     //If the start of the character under the cursor is not on the screen,
@@ -5563,10 +5563,10 @@ set_leftcol(ColNr leftcol) {
     bookGetVirtualColInVirtualMode(curPor, &curPor->cursor, &s, NULL, &e);
     if (e > (ColNr)lastcol) {
       retval = true;
-      coladvance(s - 1);
+      doColAdvance(s - 1);
    } ei (s < curPor->leftCol) {
       retval = true;
-      if (coladvance(e + 1) == FAIL) { //there isn't another character
+      if (doColAdvance(e + 1) == FAIL) { //there isn't another character
          curPor->leftCol = s;   //adjust leftCol instead
          changed_cline_bef_curs();
       }
@@ -8238,7 +8238,7 @@ setManualFold(
       Portal* po;
       FOR_ALL_PORTALS(po) {
          if (po != curPor && po->o.foldMethod == FOLD_DIFF && po->o.diff) {
-            LineNr dlnum = diff_lnum_win(curPor->cursor.lnum, po);
+            LineNr dlnum = diffLnumPort(curPor->cursor.lnum, po);
             if (dlnum != 0)
                (void)setManualFoldPort(po, dlnum, opening, recurse, NULL);
          }
@@ -12429,7 +12429,7 @@ private void
 getBorderHilite(Bag* dict, Portal* po) {
    int i;
    for (i = 0; i < 4; ++i) {
-      if (po->pup.borderHilite[i] != SHORT)
+      if (po->pup.borderHilite[i] != HILITE_NULL)
          break;
    }
    if (i == 4)
@@ -13205,7 +13205,7 @@ update_popups(void (*portUpdate)(Portal* po, Boole *)) {
 
       for (Unt i = 0; i < 4; ++i) {
          borderDeco[i] = popupDeco;
-         if (po->pup.borderHilite[i] != SHORT)
+         if (po->pup.borderHilite[i] != HILITE_NULL)
             borderDeco[i] = getFullDecoration(po->pup.borderHilite[i]);
       }
 
@@ -14030,7 +14030,7 @@ computeTextDeco(CS text, Short hiId, Decoration userDeco) {
       }
 
       newDeco = getFullDecoration(HILITE_Pmenu);
-      if (userDeco.hiId != SHORT)
+      if (userDeco.hiId != HILITE_NULL)
          newDeco = userDeco;
 
       int charCells = mb_ptr2cells(ptr);
@@ -14096,7 +14096,7 @@ combineUserDecos(int idx, int type, Decoration defaultDeco) {
       displayedItemsS[idx].kindDeco
    };
 
-   return userDecos[type].hiId != SHORT ? userDecos[type] : defaultDeco;
+   return userDecos[type].hiId != HILITE_NULL ? userDecos[type] : defaultDeco;
 }
 
 //Display text with proper decorations in the popup menu.

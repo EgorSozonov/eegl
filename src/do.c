@@ -97,31 +97,31 @@ struct UndoHeader {
    //reading the undo file in u_read_undo()
    union {
       UndoHeader* ptr;   //pointer to next undo header in list
-      long seq;
+      Long seq;
    } next;
    union {
       UndoHeader* ptr;   //pointer to previous header in list
-      long seq;
+      Long seq;
    } prev;
    union {
       UndoHeader* ptr;   //pointer to next header for alt. redo
-      long seq;
+      Long seq;
    } altNext;
    union {
       UndoHeader* ptr;   //pointer to previous header for alt. redo
-      long seq;
+      Long seq;
    } altPrev;
-   long   uh_seq;      //sequence number, higher == newer undo
+   Long   uh_seq;      //sequence number, higher == newer undo
    int      uh_walk;   //used by undo_time()
    UndoEntry* uh_entry;   //pointer to first entry
    UndoEntry* uh_getbot_entry; //pointer to where ue_bot must be set
    Pos   uh_cursor;   //cursor position before saving
-   long   uh_cursor_vcol;
+   Long   uh_cursor_vcol;
    Unt flags;   //see below
    Pos   uh_namedm[NMARKS];   //marks before undo/after redo
    VisualInfo uh_visual;   //Visual areas before undo/after redo
    Tyme   uh_time;   //timestamp when the change was made
-   long   uh_save_nr;   //set when the file was saved after the changes in this block
+   Long   uh_save_nr;   //set when the file was saved after the changes in this block
 #ifdef U_DEBUG
    int      uh_magic;   //magic number to check allocation
 #endif
@@ -259,7 +259,7 @@ private void u_freeentries(
    UndoHeader       *uhp,
    UndoHeader       **uhpp)   //if not NULL reset when freeing this header
 ;
-private void freeEntry(UndoEntry *uep, long n);
+private void freeEntry(UndoEntry *uep, Long n);
 private void invalidateUndoBuffer(Book *book);
 private void u_blockfree(Book* book);
 private void u_saveline(LineNr lnum);
@@ -269,13 +269,13 @@ private void checkRecordedChanges(
    Book* book,
    LineNr lnum,
    LineNr lnume,
-   long xtra
+   Long xtra
 );
 private void may_record_change(
     LineNr   lnum,
     ColNr   col,
     LineNr   lnume,
-    long   xtra
+    Long   xtra
 );
 private void remove_listener(Book* book, Listener *lnr, Listener *prev);
 private void changed_common(
@@ -328,15 +328,15 @@ private int isCommandModeChar(ActionArg* aArg);
 private void pbyte(Pos lp, int c);
 private void op_format(Operator* oper, int keep_cursor);
 private void op_formatexpr(Operator* oper);
-private int coladvance2(
+private int doColAdvance2(
    Pos   *pos,
    int      addspaces,   //change the text to achieve our goal?
    int      finetune,   //change char offset for the exact column
    ColNr   wcol_arg   //column to move to (can be negative)
 );
-private long get_sw_value_pos(Book* book, Pos *pos, int left);
-private long get_sw_value_indent(Book* book, int left);
-private long get_sw_value_col(Book* book, ColNr, int);
+private Long get_sw_value_pos(Book* book, Pos *pos, int left);
+private Long get_sw_value_indent(Book* book, int left);
+private Long get_sw_value_col(Book* book, ColNr, int);
 private int get_indent_str(CS ptr, int ts);
 private void emsg_text_too_long(void);
 private void fixthisline(int (*get_the_indent)(void));
@@ -580,7 +580,7 @@ c_sort(Invocation* invo) {
    RegMatch   regmatch;
    int      len;
    LineNr   lnum;
-   long   maxlen = 0;
+   Long   maxlen = 0;
    SortingInfo   *nrs;
    Unt   count = (Unt)(invo->line2 - invo->line1 + 1);
    Unt   i;
@@ -589,7 +589,7 @@ c_sort(Invocation* invo) {
    CS s2;
    Byte c;         //temporary character storage
    int unique = false;
-   long deleted;
+   Long deleted;
    ColNr start_col;
    ColNr end_col;
    int sort_what = 0;
@@ -789,9 +789,9 @@ c_sort(Invocation* invo) {
       count = 0;
 
    //Adjust marks for deleted (or added) lines and prepare for displaying.
-   deleted = (long)(count - (lnum - invo->line2));
+   deleted = (Long)(count - (lnum - invo->line2));
    if (deleted > 0) {
-      markAdjust(invo->line2 - deleted, invo->line2, (long)MAXLNUM, -deleted, true);
+      markAdjust(invo->line2 - deleted, invo->line2, (Long)MAXLNUM, -deleted, true);
       msgmore(-deleted);
    } ei (deleted < 0)
       markAdjust(invo->line2, MAXLNUM, -deleted, 0L, true);
@@ -817,14 +817,14 @@ c_uniq(Invocation* invo) {
    RegMatch   regmatch;
    int      len;
    LineNr   lnum;
-   long   maxlen = 0;
+   Long   maxlen = 0;
    LineNr   count = invo->line2 - invo->line1 + 1;
    CS p;
    CS s;
    Byte save_c = 0;      //temporary character storage
    int keep_only_unique = false;
    int keep_only_not_unique = invo->forceit ? true : false;
-   long deleted = 0;
+   Long deleted = 0;
    ColNr start_col;
    ColNr end_col;
    int change_occurred = false; //Book contents changed.
@@ -981,7 +981,7 @@ c_uniq(Invocation* invo) {
    }
 
    //Adjust marks for deleted lines and prepare for displaying.
-   markAdjust(invo->line2 - deleted, invo->line2, (long)MAXLNUM, -deleted, true);
+   markAdjust(invo->line2 - deleted, invo->line2, (Long)MAXLNUM, -deleted, true);
    msgmore(-deleted);
 
    if (change_occurred)
@@ -1090,7 +1090,7 @@ do_move(LineNr line1, LineNr line2, LineNr dest) {
 
    if (!global_busy) {
       smsg(NGETTEXT("%ld line moved", "%ld lines moved", num_lines),
-            (long)num_lines);
+            (Long)num_lines);
    }
 
    //Leave the cursor on the last of the moved lines.
@@ -1158,7 +1158,7 @@ doCopy(LineNr line1, LineNr line2, LineNr n) {
    if (VIsual_active)
    check_pos(curBook, &VIsual);
 
-    msgmore((long)count);
+    msgmore((Long)count);
 }
 
 private CS prevcmd = NULL;   //the previous command
@@ -1481,12 +1481,12 @@ do_filter(
       --no_wait_return;
 
       if (do_in) {
-         eeSnprintf(msg_buf, sizeof(msg_buf), _("%ld lines filtered"), (long)linecount);
+         eeSnprintf(msg_buf, sizeof(msg_buf), _("%ld lines filtered"), (Long)linecount);
          if (msg(msg_buf) && !msg_scroll)
             //save message to display it after redraw
             set_keep_msg((CS)msg_buf, 0);
       } else
-         msgmore((long)linecount);
+         msgmore((Long)linecount);
    } else {
 error:
       //put cursor back in same position for ";w !cmd"
@@ -1651,7 +1651,7 @@ do_fixdel(Invocation*) {
 private void
 print_line_no_prefix(LineNr lnum, int list) {
    Byte numbuf[30];
-   eeSnprintf(numbuf, sizeof(numbuf), "%*ld ", COL_PROLOGUE_WIDTH, (long)lnum);
+   eeSnprintf(numbuf, sizeof(numbuf), "%*ld ", COL_PROLOGUE_WIDTH, (Long)lnum);
    msgPutsDeco(numbuf, getDecoFlags(HILITE_LineNr));
    msg_prt_line(ml_get(lnum), list);
 }
@@ -2305,7 +2305,7 @@ c_change(Invocation* invo) {
 
    //make sure the cursor is not beyond the end of the file now
    check_cursor_lnum();
-   deleted_lines_mark(invo->line1, (long)(invo->line2 - lnum));
+   deleted_lines_mark(invo->line1, (Long)(invo->line2 - lnum));
 
    //";append" on the line above the deleted lines.
    invo->line2 = invo->line1;
@@ -2315,7 +2315,7 @@ c_change(Invocation* invo) {
 //"z" family of commands
 pub void
 c_z(Invocation* invo) {
-   long bigness;
+   Long bigness;
    CS kind;
    int minus = 0;
    LineNr start, end, curs, i;
@@ -2486,7 +2486,7 @@ check_regexp_delim(int c) {
 pub void
 c_substitute(Invocation* invo) {
    LineNr lnum;
-   long i = 0;
+   Long i = 0;
    RegMultilineMatch regmatch;
    static SubstitutionState subflags = {false, false, false, true, false, false, false, 0};
    SubstitutionState subflags_save;
@@ -2505,7 +2505,7 @@ c_substitute(Invocation* invo) {
    LineNr last_line = 0;      //below last changed line AFTER the change
    LineNr old_line_count = curBook->mem.lineCount;
    LineNr line2;
-   long nmatch;         //number of lines in match
+   Long nmatch;         //number of lines in match
    int endcolumn = false;   //cursor in last column when done
    Pos old_cursor = curPor->cursor;
    int keeppatterns = commModifierG.cmod_flags & CMOD_KEEPPATTERNS;
@@ -2758,7 +2758,7 @@ c_substitute(Invocation* invo) {
          int did_sub = false;
          int lastone;
          int len, copy_len, needed_len;
-         long   nmatch_tl = 0;   //nr of lines matched below lnum
+         Long   nmatch_tl = 0;   //nr of lines matched below lnum
          int do_again;   //do it again after joining lines
          int skip_match = false;
          LineNr   sub_firstlnum;   //nr of first sub line
@@ -3138,7 +3138,7 @@ c_substitute(Invocation* invo) {
                *new_start = ZERO;
                new_end = new_start;
             } else {
-               //Check if the temporary buffer is long enough to do the
+               //Check if the temporary buffer is Long enough to do the
                //substitution into.  If not, make it larger (with a bit
                //extra to avoid too many calls to alloc()/free()).
                len = (unsigned)STRLEN(new_start);
@@ -3291,7 +3291,7 @@ c_substitute(Invocation* invo) {
                         break;
                      for (i = 0; i < nmatch_tl; ++i)
                         ml_delete(lnum);
-                     markAdjust(lnum, lnum + nmatch_tl - 1, (long)MAXLNUM, -nmatch_tl, true);
+                     markAdjust(lnum, lnum + nmatch_tl - 1, (Long)MAXLNUM, -nmatch_tl, true);
                      if (subflags.do_ask)
                         deleted_lines(lnum, nmatch_tl);
                      --lnum;
@@ -3370,9 +3370,9 @@ outofmem:
          //when interactive leave cursor on the match
          if (!subflags.do_ask) {
             if (endcolumn)
-                coladvance((ColNr)MAXCOL);
+               doColAdvance((ColNr)MAXCOL);
             else
-                beginline(BL_WHITE | BL_FIX);
+               beginline(BL_WHITE | BL_FIX);
          }
          if (!do_sub_msg(subflags.do_count) && subflags.do_ask)
             msg(S"");
@@ -3423,7 +3423,7 @@ do_sub_msg(int       count_only) {    //used 'n' flag for ";s"
 
    eeSnprintfAdd(
          msg_buf, sizeof(msg_buf), NGETTEXT(msg_single, msg_plural, sub_nlines),
-         sub_nsubs, (long)sub_nlines
+         sub_nsubs, (Long)sub_nlines
    );
 
    if (msg(msg_buf))
@@ -4491,7 +4491,7 @@ msg_verbose_cmd(LineNr lnum, CS cmd) {
    if (lnum == 0)
       smsg(_("Executing: %s"), cmd);
    else
-      smsg(_("line %ld: %s"), (long)lnum, cmd);
+      smsg(_("line %ld: %s"), (Long)lnum, cmd);
    if (msg_silent == 0)
       msg_puts(S"\n");   //don't overwrite this
 
@@ -4995,7 +4995,7 @@ doOneCommand(
 
    //6. Parse arguments.  Then check for errors.
    if (!IS_USER_COMMAND(invo.id))
-      invo.argFlags = (long)commands[(int)invo.id].flags;
+      invo.argFlags = (Long)commands[(int)invo.id].flags;
 
    if (!invo.skip) {
       if ((IMMUTABLE) && (invo.argFlags & MODIFY) != 0) {
@@ -5662,7 +5662,7 @@ doParseCommandModifiers(
       case 't':
          if (doCheckForCommNoParen(&p, S"tab", 3)) {
             if (!skip_only) {
-               long tabnr = doGetCommandAddress(invo, &invo->comm,
+               Long tabnr = doGetCommandAddress(invo, &invo->comm,
                         ADDR_TABS, invo->skip,
                         skip_only, false, 1);
                if (tabnr == MAXLNUM)
@@ -6375,9 +6375,9 @@ commandGetInd(CS cmd, int len) {
    return idx;
 }
 
-pub long
+pub Long
 commandGetFlags(CommIndex idx) {
-   return (long)commands[(int)idx].flags;
+   return (Long)commands[(int)idx].flags;
 }
 
 //Skip a range specifier of the form: addr [,addr] [;addr] ..
@@ -6511,7 +6511,7 @@ doGetCommandAddress(
 ){
    int c;
    int i;
-   long n;
+   Long n;
    Pos pos;
    Pos* fp;
    Book* book;
@@ -8659,8 +8659,8 @@ c_syncbind(Invocation*) {
    Portal   *po;
    Portal   *save_curPor = curPor;
    Book   *save_curbuf = curBook;
-   long   topline;
-   long   y;
+   Long   topline;
+   Long   y;
    LineNr   old_linenr = curPor->cursor.lnum;
 
    setpcmark();
@@ -8904,7 +8904,7 @@ c_pwd(Invocation*) {
 //":=".
 pub void
 c_equal(Invocation* invo) {
-   smsg("%ld", (long)invo->line2);
+   smsg("%ld", (Long)invo->line2);
    mayPrint(invo);
 }
 
@@ -9105,7 +9105,7 @@ c_iput(Invocation* invo) {
 //Handle ";copy" and ";move".
 pub void
 c_copymove(Invocation* invo) {
-   long n = doGetCommandAddress(invo, &invo->arg, invo->addressKind, false, false, false, 1);
+   Long n = doGetCommandAddress(invo, &invo->arg, invo->addressKind, false, false, false, 1);
    if (invo->arg == NULL) {      //error detected
       return;
    }
@@ -9224,7 +9224,7 @@ c_redo(Invocation*) {
 //";earlier" and ";later".
 pub void
 c_later(Invocation* invo) {
-   long   count = 0;
+   Long   count = 0;
    int      sec = false;
    int      file = false;
    CS p = invo->arg;
@@ -9707,7 +9707,7 @@ c_findpat(Invocation* invo) {
        break;
    }
 
-   long n = 1;
+   Long n = 1;
    if (eeIsDigit(*invo->arg))   { //get count
       n = parseLong(&invo->arg);
       invo->arg = skipwhite(invo->arg);
@@ -10140,7 +10140,7 @@ evalVars(
             *errorMsg = _(e_no_line_number_to_use_for_sflnum);
             return NULL;
          }
-         sprintf((char *)strbuf, "%ld", (long)(scriptPosG.lineNr + SOURCING_LNUM));
+         sprintf((char *)strbuf, "%ld", (Long)(scriptPosG.lineNr + SOURCING_LNUM));
          result = strbuf;
          break;
 
@@ -10717,7 +10717,7 @@ veryfast_breakcheck(void) {
 #define U_ALLOC_LINE(size) lalloc(size, false)
 
 //used in undo_end() to report number of added and deleted lines
-private long   u_newcount, u_oldcount;
+private Long   u_newcount, u_oldcount;
 
 //???
 private int   undo_undoes = false;
@@ -10790,7 +10790,7 @@ u_check(int newhead_may_be_NULL) {
    if (header_count != curBook->undo.countHeaders) {
       emsg("countHeaders invalid");
       smsg("expected: %ld, actual: %ld",
-                   (long)header_count, (long)curBook->countHeaders);
+                   (Long)header_count, (Long)curBook->countHeaders);
    }
 }
 #endif
@@ -10846,7 +10846,7 @@ u_inssub(LineNr lnum) {
 //Careful: may trigger autocommands that reload the book.
 //Return FAIL when lines could not be saved, OK otherwise.
 pub int
-u_savedel(LineNr lnum, long nlines) {
+u_savedel(LineNr lnum, Long nlines) {
    if (undo_off)
       return OK;
 
@@ -10919,12 +10919,12 @@ has_prop_w_flags(LineNr lnum, int flags) {
 pub int
 u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
    LineNr   lnum;
-   long   i;
+   Long   i;
    UndoHeader   *uhp;
    UndoHeader   *old_curhead;
    UndoEntry   *uep;
    UndoEntry   *prev_uep;
-   long   size;
+   Long   size;
 
    if (!reload) {
       //When making changes is not allowed return FAIL.  It's a crude way
@@ -11068,7 +11068,7 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
       //making lots of changes inside the same line.
       //This is only possible if the previous change didn't increase or
       //decrease the number of lines.
-      //Check the ten last changes.  More doesn't make sense and takes too long.
+      //Check the ten last changes.  More doesn't make sense and takes too Long.
       if (size == 1) {
          uep = u_get_headentry();
          prev_uep = NULL;
@@ -11763,9 +11763,9 @@ pub void
 u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
    CS file_name;
    UndoLine line_ptr;
-   long  last_save_nr = 0;
+   Long  last_save_nr = 0;
    int  old_idx = -1, neidx = -1, cur_idx = -1;
-   long  num_read_uhps = 0;
+   Long  num_read_uhps = 0;
    Tyme seq_time;
    int c;
    UndoHeader* uhp;
@@ -11867,12 +11867,12 @@ u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
    }
 
    //Begin general undo data
-   long old_header_seq = undo_read_4c(&bi);
-   long new_header_seq = undo_read_4c(&bi);
-   long cur_header_seq = undo_read_4c(&bi);
-   long num_head = undo_read_4c(&bi);
-   long seq_last = undo_read_4c(&bi);
-   long seq_cur = undo_read_4c(&bi);
+   Long old_header_seq = undo_read_4c(&bi);
+   Long new_header_seq = undo_read_4c(&bi);
+   Long cur_header_seq = undo_read_4c(&bi);
+   Long num_head = undo_read_4c(&bi);
+   Long seq_last = undo_read_4c(&bi);
+   Long seq_cur = undo_read_4c(&bi);
    seq_time = undo_read_time(&bi);
 
    //Optional header fields.
@@ -12119,12 +12119,12 @@ u_doit(int startcount) {
 //When "file" is true use "step" as a number of file writes.
 //When "absolute" is true use "step" as the sequence number to jump to. "sec" must be false then.
 pub void
-undo_time(long step, int sec, int file, int absolute) {
-   long target;
-   long closest;
-   long closest_start;
-   long closest_seq = 0;
-   long val;
+undo_time(Long step, int sec, int file, int absolute) {
+   Long target;
+   Long closest;
+   Long closest_start;
+   Long closest_seq = 0;
+   Long val;
    UndoHeader* uhp = NULL;
    UndoHeader* last;
    int mark;
@@ -12156,7 +12156,7 @@ undo_time(long step, int sec, int file, int absolute) {
       closest = -1;
    } else {
       if (dosec)
-          target = (long)(curBook->undo.timeCurr) + step;
+          target = (Long)(curBook->undo.timeCurr) + step;
       ei (dofile) {
          if (step < 0) {
             //Going back to a previous write. If there were changes after the last write, count that as
@@ -12193,7 +12193,7 @@ undo_time(long step, int sec, int file, int absolute) {
          closest = -1;
       } else {
          if (dosec)
-            closest = (long)(eeTime() + 1);
+            closest = (Long)(eeTime() + 1);
          ei (dofile)
             closest = curBook->undo.saveNrLast + 2;
          else
@@ -12233,7 +12233,7 @@ undo_time(long step, int sec, int file, int absolute) {
       while (uhp) {
          uhp->uh_walk = mark;
          if (dosec)
-            val = (long)(uhp->uh_time);
+            val = (Long)(uhp->uh_time);
          ei (dofile)
             val = uhp->uh_save_nr;
          else
@@ -12437,7 +12437,7 @@ u_undoredo(Boole undo) {
    LineNr lnum;
    LineNr newlnum = MAXLNUM;
    Pos new_curpos = curPor->cursor;
-   long i;
+   Long i;
    UndoEntry *newlist = NULL;
    int old_flags;
    int new_flags;
@@ -12552,7 +12552,7 @@ u_undoredo(Boole undo) {
 
       //adjust marks
       if (oldsize != newsize) {
-         markAdjust(top + 1, top + oldsize, (long)MAXLNUM, (long)newsize - (long)oldsize, true);
+         markAdjust(top + 1, top + oldsize, (Long)MAXLNUM, (Long)newsize - (Long)oldsize, true);
          if (curBook->opStart.lnum > top + oldsize)
             curBook->opStart.lnum += newsize - oldsize;
          if (curBook->opEnd.lnum > top + oldsize)
@@ -12625,7 +12625,7 @@ u_undoredo(Boole undo) {
       if (curhead->uh_cursor.lnum == curPor->cursor.lnum) {
          curPor->cursor.col = curhead->uh_cursor.col;
          if (virtual_active() && curhead->uh_cursor_vcol >= 0)
-            coladvance((ColNr)curhead->uh_cursor_vcol);
+            doColAdvance((ColNr)curhead->uh_cursor_vcol);
          else
             curPor->cursor.coladd = 0;
       } else
@@ -13049,7 +13049,7 @@ u_freeentries(
 
 //free entry 'uep' and 'n' lines in uep->ue_array[]
 private void
-freeEntry(UndoEntry *uep, long n) {
+freeEntry(UndoEntry *uep, Long n) {
    while (n > 0)
       eeglFree(uep->ue_array[--n].ul_line);
    eeglFree((CS)uep->ue_array);
@@ -13162,7 +13162,7 @@ evalTree(Book* book, UndoHeader* first_uhp, List* list) {
       if (!dict)
          return;
       bagAddNumber(dict, S"seq", uhp->uh_seq);
-      bagAddNumber(dict, S"time", (long)uhp->uh_time);
+      bagAddNumber(dict, S"time", (Long)uhp->uh_time);
       if (uhp == book->undo.newHead)
          bagAddNumber(dict, S"newhead", 1);
       if (uhp == book->undo.currHead)
@@ -13229,11 +13229,11 @@ f_undotree(Var* argvars, Var* returnVar) {
 
    Bag *bag = returnVar->bag;
 
-   bagAddNumber(bag, S"synced", (long)book->undo.synced);
+   bagAddNumber(bag, S"synced", (Long)book->undo.synced);
    bagAddNumber(bag, S"seq_last", book->undo.seqLast);
    bagAddNumber(bag, S"save_last", book->undo.saveNrLast);
    bagAddNumber(bag, S"seq_cur", book->undo.seqCurr);
-   bagAddNumber(bag, S"time_cur", (long)book->undo.timeCurr);
+   bagAddNumber(bag, S"time_cur", (Long)book->undo.timeCurr);
    bagAddNumber(bag, S"save_cur", book->undo.saveNrCurr);
 
    List *list = list_alloc();
@@ -13351,7 +13351,7 @@ doOnChangeToText(void) {
    needRedrawTabpanelG = true;
 }
 
-private long next_listener_id = 0;
+private Long next_listener_id = 0;
 
 //Check if the change at "lnum" is above or overlaps with an existing
 //change. If above then flush changes and invoke listeners.
@@ -13360,7 +13360,7 @@ checkRecordedChanges(
    Book* book,
    LineNr lnum,
    LineNr lnume,
-   long xtra
+   Long xtra
 ) {
    if (book->recordedChanges == NULL || xtra == 0)
       return;
@@ -13387,7 +13387,7 @@ may_record_change(
     LineNr   lnum,
     ColNr   col,
     LineNr   lnume,
-    long   xtra
+    Long   xtra
 ) {
    Bag   *dict;
 
@@ -13836,7 +13836,7 @@ changed_bytes(LineNr lnum, ColNr col) {
       FOR_ALL_PORTALS(po) {
          if (po->o.diff && po != curPor) {
             redrawPortLater(po, UPD_VALID);
-            LineNr poLnum = diff_lnum_win(lnum, po);
+            LineNr poLnum = diffLnumPort(lnum, po);
             if (poLnum > 0)
                changedOneline(po->book, poLnum);
          }
@@ -13858,13 +13858,13 @@ inserted_bytes(LineNr lnum, ColNr col, int added) {
 //Must be called AFTER the change and after markAdjust().
 //Takes care of marking the book to be redrawn and sets the changed flag.
 pub void
-appended_lines(LineNr lnum, long count) {
+appended_lines(LineNr lnum, Long count) {
    doChangedLines(lnum + 1, 0, lnum + 1, count);
 }
 
 //Like appended_lines(), but adjust marks first.
 pub void
-appended_lines_mark(LineNr lnum, long count) {
+appended_lines_mark(LineNr lnum, Long count) {
    markAdjust(lnum + 1, (LineNr)MAXLNUM, count, 0L, true);
    doChangedLines(lnum + 1, 0, lnum + 1, count);
 }
@@ -13873,7 +13873,7 @@ appended_lines_mark(LineNr lnum, long count) {
 //Must be called AFTER the change and after markAdjust().
 //Take care of marking the book to be redrawn and sets the changed flag.
 pub void
-deleted_lines(LineNr lnum, long count) {
+deleted_lines(LineNr lnum, Long count) {
    doChangedLines(lnum, 0, lnum + count, -count);
 }
 
@@ -13881,8 +13881,8 @@ deleted_lines(LineNr lnum, long count) {
 //Make sure the cursor is on a valid line before calling, a GUI callback may
 //be triggered to display the cursor.
 pub void
-deleted_lines_mark(LineNr lnum, long count) {
-   markAdjust(lnum, (LineNr)(lnum + count - 1), (long)MAXLNUM, -count, true);
+deleted_lines_mark(LineNr lnum, Long count) {
+   markAdjust(lnum, (LineNr)(lnum + count - 1), (Long)MAXLNUM, -count, true);
    doChangedLines(lnum, 0, lnum + count, -count);
 }
 
@@ -13931,7 +13931,7 @@ doChangedLines(
    LineNr lnum,    //first line with change
    ColNr col,      //column in first line with change
    LineNr lnume,   //line below last changed line
-   long xtra       //number of extra lines (negative when deleting)
+   Long xtra       //number of extra lines (negative when deleting)
 ){
    doChangedLinesBook(curBook, lnum, lnume, xtra);
 
@@ -13942,7 +13942,7 @@ doChangedLines(
       FOR_ALL_PORTALS(po) {
          if (po->o.diff && po != curPor) {
             redrawPortLater(po, UPD_VALID);
-            LineNr poLnum = diff_lnum_win(lnum, po);
+            LineNr poLnum = diffLnumPort(lnum, po);
             if (poLnum > 0)
                doChangedLinesBook(po->book, poLnum, lnume - lnum + poLnum, 0L);
          }
@@ -14017,7 +14017,7 @@ opInsertCharBytes(CS targetLine, int charlen, Boole replace) {
 
    //Break tabs if needed.
    if (virtual_active() && curPor->cursor.coladd > 0)
-      coladvance_force(getviscol());
+      doColAdvance_force(getviscol());
 
    ColNr col = curPor->cursor.col;
    CS oldp = ml_get(lnum);
@@ -14070,7 +14070,7 @@ ins_str(CS s, Unt slen) {
    LineNr lnum = curPor->cursor.lnum;
 
    if (virtual_active() && curPor->cursor.coladd > 0)
-      coladvance_force(getviscol());
+      doColAdvance_force(getviscol());
 
    ColNr col = curPor->cursor.col;
    CS oldp = ml_get(lnum);
@@ -14160,7 +14160,7 @@ del_bytes(Long count, Boole fixpos_arg, int use_delcombine) { //'delcombine' opt
    }
 
    //When count is too big, reduce it.
-   Long movelen = (long)oldlen - (long)col - count + 1; //includes trailing ZERO
+   Long movelen = (Long)oldlen - (Long)col - count + 1; //includes trailing ZERO
    if (movelen <= 1) {
       //If we just took off the last character of a non-blank line, and fixpos is true, we don't
       //want to end up positioned at the ZERO, unless "restart_edit" is set
@@ -14358,7 +14358,7 @@ pub
 #define OPENLINE_KEEPTRAIL    0x04 //keep trailing spaces
 #define OPENLINE_MARKFIX      0x08 //fix mark positions
 #define OPENLINE_COM_LIST     0x10 //format comments with list/2nd line indent
-#define OPENLINE_FORMAT       0x20 //formatting long comment
+#define OPENLINE_FORMAT       0x20 //formatting Long comment
 #define OPENLINE_FORCE_INDENT 0x40 //use second_line_indent without indent logic
 
 
@@ -14941,7 +14941,7 @@ openLine(Unt flags, int second_line_indent){
           //Move marks after the line break to the new line.
           if ((flags & OPENLINE_MARKFIX) != 0) {
              mark_col_adjust(curPor->cursor.lnum, curPor->cursor.col + fewerColsOff,
-                1L, (long)-fewerCols, 0
+                1L, (Long)-fewerCols, 0
              );
           }
           //Keep into account the deleted blanks on the new line.
@@ -14996,8 +14996,8 @@ truncate_line(int fixpos) {
 
 //Delete "nlines" lines at the cursor. Saves the lines for undo first if "undo" is true.
 pub void
-del_lines(long nlines,   int undo) {
-   long   n;
+del_lines(Long nlines,   int undo) {
+   Long   n;
    LineNr   first = curPor->cursor.lnum;
 
    if (nlines <= 0)
@@ -15134,7 +15134,7 @@ op_shift(Operator *oper, int curs_top, int amount) {
    if (oper->block_mode)
       block_col = curPor->cursor.col;
 
-   for (long i = oper->line_count; --i >= 0; ) {
+   for (Long i = oper->line_count; --i >= 0; ) {
       int first_char = *ml_get_curline();
       if (first_char == ZERO)            //empty line
          curPor->cursor.col = 0;
@@ -15687,7 +15687,7 @@ op_delete(Operator* oper) {
          if (oper->line_count > 1) {
             lnum = curPor->cursor.lnum;
             ++curPor->cursor.lnum;
-            del_lines((long)(oper->line_count - 1), true);
+            del_lines((Long)(oper->line_count - 1), true);
             curPor->cursor.lnum = lnum;
          }
          if (u_save_cursor() == FAIL)
@@ -15716,10 +15716,10 @@ op_delete(Operator* oper) {
                return FAIL;
             if (oper->line_count == 1)
                endcol = getviscol2(oper->end.col, oper->end.coladd);
-            coladvance_force(getviscol2(oper->start.col, oper->start.coladd));
+            doColAdvance_force(getviscol2(oper->start.col, oper->start.coladd));
             oper->start = curPor->cursor;
             if (oper->line_count == 1) {
-               coladvance(endcol);
+               doColAdvance(endcol);
                oper->end.col = curPor->cursor.col;
                oper->end.coladd = curPor->cursor.coladd;
                curPor->cursor = oper->start;
@@ -15732,7 +15732,7 @@ op_delete(Operator* oper) {
             if (u_save((LineNr)(oper->end.lnum - 1), (LineNr)(oper->end.lnum + 1)) == FAIL)
                return FAIL;
             curPor->cursor = oper->end;
-            coladvance_force(getviscol2(oper->end.col, oper->end.coladd));
+            doColAdvance_force(getviscol2(oper->end.col, oper->end.coladd));
             oper->end = curPor->cursor;
             curPor->cursor = oper->start;
          }
@@ -15763,7 +15763,7 @@ op_delete(Operator* oper) {
             if (gchar_cursor() != ZERO)
                curPor->cursor.coladd = 0;
          }
-         (void)del_bytes((long)n, !virtual_op,  oper->opTy == OP_DELETE && !oper->is_VIsual);
+         (void)del_bytes((Long)n, !virtual_op,  oper->opTy == OP_DELETE && !oper->is_VIsual);
       } else {          //delete characters between lines
          Pos   curpos;
 
@@ -15776,12 +15776,12 @@ op_delete(Operator* oper) {
 
           curpos = curPor->cursor;   //remember curPor->cursor
           ++curPor->cursor.lnum;
-          del_lines((long)(oper->line_count - 2), false);
+          del_lines((Long)(oper->line_count - 2), false);
 
           //delete from start of line until op_end
           n = (oper->end.col + 1 - !oper->inclusive);
           curPor->cursor.col = 0;
-          (void)del_bytes((long)n, !virtual_op,
+          (void)del_bytes((Long)n, !virtual_op,
                 oper->opTy == OP_DELETE && !oper->is_VIsual);
           curPor->cursor = curpos;   //restore curPor->cursor
           (void)doJoinLinesUnderCursor(2, false, false, false, false);
@@ -15974,7 +15974,7 @@ op_replace(Operator *oper, Unt c) {
                       //oper->end has to be recalculated when the tab breaks
                       end_vcol = getviscol2(oper->end.col, oper->end.coladd);
                   }
-                  coladvance_force(getviscol());
+                  doColAdvance_force(getviscol());
                   if (curPor->cursor.lnum == oper->end.lnum)
                       getvpos(&oper->end, end_vcol);
                }
@@ -15995,7 +15995,7 @@ op_replace(Operator *oper, Unt c) {
 
             //oper->end has been trimmed so it's effectively inclusive;
             //as a result an extra +1 must be counted so we don't trample the ZERO
-            coladvance_force(getviscol2(oper->end.col, oper->end.coladd) + 1);
+            doColAdvance_force(getviscol2(oper->end.col, oper->end.coladd) + 1);
             curPor->cursor.col -= (virtcols + 1);
             for (; virtcols >= 0; virtcols--) {
                if (mb_char2len(c) > 1)
@@ -16167,7 +16167,7 @@ op_insert(Operator* oper, Long count1) {
          if (u_save_cursor() == FAIL)
             return;
 
-         coladvance_force(oper->opTy == OP_APPEND ? oper->end_vcol + 1 : getviscol());
+         doColAdvance_force(oper->opTy == OP_APPEND ? oper->end_vcol + 1 : getviscol());
          if (oper->opTy == OP_APPEND)
             --curPor->cursor.col;
       }
@@ -16365,10 +16365,10 @@ op_change(Operator *oper) {
    if (oper->block_mode) {
       //Add spaces before getting the current line length.
       if (virtual_op && (curPor->cursor.coladd > 0 || gchar_cursor() == ZERO))
-          coladvance_force(getviscol());
+          doColAdvance_force(getviscol());
       firstline = ml_get(oper->start.lnum);
       pre_textlen = ml_get_len(oper->start.lnum);
-      pre_indent = (long)getwhitecols(firstline);
+      pre_indent = (Long)getwhitecols(firstline);
       bd.textcol = curPor->cursor.col;
    }
 
@@ -16390,7 +16390,7 @@ op_change(Operator *oper) {
       //the indent, exclude that indent change from the inserted text.
       firstline = ml_get(oper->start.lnum);
       if (bd.textcol > (ColNr)pre_indent) {
-         long new_indent = (long)getwhitecols(firstline);
+         Long new_indent = (Long)getwhitecols(firstline);
 
          pre_textlen += new_indent - pre_indent;
          bd.textcol += new_indent - pre_indent;
@@ -16647,7 +16647,7 @@ skip_comment(CS line, Boole process, Boole include_space, OUT Boole* is_comment)
 //return FAIL for failure, OK otherwise
 pub int
 doJoinLinesUnderCursor(
-   long count,
+   Long count,
    Boole insert_space,
    Boole save_undo,
    Boole use_formatoptions,
@@ -16659,7 +16659,7 @@ doJoinLinesUnderCursor(
    int endcurr1 = ZERO;
    int endcurr2 = ZERO;
    int currsize = 0;   //size of the current line
-   int sumsize = 0;   //size of the long new line
+   int sumsize = 0;   //size of the Long new line
    LineNr t;
    ColNr col = 0;
    int ret = OK;
@@ -16754,7 +16754,7 @@ doJoinLinesUnderCursor(
    cend = newp + sumsize;
    *cend = 0;
 
-   //Move affected lines to the new long one.
+   //Move affected lines to the new Long one.
    //This loops backwards over the joined lines, including the original line.
    //
    //Move marks from each deleted line to the joined line, adjusting the
@@ -16775,11 +16775,11 @@ doJoinLinesUnderCursor(
       int spaces_removed = (curr - curr_start) - spaces[t];
 
       mark_col_adjust(curPor->cursor.lnum + t, (ColNr)0, -t,
-             (long)(cend - newp - spaces_removed), spaces_removed);
+             (Long)(cend - newp - spaces_removed), spaces_removed);
       prepend_joined_props(
          newp + sumsize + 1, propcount, &props_remaining,
          curPor->cursor.lnum + t, t == count - 1,
-         (long)(cend - newp), spaces_removed
+         (Long)(cend - newp), spaces_removed
       );
       if (t == 0)
          break;
@@ -17313,7 +17313,7 @@ addSubtractImpl(
       curPor->cursor = save_pos;
 
       //Prepare the leading characters in buf1[].
-      //When there are many leading zeros it could be very long. Allocate a bit too much.
+      //When there are many leading zeros it could be very Long. Allocate a bit too much.
       buf1 = alloc(length + NUMBUFLEN);
       ptr = buf1;
       if (negative && (!visual || was_positive))
@@ -17477,7 +17477,7 @@ cursor_pos_info(Bag* dict) {
    Long word_count_cursor = 0;
    int eol_size;
    Long last_check = 100000L;
-   long line_count_selected = 0;
+   Long line_count_selected = 0;
    Pos  min_pos, max_pos;
    Operator oparg;
    BlockDef bd;
@@ -17529,7 +17529,7 @@ cursor_pos_info(Bag* dict) {
          //Do extra processing for VIsual mode.
          if (VIsual_active && lnum >= min_pos.lnum && lnum <= max_pos.lnum) {
             CS s = NULL;
-            long len = 0L;
+            Long len = 0L;
 
             switch (VIsual_mode) {
             case Ctrl_V:
@@ -17537,7 +17537,7 @@ cursor_pos_info(Bag* dict) {
                block_prep(&oparg, OUT &bd, lnum, false);
                virtual_op = MAYBE;
                s = bd.textstart;
-               len = (long)bd.textlen;
+               len = (Long)bd.textlen;
                break;
             case 'V':
                s = ml_get(lnum);
@@ -17555,7 +17555,7 @@ cursor_pos_info(Bag* dict) {
             if (s) {
                byte_count_cursor += line_count_info(s, &word_count_cursor,
                         &char_count_cursor, len, eol_size);
-               if (lnum == curBook->mem.lineCount && (long)STRLEN(s) < len)
+               if (lnum == curBook->mem.lineCount && (Long)STRLEN(s) < len)
                   byte_count_cursor -= eol_size;
             }
          } else {
@@ -17579,7 +17579,7 @@ cursor_pos_info(Bag* dict) {
             if (VIsual_mode == Ctrl_V && curPor->cursWant < MAXCOL) {
                 getvcols(curPor, &min_pos, &max_pos, &min_pos.col, &max_pos.col);
                 eeSnprintf(buf1, sizeof(buf1), _("%ld Cols; "),
-                   (long)(oparg.end_vcol - oparg.start_vcol + 1));
+                   (Long)(oparg.end_vcol - oparg.start_vcol + 1));
             } else
                buf1[0] = ZERO;
 
@@ -17588,7 +17588,7 @@ cursor_pos_info(Bag* dict) {
                    ioBuffG, IOSIZE,
                    _("Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Bytes"),
                    buf1, line_count_selected,
-                   (long)curBook->mem.lineCount,
+                   (Long)curBook->mem.lineCount,
                    word_count_cursor,
                    word_count,
                    byte_count_cursor,
@@ -17599,7 +17599,7 @@ cursor_pos_info(Bag* dict) {
                    ioBuffG, IOSIZE,
                    _("Selected %s%ld of %ld Lines; %ld of %ld Words; %ld of %ld Chars; %ld of %ld Bytes"),
                    buf1, line_count_selected,
-                   (long)curBook->mem.lineCount,
+                   (Long)curBook->mem.lineCount,
                    word_count_cursor,
                    word_count,
                    char_count_cursor,
@@ -17618,8 +17618,8 @@ cursor_pos_info(Bag* dict) {
                   ioBuffG, IOSIZE,
                   _("Col %s of %s; Line %ld of %ld; Word %ld of %ld; Byte %ld of %ld"),
                   buf1, buf2,
-                  (long)curPor->cursor.lnum,
-                  (long)curBook->mem.lineCount,
+                  (Long)curPor->cursor.lnum,
+                  (Long)curBook->mem.lineCount,
                   word_count_cursor, word_count,
                   byte_count_cursor, byte_count
                );
@@ -17630,8 +17630,8 @@ cursor_pos_info(Bag* dict) {
                      "Byte %ld of %ld"
                   ),
                   buf1, buf2,
-                  (long)curPor->cursor.lnum,
-                  (long)curBook->mem.lineCount,
+                  (Long)curPor->cursor.lnum,
+                  (Long)curBook->mem.lineCount,
                   word_count_cursor, word_count,
                   char_count_cursor, char_count,
                   byte_count_cursor, byte_count
@@ -17664,7 +17664,7 @@ op_colon(Operator *oper) {
       if (oper->start.lnum == curPor->cursor.lnum)
          stuffcharReadbuff('.');
       else
-         stuffnumReadbuff((long)oper->start.lnum);
+         stuffnumReadbuff((Long)oper->start.lnum);
 
       //When using !! on a closed fold the range ".!" works best to operate
       //on, it will be made the whole closed fold later.
@@ -17682,9 +17682,9 @@ op_colon(Operator *oper) {
              && !getFolds(oper->end.lnum, NULL, NULL)
          ) {
             stuffReadbuff(S".+");
-            stuffnumReadbuff((long)oper->line_count - 1);
+            stuffnumReadbuff((Long)oper->line_count - 1);
          } else
-            stuffnumReadbuff((long)oper->end.lnum);
+            stuffnumReadbuff((Long)oper->end.lnum);
       }
    }
    if (oper->opTy != OP_COLON)
@@ -17817,11 +17817,11 @@ get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial) { //adjust posi
    //
    //(Actually, this does convert column positions into character positions)
    curPor->cursor.lnum = oper->end.lnum;
-   coladvance(oper->end_vcol);
+   doColAdvance(oper->end_vcol);
    oper->end = curPor->cursor;
 
    curPor->cursor = oper->start;
-   coladvance(oper->start_vcol);
+   doColAdvance(oper->start_vcol);
    oper->start = curPor->cursor;
 }
 
@@ -17830,7 +17830,7 @@ typedef struct {
    int mode;   //'v', 'V', or Ctrl-V
    LineNr lineCount;   //number of lines
    ColNr vcol;   //number of cols or end column
-   long count;   //count for Visual operator
+   Long count;   //count for Visual operator
    int extraArg;      //extra argument
 } RedoVisual;
 
@@ -17932,7 +17932,7 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
             } else {
                curPor->cursWant = MAXCOL;
             }
-            coladvance(curPor->cursWant);
+            doColAdvance(curPor->cursWant);
          }
          aArg->count0 = redo_VIsual.count;
          if (redo_VIsual.count != 0)
@@ -18322,7 +18322,7 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
              && (oper->opTy == OP_LSHIFT || oper->opTy == OP_RSHIFT
                      || oper->opTy == OP_DELETE)
          ) {
-             coladvance(curPor->cursWant = old_col);
+             doColAdvance(curPor->cursWant = old_col);
          }
       } else {
          curPor->cursor = old_cursor;
@@ -18349,7 +18349,7 @@ pbyte(Pos lp, int c) {
 //Implementation of the format operator 'gq'.
 private void
 op_format(Operator* oper, int keep_cursor){ //keep cursor on same text char
-   long old_line_count = curBook->mem.lineCount;
+   Long old_line_count = curBook->mem.lineCount;
 
    //Place the cursor where the "gq" or "gw" command was given, so that "u" can put it back there.
    curPor->cursor = oper->cursor_start;
@@ -18435,8 +18435,8 @@ getviscol(void) {
 //Go to column "wcol", and add/insert white space as necessary to get the cursor in that column.
 //The caller must have saved the cursor line for undo!
 pub int
-coladvance_force(ColNr wcol) {
-   int rc = coladvance2(&curPor->cursor, true, false, wcol);
+doColAdvance_force(ColNr wcol) {
+   int rc = doColAdvance2(&curPor->cursor, true, false, wcol);
 
    if (wcol == MAXCOL)
       curPor->cacheState &= ~VALID_VIRTCOL;
@@ -18453,7 +18453,7 @@ coladvance_force(ColNr wcol) {
 //a curPor->cursor.col value (n.b. this is equal to STRLEN(line)), beginning at coladd 0.
 //return OK if desired column is reached, FAIL if not
 pub int
-coladvance(ColNr wantcol) {
+doColAdvance(ColNr wantcol) {
    int rc = getvpos(&curPor->cursor, wantcol);
 
    if (wantcol == MAXCOL || rc == FAIL)
@@ -18470,11 +18470,11 @@ coladvance(ColNr wantcol) {
 //return OK if desired column is reached, FAIL if not
 pub int
 getvpos(Pos *pos, ColNr wantcol) {
-   return coladvance2(pos, false, virtual_active(), wantcol);
+   return doColAdvance2(pos, false, virtual_active(), wantcol);
 }
 
 private int
-coladvance2(
+doColAdvance2(
    Pos   *pos,
    int      addspaces,   //change the text to achieve our goal?
    int      finetune,   //change char offset for the exact column
@@ -18744,23 +18744,23 @@ check_pos(Book* book, Pos *pos) {
 //{{{indentation-related functions
 
 //Return the effective shiftwidth value for current book
-pub long
+pub Long
 get_sw_value(Book *book) {
    return get_sw_value_col(book, 0, false);
 }
 
 //Idem, using "pos".
-private long
+private Long
 get_sw_value_pos(Book* book, Pos *pos, int left) {
    Pos save_cursor = curPor->cursor;
    curPor->cursor = *pos;
-   long sw_value = get_sw_value_col(book, get_nolist_virtcol(), left);
+   Long sw_value = get_sw_value_col(book, get_nolist_virtcol(), left);
    curPor->cursor = save_cursor;
    return sw_value;
 }
 
 //Idem, using the first non-black in the current line.
-private long
+private Long
 get_sw_value_indent(Book* book, int left) {
    Pos pos = curPor->cursor;
 
@@ -18769,7 +18769,7 @@ get_sw_value_indent(Book* book, int left) {
 }
 
 //Idem, using virtual column "col".
-private long
+private Long
 get_sw_value_col(Book* book, ColNr, int) {
    return book->o.shiftWidth;
 }
@@ -18972,7 +18972,7 @@ inindent(int extra) {
 //op_reindent - handle reindenting a block of lines.
 pub void
 op_reindent(Operator *oper, int (*how)(void)) {
-   long   i = 0;
+   Long   i = 0;
    Byte   *l;
    int amount;
    LineNr first_changed = 0;
@@ -19241,7 +19241,7 @@ opChangeIndent(
     ignore_text_props = false;
 }
 
-//Give a "resulting text too long" error and maybe set gotInterruptG.
+//Give a "resulting text too Long" error and maybe set gotInterruptG.
 private void
 emsg_text_too_long(void) {
    emsg(_(e_resulting_text_too_long));
@@ -19255,15 +19255,15 @@ pub void
 c_retab(Invocation *eap) {
    LineNr   lnum;
    int      got_tab = false;
-   long   num_spaces = 0;
-   long   num_tabs;
-   long   len;
-   long   col;
-   long   vcol;
-   long   start_col = 0;      //For start of white-space string
-   long   start_vcol = 0;      //For start of white-space string
-   long   old_len;
-   long   new_len;
+   Long   num_spaces = 0;
+   Long   num_tabs;
+   Long   len;
+   Long   col;
+   Long   vcol;
+   Long   start_col = 0;      //For start of white-space string
+   Long   start_vcol = 0;      //For start of white-space string
+   Long   old_len;
+   Long   new_len;
    Byte   *ptr;
    CS new_line = (CS)1; //init to non-NULL
    int      did_undo;      //called u_save for current line
@@ -19398,7 +19398,7 @@ c_retab(Invocation *eap) {
    curPor->o.list = save_list;   //restore 'list'
 
    curBook->o.shiftWidth = new_ts;
-   coladvance(curPor->cursWant);
+   doColAdvance(curPor->cursWant);
 
    u_clearline();
 }

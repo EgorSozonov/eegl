@@ -914,7 +914,7 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
             blob = true;
 
          if (argvars[2].tag != VAR_UNKNOWN)
-            maxline = (long)tv_get_number(&argvars[2]);
+            maxline = (Long)tv_get_number(&argvars[2]);
       }
    }
 
@@ -975,7 +975,7 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
                s = copySubstr(start, len);
             else {
                //Change "prev" buffer to be the right size. This way the bytes are only copied
-               //once, and very long lines are allocated only once.
+               //once, and very Long lines are allocated only once.
                s = eeRealloc(prev, prevlen + len + 1);
                MEMMOVE(s + prevlen, start, len);
                s[prevlen + len] = ZERO;
@@ -1012,10 +1012,10 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
             //fragment of a line, so the first allocation is made
             //small, to avoid repeatedly 'allocing' large and 'reallocing' small.
             if (prevsize == 0)
-                prevsize = (long)(p - start);
+                prevsize = (Long)(p - start);
             else {
-                long grow50pc = (prevsize * 3) / 2;
-                long growmin  = (long)((p - start) * 2 + prevlen);
+                Long grow50pc = (prevsize * 3) / 2;
+                Long growmin  = (Long)((p - start) * 2 + prevlen);
                 prevsize = grow50pc > growmin ? grow50pc : growmin;
             }
             //need bigger "prev" buffer
@@ -1024,7 +1024,7 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
          }
          //Add the line part to end of "prev".
          MEMMOVE(prev + prevlen, start, p - start);
-         prevlen += (long)(p - start);
+         prevlen += (Long)(p - start);
       }
    } //while
 
@@ -1570,7 +1570,7 @@ unix_expandpath(
    DIR* dirp;
    struct dirent *dp;
 
-   //Expanding "**" may take a long time, check for CTRL-C.
+   //Expanding "**" may take a Long time, check for CTRL-C.
    if (stardepth > 0) {
       ui_breakcheck();
       if (gotInterruptG)
@@ -2084,7 +2084,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     //also expand whe
    if (buflen == 0)
       buflen = (int)STRLEN(buf);
 
-   //Catch file names which are too long.
+   //Catch file names which are too Long.
    if (retval == FAIL || (int)(buflen + STRLEN(fname)) >= len)
       return FAIL;
 
@@ -2107,7 +2107,7 @@ eeFullFileName(CS fname, OUT CS buf, int len, Boole force) { //force expansion e
    if (!url)
       retval = mch_FullName(fname, OUT buf, len, force);
    if (url || retval == FAIL) {
-      //something failed; use the file name (truncate when too long)
+      //something failed; use the file name (truncate when too Long)
       copySubstrToAllocation(OUT buf, (Text){fname, len - 1});
    }
    return retval;
@@ -2601,7 +2601,7 @@ home_replace(
 //
 //When you are done call eeFindFile_cleanup() to free the search context.
 //
-//The function eeFindFile_init() has a long comment, which describes the needed parameters.
+//The function eeFindFile_init() has a Long comment, which describes the needed parameters.
 //
 //
 //ATTENTION:
@@ -4049,7 +4049,7 @@ theend:
 //If Visual mode is active, use the selected text if it's in one line.
 //Return the name in allocated memory, NULL for failure.
 pub CS
-grab_file_name(long count, OUT LineNr* file_lnum) {
+grab_file_name(Long count, OUT LineNr* file_lnum) {
    Unt options = FNAME_MESS|FNAME_EXP|FNAME_REL|FNAME_UNESC;
 
    if (VIsual_active) {
@@ -4080,7 +4080,7 @@ grab_file_name(long count, OUT LineNr* file_lnum) {
 //FNAME_HYP    check for hypertext link
 //FNAME_INCL   apply @includeexpr
 pub CS
-file_name_at_cursor(int options, long count, OUT LineNr* file_lnum) {
+file_name_at_cursor(int options, Long count, OUT LineNr* file_lnum) {
     return file_name_in_line(ml_get_curline(),
             curPor->cursor.col, options, count, curBook->fullFileName,
             OUT file_lnum);
@@ -4092,7 +4092,7 @@ file_name_in_line(
    CS line,
    int col,
    int options,
-   long count,
+   Long count,
    CS rel_fname,   //file we are searching relative to
    OUT LineNr* file_lnum   //line number after the file name
 ){
@@ -4201,7 +4201,7 @@ find_file_name_in_path(
    CS ptr,
    int len,
    Unt options,
-   long count,
+   Long count,
    CS rel_fname   //file we are searching relative to
 ){
    if (len == 0)
@@ -4930,7 +4930,7 @@ mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* match
       goto notfound;
    }
    fseek(fd, 0L, SEEK_END);
-   long llen = ftell(fd);         //get size of temp file
+   Long llen = ftell(fd);         //get size of temp file
    fseek(fd, 0L, SEEK_SET);
 
    //just in case ftell() would fail
@@ -5089,14 +5089,14 @@ filemess(Book* book, CS name, CS s, int attr){
       return;
    msg_add_fname(book, name);       //put file name in ioBuffG with quotes
 
-   //If it's extremely long, truncate it.
+   //If it's extremely Long, truncate it.
    Unt len = STRLEN(ioBuffG);
    if (len > IOSIZE - 100) {
       len = IOSIZE - 100;
       ioBuffG[len] = ZERO;
    }
 
-   //Avoid an over-long translation to cause trouble.
+   //Avoid an over-Long translation to cause trouble.
    if (*s != ZERO)
       STRNCPY(ioBuffG + len, s, 99);
 
@@ -5185,7 +5185,7 @@ readfile(
    CS nebuffer = NULL;   //init to shut up gcc
    CS line_start = NULL;   //init to shut up gcc
    ColNr   len;
-   long   size = 0;
+   Long   size = 0;
    CS p;
    FileOffset   filesize = 0;
    int      skip_read = false;
@@ -5281,7 +5281,7 @@ readfile(
    if (fname && *fname != ZERO) {
       fnamelen = STRLEN(fname);
 
-      //If the name is too long we might crash further on, quit here.
+      //If the name is too Long we might crash further on, quit here.
       if (fnamelen >= MAXPATHL) {
          filemess(curBook, fname, (CS)_("Illegal file name"), 0);
          msg_end();
@@ -5458,7 +5458,7 @@ readfile(
                swap_mode &= 0600;
          }
 
-         (void)mch_setperm(swap_fname, (long)swap_mode);
+         (void)mch_setperm(swap_fname, (Long)swap_mode);
       }
    }
 
@@ -5575,7 +5575,7 @@ readfile(
       //can read up to max_unsigned characters (and other things).
       if (!skip_read) {
          //Use buffer >= 64K.  Add linerest to double the size if the
-         //line gets very long, to avoid a lot of copying. But don't
+         //line gets very Long, to avoid a lot of copying. But don't
          //read more than 1 Mbyte at a time, so we can be interrupted.
          size = 0x10000L + linerest;
          if (size > 0x100000L)
@@ -5589,7 +5589,7 @@ readfile(
          size = 1;
       } else {
          if (!skip_read) {
-            for ( ; size >= 10; size = (long)((Ulong)size >> 1)) {
+            for ( ; size >= 10; size = (Long)((Ulong)size >> 1)) {
                if ((nebuffer = lalloc(size + linerest + 1, false)) != NULL)
                   break;
             }
@@ -5612,7 +5612,7 @@ readfile(
                else {
                   int   n, ni;
 
-                  long tlen = 0;
+                  Long tlen = 0;
                   for (;;) {
                      p = ml_get(read_buf_lnum) + read_buf_col;
                      n = ml_get_len(read_buf_lnum) - read_buf_col;
@@ -5648,7 +5648,7 @@ readfile(
                }
             } else {
                //Read bytes from the file.
-               long read_size = size;
+               Long read_size = size;
                size = fiReadEintr(fd, ptr, read_size);
                //Did we reach end of file?
             }
@@ -5691,7 +5691,7 @@ readfile(
             }
          }
 
-         linerest = (long)(ptr - line_start);
+         linerest = (Long)(ptr - line_start);
          ui_breakcheck();
       }
    }
@@ -5796,18 +5796,18 @@ readfile(
          c = true;
       }
       if (split) {
-         buflen += eeSnprintf(ioBuffG + buflen, IOSIZE - buflen, _("[long lines split]"));
+         buflen += eeSnprintf(ioBuffG + buflen, IOSIZE - buflen, _("[Long lines split]"));
          c = true;
       }
       if (illegal_byte > 0) {
          eeSnprintf(ioBuffG + buflen, IOSIZE - buflen,
-            _("[ILLEGAL BYTE in line %ld]"), (long)illegal_byte);
+            _("[ILLEGAL BYTE in line %ld]"), (Long)illegal_byte);
          c = true;
       } ei (error) {
          eeSnprintf(ioBuffG + buflen, IOSIZE - buflen, _("[READ ERRORS]"));
          c = true;
       }
-      msg_add_lines(c, (long)linecnt, filesize);
+      msg_add_lines(c, (Long)linecnt, filesize);
 
       EE_CLEAR(msgAfterRedrawG);
       msg_scrolled_ign = true;
@@ -6090,7 +6090,7 @@ msg_add_fname(Book* book, CS fname){
 
 //Append line and character count to ioBuffG.
 pub void
-msg_add_lines(int insert_space, long lnum, FileOffset nchars) {
+msg_add_lines(int insert_space, Long lnum, FileOffset nchars) {
    int  len = (int)STRLEN(ioBuffG);
    eeSnprintf(
       ioBuffG + len, IOSIZE - (Unt)len, _("%s%ldLines, %ldB"), insert_space ? " " : "",
@@ -6105,7 +6105,7 @@ msg_add_eol(void){
 }
 
 pub int
-time_differs(FileStat* st, long mtime, long mtime_ns){
+time_differs(FileStat* st, Long mtime, Long mtime_ns){
    //On a FAT filesystem, esp. under Linux, there are only 5 bits to store
    //the seconds. Since the roundoff is done when flushing the inode, the
    //time may change unexpectedly by one second!!!
@@ -6150,7 +6150,7 @@ shorten_fname(CS full_path, CS dir_name){
 //Add extension to file name - change path/fo.o.h to path/fo.o.h.ext
 //
 //Assumed that fname is a valid name found in the filesystem we assure that the return value is a
-//different name and ends in 'ext'. "ext" MUST be at most 4 characters long if it starts with a
+//different name and ends in 'ext'. "ext" MUST be at most 4 characters Long if it starts with a
 //dot, 3 characters otherwise. Space for the returned name is allocated, must be freed later.
 //Return NULL when out of memory.
 pub CS
@@ -6224,7 +6224,7 @@ fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot) {  //may prepend a '.
    return retval;
 }
 
-//Like fgets(), but if the file line is too long, it is truncated and the rest of the line is
+//Like fgets(), but if the file line is too Long, it is truncated and the rest of the line is
 //thrown away. Return true for end-of-file. If the line is truncated then buf[size - 2]
 //will not be ZERO.
 pub int
@@ -6348,7 +6348,7 @@ eeCopyfile(CS from, CS to){
       return ret == 0 ? OK : FAIL;
    }
 
-   long perm = mch_getperm(from);
+   Long perm = mch_getperm(from);
    int fd_in = open((char *)from, O_RDONLY|O_EXTRA, 0);
    if (fd_in == -1) {
       return FAIL;
@@ -6765,7 +6765,7 @@ recursivelyDeleteDir(CS name){
    return result;
 }
 
-private long   temp_count = 0;      //Temp filename counter.
+private Long   temp_count = 0;      //Temp filename counter.
 
 //Open temporary directory and take file lock to prevent to be auto-cleaned.
 private void
@@ -6923,7 +6923,7 @@ match_file_pat(
 }
 
 //Return true if a file matches with a pattern in "list". "list" is a comma-separated list of
-//patterns, like 'wildignore'. "sfname" is the short file name or NULL, "ffname" the long file name
+//patterns, like 'wildignore'. "sfname" is the short file name or NULL, "ffname" the Long file name
 pub int
 match_file_list(CS list, CS sfname, CS ffname){
    Byte buf[MAXPATHL];
@@ -7090,13 +7090,13 @@ fiReadEintr(int fd, OUT void* buf, Unt bufsize) {
 }
 
 //Version of write() that retries when interrupted by EINTR (possibly by a SIGWINCH).
-pub long
+pub Long
 write_eintr(int fd, void *buf, Unt bufsize) {
-   long    ret = 0;
-   long    wlen;
+   Long    ret = 0;
+   Long    wlen;
 
-   //Repeat the write() so long it didn't fail, other than being interrupted by a signal.
-   while (ret < (long)bufsize) {
+   //Repeat the write() so Long it didn't fail, other than being interrupted by a signal.
+   while (ret < (Long)bufsize) {
       wlen = eeWriteToFile(fd, (char *)buf + ret, bufsize - ret);
       if (wlen < 0) {
          if (errno != EINTR)
@@ -7402,7 +7402,7 @@ read_string(FILE* fd, int cnt) {
 //{{{security interaction
 
 //Get file permissions for 'name'. Return -1 when it doesn't exist.
-pub long
+pub Long
 mch_getperm(CS name) {
    struct stat statb;
 
@@ -7414,7 +7414,7 @@ mch_getperm(CS name) {
 
 //Set file permission for "name" to "perm". FAIL for failure, OK otherwise.
 pub int
-mch_setperm(CS name, long perm) {
+mch_setperm(CS name, Long perm) {
    return (chmod((char *)name, (mode_t)perm) == 0 ? OK : FAIL);
 }
 
@@ -7489,7 +7489,7 @@ exitWithError:
 
 //Set file permission for open file "fd" to "perm". FAIL for failure, OK otherwise.
 pub int
-mch_fsetperm(int fd, long perm) {
+mch_fsetperm(int fd, Long perm) {
    return (fchmod(fd, (mode_t)perm) == 0 ? OK : FAIL);
 }
 

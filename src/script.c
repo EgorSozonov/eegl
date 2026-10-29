@@ -101,13 +101,13 @@ typedef struct {
 
 typedef struct ucmd {
    CS uc_name;   //The command name
-   Unt   uc_namelen;   //The length of the command name (excluding the ZERO)
-   Ulong   uc_argt;   //The argument type
+   Unt uc_namelen;   //The length of the command name (excluding the ZERO)
+   Ulong uc_argt;   //The argument type
    CS uc_rep;   //The command's replacement string
-   long   uc_def;      //The default value for a range/count
+   Long uc_def;      //The default value for a range/count
    int uc_compl;   //completion type
-   CommandAddress   uc_addr_type;   //The command's address type
-   ScriptPos   uc_scriptCtx;   //SCTX where the command was defined
+   CommandAddress uc_addr_type;   //The command's address type
+   ScriptPos uc_scriptCtx;   //SCTX where the command was defined
    int uc_flags;   //some UC_ flags
    CS uc_compl_arg;   //completion argument if any
 } UserCommand;
@@ -235,7 +235,7 @@ private CS setContextByCommandName(
    CommIndex   id,
    OUT Expand* xp,
    CS arg,
-   long argFlags,
+   Long argFlags,
    Unt context,
    Boole forceit
 );
@@ -339,10 +339,10 @@ private void finish_incsearch_highlighting(
    IncSearch *is_state,
    int call_drawUpdateScreen
 );
-private void may_do_incsearch_highlighting(int firstc, long count, OUT IncSearch* is_state);
+private void may_do_incsearch_highlighting(int firstc, Long count, OUT IncSearch* is_state);
 private int may_adjust_incsearch_highlighting(
    Unt firstc,
-   long count,
+   Long count,
    OUT IncSearch* is_state,
    int c
 );
@@ -363,7 +363,7 @@ private int commlineEraseChars(
    int indent,
    IncSearch *isp
 );
-private void cmdline_toggle_langmap(long *b_im_ptr);
+private void cmdline_toggle_langmap(Long *b_im_ptr);
 private int cmdline_insert_reg(int *gotesc);
 private void cmdline_left_right_mouse(Unt c, int *ignore_drag_release);
 private int cmdline_browse_history(
@@ -419,8 +419,8 @@ private int cmp_addr_type(const void *a, const void *b);
 private int uc_scan_attr(
    CS attr,
    Unt len,
-   long* argFlags,
-   long* def,
+   Long* argFlags,
+   Long* def,
    int* flags,
    int* context,
    OUT CS* compl_arg,
@@ -581,7 +581,7 @@ estack_init(void){
 
 //Add an item to the execution stack. Return the new entry or NULL when out of memory.
 pub Estack *
-estack_push(CallFrame type, CS name, long lnum) {
+estack_push(CallFrame type, CS name, Long lnum) {
    Estack *entry;
 
    //If memory allocation fails then we'll pop more than we push, eventually
@@ -600,7 +600,7 @@ estack_push(CallFrame type, CS name, long lnum) {
 
 //Add a user function to the execution stack.
 pub Estack*
-estack_push_ufunc(UserFunc *ufunc, long lnum) {
+estack_push_ufunc(UserFunc *ufunc, Long lnum) {
    Estack *entry = estack_push(ETYPE_UFUNC,
       ufunc->uf_name_exp ? ufunc->uf_name_exp : ufunc->uf_name, lnum);
    if (entry)
@@ -610,7 +610,7 @@ estack_push_ufunc(UserFunc *ufunc, long lnum) {
 
 //Return true if "ufunc" with "lnum" is already at the top of the exe stack.
 pub int
-estack_top_is_ufunc(UserFunc *ufunc, long lnum) {
+estack_top_is_ufunc(UserFunc *ufunc, Long lnum) {
    if (exestack.len == 0)
       return false;
    Estack* entry = ((Estack *)exestack.c) + exestack.len - 1;
@@ -669,7 +669,7 @@ estack_sfile(EstackArg which){
    for (idx = 0; idx < exestack.len; ++idx) {
       entry = ((Estack *)exestack.c) + idx;
       if (entry->name != NULL) {
-          long    lnum = 0;
+          Long    lnum = 0;
           Byte  *type_name = (CS)"";
           Byte  *class_name = (CS)"";
 
@@ -2743,7 +2743,7 @@ do_showbacktrace(CS comm) {
    }
 
    if (SOURCING_LNUM != 0)
-      smsg(_("line %ld: %s"), (long)SOURCING_LNUM, comm);
+      smsg(_("line %ld: %s"), (Long)SOURCING_LNUM, comm);
    else
       smsg(_("comm: %s"), comm);
 }
@@ -2790,7 +2790,7 @@ dbg_check_breakpoint(Invocation* invo) {
          smsg(_("Breakpoint in \"%s%s\" line %ld"),
              p,
              debug_breakpoint_name + (*p == ZERO ? 0 : 3),
-             (long)debug_breakpoint_lnum
+             (Long)debug_breakpoint_lnum
          );
          debug_breakpoint_name = NULL;
          do_debug(invo->comm);
@@ -3082,7 +3082,7 @@ c_breaklist(Invocation*) {
             bp->dbg_nr,
             bp->dbg_type == DBG_FUNC ? "func" : "file",
             bp->dbg_type == DBG_FUNC ? bp->dbg_name : nameBuffG,
-            (long)bp->dbg_lnum
+            (Long)bp->dbg_lnum
          );
       else
           smsg(_("%3d  expr %s"),
@@ -3664,14 +3664,14 @@ redrawPortalStatusLine_matches(
       if (firstMatch > 0)
           clen += 2;
       //jumping right, put match at the left
-      if ((long)clen > visibleColsG) {
+      if ((Long)clen > visibleColsG) {
          firstMatch = match;
          //if showing the last match, we can add some on the left
          clen = 2;
          Unt i;
          for (i = match; i < matches->len; ++i) {
             clen += status_match_len(xp, SHOW_MATCH(i)) + 2;
-            if ((long)clen >= visibleColsG)
+            if ((Long)clen >= visibleColsG)
                break;
          }
          if (i == matches->len)
@@ -3681,7 +3681,7 @@ redrawPortalStatusLine_matches(
    if (add_left) {
       while (firstMatch > 0) {
          clen += status_match_len(xp, SHOW_MATCH(firstMatch - 1)) + 2;
-         if ((long)clen >= visibleColsG)
+         if ((Long)clen >= visibleColsG)
             break;
          --firstMatch;
       }
@@ -3700,7 +3700,7 @@ redrawPortalStatusLine_matches(
    clen = len;
 
    Unt i = firstMatch;
-   while ((long)(clen + status_match_len(xp, SHOW_MATCH(i)) + 2) < visibleColsG) {
+   while ((Long)(clen + status_match_len(xp, SHOW_MATCH(i)) + 2) < visibleColsG) {
       if (i == match) {
          selstart = builder + len;
          selstart_col = clen;
@@ -4320,7 +4320,7 @@ addstar(Text fname, Unt context) {  //EXPAND_FILES etc.
    ) {
       //Matching will be done internally (on something other than files).
       //So we convert the file-matching-type wildcards into our kind for
-      //use with compileRegexp().  First work out how long it will be:
+      //use with compileRegexp().  First work out how Long it will be:
 
       //For help tags the translation is done in find_help_tags().
       //For a tag pattern starting with "/" no translation is needed.
@@ -4964,7 +4964,7 @@ setContextByCommandName(
    CommIndex   id,
    OUT Expand* xp,
    CS arg,
-   long argFlags,
+   Long argFlags,
    Unt context,
    Boole forceit
 ){
@@ -7566,7 +7566,7 @@ private int new_cmdpos;   //position set by setCommlinePos()
 private Unt extraCharP = ZERO;  //extra character to display when redrawing the command line
 private int extra_char_shift;
 
-private CS getCommandWorker(Unt firstc, long count, int indent, Boole clear_ccline);
+private CS getCommandWorker(Unt firstc, Long count, int indent, Boole clear_ccline);
 private int commlineCharsize(int idx);
 private void set_cmdspos(void);
 private void set_cmdspos_cursor(void);
@@ -7677,7 +7677,7 @@ set_search_match(Pos *t) {
    t->col = search_match_endcol;
    if (t->lnum > curBook->mem.lineCount) {
       t->lnum = curBook->mem.lineCount;
-      coladvance((ColNr)MAXCOL);
+      doColAdvance((ColNr)MAXCOL);
    }
 }
 
@@ -7872,7 +7872,7 @@ finish_incsearch_highlighting(
 
 //Do 'incsearch' highlighting if desired.
 private void
-may_do_incsearch_highlighting(int firstc, long count, OUT IncSearch* is_state) {
+may_do_incsearch_highlighting(int firstc, Long count, OUT IncSearch* is_state) {
    int      skiplen, patlen;
    int      found;  //do_search() result
    Pos   end_pos;
@@ -8021,7 +8021,7 @@ may_do_incsearch_highlighting(int firstc, long count, OUT IncSearch* is_state) {
 private int
 may_adjust_incsearch_highlighting(
    Unt firstc,
-   long count,
+   Long count,
    OUT IncSearch* is_state,
    int c
 ){
@@ -8440,7 +8440,7 @@ commlineEraseChars(
 //Handle the CTRL-^ key in the command-line mode and toggle the use of the
 //language :lmap mappings and/or Input Method.
 private void
-cmdline_toggle_langmap(long *b_im_ptr) {
+cmdline_toggle_langmap(Long *b_im_ptr) {
    if (map_to_exists_mode((CS)"", MODE_LANGMAP, false)) {
       //":lmap" mappings exists, toggle use of mappings.
       stateG ^= MODE_LANGMAP;
@@ -8754,7 +8754,7 @@ getCommandWorker(
    //preceded with a mouse down event
    int ignore_drag_release = true;
    int break_ctrl_c = false;
-   long* b_im_ptr = NULL;
+   Long* b_im_ptr = NULL;
    Book* b_im_ptr_buf = NULL;   //buffer where b_im_ptr is valid
    CommlineInfo save_ccline;
    int did_save_ccline = false;
@@ -9418,7 +9418,7 @@ returncmd:
    }
 
    //If the screen was shifted up, redraw the whole screen (later).
-   //If the line is too long, clear it, so ruler and shown command do
+   //If the line is too Long, clear it, so ruler and shown command do
    //not get printed in the middle of it.
    msg_check();
    msg_scroll = save_msg_scroll;
@@ -9881,7 +9881,7 @@ scrPutOnCommline(CS str, int len, int redraw) {
          //count ">" for a double-wide char that doesn't fit.
          correct_cmdspos(commInfo.cmdpos, c);
          //Stop cursor at the end of the screen, but do increment the
-         //insert position, so that entering a very long command
+         //insert position, so that entering a very Long command
          //works, even though you can't see it.
          if (commInfo.cmdspos + c < m)
             commInfo.cmdspos += c;
@@ -10812,7 +10812,7 @@ get_user_input(
          if (!inputdialog && argvars[2].tag != VAR_UNKNOWN) {
             Byte   *xp_name;
             int   xp_namelen;
-            long   argFlags = 0;
+            Long   argFlags = 0;
 
             //input() with a third argument: completion
             returnVar->string = NULL;
@@ -11025,7 +11025,7 @@ find_ucmd(
                   invo->id = C_USER;
                else
                   invo->id = C_USER_BUF;
-               invo->argFlags = (long)uc->uc_argt;
+               invo->argFlags = (Long)uc->uc_argt;
                invo->useridx = j;
                invo->addressKind = uc->uc_addr_type;
 
@@ -11121,7 +11121,7 @@ pub CS
 set_context_in_user_cmdarg(
    CS,
    CS arg,
-   long argFlags,
+   Long argFlags,
    Unt context,
    Expand* xp,
    Boole forceit
@@ -11309,7 +11309,7 @@ uc_list(CS name, Unt name_len) {
    UserCommand   *comm;
    int      len;
    int      over;
-   long   a;
+   Long   a;
    Kv   *entry;
 
    //don't allow for adding or removing user commands here
@@ -11320,7 +11320,7 @@ uc_list(CS name, Unt name_len) {
    for (;;) {
       for (i = 0; i < gap->len; ++i) {
          comm = USER_CMD_GA(gap, i);
-         a = (long)comm->uc_argt;
+         a = (Long)comm->uc_argt;
 
          //Skip commands which don't match the requested prefix and
          //commands filtered out.
@@ -11528,7 +11528,7 @@ parse_compl_arg(
    CS value,
    int vallen,
    int* context,
-   long* argFlags,
+   Long* argFlags,
    OUT CS* compl_arg
 ) {
    CS arg = NULL;
@@ -11596,8 +11596,8 @@ private int
 uc_scan_attr(
    CS attr,
    Unt len,
-   long* argFlags,
-   long* def,
+   Long* argFlags,
+   Long* def,
    int* flags,
    int* context,
    OUT CS* compl_arg,
@@ -11736,8 +11736,8 @@ uc_scan_attr(
 //  Byte   *name,
 //  Unt   name_len,
 //  Byte   *rep,
-//  long   argFlags,
-//  long   def,
+//  Long   argFlags,
+//  Long   def,
 //  int      flags,
 //  int      compl,
 //  Byte   *,
@@ -11839,8 +11839,8 @@ pub void
 c_command(Invocation* invo) {
    CS name;
    CS end;
-   long argFlags = 0;
-   long def = -1;
+   Long argFlags = 0;
+   Long def = -1;
    int flags = 0;
    int compl = EXPAND_NOTHING;
    CS compl_arg = NULL;
@@ -12346,7 +12346,7 @@ uc_check_code(
     case ct_RANGE:
     case ct_COUNT: {
       Byte num_buf[NUMBUFLEN];
-      long num = (type == ct_LINE1) ? invo->line1 :
+      Long num = (type == ct_LINE1) ? invo->line1 :
             (type == ct_LINE2) ? invo->line2 :
             (type == ct_RANGE) ? invo->addrCount :
             (invo->addrCount > 0) ? invo->line2 : comm->uc_def;
@@ -13244,7 +13244,7 @@ get_lambda_tv(
    int      equal_arrow = **arg == '(';
    int      white_error = false;
    int      called_emsg_start = called_emsg;
-   long   start_lnum = SOURCING_LNUM;
+   Long   start_lnum = SOURCING_LNUM;
    if (equal_arrow) {
       return NOTDONE;
    }
@@ -13605,7 +13605,7 @@ fname_trans_sid(
           fname_buflen += eeSnprintf(fname_buf + 3,
                      FLEN_FIXED - 3,
                      "%ld_",
-                     (long)scriptPosG.sid);
+                     (Long)scriptPosG.sid);
       }
    }
    fnamelen = fname_buflen + STRLEN(scriname);
@@ -13628,7 +13628,7 @@ func_name_with_sid(CS name, int sid, CS builder) {
    builder[0] = K_SPECIAL;
    builder[1] = KS_EXTRA;
    builder[2] = (int)KE_SNR;
-   eeSnprintf(builder + 3, MAX_FUNC_NAME_LEN - 3, "%ld_%s", (long)sid, name);
+   eeSnprintf(builder + 3, MAX_FUNC_NAME_LEN - 3, "%ld_%s", (Long)sid, name);
 }
 
 //Find the function "name" in script "sid" prefixing the autoload prefix.
@@ -14031,7 +14031,7 @@ call_user_func(
     islambda = fp->uf_flags & FC_LAMBDA;
 
    //Note about using fc->fc_fixvar[]: This is an array of FIXVAR_CNT
-   //variables with names up to VAR_SHORT_LEN long.  This avoids having to
+   //variables with names up to VAR_SHORT_LEN Long.  This avoids having to
    //alloc/free each argument variable and saves a lot of time.
    //Init l: variables.
    init_var_dict(&fc->localVars, &fc->localVarsVar, VAR_DEF_SCOPE);
@@ -14181,7 +14181,7 @@ call_user_func(
             if (i > 0)
                msg_puts(S", ");
             if (argvars[i].tag == VAR_NUMBER)
-               msg_outnum((long)argvars[i].number);
+               msg_outnum((Long)argvars[i].number);
             else {
                //Do not want errors such as E724 here.
                ++emsg_off;
@@ -14238,13 +14238,13 @@ call_user_func(
       if (aborting())
          smsg(_("%s aborted"), SOURCING_NAME);
       ei (fc->fc_returnVar->tag == VAR_NUMBER)
-         smsg(_("%s returning #%ld"), SOURCING_NAME, (long)fc->fc_returnVar->number);
+         smsg(_("%s returning #%ld"), SOURCING_NAME, (Long)fc->fc_returnVar->number);
       else {
          Byte   builder[MSG_BUF_LEN];
          Byte   numbuf2[NUMBUFLEN];
          Byte   *tofree;
 
-         //The value may be very long.  Skip the middle part, so that we
+         //The value may be very Long.  Skip the middle part, so that we
          //have some idea how it starts and ends. smsg() would always
          //truncate it at the end. Don't want errors such as E724 here.
          ++emsg_off;
@@ -15158,7 +15158,7 @@ trans_function_name_ext(
             goto theend;
          }
          sid_buflen = eeSnprintf(
-            sid_buf, sizeof(sid_buf), "%ld_", (long)scriptPosG.sid
+            sid_buf, sizeof(sid_buf), "%ld_", (Long)scriptPosG.sid
          );
          lead += (int)sid_buflen;
       }
@@ -15224,7 +15224,7 @@ get_scriptlocal_funcname(CS funcname) {
       return NULL;
    }
    //Expand s: prefix into <SNR>nr_<name>
-   sid_buflen = eeSnprintf(sid_buf, sizeof(sid_buf), "<SNR>%ld_", (long)scriptPosG.sid);
+   sid_buflen = eeSnprintf(sid_buf, sizeof(sid_buf), "<SNR>%ld_", (Long)scriptPosG.sid);
    newnamesize = sid_buflen + STRLEN(p + off) + 1;
    CS newname = alloc(newnamesize);
    eeSnprintf(newname, newnamesize, "%s%s", sid_buf, p + off);
@@ -15348,7 +15348,7 @@ listOneFunction(Invocation* invo, CS name, CS p, Boole is_global) {
       if (FUNCLINE(fp, j) == NULL)
          continue;
       msg_putchar('\n');
-      msg_outnum((long)(j + 1));
+      msg_outnum((Long)(j + 1));
       if (j < 9)
          msg_putchar(' ');
       if (j < 99)
@@ -18398,7 +18398,7 @@ BYPASS_AU:
 }
 
 //Block triggering autocommands until unblock_autocmd() is called.
-//Can be used recursively, so long as it's symmetric.
+//Can be used recursively, so Long as it's symmetric.
 pub void
 block_autocmds(void) {
    ++autocommsBlockedS;

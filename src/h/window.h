@@ -44,14 +44,14 @@ void do_put(
    int      regname,
    CS expr_result,   // result for regname "=" when compiled
    Unt dir,      // BACKWARD for 'P', FORWARD for 'p'
-   long   count,
+   Long   count,
    Unt      flags
 );
 int get_register_name(int num);
 int get_unname_register(void);
 void c_display(Invocation* invo);
-void dnd_yank_drag_data(CS str, long len);
-Byte get_reg_type(int regname, long *reglen);
+void dnd_yank_drag_data(CS str, Long len);
+Byte get_reg_type(int regname, Long *reglen);
 CS get_reg_contents(int regname, int flags);
 void write_reg_contents(
    int      name,
@@ -65,7 +65,7 @@ void write_reg_contents_lst(
    int,
    int must_append,
    Unt yank_type,
-   long block_len
+   Long block_len
 );
 void write_reg_contents_ex(
    int name,
@@ -73,7 +73,7 @@ void write_reg_contents_ex(
    int maxlen,
    int must_append,
    Unt yank_type,
-   long block_len
+   Long block_len
 );
 int may_get_selection(Unt regname);
 void clipGetDefaultRegister(OUT int* rp);

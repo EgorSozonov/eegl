@@ -3,6 +3,7 @@
    [[[Free keys]]]
 
 Q in normal
+Z in Normal Mode
 gh, gH g-Ctrl-H in Normal; Ctrl-G in Visual
 R, gR in Normal mode; Insert in Insert mode.
 r, gr in Visual mode

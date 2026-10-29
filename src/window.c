@@ -34,7 +34,7 @@
 private YankReg * getYRegister(int reg);
 private CS get_expr_line_src(void);
 private int stuff_yank(int regname, CS p);
-private CS execreg_line_continuation(Arr(Text) lines, long *idx);
+private CS execreg_line_continuation(Arr(Text) lines, Long *idx);
 private void put_reedit_in_typeBufG(int silent);
 private int put_in_typeBufG(
     CS s,
@@ -42,8 +42,8 @@ private int put_in_typeBufG(
     int      colon,       // add ':' before the line
     int      silent)
 ;
-private void free_yank(long n);
-private int yank_copy_line(BlockDef* bd, long y_idx, int exclude_trailing_space);
+private void free_yank(Long n);
+private int yank_copy_line(BlockDef* bd, Long y_idx, int exclude_trailing_space);
 private void copy_yank_reg(YankReg *reg);
 private void dis_msg(
    Byte   *p,
@@ -437,9 +437,9 @@ set_execreg_lastc(int lastc) {
  * processed next is returned in idx.
  */
 private CS
-execreg_line_continuation(Arr(Text) lines, long *idx) {
+execreg_line_continuation(Arr(Text) lines, Long *idx) {
    ArrayList   ga;
-   long   i = *idx;
+   Long   i = *idx;
    Byte   *p;
    int      cmd_start;
    int      cmd_end = i;
@@ -490,7 +490,7 @@ do_execreg(
     int       addcr,      // always add '\n' to end of line
     int       silent)      // set "silent" flag in typeahead buffer
 {
-    long   i;
+    Long   i;
     Byte   *p;
     int      retval = OK;
     int      remap;
@@ -811,7 +811,7 @@ cmdline_paste_reg(
    int literally_arg,   // Insert text literally instead of "as typed"
    int remcr      // don't add CR characters
 ){
-   long   i;
+   Long   i;
    int      literally = literally_arg;
 
    if (get_yank_register(regname, false))
@@ -853,7 +853,7 @@ pub void
 yank_do_autocmd(Operator* opArg, YankReg *reg) {
    static int recursive = false;
    Byte buf[NUMBUFLEN + 2];
-   long reglen = 0;
+   Long reglen = 0;
 
    if (recursive)
       return;
@@ -912,11 +912,11 @@ clear_registers(void) {
 
 //Free "n" lines from the current yank register. Called for normal freeing and in case of error.
 private void
-free_yank(long n) {
+free_yank(Long n) {
    if (y_current->y_array == NULL)
       return;
 
-   for (long i = n; --i >= 0; )
+   for (Long i = n; --i >= 0; )
       EE_CLEAR_STRING(y_current->y_array[i]);
    EE_CLEAR(y_current->y_array);
 }
@@ -933,7 +933,7 @@ free_yank_all(void) {
 //Return FAIL for failure, OK otherwise.
 pub int
 op_yank(Operator *opArg, int deleting, Boole mess) {
-   long y_idx;      // index in y_array[]
+   Long y_idx;      // index in y_array[]
    YankReg newreg;      // new yank register when appending
    LineNr lnum;      // current line number
    int yanktype = opArg->motion_type;
@@ -1031,7 +1031,7 @@ op_yank(Operator *opArg, int deleting, Boole mess) {
 
    if (curr != y_current) {  // append the new block to the old block
       Text *new_ptr;
-      long j;
+      Long j;
 
       new_ptr = ALLOC_MULT(Text, curr->y_size + y_current->y_size);
       for (j = 0; j < curr->y_size; ++j)
@@ -1131,7 +1131,7 @@ fail:      // free the allocated lines
 //Copy a block range into a register.
 //If "exclude_trailing_space" is set, do not copy trailing whitespaces.
 private int
-yank_copy_line(BlockDef* bd, long y_idx, int exclude_trailing_space) {
+yank_copy_line(BlockDef* bd, Long y_idx, int exclude_trailing_space) {
    if (exclude_trailing_space)
       bd->endspaces = 0;
    CS pnew = alloc(bd->startspaces + bd->endspaces + bd->textlen + 1);
@@ -1165,7 +1165,7 @@ copy_yank_reg(YankReg *reg) {
    free_yank_all();
    *y_current = *curr;
    y_current->y_array = lallocZeroed(sizeof(Text) * y_current->y_size, true);
-   for (long j = 0; j < y_current->y_size; ++j) {
+   for (Long j = 0; j < y_current->y_size; ++j) {
        if ((y_current->y_array[j].c = copySubstr(curr->y_array[j].c, curr->y_array[j].len))
             == NULL
       ) {
@@ -1189,7 +1189,7 @@ do_put(
    int      regname,
    CS expr_result,   // result for regname "=" when compiled
    Unt dir,      // BACKWARD for 'P', FORWARD for 'p'
-   long   count,
+   Long   count,
    Unt      flags
 ) {
    Byte   *ptr;
@@ -1199,15 +1199,15 @@ do_put(
    int      totlen = 0;      // init for gcc
    LineNr   lnum;
    ColNr   col;
-   long   i;         // index in y_array[]
+   Long   i;         // index in y_array[]
    int      y_type;
-   long   y_size;
+   Long   y_size;
    int      oldlen;
-   long   y_width = 0;
+   Long   y_width = 0;
    ColNr   vcol;
    Text* y_array = NULL;
    YankReg   *y_current_used = NULL;
-   long   nr_lines = 0;
+   Long   nr_lines = 0;
    int      allocated = false;
    Pos   orig_start = curBook->opStart;
    Pos   orig_end = curBook->opEnd;
@@ -1385,7 +1385,7 @@ do_put(
       int   delcount;
       int   incr = 0;
       BlockDef bd;
-      long   j;
+      Long   j;
       int   c = gchar_cursor();
       ColNr   endcol2 = 0;
 
@@ -1652,7 +1652,7 @@ do_put(
          int      indent_diff = 0;   // init for gcc
          int      first_indent = true;
          int      lendiff = 0;
-         long   cnt;
+         Long   cnt;
 
          if (flags & PUT_FIXINDENT)
             orig_indent = get_indent();
@@ -1839,7 +1839,7 @@ get_unname_register(void) {
 pub void
 c_display(Invocation* invo) {
    int      i, n;
-   long   j;
+   Long   j;
    Byte   *p;
    YankReg   *yb;
    int      name;
@@ -2005,8 +2005,8 @@ writeToRegister(
    int str_list   //true iff str is a CString
 ){
    int lnum;
-   long   start;
-   long   i;
+   Long   start;
+   Long   i;
    int      extra;
    int      extraline = 0;      // extra line at the end
    Byte   *s;
@@ -2056,7 +2056,7 @@ writeToRegister(
       pp[lnum] = yReg->y_array[lnum];
    eeglFree(yReg->y_array);
    yReg->y_array = pp;
-   long maxlen = 0;
+   Long maxlen = 0;
 
    // Find the end of each line and save it into the array.
    if (str_list) {
@@ -2123,7 +2123,7 @@ writeToRegister(
 
 // Replace the contents of the '~' register with str.
 pub void
-dnd_yank_drag_data(CS str, long len) {
+dnd_yank_drag_data(CS str, Long len) {
    YankReg* curr = y_current;
    y_current = &y_regs[TILDE_REGISTER];
    free_yank_all();
@@ -2134,7 +2134,7 @@ dnd_yank_drag_data(CS str, long len) {
 
 //Return the type of a register. MAUTO for error. Used for getregtype().
 pub Byte
-get_reg_type(int regname, long *reglen) {
+get_reg_type(int regname, Long *reglen) {
    switch (regname) {
    case '%':      // file name
    case '#':      // alternate file name
@@ -2192,7 +2192,7 @@ get_reg_contents(int regname, int flags) {
    LineNr   i;
    Byte   *retval;
    int      allocated;
-   long   len;
+   Long   len;
 
    // Don't allow using an expression register inside an expression
    if (regname == '=') {
@@ -2241,7 +2241,7 @@ get_reg_contents(int regname, int flags) {
    // Compute length of resulting string.
    len = 0;
    for (i = 0; i < y_current->y_size; ++i) {
-      len += (long)y_current->y_array[i].len;
+      len += (Long)y_current->y_array[i].len;
 
       // Insert a newline between lines and after the last line if y_type is MLINE.
       if (y_current->y_type == MLINE || i < y_current->y_size - 1)
@@ -2254,7 +2254,7 @@ get_reg_contents(int regname, int flags) {
    len = 0;
    for (i = 0; i < y_current->y_size; ++i) {
       STRCPY(retval + len, y_current->y_array[i].c);
-      len += (long)y_current->y_array[i].len;
+      len += (Long)y_current->y_array[i].len;
 
       // Insert a newline between lines and after the last line if y_type is MLINE.
       if (y_current->y_type == MLINE || i < y_current->y_size - 1)
@@ -2320,7 +2320,7 @@ write_reg_contents_lst(
    int,
    int must_append,
    Unt yank_type,
-   long block_len
+   Long block_len
 ) {
    YankReg  *old_y_previous, *old_y_current;
 
@@ -2355,10 +2355,10 @@ write_reg_contents_ex(
    int maxlen,
    int must_append,
    Unt yank_type,
-   long block_len
+   Long block_len
 ) {
    YankReg *old_y_previous, *old_y_current;
-   Long len = (maxlen >= 0) ? maxlen :  (long)STRLEN(str);
+   Long len = (maxlen >= 0) ? maxlen :  (Long)STRLEN(str);
 
    // Special case: '/' search pattern
    if (name == '/') {
@@ -2372,7 +2372,7 @@ write_reg_contents_ex(
          int num = atoi((char *)str);
          buf = bookFindFileByBookNr(num);
          if (!buf)
-            showErrFmtMsg(_(e_book_nr_does_not_exist), (long)num);
+            showErrFmtMsg(_(e_book_nr_does_not_exist), (Long)num);
       } else
          buf = bookFindFileByBookNr(booklistFindPattern(str, str + len, true, false, false));
       if (!buf)

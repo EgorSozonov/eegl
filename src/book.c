@@ -1709,8 +1709,8 @@ memGetBookLen(Book* book, LineNr lnum) {
 pub CS
 memGetLine(Book* book, LineNr lnum, Boole willChange) { //line will be changed
    BlockHeader* hdr;
-   DataBlock   *block;
-   static int   recursive = 0;
+   DataBlock* block;
+   static int recursive = 0;
    static Byte questions[4];
 
    if (lnum > book->mem.lineCount) { //invalid line number
@@ -3943,7 +3943,7 @@ goto_byte(long cnt) {
    if (lnum < 1) {//past the end
       curPor->cursor.lnum = curBook->mem.lineCount;
       curPor->cursWant = MAXCOL;
-      coladvance((ColNr)MAXCOL);
+      doColAdvance((ColNr)MAXCOL);
    } else {
       curPor->cursor.lnum = lnum;
       curPor->cursor.col = (ColNr)boff;

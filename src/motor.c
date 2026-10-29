@@ -315,7 +315,7 @@ private void insert_timer(Timer* timer);
 private void remove_timer(Timer* timer);
 private void free_timer(Timer* timer);
 private void timer_callback(Timer *timer);
-private Timer * find_timer(long id);
+private Timer * find_timer(Long id);
 private void stop_all_timers(void);
 private void add_timer_info(OUT Var* returnVar, Timer *timer);
 private void add_timer_info_all(OUT Var* returnVar);
@@ -593,10 +593,10 @@ list_version(void) {
          if (i == 0 || included_patches[i - 1] != included_patches[i] + 1) {
             msg_puts(s);
             s = S", ";
-            msg_outnum((long)first);
+            msg_outnum((Long)first);
             if (first != included_patches[i]) {
                msg_puts(S"-");
-               msg_outnum((long)included_patches[i]);
+               msg_outnum((Long)included_patches[i]);
             }
             first = -1;
          }
@@ -2875,7 +2875,7 @@ mch_exit(int r) {
 //{{{time
 
 //Cache of the current timezone name as retrieved from TZ, or an empty string
-//where unset, up to 64 octets long including trailing null byte.
+//where unset, up to 64 octets Long including trailing null byte.
 private Byte tz_cache[64];
 
 #define FOR_ALL_TIMERS(t) \
@@ -2950,8 +2950,8 @@ list2proftime(Var *arg, ProfTime *tm) {
       return FAIL;
 
    Boole error = false;
-   long n1 = list_find_nr(arg->list, 0L, &error);
-   long n2 = list_find_nr(arg->list, 1L, &error);
+   Long n1 = list_find_nr(arg->list, 0L, &error);
+   Long n2 = list_find_nr(arg->list, 1L, &error);
    tm->tv_sec = n1;
    tm->tv_fsec = n2;
    return error ? FAIL : OK;
@@ -2982,8 +2982,8 @@ f_reltime(Arr(Var) argVars, OUT Var* returnVar) {
       profile_sub(&res, &start);
    }
 
-   long n1 = res.tv_sec;
-   long n2 = res.tv_fsec;
+   Long n1 = res.tv_sec;
+   Long n2 = res.tv_fsec;
    list_append_number(returnVar->list, (Long)n1);
    list_append_number(returnVar->list, (Long)n2);
 }
@@ -3007,8 +3007,8 @@ f_reltimestr(Arr(Var) argVars, OUT Var* returnVar) {
    ProfTime   tm;
    if (list2proftime(&argVars[0], &tm) == OK) {
       static Byte buf[50];
-      long usec = tm.tv_fsec / (TV_FSEC_SEC / 1000000);
-      eeSnprintf(buf, sizeof(buf), "%3ld.%06ld", (long)tm.tv_sec, usec);
+      Long usec = tm.tv_fsec / (TV_FSEC_SEC / 1000000);
+      eeSnprintf(buf, sizeof(buf), "%3ld.%06ld", (Long)tm.tv_sec, usec);
       returnVar->string = copyStr(buf);
    }
 }
@@ -3059,10 +3059,10 @@ f_strptime(Var* argVars, Var* returnVar) {
 }
 
 private Timer* firstTimerS = NULL;
-private long lastTimerIdS = 0;
+private Long lastTimerIdS = 0;
 
 //Return time left, in "msec", until "due".  Negative if past "due".
-pub long
+pub Long
 proftime_time_left(ProfTime *due, ProfTime *now) {
    if (now->tv_sec > due->tv_sec)
       return 0;
@@ -3099,9 +3099,9 @@ free_timer(Timer* timer) {
 
 //Create a timer and return it. Caller should set the callback.
 pub Timer*
-create_timer(long msec, int repeat) {
+create_timer(Long msec, int repeat) {
    Timer* timer = ALLOC_CLEAR_ONE(Timer);
-   long   prev_id = lastTimerIdS;
+   Long   prev_id = lastTimerIdS;
 
    if (++lastTimerIdS <= prev_id)
       //Overflow!  Might cause duplicates...
@@ -3147,15 +3147,15 @@ timer_callback(Timer *timer) {
 
 //Call timers that are due. Return the time in msec until the next timer is due.
 //Return -1 if there are no pending timers.
-pub long
+pub Long
 check_due_timer(void) {
    Timer* timer_next;
-   long this_due;
-   long next_due = -1;
+   Long this_due;
+   Long next_due = -1;
    ProfTime now;
    Boole did_one = false;
    Boole need_drawUpdateScreen = false;
-   long current_id = lastTimerIdS;
+   Long current_id = lastTimerIdS;
 
    //Don't run any timers while exiting, dealing with an error or at the debug prompt.
    if (isExitingG || aborting() || debug_mode)
@@ -3256,7 +3256,7 @@ check_due_timer(void) {
 
 //Find a timer by ID.  Returns NULL if not found;
 private Timer *
-find_timer(long id) {
+find_timer(Long id) {
    Timer *timer;
 
    if (id < 0)
@@ -3297,22 +3297,22 @@ private void
 add_timer_info(OUT Var* returnVar, Timer *timer) {
    List   *list = returnVar->list;
    Bag   *dict = allocBag();
-   long   remaining;
+   Long   remaining;
    ProfTime   now;
 
    listAppendBag(list, dict);
 
    bagAddNumber(dict, S"id", timer->id);
-   bagAddNumber(dict, S"time", (long)timer->tr_interval);
+   bagAddNumber(dict, S"time", (Long)timer->tr_interval);
 
    profile_start(&now);
    remaining = proftime_time_left(&timer->due, &now);
-   bagAddNumber(dict, S"remaining", (long)remaining);
+   bagAddNumber(dict, S"remaining", (Long)remaining);
 
    bagAddNumber(dict, S"repeat",
-       (long)(timer->tr_repeat < 0 ? -1
+       (Long)(timer->tr_repeat < 0 ? -1
               : timer->tr_repeat + (timer->tr_firing ? 0 : 1)));
-   bagAddNumber(dict, S"paused", (long)(timer->tr_paused));
+   bagAddNumber(dict, S"paused", (Long)(timer->tr_paused));
 
    DictItem* di = dictitem_alloc(tConst("callback"));
    if (bagAdd(dict, di) == FAIL)
@@ -3397,7 +3397,7 @@ f_timer_start(Arr(Var) argVars, OUT Var* returnVar) {
 
    returnVar->number = -1;
 
-   long msec = (long)tv_get_number(&argVars[0]);
+   Long msec = (Long)tv_get_number(&argVars[0]);
    if (argVars[2].tag != VAR_UNKNOWN) {
       if (check_for_nonnull_dict_arg(argVars, 2) == FAIL)
          return;
@@ -3591,7 +3591,7 @@ add_time(CS buf, Unt buflen, Tyme tt) {
       if (n == 0)
          buf[0] = ZERO;
    } else {
-      long seconds = (long)(eeTime() - tt);
+      Long seconds = (Long)(eeTime() - tt);
 
       eeSnprintf(buf, buflen, NGETTEXT("%ld second ago", "%ld seconds ago", seconds), seconds);
    }
@@ -3605,14 +3605,14 @@ profile_start(ProfTime *tm){
 
 //Put the time "msec" past now in "tm".
 pub void
-profile_setlimit(long msec, ProfTime *tm) {
+profile_setlimit(Long msec, ProfTime *tm) {
    if (msec <= 0)   //no limit
       profile_zero(tm);
    else {
       PROF_GET_TIME(tm);
       Long fsec = (Long)tm->tv_fsec + (Long)msec * (Long)(TV_FSEC_SEC / 1000);
-      tm->tv_fsec = fsec % (long)TV_FSEC_SEC;
-      tm->tv_sec += fsec / (long)TV_FSEC_SEC;
+      tm->tv_fsec = fsec % (Long)TV_FSEC_SEC;
+      tm->tv_sec += fsec / (Long)TV_FSEC_SEC;
    }
 }
 
@@ -3671,7 +3671,7 @@ pub CS
 profile_msg(ProfTime *tm){
    static Byte buf[50];
 
-   SPRINTF(buf, PROF_TIME_FORMAT, (long)tm->tv_sec, (long)tm->tv_fsec);
+   SPRINTF(buf, PROF_TIME_FORMAT, (Long)tm->tv_sec, (Long)tm->tv_fsec);
    return buf;
 }
 
@@ -3713,7 +3713,7 @@ stop_timeout(void) {
 //This function is not expected to fail, but if it does it will still return a
 //valid flag pointer; the flag will remain stuck as false .
 pub volatile SigAtomic *
-start_timeout(long msec) {
+start_timeout(Long msec) {
    struct itimerspec interval = {
        {0, 0},               //Do not repeat.
        {msec / 1000, (msec % 1000) * 1000000}};   //Timeout interval
@@ -3736,7 +3736,7 @@ start_timeout(long msec) {
    }
 
    lo("setting timeout timer to %d sec %ld nsec",
-          (int)interval.it_value.tv_sec, (long)interval.it_value.tv_nsec);
+          (int)interval.it_value.tv_sec, (Long)interval.it_value.tv_nsec);
    int ret = timer_settime(timer_id, 0, &interval, NULL);
    if (ret < 0)
       showErrFmtMsg(_(e_could_not_set_timeout_str), strerror(errno));
@@ -4204,7 +4204,7 @@ channel_set_options(Channel* channel, JobOptions* opt) {
       if (opt->set & JO_OUT_BUF) {
          book = bookFindFileByBookNr(opt->ioText[PART_OUT]);
          if (book == NULL)
-            showErrFmtMsg(_(e_book_nr_does_not_exist), (long)opt->ioText[PART_OUT]);
+            showErrFmtMsg(_(e_book_nr_does_not_exist), (Long)opt->ioText[PART_OUT]);
       } else {
          int msg = true;
 
@@ -4243,7 +4243,7 @@ channel_set_options(Channel* channel, JobOptions* opt) {
       ei (opt->set & JO_ERR_BUF) {
          book = bookFindFileByBookNr(opt->ioText[PART_ERR]);
          if (!book)
-            showErrFmtMsg(_(e_book_nr_does_not_exist), (long)opt->ioText[PART_ERR]);
+            showErrFmtMsg(_(e_book_nr_does_not_exist), (Long)opt->ioText[PART_ERR]);
       } else {
          int msg = true;
 
@@ -4514,7 +4514,7 @@ channel_write_in(Channel* channel) {
       //Close the pipe/socket, so that the other side gets EOF.
       ch_close_part(channel, PART_IN);
    } else
-      ch_log(channel, "Still %ld more lines to write", (long)(book->mem.lineCount - lnum + 1));
+      ch_log(channel, "Still %ld more lines to write", (Long)(book->mem.lineCount - lnum + 1));
 }
 
 //Handle book "book" being freed, remove it from any channels.
@@ -4586,7 +4586,7 @@ channel_write_new_lines(Book* book) {
          ei (written > 1)
             ch_log(channel, "written %d lines to channel", written);
          if (lnum < book->mem.lineCount)
-            ch_log(channel, "Still %ld more lines to write", (long)(book->mem.lineCount - lnum));
+            ch_log(channel, "Still %ld more lines to write", (Long)(book->mem.lineCount - lnum));
 
          intake->ch_buf_bot = lnum;
       }
@@ -5167,7 +5167,7 @@ channel_get_json(
       ) {
          *returnVar = item->jq_value;
          if (tv->tag == VAR_NUMBER)
-            ch_log(channel, "Getting JSON message %ld", (long)tv->number);
+            ch_log(channel, "Getting JSON message %ld", (Long)tv->number);
          remove_json_node(head, item);
          return OK;
       }
@@ -6031,7 +6031,7 @@ channel_close_now(Channel* channel) {
    channel_close(channel, true);
 }
 
-//Read from channel "channel" for as long as there is something to read. "part" is PART_SOCK,
+//Read from channel "channel" for as Long as there is something to read. "part" is PART_SOCK,
 //PART_OUT or PART_ERR. The data is put in the read queue.  No callbacks are invoked here.
 private void
 channel_read(Channel *channel, ChannelFdKind part, char *func) {
@@ -6052,8 +6052,8 @@ channel_read(Channel *channel, ChannelFdKind part, char *func) {
       buf = alloc(MAXMSGSIZE);
    }
 
-   //Keep on reading for as long as there is something to read.
-   //Use poll() to avoid blocking on a message that is exactly MAXMSGSIZE long.
+   //Keep on reading for as Long as there is something to read.
+   //Use poll() to avoid blocking on a message that is exactly MAXMSGSIZE Long.
    for (;;) {
       if (channel_wait(channel, fd, 0) != CW_READY)
          break;
@@ -6962,7 +6962,7 @@ f_ch_status(Arr(Var) argvars, Var* returnVar) {
 }
 
 //Get a string with information about the channel in "varp" into "builder".
-//"builder" must be at least NUMBUFLEN long.
+//"builder" must be at least NUMBUFLEN Long.
 pub void
 channel_to_string_buf(OUT CS builder, Var* varp) {
    Channel *channel = varp->channel;
@@ -7042,7 +7042,7 @@ may_send_sigint(Unt c, ProId pid, ProId wpid) {
 private ProId
 wait4pid(ProId child, waitstatus *status) {
    ProId wait_pid = 0;
-   long delay_msec = 1;
+   Long delay_msec = 1;
 
    while (wait_pid != child) {
       //When compiled with Python threads are probably used, in which case wait() sometimes hangs
@@ -7343,7 +7343,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
          }
 
          //Check if the child has any characters to be printed. Read them and store them in
-         //a polystring. Repeat this as long as there is something to do, avoid the 10ms wait
+         //a polystring. Repeat this as Long as there is something to do, avoid the 10ms wait
          //for mch_inchar(), or sending typeahead characters to the external process.
          //TODO: This should handle escape sequences, compatible to some terminal (vt52?).
          ++unreadCnt;
@@ -7372,7 +7372,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
             if (wait_pid == 0) {
                Long msec = motElapsedMs(start);
 
-               //Avoid that we keep looping here without checking for a CTRL-C for a long time.
+               //Avoid that we keep looping here without checking for a CTRL-C for a Long time.
                //Don't break out too often to avoid losing typeahead.
                if (msec > 2000) {
                   unreadCnt = 5;
@@ -7444,7 +7444,7 @@ finished:
                msg_putchar('\n');
             } ei ((opt & SHELL_SILENT) == 0) {
                msg_puts(_("\nshell returned "));
-               msg_outnum((long)retStatus);
+               msg_outnum((Long)retStatus);
                msg_putchar('\n');
             }
          }
@@ -7570,14 +7570,14 @@ mch_early_init(void) {
 }
 
 //return process ID
-pub long
+pub Long
 mch_get_pid(void) {
-   return (long)getpid();
+   return (Long)getpid();
 }
 
 //return true if process "pid" is still running
 pub int
-mch_process_running(long pid) {
+mch_process_running(Long pid) {
    //If there is no error the process must be running.
    if (kill(pid, 0) == 0)
       return true;
@@ -7692,7 +7692,7 @@ mch_get_uname(uid_t uid, CS s, int len) {
       copySubstrToAllocation(s, (Text){(CS)pw->pw_name, len - 1});
       return OK;
    }
-   sprintf((char *)s, "%d", (int)uid);       //assumes s is long enough
+   sprintf((char *)s, "%d", (int)uid);       //assumes s is Long enough
    return FAIL;             //a number is not a name
 }
 
@@ -7895,8 +7895,8 @@ mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal) {
             term = S"xterm-256color";
          }
          set_child_environment(
-            (long)options->jo_term_rows,
-            (long)options->jo_term_cols,
+            (Long)options->jo_term_rows,
+            (Long)options->jo_term_cols,
             term,
             is_terminal
          );
@@ -8343,7 +8343,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                return FAIL;
             }
             if (bookFindFileByBookNr(opt->ioText[part]) == NULL) {
-               showErrFmtMsg(_(e_book_nr_does_not_exist), (long)opt->ioText[part]);
+               showErrFmtMsg(_(e_book_nr_does_not_exist), (Long)opt->ioText[part]);
                return FAIL;
             }
          } ei (STRCMP(hi->hi_key, "out_modifiable") == 0
@@ -8535,7 +8535,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             }
             opt->jo_bufnr_buf = bookFindFileByBookNr(nr);
             if (opt->jo_bufnr_buf == NULL) {
-               showErrFmtMsg(_(e_book_nr_does_not_exist), (long)nr);
+               showErrFmtMsg(_(e_book_nr_does_not_exist), (Long)nr);
                return FAIL;
             }
             if (opt->jo_bufnr_buf->countPortals == 0 || opt->jo_bufnr_buf->term == NULL) {
@@ -9012,7 +9012,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
       if (opt.set & JO_IN_BUF) {
          book = bookFindFileByBookNr(opt.ioText[PART_IN]);
          if (!book)
-            showErrFmtMsg(_(e_book_nr_does_not_exist), (long)opt.ioText[PART_IN]);
+            showErrFmtMsg(_(e_book_nr_does_not_exist), (Long)opt.ioText[PART_IN]);
       } ei (!(opt.set & JO_IN_NAME)) {
          emsg(_(e_in_io_buffer_requires_in_buf_or_in_name_to_be_set));
       } else
@@ -9409,7 +9409,7 @@ f_job_stop(Arr(Var) argvars, Var* returnVar) {
 }
 
 //Get a string with information about the job in "varp" into "builder".
-//"builder" must be at least NUMBUFLEN long.
+//"builder" must be at least NUMBUFLEN Long.
 pub void
 job_to_string_buf(OUT CS builder, Var* varp) {
    Job *job = varp->job;
@@ -9421,7 +9421,7 @@ job_to_string_buf(OUT CS builder, Var* varp) {
       ? "fail"
       : (job->status >= JOB_ENDED ? "dead" : "run")
    );
-   eeSnprintf(builder, NUMBUFLEN, "process %ld %s", (long)job->pid, status);
+   eeSnprintf(builder, NUMBUFLEN, "process %ld %s", (Long)job->pid, status);
 }
 
 //}}}
@@ -9858,14 +9858,14 @@ portalSizes(FILE* fd, int restore_size, Portal* tab_firstPor) {
          if (wp->height + STATUS_HEIGHT < topframeG->width
                 && (fprintf(fd,
                  "exe '%dresize ' . ((&lines * %ld + %ld) / %ld)",
-                   n, (long)wp->height, visibleRowsG / 2, visibleRowsG) < 0
+                   n, (Long)wp->height, visibleRowsG / 2, visibleRowsG) < 0
                           || put_eol(fd) == FAIL))
             return FAIL;
 
           //restore width when not full width
           if (wp->width < visibleColsG && (fprintf(fd,
             "exe 'vert %dresize ' . ((&columns * %ld + %ld) / %ld)",
-                n, (long)wp->width, visibleColsG / 2, visibleColsG) < 0
+                n, (Long)wp->width, visibleColsG / 2, visibleColsG) < 0
                        || put_eol(fd) == FAIL))
          return FAIL;
       }
@@ -9919,7 +9919,7 @@ put_view(
    //Only when part of a session: restore the argument index.  Some
    //arguments may have been deleted, check if the index is valid.
    if (wp->argListInd != current_arg_idx && wp->argListInd < WARGCOUNT(wp)) {
-      if (fprintf(fd, "%ldargu", (long)wp->argListInd + 1) < 0 || put_eol(fd) == FAIL)
+      if (fprintf(fd, "%ldargu", (Long)wp->argListInd + 1) < 0 || put_eol(fd) == FAIL)
          return FAIL;
       did_next = true;
    }
@@ -10010,20 +10010,20 @@ put_view(
       //Restore the cursor line in the file and relatively in the
       //portal.  Don't use "G", it changes the jumplist.
       if (wp->height <= 0) {
-         if (fprintf(fd, "let s:l = %ld", (long)wp->cursor.lnum) < 0)
+         if (fprintf(fd, "let s:l = %ld", (Long)wp->cursor.lnum) < 0)
             return FAIL;
       } ei (fprintf(fd,
              "let s:l = %ld - ((%ld * winheight(0) + %ld) / %ld)",
-             (long)wp->cursor.lnum,
-             (long)(wp->cursor.lnum - wp->topLine),
-             (long)wp->height / 2, (long)wp->height) < 0)
+             (Long)wp->cursor.lnum,
+             (Long)(wp->cursor.lnum - wp->topLine),
+             (Long)wp->height / 2, (Long)wp->height) < 0)
           return FAIL;
 
       if (put_eol(fd) == FAIL
             || put_line(fd, S"if s:l < 1 | let s:l = 1 | endif") == FAIL
             || put_line(fd, S"keepjumps exe s:l") == FAIL
             || put_line(fd, S"normal! zt") == FAIL
-            || fprintf(fd, "keepjumps %ld", (long)wp->cursor.lnum) < 0
+            || fprintf(fd, "keepjumps %ld", (Long)wp->cursor.lnum) < 0
             || put_eol(fd) == FAIL)
           return FAIL;
       //Restore the cursor column and left offset when not wrapping.
@@ -10034,14 +10034,14 @@ put_view(
          if (!wp->o.wrap && wp->leftCol > 0 && wp->width > 0) {
             if (fprintf(fd,
                  "let s:c = %ld - ((%ld * winwidth(0) + %ld) / %ld)",
-                   (long)wp->virtCol + 1,
-                   (long)(wp->virtCol - wp->leftCol),
-                   (long)wp->width / 2, (long)wp->width) < 0
+                   (Long)wp->virtCol + 1,
+                   (Long)(wp->virtCol - wp->leftCol),
+                   (Long)wp->width / 2, (Long)wp->width) < 0
                || put_eol(fd) == FAIL
                || put_line(fd, S"if s:c > 0") == FAIL
                || fprintf(fd,
                    "  exe 'normal! ' . s:c . '|zs' . %ld . '|'",
-                   (long)wp->virtCol + 1) < 0
+                   (Long)wp->virtCol + 1) < 0
                || put_eol(fd) == FAIL
                || put_line(fd, S"else") == FAIL
                || put_view_curpos(fd, wp, "  ") == FAIL
@@ -10529,7 +10529,7 @@ typedef enum {
 
 typedef struct {
    BValKind   btag;
-   long   bv_nr;
+   Long   bv_nr;
    Byte   *bv_string;
    Byte   *bv_tofree;   //free later when not NULL
    int      bv_len;      //length of bv_string
@@ -10595,7 +10595,7 @@ eeglinfo_filename(CS file) {
 //- replace '\n'   with CTRL-V 'n'
 //- add a '\n' at the end
 //
-//For a long line:
+//For a Long line:
 //- write " CTRL-V <length> \n " in first line
 //- write " < <string> \n "     in second line
 private void
@@ -10610,7 +10610,7 @@ eeglinfo_writestring(FILE* fd, CS p) {
       ++len;
    }
 
-   //If the string will be too long, write its length and put it in the next line. Take into
+   //If the string will be too Long, write its length and put it in the next line. Take into
    //account that some room is needed for what comes before the string (e.g., variable name).
    //Add something to the length for the '<', NL and trailing ZERO.
    if (len > LSIZE / 2)
@@ -10681,21 +10681,21 @@ barline_writestring(FILE *fd, CS s, int remaining_start) {
 //- replace CTRL-V CTRL-V with CTRL-V
 //- replace CTRL-V 'n'    with '\n'
 //
-//Check for a long line as written by eeglinfo_writestring().
+//Check for a Long line as written by eeglinfo_writestring().
 //
 //Return the string in allocated memory (NULL when out of memory).
 private CS
 eeglinfo_readstring(Vir* virp, int off) {          //offset for virp->line
    CS retval = NULL;
    CS s;
-   long len;
+   Long len;
 
    if (virp->line[off] == Ctrl_V && eeIsDigit(virp->line[off + 1])) {
       len = atol((char *)virp->line + off + 1);
       if (len > 0 && len < 1000000)
          retval = lalloc(len, true);
       else {
-         //Invalid length, line too long?  Skip next line.
+         //Invalid length, line too Long?  Skip next line.
          (void)eeFgets(virp->line, 10, virp->vir_fd);
          return NULL;
       }
@@ -10736,7 +10736,7 @@ readEeglinfoBookList(Vir* virp, int writing) {
    Book* book;
    CS sfname;
 
-   //Handle long line and escaped characters.
+   //Handle Long line and escaped characters.
    CS xline = eeglinfo_readstring(virp, 1);
 
    //don't read in if there are files on the command-line or if writing:
@@ -10830,7 +10830,7 @@ writeEeglInfoBookList(FILE* fp) {
       putc('%', fp);
       home_replace(book->fullFileName, line, MAXPATHL, true);
       eeSnprintfAdd(line, LINE_BUF_LEN, "\t%ld\t%d",
-            (long)book->lastCursor.lnum,
+            (Long)book->lastCursor.lnum,
             book->lastCursor.col);
       eeglinfo_writestring(fp, line);
    }
@@ -11070,7 +11070,7 @@ merge_history(int type) {
    int* hisidx = get_hisidx(type);
    int* hisnum = get_hisnum(type);
 
-   //Make one long list with all entries.
+   //Make one Long list with all entries.
    int max_len = hislen + eeglinfo_hisidx[type];
    tot_hist = ALLOC_MULT(HistoryEntry *, max_len);
    new_hist = ALLOC_MULT(HistoryEntry, hislen);
@@ -11227,7 +11227,7 @@ write_eeglinfo_history(FILE *fp, int merge) {
                         cbuf[0] = ZERO;
                      else
                         sprintf(cbuf, "%d", c);
-                     fprintf(fp, "|%d,%d,%ld,%s,", BARTYPE_HISTORY, type, (long)timestamp, cbuf);
+                     fprintf(fp, "|%d,%d,%ld,%s,", BARTYPE_HISTORY, type, (Long)timestamp, cbuf);
                      barline_writestring(fp, p, LSIZE - 20);
                      putc('\n', fp);
                   }
@@ -11401,7 +11401,7 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
          value->bv_allocated = allocated || converted;
          ++values->len;
          if (nextp) {
-            //values following a long string
+            //values following a Long string
             p = nextp;
             nextp = NULL;
          }
@@ -11572,7 +11572,7 @@ write_eeglinfo_varlist(FILE* fp) {
             fprintf(fp, "!%s\t%s\t", this_var->key, s);
             if (this_var->c.tag == VAR_BOOL) {
                //do not use "v:true" but "1"
-               sprintf((char *)numbuf, "%ld", (long)this_var->c.number);
+               sprintf((char *)numbuf, "%ld", (Long)this_var->c.number);
                p = numbuf;
                tofree = NULL;
             } else
@@ -11612,7 +11612,7 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
    int no_scs = false;
    int off_line = false;
    int off_end = 0;
-   long off = 0;
+   Long off = 0;
    int setlast = false;
    static Boole   hlsearch_on = false;
    Byte* val;
@@ -11950,7 +11950,7 @@ write_eeglinfo_registers(FILE* fp) {
    Byte   *type;
    Byte c;
    int num_lines;
-   long len;
+   Long len;
    YankReg   *y_ptr;
    YankReg   *y_regs_p = get_y_regs();;
 
@@ -11996,8 +11996,8 @@ write_eeglinfo_registers(FILE* fp) {
           //Skip register if there is more text than the maximum size.
           len = 0;
           for (j = 0; j < num_lines; j++)
-         len += (long)y_ptr->y_array[j].len + 1L;
-          if (len > (long)max_kbyte * 1024L)
+         len += (Long)y_ptr->y_array[j].len + 1L;
+          if (len > (Long)max_kbyte * 1024L)
          continue;
       }
 
@@ -12046,7 +12046,7 @@ write_eeglinfo_registers(FILE* fp) {
             flags |= REG_EXEC;
          fprintf(fp, "|%d,%d,%d,%d,%d,%d,%ld", BARTYPE_REGISTER, flags,
              i, y_ptr->y_type, num_lines, (int)y_ptr->y_width,
-             (long)y_ptr->y_time_set);
+             (Long)y_ptr->y_time_set);
          //11 chars for type/flags/name/type, 3 * 20 for numbers
          int remaining = LSIZE - 71;
          for (j = 0; j < num_lines; j++) {
@@ -12068,7 +12068,7 @@ private int vi_jumplist_len = 0;
 private void
 write_one_mark(FILE* fp_out, int c, Pos* pos) {
    if (pos->lnum != 0)
-      fprintf(fp_out, "\t%c\t%ld\t%d\n", c, (long)pos->lnum, (int)pos->col);
+      fprintf(fp_out, "\t%c\t%ld\t%d\n", c, (Long)pos->lnum, (int)pos->col);
 }
 
 private void
@@ -12154,15 +12154,15 @@ write_one_filemark(FILE* fp, FileMarkExt* fm, int c1, int c2) {
    else
       name = fm->fname;      //use name from .eeglinfo
    if (name && *name != ZERO) {
-      fprintf(fp, "%c%c  %ld  %ld  ", c1, c2, (long)fm->fmark.mark.lnum,
-                         (long)fm->fmark.mark.col);
+      fprintf(fp, "%c%c  %ld  %ld  ", c1, c2, (Long)fm->fmark.mark.lnum,
+                         (Long)fm->fmark.mark.col);
       eeglinfo_writestring(fp, name);
 
       //Barline: |{bartype},{name},{lnum},{col},{timestamp},{filename}
       //size up to filename: 8 + 3 * 20
       fprintf(fp, "|%d,%d,%ld,%ld,%ld,", BARTYPE_MARK, c2,
-         (long)fm->fmark.mark.lnum, (long)fm->fmark.mark.col,
-         (long)fm->time_set);
+         (Long)fm->fmark.mark.lnum, (Long)fm->fmark.mark.col,
+         (Long)fm->time_set);
       barline_writestring(fp, name, LSIZE - 70);
       putc('\n', fp);
    }
@@ -12319,7 +12319,7 @@ copy_eeglinfo_marks(
          continue;      //Skip this dud line
       }
 
-      //Handle long line and translate escaped characters.
+      //Handle Long line and translate escaped characters.
       //Find file name, set str to start. Ignore leading and trailing white space.
       str = skipwhite(line + 1);
       str = eeglinfo_readstring(virp, (int)(str - virp->line));
@@ -12365,7 +12365,7 @@ copy_eeglinfo_marks(
                if (!eeglinfo_readline(virp) && line[0] == TAB) {
                   did_read_line = true;
                   if (line[1] == '*') {
-                     long   ltime;
+                     Long   ltime;
                      sscanf((char *)line + 2, "%ld ", OUT &ltime);
                      while ((Tyme)ltime < buflist_buf->lastUsed) {
                         writeBookMarks(buflist_buf, fp_out);
@@ -12676,11 +12676,11 @@ read_eeglinfo_barline(Vir* virp, Boole force, int writing) {
    int read_next = true;
 
    //The format is: |{bartype},{value},...
-   //For a very long string:
+   //For a very Long string:
    //    |{bartype},>{length of "{text}{text2}"}
    //    |<{text1}
    //    |<{text2},{value}
-   //For a long line not using a string
+   //For a Long line not using a string
    //    |{bartype},{lots of values},>
    //    |<{value},{value}
    if (*p == '<') {
@@ -12746,7 +12746,7 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
       //Characters reserved for future expansion, ignored now
       case '+': //"+40 /path/dir file", for running vim without args
       case '^': //to be defined
-      case '<': //long line - ignored
+      case '<': //Long line - ignored
       //A comment or empty line.
       case ZERO:
       case '\r':

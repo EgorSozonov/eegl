@@ -13,7 +13,7 @@ int stat(const char* restrict path, struct stat* restrict buf);
 #define OPENLINE_KEEPTRAIL    0x04 //keep trailing spaces
 #define OPENLINE_MARKFIX      0x08 //fix mark positions
 #define OPENLINE_COM_LIST     0x10 //format comments with list/2nd line indent
-#define OPENLINE_FORMAT       0x20 //formatting long comment
+#define OPENLINE_FORMAT       0x20 //formatting Long comment
 #define OPENLINE_FORCE_INDENT 0x40 //use second_line_indent without indent logic
 #endif
 
@@ -116,7 +116,7 @@ int modifier_len(CS cmd);
 int cmd_exists(CS name);
 void f_fullcommand(Var *argvars, Var *returnVar);
 CommIndex commandGetInd(CS cmd, int len);
-long commandGetFlags(CommIndex idx);
+Long commandGetFlags(CommIndex idx);
 CS skip_range(
    CS cmd_start,
    int skip_star,   //skip "*" used for Visual range
@@ -279,7 +279,7 @@ void veryfast_breakcheck(void);
 int u_save_cursor(void);
 int u_save(LineNr top, LineNr bot);
 int u_savesub(LineNr lnum);
-int u_savedel(LineNr lnum, long nlines);
+int u_savedel(LineNr lnum, Long nlines);
 int undo_allowed(void);
 int u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload);
 void u_compute_hash(OUT Byte hash[UNDO_HASH_SIZE]);
@@ -287,7 +287,7 @@ void u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash);
 void u_read_undo(CS name, Arr(Byte) hash, CS orig_name);
 void u_undo(int count);
 void u_redo(int count);
-void undo_time(long step, int sec, int file, int absolute);
+void undo_time(Long step, int sec, int file, int absolute);
 void u_sync(int force);
 void c_undolist(Invocation*);
 void c_undojoin(Invocation*);
@@ -312,10 +312,10 @@ void doInvokeListenersOnChangedText(Book* book);
 void remove_listeners(Book* book);
 void changed_bytes(LineNr lnum, ColNr col);
 void inserted_bytes(LineNr lnum, ColNr col, int added);
-void appended_lines(LineNr lnum, long count);
-void appended_lines_mark(LineNr lnum, long count);
-void deleted_lines(LineNr lnum, long count);
-void deleted_lines_mark(LineNr lnum, long count);
+void appended_lines(LineNr lnum, Long count);
+void appended_lines_mark(LineNr lnum, Long count);
+void deleted_lines(LineNr lnum, Long count);
+void deleted_lines_mark(LineNr lnum, Long count);
 void doChangedLinesBook(
    Book* book,
    LineNr lnum,    //first line with change
@@ -326,7 +326,7 @@ void doChangedLines(
    LineNr lnum,    //first line with change
    ColNr col,      //column in first line with change
    LineNr lnume,   //line below last changed line
-   long xtra       //number of extra lines (negative when deleting)
+   Long xtra       //number of extra lines (negative when deleting)
 );
 void doResetChangedFlag(Book* book, int always_inc_changedtick);
 void ins_bytes(CS p);
@@ -342,7 +342,7 @@ int doInsertLine(Byte dir);
 int get_leader_len(CS line, Byte** flags, int backward, int include_space);
 int openLine(Unt flags, int second_line_indent);
 int truncate_line(int fixpos);
-void del_lines(long nlines,   int undo);
+void del_lines(Long nlines,   int undo);
 Unt get_op_type(Unt char1, Unt char2);
 Boole op_is_change(int op);
 int get_op_char(int optype);
@@ -363,7 +363,7 @@ int op_change(Operator *oper);
 void adjust_cursor_eol(void);
 CS skip_comment(CS line, Boole process, Boole include_space, OUT Boole* is_comment);
 int doJoinLinesUnderCursor(
-   long count,
+   Long count,
    Boole insert_space,
    Boole save_undo,
    Boole use_formatoptions,
@@ -393,8 +393,8 @@ CS did_set_operatorfunc(OptionChange *cha);
 void opsFreeOperatorFnOption(void);
 void doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank);
 int getviscol(void);
-int coladvance_force(ColNr wcol);
-int coladvance(ColNr wantcol);
+int doColAdvance_force(ColNr wcol);
+int doColAdvance(ColNr wantcol);
 int getvpos(Pos *pos, ColNr wantcol);
 int inc_cursor(void);
 int inc(Pos *lp);
@@ -403,7 +403,7 @@ int dec_cursor(void);
 int dec(Pos *lp);
 int decl(Pos *lp);
 void check_pos(Book* book, Pos *pos);
-long get_sw_value(Book *book);
+Long get_sw_value(Book *book);
 int get_indent(void);
 int get_indent_lnum(LineNr lnum);
 int get_indent_buf(Book* book, LineNr lnum);

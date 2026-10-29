@@ -3513,7 +3513,7 @@ format_lines(LineNr   line_count, int avoid_fex) { //don't use 'formatexpr'
 
             //put cursor on last non-space
             stateG = MODE_NORMAL;   //don't go past end-of-line
-            coladvance((ColNr)MAXCOL);
+            doColAdvance((ColNr)MAXCOL);
             while (curPor->cursor.col && isSpace(gchar_cursor()))
                dec_cursor();
 
@@ -4586,7 +4586,7 @@ do_mouse(
          //move VIsual to the right column
          start_visual = curPor->cursor;       //save the cursor pos
          curPor->cursor = end_visual;
-         coladvance(end_visual.col);
+         doColAdvance(end_visual.col);
          VIsual = curPor->cursor;
          curPor->cursor = start_visual;       //restore the cursor
       } else {
@@ -5397,7 +5397,7 @@ retnomove:
    if (mouse_comp_pos(curPor, OUT &row, OUT &col, &curPor->cursor.lnum, NULL))
       isMouseBelowBottomLineS = true;
 
-   //Start Visual mode before coladvance(), for when 'sel' != "old"
+   //Start Visual mode before doColAdvance(), for when 'sel' != "old"
    if ((flags & MOUSE_MAY_VIS) && !VIsual_active) {
       check_visual_highlight();
       VIsual = old_cursor;
@@ -5415,7 +5415,7 @@ retnomove:
 
    curPor->cursWant = col;
    curPor->setCursWant = false;   //May still have been true
-   if (coladvance(col) == FAIL) {  //Mouse click beyond end of line
+   if (doColAdvance(col) == FAIL) {  //Mouse click beyond end of line
       if (inclusive)
          *inclusive = true;
       isMouseRightOfEolS = true;

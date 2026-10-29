@@ -3126,19 +3126,18 @@ appear several times in any order.  Example:
 
 @@splitbelow             Global. Boolean. Default = off
 
-When on, splitting a window will put the new window below the current one. |;split|
+When on, splitting a portal will put the new window below the current one. |;split|
 
 
 @@splitright             Global. Boolean. Default = off
 
-When on, splitting a window will put the new window right of the current one. |;vsplit|
+When on, splitting a portal will put the new window right of the current one. |;vsplit|
 
 
 @@startofline            Global. Boolean. Default = on
 
-When "on" the commands listed below move the cursor to the first
-non-blank of the line.  When off the cursor is kept in the same column
-(if possible).  This applies to the commands:
+When "on" the commands listed below move the cursor to the first non-blank of the line.  When
+off the cursor is kept in the same column (if possible).  This applies to the commands:
 
    - CTRL-D, CTRL-U, CTRL-B, CTRL-F, "G", "H", "M", "L", "gg"
    - "d", "<<", "==" and ">>" with a linewise operator
@@ -3147,8 +3146,8 @@ non-blank of the line.  When off the cursor is kept in the same column
    - book changing commands (CTRL-^, :bnext, :bNext, etc.)
    - Commands that only have a line number, e.g., ";25" or ";+".
 
-In case of book changing commands the cursor is placed at the column
-where it was the last time the book was edited.
+In case of book changing commands, the cursor is placed at the column where it was the last time
+the book was edited.
 
 
 @@statusline             Portal. String.

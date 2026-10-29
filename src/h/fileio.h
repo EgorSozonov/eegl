@@ -117,13 +117,13 @@ CS findFileInPath(
    OUT FileSearchCtx** searchCtx   //state of the search
 );
 void free_findfile(void);
-CS grab_file_name(long count, OUT LineNr* file_lnum);
-CS file_name_at_cursor(int options, long count, OUT LineNr* file_lnum);
+CS grab_file_name(Long count, OUT LineNr* file_lnum);
+CS file_name_at_cursor(int options, Long count, OUT LineNr* file_lnum);
 CS file_name_in_line(
    CS line,
    int col,
    int options,
-   long count,
+   Long count,
    CS rel_fname,   //file we are searching relative to
    OUT LineNr* file_lnum   //line number after the file name
 );
@@ -131,7 +131,7 @@ CS find_file_name_in_path(
    CS ptr,
    int len,
    Unt options,
-   long count,
+   Long count,
    CS rel_fname   //file we are searching relative to
 );
 Unt simplify_filename(CS filename);
@@ -164,9 +164,9 @@ int check_file_readonly(CS fname, Unt perm);
 int eeFsync(int fd);
 int set_rw_fname(CS fname, CS sfname);
 void msg_add_fname(Book* book, CS fname);
-void msg_add_lines(int insert_space, long lnum, FileOffset nchars);
+void msg_add_lines(int insert_space, Long lnum, FileOffset nchars);
 void msg_add_eol(void);
-int time_differs(FileStat* st, long mtime, long mtime_ns);
+int time_differs(FileStat* st, Long mtime, Long mtime_ns);
 CS shorten_fname1(CS full_path);
 CS shorten_fname(CS full_path, CS dir_name);
 CS fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot);
@@ -196,7 +196,7 @@ CS file_pat_to_reg_pat(
    OUT Boole* allow_dirs   //Result passed back out in here
 );
 Long fiReadEintr(int fd, OUT void* buf, Unt bufsize);
-long write_eintr(int fd, void *buf, Unt bufsize);
+Long write_eintr(int fd, void *buf, Unt bufsize);
 CS fiGetShellOutput(
    CS cmd,
    NULLABLE CS infile, //optional input file name
@@ -211,9 +211,9 @@ int get2c(FILE* fd);
 int get3c(FILE* fd);
 int get4c(FILE* fd);
 CS read_string(FILE* fd, int cnt);
-long mch_getperm(CS name);
-int mch_setperm(CS name, long perm);
+Long mch_getperm(CS name);
+int mch_setperm(CS name, Long perm);
 void mch_copy_xattr(CS from_file, CS to_file);
-int mch_fsetperm(int fd, long perm);
+int mch_fsetperm(int fd, Long perm);
 int mch_can_exe(CS name, Arr(CS) path, int use_path);
 CS fiBuildSwapOrUndoFname(CS fname, Boole isUndo);

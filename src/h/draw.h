@@ -13,7 +13,6 @@
 #endif
 
 void drawInit();
-Decoration getPortcolorDeco(Portal* po);
 int screen_get_current_line_off(void);
 void resetActiveDeco(void);
 void drawFlushLine(

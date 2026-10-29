@@ -130,7 +130,6 @@ typedef struct {
    Boole inCurLine;
    int lastTextpropTextInd;
    Boole isLineVisible;
-   Decoration numDeco;
    int drawingOnlyNumberCol;
    int left_curline_col;
    int right_curline_col;
@@ -147,9 +146,6 @@ typedef struct {
    int* changeEnd;
    Boole needDecoFromTerm;
    int currCheckedCol;
-   int nextLineCol;
-   Arr(Byte) nextLine; //len = (SPWORDLEN * 2);
-   int nextLineInd;
    int vcolFirstChar;
    ColNr trailcol;   //start of trailing spaces
    ColNr leadcol;      //start of leading spaces
@@ -247,7 +243,7 @@ private void updatePortal(Portal* po, OUT Boole* didUpdateOnePortal);
 private void overlayDeco(OUT Decoration* baseDeco, OverlayDeco overlayingDeco);
 private int useCursorLineHilite(Portal* po, LineNr lnum);
 private void drawSignOrPad(Portal* po, DrawCtx* m);
-private void drawLineNumber(OUT DrawCtx* m, Decoration numDeco, Portal* po);
+private void drawLineNumber(OUT DrawCtx* m, Portal* po);
 private void breakIndent(Portal* po, DrawCtx* m);
 private void showbreakAndFiller(Portal* po, DrawCtx* m);
 private int textprop_size_after_trunc(
@@ -260,7 +256,7 @@ private int textprop_size_after_trunc(
 );
 private void smoothFlushScreenLine(Portal* po, DrawCtx* m, Boole clear_end);
 private void finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m);
-private void drawLineOnScreen_start(OUT DrawCtx* m, int save_extra);
+private void drawLineOnScreen_start(OUT DrawCtx* m, Boole save_extra);
 private void drawLineOnScreen_continue(DrawCtx* m);
 private void applyCursorlineHilite(DrawCtx* m);
 private Boole drawLineSub(
@@ -4879,15 +4875,12 @@ drawSignOrPad(Portal* po, DrawCtx* m) {
 
 //Draw the relative line number and, if present, the sign. Draw to m->extra
 private void
-drawLineNumber(OUT DrawCtx* m, Decoration numDeco, Portal* po) {
+drawLineNumber(OUT DrawCtx* m, Portal* po) {
    int lnum_row = m->startrow + m->filler_lines + m->textPropAbove_count;
 
    //Draw the line number (empty space after wrapping).
    //When there are text properties above the line, put the line number below them.
    if (m->row == lnum_row){
-      //char *fmt = "%*ld ";
-
-      //'relativenumber', don't use negative numbers
       Long num = labs((Long)visibleLineDistanceFromCursor(po, m->lnum));
       if (num > 99)
          num = 99; //should be unreachable - who has a monitor with over 99 text lines?
@@ -4898,12 +4891,6 @@ drawLineNumber(OUT DrawCtx* m, Decoration numDeco, Portal* po) {
       m->extra[1] = '0' + bOnes;
       m->extra[2] = ZERO;
 
-      //Unt colWidth = number_width(po);
-      //eeSnprintf(m->extra, sizeof(m->extra), fmt, colWidth, num);
-      //if (po->skipCol > 0 && m->startrow == 0) {
-      //   for (m->extraBytes = m->extra; m->extraBytes[0] == ' '; ++m->extraBytes)
-      //      m->extraBytes[0] = '-';
-      //}
       m->extraBytes = m->extra;
       m->c_extra = ZERO;
       m->c_final = ZERO;
@@ -4914,8 +4901,8 @@ drawLineNumber(OUT DrawCtx* m, Decoration numDeco, Portal* po) {
    }
    m->countExtraBytes = 2;
    m->charDeco = getFullDecoration(HILITE_LineNr);
-   //When 'cursorline' is set, hilite the line number of the current line differently.
-   //When 'cursorlineopt' does not have "line" only hilite the line number itself.
+   //When @cursor.line is set, hilite the line number of the current line differently.
+   //When @cursorlineopt does not have "line" only hilite the line number itself.
    //TODO: Can we use CursorLine instead of CursorLineNr when CursorLineNr isn't set?
    if (po->o.cursorLine
            && m->lnum == po->cursor.lnum
@@ -4928,11 +4915,6 @@ drawLineNumber(OUT DrawCtx* m, Decoration numDeco, Portal* po) {
    ei (m->lnum > po->cursor.lnum && getDecoFlags(HILITE_LineNrBelow) != 0)
       //Use LineNrBelow
       m->charDeco = getFullDecoration(HILITE_LineNrBelow);
-   ei (numDeco.hiId < SHORT) {
-      lo("xxxx numDeco! numDeco hiId %d, line nr color %d",
-            numDeco.hiId, getFullDecoration(HILITE_LineNr).fg);
-      m->charDeco = numDeco;
-   }
    lo("line nr fg %d bg %d presense %d",
          m->charDeco.fg, m->charDeco.bg, m->charDeco.fieldPresence);
 }
@@ -5214,9 +5196,9 @@ finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m) {
 #undef VCOL_HLC
 
 //Start a screen line at column zero.
-//When "save_extra" is true save and reset countExtraBytes, extraBytes, etc.
+//When "save_extra" is true, save and reset countExtraBytes, extraBytes, etc.
 private void
-drawLineOnScreen_start(OUT DrawCtx* m, int save_extra) {
+drawLineOnScreen_start(OUT DrawCtx* m, Boole save_extra) {
    m->col = 0;
    m->off = (Unt)(currScreenLineS - screenTextP);
    m->needLinebreak = false;
@@ -5626,7 +5608,7 @@ drawTextProps(
          ei (*m->ptr != ZERO)
             break;
          else {
-            //With 'nowrap' and not in the first screen line only "below" text prop can show
+            //Without @wrap and not in the first screen line only "below" text prop can show
             active = port->o.wrap
                || m->row == m->startrow
                || (t->flags & TEXT_PROP_ALIGN_BELOW);
@@ -6263,7 +6245,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
          if (m->state == DRAWING_COMMLINE && m->countExtraBytes == 0) {
             //Show the line number, if desired.
             m->state = DRAWING_NR;
-            drawLineNumber(OUT m, c->numDeco, port);
+            drawLineNumber(OUT m, port);
          }
          if (m->state == DRAWING_NR && m->countExtraBytes == 0) {
             //Show the sign column when desired.
@@ -6508,12 +6490,8 @@ drawLineOnScreen(
    m.textPropNext = 0;   //next text property to use
    c.textProps = NULL;
    c.textPropIndices = NULL;
-   Byte nextLine[SPWORDLEN * 2];//text with start of the next line
-   c.nextLineCol = 0;   //column where nextline[] starts
-   c.nextLineInd = 0;   //index in nextline[] where next line starts
    c.visualDeco = EMPTY_DECO;      //decorations for Visual and incsearch hiliting
    c.lineDecoSaved = EMPTY_DECO;
-   c.numDeco = getFullDecoration(HILITE_LineNr);  //decoration for the number column
    c.currCheckedCol = 0;   //checked column for current line
    c.hasExtraHiliting = false;   //has extra hiliting
    int changeStart = MAXCOL;   //first col of changed area
@@ -6683,8 +6661,6 @@ drawLineOnScreen(
    m.filler_todo = m.filler_lines;
 
    c.signPresent = markGetSignDecorations(port, lnum, OUT &m.signHilites);
-   if (c.signPresent)
-      c.numDeco = getFullDecoration(m.signHilites.lineNumHiId);
 
    //If this line has a sign with line hiliting, set m.lineDeco.
    if (c.signPresent) {
@@ -6883,7 +6859,6 @@ drawLineOnScreen(
    c.lineChanges = &lineChanges;
    c.changeStart = &changeStart;
    c.changeEnd = &changeEnd;
-   c.nextLine = nextLine;
 
    drawLineLoop(&m, &sc, port);
 

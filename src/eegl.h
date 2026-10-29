@@ -16,7 +16,7 @@
 //Defined to the size of an int
 #define SIZEOF_INT 4
 
-//Defined to the size of a long
+//Defined to the size of a Long
 #define SIZEOF_LONG 8
 
 //Define if tgetent() returns zero for an error
@@ -96,7 +96,7 @@ typedef struct sigaction SignalAction;
 #define PRINTF_DECIMAL_ULONG  SCANF_DECIMAL_ULONG
 
 //We use 64-bit file functions here, if available. E.g. ftello() returns
-//off_t instead of long, which helps if long is 32 bit and off_t is 64 bit.
+//off_t instead of Long, which helps if Long is 32 bit and off_t is 64 bit.
 //We assume that when fseeko() is available then ftello() is too.
 typedef off_t FileOffset;
 
@@ -555,7 +555,7 @@ typedef struct tm Tm;
 //special attribute addition: Put message in history
 #define MSG_HIST     64
 
-#define EMPTY_DECO  (Decoration){.hiId = SHORT, .fieldPresence = 0, .flags = 0}
+#define EMPTY_DECO  (Decoration){.hiId = HILITE_NULL, .fieldPresence = 0, .flags = 0}
 
 //Values for State.
 //
@@ -1111,7 +1111,7 @@ typedef enum {
 //If "--log logfile" was used or ch_logfile() was called then log some or all terminal output.
 # define MAY_WANT_TO_LOG_THIS if (ch_log_output == false) ch_log_output = true;
 
-//Operator IDs; The order must correspond to juggle.c:opchars!
+//Operator IDs; The order must correspond to do.c:opchars!
 #define OP_NOP           0 //no pending operation
 #define OP_DELETE        1 //"d"  delete operator
 #define OP_YANK          2 //"y"  yank operator
@@ -1210,7 +1210,7 @@ typedef enum {
 typedef unsigned short DisplayTick;   //display tick type
 
 //MAXCOL used to be INT_MAX, but with 64 bit ints that results in running
-//out of memory when trying to allocate a very long line.
+//out of memory when trying to allocate a very Long line.
 #define MAXCOL  0x7fffffffL    //maximum column number
 
 #define SHOWCMD_COLS 10        //columns needed by shown command
@@ -1329,7 +1329,7 @@ typedef int Socket;
 #define STL_SHOWCMD      'S'      //@showcmd book
 #define STL_EE_EXPR      '{'      //start of expression to substitute
 #define STL_SEPARATE     '='      //separation between alignment sections
-#define STL_TRUNCMARK    '<'      //truncation mark if line is too long
+#define STL_TRUNCMARK    '<'      //truncation mark if line is too Long
 #define STL_USER_HL      '*'      //highlight from (User)1..9 or 0
 #define STL_HIGHLIGHT    '#'      //highlight name
 #define STL_TABPAGENR    'T'      //tab label nr
@@ -1364,12 +1364,12 @@ EXTERN CS p_bdir;       //@backup.dir
 EXTERN CS p_bex;        //@backup.ext
 EXTERN unsigned bo_flags;
 EXTERN CS p_bsk;        //@backup.skip
-EXTERN long p_bdlay;    //@balloon.delay
+EXTERN Long p_bdlay;    //@balloon.delay
 EXTERN Boole p_bevalterm; //@balloon.evalterm
 EXTERN CS p_bt;         //@book.type
 EXTERN Boole p_delcomb; //@delcombine
-EXTERN long p_cwh;      //@cmdwinheight
-EXTERN long commlineHeightG;//@commheight
+EXTERN Long p_cwh;      //@cmdwinheight
+EXTERN Long commlineHeightG;//@commheight
 EXTERN CS p_cpt;        //@complete
 EXTERN Boole p_confirm; //@confirm
 EXTERN CS p_cfc;        //@complete.fuzzycollect
@@ -1377,7 +1377,7 @@ EXTERN unsigned cfc_flags; //flags from @complete.fuzzycollect
 EXTERN Unt p_cia;       //@complete.itemalign
 EXTERN Unt cot_flags;   //flags from @complete.opt
 EXTERN Boole p_ac;      //@autocomplete
-EXTERN long p_acl;      //@autocompletedelay
+EXTERN Long p_acl;      //@autocompletedelay
 
 //Keep in sync with option.c:p_cot_values
 #define COT_MENU        0x001
@@ -1395,14 +1395,14 @@ EXTERN long p_acl;      //@autocompletedelay
 #define COT_PREVIEW     0x008
 #define COT_FUZZY       0x100   //true: fuzzy match enabled
 
-EXTERN long   p_ph;      //@pumheight
-EXTERN long   p_pw;      //@pumwidth
-EXTERN long   p_pmw;     //@pummaxwidth
+EXTERN Long   p_ph;      //@pumheight
+EXTERN Long   p_pw;      //@pumwidth
+EXTERN Long   p_pmw;     //@pummaxwidth
 EXTERN CS p_csprg;       //@cscope.prg
 EXTERN Boole p_csre;     //@cscope.relative
 EXTERN Boole p_cst;      //@cscope.tag
-EXTERN long   p_csto;    //@cscope.tagorder
-EXTERN long   p_cspc;    //@cscope.pathcomp
+EXTERN Long   p_csto;    //@cscope.tagorder
+EXTERN Long   p_cspc;    //@cscope.pathcomp
 EXTERN Boole p_csverbose;//@cscope.verbose
 EXTERN CS p_debug;  //@debug
 EXTERN CS p_dip;    //@diffopt
@@ -1416,7 +1416,7 @@ EXTERN Boole p_ea;       //@equalalways
 EXTERN CS globOpt;  //@errorfile
 EXTERN int   p_eof;      //@endoffile
 EXTERN CS p_ei;     //@eventignore
-EXTERN long foldLevelStart; //@fold.levelstart
+EXTERN Long foldLevelStart; //@fold.levelstart
 EXTERN Unt p_fdo;        //@fold.open
 //keep in sync with option.c:p_fdo_values
 #define FDO_ALL      0x001
@@ -1435,16 +1435,16 @@ EXTERN Boole  p_fs;      //@fsync
 EXTERN CS p_cpp;    //@complete.popup
 EXTERN Byte cursorNormalG;   //@cursor.normal
 EXTERN Byte cursorInsertG;   //@cursor.insert
-EXTERN long   p_hh;      //@helpheight
+EXTERN Long p_hh;      //@helpheight
 EXTERN CS p_hlg;    //@helplang
-EXTERN Boole   p_hls;     //@hlsearch
-EXTERN long   p_hi;      //@history
-EXTERN Boole   p_ic;      //@ignorecase
+EXTERN Boole p_hls;     //@hlsearch
+EXTERN Long p_hi;      //@history
+EXTERN Boole p_ic;      //@ignorecase
 EXTERN CS p_imaf;   //@imactivatefunc
 EXTERN CS p_imsf;   //@imstatusfunc
-EXTERN int   p_imcmdline;//@imcmdline
-EXTERN int   p_imdisable;//@imdisable
-EXTERN Boole   p_is;       //@incsearch
+EXTERN int p_imcmdline;//@imcmdline
+EXTERN int p_imdisable;//@imdisable
+EXTERN Boole p_is;       //@incsearch
 EXTERN CS p_isf;    //@isfname
 EXTERN CS p_isi;    //@isident
 EXTERN CS p_ise;    //@isexpand
@@ -1487,23 +1487,23 @@ EXTERN Boole p_lrm;  //@langremap
 EXTERN Boole p_more; //@more
 EXTERN Boole makeOpenWhenDoneG; //@makeOpenWhenDone
 EXTERN CS p_mef;     //@makeef
-EXTERN long p_mfd;   //@maxfuncdepth
-EXTERN long p_mm;    //@maxmem
-EXTERN long p_mmp;   //@maxmempattern
+EXTERN Long p_mfd;   //@maxfuncdepth
+EXTERN Long p_mm;    //@maxmem
+EXTERN Long p_mmp;   //@maxmempattern
 EXTERN CS p_mopt;    //@messagesopt
-EXTERN long p_msc;   //@maxsearchcount
+EXTERN Long p_msc;   //@maxsearchcount
 EXTERN Boole p_modifiable; //command-line option "-R" (or "-M" - same thing)
-EXTERN long p_mouset;//@mousetime
+EXTERN Long p_mouset;//@mousetime
 EXTERN CS p_nf;      //@nrformats
 EXTERN CS p_opfunc;  //@operatorfunc
 EXTERN CS p_pex;     //@patchexpr
 EXTERN CS p_cdpath;  //@cdpath
-EXTERN long p_rdt;   //@redrawtime
-EXTERN long p_pvh;   //@previewheight
+EXTERN Long p_rdt;   //@redrawtime
+EXTERN Long p_pvh;   //@previewheight
 EXTERN CS p_ruf;     //@rulerformat
 EXTERN CS p_qftf;    //@quickfixtextfunc
 #define runtimePath (CS)"~/.config/eegl/runtime/"
-EXTERN long p_sj;    //@scroll.jump
+EXTERN Long p_sj;    //@scroll.jump
 #define SCR_VER  1   //keep in sync with scrolloptValues
 #define SCR_HOR  2
 #define SCR_JUMP 3
@@ -1516,7 +1516,7 @@ EXTERN Byte p_sloc;  //@showcmdloc
 
 EXTERN Boole p_sft;  //@showfulltag
 EXTERN Boole p_smd;  //@showmode
-EXTERN long  p_ss;   //@sidescroll
+EXTERN Long  p_ss;   //@sidescroll
 EXTERN Boole p_scs;  //@smartcase
 EXTERN Boole p_swf;  //@swapfile
 EXTERN CS p_sps;     //@spellsuggest
@@ -1559,7 +1559,7 @@ EXTERN Long p_ur;   //@undo.reload
 EXTERN Long p_ut;   //@updatetime
 EXTERN CS p_eeglinfo; //@eeglinfo
 EXTERN CS p_eeglinfofile; //@eeglinfofile
-EXTERN long p_verbose;//@verbose
+EXTERN Long p_verbose;//@verbose
 EXTERN CS p_vfile;    //@verbosefile
 EXTERN Unt p_wop;     //@wild.options
 
@@ -1704,7 +1704,7 @@ typedef struct {
    OptionValueTag tag;
    union {
       CS string;
-      long num;
+      Long num;
       Boole boole;
       Unt flags;
       Byte enume;
@@ -1714,7 +1714,7 @@ typedef struct {
 
 #define getDefault(optField, optDef) _Generic((optField),\
    CS: optDef->defaultValue.string,\
-   long: optDef->defaultValue.num,\
+   Long: optDef->defaultValue.num,\
    Boole: optDef->defaultValue.boole,\
    Unt: optDef->defaultValue.flags,\
    Byte: optDef->defaultValue.enum\
@@ -1722,7 +1722,7 @@ typedef struct {
 
 #define optStr(x) (OptionValue){.tag = OPTION_STRING, .string = (CS)(x)}
 #define optNum(x) (OptionValue){.tag = OPTION_NUM, .num = (x)}
-#define optEnum(x) (OptionValue){.tag = OPTION_ENUM, .num = (long)(x)}
+#define optEnum(x) (OptionValue){.tag = OPTION_ENUM, .num = (Long)(x)}
 #define optBoole(x) (OptionValue){.tag = OPTION_BOOLE, .boole = (x)}
 #define optFlag(x) (OptionValue){.tag = OPTION_FLAGS, .flags = (x)}
 #define optCallback(x) (OptionValue){.tag = OPTION_CALLBACK, .callback = (x)}
@@ -1732,7 +1732,7 @@ typedef struct {
    OptionValueTag tag;
    union {
       CS* string;
-      long* num;
+      Long* num;
       Boole* boole;
       Byte* enume;
       Unt* flags;
@@ -1787,13 +1787,16 @@ typedef struct {
    CellDeco deco;
 } ScreenCell;
 
+//typedef enum HiliteId HiliteId;
+enum HiliteId : unsigned char;
+
 typedef struct {
    VTermColor fg; //foreground, always from original hiId group
    VTermColor bg; //background, always from original hiId group
    VTermColor under; //underline color, possibly from merging hilites
    VTermDeco flags; //HL_BOLD, underline etc. Result from possibly merging hilites
    Byte fieldPresence; //HI_HAS_* and HI_IS_LINK constants
-   Short hiId; //original hilite group id
+   enum HiliteId hiId; //original hilite group id
 } Decoration;
 
 //marks: positions in a file (a normal mark is a lnum/col pair, the same as a file position)
@@ -1903,7 +1906,7 @@ typedef struct {
 //properties, thus ul_len can be larger than STRLEN(ul_line) + 1.
 typedef struct {
    CS ul_line;   //text of the line
-   long ul_len;      //length of the line including ZERO, plus text properties
+   Long ul_len;      //length of the line including ZERO, plus text properties
    ColNr ul_textlen;   //length of the line excluding ZERO and any text properties
 } UndoLine;
 
@@ -1915,7 +1918,7 @@ struct UndoEntry {
    LineNr ue_bot;      //number of line below undo block
    LineNr ue_lcount;   //linecount when u_save called
    UndoLine* ue_array;   //array of lines in undo block
-   long ue_size;   //number of lines in ue_array
+   Long ue_size;   //number of lines in ue_array
 #ifdef U_DEBUG
    int ue_magic;   //magic number to check allocation
 #endif
@@ -1923,7 +1926,7 @@ struct UndoEntry {
 
 //structures used in undo.c
 #define ALIGN_LONG   //longword alignment and use filler byte
-#define ALIGN_SIZE (sizeof(long))
+#define ALIGN_SIZE (sizeof(Long))
 
 #define ALIGN_MASK (ALIGN_SIZE - 1)
 
@@ -1934,7 +1937,7 @@ struct UndoEntry {
 
 declStruct(BlockHeader);
 declStruct(MemFile);
-typedef long BlockId;
+typedef Long BlockId;
 
 declStruct(MfHashItem);
 
@@ -2029,7 +2032,7 @@ typedef struct {
    Book* book;       //the book to search for a match
    LineNr lnum;       //the line to search for a match
    OverlayDeco extra; //decoration to be used for a match
-   Short currHiId;   //decorations currently active in drawLineOnScreen()
+   enum HiliteId currHiId;   //decorations currently active in drawLineOnScreen()
    LineNr first_lnum; //first lnum to search for multi-line pat
    ColNr startcol;   //in win_line() points to char where HL starts
    ColNr endcol;       //in win_line() points to char where HL ends
@@ -2063,7 +2066,7 @@ struct MatchItem {
    LineNr   bottLnum;   //bottom book line
 
    Match mit_hl;      //struct for doing the actual highlighting
-   Short hiId;   //highlight group ID
+   enum HiliteId hiId;   //highlight group ID
 };
 
 //}}}
@@ -2215,7 +2218,7 @@ typedef struct {
 
    //values for undo_cmdmod()
    CS cmod_save_ei;      //saved value of 'eventignore'
-   long cmod_verbose_save;   //if 'verbose' was set: value of p_verbose plus one
+   Long cmod_verbose_save;   //if 'verbose' was set: value of p_verbose plus one
    int cmod_save_msg_silent;   //if non-zero: saved value of msg_silent + 1
    int cmod_save_msg_scroll;   //for restoring msg_scroll
    int cmod_did_esilent;   //incremented when emsg_silent is
@@ -2320,10 +2323,10 @@ typedef struct {
    int typeNr;
    void* icon;
    Arr(Byte) text;
-   Short textHiId;
-   Short lineHiId;
-   Short cursorLineHiId;
-   Short lineNumHiId;
+   enum HiliteId textHiId;
+   enum HiliteId lineHiId;
+   enum HiliteId cursorLineHiId;
+   enum HiliteId lineNumHiId;
    int priority;
 } SignHilite;
 
@@ -2802,7 +2805,7 @@ struct SnAllVars {
    int blockId;     //block ID where declared
    int indInVarVals; //index in sn_var_vals
 
-   //So long as the variable is valid (block it was defined in is still
+   //So Long as the variable is valid (block it was defined in is still
    //active) "sav_di" is used.  It is set to NULL when leaving the block,
    //then sav_tv and sav_flags are used.
    DictItem *sav_di;      //dictitem with di_key and c
@@ -2959,7 +2962,7 @@ typedef enum {
 } CallFrame;
 
 typedef struct {
-   long lnum;      //replaces "sourcing_lnum"
+   Long lnum;      //replaces "sourcing_lnum"
    CS name;     //replaces "sourcing_name"
    CallFrame ty;
    union {
@@ -3203,7 +3206,7 @@ declStruct(LocationStack);
 
 declStruct(Timer);
 struct Timer {
-   long   id;
+   Long   id;
    Timer* next;
    Timer* prev;
    ProfTime due;          //when the callback is to be invoked
@@ -3211,7 +3214,7 @@ struct Timer {
    char tr_paused;       //when true callback is not invoked
    char tr_keep;       //when true keep timer after it fired
    int tr_repeat;       //number of times to repeat, -1 forever
-   long tr_interval;       //msec
+   Long tr_interval;       //msec
    Callback callback;
    int tr_emsg_count;
 };
@@ -3235,16 +3238,16 @@ typedef struct {
    int      noSpellClusterId;   //@NoSpell cluster ID or 0
    int b_syn_containedin;   //true when there is an item with a "containedin" argument
    int      syncFlags;   //flags about how to sync
-   Short   syncHiId;     //group to sync on
-   long   b_syn_sync_minlines; //minimal sync lines offset
-   long   b_syn_sync_maxlines; //maximal sync lines offset
-   long   syncLinebreaks;   //offset for multi-line pattern
+   enum HiliteId   syncHiId;     //group to sync on
+   Long b_syn_sync_minlines; //minimal sync lines offset
+   Long b_syn_sync_maxlines; //maximal sync lines offset
+   Long syncLinebreaks;   //offset for multi-line pattern
    Arr(Byte) lineContinuationPattern;   //line continuation pattern
    RegProg   *lineContinProg;   //line continuation program
-   int      lineContinIgnoreCase;   //ignore-case flag for above
-   int      b_syn_topgrp;      //for ":syntax include"
-   int      b_syn_conceal;     //auto-conceal for :syn cmds
-   int      b_syn_folditems;   //number of patterns with the HL_FOLD flag set
+   int  lineContinIgnoreCase;   //ignore-case flag for above
+   int  b_syn_topgrp;      //for ":syntax include"
+   int  b_syn_conceal;     //auto-conceal for :syn cmds
+   int  b_syn_folditems;   //number of patterns with the HL_FOLD flag set
    SyntaxState   *array; //the state stack for a number of lines, for the
                          //start of that line (col == 0).  This avoids having to recompute
                          //the syntax state too often. It is allocated to hold the state for all
@@ -3298,16 +3301,16 @@ typedef struct {
    UndoHeader* currHead;   //pointer to current header
    int countHeaders;   //current number of headers
    int synced;   //entry lists are synced
-   long seqLast;   //last used undo sequence number
-   long saveNrLast; //counter for last file write
-   long seqCurr;   //uh_seq of header below which we are now
+   Long seqLast;   //last used undo sequence number
+   Long saveNrLast; //counter for last file write
+   Long seqCurr;   //uh_seq of header below which we are now
    Tyme timeCurr;   //uh_time of header below which we are now
-   long saveNrCurr; //file write nr after which we are now
+   Long saveNrCurr; //file write nr after which we are now
 
    //variables for "U" command in undo.c
-   UndoLine   line;   //saved line for "U" command
-   LineNr   lineLnum; //line number of line in u_line
-   ColNr   lineCol;   //optional column number
+   UndoLine line;   //saved line for "U" command
+   LineNr lineLnum; //line number of line in u_line
+   ColNr lineCol;   //optional column number
 } Undo;
 
 //{{{options local to a book
@@ -3334,8 +3337,8 @@ typedef struct {
 
 
    //flags for use of ":lmap"
-   long b_p_iminsert;    //input mode for insert
-   long b_p_imsearch;    //input mode for search
+   Long b_p_iminsert;    //input mode for insert
+   Long b_p_imsearch;    //input mode for search
 #define B_IMODE_USE_INSERT (-1)	//	Use b_p_iminsert value for search
 #define B_IMODE_NONE 0   //Input via none
 #define B_IMODE_LMAP 1   //Input via langmap
@@ -3412,7 +3415,7 @@ struct Book { //:Book
    int origMode;   //mode of original file
    Tyme lastUsed;  //time when the book was last used; used for eeglinfo
 
-   Pos namedMarks[NMARKS]; //current named marks (mark.c)
+   Pos namedMarks[NMARKS]; //current named marks (see location.c)
    CS fileType;
 
    //These variables are set when VIsual_active becomes false
@@ -3440,12 +3443,12 @@ struct Book { //:Book
    ArrayList userCommands;
    //start and end of an operator, also used for '[ and ']
    Pos opStart;
-   Pos opStartOrig;  //used for juggle.c:op_insert
+   Pos opStartOrig;  //used for do.c:op_insert
    Pos opEnd;
 
    int haveReadEeglinfoMarks;   //Have we read eeglinfo marks yet?
 
-   int modifiedWasSet; //did ":set modified"
+   int modifiedWasSet; //did ";set modified"
    int didFiletype;    //FileType event found
    int keepFiletype;   //value for did_filetype when starting to execute autocommands
 
@@ -3846,13 +3849,13 @@ struct Portal { //:Portal
    //They are local because they influence the layout of the portal or depend on the portal layout.
    PortalOptions o;
 
-   long scbindPos;
+   Long scbindPos;
    DictItem wVar;          //variable for "w:" Dictionary
    Bag* internalVars;     //internal variables, local to portal
 
-   //The prev_pcmark field is used to check whether we really did jump to
-   //a new line after setting the w_pcmark.  If not, then we revert to using the previous w_pcmark.
-   Pos prevContextMark;   //previous context mark
+   //The prev_pcmark field is used to check whether we really did jump to a new line after
+   //setting the w_pcmark. If not, then we revert to using the previous w_pcmark
+   Pos prevContextMark;      //previous context mark
    Pos prevPrevContextMark;   //previous w_pcmark
 
    //the jumplist contains old cursor positions
@@ -3878,7 +3881,7 @@ struct Portal { //:Portal
    int prevFraction;
 
    LineNr lineCountSaved; //line count when ml_nrwidth_width was computed.
-   long numWidthCached;   //@numberwidth option cached
+   Long numWidthCached;   //@numberwidth option cached
    int charsInLineCount;  //nr of chars to print line count.
 
    //Location list reference used in the portal into a location list.
@@ -3898,7 +3901,7 @@ typedef struct Operator {
    Pos start;      //start of the operator
    Pos end;      //end of the operator
    Pos cursor_start;   //cursor position before motion for "gw"
-   long line_count;   //number of lines from op_start to op_end (inclusive)
+   Long line_count;   //number of lines from op_start to op_end (inclusive)
    int empty;      //op_start and op_end the same (only used by do_change())
    Boole use_reg_one;   //true if delete uses reg 1 even when not linewise
    Boole inclusive;   //true if char motion is inclusive (only valid when motion_type is MCHAR)
@@ -3906,8 +3909,8 @@ typedef struct Operator {
    Boole block_mode;   //current operator is Visual block mode
    ColNr start_vcol;   //start col for block mode operator
    ColNr end_vcol;   //end col for block mode operator
-   long  prev_opcount;   //ca.opcount saved for K_CURSORHOLD
-   long  prev_count0;   //ca.count0 saved for K_CURSORHOLD
+   Long  prev_opcount;   //ca.opcount saved for K_CURSORHOLD
+   Long  prev_count0;   //ca.count0 saved for K_CURSORHOLD
    int excludeTrailingWhitespace;   //exclude trailing whitespace for yank of a block
 } Operator;
 
@@ -3920,9 +3923,9 @@ typedef struct {
    Unt ncharC1;    //first composing character (optional)
    Unt ncharC2;    //second composing character (optional)
    Unt extra_char; //yet another character (optional)
-   long opcount;   //count before an operator
-   long count0;    //count before command, default 0
-   long count1;    //count before command, default 1
+   Long opcount;   //count before an operator
+   Long count0;    //count before command, default 0
+   Long count1;    //count before command, default 1
    int arg;        //extra argument from actions[]
    int retval;     //return: CA_* values
    CS searchbuf;//return: pointer to search pattern or NULL
@@ -4047,8 +4050,8 @@ typedef struct {
    List* ll_list;   //The list or NULL.
    int      ll_range;   //true when a [i:j] range was used
    int      ll_empty2;   //Second index is empty: [i:]
-   long   ll_n1;      //First index for list
-   long   ll_n2;      //Second index for list range
+   Long   ll_n1;      //First index for list
+   Long   ll_n2;      //Second index for list range
    Bag* bag;   //The Bag or NULL
    DictItem   *ll_di;      //The dictitem or NULL
    Text newKey;   //New key for Bag in alloc. mem or NULL.
@@ -4110,7 +4113,7 @@ typedef struct {
 //Optional extra arguments for searchit().
 typedef struct {
    LineNr sa_stop_lnum;   //stop after this line number when != 0
-   long sa_tm;      //timeout limit or zero
+   Long sa_tm;      //timeout limit or zero
    int sa_timed_out;   //set when timed out
    int sa_wrapped;   //search wrapped around
 } SearchitArg;
@@ -4501,16 +4504,16 @@ void ch_error(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 //{{{:::globals: global variables and messages
 
 //Number of Rows and Columns in the screen.
-//Must be long to be able to use them as options in option.c.
+//Must be Long to be able to use them as options in option.c.
 //Note: Use screenLinesRowsG and screenLinesColsG to access items in ScreenLines[].
 //They may have different values when the screen wasn't (re)allocated yet
 //after setting Rows or Columns (e.g., when starting up).
-EXTERN long visibleRowsG         //nr of rows in the screen
+EXTERN Long visibleRowsG         //nr of rows in the screen
 #ifdef MAIN_C
           = 24L
 #endif
 ;
-EXTERN long visibleColsG INIT(= 80);   //nr of columns in the screen
+EXTERN Long visibleColsG INIT(= 80);   //nr of columns in the screen
 
 EXTERN CS username INIT(= null); //cached result of mch_get_user_name()
 
@@ -4611,7 +4614,7 @@ EXTERN int emsg_skip INIT(= 0);         //don't display errors for expression th
 EXTERN int emsg_severe INIT(= false);   //use message of next of several emsg() calls for throw
                                         //used by assert_fails()
 EXTERN CS emsg_assert_fails_msg INIT(= NULL);
-EXTERN long emsg_assert_fails_lnum INIT(= 0);
+EXTERN Long emsg_assert_fails_lnum INIT(= 0);
 EXTERN CS emsg_assert_fails_context INIT(= NULL);
 
 EXTERN int anyEmsgG; //incremented by emsg() when a message is displayed or thrown
@@ -4663,7 +4666,7 @@ EXTERN ArrayList script_items INIT5(0, 0, sizeof(ScriptItem *), 20, NULL);
 # define FUNCLINE(fp, j)   ((Byte **)(fp->lines.c))[j]
 
 //did_throw: An exception is being thrown.  Reset when the exception is caught
-//or as long as it is pending in a finally clause.
+//or as Long as it is pending in a finally clause.
 EXTERN int did_throw INIT(= false);
 
 //need_rethrow: set to true when a throw that cannot be handled in do_cmdline()
@@ -5000,7 +5003,6 @@ EXTERN int u_sync_once INIT(= 0);   //Call u_sync() once when evaluating an expr
 EXTERN int restart_edit INIT(= 0);   //call edit when next cmd finished
 EXTERN int arrow_used; //Normally false, set to true after hitting cursor key in insert mode.
                //Used by vgetorpeek() to decide when to call u_sync()
-EXTERN Boole ins_at_eol INIT(= false); //put cursor after eol when restarting edit after CTRL-O
 
 EXTERN Boole no_abbr INIT(= true);   //true when no abbreviations loaded
 
@@ -5209,7 +5211,7 @@ EXTERN int  no_query_mouse_for_testing INIT(= false);
 EXTERN int  ui_delay_for_testing INIT(= 0);
 EXTERN int  reset_term_props_on_termresponse INIT(= false);
 EXTERN int  disable_vterm_title_for_testing INIT(= false);
-EXTERN long overrideSysinfoUptimeG INIT(= -1);
+EXTERN Long overrideSysinfoUptimeG INIT(= -1);
 EXTERN int ignore_unreachable_code_for_testing INIT(= false);
 
 EXTERN int in_free_unref_items INIT(= false);
@@ -5351,7 +5353,7 @@ EXTERN Byte e_invalid_character_after_str[] INIT(= "E71: Invalid character after
 EXTERN Byte e_close_error_on_swap_file[] INIT(= "E72: Close error on swap file");
 EXTERN Byte e_tag_stack_empty[] INIT(= "E73: Tag stack empty");
 EXTERN Byte e_command_too_complex[] INIT(= "E74: Command too complex");
-EXTERN Byte e_name_too_long[] INIT(= "E75: Name too long");
+EXTERN Byte e_name_too_long[] INIT(= "E75: Name too Long");
 EXTERN Byte e_too_many_brackets[] INIT(= "E76: Too many [");
 EXTERN Byte e_too_many_file_names[] INIT(= "E77: Too many file names");
 EXTERN Byte e_unknown_mark[] INIT(= "E78: Unknown mark");
@@ -5664,7 +5666,7 @@ EXTERN Byte e_attention[]
 EXTERN Byte e_too_many_swap_files_found[]
    INIT(= "E326: Too many swap files found");
 EXTERN Byte e_pattern_too_long[]
-   INIT(= "E339: Pattern too long");
+   INIT(= "E339: Pattern too Long");
 EXTERN Byte e_internal_error_please_report_a_bug[]
    INIT(= "E340: Internal error; if you can reproduce please report a bug");
 EXTERN Byte e_internal_error_lalloc_zero[]
@@ -5818,7 +5820,7 @@ EXTERN Byte e_bg_color_unknown[]
 EXTERN Byte e_color_name_or_number_not_recognized_str[]
    INIT(= "E421: Color name or number not recognized: %s");
 EXTERN Byte e_terminal_code_too_long_str[]
-   INIT(= "E422: Terminal code too long: %s");
+   INIT(= "E422: Terminal code too Long: %s");
 EXTERN Byte e_illegal_argument_str_3[]
    INIT(= "E423: Illegal argument: %s");
 EXTERN Byte e_too_many_different_highlighting_decos_in_use[]
@@ -6531,7 +6533,7 @@ EXTERN Byte e_invalid_register_name[]
 EXTERN Byte e_duplicate_argument_name_str[]
    INIT(= "E853: Duplicate argument name: %s");
 EXTERN Byte e_path_too_long_for_completion[]
-   INIT(= "E854: Path too long for completion");
+   INIT(= "E854: Path too Long for completion");
 EXTERN Byte e_autocommands_caused_command_to_abort[]
    INIT(= "E855: Autocommands caused command to abort");
 EXTERN Byte e_assert_fails_second_arg[]
@@ -6791,7 +6793,7 @@ EXTERN Byte e_mandatory_argument_after_optional_argument[]
 EXTERN Byte e_missing_type_after_str[] INIT(= "E1008: Missing <type> after %s");
 EXTERN Byte e_missing_gt_after_type_str[] INIT(= "E1009: Missing > after type: %s");
 EXTERN Byte e_type_not_recognized_str[] INIT(= "E1010: Type not recognized: %s");
-EXTERN Byte e_name_too_long_str[] INIT(= "E1011: Name too long: %s");
+EXTERN Byte e_name_too_long_str[] INIT(= "E1011: Name too Long: %s");
 EXTERN Byte e_type_mismatch_expected_str_but_got_str[]
    INIT(= "E1012: Type mismatch; expected %s but got %s");
 EXTERN Byte e_type_mismatch_expected_str_but_got_str_in_str[]
@@ -7097,7 +7099,7 @@ EXTERN Byte e_no_such_user_defined_command_in_current_buffer_str[]
    INIT(= "E1237: No such user-defined command in current buffer: %s");
 EXTERN Byte e_blob_required_for_argument_nr[] INIT(= "E1238: Blob required for argument %d");
 EXTERN Byte e_invalid_value_for_blob_nr[] INIT(= "E1239: Invalid value for blob: %d");
-EXTERN Byte e_resulting_text_too_long[] INIT(= "E1240: Resulting text too long");
+EXTERN Byte e_resulting_text_too_long[] INIT(= "E1240: Resulting text too Long");
 EXTERN Byte e_separator_not_supported_str[] INIT(= "E1241: Separator not supported: %s");
 EXTERN Byte e_no_white_space_allowed_before_separator_str[]
    INIT(= "E1242: No white space allowed before separator: %s");
@@ -7108,7 +7110,7 @@ EXTERN Byte e_line_number_out_of_range[] INIT(= "E1247: Line number out of range
 EXTERN Byte e_closure_called_from_invalid_context[]
    INIT(= "E1248: Closure called from invalid context");
 EXTERN Byte e_highlight_group_name_too_long[]
-   INIT(= "E1249: Highlight group name too long: %s");
+   INIT(= "E1249: Highlight group name too Long: %s");
 EXTERN Byte e_argument_of_str_must_be_list_string_dictionary_or_blob[]
    INIT(= "E1250: Argument of %s must be a List, String, Dictionary or Blob");
 EXTERN Byte e_list_tuple_dict_blob_or_string_required_for_argument_nr[]
@@ -7235,7 +7237,7 @@ EXTERN Byte e_cannot_access_protected_variable_str[]
 EXTERN Byte e_variable_is_not_writable_str[]
    INIT(= "E1335: Variable \"%s\" in class \"%s\" is not writable");
 EXTERN Byte e_internal_error_shortmess_too_long[]
-   INIT(= "E1336: Internal error: shortmess too long");
+   INIT(= "E1336: Internal error: shortmess too Long");
 EXTERN Byte e_class_variable_str_not_found_in_class_str[]
    INIT(= "E1337: Class variable \"%s\" not found in class \"%s\"");
 EXTERN Byte e_cannot_add_textprop_with_text_after_using_textprop_with_negative_id[]

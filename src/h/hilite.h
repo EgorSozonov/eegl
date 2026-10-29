@@ -8,13 +8,13 @@
 
 typedef enum {
 #define HI(a, b, c, d, e, f) HILITE_##a,
-HI(None, HI_HAS_FG|HI_HAS_BG, 7, 0, 0, 0) //0
+HI(None, HI_HAS_FG|HI_HAS_BG, 7, 0, 0, 0)
 HI(NonText, HI_HAS_FG, 4, 0, DECO_BOLD, 0)
 HI(NormalFloat, HI_IS_LINK, 0, 0, 0, HILITE_None)
 HI(Directories, HI_IS_LINK, 0, 0, 0, HILITE_None)        //directories in CTRL-D listing
 HI(ErrorMsg, HI_HAS_FG|HI_HAS_BG, 7, 1, 0, 0)
 HI(WarningMsg, HI_HAS_FG|HI_HAS_BG, 9, 7 + 232, 0, 0)    //warning messages
-HI(MoreMsg, HI_IS_LINK, 0, 0, 0, HILITE_None)            //10 "--More--" message
+HI(MoreMsg, HI_IS_LINK, 0, 0, 0, HILITE_None)            //"--More--" message
 HI(ModeName, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)            //Mode (e.g., "-- INSERT --")
 HI(CurrentLineNr, HI_IS_LINK, 0, 0, 0, HILITE_None)      //current line number
 HI(CurrentSign, HI_IS_LINK, 0, 0, 0, HILITE_None)        //current line sign column
@@ -26,7 +26,7 @@ HI(StatusLinesInactive, HI_HAS_DECO, 0, 0, DECO_INVERSE, 0) //status line of non
 HI(VertSplit, HI_HAS_DECO, 0, 0, DECO_INVERSE, 0) //column to separate vertically split portals
 HI(OutputOfAutocmd, HI_IS_LINK, 0, 0, 0, HILITE_None)    //Titles for output from
                                                          //";set all", ";autocmd" etc
-HI(VisualMode, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)          //20 Visual mode
+HI(VisualMode, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)          //Visual mode
 HI(WildcardMenu, HI_IS_LINK, 0, 0, 0, HILITE_None)       //Wildmenu hilite
 HI(FoldedLine, HI_IS_LINK, 0, 0, 0, HILITE_None)         //Folded line
 HI(DiffTextAdd, HI_HAS_FG, 2, 0, 0, 0)                   //Added diff line
@@ -34,7 +34,7 @@ HI(DiffText, HI_HAS_FG, 4, 0, 0, 0)                      //Changed diff line
 HI(DiffChangedTextInChanged, HI_IS_LINK, 0, 0, 0, HILITE_None) //Text Changed in changed diff
 HI(DiffAddedTextInChanged, HI_IS_LINK, 0, 0, 0, HILITE_None) //Text Added in changed diff line
 HI(DiffDeleted, HI_HAS_FG|HI_HAS_BG|HI_HAS_DECO, 4, 14, DECO_BOLD, 0) //HILITE_DiffDeleted
-HI(SignColumn, HI_HAS_FG|HI_HAS_BG, 6, 232 + 10, 0, 0)   //30 Sign column
+HI(SignColumn, HI_HAS_FG|HI_HAS_BG, 6, 232 + 10, 0, 0)   //Sign column
 HI(Pmenu, HI_HAS_FG|HI_HAS_BG, 0, 4, 0, 0)               //popup menu normal item
 HI(PmenuSelected, HI_HAS_BG, 0, 4 + 232, 0, 0)           //popup menu selected item
 HI(PmenuMatchedText, HI_IS_LINK, 0, 0, 0, HILITE_None)   //popup menu matched text in normal item
@@ -54,7 +54,7 @@ HI(TabpanelFill, HI_IS_LINK, 0, 0, 0, HILITE_None)       //tabpanel filler
 HI(CursorLine, HI_HAS_BG, 0, 8 + 232, 0, 0)              //@cursorline
 HI(LocationPortalSelected, HI_IS_LINK, 0, 0, 0, HILITE_PmenuSelectedItem) //location portal line
                                                                           //currently selected
-HI(TerminalStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None)  //50 status lines of terminal portals
+HI(TerminalStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None)  //status lines of terminal portals
 HI(TerminalNoncurrentStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None) //status lines of
                                                                     //not-current terminal
                                                                     //portals
@@ -66,8 +66,8 @@ HI(MetaSpecialKeys, HI_IS_LINK, 0, 0, 0, HILITE_None)    //Meta & special keys l
                                                          //";map", text that is
                                                          //displayed different
 HI(LineNr, HI_HAS_FG, 3, 0, 0, 0)             //line number for ";number" and ";#" commands
-HI(LineNrAbove, HI_IS_LINK, 0, 0, 0, HILITE_None)
-HI(LineNrBelow, HI_IS_LINK, 0, 0, 0, HILITE_None)
+HI(LineNrAbove, HI_IS_LINK, 0, 0, 0, HILITE_LineNr)
+HI(LineNrBelow, HI_IS_LINK, 0, 0, 0, HILITE_LineNr)
 HI(Directory, HI_HAS_FG, 14, 0, 0, 0)
 HI(CursorLineNr, HI_HAS_FG|HI_HAS_DECO, 3, 0, DECO_BOLD, 0)
 HI(Question, HI_HAS_FG|HI_HAS_DECO, 10, 0, DECO_BOLD, 0)
@@ -103,6 +103,7 @@ HI(Error, HI_HAS_BG, 0, 1, 0, 0)
 HI(Todo, HI_HAS_FG|HI_HAS_BG, 4, 3, 0, 0)
 HI(Bold, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)
 HI(Italic, HI_HAS_DECO, 0, 0, DECO_ITALIC, 0)
+HILITE_NULL
 #undef HI
 } HiliteId;
 void initHilite();
@@ -122,13 +123,13 @@ int expandHiliteGroup(
    RegMatch* rmp,
    OUT ExpandMatch* matches
 );
-void f_hlget(Var *argvars, Var *returnVar);
+void f_hlget(Arr(Var) argvars, OUT Var* returnVar);
 char getDecoFlags(Short hiId);
 Decoration getFullDecoration(Short hiId);
 Boole decoEq(Decoration a, Decoration b);
 void c_echohl(Invocation* invo);
-void f_hlID(Arr(Var) argvars, Var* returnVar);
-void f_hlexists(Arr(Var) argvars, Var* returnVar);
+void f_hlID(Arr(Var) argvars, OUT Var* returnVar);
+void f_hlexists(Arr(Var) argvars, OUT Var* returnVar);
 void syntaxStartLine(Portal *wp, LineNr lnum);
 void synFreeBlock(SyntaxBlock *block);
 void syn_stack_apply_changes(Book* book);
@@ -145,16 +146,16 @@ void c_syntax(Invocation* invo);
 void c_ownsyntax(Invocation* invo);
 int syntax_present(Portal* po);
 void reset_expand_highlight(void);
-void set_context_in_echohl_cmd(Expand *xp, CS arg);
+void set_context_in_echohl_cmd(Expand* xp, CS arg);
 void set_context_in_syntax_cmd(Expand *xp, CS arg);
 CS get_syntax_name(Expand* xp, int idx);
 int syn_get_id(
-   Portal   *wp,
-   long   lnum,
-   ColNr   col,
-   int      trans,      //remove transparency
-   int      keep_state  //keep state of char at "col"
+   Portal* wp,
+   Long lnum,
+   ColNr col,
+   int trans,      //remove transparency
+   int keep_state  //keep state of char at "col"
 );
 int syn_get_stack_item(int i);
-int syn_get_foldlevel(Portal *po, long lnum);
+int syn_get_foldlevel(Portal *po, Long lnum);
 void f_synIDtrans(Arr(Var) argvars, Var* returnVar);

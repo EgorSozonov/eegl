@@ -611,7 +611,6 @@ private void show_one_mark(
    int current   //in current file
 );
 private int add_mark(List* l, CS mname, Pos* pos, int bufnr, CS fname);
-private void get_buf_local_marks(Book *book, List *l);
 private void get_global_marks(List *l);
 private SignGroup * sign_group_ref(CS groupname);
 private void sign_group_unref(CS groupname);
@@ -674,19 +673,12 @@ private int findsign_id(Book* book, //book whose sign we are searching for
             CS groupname //sign group name
 );
 private void sign_list_placed(Book* rbook, CS sign_group);
-private void sign_mark_adjust(
-    LineNr line1,
-    LineNr line2,
-    long amount,
-    long amount_after
-);
-private int sign_cmd_idx(CS begin_cmd, //begin of sign subcmd
-             CS end_cmd //just after sign subcmd
-);
-private Sign* sign_find(CS name, Sign** sp_prev);
+private void sign_mark_adjust(LineNr line1, LineNr line2, Long amount, Long amount_after);
+private int sign_cmd_idx(CS begin_cmd, CS end_cmd);
+private Sign* sign_find(CS name, OUT Sign** sp_prev);
 private Sign * alloc_new_sign(CS name);
 private int sign_define_init_text(Sign *sp, Byte *text);
-private void sign_list_by_name(Byte *name);
+private void sign_list_by_name(CS name);
 private void may_force_numberwidth_recompute(Book* book, int unplace);
 private int sign_unplace(int sign_id, Byte *sign_group, Book* book, LineNr atlnum);
 private void sign_unplace_at_cursor(CS groupname);
@@ -3417,7 +3409,7 @@ jumpToEntry(LineNr lNum, int col, Byte visCol, CS pattern){
       if (col > 0) {
          curPor->cursor.coladd = 0;
          if (visCol == true)
-            coladvance(col - 1);
+            doColAdvance(col - 1);
          else
             curPor->cursor.col = col - 1;
          curPor->setCursWant = true;
@@ -7998,8 +7990,7 @@ markGetBookFnum(Book* book, int c, int changefile, int* fnum) {
 //Return pointer to Pos of the next mark or NULL if no mark is found.
 pub Pos *
 getnextmark(Pos* startpos, Unt dir, int begin_line) {
-   int      i;
-   Pos   *result = NULL;
+   Pos* result = NULL;
 
    Pos pos = *startpos;
 
@@ -8012,15 +8003,17 @@ getnextmark(Pos* startpos, Unt dir, int begin_line) {
    ei (dir == FORWARD && begin_line)
       pos.col = MAXCOL;
 
-   for (i = 0; i < NMARKS; i++) {
+   for (Unt i = 0; i < NMARKS; i++) {
       if (curBook->namedMarks[i].lnum > 0) {
          if (dir == FORWARD) {
-         if ((result == NULL || LT_POS(curBook->namedMarks[i], *result))
-               && LT_POS(pos, curBook->namedMarks[i]))
-            result = &curBook->namedMarks[i];
+            if ((!result || LT_POS(curBook->namedMarks[i], *result))
+                  && LT_POS(pos, curBook->namedMarks[i])
+            )
+               result = &curBook->namedMarks[i];
          } else {
-            if ((result == NULL || LT_POS(*result, curBook->namedMarks[i]))
-                  && LT_POS(curBook->namedMarks[i], pos))
+            if ((!result || LT_POS(*result, curBook->namedMarks[i]))
+                  && LT_POS(curBook->namedMarks[i], pos)
+            )
                result = &curBook->namedMarks[i];
          }
       }
@@ -8029,7 +8022,7 @@ getnextmark(Pos* startpos, Unt dir, int begin_line) {
    return result;
 }
 
-//For an xtended filemark: set the fnum from the fname.
+//For an extended filemark: set the fnum from the fname.
 //This is used for marks obtained from the .eeglinfo file.  It's postponed
 //until the mark is used to avoid a long startup delay.
 private void
@@ -8108,7 +8101,7 @@ check_mark(Pos* pos) {
 
 //clrallmarks() - clear all marks in the book 'book'
 //
-//Used mainly when trashing the entire book during ":e" type commands
+//Used mainly when trashing the entire book during ";e" type commands
 pub void
 clrallmarks(Book* book) {
    static int i = -1;
@@ -8134,7 +8127,7 @@ clrallmarks(Book* book) {
 }
 
 //Get name of file from a filemark.
-//When it's in the current buffer, return the text at the mark. Returns an allocated string.
+//When it's in the current book, return the text at the mark. Return an allocated string.
 pub CS
 fm_getname(FileMark* fmark, int lead_len) {
    if (fmark->fnum == curBook->fiNum)          //current buffer
@@ -8164,7 +8157,7 @@ mark_line(Pos* mp, int lead_len) {
 
 //print the marks
 pub void
-c_marks(Invocation *invo) {
+c_marks(Invocation* invo) {
    CS arg = invo->arg;
    int i;
    CS name;
@@ -8262,7 +8255,7 @@ show_one_mark(
    }
 }
 
-//":delmarks[!] [marks]"
+//";delmarks[!] [marks]"
 pub void
 c_delmarks(Invocation* invo) {
    int from, to;
@@ -8346,11 +8339,11 @@ c_jumps(Invocation*) {
          name = fm_getname(&curPor->jumpList[i].fmark, 16);
 
          //Make sure to output the current indicator, even when on a wiped
-         //out book.  ":filter" may still skip it.
+         //out book. ";filter" may still skip it.
          if (name == NULL && i == curPor->jumpListInd)
             name = copyStr((CS)"-invalid-");
-         //apply :filter /pat/ or file name not available
-         if (name == NULL || message_filtered(name)) {
+         //apply ;filter /pat/ or file name not available
+         if (!name || message_filtered(name)) {
             eeglFree(name);
             continue;
          }
@@ -8370,7 +8363,9 @@ c_jumps(Invocation*) {
          );
          msg_outtrans(ioBuffG);
          msgOuttransDeco(
-            name, curPor->jumpList[i].fmark.fnum == curBook->fiNum ? getDecoFlags(HILITE_Directories) : 0
+            name,
+            curPor->jumpList[i].fmark.fnum == curBook->fiNum
+               ? getDecoFlags(HILITE_Directories) : 0
          );
          eeglFree(name);
          ui_breakcheck();
@@ -8421,34 +8416,30 @@ c_changes(Invocation*) {
       msg_puts(S"\n>");
 }
 
-#define one_adjust(add) \
-    { \
-   lp = add; \
-   if (*lp >= line1 && *lp <= line2) \
+#define adjustOne(add) \
    { \
-       if (amount == MAXLNUM) \
-      *lp = 0; \
-       else \
-      *lp += amount; \
-   } \
-   ei (amount_after && *lp > line2) \
-       *lp += amount_after; \
-    }
+   lp = add; \
+   if (*lp >= line1 && *lp <= line2) { \
+      if (amount == MAXLNUM) \
+         *lp = 0; \
+      else \
+         *lp += amount; \
+   } ei (amount_after && *lp > line2) \
+      *lp += amount_after; \
+   }
 
 //don't delete the line, just put at first deleted line
-#define one_adjust_nodel(add) \
-    { \
-   lp = add; \
-   if (*lp >= line1 && *lp <= line2) \
+#define adjustOneNodeLine(add) \
    { \
-       if (amount == MAXLNUM) \
-      *lp = line1; \
-       else \
-      *lp += amount; \
-   } \
-   ei (amount_after && *lp > line2) \
-       *lp += amount_after; \
-    }
+   lp = add; \
+   if (*lp >= line1 && *lp <= line2){ \
+      if (amount == MAXLNUM) \
+         *lp = line1; \
+      else \
+         *lp += amount; \
+   } ei (amount_after && *lp > line2) \
+      *lp += amount_after; \
+   }
 
 //Adjust marks between "line1" and "line2" (inclusive) to move "amount" lines. Must be called before
 //changed_*(), appended_lines() or deleted_lines(). May be called before or after changing the text.
@@ -8459,13 +8450,7 @@ c_changes(Invocation*) {
 //Example: Insert two lines below 55: markAdjust(56, MAXLNUM, 2, 0, true);
 //             or: markAdjust(56, 55, MAXLNUM, 2, true);
 pub void
-markAdjust(
-   LineNr line1,
-   LineNr line2,
-   long amount,
-   long amount_after,
-   Boole adjust_folds
-) {
+markAdjust(LineNr line1, LineNr line2, Long amount, Long amount_after, Boole adjustFolds) {
    int i;
    int fnum = curBook->fiNum;
    LineNr* lp;
@@ -8477,32 +8462,32 @@ markAdjust(
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
       //named marks, lower case and upper case
       for (i = 0; i < NMARKS; i++) {
-         one_adjust(&(curBook->namedMarks[i].lnum));
+         adjustOne(&(curBook->namedMarks[i].lnum));
          if (namedfm[i].fmark.fnum == fnum)
-            one_adjust_nodel(&(namedfm[i].fmark.mark.lnum));
+            adjustOneNodeLine(&(namedfm[i].fmark.mark.lnum));
       }
       for (i = NMARKS; i < NMARKS + EXTRA_MARKS; i++) {
          if (namedfm[i].fmark.fnum == fnum)
-            one_adjust_nodel(&(namedfm[i].fmark.mark.lnum));
+            adjustOneNodeLine(&(namedfm[i].fmark.mark.lnum));
       }
 
       //last Insert position
-      one_adjust(&(curBook->lastInsert.lnum));
+      adjustOne(&(curBook->lastInsert.lnum));
 
       //last change position
-      one_adjust(&(curBook->lastChange.lnum));
+      adjustOne(&(curBook->lastChange.lnum));
 
       //last cursor position, if it was set
       if (!EQUAL_POS(curBook->lastCursor, initpos))
-         one_adjust(&(curBook->lastCursor.lnum));
+         adjustOne(&(curBook->lastCursor.lnum));
 
       //list of change positions
       for (Unt i = 0; i < curBook->changeListLen; ++i)
-          one_adjust_nodel(&(curBook->changeList[i].lnum));
+          adjustOneNodeLine(&(curBook->changeList[i].lnum));
 
       //Visual area
-      one_adjust_nodel(&(curBook->visual.vi_start.lnum));
-      one_adjust_nodel(&(curBook->visual.vi_end.lnum));
+      adjustOneNodeLine(&(curBook->visual.vi_start.lnum));
+      adjustOneNodeLine(&(curBook->visual.vi_end.lnum));
 
       //location list marks
       llAdjustEntries(line1, line2, amount, amount_after);
@@ -8510,26 +8495,26 @@ markAdjust(
    }
 
    //previous context mark
-   one_adjust(&(curPor->prevContextMark.lnum));
+   adjustOne(&(curPor->prevContextMark.lnum));
 
    //previous pcmark
-   one_adjust(&(curPor->prevPrevContextMark.lnum));
+   adjustOne(&(curPor->prevPrevContextMark.lnum));
 
    //saved cursor for formatting
    if (saved_cursor.lnum != 0)
-      one_adjust_nodel(&(saved_cursor.lnum));
+      adjustOneNodeLine(&(saved_cursor.lnum));
 
-   //Adjust items in all portals into the current buffer
+   //Adjust items in all portals into the current book
 
    Portal* port;
    Tab* tab;
    FOR_ALL_TAB_PORTALS(tab, port) {
       if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
-         //Marks in the jumplist.  When deleting lines, this may create
+         //Marks in the jumplist. When deleting lines, this may create
          //duplicate marks in the jumplist, they will be removed later.
          for (i = 0; i < port->jumpListLen; ++i) {
             if (port->jumpList[i].fmark.fnum == fnum)
-                one_adjust_nodel(&(port->jumpList[i].fmark.mark.lnum));
+               adjustOneNodeLine(&(port->jumpList[i].fmark.mark.lnum));
          }
 
       if (port->book == curBook) {
@@ -8537,24 +8522,24 @@ markAdjust(
             //marks in the tag stack
             for (Unt i = 0; i < port->tagStackLen; i++) {
                if (port->tagStack[i].fmark.fnum == fnum)
-                  one_adjust_nodel(&(port->tagStack[i].fmark.mark.lnum));
+                  adjustOneNodeLine(&(port->tagStack[i].fmark.mark.lnum));
             }
          }
 
          //the displayed Visual area
          if (port->prevVisualEnd != 0) {
-            one_adjust_nodel(&(port->prevVisualEnd));
-            one_adjust_nodel(&(port->oldVisualLnum));
+            adjustOneNodeLine(&(port->prevVisualEnd));
+            adjustOneNodeLine(&(port->oldVisualLnum));
          }
 
-         //topline and cursor position for portals into the same buffer other than curPor
+         //topline and cursor position for portals into the same book other than curPor
          if (port != curPor) {
             if (port->topLine >= line1 && port->topLine <= line2) {
                if (amount == MAXLNUM) {    //topline is deleted
                   if (line1 <= 1)
-                      port->topLine = 1;
+                     port->topLine = 1;
                   else
-                      port->topLine = line1 - 1;
+                     port->topLine = line1 - 1;
                } ei (port->topLine > line1)
                   //Keep topline on the same line, unless inserting just
                   //above it (we probably want to see that line then)
@@ -8577,8 +8562,7 @@ markAdjust(
                 port->cursor.lnum += amount_after;
          }
 
-         //adjust folds
-         if (adjust_folds)
+         if (adjustFolds)
             foldMarkAdjust(port, line1, line2, amount, amount_after);
       }
    }
@@ -8589,7 +8573,7 @@ markAdjust(
 
 //This code is used often, needs to be fast.
 #define col_adjust(pp) \
-    { \
+   { \
    posp = pp; \
    if (posp->lnum == lnum && posp->col >= mincol) \
    { \
@@ -8601,7 +8585,7 @@ markAdjust(
        else \
       posp->col += col_amount; \
    } \
-    }
+   }
 
 //Adjust marks in line "lnum" at column "mincol" and further: add
 //"lnum_amount" to the line number and add "col_amount" to the column position.
@@ -8611,8 +8595,8 @@ pub void
 mark_col_adjust(
    LineNr lnum,
    ColNr mincol,
-   long lnum_amount,
-   long col_amount,
+   Long lnum_amount,
+   Long col_amount,
    int spaces_removed
 ) {
    int i;
@@ -8700,7 +8684,8 @@ cleanup_jumplist(Portal* wp, int loadfiles) {
       for (; i < wp->jumpListLen; ++i) {
          if (wp->jumpList[i].fmark.fnum == wp->jumpList[from].fmark.fnum
                 && wp->jumpList[from].fmark.fnum != 0
-                && wp->jumpList[i].fmark.mark.lnum == wp->jumpList[from].fmark.mark.lnum)
+                && wp->jumpList[i].fmark.mark.lnum == wp->jumpList[from].fmark.mark.lnum
+         )
             break;
       }
       wp->jumpList[to++] = wp->jumpList[from];
@@ -8724,13 +8709,13 @@ copy_jumplist(Portal* from, Portal* to) {
 
 //Free items in the jumplist of portal "wp".
 pub void
-free_jumplist(Portal *wp) {
+free_jumplist(Portal* wp) {
    for (int i = 0; i < wp->jumpListLen; ++i)
       eeglFree(wp->jumpList[i].fname);
 }
 
 pub void
-set_last_cursor(Portal *port) {
+set_last_cursor(Portal* port) {
    if (port->book)
       port->book->lastCursor = port->cursor;
 }
@@ -8738,9 +8723,7 @@ set_last_cursor(Portal *port) {
 #if defined(EXITFREE)
 pub void
 free_all_marks(void) {
-   int      i;
-
-   for (i = 0; i < NMARKS + EXTRA_MARKS; i++) {
+   for (Unt i = 0; i < NMARKS + EXTRA_MARKS; i++) {
       if (namedfm[i].fmark.mark.lnum != 0)
           eeglFree(namedfm[i].fname);
    }
@@ -8777,34 +8760,11 @@ add_mark(List* l, CS mname, Pos* pos, int bufnr, CS fname) {
 
    if (bagAddString(d, S"mark", mname) == FAIL
           || bagAddList(d, S"pos", lpos) == FAIL
-          || (fname != NULL && bagAddString(d, S"file", fname) == FAIL))
+          || (fname && bagAddString(d, S"file", fname) == FAIL)
+   )
       return FAIL;
 
    return OK;
-}
-
-//Get information about marks local to a buffer.
-private void
-get_buf_local_marks(Book *book, List *l) {
-   Byte   mname[3] = "' ";
-   int      i;
-
-   //Marks 'a' to 'z'
-   for (i = 0; i < NMARKS; ++i) {
-      mname[1] = 'a' + i;
-      add_mark(l, mname, &book->namedMarks[i], book->fiNum, NULL);
-   }
-
-    //Mark '' is a portal local mark and not a buffer local mark
-    add_mark(l, S"''", &curPor->prevContextMark, curBook->fiNum, NULL);
-
-    add_mark(l, S"'\"", &book->lastCursor, book->fiNum, NULL);
-    add_mark(l, S"'[", &book->opStart, book->fiNum, NULL);
-    add_mark(l, S"']", &book->opEnd, book->fiNum, NULL);
-    add_mark(l, S"'^", &book->lastInsert, book->fiNum, NULL);
-    add_mark(l, S"'.", &book->lastChange, book->fiNum, NULL);
-    add_mark(l, S"'<", &book->visual.vi_start, book->fiNum, NULL);
-    add_mark(l, S"'>", &book->visual.vi_end, book->fiNum, NULL);
 }
 
 //Get information about global marks ('A' to 'Z' and '0' to '9')
@@ -8841,7 +8801,24 @@ f_getmarklist(Arr(Var) argvars, Var* returnVar) {
    if (!book)
       return;
 
-   get_buf_local_marks(book, returnVar->list);
+   List* l = returnVar->list;
+   Byte mname[3] = "' ";
+
+   //Marks 'a' to 'z'
+   for (Unt i = 0; i < NMARKS; ++i) {
+      mname[1] = 'a' + i;
+      add_mark(OUT l, mname, &book->namedMarks[i], book->fiNum, NULL);
+   }
+
+   //Mark '' is a portal-local mark and not a book-local mark
+   add_mark(OUT l, S"''", &curPor->prevContextMark, curBook->fiNum, NULL);
+   add_mark(OUT l, S"'\"", &book->lastCursor, book->fiNum, NULL);
+   add_mark(OUT l, S"'[", &book->opStart, book->fiNum, NULL);
+   add_mark(OUT l, S"']", &book->opEnd, book->fiNum, NULL);
+   add_mark(OUT l, S"'^", &book->lastInsert, book->fiNum, NULL);
+   add_mark(OUT l, S"'.", &book->lastChange, book->fiNum, NULL);
+   add_mark(OUT l, S"'<", &book->visual.vi_start, book->fiNum, NULL);
+   add_mark(OUT l, S"'>", &book->visual.vi_end, book->fiNum, NULL);
 }
 
 //}}}
@@ -9492,44 +9469,37 @@ sign_list_placed(Book* rbook, CS sign_group) {
 
 //Adjust a placed sign for inserted/deleted lines.
 private void
-sign_mark_adjust(
-    LineNr line1,
-    LineNr line2,
-    long amount,
-    long amount_after
-) {
-   SignEntry *sign = NULL; //a sign in a signList
+sign_mark_adjust(LineNr line1, LineNr line2, Long amount, Long amount_after) {
+   SignEntry* sign = NULL;
    FOR_ALL_SIGNS_IN_BOOK(curBook, sign) {
       //Ignore changes to lines after the sign
       if (sign->lnum < line1)
          continue;
 
-      LineNr new_lnum = sign->lnum;
+      LineNr newLnum = sign->lnum;
 
       if (sign->lnum <= line2) {
          if (amount != MAXLNUM)
-            new_lnum += amount;
+            newLnum += amount;
       } ei (sign->lnum > line2) {
          //Lines inserted or deleted before the sign
-         new_lnum += amount_after;
+         newLnum += amount_after;
       }
 
       //If the new sign line number is past the last line in the book,
       //then don't adjust the line number. Otherwise, it will always be past
       //the last line and will not be visible.
-      if (new_lnum <= curBook->mem.lineCount)
-         sign->lnum = new_lnum;
+      if (newLnum <= curBook->mem.lineCount)
+         sign->lnum = newLnum;
    }
 }
 
-//Find index of a ":sign" subcmd from its name. "*end_cmd" must be writable.
+//Find index of a ";sign" subcmd from its name. "*end_cmd" must be writable.
 private int
-sign_cmd_idx(CS begin_cmd, //begin of sign subcmd
-             CS end_cmd //just after sign subcmd
-){
+sign_cmd_idx(CS begin_cmd, CS end_cmd){
    int idx = 0;
-   Byte save = *end_cmd;
-   *end_cmd = ZERO;
+   Byte save = end_cmd[0];
+   end_cmd[0] = ZERO;
 
    while (cmds[idx] != NULL && STRCMP(begin_cmd, cmds[idx]) != 0)
       ++idx;
@@ -9540,7 +9510,7 @@ sign_cmd_idx(CS begin_cmd, //begin of sign subcmd
 
 //Find a sign by name. Also return pointer to the previous sign.
 private Sign*
-sign_find(CS name, Sign** sp_prev) {
+sign_find(CS name, OUT Sign** sp_prev) {
    if (sp_prev)
       *sp_prev = NULL;
 
@@ -9562,13 +9532,13 @@ alloc_new_sign(CS name) {
    int start = next_sign_typenr;
 
    //Allocate a new sign.
-   Sign *sp = allocZeroed_id(sizeof(Sign), aid_sign_define_by_name);
+   Sign* sp = allocZeroed_id(sizeof(Sign), aid_sign_define_by_name);
 
    //Check that next_sign_typenr is not already being used.
    //This only happens after wrapping around. Hopefully
    //another one got deleted and we can use its number.
-   Sign *lp = first_sign;
-   while (lp != NULL) {
+   Sign* lp = first_sign;
+   while (lp) {
        if (lp->typeNr == next_sign_typenr) {
            ++next_sign_typenr;
 
@@ -9649,7 +9619,7 @@ sign_define_by_name(
    int prio
 ){
    Sign *sp_prev = NULL;
-   Sign *sp = sign_find(name, &sp_prev);
+   Sign *sp = sign_find(name, OUT &sp_prev);
    if (!sp) {
       sp = alloc_new_sign(name);
       //add the new sign to the list of signs
@@ -9714,8 +9684,8 @@ sign_exists_by_name(CS name) {
 //Free the sign specified by 'name'.
 pub int
 sign_undefine_by_name(CS name, Boole give_error) {
-   Sign *sp_prev = NULL;
-   Sign *sp = sign_find(name, &sp_prev);
+   Sign* sp_prev = NULL;
+   Sign* sp = sign_find(name, OUT &sp_prev);
    if (!sp) {
       if (give_error)
          showErrFmtMsg(_(e_unknown_sign_str), name);
@@ -9728,9 +9698,9 @@ sign_undefine_by_name(CS name, Boole give_error) {
 
 //List the signs matching 'name'
 private void
-sign_list_by_name(Byte *name) {
-   Sign *sp = sign_find(name, NULL);
-   if (sp != NULL)
+sign_list_by_name(CS name) {
+   Sign* sp = sign_find(name, NULL);
+   if (sp )
       sign_list_defined(sp);
    else
       showErrFmtMsg(_(e_unknown_sign_str), name);

@@ -89,29 +89,23 @@ void fmarks_check_names(Book* book);
 int check_mark(Pos* pos);
 void clrallmarks(Book* book);
 CS fm_getname(FileMark* fmark, int lead_len);
-void c_marks(Invocation *invo);
+void c_marks(Invocation* invo);
 void c_delmarks(Invocation* invo);
 void c_jumps(Invocation*);
 void c_clearjumps(Invocation*);
 void c_changes(Invocation*);
-void markAdjust(
-   LineNr line1,
-   LineNr line2,
-   long amount,
-   long amount_after,
-   Boole adjust_folds
-);
+void markAdjust(LineNr line1, LineNr line2, Long amount, Long amount_after, Boole adjustFolds);
 void mark_col_adjust(
    LineNr lnum,
    ColNr mincol,
-   long lnum_amount,
-   long col_amount,
+   Long lnum_amount,
+   Long col_amount,
    int spaces_removed
 );
 void cleanup_jumplist(Portal* wp, int loadfiles);
 void copy_jumplist(Portal* from, Portal* to);
-void free_jumplist(Portal *wp);
-void set_last_cursor(Portal *port);
+void free_jumplist(Portal* wp);
+void set_last_cursor(Portal* port);
 void free_all_marks(void);
 FileMarkExt * get_namedfm(void);
 void f_getmarklist(Arr(Var) argvars, Var* returnVar);

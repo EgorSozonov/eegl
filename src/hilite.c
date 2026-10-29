@@ -45,7 +45,7 @@ typedef struct {
    Unt hiId;
    Text name;
    VTermDeco flags;   //flag of text decoration combo (bold, underline etc)
-   Byte fieldPresence; //HI_* flags
+   Byte fieldPresence; //HI_HAS_* and HI_IS_LINK flags
    VTermColor fg; //foreground color
    VTermColor bg; //background color
    VTermColor under; //underline color, if underline is applied
@@ -83,7 +83,7 @@ typedef struct state_item {
    int si_end_idx;      //group ID for end pattern or zero
    int si_ends;      //if match ends before matchEndPos
    char flags;      //decorations in this state
-   long si_flags;      //HL_HAS_EOL flag in this state, and HL_SKIP* for nextList
+   Long si_flags;      //HL_HAS_EOL flag in this state, and HL_SKIP* for nextList
    Short* si_containsHiId;      //list of contained groups
    Short* nextList;      //nextgroup IDs after this item ends
    RegExternalMatch *si_extmatch;   //\z(...\) matches from start pattern
@@ -167,16 +167,16 @@ private HiliteGroup hilites[] = {
    .link = lnk},
 
 //The hilite groups
-pubWrap("typedef enum {\n#define HI(a, b, c, d, e, f) HILITE_##a,\n",
-   "#undef HI\n} HiliteId;\n"
+pubWrap("enum HiliteId : unsigned char {\n#define HI(a, b, c, d, e, f) HILITE_##a,\n",
+   "HILITE_NULL\n#undef HI\n};\n"
 )
-HI(None, HI_HAS_FG|HI_HAS_BG, 7, 0, 0, 0) //0
+HI(None, HI_HAS_FG|HI_HAS_BG, 7, 0, 0, 0)
 HI(NonText, HI_HAS_FG, 4, 0, DECO_BOLD, 0)
 HI(NormalFloat, HI_IS_LINK, 0, 0, 0, HILITE_None)
 HI(Directories, HI_IS_LINK, 0, 0, 0, HILITE_None)        //directories in CTRL-D listing
 HI(ErrorMsg, HI_HAS_FG|HI_HAS_BG, 7, 1, 0, 0)
 HI(WarningMsg, HI_HAS_FG|HI_HAS_BG, 9, 7 + 232, 0, 0)    //warning messages
-HI(MoreMsg, HI_IS_LINK, 0, 0, 0, HILITE_None)            //10 "--More--" message
+HI(MoreMsg, HI_IS_LINK, 0, 0, 0, HILITE_None)            //"--More--" message
 HI(ModeName, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)            //Mode (e.g., "-- INSERT --")
 HI(CurrentLineNr, HI_IS_LINK, 0, 0, 0, HILITE_None)      //current line number
 HI(CurrentSign, HI_IS_LINK, 0, 0, 0, HILITE_None)        //current line sign column
@@ -188,7 +188,7 @@ HI(StatusLinesInactive, HI_HAS_DECO, 0, 0, DECO_INVERSE, 0) //status line of non
 HI(VertSplit, HI_HAS_DECO, 0, 0, DECO_INVERSE, 0) //column to separate vertically split portals
 HI(OutputOfAutocmd, HI_IS_LINK, 0, 0, 0, HILITE_None)    //Titles for output from
                                                          //";set all", ";autocmd" etc
-HI(VisualMode, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)          //20 Visual mode
+HI(VisualMode, HI_HAS_DECO, 0, 0, DECO_BOLD, 0)          //Visual mode
 HI(WildcardMenu, HI_IS_LINK, 0, 0, 0, HILITE_None)       //Wildmenu hilite
 HI(FoldedLine, HI_IS_LINK, 0, 0, 0, HILITE_None)         //Folded line
 HI(DiffTextAdd, HI_HAS_FG, 2, 0, 0, 0)                   //Added diff line
@@ -196,7 +196,7 @@ HI(DiffText, HI_HAS_FG, 4, 0, 0, 0)                      //Changed diff line
 HI(DiffChangedTextInChanged, HI_IS_LINK, 0, 0, 0, HILITE_None) //Text Changed in changed diff
 HI(DiffAddedTextInChanged, HI_IS_LINK, 0, 0, 0, HILITE_None) //Text Added in changed diff line
 HI(DiffDeleted, HI_HAS_FG|HI_HAS_BG|HI_HAS_DECO, 4, 14, DECO_BOLD, 0) //HILITE_DiffDeleted
-HI(SignColumn, HI_HAS_FG|HI_HAS_BG, 6, 232 + 10, 0, 0)   //30 Sign column
+HI(SignColumn, HI_HAS_FG|HI_HAS_BG, 6, 232 + 10, 0, 0)   //Sign column
 HI(Pmenu, HI_HAS_FG|HI_HAS_BG, 0, 4, 0, 0)               //popup menu normal item
 HI(PmenuSelected, HI_HAS_BG, 0, 4 + 232, 0, 0)           //popup menu selected item
 HI(PmenuMatchedText, HI_IS_LINK, 0, 0, 0, HILITE_None)   //popup menu matched text in normal item
@@ -216,7 +216,7 @@ HI(TabpanelFill, HI_IS_LINK, 0, 0, 0, HILITE_None)       //tabpanel filler
 HI(CursorLine, HI_HAS_BG, 0, 8 + 232, 0, 0)              //@cursorline
 HI(LocationPortalSelected, HI_IS_LINK, 0, 0, 0, HILITE_PmenuSelectedItem) //location portal line
                                                                           //currently selected
-HI(TerminalStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None)  //50 status lines of terminal portals
+HI(TerminalStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None)  //status lines of terminal portals
 HI(TerminalNoncurrentStatusLine, HI_IS_LINK, 0, 0, 0, HILITE_None) //status lines of
                                                                     //not-current terminal
                                                                     //portals
@@ -228,8 +228,8 @@ HI(MetaSpecialKeys, HI_IS_LINK, 0, 0, 0, HILITE_None)    //Meta & special keys l
                                                          //";map", text that is
                                                          //displayed different
 HI(LineNr, HI_HAS_FG, 3, 0, 0, 0)             //line number for ";number" and ";#" commands
-HI(LineNrAbove, HI_IS_LINK, 0, 0, 0, HILITE_None)
-HI(LineNrBelow, HI_IS_LINK, 0, 0, 0, HILITE_None)
+HI(LineNrAbove, HI_IS_LINK, 0, 0, 0, HILITE_LineNr)
+HI(LineNrBelow, HI_IS_LINK, 0, 0, 0, HILITE_LineNr)
 HI(Directory, HI_HAS_FG, 14, 0, 0, 0)
 HI(CursorLineNr, HI_HAS_FG|HI_HAS_DECO, 3, 0, DECO_BOLD, 0)
 HI(Question, HI_HAS_FG|HI_HAS_DECO, 10, 0, DECO_BOLD, 0)
@@ -276,7 +276,6 @@ private Text keyName(HiKey kv, CS s);
 private Text keyOf(HiKeyValue kv, CS s);
 private Text valueOf(HiKeyValue kv, CS s);
 private Boole sliceCmpToConst0(Text a, Arr(char) b, Unt len);
-private Text hiliteGroupName(Short hiId);
 private int setDecoration(Text arg, OUT HiliteGroup* g);
 private Boole getColorByName(OUT VTermColor* res, Text name);
 private Boole setForeground(HiliteGroup* group, Text arg);
@@ -294,20 +293,17 @@ private Boole printHiliteHeaderWorker(
    HiliteGroup* group
 );
 private Boole printHiliteHeader(
-   int       didHeader,   //did header already
-   int       lineLen,     //length of the part of the line that has been printed already
-   Short hiId
+   int didHeader,   //did header already
+   int lineLen,     //length of the part of the line that has been printed already
+   HiliteId hiId
 );
-private Boole linkHilite(
-   HiliteGroup* group,
-   Text toName
-);
+private Boole linkHilite(HiliteGroup* group, Text toName);
 private HiliteKey parseHiliteKey(Text key);
 private Decoration writeToDecoration(HiliteGroup* restrict g);
 private void parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line);
 private void clearHiliteWorker(OUT HiliteGroup* g);
 private void set_normal_colors(void);
-private Short hiResolveLinks(Short hiId);
+private Short hiResolveLinks(HiliteId hiId);
 private HiliteGroup* resolveLinksByGroup(HiliteGroup* group);
 private Bag * getDecorationDict(int hlDeco);
 private Bag* toDict(Short hiId, int resolveLinks);
@@ -352,7 +348,7 @@ private void find_endpos(
    PosNoVirt   *startpos,   //where to start looking for an END match
    PosNoVirt   *m_endpos,   //return: end of match
    PosNoVirt   *hl_endpos,   //return: end of highlighting
-   long   *flagsp,   //return: flags of matching END
+   Long   *flagsp,   //return: flags of matching END
    PosNoVirt   *end_endpos,   //return: end of end pattern match
    int      *end_idx,   //return: group ID for end pat. match, or 0
    RegExternalMatch *start_ext)   //submatches from the start pattern
@@ -385,7 +381,7 @@ private Short check_keyword_id(
    CS line,
    int startcol,   //position in line to check for keyword
    int* endcolp,   //return: character after found keyword
-   long* flagsp,   //return: flags of matching keyword
+   Long* flagsp,   //return: flags of matching keyword
    Short** next_listp,   //return: next_list of matching keyword
    StateItem* currStateItem,   //item at the top of the stack
    int*
@@ -576,7 +572,7 @@ initHilite() {
    decorationsG = alloc((countGroups + 10)*sizeof(Decoration));
    set_normal_colors();
    for (Unt i = 0; i < ARRAY_LENGTH(hilites); i++) {
-      hilites[i].hiId = i;
+      hilites[i].hiId = (HiliteId)i;
    }
    lo("yyy after init LineNr id %d fg %d", HILITE_LineNr, hilites[HILITE_LineNr].fg);
 }
@@ -755,7 +751,7 @@ printHiliteHeaderNew(HiliteGroup* group){
    msg_putchar('\n');
    msg_outtrans(group->name.c);
    int endcol = 15;
-   if (visibleColsG <= (long)endcol)   //avoid hang for tiny window
+   if (visibleColsG <= (Long)endcol)   //avoid hang for tiny window
       endcol = (int)(visibleColsG - 1);
 
    msg_advance(endcol);
@@ -793,7 +789,7 @@ printHiliteHeaderWorker(
 
    if (msgColG >= endcol)   //output at least one space
       endcol = msgColG + 1;
-   if (visibleColsG <= (long)endcol)   //avoid hang for tiny window
+   if (visibleColsG <= (Long)endcol)   //avoid hang for tiny window
       endcol = (int)(visibleColsG - 1);
 
    msg_advance(endcol);
@@ -811,11 +807,11 @@ printHiliteHeaderWorker(
 //Output the syntax group header. Return true when started a new line.
 private Boole
 printHiliteHeader(
-   int       didHeader,   //did header already
-   int       lineLen,     //length of the part of the line that has been printed already
-   Short hiId
+   int didHeader,   //did header already
+   int lineLen,     //length of the part of the line that has been printed already
+   HiliteId hiId
 ){
-   HiliteGroup* group = hilites + hiId;
+   HiliteGroup* group = hilites + (Unt)hiId;
    return printHiliteHeaderWorker(didHeader, lineLen, group);
 }
 
@@ -828,7 +824,7 @@ linkHilite(HiliteGroup* group, Text toName) {
    clearHiliteWorker(OUT group);
 
    Short toId = hiliteGroupByName(toName);
-   if (toId == SHORT) {
+   if (toId == HILITE_NULL) {
       return false;
    }
 
@@ -868,7 +864,7 @@ writeToDecoration(HiliteGroup* restrict g) {
    deco.under = g->under;
    deco.flags = g->flags;
    deco.fieldPresence = g->fieldPresence;
-   deco.hiId = g->hiId;
+   deco.hiId = (Short)g->hiId;
    return deco;
 }
 
@@ -949,9 +945,9 @@ doHilite(CS line, Boole forceit, Boole init) { //true when called for initializi
 
    //Isolate the name.
    Text groupName = keyName(keys[0], line);
-   Unt hiId = keys[0].start < SHORT ? hiliteGroupByName(groupName) : SHORT;
+   HiliteId hiId = keys[0].start < SHORT ? hiliteGroupByName(groupName) : HILITE_NULL;
 
-   if (hiId == SHORT) {
+   if (hiId == HILITE_NULL) {
       showErrFmtMsg(_(e_hilite_group_name_not_found_str), line);
       return;
    }
@@ -1045,7 +1041,7 @@ clearHiliteWorker(OUT HiliteGroup* g) {
 //Set the normal foreground and background colors according to the "Normal" hiliting group.
 private void
 set_normal_colors(void) {
-   Decoration deco = getFullDecoration(0);
+   Decoration deco = getFullDecoration(HILITE_None);
    //If the normal fg or bg color changed, a complete redraw is required.
    if (defaultFgColorG != deco.fg || defaultBgColorG != deco.bg) {
       defaultFgColorG = deco.fg;
@@ -1060,23 +1056,23 @@ set_normal_colors(void) {
 //  return ((g->flags & flag) != 0) ? S"1" : null;
 //}
 
-//Lookup a hilite group name and return its ID. If it is not found, SHORT is returned.
+//Lookup a hilite group name and return its ID. If it is not found, HILITE_NULL is returned.
 pub Short
 hiliteGroupByName(Text name) { //:hiliteGroupByName
-   return getOrDefault(name, SHORT, hiNames);
+   return getOrDefault(name, (Short)HILITE_NULL, hiNames);
 }
 
 //Lookup a hilite group name and return its decos. Return zero if not found.
 pub Decoration
 decosByHiliteName(Text name) {
    Short hiId = hiliteGroupByName(name);
-   return hiId != SHORT ? getFullDecoration(hiId) : EMPTY_DECO;
+   return hiId != HILITE_NULL ? getFullDecoration(hiId) : EMPTY_DECO;
 }
 
 //Return true if hilite group "name" exists.
 pub Boole
 hiliteExists(Text name) {
-   return (hiliteGroupByName(name) < SHORT);
+   return (hiliteGroupByName(name) < (Short)HILITE_NULL);
 }
 
 //Return the name of hilite group "id". When not a valid ID return an empty string.
@@ -1090,16 +1086,16 @@ syn_id2name(Unt id) {
 //Translate a group ID to hilite decos. Precondition: "hl_id" must be > 0
 pub Byte
 decorationByHiliteId(Short hiId) {
-   Unt resolvedId = hiResolveLinks(hiId);
-   assert(resolvedId < SHORT);
+   Short resolvedId = hiResolveLinks(hiId);
+   assert(resolvedId < (Short)HILITE_NULL);
    return hilites[resolvedId].flags;
 }
 
 //Get the colors and decos for a group ID. NOTE: the colors will be regular0 when not set
 pub Byte
 syn_id2colors(Short hiId, OUT VTermColor* fgp, OUT VTermColor* bgp) {
-   Unt resolvedId = hiResolveLinks(hiId);
-   assert(resolvedId < SHORT);
+   Short resolvedId = hiResolveLinks(hiId);
+   assert(resolvedId < HILITE_NULL);
    Decoration deco = getFullDecoration(resolvedId);
 
    *fgp = deco.fg;
@@ -1107,12 +1103,12 @@ syn_id2colors(Short hiId, OUT VTermColor* fgp, OUT VTermColor* bgp) {
    return deco.flags;
 }
 
-//Translate a group ID to the final group ID (following links). hiId must be != SHORT
+//Translate a group ID to the final group ID (following links). hiId must be != HILITE_NULL
 private Short
-hiResolveLinks(Short hiId) {
+hiResolveLinks(HiliteId hiId) {
    //Follow links until there is no more. Look out for loops! Break after 100 links.
    for (int depth = 0; depth < 100; depth++) {
-      HiliteGroup* group = hilites + hiId;
+      HiliteGroup* group = hilites + (Short)hiId;
       if ((group->fieldPresence & HI_IS_LINK) == 0)
          break;
       hiId = group->link;
@@ -1155,7 +1151,7 @@ setCompletionContextInHiliteCommand(OUT Expand* xp, CS arg) {
 pub Text
 getHiliteGroupName(Expand*, int id) {
    Short hiId = (Short)id;
-   if (hiId == SHORT)
+   if (hiId == HILITE_NULL)
       return (Text){null, 0};
    ei (hiId == countGroups && hiComplIncludeNoneG != 0)
       return text(S"NONE");
@@ -1299,7 +1295,7 @@ f_hlget(Arr(Var) argvars, OUT Var* returnVar) {
 
 pub char
 getDecoFlags(Short hiId) {
-   if (hiId == SHORT) {
+   if (hiId == HILITE_NULL) {
       return 0;
    }
    return hilites[hiId].flags;
@@ -1309,7 +1305,6 @@ pub Decoration
 getFullDecoration(Short hiId) {
    Short resolvedId = hiResolveLinks(hiId);
    HiliteGroup* g = hilites + resolvedId;
-
    return (Decoration) {
       .fg = g->fg, .bg = g->bg, .under = g->under, .flags = g->flags,
       .fieldPresence = g->fieldPresence, .hiId = hiId
@@ -1327,7 +1322,7 @@ decoEq(Decoration a, Decoration b) {
 //";echohl {name}".
 pub void
 c_echohl(Invocation* invo) {
-   echoDecoFlagsG = hilites[getOrDefault(mbText(invo->arg), SHORT, hiNames)].flags;
+   echoDecoFlagsG = hilites[getOrDefault(mbText(invo->arg), HILITE_NULL, hiNames)].flags;
 }
 
 //"hilite(name)" function
@@ -1348,7 +1343,7 @@ f_hlexists(Arr(Var) argvars, OUT Var* returnVar) {
 //Struct used to store one state of the state stack.
 typedef struct buf_state {
    int bs_idx;    //index of pattern
-   int bs_flags;    //flags for pattern
+   Unt bs_flags;    //flags for pattern
    int bs_seqnr;    //stores si_seqnr
    int bs_cchar;    //stores si_cchar
    RegExternalMatch* bs_extmatch; //external matches from start pattern
@@ -1402,16 +1397,15 @@ struct SyntaxState {
    SyntaxState   *next; //next entry in used or free list
    LineNr   lnum;   //line number for this state
    union {
-      BufState   stack[SST_FIX_STATES]; //short state stack
-      ArrayList   arrayList;   //growarray for long state stack
+      BufState stack[SST_FIX_STATES]; //short state stack
+      ArrayList arrayList;   //growarray for Long state stack
    } sst_union;
-   Unt      next_flags; //flags for next_list
-   int      stacksize;  //number of states on the stack
-   Short   *next_list;  //"nextgroup" list in this state (this is a copy, don't free it!)
-   DisplayTick   tick;   //tick when last displayed
-   LineNr   invalidatingChangeLnum;//when non-zero, change in this line may have made the state invalid
+   Unt next_flags; //flags for next_list
+   int stacksize;  //number of states on the stack
+   Short* next_list;  //"nextgroup" list in this state (this is a copy, don't free it!)
+   DisplayTick tick;   //tick when last displayed
+   LineNr invalidatingChangeLnum;//when non-zero, change in this line may have made the state invalid
 };
-
 
 //Each keyword has one keyentry, which is linked in a hash list.
 typedef struct KeyEntry KeyEntry;
@@ -1524,7 +1518,7 @@ private PosNoVirt next_match_m_endpos;   //position for end of next match
 private PosNoVirt next_match_h_startpos;   //pos. for highl. start of next match
 private PosNoVirt next_match_h_endpos;   //pos. for highl. end of next match
 private int nextMatchIdx;      //index of matched item
-private long next_match_flags;      //flags for next match
+private Long next_match_flags;      //flags for next match
 private PosNoVirt next_match_eos_pos;   //end of start pattn (start region)
 private PosNoVirt next_match_eoe_pos;   //pos. for end of end pattern
 private int next_match_end_idx;      //ID of group for end pattn or zero
@@ -1558,7 +1552,7 @@ private int current_line_id = 0;   //unique number for current line
 
 private void syn_stack_apply_changes_block(SyntaxBlock *block, Book* book);
 private void find_endpos(
-      int idx, PosNoVirt *startpos, PosNoVirt *m_endpos, PosNoVirt *hl_endpos, long *flagsp,
+      int idx, PosNoVirt *startpos, PosNoVirt *m_endpos, PosNoVirt *hl_endpos, Long *flagsp,
       PosNoVirt *end_endpos, int *end_idx, RegExternalMatch *start_ext
 );
 
@@ -1693,7 +1687,7 @@ syntaxStartLine(Portal *wp, LineNr lnum) {
             prev = store_current_state();
       }
 
-      //This can take a long time: break when CTRL-C pressed. The current state will be wrong then
+      //This can take a Long time: break when CTRL-C pressed. The current state will be wrong then
       line_breakcheck();
       if (gotInterruptG) {
          currLnumS = lnum;
@@ -1839,7 +1833,7 @@ syn_sync(Portal   *wp, LineNr   start_lnum, SyntaxState   *last_valid){
       end_lnum = start_lnum;
       lnum = start_lnum;
       while (--lnum > break_lnum) {
-         //This can take a long time: break when CTRL-C pressed.
+         //This can take a Long time: break when CTRL-C pressed.
          line_breakcheck();
          if (gotInterruptG) {
             invalidate_current_state();
@@ -2111,7 +2105,7 @@ synFreeBlock(SyntaxBlock *block) {
 //Also used to allocate array[] for the first time.
 private void
 syn_stack_alloc(void) {
-   long   len;
+   Long   len;
    SyntaxState   *to, *from;
    SyntaxState   *state;
 
@@ -2559,7 +2553,7 @@ syntax_check_changed(LineNr lnum) {
 
 //Finish the current line.
 //This doesn't return any attributes, it only gets the state at the end of
-//the line.  It can start anywhere in the line, as long as the current state is valid.
+//the line.  It can start anywhere in the line, as Long as the current state is valid.
 private int
 syn_finish_line(int       syncing) {     //called for syncing
    StateItem   *currStateItem;
@@ -2645,7 +2639,7 @@ getCurrentDeco(
    StateItem   *currStateItem, *sip = NULL;
    int      startcol;
    int      endcol;
-   long   flags;
+   Long   flags;
    int      cchar;
    Short* next_list;
    int      found_match;          //found usable match
@@ -2705,7 +2699,7 @@ getCurrentDeco(
    do {
       found_match = false;
       keep_next_list = false;
-      hiId = SHORT;
+      hiId = HILITE_NULL;
 
       //1. Check for a current state. Only when there is no current state, or if the current state
       //may contain other things, we need to check for keywords and patterns. Always need to check
@@ -2725,7 +2719,7 @@ getCurrentDeco(
                hiId = check_keyword_id(
                   line, (int)currColS, &endcol, &flags, OUT &next_list, currStateItem, &cchar
                );
-               if (hiId != SHORT) {
+               if (hiId != HILITE_NULL) {
                   if (push_current_state(KEYWORD_IDX) == OK) {
                      currStateItem = &CUR_STATE(current_state.len - 1);
                      currStateItem->matchStartCol = currColS;
@@ -2975,7 +2969,7 @@ getCurrentDeco(
                || currLnumS < sip->hiEndPos.lnum
                || (currLnumS == sip->hiEndPos.lnum && currColS < sip->hiEndPos.col))
          ){
-            currDeco = sip->hiId < SHORT ? decorationsG[sip->hiId] : EMPTY_DECO;
+            currDeco = sip->hiId < (Short)HILITE_NULL ? decorationsG[sip->hiId] : EMPTY_DECO;
             current_id = sip->hiId;
             current_trans_id = sip->transparentHiId;
             break;
@@ -3362,7 +3356,7 @@ find_endpos(
    PosNoVirt   *startpos,   //where to start looking for an END match
    PosNoVirt   *m_endpos,   //return: end of match
    PosNoVirt   *hl_endpos,   //return: end of highlighting
-   long   *flagsp,   //return: flags of matching END
+   Long   *flagsp,   //return: flags of matching END
    PosNoVirt   *end_endpos,   //return: end of end pattern match
    int      *end_idx,   //return: group ID for end pat. match, or 0
    RegExternalMatch *start_ext)   //submatches from the start pattern
@@ -3703,7 +3697,7 @@ check_keyword_id(
    CS line,
    int startcol,   //position in line to check for keyword
    int* endcolp,   //return: character after found keyword
-   long* flagsp,   //return: flags of matching keyword
+   Long* flagsp,   //return: flags of matching keyword
    Short** next_listp,   //return: next_list of matching keyword
    StateItem* currStateItem,   //item at the top of the stack
    int*
@@ -4011,11 +4005,11 @@ clearSubcommand(Invocation* invo, int syncing) {
    } else {
       //Clear the group IDs that are in the argument.
       while (!endsComm(arg)) {
-         Short     hiId;
+         Short hiId;
          arg_end = skiptowhite(arg);
          if (*arg == '@') {
             hiId = syntaxClusterByName((Text){.c = arg + 1, .len = arg_end - arg - 1});
-            if (hiId == SHORT) {
+            if (hiId == HILITE_NULL) {
                showErrFmtMsg(_(e_no_such_syntax_cluster_str_1), arg);
                break;
             } else {
@@ -4027,7 +4021,7 @@ clearSubcommand(Invocation* invo, int syncing) {
             }
          } else {
             hiId = syntaxClusterByName((Text){.c = arg, .len = arg_end - arg});
-            if (hiId == SHORT) {
+            if (hiId == HILITE_NULL) {
                showErrFmtMsg(_(e_no_such_highlight_group_name_str), arg);
                break;
             } else
@@ -4350,7 +4344,7 @@ syn_list_cluster(int id) {
 
    if (msgColG >= endcol)   //output at least one space
       endcol = msgColG + 1;
-   if (visibleColsG <= (long)endcol)   //avoid hang for tiny window
+   if (visibleColsG <= (Long)endcol)   //avoid hang for tiny window
       endcol = (int)(visibleColsG - 1);
 
    msg_advance(endcol);
@@ -4904,10 +4898,10 @@ syn_cmd_keyword(Invocation* invo, int) {
 
    if (rest) {
       if (invo->skip)
-         hiId = SHORT;
+         hiId = HILITE_NULL;
       else
          hiId = hiliteGroupByName(mbText(arg));
-      if (hiId != SHORT)
+      if (hiId != HILITE_NULL)
          //allocate a buffer, for removing backslashes in the keyword
          keyword_copy = alloc(STRLEN(rest) + 1);
       if (keyword_copy) {
@@ -5033,7 +5027,7 @@ syn_cmd_match( Invocation   *invo, int      syncing) {      //true for ":syntax 
       if (!endsComm(rest) || invo->skip)
          rest = NULL;
       ei (ga_grow(&curPor->ownSyntax->syntaxPatterns, 1) == OK
-            && (hiId = hiliteGroupByName(mbText(arg))) != SHORT
+            && (hiId = hiliteGroupByName(mbText(arg))) != HILITE_NULL
       ) {
          syn_incl_toplevel(hiId, &syn_opt_arg.flags);
          //Store the pattern in the syn_items list
@@ -5101,13 +5095,13 @@ syn_cmd_region(
                //patterns found in the line
    struct pat_ptr   *ppp;
    struct pat_ptr   *ppp_next;
-   int         pat_count = 0;      //nr of syn_patterns found
+   int pat_count = 0;      //nr of syn_patterns found
    Short hiId;
    Short matchgroup_id = SHORT;
-   int         not_enough = false;   //not enough arguments
-   int         illegal = false;   //illegal arguments
-   int         success = false;
-   int         idx;
+   int not_enough = false;   //not enough arguments
+   int illegal = false;   //illegal arguments
+   int success = false;
+   int idx;
 
    //Isolate the group name, check for validity
    rest = get_group_name(arg, OUT &group_name_end);
@@ -5118,7 +5112,7 @@ syn_cmd_region(
 
    init_syn_patterns();
 
-   SynOptArg   syn_opt_arg;
+   SynOptArg syn_opt_arg;
    syn_opt_arg.flags = 0;
    syn_opt_arg.keyword = false;
    syn_opt_arg.sync_idx = NULL;
@@ -5228,7 +5222,7 @@ syn_cmd_region(
       if (!endsComm(rest) || invo->skip)
          rest = NULL;
       ei (ga_grow(&(curPor->ownSyntax->syntaxPatterns), pat_count) == OK
-            && (hiId = hiliteGroupByName(mbText(arg))) != SHORT
+            && (hiId = hiliteGroupByName(mbText(arg))) != HILITE_NULL
       ) {
           syn_incl_toplevel(hiId, &syn_opt_arg.flags);
          //Store the start/skip/end in the syn_items list
@@ -5628,7 +5622,7 @@ syn_cmd_sync(Invocation* invo, int) {
     CS next_arg;
     int      illegal = false;
     int      finished = false;
-    long   n;
+    Long   n;
 
    if (endsComm(arg_start)) {
       syn_cmd_list(invo, true);
@@ -5929,13 +5923,11 @@ in_id_list(
    SyntaxInfo* ssp,      //group id and ":syn include" tag of group
    Unt      flags      //group flags
 ){
-   int      retval;
+   int  retval;
    Arr(Short) hiIds;
-   Short   item;
-   Short   hiId = ssp->hiId;
+   Short item;
+   Short hiId = ssp->hiId;
    static int   depth = 0;
-   int      r;
-   int      toplevel;
 
    //If ssp has a "containedin" list and "currStateItem" is in it, return true.
    if (currStateItem != NULL
@@ -5964,7 +5956,7 @@ in_id_list(
 
     //Is this top-level (i.e. not 'contained') in the file it was declared in?
     //For included files, this is different from HL_CONTAINED, which is set unconditionally.
-    toplevel = !(flags & HL_CONTAINED) || (flags & HL_INCLUDED_TOPLEVEL);
+    int toplevel = !(flags & HL_CONTAINED) || (flags & HL_INCLUDED_TOPLEVEL);
 
    //If the first item is "ALLBUT", return true if "id" is NOT in the
    //contains list.  We also require that "id" is at the same ":syn include"
@@ -5992,14 +5984,14 @@ in_id_list(
    //Return "retval" if id is in the contains list.
    while (item != 0) {
       if (item == hiId)
-          return retval;
+         return retval;
       if (item >= SYNID_CLUSTER) {
          hiIds = SYN_CLSTR(synBlockS)[item - SYNID_CLUSTER].hiIds;
          //restrict recursiveness to 30 to avoid an endless loop for a
          //cluster that includes itself (indirectly)
          if (hiIds && depth < 30) {
             ++depth;
-            r = in_id_list(NULL, hiIds, ssp, flags);
+            int r = in_id_list(NULL, hiIds, ssp, flags);
             --depth;
             if (r)
                return retval;
@@ -6044,7 +6036,7 @@ c_syntax(Invocation* invo) {
    CS arg = invo->arg;
    CS subcmd_end;
    CS subcmd_name;
-   int      i;
+   int i;
 
    synCommline = invo->commline;
 
@@ -6132,7 +6124,7 @@ reset_expand_highlight(void) {
 
 //Handle command line completion for :match and :echohl command: Add "NONE" as hilite group.
 pub void
-set_context_in_echohl_cmd(Expand *xp, CS arg) {
+set_context_in_echohl_cmd(Expand* xp, CS arg) {
    xp->context = EXPAND_HILITE_GROUP;
    xp->input = mbText(arg);
    hiComplIncludeNoneG = 1;
@@ -6219,15 +6211,14 @@ get_syntax_name(Expand* xp, int idx) {
    return NULL;
 }
 
-
 //Function called for expression evaluation: get syntax ID at file position.
 pub int
 syn_get_id(
-   Portal   *wp,
-   long   lnum,
-   ColNr   col,
-   int      trans,      //remove transparency
-   int      keep_state  //keep state of char at "col"
+   Portal* wp,
+   Long lnum,
+   ColNr col,
+   int trans,      //remove transparency
+   int keep_state  //keep state of char at "col"
 ){
    //When the position is not after the current position and in the same
    //line of the same window with the same buffer, need to restart parsing.
@@ -6259,7 +6250,7 @@ syn_get_stack_item(int i) {
 
 private int
 syn_cur_foldlevel(void) {
-   int  level = 0;
+   int level = 0;
    for (int i = 0; i < current_state.len; ++i) {
       if (CUR_STATE(i).si_flags & HL_FOLD)
          ++level;
@@ -6269,7 +6260,7 @@ syn_cur_foldlevel(void) {
 
 //Function called to get folding level for line "lnum" in portal "po".
 pub int
-syn_get_foldlevel(Portal *po, long lnum) {
+syn_get_foldlevel(Portal *po, Long lnum) {
    int level = 0;
 
    //Return quickly when there are no fold items at all.

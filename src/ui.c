@@ -91,9 +91,9 @@ typedef struct {
 
 typedef struct {
    CS str;
-   Unt      len : 30;
-   unsigned int  initial : 1;
-   unsigned int  final : 1;
+   Unt len : 30;
+   unsigned int initial : 1;
+   unsigned int final : 1;
 } VTermStringFragment;
 
 typedef struct {
@@ -114,11 +114,11 @@ enum {
 
 typedef struct {
   VTermPos pos;
-  int      buttons;
+  int buttons;
 #define MOUSE_BUTTON_LEFT 0x01
 #define MOUSE_BUTTON_MIDDLE 0x02
 #define MOUSE_BUTTON_RIGHT 0x04
-  int      flags;
+  Unt flags;
 #define MOUSE_WANT_CLICK 0x01
 #define MOUSE_WANT_DRAG  0x02
 #define MOUSE_WANT_MOVE  0x04
@@ -576,7 +576,7 @@ struct VTermState {
    //Mouse state
    int mouse_col, mouse_row;
    int mouse_buttons;
-   int mouse_flags;
+   Unt mouse_flags;
 
    //Last glyph output, for Unicode recombining purposes
    Unt* combine_chars;
@@ -626,26 +626,26 @@ struct VTermState {
   union {
     char decrqss[4];
     struct {
-      uint16_t mask;
+      Short mask;
       enum {
-        SELECTION_INITIAL,
-        SELECTION_SELECTED,
-        SELECTION_QUERY,
-        SELECTION_SET_INITIAL,
-        SELECTION_SET,
-        SELECTION_INVALID,
+         SELECTION_INITIAL,
+         SELECTION_SELECTED,
+         SELECTION_QUERY,
+         SELECTION_SET_INITIAL,
+         SELECTION_SET,
+         SELECTION_INVALID,
       } state : 8;
       uint32_t recvpartial;
       uint32_t sendpartial;
     } selection;
   } tmp;
 
-  struct {
-    VTermSelectionCallbacks* callbacks;
-    void *user;
-    CS buffer;
-    Unt buflen;
-  } selection;
+   struct {
+      VTermSelectionCallbacks* callbacks;
+      void *user;
+      CS buffer;
+      Unt buflen;
+   } selection;
 };
 
 struct VTermGlyphInfo {
@@ -701,7 +701,6 @@ fill_utf8(long codepoint, CS str) {
 
 //}}}
 //{{{parsing layer
-
 
 //Flag to indicate non-final subparameters in a single CSI parameter.
 //Consider
@@ -840,7 +839,7 @@ private void string_fragment(VTerm *vt, CS str, Unt len, int final);
 private Unt vterm_input_write(VTerm *vt, CS bytes, Unt len);
 private void vterm_parser_set_callbacks(VTerm* vt, VTermParserCallbacks* callbacks, void* user);
 private void statePutglyph(VTermState* state, Unt chars[], int width, VTermPos pos);
-private void updatecursor(VTermState *state, VTermPos *oldpos, int cancel_phantom);
+private void updatecursor(VTermState* state, VTermPos* oldpos, Boole cancel_phantom);
 private void stateErase(VTermState* state, VTermRect rect);
 private VTermState* vterm_state_new(VTerm* vt);
 private void vterm_state_free(VTermState *state);
@@ -875,7 +874,7 @@ private void osc_selection(VTermState* state, VTermStringFragment frag);
 private int on_osc(int command, VTermStringFragment frag, void* user);
 private void request_status_string(VTermState* state, VTermStringFragment frag);
 private int on_dcs(CS command, Unt commandlen, VTermStringFragment frag, void *user);
-private int on_apc(VTermStringFragment frag, void *user);
+private int on_apc(VTermStringFragment frag, void* user);
 private int on_pm(VTermStringFragment frag, void* user);
 private int on_sos(VTermStringFragment frag, void* user);
 private Boole on_resize(Short rows, Short cols, void* user);
@@ -4177,16 +4176,20 @@ statePutglyph(VTermState* state, Unt chars[], int width, VTermPos pos) {
 }
 
 private void
-updatecursor(VTermState *state, VTermPos *oldpos, int cancel_phantom) {
+updatecursor(VTermState* state, VTermPos* oldpos, Boole cancel_phantom) {
    if (state->pos.col == oldpos->col && state->pos.row == oldpos->row)
       return;
 
    if (cancel_phantom)
       state->at_phantom = 0;
 
-   if (state->callbacks && state->callbacks->movecursor)
-      if ((*state->callbacks->movecursor)(state->pos, *oldpos, state->mode.cursor_visible, state->cbdata))
-         return;
+   if (state->callbacks
+      && state->callbacks->movecursor
+      && ((*state->callbacks->movecursor)(
+               state->pos, *oldpos, state->mode.cursor_visible, state->cbdata)
+         )
+   )
+      return;
 }
 
 private void
@@ -4545,7 +4548,7 @@ on_text(CS, Unt, void* user) {
       vterm_allocator_free(state->vt, chars);
    }
 
-   updatecursor(state, &oldpos, 0);
+   updatecursor(state, &oldpos, false);
 
 #ifdef DEBUG
    if (state->pos.row < 0 || state->pos.row >= state->rows ||
@@ -4650,7 +4653,7 @@ on_control(unsigned char control, void *user) {
       return 0;
    }
 
-   updatecursor(state, &oldpos, 1);
+   updatecursor(state, &oldpos, true);
 
 #ifdef DEBUG
    if (state->pos.row < 0 || state->pos.row >= state->rows
@@ -4707,7 +4710,7 @@ savecursor(VTermState* state, int save) {
 
       vterm_state_savepen(state, 0);
 
-      updatecursor(state, &oldpos, 1);
+      updatecursor(state, &oldpos, true);
    }
 }
 
@@ -4934,7 +4937,7 @@ on_csi(
    VTermState *state = user;
    int leader_byte = 0;
    int intermed_byte = 0;
-   int cancel_phantom = 1;
+   Boole cancel_phantom = true;
    VTermPos oldpos = state->pos;
    int handled = 1;
 
@@ -5267,7 +5270,7 @@ on_csi(
       }
       if (state->pos.col + state->combine_width >= (int)row_width && state->mode.autowrap) {
          state->at_phantom = 1;
-         cancel_phantom = 0;
+         cancel_phantom = false;
       }
       break;
    }
@@ -5606,7 +5609,7 @@ on_csi(
       UBOUND(state->pos.col, THISROWWIDTH(state) - 1);
    }
 
-  updatecursor(state, &oldpos, cancel_phantom);
+   updatecursor(state, &oldpos, cancel_phantom);
 
 #ifdef DEBUG
    if (state->pos.row < 0 || state->pos.row >= state->rows
@@ -5744,12 +5747,13 @@ osc_selection(VTermState* state, VTermStringFragment frag) {
       Unt bufcur = 0;
       CS buffer = state->selection.buffer;
 
-      uint32_t x = 0; /* Current decoding value */
-      int n = 0;      /* Number of sextets consumed */
+      uint32_t x = 0; // Current decoding value
+      int n = 0;      // Number of sextets consumed
 
       if (state->tmp.selection.recvpartial) {
          n = state->tmp.selection.recvpartial >> 24;
-         x = state->tmp.selection.recvpartial & 0x03FFFF; /* could be up to 18 bits of state in here */
+         // could be up to 18 bits of state in here
+         x = state->tmp.selection.recvpartial & 0x03FFFF;
 
          state->tmp.selection.recvpartial = 0;
       }
@@ -5777,12 +5781,15 @@ osc_selection(VTermState* state, VTermStringFragment frag) {
 
                state->tmp.selection.state = SELECTION_INVALID;
                if (state->selection.callbacks->set) {
-                  (*state->selection.callbacks->set)(state->tmp.selection.mask, (VTermStringFragment){
-                      .str     = NULL,
-                      .len     = 0,
-                      .initial = true,
-                      .final   = true,
-                      }, state->selection.user);
+                  (*state->selection.callbacks->set)(
+                     state->tmp.selection.mask,
+                     (VTermStringFragment){
+                         .str     = NULL,
+                         .len     = 0,
+                         .initial = true,
+                         .final   = true,
+                     }, state->selection.user
+                  );
                }
                break;
             }
@@ -5961,7 +5968,7 @@ on_dcs(CS command, Unt commandlen, VTermStringFragment frag, void *user) {
 }
 
 private int
-on_apc(VTermStringFragment frag, void *user) {
+on_apc(VTermStringFragment frag, void* user) {
    VTermState *state = user;
 
    if (state->fallbacks && state->fallbacks->apc && (*state->fallbacks->apc)(frag, state->fbdata))
@@ -7952,8 +7959,8 @@ term_enter_normal_mode(void) {
    curPor->cursor.lnum = term->scrollbackScrolled
                     + term->cursorPos.row + 1;
    check_cursor();
-   if (coladvance(term->cursorPos.col) == FAIL)
-      coladvance(MAXCOL);
+   if (doColAdvance(term->cursorPos.col) == FAIL)
+      doColAdvance(MAXCOL);
    curPor->setCursWant = true;
 
    //Display the same lines as in the terminal.
@@ -9966,7 +9973,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    //position the cursor
    if (cursor_pos1.row != SHORT) {
       curPor->cursor.lnum = cursor_pos1.row + 1;
-      coladvance(cursor_pos1.col);
+      doColAdvance(cursor_pos1.col);
    }
 
    //Delete the empty line that was in the empty buffer.

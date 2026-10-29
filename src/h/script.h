@@ -4,9 +4,9 @@ declStruct(AutoComm);
 #endif
 
 void estack_init(void);
-Estack * estack_push(CallFrame type, CS name, long lnum);
-Estack* estack_push_ufunc(UserFunc *ufunc, long lnum);
-int estack_top_is_ufunc(UserFunc *ufunc, long lnum);
+Estack * estack_push(CallFrame type, CS name, Long lnum);
+Estack* estack_push_ufunc(UserFunc *ufunc, Long lnum);
+int estack_top_is_ufunc(UserFunc *ufunc, Long lnum);
 Estack* estack_pop(void);
 CS estack_sfile(EstackArg which);
 List * stacktrace_create(void);
@@ -251,7 +251,7 @@ CS set_context_in_user_cmd(Expand *xp, CS arg_in);
 CS set_context_in_user_cmdarg(
    CS,
    CS arg,
-   long argFlags,
+   Long argFlags,
    Unt context,
    Expand* xp,
    Boole forceit
@@ -270,7 +270,7 @@ int parse_compl_arg(
    CS value,
    int vallen,
    int* context,
-   long* argFlags,
+   Long* argFlags,
    OUT CS* compl_arg
 );
 void c_command(Invocation* invo);
