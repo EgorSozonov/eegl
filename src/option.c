@@ -376,7 +376,6 @@ private CS did_set_comments(OptionChange* cha);
 private CS did_set_commentstring(OptionChange *cha);
 private CS setBackupCopy(OptionChange* cha);
 private int expand_set_backupcopy(OptExpand* args, OUT ExpandMatch* matches);
-private CS setBreakindent(OptionChange* cha);
 private CS setComplete(OptionChange* cha);
 private int expandComplete(OptExpand* args, ExpandMatch* matches);
 private CS setCompleteopt(OptionChange* cha);
@@ -3422,15 +3421,6 @@ setBackupCopy(OptionChange* cha) {
 private int
 expand_set_backupcopy(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(backupCopyValues));
-}
-
-private CS
-setBreakindent(OptionChange* cha) {
-	if (cha->newVal.num < 0 || cha->newVal.num > 80)
-		return e_invalid_argument;
-
-	updateNumRef(cha);
-	return NULL;
 }
 
 private CS

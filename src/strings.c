@@ -2136,7 +2136,7 @@ mb_charlen_len(CS str, int len) {
 //"pp" to just after the bytes that formed it. Return NULL if no multi-byte char was found.
 pub CS
 mb_unescape(OUT CS* pp) {
-	static Byte   buf[6];
+	static Byte buf[6];
 	int n;
 	int m = 0;
 	CS str = *pp;
@@ -3792,17 +3792,17 @@ malformedInput:
 //}}}
 //{{{file path names
 
-
 //If the string between "p" and "pend" ends in "name/", return "pend" minus
 //the length of "name/".  Otherwise return "pend".
 pub CS
 remove_tail(CS p, CS pend, CS name) {
-	int      len = (int)STRLEN(name) + 1;
+	int len = (int)STRLEN(name) + 1;
 	CS newend = pend - len;
 
 	if (newend >= p
-			 && STRNCMP(newend, name, len - 1) == 0
-			 && (newend == p || after_pathsep(p, newend)))
+		 && STRNCMP(newend, name, len - 1) == 0
+		 && (newend == p || after_pathsep(p, newend))
+	)
 		return newend;
 	return pend;
 }

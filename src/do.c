@@ -301,7 +301,7 @@ private void block_insert(
 	int b_insert,
 	OUT BlockDef* bdp)
 ;
-private int getviscol2(ColNr col, ColNr coladd);
+private int doGetCursorPos2(ColNr col, ColNr coladd);
 private void mb_adjust_opend(Operator *oper);
 private void replaceAndMoveBack(Unt c);
 private int op_replace(Operator *oper, Unt c);
@@ -330,8 +330,8 @@ private void op_format(Operator* oper, int keep_cursor);
 private void op_formatexpr(Operator* oper);
 private int doColAdvance2(
 	Pos   *pos,
-	int      addspaces,   //change the text to achieve our goal?
-	int      finetune,   //change char offset for the exact column
+	int addspaces,   //change the text to achieve our goal?
+	int finetune,   //change char offset for the exact column
 	ColNr   wcol_arg   //column to move to (can be negative)
 );
 private Long get_sw_value_pos(Book* book, Pos *pos, int left);
@@ -418,7 +418,7 @@ c_align(Invocation* invo) {
 			indent = width;
 	} else {
 		if (width <= 0)
-			 width = curBook->o.textWidth;
+			width = curBook->o.textWidth;
 	}
 
 	if (u_save((LineNr)(invo->line1 - 1), (LineNr)(invo->line2 + 1)) == FAIL)
@@ -428,7 +428,7 @@ c_align(Invocation* invo) {
 	for (curPor->cursor.lnum = invo->line1; curPor->cursor.lnum <= invo->line2;
 			++curPor->cursor.lnum
 	) {
-		if (invo->id == C_left)      //left align
+		if (invo->id == C_left)   //left align
 			new_indent = indent;
 		else {
 			int has_tab = false;   //avoid uninit warnings
@@ -447,13 +447,13 @@ c_align(Invocation* invo) {
 					while (new_indent > 0) {
 						(void)doSetIndent(new_indent, 0);
 						if (linelen(NULL) <= width) {
-						   //Now try to move the line as much as possible to the right. Stop when it
-						   //moves too far.
-						   do
-						      (void)doSetIndent(++new_indent, 0);
-						   while (linelen(NULL) <= width);
-						   --new_indent;
-						   break;
+							//Now try to move the line as much as possible to the right. Stop when it
+							//moves too far.
+							do
+								(void)doSetIndent(++new_indent, 0);
+							while (linelen(NULL) <= width);
+							--new_indent;
+							break;
 						}
 						--new_indent;
 					}
@@ -472,9 +472,9 @@ c_align(Invocation* invo) {
 //Get the length of the current line, excluding trailing white space.
 private int
 linelen(OUT int* has_tab) {
-	//Get the line.  If it's empty bail out early (could be the empty string for an unloaded book)
+	//Get the line. If it's empty bail out early (could be the empty string for an unloaded book)
 	CS line = ml_get_curline();
-	if (*line == ZERO)
+	if (line[0] == ZERO)
 		return 0;
 
 	//find the first non-blank character
@@ -487,6 +487,7 @@ linelen(OUT int* has_tab) {
 	int save = *last;
 	*last = ZERO;
 	int len = linetabsize_str(line);   //get line length on screen
+
 	if (has_tab)      //check for embedded TAB
 		*has_tab = (firstOccurrence(first, TAB) != NULL);
 	*last = save;
@@ -2437,11 +2438,11 @@ c_z(Invocation* invo) {
 private CS prevSubstS = NULL;   //previous substitute pattern
 private Boole globalNeedBeginlineS = false;   //call beginline() after ";g"
 
-//Flags that are kept between calls to :substitute.
+//Flags that are kept between calls to ;substitute.
 typedef struct {
 	Boole do_all;    //do multiple substitutions per line
 	Boole do_ask;    //ask for confirmation
-	Boole do_count;  //count only
+	Boole onlyCount;  //count only
 	Boole do_error;  //if false, ignore errors
 	Boole do_print;  //print last line with subs.
 	Boole do_list;   //list last line with subs.
@@ -2449,18 +2450,18 @@ typedef struct {
 	Boole do_ic;     //ignore case flag
 } SubstitutionState;
 
-//Skip over the "sub" part in :s/pat/sub/ where "delimiter" is the separating character.
+//Skip over the "sub" part in :s|pat|sub| where "delimiter" is the separating character.
 pub CS
-skip_substitute(CS start, int delimiter) {
+skip_substitute(CS start, Unt delimiter) {
 	CS p = start;
 
 	while (p[0]) {
-		if (p[0] == delimiter) {    //end delimiter found
-			 *p++ = ZERO;         //replace it with a ZERO
-			 break;
+		if (p[0] == delimiter) {//end delimiter found
+			*p++ = ZERO;         //replace it with a ZERO
+			break;
 		}
 		if (p[0] == '\\' && p[1] != 0)   //skip escaped characters
-			 ++p;
+			++p;
 		MB_PTR_ADV(p);
 	}
 	return p;
@@ -2487,7 +2488,6 @@ pub void
 c_substitute(Invocation* invo) {
 	LineNr lnum;
 	Long i = 0;
-	RegMultilineMatch regmatch;
 	static SubstitutionState subflags = {false, false, false, true, false, false, false, 0};
 	SubstitutionState subflags_save;
 	int save_do_all;      //remember user specified 'g' flag
@@ -2496,7 +2496,6 @@ c_substitute(Invocation* invo) {
 	int delimiter;
 	int got_quit = false;
 	int got_match = false;
-	int which_pat;
 	CS p;
 	int save_State;
 	LineNr first_line = 0;      //first changed line
@@ -2517,19 +2516,17 @@ c_substitute(Invocation* invo) {
 	}
 	int start_nsubs = sub_nsubs;
 
-	if (invo->id == C_tilde)
-		which_pat = RE_LAST; //use last used regexp
-	else
-		which_pat = RE_SUBST; //use last substitute regexp new pattern and substitution
+	Unt whichPat = (invo->id == C_tilde)
+		? RE_LAST //use last used regexp
+		: RE_SUBST; //use last substitute regexp new pattern and substitution
 
 	CS replacement;
-
 	if ((invo->comm[0] == 's' || invo->comm[0] == 'S') && *cmd != ZERO && !SPACE_OR_TAB(*cmd)
 		&& firstOccurrence(S"0123456789cegriIp|\"", *cmd) == NULL
 	) {
 		//don't accept alphanumeric for separator
 		if (check_regexp_delim(*cmd) == FAIL)
-			 return;
+			return;
 
 		//undocumented vi feature:
 		// "\/sub/" and "\?sub?" use last used search pattern (almost like
@@ -2541,16 +2538,16 @@ c_substitute(Invocation* invo) {
 				return;
 			}
 			if (*cmd != '&')
-				which_pat = RE_SEARCH;       //use last '/' pattern
-			pat = (Text){null, 0};          //empty search pattern
-			delimiter = *cmd++;          //remember delimiter character
+				whichPat = RE_SEARCH; //use last '/' pattern
+			pat = (Text){null, 0};   //empty search pattern
+			delimiter = *cmd++;      //remember delimiter character
 		} else {     //find the end of the regexp
-			which_pat = RE_LAST;       //use last used regexp
-			delimiter = *cmd++;          //remember delimiter character
-			pat = mbText(cmd);             //remember start of search pat
+			whichPat = RE_LAST;      //use last used regexp
+			delimiter = *cmd++;      //remember delimiter character
+			pat = mbText(cmd);       //remember start of search pat
 			cmd = skip_regexp_ex(cmd, delimiter, true, &invo->arg, NULL, NULL);
-			if (cmd[0] == delimiter)       //end delimiter found
-				*cmd++ = ZERO;          //replace it with a ZERO
+			if (cmd[0] == delimiter) //end delimiter found
+				*cmd++ = ZERO;        //replace it with a ZERO
 		}
 
 		//Small incompatibility: vi sees '\n' as end of the command, but in
@@ -2559,11 +2556,9 @@ c_substitute(Invocation* invo) {
 		cmd = skip_substitute(cmd, delimiter);
 		replacement = copyStr(p);
 
-		if (!invo->skip) {
-			if (!keeppatterns) {
-				eeglFree(prevSubstS);
-				prevSubstS = copyStr(replacement);
-			}
+		if (!invo->skip && !keeppatterns) {
+			eeglFree(prevSubstS);
+			prevSubstS = copyStr(replacement);
 		}
 	} ei (!invo->skip) {  //use previous pattern and substitution
 		if (!prevSubstS) {  //there is no previous command
@@ -2583,8 +2578,9 @@ c_substitute(Invocation* invo) {
 	//efficient, avoid allocating a string that grows in size.
 	if (pat.len > 1 && STRCMP(pat.c, "\\n") == 0
 		 && replacement[0] == ZERO
-		 && (*cmd == ZERO || (cmd[1] == ZERO && (*cmd == 'g' || *cmd == 'l'
-						  || *cmd == 'p' || *cmd == '#')))
+		 && (cmd[0] == ZERO
+				 || (cmd[1] == ZERO && (cmd[0] == 'g' || *cmd == 'l' || *cmd == 'p' || *cmd == '#'))
+			 )
 	) {
 		if (invo->skip) {
 			eeglFree(replacement);
@@ -2599,7 +2595,7 @@ c_substitute(Invocation* invo) {
 			invo->flags = EXFLAG_PRINT;
 
 		//The number of lines joined is the number of lines in the range plus
-		//one.  One less when the last line is included.
+		//one. One less when the last line is included.
 		LineNr joined_lines_count = invo->line2 - invo->line1 + 1;
 		if (invo->line2 < curBook->mem.lineCount)
 			++joined_lines_count;
@@ -2620,7 +2616,7 @@ c_substitute(Invocation* invo) {
 		return;
 	}
 
-	//Find trailing options. When '&' is used, keep old options.
+	//Find trailing options. When `&` is used, keep old options.
 	if (*cmd == '&')
 		++cmd;
 	else {
@@ -2629,7 +2625,7 @@ c_substitute(Invocation* invo) {
 		subflags.do_error = true;
 		subflags.do_print = false;
 		subflags.do_list = false;
-		subflags.do_count = false;
+		subflags.onlyCount = false;
 		subflags.do_number = false;
 		subflags.do_ic = 0;
 	}
@@ -2641,11 +2637,11 @@ c_substitute(Invocation* invo) {
 		ei (*cmd == 'c')
 			subflags.do_ask = !subflags.do_ask;
 		ei (*cmd == 'n')
-			subflags.do_count = true;
+			subflags.onlyCount = true;
 		ei (*cmd == 'e')
 			subflags.do_error = !subflags.do_error;
 		ei (*cmd == 'r')       //use last used regexp
-			which_pat = RE_LAST;
+			whichPat = RE_LAST;
 		ei (*cmd == 'p')
 			subflags.do_print = true;
 		ei (*cmd == '#') {
@@ -2662,15 +2658,21 @@ c_substitute(Invocation* invo) {
 			break;
 		++cmd;
 	}
-	if (subflags.do_count)
+	if (subflags.onlyCount) {
 		subflags.do_ask = false;
+	} ei (!curBook->o.modifiable || !p_modifiable) {
+		//Substitution is not allowed in immutable books
+		emsg(_(e_cannot_make_changes_modifiable_is_off));
+		eeglFree(replacement);
+		return;
+	}
 
 	save_do_all = subflags.do_all;
 	save_do_ask = subflags.do_ask;
 
 	//check for a trailing count
 	cmd = skipwhite(cmd);
-	if (EE_ISDIGIT(*cmd)) {
+	if (EE_ISDIGIT(cmd[0])) {
 		i = parseLong(&cmd);
 		if (i <= 0 && !invo->skip && subflags.do_error) {
 			emsg(_(e_positive_count_required));
@@ -2702,14 +2704,8 @@ c_substitute(Invocation* invo) {
 		return;
 	}
 
-	if (!subflags.do_count && (!curBook->o.modifiable || !p_modifiable)) {
-		//Substitution is not allowed in immutable buffers
-		emsg(_(e_cannot_make_changes_modifiable_is_off));
-		eeglFree(replacement);
-		return;
-	}
-
-	if (search_regcomp(pat, NULL, RE_SUBST, which_pat, SEARCH_HIS, OUT &regmatch) == FAIL) {
+	RegMultilineMatch regmatch;
+	if (search_regcomp(pat, NULL, RE_SUBST, whichPat, SEARCH_HIS, OUT &regmatch) == FAIL) {
 		if (subflags.do_error)
 			emsg(_(e_invalid_command));
 		eeglFree(replacement);
@@ -2727,21 +2723,19 @@ c_substitute(Invocation* invo) {
 
 	CS sub_firstline = NULL; //allocated copy of first sub line
 
-	//If the substitute pattern starts with "\=" then it's an expression.
-	//Make a copy, a recursive function may free it.
-	//Otherwise, '~' in the substitute pattern is replaced with the old
-	//pattern.  We do it here once to avoid it to be replaced over and over again.
+	//If the substitute pattern starts with "\=" then it's an expression. Make a copy, a
+	//recursive function may free it. Otherwise, '~' in the substitute pattern is replaced with
+	//the old pattern. We do it here once to avoid it to be replaced over and over again.
 	if (replacement[0] == '\\' && replacement[1] == '=') {
 		p = copyStr(replacement);
 		eeglFree(replacement);
 		replacement = p;
 	} else {
 		p = regtilde(replacement);
-      lo("ccc after regtilde %s", p);
 
 		if (p != replacement) {
-			 eeglFree(replacement);
-			 replacement = p;
+			eeglFree(replacement);
+			replacement = p;
 		}
 	}
 
@@ -2750,12 +2744,12 @@ c_substitute(Invocation* invo) {
 	for (lnum = invo->line1; lnum <= line2 && !(got_quit || aborting()); ++lnum) {
 		nmatch = eeRegexec_multi(&regmatch, curPor, curBook, lnum, (ColNr)0, NULL);
 		if (nmatch) {
-			ColNr   copycol;
-			ColNr   matchcol;
-			ColNr   prev_matchcol = MAXCOL;
+			ColNr copycol;
+			ColNr matchcol;
+			ColNr prev_matchcol = MAXCOL;
 			CS new_end;
 			CS new_start = null;
-			unsigned   new_start_len = 0;
+			unsigned new_start_len = 0;
 			CS p1;
 			int did_sub = false;
 			int lastone;
@@ -2831,7 +2825,8 @@ c_substitute(Invocation* invo) {
 					EE_CLEAR(sub_firstline);
 				}
 
-				//Match might be after the last line for "\n\zs" matching at the end of the last line.
+				//Match might be after the last line for "\n\zs" matching at the end of the last
+				//line
 				if (lnum > curBook->mem.lineCount)
 					break;
 
@@ -2858,8 +2853,8 @@ c_substitute(Invocation* invo) {
 						//for a match in this line again.
 						skip_match = true;
 					else {
-					 //search for a match at next column
-						 matchcol += utfCharLen(sub_firstline + matchcol);
+						//search for a match at next column
+						matchcol += utfCharLen(sub_firstline + matchcol);
 					}
 					goto skip;
 				}
@@ -2868,9 +2863,9 @@ c_substitute(Invocation* invo) {
 				matchcol = regmatch.endpos[0].col;
 				prev_matchcol = matchcol;
 
-				//2. If do_count is set only increase the counter.
+				//2. If onlyCount is set only increase the counter.
 				//   If do_ask is set, ask for confirmation.
-				if (subflags.do_count) {
+				if (subflags.onlyCount) {
 					//For a multi-line match, put matchcol at the ZERO at the end of the line and
 					//set nmatch to one, so that we continue looking for a match on the next line.
 					//Avoids that ";s/\nB\@=//gc" get stuck.
@@ -3021,7 +3016,7 @@ c_substitute(Invocation* invo) {
 
 				//3. substitute the string.
 				save_ma = curBook->o.modifiable;
-				if (subflags.do_count) {
+				if (subflags.onlyCount) {
 					//prevent accidentally changing the buffer by a function
 					curBook->o.modifiable = false;
 				}
@@ -3033,19 +3028,20 @@ c_substitute(Invocation* invo) {
 				++textlock;
 				//Get length of substitution part, including the ZERO. When it fails, sublen is 0
 				int sublen = eeRegsub_multi(
-						&regmatch,
-						sub_firstlnum - regmatch.startpos[0].lnum,
-						replacement, sub_firstline, 0,
-						REGSUB_BACKSLASH | (REGSUB_MAGIC)
+					&regmatch,
+					sub_firstlnum - regmatch.startpos[0].lnum,
+					replacement,
+					(Text){sub_firstline, 0},
+					REGSUB_BACKSLASH | REGSUB_MAGIC
 				);
 				--textlock;
 
 				//If getting the substitute string caused an error, don't do the replacement.
 				//Don't keep flags set by a recursive call.
 				subflags = subflags_save;
-				if (sublen == 0 || aborting() || subflags.do_count) {
-					 curBook->o.modifiable = save_ma;
-					 goto skip;
+				if (sublen == 0 || aborting() || subflags.onlyCount) {
+					curBook->o.modifiable = save_ma;
+					goto skip;
 				}
 
 				//When the match included the "$" of the last line it may
@@ -3156,10 +3152,11 @@ c_substitute(Invocation* invo) {
 
 				++textlock;
 				(void)eeRegsub_multi(
-						&regmatch,
-						sub_firstlnum - regmatch.startpos[0].lnum,
-						replacement, new_end, sublen,
-						REGSUB_COPY | REGSUB_BACKSLASH | (REGSUB_MAGIC)
+					&regmatch,
+					sub_firstlnum - regmatch.startpos[0].lnum,
+					replacement,
+					(Text){new_end, sublen},
+					REGSUB_COPY | REGSUB_BACKSLASH | (REGSUB_MAGIC)
 				);
 				--textlock;
 				sub_nsubs++;
@@ -3238,10 +3235,10 @@ c_substitute(Invocation* invo) {
 				//strings, e.g. :s/$/pat/g or :s/[a-z]* /(&)/g.
 				//But ";s/\n/#/" is OK.
 		skip:
-				//We already know that we did the last subst when we are at
-				//the end of the line, except that a pattern like
-				//"bar\|\nfoo" may match at the ZERO.  "lnum" can be below
-				//"line2" when there is a \zs in the pattern after a line break.
+
+				//We already know that we did the last subst when we are at the end of the line,
+				//except that a pattern like "bar\|\nfoo" may match at the ZERO. "lnum" can be
+				//below "line2" when there is a \zs in the pattern after a line break.
 				lastone = (skip_match
 					|| gotInterruptG
 					|| got_quit
@@ -3278,32 +3275,32 @@ c_substitute(Invocation* invo) {
 						   break;
 						ml_replace(lnum, new_start, true);
 						if (text_props)
-						   add_text_props(lnum, text_props, text_prop_count);
+							add_text_props(lnum, text_props, text_prop_count);
 						if (nmatch_tl > 0) {
-						   //Matched lines have now been substituted and are useless, delete them.
-						   //The part after the match has been appended to new_start, we don't need
-						   //it in the buffer.
-						   ++lnum;
-						   if (u_savedel(lnum, nmatch_tl) != OK)
-						      break;
-						   for (i = 0; i < nmatch_tl; ++i)
-						      ml_delete(lnum);
-						   markAdjust(lnum, lnum + nmatch_tl - 1, (Long)MAXLNUM, -nmatch_tl, true);
-						   if (subflags.do_ask)
-						      deleted_lines(lnum, nmatch_tl);
-						   --lnum;
-						   line2 -= nmatch_tl; //nr of lines decreases
-						   nmatch_tl = 0;
+							//Matched lines have now been substituted and are useless, delete them.
+							//The part after the match has been appended to new_start, we don't need
+							//it in the buffer.
+							++lnum;
+							if (u_savedel(lnum, nmatch_tl) != OK)
+								break;
+							for (i = 0; i < nmatch_tl; ++i)
+								ml_delete(lnum);
+							markAdjust(lnum, lnum + nmatch_tl - 1, (Long)MAXLNUM, -nmatch_tl, true);
+							if (subflags.do_ask)
+								deleted_lines(lnum, nmatch_tl);
+							--lnum;
+							line2 -= nmatch_tl; //nr of lines decreases
+							nmatch_tl = 0;
 						}
 
 						//When asking, undo is saved each time, must also set
 						//changed flag each time.
 						if (subflags.do_ask)
-						   changed_bytes(lnum, 0);
+							changed_bytes(lnum, 0);
 						else {
-						   if (first_line == 0)
-						      first_line = lnum;
-						   last_line = lnum + 1;
+							if (first_line == 0)
+								first_line = lnum;
+							last_line = lnum + 1;
 						}
 
 						sub_firstlnum = lnum;
@@ -3325,18 +3322,18 @@ c_substitute(Invocation* invo) {
 						//If the match found didn't start where we were searching, do the next search
 						//in the line where we found the match.
 						if (nmatch == -1)
-						   lnum -= regmatch.startpos[0].lnum;
+							lnum -= regmatch.startpos[0].lnum;
 						break;
 					}
 				}
 
 				line_breakcheck();
-			 }
+			}
 
-			 if (did_sub)
-			++sub_nlines;
-			 eeglFree(new_start);   //for when substitute was cancelled
-			 EE_CLEAR(sub_firstline);   //free the copy of the original line
+			if (did_sub)
+				++sub_nlines;
+			eeglFree(new_start);   //for when substitute was cancelled
+			EE_CLEAR(sub_firstline);   //free the copy of the original line
 		}
 
 		line_breakcheck();
@@ -3355,7 +3352,7 @@ outofmem:
 	eeglFree(text_props);
 
 	//";s/pat//n" doesn't move the cursor
-	if (subflags.do_count)
+	if (subflags.onlyCount)
 		curPor->cursor = old_cursor;
 
 	if (sub_nsubs > start_nsubs) {
@@ -3374,7 +3371,7 @@ outofmem:
 				else
 					beginline(BL_WHITE | BL_FIX);
 			}
-			if (!do_sub_msg(subflags.do_count) && subflags.do_ask)
+			if (!do_sub_msg(subflags.onlyCount) && subflags.do_ask)
 				msg(S"");
 		} else
 			globalNeedBeginlineS = true;
@@ -3490,7 +3487,7 @@ c_global(Invocation* invo) {
 	CS used_pat;
 	RegMultilineMatch   regmatch;
 	int match;
-	int which_pat;
+	int whichPat;
 
 	//When nesting the command works on one line.  This allows for
 	//";g/found/v/notfound/command".
@@ -3505,7 +3502,7 @@ c_global(Invocation* invo) {
 	else
 	  type = *invo->comm;
 	cmd = invo->arg;
-	which_pat = RE_LAST;       //default: use last used regexp
+	whichPat = RE_LAST;       //default: use last used regexp
 
 
 	//undocumented feature:
@@ -3518,9 +3515,9 @@ c_global(Invocation* invo) {
 			return;
 		}
 		if (*cmd == '&')
-			 which_pat = RE_SUBST;   //use previous substitute pattern
+			whichPat = RE_SUBST;   //use previous substitute pattern
 		else
-			 which_pat = RE_SEARCH;   //use previous search pattern
+			whichPat = RE_SEARCH;   //use previous search pattern
 		++cmd;
 		pat = (Text){null, 0};
 	} ei (*cmd == ZERO) {
@@ -3534,10 +3531,10 @@ c_global(Invocation* invo) {
 		pat = text(cmd);      //remember start of pattern
 		cmd = skip_regexp_ex(cmd, delim, true, &invo->arg, NULL, NULL);
 		if (cmd[0] == delim)          //end delimiter found
-			 *cmd++ = ZERO;          //replace it with a ZERO
+			*cmd++ = ZERO;          //replace it with a ZERO
 	}
 
-	if (search_regcomp(pat, &used_pat, RE_BOTH, which_pat, SEARCH_HIS, OUT &regmatch)
+	if (search_regcomp(pat, &used_pat, RE_BOTH, whichPat, SEARCH_HIS, OUT &regmatch)
 			== FAIL
 	) {
 		emsg(_(e_invalid_command));
@@ -3546,10 +3543,9 @@ c_global(Invocation* invo) {
 
 	if (global_busy) {
 		lnum = curPor->cursor.lnum;
-		match = eeRegexec_multi(&regmatch, curPor, curBook, lnum,
-						          (ColNr)0, NULL);
+		match = eeRegexec_multi(&regmatch, curPor, curBook, lnum, (ColNr)0, NULL);
 		if ((type == 'g' && match) || (type == 'v' && !match))
-			 global_exe_one(cmd, lnum);
+			global_exe_one(cmd, lnum);
 	} else {
 		//pass 1: set marks for each (not) matching line
 		for (lnum = invo->line1; lnum <= invo->line2 && !gotInterruptG; ++lnum) {
@@ -11047,7 +11043,7 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
 		uhp->uh_getbot_entry = NULL;
 		uhp->uh_cursor = curPor->cursor;   //save cursor pos. for undo
 		if (virtual_active() && curPor->cursor.coladd > 0)
-			uhp->uh_cursor_vcol = getviscol();
+			uhp->uh_cursor_vcol = doGetCursorPos();
 		else
 			uhp->uh_cursor_vcol = -1;
 
@@ -14021,7 +14017,7 @@ opInsertCharBytes(CS targetLine, int charlen, Boole replace) {
 
 	//Break tabs if needed.
 	if (virtual_active() && curPor->cursor.coladd > 0)
-		doColAdvance_force(getviscol());
+		doColAdvance_force(doGetCursorPos());
 
 	ColNr col = curPor->cursor.col;
 	CS oldp = ml_get(lnum);
@@ -14074,7 +14070,7 @@ ins_str(CS s, Unt slen) {
 	LineNr lnum = curPor->cursor.lnum;
 
 	if (virtual_active() && curPor->cursor.coladd > 0)
-		doColAdvance_force(getviscol());
+		doColAdvance_force(doGetCursorPos());
 
 	ColNr col = curPor->cursor.col;
 	CS oldp = ml_get(lnum);
@@ -15521,13 +15517,13 @@ block_insert(
 
 //Get the screen position of character col with a coladd in the cursor line.
 private int
-getviscol2(ColNr col, ColNr coladd) {
-	Pos   pos;
+doGetCursorPos2(ColNr col, ColNr coladd) {
+	Pos pos;
 	pos.lnum = curPor->cursor.lnum;
 	pos.col = col;
 	pos.coladd = coladd;
 
-	ColNr   x;
+	ColNr x;
 	bookGetVirtualColInVirtualMode(curPor, &pos, OUT &x, NULL, NULL);
 	return (int)x;
 }
@@ -15719,8 +15715,8 @@ op_delete(Operator* oper) {
 				if (u_save_cursor() == FAIL)   //save first line for undo
 					return FAIL;
 				if (oper->line_count == 1)
-					endcol = getviscol2(oper->end.col, oper->end.coladd);
-				doColAdvance_force(getviscol2(oper->start.col, oper->start.coladd));
+					endcol = doGetCursorPos2(oper->end.col, oper->end.coladd);
+				doColAdvance_force(doGetCursorPos2(oper->start.col, oper->start.coladd));
 				oper->start = curPor->cursor;
 				if (oper->line_count == 1) {
 					doColAdvance(endcol);
@@ -15736,7 +15732,7 @@ op_delete(Operator* oper) {
 				if (u_save((LineNr)(oper->end.lnum - 1), (LineNr)(oper->end.lnum + 1)) == FAIL)
 					return FAIL;
 				curPor->cursor = oper->end;
-				doColAdvance_force(getviscol2(oper->end.col, oper->end.coladd));
+				doColAdvance_force(doGetCursorPos2(oper->end.col, oper->end.coladd));
 				oper->end = curPor->cursor;
 				curPor->cursor = oper->start;
 			}
@@ -15975,12 +15971,12 @@ op_replace(Operator *oper, Unt c) {
 						int end_vcol = 0;
 
 						if (curPor->cursor.lnum == oper->end.lnum) {
-						    //oper->end has to be recalculated when the tab breaks
-						    end_vcol = getviscol2(oper->end.col, oper->end.coladd);
+							//oper->end has to be recalculated when the tab breaks
+							end_vcol = doGetCursorPos2(oper->end.col, oper->end.coladd);
 						}
-						doColAdvance_force(getviscol());
+						doColAdvance_force(doGetCursorPos());
 						if (curPor->cursor.lnum == oper->end.lnum)
-						    getvpos(&oper->end, end_vcol);
+							getvpos(&oper->end, end_vcol);
 					}
 					//with "coladd" set may move to just after a TAB
 					if (gchar_cursor() != ZERO) {
@@ -15999,7 +15995,7 @@ op_replace(Operator *oper, Unt c) {
 
 				//oper->end has been trimmed so it's effectively inclusive;
 				//as a result an extra +1 must be counted so we don't trample the ZERO
-				doColAdvance_force(getviscol2(oper->end.col, oper->end.coladd) + 1);
+				doColAdvance_force(doGetCursorPos2(oper->end.col, oper->end.coladd) + 1);
 				curPor->cursor.col -= (virtcols + 1);
 				for (; virtcols >= 0; virtcols--) {
 					if (mb_char2len(c) > 1)
@@ -16171,7 +16167,7 @@ op_insert(Operator* oper, Long count1) {
 			if (u_save_cursor() == FAIL)
 				return;
 
-			doColAdvance_force(oper->opTy == OP_APPEND ? oper->end_vcol + 1 : getviscol());
+			doColAdvance_force(oper->opTy == OP_APPEND ? oper->end_vcol + 1 : doGetCursorPos());
 			if (oper->opTy == OP_APPEND)
 				--curPor->cursor.col;
 		}
@@ -16249,7 +16245,7 @@ op_insert(Operator* oper, Long count1) {
 		//to adjust the block for that.  But only do it, if the difference
 		//does not come from indent kicking in.
 		if (oper->start.lnum == curBook->opStartOrig.lnum && !bd.is_MAX && !did_indent) {
-			int t = getviscol2(curBook->opStartOrig.col, curBook->opStartOrig.coladd);
+			int t = doGetCursorPos2(curBook->opStartOrig.col, curBook->opStartOrig.coladd);
 
 			if (oper->opTy == OP_INSERT
 				 && oper->start.col + oper->start.coladd
@@ -16369,7 +16365,7 @@ op_change(Operator *oper) {
 	if (oper->block_mode) {
 		//Add spaces before getting the current line length.
 		if (virtual_op && (curPor->cursor.coladd > 0 || gchar_cursor() == ZERO))
-			 doColAdvance_force(getviscol());
+			 doColAdvance_force(doGetCursorPos());
 		firstline = ml_get(oper->start.lnum);
 		pre_textlen = ml_get_len(oper->start.lnum);
 		pre_indent = (Long)getwhitecols(firstline);
@@ -17118,7 +17114,6 @@ addSubtractImpl(
 	Ulong   n;
 	Ulong   oldn;
 	Byte   *ptr;
-	int      linelen;
 	int      c;
 	int      todel;
 	int      firstdigit;
@@ -17140,7 +17135,7 @@ addSubtractImpl(
 
 	curPor->cursor = *pos;
 	ptr = ml_get(pos->lnum);
-	linelen = ml_get_len(pos->lnum);
+	int linelen = ml_get_len(pos->lnum);
 	col = pos->col;
 
 	if (col + !!save_coladd >= linelen)
@@ -17779,7 +17774,7 @@ op_function(Operator* oper) {
 //Calculate start/end virtual columns for operating in block mode.
 private void
 get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial) { //adjust position for selectmode
-	ColNr       start, end;
+	ColNr start, end;
 
 	if (VIsual_mode != Ctrl_V || (!initial && oper->end.col < (int)curPor->width))
 		return;
@@ -17789,7 +17784,9 @@ get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial) { //adjust posi
 	//prevent from moving onto a trail byte
 	mb_adjustpos(curPor->book, &oper->end);
 
-	bookGetVirtualColInVirtualMode(curPor, &(oper->start), &oper->start_vcol, NULL, &oper->end_vcol);
+	bookGetVirtualColInVirtualMode(
+			curPor, &(oper->start), &oper->start_vcol, NULL, &oper->end_vcol
+	);
 
 	if (!isRedoVisualBusy) {
 		bookGetVirtualColInVirtualMode(curPor, &(oper->end), &start, NULL, &end);
@@ -18010,12 +18007,17 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
 				if (curPor->cursWant == MAXCOL)
 					 resel_VIsual_vcol = MAXCOL;
 				else {
-					if (VIsual_mode != Ctrl_V)
-						bookGetVirtualColInVirtualMode(curPor, &(oper->end), NULL, NULL, &oper->end_vcol);
+					if (VIsual_mode != Ctrl_V) {
+						bookGetVirtualColInVirtualMode(
+							curPor, &(oper->end), NULL, NULL, &oper->end_vcol
+						);
+					}
 					if (VIsual_mode == Ctrl_V || oper->line_count <= 1) {
-						if (VIsual_mode != Ctrl_V)
-						    bookGetVirtualColInVirtualMode(curPor, &(oper->start),
-						         &oper->start_vcol, NULL, NULL);
+						if (VIsual_mode != Ctrl_V) {
+							bookGetVirtualColInVirtualMode(
+								 curPor, &(oper->start), &oper->start_vcol, NULL, NULL
+							);
+						}
 						resel_VIsual_vcol = oper->end_vcol - oper->start_vcol + 1;
 					} else
 						resel_VIsual_vcol = oper->end_vcol;
@@ -18053,11 +18055,12 @@ doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank) {
 					ei (nchar == REPLACE_NL_NCHAR)
 						nchar = NL;
 
-					if (opchar == 'g' && extra_opchar == '@')
+					if (opchar == 'g' && extra_opchar == '@') {
 						//also repeat the count for 'operatorfunc'
-						prep_redo_num2(oper->regname, 0L, ZERO, 'v',
-						        aArg->count0, opchar, extra_opchar, nchar);
-					else
+						prep_redo_num2(
+								oper->regname, 0L, ZERO, 'v', aArg->count0, opchar, extra_opchar, nchar
+						);
+					} else
 						prep_redo(oper->regname, 0L, ZERO, 'v', opchar, extra_opchar, nchar);
 				}
 				if (!isRedoVisualBusy) {
@@ -18435,8 +18438,8 @@ op_formatexpr(Operator* oper) {
 
 //Get the screen position of the cursor.
 pub int
-getviscol(void) {
-	ColNr   x;
+doGetCursorPos(void) { //:doGetCursorPos
+	ColNr x;
 	bookGetVirtualColInVirtualMode(curPor, &curPor->cursor, OUT &x, NULL, NULL);
 	return (int)x;
 }
@@ -18485,15 +18488,15 @@ getvpos(Pos *pos, ColNr wantcol) {
 private int
 doColAdvance2(
 	Pos   *pos,
-	int      addspaces,   //change the text to achieve our goal?
-	int      finetune,   //change char offset for the exact column
+	int addspaces,   //change the text to achieve our goal?
+	int finetune,   //change char offset for the exact column
 	ColNr   wcol_arg   //column to move to (can be negative)
 ){
 	ColNr   wcol = wcol_arg;
-	int      idx;
+	int idx;
 	ColNr   col = 0;
-	int      csize = 0;
-	int      head = 0;
+	int csize = 0;
+	int head = 0;
 
 	Boole one_more = ((stateG & MODE_INSERT) != 0) || restart_edit != ZERO || (VIsual_active);
 	CS line = memGetLine(curBook, pos->lnum, false);
@@ -18582,15 +18585,14 @@ doColAdvance2(
 				col = wcol;
 			} else {
 				//Break a tab
-				int   correct = wcol - col - csize + 1; //negative!!
-				Byte   *newline;
-				int   t, s = 0;
-				int   v;
+				int correct = wcol - col - csize + 1; //negative!!
+				int t, s = 0;
+				int v;
 
 				if (-correct > csize)
 					return FAIL;
 
-				newline = alloc(linelen + csize);
+				CS newline = alloc(linelen + csize);
 
 				for (t = 0; t < linelen; t++) {
 					if (t != idx)

@@ -102,8 +102,8 @@ typedef struct {
 //When there is no match, the pointer is NULL.
 struct RegMatch {
 	RegProg* regprog;
-	Byte* startp[NSUBEXP];
-	Byte* endp[NSUBEXP];
+	CS startp[NSUBEXP];
+	CS endp[NSUBEXP];
 
 	ColNr rm_matchcol;   //match start without "\zs"
 	int rm_ic;
@@ -165,7 +165,7 @@ private SigAtomic *saved_timeout_flag;
 	(showErrFmtMsg((const char *)(m), (c) ? "" : "\\", (a)), anyRegexEmsgG = true, (void *)NULL)
 #define EMSG2_RET_FAIL(m, c) return \
 	(showErrFmtMsg((const char *)(m), (c) ? "" : "\\"), anyRegexEmsgG = true, FAIL)
-#define EMSG_ONE_RET_NULL EMSG2_RET_NULL(_(e_invalid_item_in_str_brackets), reg_magic == MAGIC_ALL)
+#define EMSG_ONE_RET_NULL EMSG2_RET_NULL(_(e_invalid_item_in_str_brackets), magicnessP == MAGIC_ALL)
 
 
 #define MAX_LIMIT   (32767L << 16L)
@@ -219,8 +219,8 @@ backslash_trans(Unt c) {
 	case 't':   return TAB;
 	case 'e':   return ESC;
 	case 'b':   return BS;
+   default:    return c;
 	}
-	return c;
 }
 
 enum {
@@ -310,7 +310,7 @@ private int currZParensS;   //\z() count.
 private int re_has_z;   //\z item detected
 private unsigned regflags;   //RF_ flags for prog
 
-private Magic reg_magic;   //magicness of the pattern
+private Magic magicnessP;   //magicness of the pattern
 
 private int reg_string;   //matching with a string instead of a buffer line
 private int reg_strict;   //"[abc" is illegal
@@ -477,8 +477,7 @@ private void clear_submatch_list(StaticList10 *sl);
 private int eeRegsub_both(
 	CS source,
 	Var* expr,
-	CS dest,
-	int destlen,
+	OUT Text dest,
 	Unt flags
 );
 private Byte * reg_getline_submatch(LineNr lnum);
@@ -595,18 +594,18 @@ private long parseBranchtry(
 	ColNr col,
 	int* timed_out //flag set on timeout or NULL
 );
-private long parseBranchexec_both(
-	Byte   *line,
-	ColNr   startcol,   //column to start looking for match
-	int      *timed_out //flag set on timeout or NULL
+private Long parseBranchexec_both(
+	CS line,
+	ColNr startcol,   //column to start looking for match
+	int* timed_out //flag set on timeout or NULL
 );
 private RegProg* compile(CS expr, int flags);
 private void freeBranch(RegProg *prog);
 private int parseBranchexec_nl(
 	RegMatch   *rmp,
-	Byte   *line,  //string to match against
-	ColNr   col,   //column to start looking for match
-	int      line_lbr
+	CS line,  //string to match against
+	ColNr col,   //column to start looking for match
+	int line_lbr
 );
 private void init_regexec_multi(
 	RegMultilineMatch   *rmp,
@@ -615,18 +614,18 @@ private void init_regexec_multi(
 	LineNr lnum)   //nr of line to start looking for match
 ;
 private long matchManyLines(
-	RegMultilineMatch   *rmp,
-	Portal* port,      //portal in which to search or NULL
+	RegMultilineMatch* rmp,
+	Portal* port,    //portal in which to search or NULL
 	Book* book,      //book in which to search
-	LineNr   lnum,      //nr of line to start looking for match
-	ColNr   col,      //column to start looking for match
+	LineNr lnum,     //nr of line to start looking for match
+	ColNr col,       //column to start looking for match
 	int* timed_out   //flag set on timeout or NULL
 );
 private Boole eeRegexec_string(
-	RegMatch   *rmp,
+	RegMatch* rmp,
 	CS line,  //string to match against
-	ColNr   col,    //column to start looking for match
-	int      nl
+	ColNr col,    //column to start looking for match
+	int nl
 );
 private Long coll_get_char(void);
 //}}}
@@ -796,17 +795,17 @@ skip_anyof(Byte *p) {
 //Stop at end of "startp" or where "delim" is found ('/', '?', etc).
 //Take care of characters with a backslash in front of it.
 //Skip strings inside [ and ].
-pub Byte *
-skip_regexp(Byte* startp, int delim, int magic) {
+pub CS
+skip_regexp(CS startp, int delim, int magic) {
 	return skip_regexp_ex(startp, delim, magic, NULL, NULL, NULL);
 }
 
 //Call skip_regexp() and when the delimiter does not match give an error and return NULL.
-pub Byte *
-skip_regexp_err(Byte* startp, int delim, int magic) {
-	Byte *p = skip_regexp(startp, delim, magic);
+pub CS
+skip_regexp_err(CS startp, int delim, int magic) {
+	CS p = skip_regexp(startp, delim, magic);
 
-	if (*p != delim) {
+	if (p[0] != delim) {
 		showErrFmtMsg(_(e_missing_delimiter_after_search_pattern_str), startp);
 		return NULL;
 	}
@@ -818,9 +817,9 @@ skip_regexp_err(Byte* startp, int delim, int magic) {
 //"\?" to "?".  If "*newp" is not NULL the expression is changed in-place.
 //If a "\?" is changed to "?" then "dropped" is incremented, unless NULL.
 //If "magic_val" is not NULL, returns the effective magicness of the pattern
-pub Byte *
+pub CS
 skip_regexp_ex(
-	Byte* startp,
+	CS startp,
 	int dirc,
 	int magic,
 	Byte** newp,
@@ -849,7 +848,7 @@ skip_regexp_ex(
 			if (dirc == '?' && newp != NULL && p[1] == '?') {
 			//change "\?" to "?", make a copy first.
 			if (startplen == 0)
-				 startplen = STRLEN(startp);
+				startplen = STRLEN(startp);
 			if (*newp == NULL) {
 				*newp = copySubstr(startp, startplen);
 				if (*newp != NULL) {
@@ -932,7 +931,7 @@ peekchr(void) {
 	case '[':
 	case '~':
 		//magic when 'magic' is on
-		if (reg_magic >= MAGIC_ON)
+		if (magicnessP >= MAGIC_ON)
 			curchr = Magic(curchr);
 		break;
 	case '(':
@@ -958,14 +957,14 @@ peekchr(void) {
 	case '`':   //future ext.
 	case '/':   //Can't be used in / command
 		//magic only after "\v"
-		if (reg_magic == MAGIC_ALL)
+		if (magicnessP == MAGIC_ALL)
 			curchr = Magic(curchr);
 		break;
 	case '*':
 		 //* is not magic as the very first character, eg "?*ptr", when
 		 //after '^', eg "/^*ptr" and when after "\(", "\|", "\&".  But
 		//"\(\*" is not magic, thus must be magic if "after_slash"
-		if (reg_magic >= MAGIC_ON
+		if (magicnessP >= MAGIC_ON
 			 && !at_start
 			 && !(prev_at_start && prevchr == Magic('^'))
 			 && (after_slash
@@ -978,9 +977,9 @@ peekchr(void) {
 	case '^':
 		//'^' is only magic as the very first character and if it's after
 		//"\(", "\|", "\&' or "\n"
-		if (reg_magic >= MAGIC_OFF
+		if (magicnessP >= MAGIC_OFF
 			 && (at_start
-				|| reg_magic == MAGIC_ALL
+				|| magicnessP == MAGIC_ALL
 				|| prevchr == Magic('(')
 				|| prevchr == Magic('|')
 				|| prevchr == Magic('&')
@@ -996,9 +995,9 @@ peekchr(void) {
 	case '$':
 		 //'$' is only magic as the very last char and if it's in front of
 		 //either "\|", "\)", "\&", or "\n"
-		if (reg_magic >= MAGIC_OFF) {
+		if (magicnessP >= MAGIC_OFF) {
 			Byte *p = regparse + 1;
-			int is_magic_all = (reg_magic == MAGIC_ALL);
+			int is_magic_all = (magicnessP == MAGIC_ALL);
 
 			//ignore \c \C \m \M \v \V and \Z after '$'
 			while (p[0] == '\\' && (p[1] == 'c' || p[1] == 'C'
@@ -1016,7 +1015,7 @@ peekchr(void) {
 						 && (p[1] == '|' || p[1] == '&' || p[1] == ')' || p[1] == 'n'))
 					|| (is_magic_all
 						 && (p[0] == '|' || p[0] == '&' || p[0] == ')'))
-					|| reg_magic == MAGIC_ALL
+					|| magicnessP == MAGIC_ALL
 			)
 				 curchr = Magic('$');
 		}
@@ -1046,7 +1045,7 @@ peekchr(void) {
 		} ei (firstOccurrence(REGEXP_ABBR, c)) {
 			//Handle abbreviations, like "\t" for TAB -- webb
 			curchr = backslash_trans(c);
-		} ei (reg_magic == MAGIC_NONE && (c == '$' || c == '^')) {
+		} ei (magicnessP == MAGIC_NONE && (c == '$' || c == '^')) {
 			curchr = toggle_Magic(c);
 		} else {
 			//Next character can never be (made) magic? Then backslashing it won't do anything.
@@ -1187,7 +1186,7 @@ read_limits(long* minval, long* maxval) {
 	if (*regparse == '\\')
 		regparse++;   //Allow either \{...} or \{...\}
 	if (*regparse != '}')
-		EMSG2_RET_FAIL(_(e_syntax_error_in_str_curlies), reg_magic == MAGIC_ALL);
+		EMSG2_RET_FAIL(_(e_syntax_error_in_str_curlies), magicnessP == MAGIC_ALL);
 
 	//Reverse the range if there was a '-', or make sure it is in the right order otherwise.
 	if ((!reverse && *minval > *maxval) || (reverse && *minval < *maxval)) {
@@ -1257,11 +1256,11 @@ typedef struct {
 
 	//Similar to "reg_ic", but only for 'combining' characters.  Set with \Z
 	//flag in the regexp.  Defaults to false, always.
-	int         reg_icombine;
+	int reg_icombine;
 
 	//Copy of "rmm_maxcol": maximum column to search for a match.  Zero when
 	//there is no maximum.
-	ColNr      reg_maxcol;
+	ColNr reg_maxcol;
 
 	//RState for the regexec.
 	int nfa_has_zend;       //NFA regexp \ze operator encountered.
@@ -1277,8 +1276,8 @@ typedef struct {
 	int nfa_has_zsubexpr;   //NFA regexp has \z( ), set zsubexpr.
 } Execution;
 
-private Execution   exe;
-private int      isBusyS = false;
+private Execution exe;
+private Boole isBusyP = false;
 
 //Return true if character 'c' is included in 'iskeyword' option for book where we're executin'.
 private int
@@ -1292,7 +1291,7 @@ private int can_f_submatch = false;   //true when submatch() can be used
 //substitution string is an expression that contains a call to substitute()
 //and submatch().
 typedef struct {
-	RegMatch   *sm_match;
+	RegMatch* c;
 	RegMultilineMatch   *sm_mmatch;
 	LineNr   sm_firstlnum;
 	LineNr   sm_maxline;
@@ -1782,16 +1781,14 @@ cstrchr(Byte *s, int c) {
 
 typedef void (*AllOrOne)(int *, int);
 
-private int eeRegsub_both(Byte *source, Var *expr, Byte *dest, int destlen, Unt flags);
-
 private void
 do_upper(int *d, int c) {
-	 *d = MB_TOUPPER(c);
+	*d = MB_TOUPPER(c);
 }
 
 private void
 do_lower(int *d, int c) {
-	 *d = MB_TOLOWER(c);
+	*d = MB_TOLOWER(c);
 }
 
 //regtilde(): Replace tildes in the pattern by the old pattern.
@@ -1806,13 +1803,13 @@ do_lower(int *d, int c) {
 //The tildes are parsed once before the first call to eeRegsub().
 pub CS
 regtilde(CS source) {
-	Byte* newsub = source;
-	Byte* p;
+	CS newsub = source;
 	Unt newsublen = 0;
 	Byte tilde[3] = {'~', ZERO, ZERO};
 	Unt tildelen = 1;
 	int error = false;
 
+   CS p;
 	for (p = newsub; *p; ++p) {
 		if (STRNCMP(p, tilde, tildelen) == 0) {
 			Unt prefixlen = p - newsub;      //not including the tilde
@@ -1892,22 +1889,20 @@ regtilde(CS source) {
 //eeRegsub_both(). Precondition: has_varargs(fp) || fp->args.len > argskip)
 private int
 fill_submatch_list(int, Var *argv, int argskip) {
-	ListItem   *li;
-	int      i;
-	Byte   *s;
-	Var   *listarg = argv + argskip;
+	int i;
+	Var* listarg = argv + argskip;
 
 	//Relies on list to be the first item in StaticList10.
 	init_static_list((StaticList10 *)(listarg->list));
 
 	//There are always 10 list items in StaticList10.
-	li = listarg->list->first;
+	ListItem* li = listarg->list->first;
 	for (i = 0; i < 10; ++i) {
-		s = rsm.sm_match->startp[i];
-		if (s == NULL || rsm.sm_match->endp[i] == NULL)
+		CS s = rsm.c->startp[i];
+		if (!s || rsm.c->endp[i] == NULL)
 			 s = NULL;
 		else
-			 s = copySubstr(s, rsm.sm_match->endp[i] - s);
+			 s = copySubstr(s, rsm.c->endp[i] - s);
 		li->c.tag = VAR_STRING;
 		li->c.string = s;
 		li = li->next;
@@ -1942,52 +1937,52 @@ clear_submatch_list(StaticList10 *sl) {
 pub int
 eeRegsub(
 	RegMatch* rmp,
-	Byte* source,
+	CS source,
 	Var* expr,
-	Byte* dest,
-	int destlen,
-	int flags
+	Text dest,
+	Unt flags
 ) {
 	int result;
 	Execution exeSaved;
-	int isBusyS_save = isBusyS;
+	Boole isBusyS_save = isBusyP;
 
-	if (isBusyS)
+	if (isBusyP)
 		//Being called recursively, save the state.
 		exeSaved = exe;
-	isBusyS = true;
+	isBusyP = true;
 
-	 exe.match = rmp;
-	 exe.multiMatch = NULL;
-	 exe.reg_maxline = 0;
-	 exe.book = curBook;
-	 exe.reg_line_lbr = true;
-	 result = eeRegsub_both(source, expr, dest, destlen, flags);
+	exe.match = rmp;
+	exe.multiMatch = NULL;
+	exe.reg_maxline = 0;
+	exe.book = curBook;
+	exe.reg_line_lbr = true;
+	result = eeRegsub_both(source, expr, dest, flags);
 
-	 isBusyS = isBusyS_save;
-	 if (isBusyS)
-	exe = exeSaved;
+	isBusyP = isBusyS_save;
+	if (isBusyP)
+		exe = exeSaved;
 
 	 return result;
 }
 
+//Regexp substitution
 pub int
 eeRegsub_multi(
-	RegMultilineMatch   *rmp,
-	LineNr   lnum,
-	Byte   *source,
-	Byte   *dest,
-	int      destlen,
-	int      flags)
-{
-	int      result;
-	Execution   exeSaved;
-	int      isBusyS_save = isBusyS;
+	RegMultilineMatch* rmp,
+	LineNr lnum,
+	CS source,
+	Text dest,
+	Unt flags
+) {
+   lo("ccc eeRegsub_multi %s", source);
+	int result;
+	Execution exeSaved;
+	Boole isBusyS_save = isBusyP;
 
-	if (isBusyS)
+	if (isBusyP)
 		//Being called recursively, save the state.
 		exeSaved = exe;
-	isBusyS = true;
+	isBusyP = true;
 
 	exe.match = NULL;
 	exe.multiMatch = rmp;
@@ -1995,10 +1990,10 @@ eeRegsub_multi(
 	exe.reg_firstlnum = lnum;
 	exe.reg_maxline = curBook->mem.lineCount - lnum;
 	exe.reg_line_lbr = false;
-	result = eeRegsub_both(source, NULL, dest, destlen, flags);
+	result = eeRegsub_both(source, NULL, dest, flags);
 
-	isBusyS = isBusyS_save;
-	if (isBusyS)
+	isBusyP = isBusyS_save;
+	if (isBusyP)
 		exe = exeSaved;
 
 	return result;
@@ -2016,31 +2011,31 @@ free_resub_eval_result(void) {
 }
 # endif
 
+//Regexp-based substitution
 //Return difference in lengths minus 1, or 0 in case of error.
 private int
 eeRegsub_both(
 	CS source,
 	Var* expr,
-	CS dest,
-	int destlen,
+	OUT Text dest,
 	Unt flags
-) {
+) { //:eeRegsub_both
 	CS src;
 	CS dst;
 	CS s;
-	int      c;
-	int      cc;
-	int      no = -1;
+	int c;
+	int cc;
+	int no = -1;
 	AllOrOne   func_all = (AllOrOne)NULL;
 	AllOrOne   func_one = (AllOrOne)NULL;
 	LineNr   clnum = 0;   //init for GCC
-	int      len = 0;   //init for GCC
+	int len = 0;   //init for GCC
 	static int  nesting = 0;
-	int      nested;
-	int      copy = flags & REGSUB_COPY;
+	int nested;
+	int copy = flags & REGSUB_COPY;
 
 	//Be paranoid...
-	if ((!source && !expr) || !dest) {
+	if ((!source && !expr) || dest.len == 0) {
 		internalErrMsg(e_null_argument);
 		return 0;
 	}
@@ -2050,7 +2045,7 @@ eeRegsub_both(
 	}
 	nested = nesting;
 	src = source;
-	dst = dest;
+	dst = dest.c;
 
 	//When the substitute part starts with "\=", evaluate it as an expression.
 	if (expr || (source[0] == '\\' && source[1] == '=')) {
@@ -2061,9 +2056,9 @@ eeRegsub_both(
 		//"flags & REGSUB_COPY" != 0.
 		if (copy) {
 			if (eval_result[nested]) {
-				int eval_len = (int)STRLEN(eval_result[nested]);
-				if (eval_len < destlen) {
-					STRCPY(dest, eval_result[nested]);
+				Unt eval_len = STRLEN(eval_result[nested]);
+				if (eval_len < dest.len) {
+					STRCPY(dest.c, eval_result[nested]);
 					dst += eval_len;
 					EE_CLEAR(eval_result[nested]);
 				}
@@ -2075,11 +2070,11 @@ eeRegsub_both(
 			EE_CLEAR(eval_result[nested]);
 
 			//The expression may contain substitute(), which calls us
-			//recursively.  Make sure submatch() gets the text from the first level.
+			//recursively. Make sure submatch() gets the text from the first level.
 			if (can_f_submatch)
 				rsm_save = rsm;
 			can_f_submatch = true;
-			rsm.sm_match = exe.match;
+			rsm.c = exe.match;
 			rsm.sm_mmatch = exe.multiMatch;
 			rsm.sm_firstlnum = exe.reg_firstlnum;
 			rsm.sm_maxline = exe.reg_maxline;
@@ -2204,7 +2199,7 @@ eeRegsub_both(
 				if (c == K_SPECIAL && src[0] != ZERO && src[1] != ZERO) {
 					//Copy a special key as-is.
 					if (copy) {
-						if (dst + 3 > dest + destlen) {
+						if (dst + 3 > dest.c + dest.len) {
 						   internalErrMsg(S"eeRegsub_both(): not enough space");
 						   return 0;
 						}
@@ -2224,16 +2219,16 @@ eeRegsub_both(
 						case 'r':   c = ENTER;   ++src;   break;
 						case 'n':   c = NL;      ++src;   break;
 						case 't':   c = TAB;   ++src;   break;
-					 //Oh no!  \e already has meaning in subst pat :-(
-					 //case 'e':   c = ESC;   ++src;   break;
+						//Oh no!  \e already has meaning in subst pat :-(
+						//case 'e':   c = ESC;   ++src;   break;
 						case 'b':   c = Ctrl_H;   ++src;   break;
 
 						//If "backslash" is true the backslash will be removed
-						//later.  Used to insert a literal CR.
+						//later. Used to insert a literal CR.
 						default:
 						   if (flags & REGSUB_BACKSLASH) {
 						      if (copy) {
-						         if (dst + 1 > dest + destlen) {
+						         if (dst + 1 > dest.c + dest.len) {
 						            internalErrMsg(S"eeRegsub_both(): not enough space");
 						            return 0;
 						         }
@@ -2258,7 +2253,7 @@ eeRegsub_both(
 				int charlen = mb_char2len(cc);
 
 				if (copy) {
-					if (dst + charlen > dest + destlen) {
+					if (dst + charlen > dest.c + dest.len) {
 						internalErrMsg(S"eeRegsub_both(): not enough space");
 						return 0;
 					}
@@ -2271,7 +2266,7 @@ eeRegsub_both(
 					//are composing characters; copy them as-is.
 					if (clen < totlen) {
 						if (copy) {
-						   if (dst + totlen - clen > dest + destlen) {
+						   if (dst + totlen - clen > dest.c + dest.len) {
 						      internalErrMsg(S"eeRegsub_both(): not enough space");
 						      return 0;
 						   }
@@ -2309,7 +2304,7 @@ eeRegsub_both(
 						   if (exe.multiMatch->endpos[no].lnum == clnum)
 						      break;
 						   if (copy) {
-						      if (dst + 1 > dest + destlen) {
+						      if (dst + 1 > dest.c + dest.len) {
 						         internalErrMsg(S"eeRegsub_both(): not enough space");
 						         return 0;
 						      }
@@ -2333,7 +2328,7 @@ eeRegsub_both(
 						   //it will be replaced by a line break.
 						   //Number of backslashes will be halved later, double them here.
 						   if (copy) {
-						      if (dst + 2 > dest + destlen) {
+						      if (dst + 2 > dest.c + dest.len) {
 						         internalErrMsg(S"eeRegsub_both(): not enough space");
 						         return 0;
 						      }
@@ -2359,7 +2354,7 @@ eeRegsub_both(
 						   len -= l;
 						   int charlen = mb_char2len(cc);
 						   if (copy) {
-						      if (dst + charlen > dest + destlen) {
+						      if (dst + charlen > dest.c + dest.len) {
 						         internalErrMsg(S"eeRegsub_both(): not enough space");
 						         return 0;
 						      }
@@ -2382,7 +2377,7 @@ blockEnd:
 		*dst = ZERO;
 
 exit:
-	return (int)((dst - dest) + 1);
+	return (int)((dst - dest.c) + 1);
 }
 
 
@@ -2416,7 +2411,7 @@ reg_submatch(int no) {
 	if (!can_f_submatch || no < 0)
 		return NULL;
 
-	if (!rsm.sm_match) {
+	if (!rsm.c) {
 		//First round: compute the length and allocate memory. Second round: copy the text.
 		for (round = 1; round <= 2; ++round) {
 			lnum = rsm.sm_mmatch->startpos[no].lnum;
@@ -2467,11 +2462,11 @@ reg_submatch(int no) {
 			}
 		}
 	} else {
-		s = rsm.sm_match->startp[no];
-		if (!s || rsm.sm_match->endp[no] == NULL)
+		s = rsm.c->startp[no];
+		if (!s || rsm.c->endp[no] == NULL)
 			retval = NULL;
 		else
-			retval = copySubstr(s, rsm.sm_match->endp[no] - s);
+			retval = copySubstr(s, rsm.c->endp[no] - s);
 	}
 
 	 return retval;
@@ -2495,7 +2490,7 @@ reg_submatch_list(int no) {
 		return NULL;
 
 	List* list;
-	if (!rsm.sm_match) {
+	if (!rsm.c) {
 		slnum = rsm.sm_mmatch->startpos[no].lnum;
 		elnum = rsm.sm_mmatch->endpos[no].lnum;
 		if (slnum < 0 || elnum < 0)
@@ -2511,25 +2506,25 @@ reg_submatch_list(int no) {
 			 if (list_append_string(list, s, ecol - scol) == FAIL)
 			error = true;
 		} else {
-			 int max_lnum = elnum - slnum;
+			int max_lnum = elnum - slnum;
 
-			 if (list_append_string(list, s, -1) == FAIL)
-			error = true;
-			 for (i = 1; i < max_lnum; i++) {
-			s = reg_getline_submatch(slnum + i);
 			if (list_append_string(list, s, -1) == FAIL)
-				 error = true;
-			 }
-			 s = reg_getline_submatch(elnum);
-			 if (list_append_string(list, s, ecol) == FAIL)
-			error = true;
+				error = true;
+			for (i = 1; i < max_lnum; i++) {
+				s = reg_getline_submatch(slnum + i);
+				if (list_append_string(list, s, -1) == FAIL)
+					 error = true;
+			}
+			s = reg_getline_submatch(elnum);
+			if (list_append_string(list, s, ecol) == FAIL)
+				error = true;
 		}
 	} else {
-		s = rsm.sm_match->startp[no];
-		if (s == NULL || rsm.sm_match->endp[no] == NULL)
+		s = rsm.c->startp[no];
+		if (!s || rsm.c->endp[no] == NULL)
 			return NULL;
 		list = list_alloc();
-		if (list_append_string(list, s, (int)(rsm.sm_match->endp[no] - s)) == FAIL)
+		if (list_append_string(list, s, (int)(rsm.c->endp[no] - s)) == FAIL)
 			error = true;
 	 }
 
@@ -2574,31 +2569,31 @@ enum {
 	 SPLIT = 4294967295 - 1024,
 	 MATCH,
 	 EMPTY,             //matches 0-length
-	 START_COLL,          //[abc] start
+	 START_COLL,        //[abc] start
 	 END_COLL,          //[abc] end
-	 START_NEG_COLL,          //[^abc] start
-	 END_NEG_COLL,          //[^abc] end (postfix only)
+	 START_NEG_COLL,    //[^abc] start
+	 END_NEG_COLL,      //[^abc] end (postfix only)
 	 RANGE,             //range of the two previous items (postfix only)
-	 RANGE_MIN,          //low end of a range
-	 RANGE_MAX,          //high end of a range
-	 CONCAT,             //concatenate two previous items (postfix only)
-	 OR,             //\| (postfix only)
-	 STAR,             //greedy * (postfix only)
-	 STAR_NONGREEDY,          //non-greedy * (postfix only)
+	 RANGE_MIN,         //low end of a range
+	 RANGE_MAX,         //high end of a range
+	 CONCAT,            //concatenate two previous items (postfix only)
+	 OR,                //\| (postfix only)
+	 STAR,              //greedy * (postfix only)
+	 STAR_NONGREEDY,    //non-greedy * (postfix only)
 	 QUEST,             //greedy \? (postfix only)
-	 QUEST_NONGREEDY,       //non-greedy \? (postfix only)
+	 QUEST_NONGREEDY,   //non-greedy \? (postfix only)
 
-	 BOL,             //^    Begin line
-	 EOL,             //$    End line
-	 BOW,             //\<   Begin word
-	 EOW,             //\>   End word
-	 BOF,             //\%^  Begin file
-	 EOFF,             //\%$  End file
+	 BOL,               //^    Begin line
+	 EOL,               //$    End line
+	 BOW,               //\<   Begin word
+	 EOW,               //\>   End word
+	 BOF,               //\%^  Begin file
+	 EOFF,              //\%$  End file
 	 NEWL,
-	 ZSTART,             //Used for \zs
-	 ZEND,             //Used for \ze
+	 ZSTART,            //Used for \zs
+	 ZEND,              //Used for \ze
 	 NOPEN,             //Start of subexpression marked with \%(
-	 NCLOSE,             //End of subexpr. marked with \%( ... \)
+	 NCLOSE,            //End of subexpr. marked with \%( ... \)
 	 START_INVISIBLE,
 	 START_INVISIBLE_FIRST,
 	 START_INVISIBLE_NEG,
@@ -2612,8 +2607,8 @@ enum {
 	 END_INVISIBLE_NEG,
 	 END_PATTERN,
 	 COMPOSING,          //Next nodes in NFA are part of the composing multibyte char
-	 END_COMPOSING,          //End of a composing char in the NFA
-	 ANY_COMPOSING,          //\%C: Any composing characters.
+	 END_COMPOSING,      //End of a composing char in the NFA
+	 ANY_COMPOSING,      //\%C: Any composing characters.
 	 OPT_CHARS,          //\%[abc]
 
 	 //The following are used only in the postfix form, not in the NFA
@@ -2688,29 +2683,29 @@ enum {
 	 ZCLOSE9,
 
 	 //FIRST_NL
-	 ANY,      //  Match any one character.
-	 IDENT,    //  Match identifier char
-	 SIDENT,   //  Match identifier char but no digit
-	 KWORD,    //  Match keyword char
-	 SKWORD,   //  Match word char but no digit
-	 FNAME,    //  Match file name char
-	 SFNAME,   //  Match file name char but no digit
-	 PRINT,    //  Match printable char
-	 SPRINT,   //  Match printable char but no digit
-	 WHITE,    //  Match whitespace char
-	 NWHITE,   //  Match non-whitespace char
-	 DIGIT,      //  Match digit char
-	 NDIGIT,      //  Match non-digit char
-	 HEX,      //  Match hex char
-	 NHEX,      //  Match non-hex char
-	 WORD,      //  Match word char
-	 NWORD,      //  Match non-word char
-	 HEAD,      //  Match head char
-	 NHEAD,      //  Match non-head char
-	 ALPHA,      //  Match alpha char
-	 NALPHA,      //  Match non-alpha char
-	 LOWER,      //  Match lowercase char
-	 NLOWER,      //  Match non-lowercase char
+	 ANY,      //Match any one character.
+	 IDENT,    //Match identifier char
+	 SIDENT,   //Match identifier char but no digit
+	 KWORD,    //Match keyword char
+	 SKWORD,   //Match word char but no digit
+	 FNAME,    //Match file name char
+	 SFNAME,   //Match file name char but no digit
+	 PRINT,    //Match printable char
+	 SPRINT,   //Match printable char but no digit
+	 WHITE,    //Match whitespace char
+	 NWHITE,   //Match non-whitespace char
+	 DIGIT,    //Match digit char
+	 NDIGIT,   //Match non-digit char
+	 HEX,      //Match hex char
+	 NHEX,     //Match non-hex char
+	 WORD,     //Match word char
+	 NWORD,    //Match non-word char
+	 HEAD,     //Match head char
+	 NHEAD,    //Match non-head char
+	 ALPHA,    //Match alpha char
+	 NALPHA,   //Match non-alpha char
+	 LOWER,    //Match lowercase char
+	 NLOWER,   //Match non-lowercase char
 	 UPPER,      //  Match uppercase char
 	 NUPPER,      //  Match non-uppercase char
 	 LOWER_IC,   //  Match [a-z]
@@ -2811,18 +2806,15 @@ private int failure_chance(RState *state, int depth);
 
 //helper functions used when doing parsing
 #define EMIT(c) if (postfixS >= postfixEndS && reallocPostfix() == FAIL) \
-				return FAIL;      \
-			*postfixS++ = c; \
+		return FAIL;     \
+	*postfixS++ = c; \
 
 
 //Setup to parse the regexp.  Used once to get the length and once to do it.
 private void
 regcomp_start(Byte* expr, Unt flags) {      //see eeRegcomp()
 	initchr(expr);
-	if (flags & RE_MAGIC)
-		reg_magic = MAGIC_ON;
-	else
-		reg_magic = MAGIC_OFF;
+	magicnessP = (flags & RE_MAGIC) != 0 ? MAGIC_ON : MAGIC_OFF;
 	reg_string = (flags & RE_STRING);
 	reg_strict = (flags & RE_STRICT);
 
@@ -4028,7 +4020,7 @@ parseAtom(OUT Boole* hadEol) {
 			}
 
 			if (nr < 0 || nr > INT_MAX)
-				EMSG2_RET_FAIL(_(e_invalid_character_after_str_2), reg_magic == MAGIC_ALL);
+				EMSG2_RET_FAIL(_(e_invalid_character_after_str_2), magicnessP == MAGIC_ALL);
 			//A ZERO is stored in the text as NL
 			//TODO: what if a composing character follows?
 			EMIT(nr == 0 ? 0x0a : (long)nr);
@@ -4068,14 +4060,14 @@ parseAtom(OUT Boole* hadEol) {
 			//\%[abc]
 			for (n = 0; (c = peekchr()) != ']'; ++n) {
 				if (c == ZERO)
-					EMSG2_RET_FAIL(_(e_missing_sb_after_str), reg_magic == MAGIC_ALL);
+					EMSG2_RET_FAIL(_(e_missing_sb_after_str), magicnessP == MAGIC_ALL);
 				//recursive call!
 				if (parseAtom(OUT hadEol) == FAIL)
 					return FAIL;
 			}
 			getchr();  //get the ]
 			if (n == 0)
-				EMSG2_RET_FAIL(_(e_empty_str_brackets), reg_magic == MAGIC_ALL);
+				EMSG2_RET_FAIL(_(e_empty_str_brackets), magicnessP == MAGIC_ALL);
 			EMIT(OPT_CHARS);
 			EMIT(n);
 
@@ -4721,22 +4713,22 @@ parseOneOrMorePieces(OUT Boole* hadEol){
 			skipchr_keepstart();
 			break;
 		case Magic('v'):
-			reg_magic = MAGIC_ALL;
+			magicnessP = MAGIC_ALL;
 			skipchr_keepstart();
 			curchr = -1;
 			break;
 		case Magic('m'):
-			reg_magic = MAGIC_ON;
+			magicnessP = MAGIC_ON;
 			skipchr_keepstart();
 			curchr = -1;
 			break;
 		case Magic('M'):
-			reg_magic = MAGIC_OFF;
+			magicnessP = MAGIC_OFF;
 			skipchr_keepstart();
 			curchr = -1;
 			break;
 		case Magic('V'):
-			reg_magic = MAGIC_NONE;
+			magicnessP = MAGIC_NONE;
 			skipchr_keepstart();
 			curchr = -1;
 			break;
@@ -4837,12 +4829,12 @@ parse(Unt paren, OUT Boole* hadEol) {  //REG_NOPAREN, REG_PAREN, REG_NPAREN or R
 	//Check for proper termination.
 	if (paren != REG_NOPAREN && getchr() != Magic(')')) {
 		if (paren == REG_NPAREN)
-			EMSG2_RET_FAIL(_(e_unmatched_str_percent_open), reg_magic == MAGIC_ALL);
+			EMSG2_RET_FAIL(_(e_unmatched_str_percent_open), magicnessP == MAGIC_ALL);
 		else
-			EMSG2_RET_FAIL(_(e_unmatched_str_open), reg_magic == MAGIC_ALL);
+			EMSG2_RET_FAIL(_(e_unmatched_str_open), magicnessP == MAGIC_ALL);
 	} ei (paren == REG_NOPAREN && peekchr() != ZERO) {
 		if (peekchr() == Magic(')'))
-			EMSG2_RET_FAIL(_(e_unmatched_str_close), reg_magic == MAGIC_ALL);
+			EMSG2_RET_FAIL(_(e_unmatched_str_close), magicnessP == MAGIC_ALL);
 		else
 			EMSG_RET_FAIL(_(e_nfa_regexp_proper_termination_error));
 	}
@@ -8941,13 +8933,13 @@ parseBranchtry(
 //lines (if "line" is NULL, use reg_getline()).
 //
 //Returns <= 0 for failure, number of lines contained in the match otherwise.
-private long
+private Long
 parseBranchexec_both(
-	Byte   *line,
-	ColNr   startcol,   //column to start looking for match
-	int      *timed_out //flag set on timeout or NULL
+	CS line,
+	ColNr startcol,   //column to start looking for match
+	int* timed_out //flag set on timeout or NULL
 ){
-	RegProg   *prog;
+	RegProg* prog;
 	long retval = 0L;
 	int i;
 	ColNr col = startcol;
@@ -9176,9 +9168,9 @@ freeBranch(RegProg *prog) {
 private int
 parseBranchexec_nl(
 	RegMatch   *rmp,
-	Byte   *line,  //string to match against
-	ColNr   col,   //column to start looking for match
-	int      line_lbr
+	CS line,  //string to match against
+	ColNr col,   //column to start looking for match
+	int line_lbr
 ){
 	exe.match = rmp;
 	exe.multiMatch = NULL;
@@ -9240,11 +9232,11 @@ init_regexec_multi(
 //FIXME if this behavior is not compatible.
 private long
 matchManyLines(
-	RegMultilineMatch   *rmp,
-	Portal* port,      //portal in which to search or NULL
+	RegMultilineMatch* rmp,
+	Portal* port,    //portal in which to search or NULL
 	Book* book,      //book in which to search
-	LineNr   lnum,      //nr of line to start looking for match
-	ColNr   col,      //column to start looking for match
+	LineNr lnum,     //nr of line to start looking for match
+	ColNr col,       //column to start looking for match
 	int* timed_out   //flag set on timeout or NULL
 ){
 	init_regexec_multi(rmp, port, book, lnum);
@@ -9315,13 +9307,13 @@ free_regexp_stuff(void) {
 //Return true if there is a match, false if not.
 private Boole
 eeRegexec_string(
-	RegMatch   *rmp,
+	RegMatch* rmp,
 	CS line,  //string to match against
-	ColNr   col,    //column to start looking for match
-	int      nl
+	ColNr col,    //column to start looking for match
+	int nl
 ){
-	Execution   exeSaved;
-	int      isBusyS_save = isBusyS;
+	Execution exeSaved;
+	Boole isBusyS_save = isBusyP;
 
 	//Cannot use the same prog recursively, it contains state.
 	if (rmp->regprog->re_in_use) {
@@ -9330,10 +9322,10 @@ eeRegexec_string(
 	}
 	rmp->regprog->re_in_use = true;
 
-	if (isBusyS)
+	if (isBusyP)
 		//Being called recursively, save the state.
 		exeSaved = exe;
-	isBusyS = true;
+	isBusyP = true;
 
 	exe.reg_startp = NULL;
 	exe.reg_endp = NULL;
@@ -9343,8 +9335,8 @@ eeRegexec_string(
 	int result = parseBranchexec_nl(rmp, line, col, nl);
 	rmp->regprog->re_in_use = false;
 
-	isBusyS = isBusyS_save;
-	if (isBusyS)
+	isBusyP = isBusyS_save;
+	if (isBusyP)
 		exe = exeSaved;
 
 	return result > 0;
@@ -9389,9 +9381,9 @@ eeRegexec_multi(
 	ColNr col,   //column to start looking for match
 	int* timed_out //flag is set when timeout limit reached
 ){
-	int      result;
+	int result;
 	Execution   exeSaved;
-	int      isBusyS_save = isBusyS;
+	Boole isBusyS_save = isBusyP;
 
 	//Cannot use the same prog recursively, it contains state.
 	if (rmp->regprog->re_in_use) {
@@ -9400,15 +9392,15 @@ eeRegexec_multi(
 	}
 	rmp->regprog->re_in_use = true;
 
-	if (isBusyS)
+	if (isBusyP)
 		//Being called recursively, save the state.
 		exeSaved = exe;
-	isBusyS = true;
+	isBusyP = true;
 
 	result = matchManyLines(rmp, port, book, lnum, col, timed_out);
 	rmp->regprog->re_in_use = false;
-	isBusyS = isBusyS_save;
-	if (isBusyS)
+	isBusyP = isBusyS_save;
+	if (isBusyP)
 		exe = exeSaved;
 
 	return result <= 0 ? 0 : result;

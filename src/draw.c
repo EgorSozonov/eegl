@@ -75,9 +75,6 @@ typedef struct {
 	int fromcol;      //start of inverting
 	int tocol;        //end of inverting
 
-	long vcol_sbr;    //virtual column after showbreak
-	Boole need_showbreak; //overlong line, skipping first x chars
-	Boole dont_use_showbreak; //do not use @showbreak
 	int textPropAbove_count;
 
 	Decoration charDeco; //decorations for the next character
@@ -244,7 +241,6 @@ private void overlayDeco(OUT Decoration* baseDeco, OverlayDeco overlayingDeco);
 private int useCursorLineHilite(Portal* po, LineNr lnum);
 private void drawSignOrPad(Portal* po, DrawCtx* m);
 private void drawLineNumber(OUT DrawCtx* m, Portal* po);
-private void breakIndent(Portal* po, DrawCtx* m);
 private void showbreakAndFiller(Portal* po, DrawCtx* m);
 private int textprop_size_after_trunc(
 	Portal* po,
@@ -2504,10 +2500,10 @@ ruler(Portal* po, int always) {
 		 || po->topFill != po->ruler.topFill
 		 || empty_line != po->ruler.isLineEmpty
 	){
-		int   row;
-		int   fillchar;
-		int   off;
-		int   width;
+		int row;
+		int fillchar;
+		int off;
+		int width;
 		ColNr   virtcol;
 #define RULER_BUF_LEN 70
 		Byte buffer[RULER_BUF_LEN];
@@ -4848,9 +4844,8 @@ overlayDeco(OUT Decoration* baseDeco, OverlayDeco overlayingDeco) {
 #define DRAWING_COMMLINE 1 //commline portal column
 #define DRAWING_NR       2 //line number
 #define DRAWING_SIGN     3 //column for signs
-#define DRAWING_BRI      4 //@breakindent
-#define DRAWING_DIFF     5 //@diff
-#define DRAWING_TEXT     6 //text in the line
+#define DRAWING_DIFF     4 //@diff
+#define DRAWING_TEXT     5 //text in the line
 
 //Return true if CursorLineSign hilite is to be used.
 private int
@@ -4920,34 +4915,6 @@ drawLineNumber(OUT DrawCtx* m, Portal* po) {
 			m->charDeco.fg, m->charDeco.bg, m->charDeco.fieldPresence);
 }
 
-//draw @breakindent: indent wrapped text accordingly
-private void
-breakIndent(Portal* po, DrawCtx* m) {
-	//when m->need_showbreak is set, @breakindent also applies
-	if (po->o.breakIndent
-			&& (m->row > m->startrow + m->filler_lines || m->need_showbreak)
-		&& !m->dont_use_showbreak
-	){
-		m->charDeco = EMPTY_DECO;
-		if (m->diff_hlf != 0)
-			m->charDeco = getFullDecoration(m->diff_hlf);
-		m->extraBytes = NULL;
-		m->c_extra = ' ';
-		m->c_final = ZERO;
-		m->countExtraBytes = po->o.breakIndent;
-		if (m->row == m->startrow && m->countExtraBytes < 0)
-			 m->countExtraBytes = 0;
-
-		//Correct start of hilited area for @breakindent,
-		if (m->fromcol >= m->vcol && m->fromcol < m->vcol + m->countExtraBytes)
-			m->fromcol = m->vcol + m->countExtraBytes;
-
-		//Correct end of hilited area for @breakindent
-		if (m->tocol == m->vcol)
-			m->tocol += m->countExtraBytes;
-	}
-}
-
 private void
 showbreakAndFiller(Portal* po, DrawCtx* m) {
 	if (m->filler_todo > 0) {
@@ -4962,8 +4929,6 @@ showbreakAndFiller(Portal* po, DrawCtx* m) {
 		m->countExtraBytes = po->width - m->col;
 		m->charDeco = getFullDecoration(HILITE_DiffDeleted);
 	}
-
-	m->need_showbreak = false;
 }
 
 //Return the cell size of virtual text after truncation.
@@ -5449,7 +5414,6 @@ drawLineSub(
 		if (!port->o.wrap && sc->textPropFollows && !sc->textPropAbove) {
 			//do not output more of the line, only the "below" prop
 			m->ptr = m->line + (Unt)memGetBookLen(port->book, c->lnum);
-			m->dont_use_showbreak = true;
 		}
 
 		//When the portal is too narrow, draw all "@" lines.
@@ -5504,8 +5468,6 @@ drawLineSub(
 
 		drawLineOnScreen_start(m, true);
 
-		if (!m->dont_use_showbreak && m->filler_todo <= 0)
-			m->need_showbreak = true;
 		--m->filler_todo;
 		//When the filler lines are actually below the last line of the
 		//file, don't draw the line itself, break here.
@@ -5722,12 +5684,6 @@ drawTextProps(
 				if (*m->ptr == ZERO)
 					//don't combine char deco after EOL
 					sc->textPropFlags &= ~PT_FLAG_COMBINE;
-				if (above || below || right || !wrap) {
-					//no @showbreak before "below" text property or after "above" or "right"
-					//text property
-					m->need_showbreak = false;
-					m->dont_use_showbreak = true;
-				}
 				if ((right || above || below || !wrap || padding > 0) && port->width > 2) {
 
 					//Take care of padding, right-align and truncation.
@@ -6280,12 +6236,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
 					break;
 			}
 
-			//Check if @breakindent applies and show it.
 			if (m->state == DRAWING_SIGN && m->countExtraBytes == 0) {
-				m->state = DRAWING_BRI;
-				breakIndent(port, m);
-			}
-			if (m->state == DRAWING_BRI && m->countExtraBytes == 0) {
 				m->state = DRAWING_DIFF;
 				showbreakAndFiller(port, m);
 			}
@@ -6519,7 +6470,6 @@ drawLineOnScreen(
 	m.screen_row = m.row + port->windowRow;
 	m.fromcol = -10;
 	m.tocol = MAXCOL;
-	m.vcol_sbr = -1;
 
 	if (drawingOnlyNumberCol == 0) { //normal line, with content
 		//To speed up the loop below, set hasExtraHiliting when there is linebreak,
@@ -6766,7 +6716,6 @@ drawLineOnScreen(
 		int head = 0;
 
 		bookInitCharsForKeywordsSizeArg(OUT &cts, port, lnum, m.vcol, m.line, m.ptr);
-		cts.cts_max_head_vcol = m.bufferLen;
 		while (cts.cts_vcol < m.bufferLen && *cts.cts_ptr != ZERO) {
 			head = 0;
 			charsize = win_lbr_chartabsize(&cts, &head);
@@ -6809,10 +6758,6 @@ drawLineOnScreen(
 			m.fromcol = 0;
 		ei (m.fromcol >= 0 && m.fromcol < m.vcol)
 			m.fromcol = m.vcol;
-
-		//When skipCol is non-zero, first line needs @showbreak
-		if (port->o.wrap)
-			m.need_showbreak = true;
 	}
 
 	//Correct hiliting for cursor that can't be disabled. Avoids having to check this for each

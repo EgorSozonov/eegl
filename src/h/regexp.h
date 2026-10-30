@@ -7,10 +7,10 @@
 void init_regexp_timeout(long msec);
 void disable_regexp_timeout(void);
 int re_multiline(RegProg* prog);
-Byte * skip_regexp(Byte* startp, int delim, int magic);
-Byte * skip_regexp_err(Byte* startp, int delim, int magic);
-Byte * skip_regexp_ex(
-	Byte* startp,
+CS skip_regexp(CS startp, int delim, int magic);
+CS skip_regexp_err(CS startp, int delim, int magic);
+CS skip_regexp_ex(
+	CS startp,
 	int dirc,
 	int magic,
 	Byte** newp,
@@ -22,20 +22,18 @@ void unref_extmatch(RegExternalMatch *em);
 CS regtilde(CS source);
 int eeRegsub(
 	RegMatch* rmp,
-	Byte* source,
+	CS source,
 	Var* expr,
-	Byte* dest,
-	int destlen,
-	int flags
+	Text dest,
+	Unt flags
 );
 int eeRegsub_multi(
-	RegMultilineMatch   *rmp,
-	LineNr   lnum,
-	Byte   *source,
-	Byte   *dest,
-	int      destlen,
-	int      flags)
-;
+	RegMultilineMatch* rmp,
+	LineNr lnum,
+	CS source,
+	Text dest,
+	Unt flags
+);
 void free_resub_eval_result(void);
 Byte * reg_submatch(int no);
 List * reg_submatch_list(int no);

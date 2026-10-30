@@ -51,7 +51,7 @@ int getfile(
 void c_append(Invocation* invo);
 void c_change(Invocation* invo);
 void c_z(Invocation* invo);
-CS skip_substitute(CS start, int delimiter);
+CS skip_substitute(CS start, Unt delimiter);
 void c_substitute(Invocation* invo);
 int do_sub_msg(int       count_only);
 CS get_old_sub(void);
@@ -392,7 +392,7 @@ void cursor_pos_info(Bag* dict);
 CS did_set_operatorfunc(OptionChange *cha);
 void opsFreeOperatorFnOption(void);
 void doExecuteVisualOperator(ActionArg* aArg, int old_col, int clipbYank);
-int getviscol(void);
+int doGetCursorPos(void);
 int doColAdvance_force(ColNr wcol);
 int doColAdvance(ColNr wantcol);
 int getvpos(Pos *pos, ColNr wantcol);

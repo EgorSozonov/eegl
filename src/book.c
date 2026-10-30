@@ -347,7 +347,7 @@ private void getLinesIntoVar(
 private void getBookLineIntoVar(Var* argvars, Var* returnVar, int retlist);
 private int initCharTable(Book* book);
 private int parseAnIsOption(CS var, Book* book, Boole only_check);
-private int win_nolbr_chartabsize(CharTableSize* cts, int* headp);
+private int win_nolbr_chartabsize(CharTableSize* cts, OUT int* headp);
 private int inPortalBorder(Portal *po, ColNr vcol);
 private int calc_percentage(long part, long whole);
 private int readBook(
@@ -5940,7 +5940,7 @@ linetabsize_eol(Portal *po, LineNr lnum) {
 	return linetabsize(po, lnum) + ((po->o.list && listCharsG.eol != ZERO) ? 1 : 0);
 }
 
-//Like linetabsize(), but excludes 'above'/'after'/'right'/'below' aligned
+//Like linetabsize(), but exclude 'above'/'after'/'right'/'below' aligned
 //virtual text, while keeping inline virtual text.
 pub int
 linetabsize_no_outer(Portal *po, LineNr lnum) {
@@ -6082,7 +6082,7 @@ bookInitCharsForKeywordsSizeArg(
 		cts->cts_text_prop_count = count;
 		if (count > 0) {
 			//Make a copy of the properties, so that they are properly
-			//aligned.  Make it twice as long for the sorting below.
+			//aligned. Make it twice as long for the sorting below.
 			cts->cts_text_props = ALLOC_MULT(TextProp, count * 2);
 			MEMMOVE(cts->cts_text_props + count, propStart, count * sizeof(TextProp));
 			for (int i = 0; i < count; ++i) {
@@ -6125,7 +6125,7 @@ clear_chartabsize_arg(OUT CharTableSize* cts) {
 //insert
 pub int
 lbr_chartabsize(CharTableSize* cts) {
-	if (curPor->o.breakIndent == 0 && !cts->cts_has_prop_with_text) {
+	if (!cts->cts_has_prop_with_text) {
 		if (curPor->o.wrap)
 			return win_nolbr_chartabsize(cts, NULL);
 		RET_PORT_BOOK_CHARSIZE(curPor, curBook, cts->cts_ptr, cts->cts_vcol)
@@ -6146,16 +6146,12 @@ lbr_chartabsize_adv(CharTableSize *cts) {
 //"cts->cts_cur_text_width" is set to the extra size for a text property that inserts text.
 //This function is used very often, keep it fast!!!!
 //
-//If "headp" not NULL, set "*headp" to the size of 'showbreak'/'breakindent'
+//If "headp" not NULL, set "*headp" to the size of @breakindent
 //included in the return value.
-//When "cts->cts_max_head_vcol" is positive, only count in "*headp" the size
-//of 'showbreak'/'breakindent' before "cts->cts_max_head_vcol".
-//When "cts->cts_max_head_vcol" is negative, only count in "*headp" the size
-//of 'showbreak'/'breakindent' before where cursor should be placed.
 //
 //Warning: "*headp" may not be set if it's 0, init to 0 before calling.
 pub int
-win_lbr_chartabsize(CharTableSize* cts, int* headp){
+win_lbr_chartabsize(CharTableSize* cts, OUT int* headp){
 	Portal* po = cts->port;
 	CS line = cts->cts_line; //start of the line
 	CS s = cts->cts_ptr;
@@ -6167,7 +6163,7 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
 	cts->cts_first_char = 0;
 
 	//No @breakindent and text properties that insert text: finish quickly
-	if (po->o.breakIndent == 0 && !cts->cts_has_prop_with_text) {
+	if (!cts->cts_has_prop_with_text) {
 		if (po->o.wrap)
 			return win_nolbr_chartabsize(cts, headp);
 		RET_PORT_BOOK_CHARSIZE(po, po->book, s, vcol)
@@ -6262,74 +6258,6 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
 	//May have to add something for 'breakindent' and/or 'showbreak'
 	//string at the start of a screen line.
 	int head = mb_added;
-	//When "size" is 0, no new screen line is started.
-	if (size > 0 && po->o.wrap && po->o.breakIndent != 0) {
-		int col_off_prev = normalPortalColumnOffset(po);
-		int width2 = po->width - col_off_prev;
-		ColNr wcol = vcol + col_off_prev;
-		wcol -= po->virtColFirstChar;
-		ColNr max_head_vcol = cts->cts_max_head_vcol;
-		int added = 0;
-
-		//cells taken by 'showbreak'/'breakindent' before current char
-		int   head_prev = 0;
-		if (wcol >= (int)po->width) {
-			wcol -= po->width;
-			col_off_prev = po->width - width2;
-			if (wcol >= width2 && width2 > 0)
-				wcol %= width2;
-			if (po->o.breakIndent != 0) {
-				if (cts->cts_bri_size < 0)
-					cts->cts_bri_size = po->o.breakIndent;
-				head_prev += cts->cts_bri_size;
-			}
-			if (wcol < head_prev) {
-				head_prev -= wcol;
-				wcol += head_prev;
-				added += head_prev;
-				if (max_head_vcol <= 0 || vcol < max_head_vcol)
-					head += head_prev;
-			} else
-				head_prev = 0;
-			wcol += col_off_prev;
-		}
-
-		if (wcol + size > (int)po->width) {
-			//cells taken by 'showbreak'/'breakindent' halfway current char
-			int head_mid = 0;
-			if (po->o.breakIndent != 0) {
-				if (cts->cts_bri_size < 0)
-					cts->cts_bri_size = po->o.breakIndent;
-				head_mid += cts->cts_bri_size;
-			}
-			if (head_mid > 0) {
-				//Calculate effective portal width.
-				int prev_rem = po->width - wcol;
-				int width = width2 - head_mid;
-
-				if (width <= 0)
-					width = 1;
-				//Divide "size - prev_rem" by "width", rounding up.
-				int cnt = (size - prev_rem + width - 1) / width;
-				added += cnt * head_mid;
-
-				if (max_head_vcol == 0 || vcol + size + added < max_head_vcol)
-					 head += cnt * head_mid;
-				ei (max_head_vcol > vcol + head_prev + prev_rem)
-					 head += (max_head_vcol - (vcol + head_prev + prev_rem)
-						        + width2 - 1) / width2 * head_mid;
-				ei (max_head_vcol < 0) {
-					int off = mb_added;
-					if (*s != ZERO && ((stateG & MODE_NORMAL) || cts->cts_start_incl))
-						off += cts->cts_cur_text_width;
-					if (off >= prev_rem)
-						head += (1 + (off - prev_rem) / width) * head_mid;
-				}
-			}
-		}
-
-		size += added;
-	}
 
 	if (headp)
 		*headp = head;
@@ -6369,22 +6297,22 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
 //Like win_lbr_chartabsize(), except that we know 'linebreak' is off, 'wrap'
 //is on and there are no properties that insert text.  This means we need to
 //check for a double-byte character that doesn't fit at the end of the screen line.
-//Only uses "port", "cts_ptr" and "cts_vcol" from "cts".
+//Only use "port", "cts_ptr" and "cts_vcol" from "cts".
 private int
-win_nolbr_chartabsize(CharTableSize* cts, int* headp){
+win_nolbr_chartabsize(CharTableSize* cts, OUT int* headp){
 	Portal* po = cts->port;
 	CS s = cts->cts_ptr;
 	ColNr col = cts->cts_vcol;
 	int n;
 
-	if (*s == TAB && (!po->o.list || listCharsG.tab1)) {
+	if (s[0] == TAB && (!po->o.list || listCharsG.tab1)) {
 		n = po->book->o.shiftWidth;
 		return (int)(n - (col % n));
 	}
 	n = bookPtr2Cells(s);
 	//Add one cell for a double-width character in the last column of the
 	//portal, displayed with a ">".
-	if (n == 2 && utf8CharLens[*s] > 1 && inPortalBorder(po, col)) {
+	if (n == 2 && utf8CharLens[s[0]] > 1 && inPortalBorder(po, col)) {
 		if (headp)
 			*headp = 1;
 		return 3;
@@ -6433,7 +6361,6 @@ getvcol(
 	CS line = ptr;  //start of the line
 
 	bookInitCharsForKeywordsSizeArg(&cts, po, pos->lnum, 0, line, line);
-	cts.cts_max_head_vcol = -1;
 
 	//This function is used very often, do some speed optimizations.
 	//When 'list', 'linebreak', 'showbreak' and 'breakindent' are not set
@@ -6441,10 +6368,7 @@ getvcol(
 	//Also use this when 'list' is set but tabs take their normal size.
 
 	Unt c;
-	if ((!po->o.list || listCharsG.tab1 != ZERO)
-		 && !po->o.breakIndent
-		 && !cts.cts_has_prop_with_text
-	) {
+	if ((!po->o.list || listCharsG.tab1 != ZERO) && !cts.cts_has_prop_with_text) {
 		for (;;) {
 			head = 0;
 			c = *ptr;
@@ -6483,12 +6407,12 @@ getvcol(
 		for (;;) {
 			//A tab gets expanded, depending on the current column. Other things also take up space.
 			head = 0;
-			incr = win_lbr_chartabsize(&cts, &head);
+			incr = win_lbr_chartabsize(&cts, OUT &head);
 			//make sure we don't go past the end of the line
 			if (*cts.cts_ptr == ZERO) {
 				incr = 1;   //ZERO at end of line only takes one column
 				if (cts.cts_cur_text_width > 0)
-					 incr = cts.cts_cur_text_width;
+					incr = cts.cts_cur_text_width;
 				on_ZERO = true;
 				break;
 			}
@@ -6562,16 +6486,14 @@ bookGetVirtualColInVirtualMode(
 	OUT ColNr* cursor,
 	OUT ColNr* end
 ) {
-	ColNr   col;
-	ColNr   coladd;
-	ColNr   endadd;
-
 	if (virtual_active()) {
 		//For virtual mode, only want one value
+
+		ColNr col;
 		getvcol(po, pos, &col, NULL, NULL);
 
-		coladd = pos->coladd;
-		endadd = 0;
+		ColNr coladd = pos->coladd;
+		ColNr endadd = 0;
 		//Cannot put the cursor on part of a wide character.
 		CS ptr = memGetLine(po->book, pos->lnum, false);
 		if (pos->col < memGetBookLen(po->book, pos->lnum)) {
@@ -13836,7 +13758,7 @@ f_argv(Var *argvars, OUT Var* returnVar) {
 }
 
 //}}}
-//{{{text properties. See ":help text-properties".
+//{{{text properties. See ";help text-properties".
 
 //In a hashtable item "hi_key" points to "name" in a PropType.
 //This avoids adding a pointer to the hashtable item.
@@ -13936,8 +13858,9 @@ f_prop_add(Var *argvars, OUT Var* returnVar) {
 	if (check_for_dict_arg(argvars, 2) == FAIL)
 		return;
 
-	returnVar->number = prop_add_common(start_lnum, start_col,
-				 argvars[2].bag, curBook, &argvars[2]);
+	returnVar->number = prop_add_common(
+			start_lnum, start_col, argvars[2].bag, curBook, &argvars[2]
+	);
 }
 
 //Attach a text property 'type_name' to the text starting at [start_lnum, start_col] and ending at

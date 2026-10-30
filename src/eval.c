@@ -5417,7 +5417,7 @@ do_string_sub(
 			//- The text up to where the match is.
 			//- The substituted text.
 			//- The text after the match.
-			sublen = eeRegsub(&regmatch, sub, expr, tail, 0, REGSUB_MAGIC);
+			sublen = eeRegsub(&regmatch, sub, expr, (Text){tail, 0}, REGSUB_MAGIC);
 			if (sublen <= 0) {
 				ga_clear(&ga);
 				break;
@@ -5434,7 +5434,8 @@ do_string_sub(
 			MEMMOVE((CS)ga.c + ga.len, tail, (Unt)i);
 			//add the substituted text
 			(void)eeRegsub(
-				&regmatch, sub, expr, (CS)ga.c + ga.len + i, sublen, REGSUB_COPY | REGSUB_MAGIC
+				&regmatch, sub, expr, (Text){(CS)ga.c + ga.len + i, sublen},
+				REGSUB_COPY | REGSUB_MAGIC
 			);
 			ga.len += i + sublen - 1;
 			tail = regmatch.endp[0];

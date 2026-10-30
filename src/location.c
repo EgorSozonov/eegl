@@ -11164,7 +11164,7 @@ search_regcomp(
 
 	//Save the currently used pattern in the appropriate place,
 	//unless the pattern should not be remembered.
-	if (!(options & SEARCH_KEEP) && (commModifierG.cmod_flags & CMOD_KEEPPATTERNS) == 0) {
+	if ((options & SEARCH_KEEP) == 0 && (commModifierG.cmod_flags & CMOD_KEEPPATTERNS) == 0) {
 		//search or global command
 		if (pat_save == RE_SEARCH || pat_save == RE_BOTH)
 			 save_re_pat(RE_SEARCH, pat, magic);

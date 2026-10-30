@@ -1986,8 +1986,8 @@ declStruct(RegProg);
 //just before "endp[no]". When there is no match, the pointer is NULL.
 typedef struct {
    RegProg* regprog;
-   Byte* startp[NSUBEXP];
-   Byte* endp[NSUBEXP];
+   CS startp[NSUBEXP];
+   CS endp[NSUBEXP];
    ColNr rm_matchcol;   //match start without "\zs"
    int rm_ic;
 } RegMatch;
@@ -4170,7 +4170,6 @@ typedef struct {
    int cts_with_trailing;   //include size of trailing props with last character
    int cts_start_incl;      //prop has true "start_incl" arg
    int cts_vcol;      //virtual column at current position
-   int cts_max_head_vcol;   //see win_lbr_chartabsize()
 } CharTableSize;
 
 typedef enum {

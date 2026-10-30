@@ -174,7 +174,7 @@ void bookInitCharsForKeywordsSizeArg(
 void clear_chartabsize_arg(OUT CharTableSize* cts);
 int lbr_chartabsize(CharTableSize* cts);
 int lbr_chartabsize_adv(CharTableSize *cts);
-int win_lbr_chartabsize(CharTableSize* cts, int* headp);
+int win_lbr_chartabsize(CharTableSize* cts, OUT int* headp);
 void getvcol(
 	Portal* po,
 	Pos* pos,

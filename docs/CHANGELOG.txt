@@ -169,7 +169,7 @@
 [-] p_cb (clipboard)
 [-] p_sn (short, MSDOS-style file names)
 [-] p_sta (smarttab), p_ts (tab stop), p_sts (softtabstop)
-[-] @breakindentopt (fixed at "column" setting, it's in @breakindent now)
+[-] @breakindent, @breakindentopt (fixed at "column" setting, it's in @breakindent now)
 [-] @autoshelldir (p_asd, actively harmful)
 [-] window title & icon
 [-] restricted, check_restricted()
@@ -318,11 +318,11 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] %s (and the substitute command in general) does NOT clobber the last, highlighted search
 [+] Do not clobber registers when pasting in Visual mode
 [+] asynchronous "make"
-[+] the :edit command should work with multiple files `:e a.txt b.txt`
+[+] the :edit command works with multiple files `:e a.txt b.txt`
 [+] Skip the quickfix buffer when looping through buffers
 [+] The :S command: a case-sensitive version of :s substitution
 [ ] Correct handling of /r, /n in substitutions. `s| |\n|g` should work correctly!
-[+] When yanking in visual mode, the cursor should not move anywhere
+[+] When yanking in visual mode, the cursor does not jump anywhere like crazy
 [+] :hi prints hilite groups sorted by name
 [+] replace CUT_BUFFER0 in X11 with PRIMARY or CLIPBOARD (clipboard.c) and remove string_convert()
 [+] Tab in insert mode enters Normal Mode
@@ -332,6 +332,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] "d" action does not clobber the clipboard (but still saves text to the "1" or "-" register)
 [+] "==" for strings in scripts is always case-sensitive. Doesn't depend on any options anymore!
 [ ] `;q` works even when addresses or count set. Useful when exiting from visual mode
+[+] `q` closes book (much better than `;bd` all the time)
 [ ] Correct tab handling (insert tabs only at the beginning of a line)
 [?] Command to comment or uncomment out a block
 [+] sane discriminated unions in options.c instead of byte casting
@@ -340,7 +341,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] draw.c:screenLinesCG: change array layout to improve cache locality
 [ ] auto-replace >=, <=, != with single Unicode chars (new book-local option)
 [ ] "rX", char replacing, shoult not set the "modified" flag on a buffer if previous char was same
-[+] prevent saving of immutable books. The "modifiable" flag should have actual power
+[+] prevent saving of immutable books. The "modifiable" flag has actual power
 [ ] finish implementing @smoothscroll?
 [ ] "gg" to a line should open all folds this line is in
 [ ] ":ls" should open a popup where jk moves the cursor up/down while hl move the buffers up/down
@@ -349,7 +350,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [ ] function to reformat minified JSON into human-readable form? Maybe just use jq? And just
    a general way to create auto-updateable views of buffers?
 [+] remove dependency on libattr - migrate to glibc
-[ ] Frozen options mode? (options cannot be changed after the init script)
+[ ] init.ini file with just the options (no scripting) that is loaded before the init.eyr script
 [+] Transition to pure 256-color palette and removal of double-width symbols
 [ ] Project dir and src dir settings at command line (-P and -Psrc options)
 [ ] Replace VimScript with Eyr

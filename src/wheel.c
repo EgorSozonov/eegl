@@ -5523,10 +5523,10 @@ nv_replace(ActionArg* aArg) {
 			return;
 		if (gchar_cursor() == ZERO) {
 			//Add extra space and put the cursor on the first one.
-			doColAdvance_force((ColNr)(getviscol() + aArg->count1));
+			doColAdvance_force((ColNr)(doGetCursorPos() + aArg->count1));
 			curPor->cursor.col -= aArg->count1;
 		} ei (gchar_cursor() == TAB)
-			doColAdvance_force(getviscol());
+			doColAdvance_force(doGetCursorPos());
 	}
 
 	//Abort if not enough characters to replace.
@@ -6768,7 +6768,7 @@ nv_edit(ActionArg* aArg) {
 
 			//Pretend Insert mode here to allow the cursor on the character past the end of the line
 			stateG = MODE_INSERT;
-			doColAdvance(getviscol());
+			doColAdvance(doGetCursorPos());
 			stateG = save_State;
 		}
 
@@ -13740,7 +13740,7 @@ oneright(void) {
 
 		//Adjust for multi-wide char (excluding TAB)
 		CS ptr = ml_get_cursor();
-		doColAdvance(getviscol() + ((*ptr != TAB
+		doColAdvance(doGetCursorPos() + ((*ptr != TAB
 						  && bookIsCharPrintable((*mb_ptr2char)(ptr)))
 				 ? bookPtr2Cells(ptr) : 1));
 		curPor->setCursWant = true;
@@ -13769,7 +13769,7 @@ oneright(void) {
 pub int
 oneleft(void) {
 	if (virtual_active()) {
-		int v = getviscol();
+		int v = doGetCursorPos();
 		if (v == 0)
 			return FAIL;
 
@@ -13777,9 +13777,9 @@ oneleft(void) {
 		int width = 1;
 		for (;;) {
 			doColAdvance(v - width);
-			//getviscol() is slow, skip it when @showbreak' is empty,
-			//'breakindent' is not set and there are no multi-byte characters
-			if (getviscol() < v)
+			//doGetCursorPos() is slow, skip it when @showbreak is empty,
+			//@breakindent is not set and there are no multi-byte characters
+			if (doGetCursorPos() < v)
 				break;
 			++width;
 		}
@@ -14986,7 +14986,7 @@ ins_eol(Unt c) {
 
 	//Put cursor on ZERO if on the last char and coladd is 1 (happens after CTRL-O).
 	if (virtual_active() && curPor->cursor.coladd > 0)
-		doColAdvance(getviscol());
+		doColAdvance(doGetCursorPos());
 
 	inpAppendToRedoBuff(NL_STR);
 	int i = openLine(has_format_option(FO_RET_COMS) ? OPENLINE_DO_COM : 0, old_indent);
@@ -20760,10 +20760,6 @@ internal_format(
 	int no_leader = false;
 	int doComments = (flags & INSCHAR_DO_COM);
 	int safe_tw = trim_to_int(8 * (Long)textwidth);
-	Long breakIndentSaved = curPor->o.breakIndent;
-
-	//make sure win_lbr_chartabsize() counts correctly
-	curPor->o.breakIndent = false;
 
 	//When 'ai' is off we don't want a space under the cursor to be
 	//deleted.  Replace it with an 'x' temporarily.
@@ -21055,7 +21051,6 @@ internal_format(
 	if (save_char != ZERO)      //put back space after cursor
 		pchar_cursor(save_char);
 
-	curPor->o.breakIndent = breakIndentSaved;
 	if (!format_only && haveto_redraw) {
 		update_topline();
 		drawCurBookLater(UPD_VALID);

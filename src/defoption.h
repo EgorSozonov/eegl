@@ -289,7 +289,6 @@ OPTION("termport.scroll", p_twsl, long, 10000, P_RBUF, &did_set_termwinscroll, n
 
 #ifdef OPTIONS_LIST_PORTAL
 
-OPTION("breakindent", breakIndent, Boole, false, 0, setBreakindent, null)
 OPTION("diff", diff, Boole, false, P_REDRAW_PORT, &did_set_diff, null)
 OPTION("eventignore.port", eventIgnorePort, CS, null, P_ONECOMMA|P_NODUP,
    &did_set_eventignore, &expand_set_eventignore)

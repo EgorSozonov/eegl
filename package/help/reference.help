@@ -860,12 +860,6 @@ the original file (normally Eegl appends an <EOL> to the last line if there is n
 make the file longer). See the @endofline option.
 
 
-@@breakindent            Portal. Numeric. Default = 0
-
-Every wrapped line will continue visually indented at that column,  thus preserving horizontal
-blocks of text. Note: an additional indent may be added for the @showbreak setting. (default: off)
-
-
 @@book.listed            Book. Boolean. Default = on
 
 When this option is set, the book shows up in the book list. If it is reset, it is not used for
@@ -4209,7 +4203,7 @@ Keep the portal width when portals are opened or closed and @equalalways is set.
 
 This option changes how text is displayed. It doesn't change the text in the book, see
 @textwidth for that. When on, lines longer than the width of the window will wrap and displaying
-continues on the next line.  When off lines will not wrap and only part of long lines will be
+continues on the next line.  When off, lines will not wrap and only part of long lines will be
 displayed.  When the cursor is moved to a part that is not shown, the screen will scroll
 horizontally. The line will be broken in the middle of a word if necessary.  See @linebreak to
 get the break at a word boundary. To make scrolling horizontally a bit more useful, try this:
