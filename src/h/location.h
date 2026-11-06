@@ -24,10 +24,10 @@ typedef enum {
 
 int llInitFromFile(
 	OUT LocationStack* st,
-	CS errorFName,
-	NULLABLE CS errorformat,
+	S errorFName,
+	NULLABLE S errorformat,
 	Boole newlist,      //true: start a new error list
-	CS title
+	S title
 );
 int qf_stack_get_bufnr(void);
 void check_qfBusynessG(void);
@@ -43,7 +43,7 @@ void c_lClose(Invocation* invo);
 void c_lOpen(Invocation* invo);
 void c_lBottom(Invocation* invo);
 LineNr llCurrentEntry(Portal* po);
-CS setQuickfixtextfunc(OptionChange* cha);
+S setQuickfixtextfunc(OptionChange* cha);
 int grepIsActuallyInternal(CommIndex id);
 void c_elgrep(Invocation* invo);
 void c_grep(Invocation* invo);
@@ -62,11 +62,11 @@ int setLocationList(
 	OUT LocationStack* stack,
 	List* newContent,
 	LocListAction action,
-	CS title,
+	S title,
 	Bag* specific
 );
 void c_lbook(Invocation* invo);
-CS cexpr_get_auname(CommIndex id);
+S cexpr_get_auname(CommIndex id);
 int trigger_cexpr_autocmd(int id);
 int cexpr_core(Invocation* invo, Var *tv);
 void c_lExpr(Invocation* invo);
@@ -88,7 +88,7 @@ Pos * getnextmark(Pos* startpos, Unt dir, int begin_line);
 void fmarks_check_names(Book* book);
 int check_mark(Pos* pos);
 void clrallmarks(Book* book);
-CS fm_getname(FileMark* fmark, int lead_len);
+S fm_getname(FileMark* fmark, int lead_len);
 void c_marks(Invocation* invo);
 void c_delmarks(Invocation* invo);
 void c_jumps(Invocation*);
@@ -111,22 +111,22 @@ FileMarkExt * get_namedfm(void);
 void f_getmarklist(Arr(Var) argvars, Var* returnVar);
 void init_signs(void);
 int markGetSignDecorations(Portal *wp, LineNr lnum, OUT SignHilite* signHilites);
-void llDeleteSigns(Book* book, CS group);
+void llDeleteSigns(Book* book, S group);
 int sign_define_by_name(
-	CS name,
-	CS linehl,
-	CS textt,
-	CS texthl,
-	CS culhl,
-	CS numhl,
+	S name,
+	S linehl,
+	S textt,
+	S texthl,
+	S culhl,
+	S numhl,
 	int prio
 );
-int sign_exists_by_name(CS name);
-int sign_undefine_by_name(CS name, Boole give_error);
+int sign_exists_by_name(S name);
+int sign_undefine_by_name(S name, Boole give_error);
 int sign_place(
 	int *sign_id,
-	CS sign_group,
-	CS sign_name,
+	S sign_group,
+	S sign_name,
 	Book* book,
 	LineNr lnum,
 	int prio
@@ -134,8 +134,8 @@ int sign_place(
 void c_sign(Invocation* invo);
 void llGetBookSigns(Book *book, List *l);
 void free_signs(void);
-CS get_sign_name(Expand *, int idx);
-void set_context_in_sign_cmd(Expand* xp, CS arg);
+S get_sign_name(Expand *, int idx);
+void set_context_in_sign_cmd(Expand* xp, S arg);
 void f_sign_define(Arr(Var) argvars, Var* returnVar);
 void f_sign_getdefined(Arr(Var) argvars, Var* returnVar);
 void f_sign_getplaced(Arr(Var) argvars, Var* returnVar);
@@ -147,13 +147,13 @@ void f_sign_unplace(Arr(Var) argvars, Var* returnVar);
 void f_sign_unplacelist(Arr(Var) argvars, Var* returnVar);
 int search_regcomp(
 	Text pat,
-	Arr(CS) used_pat,
+	Arr(S) used_pat,
 	int pat_save,
 	int pat_use,
 	int options,
 	OUT RegMultilineMatch* regmatch   //return: pattern and ignore-case flag
 );
-CS get_search_pat(void);
+S get_search_pat(void);
 void save_re_pat(int idx, Text pat, int magic);
 void save_search_patterns(void);
 void restore_search_patterns(void);
@@ -161,19 +161,19 @@ void free_search_patterns(void);
 void save_last_search_pattern(void);
 void restore_last_search_pattern(void);
 Text last_search_pattern(void);
-int ignorecase(CS pat);
-int ignorecase_opt(CS pat, int ic_in, int scs);
-int pat_has_uppercase(CS pat);
-CS last_csearch(void);
+int ignorecase(S pat);
+int ignorecase_opt(S pat, int ic_in, int scs);
+int pat_has_uppercase(S pat);
+S last_csearch(void);
 int last_csearch_forward(void);
 int last_csearch_until(void);
-void set_last_csearch(int c, CS s, int len);
+void set_last_csearch(int c, S s, int len);
 void set_csearch_direction(int cdir);
 void set_csearch_until(int t_cmd);
 Text last_search_pat(void);
 void reset_search_dir(void);
 void set_last_search_pat(
-	CS s,
+	S s,
 	int idx,
 	int magic,
 	int setlast
@@ -205,7 +205,7 @@ int search_for_exact_line(
 	Book* book,
 	Pos* pos,
 	int dir,
-	CS pat
+	S pat
 );
 int searchc(ActionArg* cap, int t_cmd);
 Pos* findmatch(Operator *oap, int initc);
@@ -215,11 +215,11 @@ Pos* findmatchlimit(
 	int flags,
 	int maxtravel
 );
-int check_linecomment(CS line);
+int check_linecomment(S line);
 int current_search(long   count, Boole forward);
 int linewhite(LineNr lnum);
 void find_pattern_in_path(
-	CS ptr,      //pointer to search pattern
+	S ptr,      //pointer to search pattern
 	Unt dir,   //direction of expansion
 	int len,      //length of search pattern
 	int whole,      //match whole words only
@@ -242,7 +242,7 @@ Boole searchPrepareHiliteLine(
 	Portal* po,
 	LineNr lnum,
 	ColNr mincol,
-	OUT CS* line,
+	OUT S* line,
 	Match* search_hl,
 	OUT HiliteId* searchHiId
 );
@@ -250,7 +250,7 @@ Short update_search_hl(
 	Portal* po,
 	LineNr lnum,
 	ColNr col,
-	OUT CS* line,
+	OUT S* line,
 	Match* search_hl,
 	int didLineDecorations,
 	int lcs_eol_one,
@@ -268,14 +268,14 @@ void f_matchdelete(Arr(Var) argvars, Var* returnVar);
 void c_match(Invocation* invo);
 void c_help(Invocation* invo);
 void c_helpclose(Invocation*);
-CS check_help_lang(CS arg);
+S check_help_lang(S arg);
 int help_heuristic(
-	CS matched_string,
+	S matched_string,
 	int offset,         //offset for match
 	int wrong_case      //no matching case
 );
 int find_help_tags(
-	CS arg,
+	S arg,
 	int keep_lang,
 	OUT ExpandMatch* matches
 );

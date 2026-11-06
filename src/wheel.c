@@ -53,8 +53,8 @@ declStruct(InsertCompletion);
 
 //state information used for getting the next set of insert completion matches.
 typedef struct {
-	CS e_cpt_copy;      //copy of 'complete'
-	CS e_cpt;         //current entry in "e_cpt_copy"
+	S e_cpt_copy;      //copy of 'complete'
+	S e_cpt;         //current entry in "e_cpt_copy"
 	Book* scannedBook;      //book being scanned
 	Pos* cur_match_pos;      //current match position
 	Pos prev_match_pos;      //previous match position
@@ -62,7 +62,7 @@ typedef struct {
 	Pos first_match_pos;   //first match position
 	Pos last_match_pos;      //last match position
 	int found_all;      //found all matches of a certain type.
-	CS dict;         //dictionary file to search
+	S dict;         //dictionary file to search
 	int dict_f;         //"dict" is an exact file name or not
 	Callback* func_cb;      //callback of function in 'cpt' option
 } InsertionCompletionNext;
@@ -83,13 +83,13 @@ private int current_block(
 );
 private int in_html_tag(int end_tag);
 private int find_next_quote(
-	CS line,
+	S line,
 	int col,
 	int  quotechar,
 	Boole escapeWithBackslash   //does backslash escape the quote character?
 );
 private int find_prev_quote(
-	CS line,
+	S line,
 	int col_start,
 	int quotechar,
 	Boole escapeWithBackslash   //does backslash escape the quote character?
@@ -111,14 +111,14 @@ private int getMoreChars(
 private int needToWaitForMsg(ActionArg* aArg, Pos *old_pos);
 private void waitForMsg(void);
 private void callYankDoAutocmd(int regname);
-private int checkIsBalloonItem(CS ptr, int* colp, int* bnp, int dir);
+private int checkIsBalloonItem(S ptr, int* colp, int* bnp, int dir);
 private void prepareForRedo(ActionArg* aArg);
 private int checkclearop(Operator* oper);
 private int checkclearopq(Operator* oper);
 private void unshift_special(ActionArg* aArg);
 private void del_from_showcmd(int len);
 private void display_showcmd(void);
-private Boole isIdent(CS line, int offset);
+private Boole isIdent(S line, int offset);
 private int normal_search(
 	ActionArg* aArg,
 	int dir,
@@ -155,12 +155,12 @@ private void nv_hat(ActionArg* aArg);
 private void nv_Zet(ActionArg* );
 private int nv_K_getcmd(
 	ActionArg* aArg,
-	CS kp,
+	S kp,
 	int kp_help,
 	int kp_ex,
 	Byte** ptr_arg,
 	int n,
-	CS buffer,
+	S buffer,
 	Unt bufsize,
 	Unt* buflen
 );
@@ -251,14 +251,14 @@ private int get_scroll_overlap(int dir);
 private int scrollSmoothly(int dir, long count, long *curscount);
 private void validateMappingTable(void);
 private void mapFree(MapBlock** mpp);
-private CS mapModeToChars(int mode);
+private S mapModeToChars(int mode);
 private void showMap(MapBlock* mp, int local);
 private MapBlock * addToMap(
 	MapBlock** map_table,
 	MapBlock** abbr_table,
-	CS keys,
-	CS rhs,
-	CS orig_rhs,
+	S keys,
+	S rhs,
+	S orig_rhs,
 	Unt noremap,
 	int nowait,
 	int silent,
@@ -273,24 +273,24 @@ private void listMappings(
 	int keyround,
 	int abbrev,
 	int haskey,
-	CS keys,
+	S keys,
 	int keys_len,
 	int mode,
 	int* did_local
 );
-private int getMapMode(CS* cmdp, Boole forceit);
-private void mapClear(CS cmdp, CS arg, Boole forceit, int abbr);
+private int getMapMode(S* cmdp, Boole forceit);
+private void mapClear(S cmdp, S arg, Boole forceit, int abbr);
 private int isMapLocked(void);
-private CS translateMapping(CS str);
+private S translateMapping(S str);
 private void mapblock2dict(
 	MapBlock* mp,
 	Bag* bag,
-	NULLABLE CS lhsrawalt,
+	NULLABLE S lhsrawalt,
 	int bookLocal,   //false if not buffer local mapping
 	int abbr       //true if abbreviation
 );
 private void getMapArg(Var* argvars, Var* returnVar, int exact);
-private int getMapModeString(CS mode_string, int abbr);
+private int getMapModeString(S mode_string, int abbr);
 private void setEntry(int from, int to);
 private void mappingImpl(Invocation* invo, Boole isabbrev);
 private int char_before_cursor(void);
@@ -355,8 +355,8 @@ private int has_compl_option(int dict_opt);
 private int match_at_original_text(InsertCompletion *match);
 private int is_first_match(InsertCompletion *match);
 private int ins_compl_accept_char(int c);
-private CS ins_compl_infercase_gettext(
-	CS str,
+private S ins_compl_infercase_gettext(
+	S str,
 	int char_len,
 	int compl_char_len,
 	int min_len,
@@ -365,9 +365,9 @@ private CS ins_compl_infercase_gettext(
 private int cfc_has_mode(void);
 private int is_nearest_active(void);
 private Unt addMatchToList(
-	CS str,
+	S str,
 	int len,
-	CS fname,
+	S fname,
 	Byte** cptext,       //extra text for popup menu or NULL
 	Var* user_data,  //"user_data" entry or NULL
 	Unt cdir,
@@ -376,8 +376,8 @@ private Unt addMatchToList(
 	Arr(Decoration) userDecos,           //user abbreviation/kind decorations
 	int      score
 );
-private int ins_compl_equal(InsertCompletion *match, CS str, int len);
-private void ins_compl_insert_bytes(CS p, int len);
+private int ins_compl_equal(InsertCompletion *match, S str, int len);
+private void ins_compl_insert_bytes(S p, int len);
 private Boole isCompletionSingleLine(void);
 private void ins_compl_longest_match(InsertCompletion* match);
 private void ins_compl_add_matches(OUT ExpandMatch* matches, int icase);
@@ -403,18 +403,18 @@ private void sort_compl_match_list(int (*compare)(const void *, const void *));
 private int ins_compl_build_pum(void);
 private Unt ins_compl_leader_len(void);
 private void ins_compl_dictionaries(
-	NULLABLE CS dict_start,
-	CS pat,
+	NULLABLE S dict_start,
+	S pat,
 	Unt flags,      //DICT_FIRST and/or DICT_EXACT
 	int thesaurus   //Thesaurus completion
 );
-private Unt thesaurus_add_words_in_line(CS fname, OUT CS* buf_arg, Unt dir, CS skip_word);
+private Unt thesaurus_add_words_in_line(S fname, OUT S* buf_arg, Unt dir, S skip_word);
 private void filterFromFiles(
 	OUT ExpandMatch files,
 	int thesaurus,
 	Unt flags,
 	RegMatch* regmatch,
-	CS buf,
+	S buf,
 	OUT Unt* dir
 );
 private void ins_compl_item_free(InsertCompletion* match);
@@ -432,30 +432,30 @@ private void ins_compl_new_leader(void);
 private int get_compl_len(void);
 private void ins_compl_addleader(int c);
 private void ins_compl_restart(void);
-private void ins_compl_set_original_text(CS str, Unt len);
+private void ins_compl_set_original_text(S str, Unt len);
 private void ins_compl_addfrommatch(void);
 private Boole set_ctrl_x_mode(Unt c);
 private int ins_compl_stop(Unt c, int prev_mode, int retval);
 private int ins_compl_cancel(void);
 private Boole ins_compl_prep(Unt c);
-private void ins_compl_fixRedoBufForLeader(CS ptr_arg);
+private void ins_compl_fixRedoBufForLeader(S ptr_arg);
 private Book* ins_compl_next_buf(Book* book, Unt flag);
 private Unt copyCompletionCbs(OUT Callback* dest, Callback* src);
-private CS get_complete_funcname(int type);
+private S get_complete_funcname(int type);
 private Callback* get_insert_callback(int type);
-private void expand_by_function(int type, CS base, Callback* cb);
-private inline Decoration getUserDecoration(CS name);
+private void expand_by_function(int type, S base, Callback* cb);
+private inline Decoration getUserDecoration(S name);
 private int ins_compl_add_tv(Var* tv, Unt dir, int fast);
 private void ins_compl_add_list(List* list);
 private void ins_compl_add_dict(Bag* dict);
 private void set_completion(ColNr startcol, List *list);
-private Unt add_match_to_list( Var  *returnVar, CS str, int len, int pos);
-private CS ins_compl_mode(void);
+private Unt add_match_to_list( Var  *returnVar, S str, int len, int pos);
+private S ins_compl_mode(void);
 private void ins_compl_update_sequence_numbers(void);
 private void fill_complete_info_dict(Bag *di, InsertCompletion *match, int add_match);
 private void get_complete_info(List *what_list, Bag *retdict);
 private int thesaurus_func_complete(int type);
-private int may_advance_cpt_index(CS cpt);
+private int may_advance_cpt_index(S cpt);
 private int process_next_cpt_value(
 	OUT InsertionCompletionNext* st,
 	OUT Unt* InsertCompletionype_arg,
@@ -464,13 +464,13 @@ private int process_next_cpt_value(
 	OUT int* advance_cpt_idx
 );
 private void get_next_include_file_completion(Unt insertCompletionType);
-private void get_next_dict_tsr_completion(int insertCompletionType, CS dict, int dict_f);
+private void get_next_dict_tsr_completion(int insertCompletionType, S dict, int dict_f);
 private void get_next_tag_completion(void);
-private void ins_compl_longest_insert(CS prefix);
+private void ins_compl_longest_insert(S prefix);
 private void fuzzy_longest_match(void);
 private void get_next_filename_completion(void);
 private void get_next_cmdline_completion(void);
-private CS ins_compl_get_next_word_or_line(
+private S ins_compl_get_next_word_or_line(
 	Book* scannedBook,      //buffer being scanned
 	Pos* cur_match_pos,      //current match position
 	int* match_len,
@@ -480,24 +480,24 @@ private Unt get_next_default_completion(InsertionCompletionNext* st, Pos* start_
 private int search_for_fuzzy_match(
 	Book* book,
 	Pos* pos,
-	CS pattern,
+	S pattern,
 	int dir,
 	Pos* start_pos,
 	OUT int* len,
-	OUT CS* ptr,
+	OUT S* ptr,
 	int* score
 );
-private Callback * get_callback_if_cfn(CS p);
+private Callback * get_callback_if_cfn(S p);
 private void get_register_completion(void);
 private Unt get_next_completion_match(int type, InsertionCompletionNext *st, Pos *ini);
-private void strip_caret_numbers_in_place(CS str);
+private void strip_caret_numbers_in_place(S str);
 private int prepare_cpt_compl_funcs(void);
 private void compl_source_start_timer(int source_idx);
 private int advance_cpt_sources_index_safe(void);
 private int ins_compl_get_exp(Pos* ini);
 private void ins_compl_update_shown_match(void);
 private void ins_compl_delete(void);
-private void ins_compl_expand_multiple(CS str);
+private void ins_compl_expand_multiple(S str);
 private void ins_compl_insert(int move_cursor);
 private void ins_compl_show_filename(void);
 private InsertCompletion * find_next_match_in_menu(void);
@@ -517,20 +517,20 @@ private Unt ins_compl_key2dir(Unt c);
 private Boole ins_compl_pum_key(Unt c);
 private int ins_compl_key2count(Unt c);
 private Boole shouldNewCharInsertTheMatch(int c);
-private Unt get_normal_compl_info(CS line, int startcol, ColNr curs_col);
-private int get_wholeline_compl_info(CS line, ColNr curs_col);
-private int get_filename_compl_info(CS line, int startcol, ColNr curs_col);
-private int get_cmdline_compl_info(CS line, ColNr curs_col);
+private Unt get_normal_compl_info(S line, int startcol, ColNr curs_col);
+private int get_wholeline_compl_info(S line, ColNr curs_col);
+private int get_filename_compl_info(S line, int startcol, ColNr curs_col);
+private int get_cmdline_compl_info(S line, ColNr curs_col);
 private int set_compl_globals(int startcol, ColNr curs_col, int is_cpt_compl);
 private int get_userdefined_compl_info(ColNr curs_col, Callback* cb, int* startcol);
-private Unt compl_get_info(CS line, int startcol, ColNr curs_col, OUT Boole* line_invalid);
-private void ins_compl_continue_search(CS line);
+private Unt compl_get_info(S line, int startcol, ColNr curs_col, OUT Boole* line_invalid);
+private void ins_compl_continue_search(S line);
 private Unt ins_compl_start(void);
 private void ins_compl_show_statusmsg(void);
 private Unt insertModeCompletion(Unt c, Boole enable_pum);
 private Boole ins_compl_setup_autocompl(Unt c);
 private void show_pum(int prev_cursorRow, int prev_leftCol);
-private unsigned quote_meta(CS dest, CS src, int len);
+private unsigned quote_meta(S dest, S src, int len);
 private void cpt_sources_clear(void);
 private Unt setup_cpt_sources(void);
 private Boole is_cfn_refresh_always(void);
@@ -598,18 +598,18 @@ findsent(int dir, long count) {
 
 		//go back to the previous non-white non-punctuation character
 		found_dot = false;
-		while (c = gchar_pos(&pos), SPACE_OR_TAB(c) || firstOccurrence(S".!?)]\"'", c) != NULL) {
+		while (c = gchar_pos(&pos), SPACE_OR_TAB(c) || firstOccurrence(u8".!?)]\"'", c) != NULL) {
 			tpos = pos;
 			if (decl(&tpos) == -1 || (LINEEMPTY(tpos.lnum) && dir == FORWARD))
 				break;
 
 			if (found_dot)
 				break;
-			if (firstOccurrence(S".!?", c) != NULL)
+			if (firstOccurrence(u8".!?", c) != NULL)
 				found_dot = true;
 
-			if (firstOccurrence(S")]\"'", c) != NULL
-					&& firstOccurrence(S".!?)]\"'", gchar_pos(&tpos)) == NULL)
+			if (firstOccurrence(u8")]\"'", c) != NULL
+					&& firstOccurrence(u8".!?)]\"'", gchar_pos(&tpos)) == NULL)
 				break;
 
 			 decl(&pos);
@@ -630,7 +630,7 @@ findsent(int dir, long count) {
 				do
 					 if ((c = inc(&tpos)) == -1)
 					break;
-				while (firstOccurrence((CS)")]\"'", c = gchar_pos(&tpos))
+				while (firstOccurrence(u8")]\"'", c = gchar_pos(&tpos))
 					!= NULL);
 				if (c == -1  || (c == ' ' || c == '\t') || c == ZERO) {
 					 pos = tpos;
@@ -721,7 +721,7 @@ normFindNextParagraf(
 		++curr;
 	curPor->cursor.lnum = curr;
 	if (curr == curBook->mem.lineCount && what != '}' && dir == FORWARD) {
-		CS line = ml_get(curr);
+		S line = ml_get(curr);
 
 		//Put the cursor on the last character in the last line and make the motion inclusive.
 		if ((curPor->cursor.col = ml_get_len(curr)) != 0) {
@@ -739,7 +739,7 @@ normFindNextParagraf(
 //If 'both' is true also stop at '}'
 pub int
 startPS(LineNr lnum, int para, int both) {
-	CS s = ml_get(lnum);
+	S s = ml_get(lnum);
 	return (*s == para || *s == '\f' || (both && *s == '}'));
 }
 
@@ -1395,8 +1395,8 @@ current_block(
 //When "end_tag" is true return true if the cursor is on "</aaa>".
 private int
 in_html_tag(int end_tag) {
-	CS line = ml_get_curline();
-	CS p;
+	S line = ml_get_curline();
+	S p;
 	int      c;
 	int      lc = ZERO;
 
@@ -1444,7 +1444,7 @@ current_tagblock(Operator* oper, long count_arg, Boole includeWhiteSpace){
 	Pos start_pos;
 	Pos end_pos;
 	Pos old_start, old_end;
-	CS cp;
+	S cp;
 	int len;
 	int r;
 	int do_include = includeWhiteSpace;
@@ -1493,9 +1493,9 @@ current_tagblock(Operator* oper, long count_arg, Boole includeWhiteSpace){
 again:
 	//Search backwards for unclosed "<aaa>". Put this position in start_pos.
 	for (n = 0; n < count; ++n) {
-		if (do_searchpair((CS)"<[^ \t>/!]\\+\\%(\\_s\\_[^>]\\{-}[^/]>\\|$\\|\\_s\\=>\\)",
-				 S"",
-				 S"</[^>]*>", BACKWARD, NULL, 0, NULL, (LineNr)0, 0L) <= 0)
+		if (do_searchpair(u8"<[^ \t>/!]\\+\\%(\\_s\\_[^>]\\{-}[^/]>\\|$\\|\\_s\\=>\\)",
+				 u8"",
+				 u8"</[^>]*>", BACKWARD, NULL, 0, NULL, (LineNr)0, 0L) <= 0)
 		{
 			 curPor->cursor = old_pos;
 			 goto theend;
@@ -1505,7 +1505,7 @@ again:
 
 	//Search for matching "</aaa>".  First isolate the "aaa".
 	inc_cursor();
-	CS p = ml_get_cursor();
+	S p = ml_get_cursor();
 	for (cp = p; *cp != ZERO && *cp != '>' && !SPACE_OR_TAB(*cp); MB_PTR_ADV(cp))
 		;
 	len = (int)(cp - p);
@@ -1513,12 +1513,12 @@ again:
 		curPor->cursor = old_pos;
 		goto theend;
 	}
-	CS spat = alloc(len + 39);
-	CS epat = alloc(len + 9);
+	S spat = alloc(len + 39);
+	S epat = alloc(len + 9);
 	sprintf((char *)spat, "<%.*s\\>\\%%(\\_s\\_[^>]\\{-}\\_[^/]>\\|\\_s\\?>\\)\\c", len, p);
 	sprintf((char *)epat, "</%.*s>\\c", len, p);
 
-	r = do_searchpair(spat, (CS)"", epat, FORWARD, NULL, 0, NULL, (LineNr)0, 0L);
+	r = do_searchpair(spat, u8"", epat, FORWARD, NULL, 0, NULL, (LineNr)0, 0L);
 
 	eeglFree(spat);
 	eeglFree(epat);
@@ -1537,7 +1537,7 @@ again:
 		 if (inc_cursor() < 0)
 		break;
 	} else {
-		CS c = ml_get_cursor();
+		S c = ml_get_cursor();
 
 		//Exclude the '<' of the end tag.
 		//If the closing tag is on new line, do not decrement cursor, but
@@ -1749,7 +1749,7 @@ current_par(
 //Return column number of "quotechar" or -1 when not found.
 private int
 find_next_quote(
-	CS line,
+	S line,
 	int col,
 	int  quotechar,
 	Boole escapeWithBackslash   //does backslash escape the quote character?
@@ -1774,7 +1774,7 @@ find_next_quote(
 //Return the found column or zero.
 private int
 find_prev_quote(
-	CS line,
+	S line,
 	int col_start,
 	int quotechar,
 	Boole escapeWithBackslash   //does backslash escape the quote character?
@@ -1803,7 +1803,7 @@ current_quote(
 	Boole includeQuote,
 	int quotechar   //Quote character
 ){
-	CS line = ml_get_curline();
+	S line = ml_get_curline();
 	int      col_end;
 	int      col_start = curPor->cursor.col;
 	int      inclusive = false;
@@ -2016,7 +2016,7 @@ virtual_active(void) {
 //Return the current mode as a string in "buf[MODE_MAX_LENGTH]", ZERO terminated.
 //The first character represents the major mode, the following ones the minor ones.
 pub void
-get_mode(CS buf) {
+get_mode(S buf) {
 	int i = 0;
 
 	if (time_for_testing == 93784) {
@@ -2462,7 +2462,7 @@ waitForMsg(void) {
 
 	//If need to redraw, and there is a "msgAfterRedrawG", redraw before the delay
 	if (mustRedrawG && msgAfterRedrawG != NULL && !emsg_on_display) {
-		CS kmsg = msgAfterRedrawG;
+		S kmsg = msgAfterRedrawG;
 		msgAfterRedrawG = NULL;
 		//Showmode() will clear msgAfterRedrawG, but we want to use it anyway. First update topLine
 		setcursor();
@@ -2814,7 +2814,7 @@ whRestoreVisualMode(void) {
 //"dir" is FORWARD or BACKWARD, the direction of searching. "*colp" is in/decremented if
 //"ptr[-dir]" should also be included. "bnp" points to a counter for square brackets.
 private int
-checkIsBalloonItem(CS ptr, int* colp, int* bnp, int dir){
+checkIsBalloonItem(S ptr, int* colp, int* bnp, int dir){
 	//Accept everything inside [].
 	if ((*ptr == ']' && dir == BACKWARD) || (*ptr == '[' && dir == FORWARD))
 		++*bnp;
@@ -2863,7 +2863,7 @@ pub
 //If text is found, a pointer to the text is put in "*text".  This
 //points into the current buffer line and is not always ZERO terminated.
 pub int
-find_ident_under_cursor(OUT CS* text, int find_type) {
+find_ident_under_cursor(OUT S* text, int find_type) {
 	 return find_ident_at_pos(curPor, curPor->cursor.lnum,
 				curPor->cursor.col, text, NULL, find_type);
 }
@@ -2875,7 +2875,7 @@ find_ident_at_pos(
 	Portal* po,
 	LineNr lnum,
 	ColNr startcol,
-	OUT CS* text,
+	OUT S* text,
 	int* textcol,   //column where "text" starts, can be NULL
 	int find_type
 ) {
@@ -2888,7 +2888,7 @@ find_ident_at_pos(
 
 	//if i == 0: try to find an identifier
 	//if i == 1: try to find any non-white text
-	CS ptr = memGetLine(po->book, lnum, false);
+	S ptr = memGetLine(po->book, lnum, false);
 	for (i = (find_type & FIND_IDENT) ? 0 : 1;   i < 2; ++i) {
 		//1. skip to start of identifier/text
 		col = startcol;
@@ -2908,7 +2908,7 @@ find_ident_at_pos(
 		//2. Back up to start of identifier/text.
 		//Remember class of character under cursor.
 		if ((find_type & FIND_EVAL) && ptr[col] == ']')
-			this_class = mb_get_class((CS)"a");
+			this_class = mb_get_class(u8"a");
 		else
 			this_class = mb_get_class(ptr + col);
 		while (col > 0 && this_class != 0) {
@@ -3121,8 +3121,8 @@ clear_showcmd(void) {
 			int       bytes = 0;
 			int       chars = 0;
 
-			CS s;
-			CS e;
+			S s;
+			S e;
 			if (cursor_bot) {
 				s = ml_get_pos(&VIsual);
 				e = ml_get_cursor();
@@ -3164,7 +3164,7 @@ clear_showcmd(void) {
 //Return true if output has been written (and setcursor() has been called).
 pub int
 add_to_showcmd(Unt c) {
-	CS p;
+	S p;
 	int old_len;
 	int extra_len;
 	int overflow;
@@ -3268,7 +3268,7 @@ display_showcmd(void) {
 			drawText(showcmd_buf, (int)visibleRowsG - 1, shownCommandColG, 0);
 
 		//clear the rest of an old message by outputting up to SHOWCMD_COLS spaces
-		drawText(S"          " + len, (int)visibleRowsG - 1, shownCommandColG + len, 0);
+		drawText(u8"          " + len, (int)visibleRowsG - 1, shownCommandColG + len, 0);
 	}
 
 	 setcursor();       //put cursor back where it belongs
@@ -3381,7 +3381,7 @@ check_scrollbind(LineNr topline_diff, long leftcol_diff) {
 
 //Return true if line[offset] is not inside a C-style comment or string, false otherwise.
 private Boole
-isIdent(CS line, int offset) {
+isIdent(S line, int offset) {
 	Boole incomment = false;
 	int   instring = 0;
 	int   prev = 0;
@@ -3415,7 +3415,7 @@ isIdent(CS line, int offset) {
 //When "thisblock" is true check the {} block scope. Return FAIL when not found.
 pub int
 find_decl(
-	CS ptr,
+	S ptr,
 	int len,
 	int locally,
 	int thisblock,
@@ -3429,7 +3429,7 @@ find_decl(
 	int retval = OK;
 	Unt searchflags = flags_arg;
 
-	CS pat = alloc(len + 7);
+	S pat = alloc(len + 7);
 
 	//Put "\V" before the pattern to avoid that the special meaning of "."
 	//and "~" causes trouble.
@@ -3545,7 +3545,7 @@ find_decl(
 pub int
 get_visual_text(
 	ActionArg* aArg,
-	OUT CS* pp,       //return: start of selected text
+	OUT S* pp,       //return: start of selected text
 	OUT int* lenp       //return: length of selected text
 ){
 	if (VIsual.lnum != curPor->cursor.lnum) {
@@ -3706,8 +3706,8 @@ invokeEdit(
 private void
 utf_find_illegal(void) {
 	Pos pos = curPor->cursor;
-	CS p;
-	CS tofree = NULL;
+	S p;
+	S tofree = NULL;
 
 	curPor->cursor.coladd = 0;
 	for (;;) {
@@ -3814,7 +3814,7 @@ nvPage(ActionArg* aArg) {
 private void
 nv_gd(Operator* oper, int nchar, int      thisblock) {  //1 for "1gd" and "1gD"
 	int len;
-	CS ptr;
+	S ptr;
 
 	if ((len = find_ident_under_cursor(OUT &ptr, FIND_IDENT)) == 0
 		 || find_decl(ptr, len, nchar == 'd', thisblock, SEARCH_START) == FAIL
@@ -4032,7 +4032,7 @@ nv_zet(ActionArg* aArg) {
 			 //"zf" and "zF" are always an operator, "zd", "zo", "zO", "zc" and "zC" only in Visual
 			 //mode. "zj" and "zk" are motion actions.
 			 aArg->nchar != 'f' && aArg->nchar != 'F'
-			 && !(VIsual_active && firstOccurrence((CS)"dcCoO", aArg->nchar))
+			 && !(VIsual_active && firstOccurrence(u8"dcCoO", aArg->nchar))
 			 && aArg->nchar != 'j' && aArg->nchar != 'k'
 			 &&
 			 checkclearop(aArg->oper))
@@ -4040,7 +4040,7 @@ nv_zet(ActionArg* aArg) {
 
 	 //For "z+", "z<CR>", "zt", "z.", "zz", "z^", "z-", "zb":
 	 //If line number given, set cursor.
-	if ((firstOccurrence((CS)"+\r\nt.z^-b", nchar) != NULL)
+	if ((firstOccurrence(u8"+\r\nt.z^-b", nchar) != NULL)
 		 && aArg->count0
 		 && aArg->count0 != curPor->cursor.lnum
 	) {
@@ -4381,7 +4381,7 @@ nv_semicolon(OUT ActionArg* aArg) {
 		//translate "count;" into ";.,.+(count - 1)"
 		stuffcharReadbuff('.');
 		if (aArg->count0 > 1) {
-			stuffReadbuff(S",.+");
+			stuffReadbuff(u8",.+");
 			stuffnumReadbuff((Long)aArg->count0 - 1L);
 		}
 	}
@@ -4481,16 +4481,16 @@ do_nv_ident(int c1, int c2) {
 private int
 nv_K_getcmd(
 	ActionArg* aArg,
-	CS kp,
+	S kp,
 	int kp_help,
 	int kp_ex,
 	Byte** ptr_arg,
 	int n,
-	CS buffer,
+	S buffer,
 	Unt bufsize,
 	Unt* buflen
 ) {
-	CS ptr = *ptr_arg;
+	S ptr = *ptr_arg;
 
 	if (kp_help) {
 		//in the help buffer
@@ -4549,12 +4549,12 @@ nv_K_getcmd(
 // g  ']'   :tselect for current identifier
 private void
 nv_ident(ActionArg* aArg) {
-	CS p;
+	S p;
 	int n = 0;      //init for GCC
 	Unt cmdchar;
 	int g_cmd;      //"g" command
 	int tag_cmd = false;
-	CS aux_ptr;
+	S aux_ptr;
 
 	if (aArg->cmdchar == 'g') {   //"g*", "g#", "g]" and "gCTRL-]"
 		cmdchar = aArg->nchar;
@@ -4568,7 +4568,7 @@ nv_ident(ActionArg* aArg) {
 		cmdchar = '#';
 
 	//The "]", "CTRL-]" and "K" commands accept an argument in Visual mode.
-	CS ptr = NULL;
+	S ptr = NULL;
 	if (cmdchar == ']' || cmdchar == Ctrl_RSB || cmdchar == 'K') {
 		if (VIsual_active && get_visual_text(aArg, OUT &ptr, OUT &n) == FAIL)
 			 return;
@@ -4588,7 +4588,7 @@ nv_ident(ActionArg* aArg) {
 
 	//Allocate buffer to put the command in. Inserting backslashes can
 	//double the length of the word. curBook->o.keywordProg could be added and some numbers.
-	CS kp = curBook->o.keywordProg;     //value of @keywordprog
+	S kp = curBook->o.keywordProg;     //value of @keywordprog
 	//'keywordprg' is ";he"
 	Boole kp_help = (!kp || STRCMP(kp, ";he") == 0 || STRCMP(kp, ";help") == 0);
 	if (kp_help && *skipwhite(ptr) == ZERO) {
@@ -4597,7 +4597,7 @@ nv_ident(ActionArg* aArg) {
 	}
 	Boole kp_ex = (*kp == ';'); //@keywordprog starts with ";"
 	Unt bufsize = (Unt)(n * 2 + 30 + STRLEN(kp));
-	CS buffer = alloc(bufsize);
+	S buffer = alloc(bufsize);
 	buffer[0] = ZERO;
 	Unt buflen = 0;
 
@@ -4662,24 +4662,24 @@ nv_ident(ActionArg* aArg) {
 			p = copyStr_shellescape(ptr, true, true);
 		eeglFree(ptr);
 		Unt plen = STRLEN(p);
-		CS newbuf = eeRealloc(buffer, buflen + plen + 1);
+		S newbuf = eeRealloc(buffer, buflen + plen + 1);
 		buffer = newbuf;
 		STRCPY(buffer + buflen, p);
 		buflen += plen;
 		eeglFree(p);
 	} else {
 		if (cmdchar == '*')
-			aux_ptr = S"/.*~[^$\\";
+			aux_ptr = u8"/.*~[^$\\";
 		ei (cmdchar == '#')
-			aux_ptr = S"/?.*~[^$\\";
+			aux_ptr = u8"/?.*~[^$\\";
 		ei (tag_cmd) {
 			if (curBook->kind == BOOK_HELP)
 				//";help" handles unescaped argument
-				aux_ptr = S"";
+				aux_ptr = u8"";
 			else
-				aux_ptr = S"\\|\"\n[";
+				aux_ptr = u8"\\|\"\n[";
 		} else
-			aux_ptr = S"\\|\"\n*?[";
+			aux_ptr = u8"\\|\"\n*?[";
 
 		p = buffer + buflen;
 		while (n-- > 0) {
@@ -4724,7 +4724,7 @@ nv_ident(ActionArg* aArg) {
 private void
 nv_tagpop(ActionArg* aArg) {
 	if (!checkclearopq(aArg->oper))
-		do_tag(S"", DT_POP, (int)aArg->count1, false, true);
+		do_tag(u8"", DT_POP, (int)aArg->count1, false, true);
 }
 
 //Handle scrolling command 'H', 'L' and 'M'.
@@ -4908,7 +4908,7 @@ nv_left(ActionArg* aArg) {
 						 || aArg->oper->opTy == OP_CHANGE)
 						   && !LINEEMPTY(curPor->cursor.lnum)
 				){
-					CS cp = ml_get_cursor();
+					S cp = ml_get_cursor();
 					if (*cp != ZERO) {
 						curPor->cursor.col += utfCharLen(cp);
 					}
@@ -4989,7 +4989,7 @@ nv_gotofile(ActionArg* aArg) {
 	if (!portCheckCanSetCurBookDisabled())
 		return;
 
-	CS ptr = grab_file_name(aArg->count1, OUT &lnum);
+	S ptr = grab_file_name(aArg->count1, OUT &lnum);
 
 	if (ptr) {
 		setpcmark();
@@ -5246,8 +5246,8 @@ nv_brackets(ActionArg* aArg) {
 	 //           fwd   bwd    fwd    bwd    fwd   bwd
 	 //identifier     "]i"  "[i"   "]I"  "[I"   "]^I"  "[^I"
 	 //define         "]d"  "[d"   "]D"  "[D"   "]^D"  "[^D"
-	if (firstOccurrence((CS)"iI\011dD\004", aArg->nchar) != NULL) {
-		CS ptr;
+	if (firstOccurrence(u8"iI\011dD\004", aArg->nchar) != NULL) {
+		S ptr;
 		int len;
 
 		if ((len = find_ident_under_cursor(&ptr, FIND_IDENT)) == 0)
@@ -5278,9 +5278,9 @@ nv_brackets(ActionArg* aArg) {
 		//"[m" or "]m" search for prev/next start of (Java) method.
 		//"[M" or "]M" search for prev/next end of (Java) method.
 		if (  (aArg->cmdchar == '['
-			&& firstOccurrence((CS)"{(*/#mM", aArg->nchar) != NULL)
+			&& firstOccurrence(u8"{(*/#mM", aArg->nchar) != NULL)
 			 || (aArg->cmdchar == ']'
-			&& firstOccurrence((CS)"})*/#mM", aArg->nchar) != NULL)
+			&& firstOccurrence(u8"})*/#mM", aArg->nchar) != NULL)
 		)
 			nv_bracket_block(aArg, &old_pos);
 
@@ -5626,7 +5626,7 @@ nv_cursormark(ActionArg* aArg, int flag, Pos *pos) {
 	curPor->setCursWant = true;
 }
 
-//"s" and "S" commands. TODO
+//"s" and "u8" commands. TODO
 private void
 nv_subst(ActionArg* aArg) {
 	//When showing output of term_dumpdiff() swap the top and bottom.
@@ -5636,7 +5636,7 @@ nv_subst(ActionArg* aArg) {
 		clearopbeep(aArg->oper);
 		return;
 	}
-	if (VIsual_active) { //"vs" and "vS" are the same as "vc"
+	if (VIsual_active) { //"vs" and "vu8" are the same as "vc"
 		if (aArg->cmdchar == 'S') {
 			VIsual_mode_orig = VIsual_mode;
 			VIsual_mode = 'V';
@@ -5663,8 +5663,8 @@ nv_abbrev(ActionArg* aArg) {
 //Translate a command into another command.
 private void
 nvOperatorAliases(ActionArg* aArg) {
-	static CS aliases = S"DCsSY&";
-	static CS replacements[8] = {SMAP((CS),
+	static S aliases = u8"DCsSY&";
+	static S replacements[8] = {SMAP((S),
 			"d$", "c$", "cl", "cc", "y$", ";s\r"
 	)};
 
@@ -5854,7 +5854,7 @@ nv_suspend(ActionArg* aArg) {
 	clearop(aArg->oper);
 	if (VIsual_active)
 		whEndVisualMode();      //stop Visual mode
-	executeCommLine(S"stop");
+	executeCommLine(u8"stop");
 }
 
 //"gv": Reselect the previous Visual area.  If Visual already active, exchange previous and
@@ -5970,7 +5970,7 @@ gUnderscoreAction(ActionArg* aArg) {
 		return;
 	}
 
-	CS ptr = ml_get_curline();
+	S ptr = ml_get_curline();
 
 	//In Visual mode we may end up after the line.
 	if (curPor->cursor.col > 0 && ptr[curPor->cursor.col] == ZERO)
@@ -6093,7 +6093,7 @@ nv_g_cmd(ActionArg* aArg) {
 	break;
 
 	case '&':
-		executeCommLine((CS)"%s//~/&");
+		executeCommLine(u8"%s//~/&");
 		break;
 
 	//"gv": Reselect the previous Visual area.  If Visual already active,
@@ -6620,7 +6620,7 @@ nv_esc(ActionArg* aArg) {
 			//CTRL-C doesn't show anything.  With a changed buffer give the
 			//message on stderr.  Without any changes might as well exit.
 			if (wasAnyBookChanged()) {
-				CS ms = _("Type  :qa!  and press <Enter> to abandon all changes and exit Eegl");
+				S ms = _("Type  :qa!  and press <Enter> to abandon all changes and exit Eegl");
 
 				if (out_redir)
 					mch_errmsg(ms);
@@ -6629,7 +6629,7 @@ nv_esc(ActionArg* aArg) {
 			} else {
 				if (out_redir) {
 					gotInterruptG = false;
-					executeCommLine((CS)"qa");
+					executeCommLine(u8"qa");
 				} else
 					msg(_("Type  :qa  and press <Enter> to exit Eegl"));
 			}
@@ -6720,7 +6720,7 @@ nv_edit(ActionArg* aArg) {
 				if (curPor->cursor.lnum < old_pos.lnum && curPor->cursor.lnum < old_visual.lnum
 						&& u_save_cursor() == OK
 				) {
-					ml_append(curPor->cursor.lnum, S"", 0, false);
+					ml_append(curPor->cursor.lnum, u8"", 0, false);
 					appended_lines(curPor->cursor.lnum++, 1L);
 				}
 			}
@@ -6822,8 +6822,8 @@ nv_object(ActionArg* aArg) {
 		include = true;       //"ax" = an object: include white space
 
 	//Make sure (), [], {} and <> are in 'matchpairs'
-	CS mps_save = curBook->o.matchPairs;
-	curBook->o.matchPairs = S"(:),{:},[:],<:>";
+	S mps_save = curBook->o.matchPairs;
+	curBook->o.matchPairs = u8"(:),{:},[:],<:>";
 
 	switch (aArg->nchar) {
 	case 'w': //"aw" = a word
@@ -6872,7 +6872,7 @@ nv_object(ActionArg* aArg) {
 		flag = current_quote(aArg->oper, aArg->count1, include, aArg->nchar);
 		break;
 #if 0   //TODO
-	case 'S': //"aS" = a section
+	case 'S': //"au8" = a section
 	case 'f': //"af" = a filename
 	case 'u': //"au" = a URL
 #endif
@@ -8287,10 +8287,10 @@ f_screenpos(Var* argvars, Var* returnVar) {
 	pos.coladd = 0;
 	textpos2screenpos(po, &pos, &row, &scol, &ccol, &ecol);
 
-	bagAddNumber(bag, S"row", row);
-	bagAddNumber(bag, S"col", scol);
-	bagAddNumber(bag, S"curscol", ccol);
-	bagAddNumber(bag, S"endcol", ecol);
+	bagAddNumber(bag, u8"row", row);
+	bagAddNumber(bag, u8"col", scol);
+	bagAddNumber(bag, u8"curscol", ccol);
+	bagAddNumber(bag, u8"endcol", ecol);
 }
 
 //Convert a virtual (screen) column to a character column.  The first column
@@ -8298,8 +8298,8 @@ f_screenpos(Var* argvars, Var* returnVar) {
 private int
 virtcol2col(Portal* po, LineNr lnum, int vcol) {
 	int offset = vcol2col(po, lnum, vcol - 1, NULL);
-	CS line = memGetLine(po->book, lnum, false);
-	CS p = line + offset;
+	S line = memGetLine(po->book, lnum, false);
+	S p = line + offset;
 	if (*p == ZERO) {
 		if (p == line)
 			return 0;
@@ -9736,7 +9736,7 @@ mapFree(MapBlock** mpp) {
 }
 
 //Return characters to represent the map mode in an allocated string. NULL when out of memory.
-private CS
+private S
 mapModeToChars(int mode) {
 	ArrayList    mapmode;
 
@@ -9768,7 +9768,7 @@ mapModeToChars(int mode) {
 	}
 
 	ga_append(&mapmode, ZERO);
-	return (CS)mapmode.c;
+	return (S)mapmode.c;
 }
 
 //Output a line for one mapping.
@@ -9789,7 +9789,7 @@ showMap(MapBlock* mp, int local) {      //true for book-local map
 			 { goto theend; }
 	}
 
-	CS mapchars = mapModeToChars(mp->mode);
+	S mapchars = mapModeToChars(mp->mode);
 	if (mapchars) {
 		msg_puts(mapchars);
 		len = (int)STRLEN(mapchars);
@@ -9808,9 +9808,9 @@ showMap(MapBlock* mp, int local) {      //true for book-local map
 	} while (len < 12);
 
 	if (mp->noremap == REMAP_NONE)
-		msgPutsDeco((CS)"*", getDecoFlags(HILITE_MetaSpecialKeys));
+		msgPutsDeco(u8"*", getDecoFlags(HILITE_MetaSpecialKeys));
 	ei (mp->noremap == REMAP_SCRIPT)
-		msgPutsDeco((CS)"&", getDecoFlags(HILITE_MetaSpecialKeys));
+		msgPutsDeco(u8"&", getDecoFlags(HILITE_MetaSpecialKeys));
 	else
 		msg_putchar(' ');
 
@@ -9823,7 +9823,7 @@ showMap(MapBlock* mp, int local) {      //true for book-local map
 	//Use false below if we only want things like <Up> to show up as such on
 	//the rhs, and not M-x etc, true gets both -- webb
 	if (*mp->rhs == ZERO)
-		msgPutsDeco((CS)"<Nop>", getDecoFlags(HILITE_MetaSpecialKeys));
+		msgPutsDeco(u8"<Nop>", getDecoFlags(HILITE_MetaSpecialKeys));
 	else
 		msg_outtrans_special(mp->rhs, false, 0);
 	if (p_verbose > 0)
@@ -9839,9 +9839,9 @@ private MapBlock *
 addToMap(
 	MapBlock** map_table,
 	MapBlock** abbr_table,
-	CS keys,
-	CS rhs,
-	CS orig_rhs,
+	S keys,
+	S rhs,
+	S orig_rhs,
 	Unt noremap,
 	int nowait,
 	int silent,
@@ -9903,7 +9903,7 @@ listMappings(
 	int keyround,
 	int abbrev,
 	int haskey,
-	CS keys,
+	S keys,
 	int keys_len,
 	int mode,
 	int* did_local
@@ -9916,7 +9916,7 @@ listMappings(
 			 msg_puts(_("Seen modifyOtherKeys: true\n"));
 
 		if (modify_otherkeys_state != MOKS_INITIAL) {
-			 CS name;
+			 S name;
 			 switch (modify_otherkeys_state) {
 			 case MOKS_INITIAL: break;
 			 case MOKS_OFF: name = _("Off"); break;
@@ -9931,7 +9931,7 @@ listMappings(
 			 msg_puts(buffer);
 		}
 
-		CS name = _("On");
+		S name = _("On");
 		Byte buffer[200];
 		eeSnprintf(buffer, sizeof(buffer), _("Kitty keyboard protocol: %s\n"), name);
 		msg_puts(buffer);
@@ -10007,8 +10007,8 @@ listMappings(
 //   4 for out of mem
 //   5 for entry not unique
 pub int
-do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbreviation
-	CS keys;
+do_map(int maptype, S arg, Unt mode, int abbrev){ //not a mapping but an abbreviation
+	S keys;
 	MapBlock* foundMapping;
 	MapBlock** mpp;
 	MapBlock* mp_result[2] = {NULL, NULL};
@@ -10017,9 +10017,9 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
 	int hasarg;
 	int haskey;
 	int do_print;
-	CS keysBuffer = NULL;
-	CS alt_keysBuffer = NULL;
-	CS arg_buf = NULL;
+	S keysBuffer = NULL;
+	S alt_keysBuffer = NULL;
+	S arg_buf = NULL;
 	int      retval = 0;
 	Boole unique = false;
 	Boole nowait = false;
@@ -10028,7 +10028,7 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
 	Boole expr = false;
 	Boole didSimplify = false;
 	int      unmap_lhs_only = false;
-	CS orig_rhs;
+	S orig_rhs;
 	keys = arg;
 	MapBlock** map_table = mappingTable;
 	MapBlock** abbr_table = &first_abbr;
@@ -10099,7 +10099,7 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
 	//Find end of keys and skip CTRL-Vs (and backslashes) in it.
 	//Accept backslash like CTRL-V
 	//with :unmap white space is included in the keys, no argument possible.
-	CS p = keys;
+	S p = keys;
 	while (*p && (maptype == MAPTYPE_UNMAP || !SPACE_OR_TAB(*p))) {
 		if ((p[0] == Ctrl_V) && p[1] != ZERO) {
 			++p;      //skip CTRL-V or backslash
@@ -10111,7 +10111,7 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
 	}
 
 	p = skipwhite(p);
-	CS rhs = p;
+	S rhs = p;
 	hasarg = (*rhs != ZERO);
 	haskey = (*keys != ZERO);
 	do_print = !haskey || (maptype != MAPTYPE_UNMAP && !hasarg);
@@ -10134,7 +10134,7 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
 
 		if (special)
 			flags |= REPTERM_SPECIAL;
-		CS new_keys = replace_termcodes(keys, &keysBuffer, 0, flags, OUT &didSimplify, false);
+		S new_keys = replace_termcodes(keys, &keysBuffer, 0, flags, OUT &didSimplify, false);
 		if (didSimplify) {
 			(void)replace_termcodes(
 					keys, &alt_keysBuffer, 0, flags | REPTERM_NO_SIMPLIFY, NULL, false
@@ -10145,7 +10145,7 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
 	orig_rhs = rhs;
 	if (hasarg) {
 		if (caseInsensitiveCompare(rhs, "<nop>") == 0) { //"<Nop>" means nothing
-			rhs = S"";
+			rhs = u8"";
 		} else {
 			rhs = replace_termcodes(
 				rhs, &arg_buf, 0, REPTERM_DO_LT | (special ? REPTERM_SPECIAL : 0), NULL, false
@@ -10332,7 +10332,7 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ //not a mapping but an abbrev
 						      //new rhs for existing entry
 						      foundMapping->mode &= ~mode;   //remove mode bits
 						      if (foundMapping->mode == 0 && !did_it) {//reuse entry
-						         CS newstr = copyStr(rhs);
+						         S newstr = copyStr(rhs);
 
 						         if (foundMapping->alt != NULL)
 						            { foundMapping->alt = foundMapping->alt->alt = NULL; }
@@ -10430,10 +10430,10 @@ theend:
 
 //Get the mapping mode from the command name.
 private int
-getMapMode(CS* cmdp, Boole forceit) {
+getMapMode(S* cmdp, Boole forceit) {
 	int      mode;
 
-	CS p = *cmdp;
+	S p = *cmdp;
 	int modec = *p++;
 	if (modec == 'i')
 		 mode = MODE_INSERT;            //:imap
@@ -10465,7 +10465,7 @@ getMapMode(CS* cmdp, Boole forceit) {
 //Clear all mappings (";mapclear") or abbreviations (";abclear").
 //"abbr" should be false for mappings, true for abbreviations.
 private void
-mapClear(CS cmdp, CS arg, Boole forceit, int abbr) {
+mapClear(S cmdp, S arg, Boole forceit, int abbr) {
 	int local = (STRCMP(arg, "<book>") == 0);
 	if (!local && *arg != ZERO) {
 		emsg(_(e_invalid_argument));
@@ -10543,7 +10543,7 @@ mapClearAllMappingsInMode(
 }
 
 pub int
-mode_str2flags(CS modechars) {
+mode_str2flags(S modechars) {
 	int      mode = 0;
 
 	if (firstOccurrence(modechars, 'n') != NULL)
@@ -10567,9 +10567,9 @@ mode_str2flags(CS modechars) {
 //Return true if a map exists that has "str" in the rhs for mode "modechars".
 //Recognize termcap codes in "str". Also check mappings local to the current book.
 pub int
-map_to_exists(CS str, CS modechars, int abbr) {
-	 CS buffer;
-	 CS rhs = replace_termcodes(str, OUT &buffer, 0, REPTERM_DO_LT, NULL, false);
+map_to_exists(S str, S modechars, int abbr) {
+	 S buffer;
+	 S rhs = replace_termcodes(str, OUT &buffer, 0, REPTERM_DO_LT, NULL, false);
 	 int retval = map_to_exists_mode(rhs, mode_str2flags(modechars), abbr);
 	 eeglFree(buffer);
 	 return retval;
@@ -10578,7 +10578,7 @@ map_to_exists(CS str, CS modechars, int abbr) {
 //Return true if a map exists that has "str" in the rhs for mode "mode".
 //Also checks mappings local to the current book.
 pub Boole
-map_to_exists_mode(CS rhs, int mode, int abbr) {
+map_to_exists_mode(S rhs, int mode, int abbr) {
 	Boole isExpandBook = false;
 
 	validateMappingTable();
@@ -10625,8 +10625,8 @@ private int expand_buffer = false;
 //wider than the original description. The caller has to free the string afterwards.
 //
 //Return NULL when there is a problem.
-private CS
-translateMapping(CS str) {
+private S
+translateMapping(S str) {
 	ArrayList   ga;
 	Unt      c;
 	int      modifiers;
@@ -10661,15 +10661,15 @@ translateMapping(CS str) {
 			ga_append(&ga, c);
 	}
 	ga_append(&ga, ZERO);
-	return (CS)(ga.c);
+	return (S)(ga.c);
 }
 
 //Work out what to complete when doing command line completion of mapping or abbreviation names.
-pub CS
+pub S
 set_context_in_map_cmd(
 	Expand* xp,
-	CS cmd,
-	CS arg,
+	S cmd,
+	S arg,
 	Boole forceit,   //true if '!' given
 	Boole isabbrev,   //true if abbreviation
 	Boole isunmap,   //true if unmap/unabbrev command
@@ -10731,13 +10731,13 @@ set_context_in_map_cmd(
 //Return OK if matches found, FAIL otherwise.
 pub int
 expandMappings(
-	CS pat,
+	S pat,
 	RegMatch* regmatch,
 	OUT ExpandMatch* matches
 ) {
 	MapBlock* mp;
 	int hash;
-	CS p;
+	S p;
 	int i;
 	int score = 0;
 
@@ -10751,13 +10751,13 @@ expandMappings(
 	//First search in map modifier arguments
 	for (i = 0; i < 7; ++i) {
 		switch (i) {
-		case 0: p = S"<silent>"; break;
-		case 1: p = S"<unique>"; break;
-		case 2: p = S"<script>"; break;
-		case 3: p = S"<expr>"; break;
-		case 4: p = S"<book>"; break;
-		case 5: p = S"<nowait>"; break;
-		case 6: p = S"<special>"; break;
+		case 0: p = u8"<silent>"; break;
+		case 1: p = u8"<unique>"; break;
+		case 2: p = u8"<script>"; break;
+		case 3: p = u8"<expr>"; break;
+		case 4: p = u8"<book>"; break;
+		case 5: p = u8"<nowait>"; break;
+		case 6: p = u8"<special>"; break;
 		case 7: continue;
 		}
 
@@ -10827,9 +10827,9 @@ expandMappings(
 			sortStrings(matches->c, matches->len);
 
 		//Remove multiple entries
-		CS* ptr1 = matches->c;
-		CS* ptr2 = ptr1 + 1;
-		CS* ptr3 = matches->c + matches->len;
+		S* ptr1 = matches->c;
+		S* ptr2 = ptr1 + 1;
+		S* ptr3 = matches->c + matches->len;
 
 		//TODO write/find function that removes runs of duplicate strings in-place
 		while (ptr2 < ptr3) {
@@ -10863,11 +10863,11 @@ expandMappings(
 //
 //return true if there is an abbreviation, false if not
 pub Boole
-check_abbr(Unt c, CS ptr, int col, int mincol) {
+check_abbr(Unt c, S ptr, int col, int mincol) {
 	int len;
 	int scol;      //starting column of the abbr.
 	int j;
-	CS s;
+	S s;
 	Byte tb[MB_MAXBYTES + 4];
 	MapBlock   *mp;
 	MapBlock   *mp2;
@@ -10889,7 +10889,7 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
 	if (col == 0)            //cannot be an abbr.
 		return false;
 
-	CS p = mb_prevptr(ptr, ptr + col);
+	S p = mb_prevptr(ptr, ptr + col);
 	if (!eeIsWordPtr(p)) {
 		eeglAbbr = true;         //Eegl added abbr.
 	} else {
@@ -10921,11 +10921,11 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
 		}
 		for ( ; mp; mp->next ? (mp = mp->next) : (mp = mp2, mp2 = NULL)) {
 			 int      qlen = mp->keylen;
-			 CS q = mp->lhs;
+			 S q = mp->lhs;
 			 int      match;
 
 			 if (eeStrbyte(mp->lhs, K_SPECIAL) != NULL) {
-				 CS qe = copyStr(mp->lhs);
+				 S qe = copyStr(mp->lhs);
 
 				 //might have CSI escaped mp->lhs
 				 q = qe;
@@ -10973,7 +10973,7 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
 					newlen = (*mb_char2bytes)(c, tb + j);
 					tb[j + newlen] = ZERO;
 					//Need to escape K_SPECIAL.
-					CS escaped = copyStr_escape_csi(tb + j);
+					S escaped = copyStr_escape_csi(tb + j);
 					newlen = (int)STRLEN(escaped);
 					MEMMOVE(tb + j, escaped, newlen);
 					j += newlen;
@@ -11014,12 +11014,12 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
 
 //Evaluate the RHS of a mapping or abbreviations and take care of escaping special characters.
 //Careful: after this "mp" will be invalid if the mapping was deleted.
-pub CS
+pub S
 eval_map_expr(MapBlock* mp, int) { //ZERO or typed character for abbreviation
 	ScriptId   save_sctx_sid = scriptPosG.sid;
 
 	//Remove escaping of CSI, because "str" is in a format to be used as typeahead.
-	CS expr = copyStr(mp->rhs);
+	S expr = copyStr(mp->rhs);
 	eeUnescapeCsi(expr);
 
 	//Forbid changing text or using ";normal" to avoid most of the bad side
@@ -11031,7 +11031,7 @@ eval_map_expr(MapBlock* mp, int) { //ZERO or typed character for abbreviation
 	int msgRowSaved = msgRowG;
 
 	//Note: the evaluation may make "mp" invalid.
-	CS p = eval_to_string(expr, false, false);
+	S p = eval_to_string(expr, false, false);
 
 	--textlock;
 	--ex_normal_lock;
@@ -11045,7 +11045,7 @@ eval_map_expr(MapBlock* mp, int) { //ZERO or typed character for abbreviation
 	if (!p)
 		return NULL;
 	//Escape CSI in the result to be able to use the string as typeahead.
-	CS res = copyStr_escape_csi(p);
+	S res = copyStr_escape_csi(p);
 	eeglFree(p);
 
 	return res;
@@ -11053,13 +11053,13 @@ eval_map_expr(MapBlock* mp, int) { //ZERO or typed character for abbreviation
 
 //Copy "p" to allocated memory, escaping K_SPECIAL and CSI so that the result
 //can be put in the typeahead buffer.
-pub CS
-copyStr_escape_csi(CS p) {
+pub S
+copyStr_escape_csi(S p) {
 	//Need a buffer to hold up to 3 times as much. 4 in case of an illegal utf-8 byte:
 	//0xc0 -> 0xc3 0x80 -> 0xc3 K_SPECIAL KS_SPECIAL KE_FILLER
-	CS res = alloc(STRLEN(p) * 4 + 1);
-	CS d = res;
-	for (CS s = p; *s != ZERO; ) {
+	S res = alloc(STRLEN(p) * 4 + 1);
+	S d = res;
+	for (S s = p; *s != ZERO; ) {
 		if ((s[0] == K_SPECIAL) && s[1] != ZERO && s[2] != ZERO) {
 			//Copy special key unmodified.
 			*d++ = *s++;
@@ -11080,9 +11080,9 @@ copyStr_escape_csi(CS p) {
 //Remove escaping from CSI and K_SPECIAL characters. Reverse of copyStr_escape_csi().
 //Work in-place.
 pub void
-eeUnescapeCsi(CS p) {
-	CS s = p;
-	CS d = p;
+eeUnescapeCsi(S p) {
+	S s = p;
+	S d = p;
 
 	while (*s != ZERO) {
 		if (s[0] == K_SPECIAL && s[1] == KS_SPECIAL && s[2] == KE_FILLER) {
@@ -11103,7 +11103,7 @@ pub int
 makemap(FILE* fd, NULLABLE Book* book) {     //the book for local mappings or NULL
 	MapBlock* mp;
 	Byte c1, c2, c3;
-	CS p;
+	S p;
 	char   *cmd;
 	int      abbr;
 	int      hash;
@@ -11227,8 +11227,8 @@ makemap(FILE* fd, NULLABLE Book* book) {     //the book for local mappings or NU
 //write escape string to file. "what": 0 for ;map lhs, 1 for ;map rhs, 2 for ;set
 //return FAIL for failure, OK otherwise
 pub int
-put_escstr(FILE* fd, CS strstart, int what) {
-	CS str = strstart;
+put_escstr(FILE* fd, S strstart, int what) {
+	S str = strstart;
 	Unt      c;
 	int modifiers;
 
@@ -11241,7 +11241,7 @@ put_escstr(FILE* fd, CS strstart, int what) {
 
 	for ( ; *str != ZERO; ++str) {
 			//Check for a multi-byte character, which may contain escaped K_SPECIAL and CSI bytes
-			CS p = mb_unescape(&str);
+			S p = mb_unescape(&str);
 			if (p) {
 				while (*p != ZERO) {
 					if (fputc(*p++, fd) < 0)
@@ -11323,7 +11323,7 @@ put_escstr(FILE* fd, CS strstart, int what) {
 pub void
 check_map_keycodes(void) {
 	MapBlock   *mp;
-	CS p;
+	S p;
 	int i;
 	Byte buffer[3];
 	int abbr;
@@ -11333,7 +11333,7 @@ check_map_keycodes(void) {
 
 	validateMappingTable();
 	//avoids giving error messages
-	estack_push(ETYPE_INTERNAL, (CS)"mappings", 0);
+	estack_push(ETYPE_INTERNAL, u8"mappings", 0);
 	ESTACK_CHECK_SETUP;
 
 	//Do this once for each book, and then once for global mappings/abbreviations with bp == NULL
@@ -11386,9 +11386,9 @@ check_map_keycodes(void) {
 
 //Check the string "keys" against the lhs of all mappings. Return pointer to rhs of mapping
 //(mapblock->m_str). NULL when no mapping found.
-pub CS
+pub S
 norCheckMapping(
-	CS keys,
+	S keys,
 	int mode,
 	int exact,      //require exact match
 	int ign_mod,   //ignore preceding modifier
@@ -11398,7 +11398,7 @@ norCheckMapping(
 ){
 	int      hash;
 	MapBlock   *mp;
-	CS s;
+	S s;
 
 	validateMappingTable();
 
@@ -11449,13 +11449,13 @@ norCheckMapping(
 //"hasmapto()" function
 pub void
 f_hasmapto(Var* argvars, Var* returnVar) {
-	CS mode;
+	S mode;
 	Byte buffer[NUMBUFLEN];
 	int  abbr = false;
 
-	CS name = tv_get_string(&argvars[0]);
+	S name = tv_get_string(&argvars[0]);
 	if (argvars[1].tag == VAR_UNKNOWN)
-		mode = S"nvo";
+		mode = u8"nvo";
 	else {
 		mode = tv_get_string_buf(&argvars[1], buffer);
 		if (argvars[2].tag != VAR_UNKNOWN)
@@ -11473,32 +11473,32 @@ private void
 mapblock2dict(
 	MapBlock* mp,
 	Bag* bag,
-	NULLABLE CS lhsrawalt,
+	NULLABLE S lhsrawalt,
 	int bookLocal,   //false if not buffer local mapping
 	int abbr       //true if abbreviation
 ){
-	CS lhs = str2special_save(mp->lhs, true, false);
-	CS mapmode = mapModeToChars(mp->mode);
+	S lhs = str2special_save(mp->lhs, true, false);
+	S mapmode = mapModeToChars(mp->mode);
 
-	bagAddString(bag, S"lhs", lhs);
+	bagAddString(bag, u8"lhs", lhs);
 	eeglFree(lhs);
-	bagAddString(bag, S"lhsraw", mp->lhs);
+	bagAddString(bag, u8"lhsraw", mp->lhs);
 	if (lhsrawalt) {
 		//Also add the value for the simplified entry.
-		bagAddString(bag, S"lhsrawalt", lhsrawalt);
+		bagAddString(bag, u8"lhsrawalt", lhsrawalt);
 	}
-	bagAddString(bag, S"rhs", mp->origRhs);
-	bagAddNumber(bag, S"noremap", mp->noremap ? 1L : 0L);
-	bagAddNumber(bag, S"script", mp->noremap == REMAP_SCRIPT ? 1L : 0L);
-	bagAddNumber(bag, S"expr", mp->expr ? 1L : 0L);
-	bagAddNumber(bag, S"silent", mp->silent ? 1L : 0L);
-	bagAddNumber(bag, S"sid", (long)mp->scriptCtx.sid);
-	bagAddNumber(bag, S"lnum", (long)mp->scriptCtx.lineNr);
-	bagAddNumber(bag, S"buffer", (long)bookLocal);
-	bagAddNumber(bag, S"nowait", mp->nowait ? 1L : 0L);
-	bagAddString(bag, S"mode", mapmode);
-	bagAddNumber(bag, S"abbr", abbr ? 1L : 0L);
-	bagAddNumber(bag, S"mode_bits", mp->mode);
+	bagAddString(bag, u8"rhs", mp->origRhs);
+	bagAddNumber(bag, u8"noremap", mp->noremap ? 1L : 0L);
+	bagAddNumber(bag, u8"script", mp->noremap == REMAP_SCRIPT ? 1L : 0L);
+	bagAddNumber(bag, u8"expr", mp->expr ? 1L : 0L);
+	bagAddNumber(bag, u8"silent", mp->silent ? 1L : 0L);
+	bagAddNumber(bag, u8"sid", (long)mp->scriptCtx.sid);
+	bagAddNumber(bag, u8"lnum", (long)mp->scriptCtx.lineNr);
+	bagAddNumber(bag, u8"buffer", (long)bookLocal);
+	bagAddNumber(bag, u8"nowait", mp->nowait ? 1L : 0L);
+	bagAddString(bag, u8"mode", mapmode);
+	bagAddNumber(bag, u8"abbr", abbr ? 1L : 0L);
+	bagAddNumber(bag, u8"mode_bits", mp->mode);
 
 	eeglFree(mapmode);
 }
@@ -11509,13 +11509,13 @@ getMapArg(Var* argvars, Var* returnVar, int exact) {
 	returnVar->tag = VAR_STRING;
 	returnVar->string = NULL;
 
-	CS keys = tv_get_string(&argvars[0]);
+	S keys = tv_get_string(&argvars[0]);
 	if (*keys == ZERO)
 		return;
 
 	Byte buffer[NUMBUFLEN];
 	Unt flags = REPTERM_FROM_PART | REPTERM_DO_LT;
-	CS which;
+	S which;
 	Boole abbr = false;
 	int get_dict = false;
 	if (argvars[1].tag != VAR_UNKNOWN) {
@@ -11526,20 +11526,20 @@ getMapArg(Var* argvars, Var* returnVar, int exact) {
 				get_dict = (int)tv_get_bool(&argvars[3]);
 		}
 	} else
-		which = S"";
+		which = u8"";
 	if (!which)
 		return;
 
 	int mode = getMapMode(&which, 0);
 
 	Boole didSimplify = false;
-	CS keysBuffer = NULL;
-	CS simplifiedKeys =
+	S keysBuffer = NULL;
+	S simplifiedKeys =
 		replace_termcodes(keys, &keysBuffer, 0, flags, OUT &didSimplify, false);
 	int bookLocal;
 	MapBlock* mp = NULL;
-	CS rhs = norCheckMapping(simplifiedKeys, mode, exact, false, abbr, OUT &mp, OUT &bookLocal);
-	CS alt_keysBuffer = NULL;
+	S rhs = norCheckMapping(simplifiedKeys, mode, exact, false, abbr, OUT &mp, OUT &bookLocal);
+	S alt_keysBuffer = NULL;
 	if (didSimplify) {
 		//When the lhs is being simplified the not-simplified keys are
 		//preferred for printing, like in do_map().
@@ -11551,7 +11551,7 @@ getMapArg(Var* argvars, Var* returnVar, int exact) {
 		//Return a string.
 		if (rhs) {
 			if (*rhs == ZERO)
-				returnVar->string = copyStr(S"<Nop>");
+				returnVar->string = copyStr(u8"<Nop>");
 			else
 				returnVar->string = str2special_save(rhs, false, false);
 		}
@@ -11606,10 +11606,10 @@ f_maplist(Arr(Var) argvars, Var* returnVar) {
 					return;
 				}
 
-				CS keysBuffer = NULL;
+				S keysBuffer = NULL;
 				Boole didSimplify = false;
 
-				CS lhs = str2special_save(mp->lhs, true, false);
+				S lhs = str2special_save(mp->lhs, true, false);
 				(void)replace_termcodes(lhs, &keysBuffer, 0, flags, OUT &didSimplify, false);
 				eeglFree(lhs);
 
@@ -11633,8 +11633,8 @@ f_mapcheck(Arr(Var) argvars, Var* returnVar) {
 //Get the mapping mode from the mode string.
 //It may contain multiple characters, eg "nox", or "!", or ' '. Return 0 if there is an error
 private int
-getMapModeString(CS mode_string, int abbr) {
-	CS p = mode_string;
+getMapModeString(S mode_string, int abbr) {
+	S p = mode_string;
 	int mode = 0;
 	int tmode;
 	int modec;
@@ -11643,7 +11643,7 @@ getMapModeString(CS mode_string, int abbr) {
 	const int MASK_BANG = MODE_INSERT | MODE_COMMLINE;
 
 	if (*p == ZERO)
-		p = S" ";   //compatibility
+		p = u8" ";   //compatibility
 	while ((modec = *p++)) {
 		switch (modec) {
 		case 'i': tmode = MODE_INSERT;   break;
@@ -11677,13 +11677,13 @@ getMapModeString(CS mode_string, int abbr) {
 //"mapset()" function
 pub void
 f_mapset(Arr(Var) argvars, Var*) {
-	CS which;
+	S which;
 	Byte buffer[NUMBUFLEN];
 	int is_abbr;
 	Bag* bag;
 	MapBlock** map_table = mappingTable;
 	MapBlock** abbr_table = &first_abbr;
-	CS arg;
+	S arg;
 	MapBlock* mp_result[2] = {NULL, NULL};
 	//If first arg is a dict, then that's the only arg permitted.
 	Boole bagOnly = argvars[0].tag == VAR_BAG;
@@ -11713,15 +11713,15 @@ f_mapset(Arr(Var) argvars, Var*) {
 	}
 
 	//Get the values in the same order as above in getMapArg().
-	CS lhs = bagGetString(bag, tConst("lhs"), false);
-	CS lhsraw = bagGetString(bag, tConst("lhsraw"), false);
-	CS lhsrawalt = bagGetString(bag, tConst("lhsrawalt"), false);
-	CS rhs = bagGetString(bag, tConst("rhs"), false);
+	S lhs = bagGetString(bag, tConst("lhs"), false);
+	S lhsraw = bagGetString(bag, tConst("lhsraw"), false);
+	S lhsrawalt = bagGetString(bag, tConst("lhsrawalt"), false);
+	S rhs = bagGetString(bag, tConst("rhs"), false);
 	if (!lhs || !lhsraw || !rhs) {
 		emsg(_(e_entries_missing_in_mapset_dict_argument));
 		return;
 	}
-	CS orig_rhs = rhs;
+	S orig_rhs = rhs;
 
 	Unt noremap = bagGetNumber(bag, tConst("noremap")) ? REMAP_NONE: 0;
 	if (bagGetNumber(bag, tConst("script")) != 0)
@@ -11734,9 +11734,9 @@ f_mapset(Arr(Var) argvars, Var*) {
 	int nowait = bagGetNumber(bag, tConst("nowait")) != 0;
 	//mode from the dict is not used
 
-	CS arg_buf = NULL;
+	S arg_buf = NULL;
 	if (caseInsensitiveCompare(rhs, "<nop>") == 0)   //"<Nop>" means nothing
-		rhs = S"";
+		rhs = u8"";
 	else
 		rhs = replace_termcodes(rhs, &arg_buf, sid, REPTERM_DO_LT | REPTERM_SPECIAL, NULL, false);
 
@@ -11778,8 +11778,8 @@ f_mapset(Arr(Var) argvars, Var*) {
 //Add a mapping "map" for mode "mode". When "nore" is true use MAPTYPE_NOREMAP.
 //Need to put string in allocated memory, because do_map() will modify it.
 pub void
-add_map(CS map, int mode, int nore) {
-	CS s = copyStr(map);
+add_map(S map, int mode, int nore) {
+	S s = copyStr(map);
 	(void)do_map(nore ? MAPTYPE_NOREMAP : MAPTYPE_MAP, s, mode, false);
 	eeglFree(s);
 }
@@ -11864,16 +11864,16 @@ langmap_init(void) {
 }
 
 //Called when langmap option is set; the language map can be changed at any time!
-pub CS
+pub S
 setLangmap(OptionChange* args) {
-	CS new = args->newVal.string;
+	S new = args->newVal.string;
 	if (!new) {
 		p_langmap = null;
 		return null;
 	}
-	CS p2;
+	S p2;
 
-	for (CS p = new; p[0] != ZERO; ) {
+	for (S p = new; p[0] != ZERO; ) {
 		for (p2 = p; p2[0] != ZERO && p2[0] != ',' && p2[0] != ';'; MB_PTR_ADV(p2)) {
 			if (p2[0] == '\\' && p2[1] != ZERO)
 				++p2;
@@ -11947,7 +11947,7 @@ setLangmap(OptionChange* args) {
 
 private void
 mappingImpl(Invocation* invo, Boole isabbrev) {
-	CS cmdp = invo->comm;
+	S cmdp = invo->comm;
 	int mode = getMapMode(&cmdp, invo->forceit || isabbrev);
 
 	switch (do_map(
@@ -12029,9 +12029,9 @@ char_before_cursor(void) {
 	if (curPor->cursor.col == 0)
 		return -1;
 
-	CS line = ml_get_curline();
+	S line = ml_get_curline();
 
-	CS p = line + curPor->cursor.col;
+	S p = line + curPor->cursor.col;
 	int prev_len = mb_head_off(line, p - 1) + 1;
 	return mb_ptr2char(p - prev_len);
 }
@@ -12040,9 +12040,9 @@ char_before_cursor(void) {
 //Move the cursor to this line.
 pub void
 init_prompt(int cmdchar_todo) {
-	CS prompt = prompt_text();
+	S prompt = prompt_text();
 	curPor->cursor.lnum = curBook->mem.lineCount;
-	CS text = ml_get_curline();
+	S text = ml_get_curline();
 	if (STRNCMP(text, prompt, STRLEN(prompt)) != 0) {
 		//prompt is missing, insert it or append a line with it
 		if (*text == ZERO)
@@ -12085,7 +12085,7 @@ pub int
 edit(Unt commChar, int startln, long count){
 						 //if set, insert at start of line
 	Unt c = 0;
-	CS ptr;
+	S ptr;
 	int lastc = 0;
 	int mincol;
 	static LineNr o_lnum = 0;
@@ -12120,11 +12120,11 @@ edit(Unt commChar, int startln, long count){
 		Pos save_cursor = curPor->cursor;
 
 		if (commChar == 'R')
-			ptr = S"r";
+			ptr = u8"r";
 		ei (commChar == 'V')
-			ptr = S"v";
+			ptr = u8"v";
 		else
-			ptr = S"i";
+			ptr = u8"i";
 		ins_applyAutocomms(EVENT_INSERTENTER);
 
 		//Make sure the cursor didn't move. Do call poRefreshCursorCol() in case the text was modified.
@@ -12808,9 +12808,9 @@ edit(Unt commChar, int startln, long count){
 			//In a quickfix window a <CR> jumps to the error under the cursor.
 			if (isLocationListBook(curBook) && c == ENTER) {
 				if (!curPor->locationStackRef)    //quickfix window
-					executeCommLine(S".mc");
+					executeCommLine(u8".mc");
 				else                //location list portal
-					executeCommLine(S".ll");
+					executeCommLine(u8".ll");
 				break;
 			}
 			if (commPortTypeG != 0) {
@@ -12994,7 +12994,7 @@ insertStartVisualBlockMode(void) {
 		edit_putchar('^', true);
 		did_putchar = true;
 	}
-	inpAppendToRedoBuff((CS)CTRL_V_STR);   //CTRL-V
+	inpAppendToRedoBuff((S)CTRL_V_STR);   //CTRL-V
 
 	add_to_showcmd_c(Ctrl_V);
 
@@ -13015,7 +13015,7 @@ insertStartVisualBlockMode(void) {
 //buffer already.
 private int
 decodeModifyOtherKeys(int c) {
-	CS p = typeBufG.c + typeBufG.currPos;
+	S p = typeBufG.c + typeBufG.currPos;
 	int idx;
 	int form = 0;
 	int argidx = 0;
@@ -13116,7 +13116,7 @@ edit_unputchar(void) {
 
 //Truncate the space at the end of a line.  This is to be used only in insert mode
 pub void
-truncate_spaces(CS line, Unt len) {
+truncate_spaces(S line, Unt len) {
 	//find start of trailing white space
 	for (int i = (int)len - 1; i >= 0 && SPACE_OR_TAB(line[i]); i--) {
 		line[i + 1] = ZERO;
@@ -13256,7 +13256,7 @@ insertRegular(Unt c, Boole allow_modmask, Boole ctrlv) {       //c was typed aft
 	//so as not to replace characters in replace mode. Only use modMaskG for special keys, to
 	//avoid things like <S-Space>, unless 'allow_modmask' is true.
 	if (IS_SPECIAL(c) || (modMaskG && allow_modmask)) {
-		CS p = get_special_key_name(c, modMaskG);
+		S p = get_special_key_name(c, modMaskG);
 		int len = (int)STRLEN(p);
 		c = p[len - 1];
 		if (len > 2) {
@@ -13295,7 +13295,7 @@ insertchar0(
 	Unt flags,         //INSCHAR_FORMAT, etc.
 	int second_indent      //indent for second line if >= 0
 ){
-	CS p;
+	S p;
 	Boole force_format = (flags & INSCHAR_FORMAT) != 0;
 
 	Unt textwidth = curBook->o.textWidth;
@@ -13344,7 +13344,7 @@ insertchar0(
 
 	//Check whether this character should end a comment.
 	if (didAindentG && c == end_comment_pending) {
-		CS line;
+		S line;
 		Byte lead_end[COM_MAX_LEN];       //end-comment string
 		int middle_len, end_len;
 
@@ -13355,7 +13355,7 @@ insertchar0(
 			//Skip middle-comment string
 			while (*p && p[-1] != ':')   //find end of middle flags
 				++p;
-			middle_len = strCutPathFromListOfPaths(OUT &p, OUT lead_end, COM_MAX_LEN, S",");
+			middle_len = strCutPathFromListOfPaths(OUT &p, OUT lead_end, COM_MAX_LEN, u8",");
 			//Don't count trailing white space for middle_len
 			while (middle_len > 0 && SPACE_OR_TAB(lead_end[middle_len - 1]))
 				--middle_len;
@@ -13363,7 +13363,7 @@ insertchar0(
 			//Find the end-comment string
 			while (*p && p[-1] != ':')   //find end of end flags
 				++p;
-			end_len = strCutPathFromListOfPaths(OUT &p, OUT lead_end, COM_MAX_LEN, S",");
+			end_len = strCutPathFromListOfPaths(OUT &p, OUT lead_end, COM_MAX_LEN, u8",");
 
 			//Skip white space before the cursor
 			i = curPor->cursor.col;
@@ -13531,7 +13531,7 @@ stop_arrow(void) {
 
 		autoindentColG = 0;
 		ResetRedobuff();
-		inpAppendToRedoBuff((CS)"1i");   //pretend we start an insertion
+		inpAppendToRedoBuff(u8"1i");   //pretend we start an insertion
 		new_insert_skip = 2;
 	} ei (needUndoS) {
 		if (u_save_cursor() == OK)
@@ -13659,7 +13659,7 @@ set_last_insert(Unt c) {
 	eeglFree(lastInsertP.c);
 	lastInsertP.c = alloc(MB_MAXBYTES * 3 + 5);
 
-	CS s = lastInsertP.c;
+	S s = lastInsertP.c;
 	//Use the CTRL-V only when entering a special char
 	if (c < ' ' || c == DEL)
 		*s++ = Ctrl_V;
@@ -13680,8 +13680,8 @@ free_last_insert(void) {
 
 //Add character "c" to buffer "s". Escape the special meaning of K_SPECIAL
 //and CSI. Handle multi-byte characters. Return a pointer to after the added bytes.
-pub CS
-add_char2buf(Unt c, CS s) {
+pub S
+add_char2buf(Unt c, S s) {
 	Byte temp[MB_MAXBYTES + 1];
 
 	Unt len = mb_char2bytes(c, temp);
@@ -13712,7 +13712,7 @@ beginline(Unt flags) { //:beginline
 		curPor->cursor.coladd = 0;
 
 		if ((flags & (BL_WHITE | BL_SOL)) != 0) {
-			for (CS ptr = ml_get_curline();
+			for (S ptr = ml_get_curline();
 				SPACE_OR_TAB(*ptr) && ((flags & BL_FIX) == 0 || ptr[1] != ZERO);
 				++ptr
 			)
@@ -13737,7 +13737,7 @@ oneright(void) {
 		Pos prevpos = curPor->cursor;
 
 		//Adjust for multi-wide char (excluding TAB)
-		CS ptr = ml_get_cursor();
+		S ptr = ml_get_cursor();
 		doColAdvance(doGetCursorPos() + ((*ptr != TAB
 						&& bookIsCharPrintable((*mb_ptr2char)(ptr)))
 				 ? bookPtr2Cells(ptr) : 1));
@@ -13747,7 +13747,7 @@ oneright(void) {
 				 || prevpos.coladd != curPor->cursor.coladd) ? OK : FAIL;
 	}
 
-	CS ptr = ml_get_cursor();
+	S ptr = ml_get_cursor();
 	if (*ptr == ZERO)
 		return FAIL;       //already at the very end
 
@@ -13782,7 +13782,7 @@ oneleft(void) {
 
 		if (curPor->cursor.coladd == 1) {
 			//Adjust for multi-wide char (not a TAB)
-			CS ptr = ml_get_cursor();
+			S ptr = ml_get_cursor();
 			if (*ptr != TAB && bookIsCharPrintable((*mb_ptr2char)(ptr)) && bookPtr2Cells(ptr) > 1)
 				curPor->cursor.coladd = 0;
 		}
@@ -13924,7 +13924,7 @@ stuff_inserted(
 
 	if (insert.len > 0) {
 		//look for the last ESC in 'insert'
-		for (CS p = insert.c + insert.len - 1; p >= insert.c; --p) {
+		for (S p = insert.c + insert.len - 1; p >= insert.c; --p) {
 			if (*p == ESC) {
 				insert.len = (Unt)(p - insert.c);
 				break;
@@ -13933,7 +13933,7 @@ stuff_inserted(
 	}
 
 	if (insert.len > 0) {
-		CS p = insert.c + insert.len - 1;
+		S p = insert.c + insert.len - 1;
 
 		//when the last char is either "0" or "^" it will be quoted if no ESC
 		//comes after it OR if it will insert more than once and "ptr" starts with ^D.   -- Acevedo
@@ -13949,13 +13949,13 @@ stuff_inserted(
 		switch (last) {
 		case '0':
 #define TEXT_TO_INSERT "\026\060\064\070"
-			 stuffReadbuffLen((CS)TEXT_TO_INSERT, STRLEN_LITERAL(TEXT_TO_INSERT));
+			 stuffReadbuffLen((S)TEXT_TO_INSERT, STRLEN_LITERAL(TEXT_TO_INSERT));
 #undef TEXT_TO_INSERT
 			 break;
 
 		case '^':
 #define TEXT_TO_INSERT "\026^"
-			 stuffReadbuffLen((CS)TEXT_TO_INSERT, STRLEN_LITERAL(TEXT_TO_INSERT));
+			 stuffReadbuffLen((S)TEXT_TO_INSERT, STRLEN_LITERAL(TEXT_TO_INSERT));
 #undef TEXT_TO_INSERT
 			 break;
 
@@ -13985,15 +13985,15 @@ get_last_insert(void){
 
 //Get last inserted string, and remove trailing <Esc>. Return pointer to allocated memory
 //(must be freed) or NULL.
-pub CS
+pub S
 get_last_insert_save(void){
 	Text   insert = get_last_insert();
 
 	if (!insert.c)
-		return S"";
-	CS s = copySubstr(insert.c, insert.len);
+		return u8"";
+	S s = copySubstr(insert.c, insert.len);
 	if (!s)
-		return S"";
+		return u8"";
 
 	if (insert.len > 0 && s[insert.len - 1] == ESC)   //remove trailing ESC
 		s[--insert.len] = ZERO;
@@ -14147,7 +14147,7 @@ ins_ctrl_g(void) {
 //CTRL-^ in Insert mode.
 private void
 ins_ctrl_hat(void) {
-	if (map_to_exists_mode(S"", MODE_LANGMAP, false)) {
+	if (map_to_exists_mode(u8"", MODE_LANGMAP, false)) {
 		//";lmap" mappings exists, Toggle use of ";lmap" mappings.
 		if (stateG & MODE_LANGMAP) {
 			curBook->o.b_p_iminsert = B_IMODE_NONE;
@@ -14243,7 +14243,7 @@ ins_esc(long* count, int commChar, int nomove) {      //don't move cursor
 	if (reg_recording != 0 || restart_edit != ZERO)
 		showmode();
 	ei (p_smd && (gotInterruptG || !skip_showmode()))
-		msg(S"");
+		msg(u8"");
 
 	return true;       //exit Insert mode
 }
@@ -14415,11 +14415,11 @@ ins_bs(int c, int mode, int* inserted_space_p) {
 		//When "aw" is in 'formatoptions' we must delete the space at
 		//the end of the line, otherwise the line will be broken again when auto-formatting.
 		if (has_format_option(FO_AUTO) && has_format_option(FO_WHITE_PAR)) {
-			CS ptr = memGetLine(curBook, curPor->cursor.lnum, false);
+			S ptr = memGetLine(curBook, curPor->cursor.lnum, false);
 			int len = ml_get_curline_len();
 
 			if (len > 0 && ptr[len - 1] == ' ') {
-				CS newp = alloc(curBook->mem.lineLen - 1);
+				S newp = alloc(curBook->mem.lineLen - 1);
 
 				MEMMOVE(newp, ptr, len - 1);
 				newp[len - 1] = ZERO;
@@ -14462,10 +14462,10 @@ ins_bs(int c, int mode, int* inserted_space_p) {
 		) {
 			ColNr vcol = 0;
 			ColNr want_vcol;
-			CS line;
-			CS ptr;
-			CS cursor_ptr;
-			CS space_ptr;
+			S line;
+			S ptr;
+			S cursor_ptr;
+			S space_ptr;
 			ColNr   space_vcol = 0;
 			int      prev_space = false;
 			ColNr   want_col;
@@ -14517,7 +14517,7 @@ ins_bs(int c, int mode, int* inserted_space_p) {
 						   && curPor->cursor.col < insertStartOrigG.col
 				)
 					insertStartOrigG.col = curPor->cursor.col;
-				ins_str(S" ", 1);
+				ins_str(u8" ", 1);
 			}
 		}
 
@@ -14590,7 +14590,7 @@ whBracketedPaste(PasteMode mode, int drop) {
 	Unt c;
 	Byte buf[NUMBUFLEN + MB_MAXBYTES];
 	int idx = 0;
-	CS end = find_termcode((CS)"PE");
+	S end = find_termcode(u8"PE");
 	int ret_char = -1;
 	int save_allow_keys = allow_keys;
 
@@ -14860,7 +14860,7 @@ ins_tab(void) {
 	didSindentG = false;
 	can_si = false;
 	can_si_back = false;
-	inpAppendToRedoBuff((CS)"\t");
+	inpAppendToRedoBuff(u8"\t");
 
 	temp = (int)get_sw_value(curBook);
 	temp -= get_nolist_virtcol() % temp;
@@ -14869,7 +14869,7 @@ ins_tab(void) {
 	//any chars.  For MODE_VREPLACE state, we use ins_char() for all characters.
 	insertChar(' ');
 	while (--temp > 0) {
-		ins_str((CS)" ", 1);
+		ins_str(u8" ", 1);
 	}
 
 	//When 'expandtab' not set: Replace spaces by TABs where possible.
@@ -14878,11 +14878,11 @@ ins_tab(void) {
 		ColNr want_vcol, vcol;
 		int change_col = -1;
 		int save_list = curPor->o.list;
-		CS tab = S"\t";
+		S tab = u8"\t";
 		CharTableSize   cts;
 
 		//Get the current line.
-		CS ptr = ml_get_cursor();
+		S ptr = ml_get_cursor();
 		cursor = &curPor->cursor;
 
 		//When 'L' is not in 'cpoptions' a tab always takes up 'ts' spaces.
@@ -14946,7 +14946,7 @@ ins_tab(void) {
 			//Delete following spaces.
 			i = cursor->col - fpos.col;
 			if (i > 0) {
-				CS newp = alloc(curBook->mem.lineLen - i);
+				S newp = alloc(curBook->mem.lineLen - i);
 
 				int col = ptr - curBook->mem.cachedLine;
 				if (col > 0)
@@ -15003,15 +15003,15 @@ ins_copychar(LineNr lnum) {
 
 	//try to advance to the cursor column
 	validate_virtcol();
-	CS line = ml_get(lnum);
-	CS prev_ptr = line;
+	S line = ml_get(lnum);
+	S prev_ptr = line;
 	CharTableSize cts;
 	bookInitCharsForKeywordsSizeArg(&cts, curPor, lnum, 0, line, line);
 	while (cts.cts_vcol < curPor->virtCol && *cts.cts_ptr != ZERO) {
 		prev_ptr = cts.cts_ptr;
 		cts.cts_vcol += lbr_chartabsize_adv(&cts);
 	}
-	CS ptr = (cts.cts_vcol > curPor->virtCol) ? prev_ptr : cts.cts_ptr;
+	S ptr = (cts.cts_vcol > curPor->virtCol) ? prev_ptr : cts.cts_ptr;
 	clear_chartabsize_arg(&cts);
 
 	return mb_ptr2char(ptr);
@@ -15037,7 +15037,7 @@ ins_ctrl_ey(Unt tc) {
 			//pretend 'textwidth' wasn't set.  Digits, 'o' and 'x' are special after a
 			//CTRL-V, don't use it for these.
 			if (c < 256 && !SAFE_isalnum(c))
-				inpAppendToRedoBuff((CS)CTRL_V_STR);   //CTRL-V
+				inpAppendToRedoBuff((S)CTRL_V_STR);   //CTRL-V
 			tw_save = curBook->o.textWidth;
 			curBook->o.textWidth = -1;
 			insertRegular(c, true, false);
@@ -15121,7 +15121,7 @@ private Callback customCompleteFnS;
 #define CTRL_X_MSG(i) ctrl_x_msgs[(i) & ~CTRL_X_WANT_IDENT]
 
 //Message for CTRL-X mode, index is ctrl_x_mode.
-private CS ctrl_x_msgs[] = {
+private S ctrl_x_msgs[] = {
 	N_(" Keyword completion (^N^P)"), //CTRL_X_NORMAL, ^P/^N compl.
 	N_(" ^X mode (^]^D^E^F^I^K^L^N^O^P^Rs^U^V^Y)"),
 	NULL, //CTRL_X_SCROLL: depends on state
@@ -15143,7 +15143,7 @@ private CS ctrl_x_msgs[] = {
 	N_(" Register completion (^N^P)"),
 };
 
-private CS ctrl_x_mode_names[] = {SMAP((CS),
+private S ctrl_x_mode_names[] = {SMAP((S),
 	"keyword",
 	"ctrl_x",
 	"scroll",
@@ -15160,7 +15160,7 @@ private CS ctrl_x_mode_names[] = {SMAP((CS),
 	"omni",
 	"spell"),
 	NULL,          //CTRL_X_LOCAL_MSG only used in "ctrl_x_msgs"
-	SMAP((CS),
+	SMAP((S),
 	"eval",
 	"cmdline",
 	"register"
@@ -15172,9 +15172,9 @@ struct InsertCompletion {
 	InsertCompletion* prev;
 	InsertCompletion* nextMatch;      //matched next InsertCompletion
 	Text   cp_str;         //matched text
-	CS cp_text[CPT_COUNT];   //text for the menu
+	S cp_text[CPT_COUNT];   //text for the menu
 	Var   userData;
-	CS fName; //file containing the match, allocated when flags has CP_FREE_FNAME
+	S fName; //file containing the match, allocated when flags has CP_FREE_FNAME
 	Unt flags;      //CP_ values
 	int cp_number;      //sequence number
 	int cp_score;      //fuzzy match score or proximity score
@@ -15303,7 +15303,7 @@ private CompletionSource *cpt_sources_array; //Pointer to the array of completio
 private int cpt_sources_count;  //Total number of completion sources specified in the 'cpt' option
 private int cpt_sources_index = -1;  //Index of the current completion source being expanded
 
-//"displayedCompletionsS" points the currently displayed list of entries in the
+//"displayedCompletionsu8" points the currently displayed list of entries in the
 //popup menu. It is NULL when there is no popup menu.
 private Arr(PopupItem) displayedCompletionsS = NULL;
 private int displayedCompletionsSsize;
@@ -15319,7 +15319,7 @@ ins_ctrl_x(void) {
 			compl_cont_status = 0;
 		//We're not sure which CTRL-X mode it will be yet
 		ctrl_x_mode = CTRL_X_NOT_DEFINED_YET;
-		editSubmodeMsgG = (CS)_(CTRL_X_MSG(ctrl_x_mode));
+		editSubmodeMsgG = (S)_(CTRL_X_MSG(ctrl_x_mode));
 		editSubmodePreMsgG = NULL;
 		showmode();
 	} else
@@ -15485,7 +15485,7 @@ eeIsCtrlXKey(Unt c) {
 	case CTRL_X_REGISTER:
 		return (c == Ctrl_R || c == Ctrl_P || c == Ctrl_N);
 	}
-	internal_error(S"eeIsCtrlXKey()");
+	internal_error(u8"eeIsCtrlXKey()");
 	return false;
 }
 
@@ -15534,9 +15534,9 @@ ins_compl_accept_char(int c) {
 
 //Get the completed text by inferring the case of the originally typed text.
 //If the result is in allocated memory "tofree" is set to it.
-private CS
+private S
 ins_compl_infercase_gettext(
-	CS str,
+	S str,
 	int char_len,
 	int compl_char_len,
 	int min_len,
@@ -15552,7 +15552,7 @@ ins_compl_infercase_gettext(
 	//Allocate wide character array for the completion and fill it.
 	Arr(int) wideChars = ALLOC_MULT(int, char_len);
 
-	CS p = str;
+	S p = str;
 	for (i = 0; i < char_len; ++i) {
 		wideChars[i] = strAdvanceMultibyte(&p);
 	}
@@ -15605,9 +15605,9 @@ ins_compl_infercase_gettext(
 		if (gap.c != NULL) {
 			if (ga_grow(&gap, 10) == FAIL) {
 				ga_clear(&gap);
-				return (CS)"[failed]";
+				return u8"[failed]";
 			}
-			p = (CS)gap.c + gap.len;
+			p = (S)gap.c + gap.len;
 			gap.len += (*mb_char2bytes)(wideChars[i], p);
 			i++;
 		} ei ((p - ioBuffG) + 6 >= IOSIZE) {
@@ -15616,7 +15616,7 @@ ins_compl_infercase_gettext(
 			//switch to using a growarray. Add the character in the next round.
 			if (ga_grow(&gap, IOSIZE) == FAIL) {
 				eeglFree(wideChars);
-				return (CS)"[failed]";
+				return u8"[failed]";
 			}
 			*p = ZERO;
 			STRCPY(gap.c, ioBuffG);
@@ -15641,21 +15641,21 @@ ins_compl_infercase_gettext(
 //what case you probably wanted the rest of the word to be in -- webb
 pub Unt
 ins_compl_add_infercase(
-	CS str_arg,
+	S str_arg,
 	int len,
 	int icase,
-	CS fname,
+	S fname,
 	Unt dir,
 	int cont_s_ipos,  //next ^X<> will set initial_pos
 	int score
 ) {
-	CS str = str_arg;
-	CS p;
+	S str = str_arg;
+	S p;
 	int char_len;      //count multi-byte characters
 	int compl_char_len;
 	int min_len;
 	Unt flags = 0;
-	CS tofree = NULL;
+	S tofree = NULL;
 
 	if (p_ic && curBook->o.inferCase && len > 0) {
 		//Infer case of completed part. Find actual length of completion.
@@ -15726,9 +15726,9 @@ is_nearest_active(void) {
 //maybe because alloc() returns NULL, then FAIL is returned.
 private Unt
 addMatchToList(
-	CS str,
+	S str,
 	int len,
-	CS fname,
+	S fname,
 	Byte** cptext,       //extra text for popup menu or NULL
 	Var* user_data,  //"user_data" entry or NULL
 	Unt cdir,
@@ -15858,7 +15858,7 @@ addMatchToList(
 
 //Return true if "str[len]" matches with match->cp_str, considering match->flags.
 private int
-ins_compl_equal(InsertCompletion *match, CS str, int len) {
+ins_compl_equal(InsertCompletion *match, S str, int len) {
 	if ((match->flags & CP_EQUAL) != 0)
 		return true;
 	if ((match->flags & CP_ICASE) != 0)
@@ -15868,7 +15868,7 @@ ins_compl_equal(InsertCompletion *match, CS str, int len) {
 
 //when len is -1 mean use whole length of p otherwise part of p
 private void
-ins_compl_insert_bytes(CS p, int len) {
+ins_compl_insert_bytes(S p, int len) {
 	if (len == -1)
 		len = (int)STRLEN(p);
 	ins_bytes_len(p, len);
@@ -15942,8 +15942,8 @@ ins_compl_longest_match(InsertCompletion* match) {
 	}
 
 	//Reduce the text if this match differs from compl_leader.
-	CS p = compl_leader.c;
-	CS s = match->cp_str.c;
+	S p = compl_leader.c;
+	S s = match->cp_str.c;
 	while (*p != ZERO) {
 		c1 = mb_ptr2char(p);
 		c2 = mb_ptr2char(s);
@@ -16077,15 +16077,15 @@ private Bag *
 ins_compl_allocBag(InsertCompletion *match) {
 	Bag* dict = allocBag_lock(VAR_FIXED);
 
-	bagAddString(dict, S"word", match->cp_str.c);
-	bagAddString(dict, S"abbr", match->cp_text[CPT_ABBR]);
-	bagAddString(dict, S"menu", match->cp_text[CPT_MENU]);
-	bagAddString(dict, S"kind", match->cp_text[CPT_KIND]);
-	bagAddString(dict, S"info", match->cp_text[CPT_INFO]);
+	bagAddString(dict, u8"word", match->cp_str.c);
+	bagAddString(dict, u8"abbr", match->cp_text[CPT_ABBR]);
+	bagAddString(dict, u8"menu", match->cp_text[CPT_MENU]);
+	bagAddString(dict, u8"kind", match->cp_text[CPT_KIND]);
+	bagAddString(dict, u8"info", match->cp_text[CPT_INFO]);
 	if (match->userData.tag == VAR_UNKNOWN)
-		bagAddString(dict, S"user_data", (CS)"");
+		bagAddString(dict, u8"user_data", u8"");
 	else
-		bagAddVar(dict, S"user_data", &match->userData);
+		bagAddVar(dict, u8"user_data", &match->userData);
 
 	return dict;
 }
@@ -16155,7 +16155,7 @@ prepend_startcol_text(Text* dest, Text* src, int startcol) {
 
 	dest->len = (Unt)new_length;
 	dest->c = alloc(new_length + 1);  //+1 for ZERO
-	CS line = ml_get(curPor->cursor.lnum);
+	S line = ml_get(curPor->cursor.lnum);
 
 	MEMMOVE(dest->c, line + startcol, prepend_len);
 	MEMMOVE(dest->c + prepend_len, src->c, src->len);
@@ -16456,7 +16456,7 @@ ins_compl_show_pum(void) {
 #define DICT_EXACT   (2)  //"dict" is the exact name of a file
 
 //Get current completion leader
-pub CS
+pub S
 ins_compl_leader(void) {
 	return compl_leader.c ? compl_leader.c : compl_orig_text.c;
 }
@@ -16471,20 +16471,20 @@ ins_compl_leader_len(void) {
 //dictionary files "dict_start" to the list of completions.
 private void
 ins_compl_dictionaries(
-	NULLABLE CS dict_start,
-	CS pat,
+	NULLABLE S dict_start,
+	S pat,
 	Unt flags,      //DICT_FIRST and/or DICT_EXACT
 	int thesaurus   //Thesaurus completion
 ){
 	if (!dict_start)
 		return;
 
-	CS dict = dict_start;
-	CS ptr;
+	S dict = dict_start;
+	S ptr;
 	RegMatch   regmatch;
 	Unt dir = compl_direction;
 
-	CS buf = alloc(LSIZE);
+	S buf = alloc(LSIZE);
 	regmatch.regprog = NULL;   //so that we can goto theend
 
 	//If @infercase is set, don't use 'smartcase' here
@@ -16496,7 +16496,7 @@ ins_compl_dictionaries(
 	//to only match at the start of a line.  Otherwise just match the
 	//pattern. Also need to double backslashes.
 	if (ctrl_x_mode_line_or_eval()) {
-		CS pat_esc = copyStr_escaped(pat, (CS)"\\");
+		S pat_esc = copyStr_escaped(pat, u8"\\");
 		if (!pat_esc)
 			goto theend;
 
@@ -16522,7 +16522,7 @@ ins_compl_dictionaries(
 			 files = (ExpandMatch){.c = &dict, .len = 1};
 		} else {
 			//Expand wildcards in the dictionary name, but do not allow backticks
-			strCutPathFromListOfPaths(OUT &dict, OUT buf, LSIZE, S",");
+			strCutPathFromListOfPaths(OUT &dict, OUT buf, LSIZE, u8",");
 			if (!thesaurus && STRCMP(buf, "spell") == 0)
 				files.len = 0;
 			ei (firstOccurrence(buf, '`') != NULL
@@ -16554,12 +16554,12 @@ theend:
 //Add all the words in the line "*buf_arg" from the thesaurus file "fname"
 //skipping the word at 'skip_word'.  Returns OK on success.
 private Unt
-thesaurus_add_words_in_line(CS fname, OUT CS* buf_arg, Unt dir, CS skip_word) {
+thesaurus_add_words_in_line(S fname, OUT S* buf_arg, Unt dir, S skip_word) {
 	Unt status = OK;
-	CS wstart;
+	S wstart;
 
 	//Add the other matches on the line
-	CS ptr = *buf_arg;
+	S ptr = *buf_arg;
 	while (!gotInterruptG) {
 		//Find start of the next word. Skip whitespace and punctuation.
 		ptr = findWordStart(ptr);
@@ -16598,18 +16598,18 @@ filterFromFiles(
 	int thesaurus,
 	Unt flags,
 	RegMatch* regmatch,
-	CS buf,
+	S buf,
 	OUT Unt* dir
 ) {
-	CS ptr;
+	S ptr;
 	FILE* fp;
 	Unt add_r;
-	CS leader = NULL;
+	S leader = NULL;
 	int leader_len = 0;
 	int inFuzzyCollect = cfc_has_mode();
 	int score = 0;
 	int len = 0;
-	CS line_end = NULL;
+	S line_end = NULL;
 
 	if (inFuzzyCollect) {
 		leader = ins_compl_leader();
@@ -16658,7 +16658,7 @@ filterFromFiles(
 				line_end = find_line_end(ptr);
 				while (ptr < line_end) {
 					if (fuzzyMatchStr_in_line(&ptr, leader, &len, NULL, &score)) {
-						CS end_ptr = ctrl_x_mode_line_or_eval()
+						S end_ptr = ctrl_x_mode_line_or_eval()
 						   ? find_line_end(ptr) : find_word_end(ptr);
 						add_r = ins_compl_add_infercase(
 						   ptr, (int)(end_ptr - ptr), p_ic, files.c[i], *dir, false, score
@@ -16814,8 +16814,8 @@ ins_compl_bs(void) {
 	if (ins_compl_preinsert_effect())
 		ins_compl_delete();
 
-	CS line = ml_get_curline();
-	CS p = line + curPor->cursor.col;
+	S line = ml_get_curline();
+	S p = line + curPor->cursor.col;
 	MB_PTR_BACK(line, p);
 
 	//Stop completion when the whole word was deleted. For Omni completion
@@ -16987,17 +16987,17 @@ ins_compl_restart(void) {
 
 //Set the first match, the original text.
 private void
-ins_compl_set_original_text(CS str, Unt len) {
+ins_compl_set_original_text(S str, Unt len) {
 	//Replace the original text entry.
 	//The CP_ORIGINAL_TEXT flag is either at the first item or might possibly
 	//be at the last item for backward completion
 	if (match_at_original_text(compl_first_match)) {  //safety check
-		CS p = copySubstr(str, len);
+		S p = copySubstr(str, len);
 		EE_CLEAR_STRING(compl_first_match->cp_str);
 		compl_first_match->cp_str.c = p;
 		compl_first_match->cp_str.len = len;
 	} ei (compl_first_match->prev && match_at_original_text(compl_first_match->prev)) {
-		CS p = copySubstr(str, len);
+		S p = copySubstr(str, len);
 		EE_CLEAR_STRING(compl_first_match->prev->cp_str);
 		compl_first_match->prev->cp_str.c = p;
 		compl_first_match->prev->cp_str.len = len;
@@ -17010,7 +17010,7 @@ ins_compl_addfrommatch(void) {
 	int len = (int)curPor->cursor.col - (int)compl_col;
 	int c;
 
-	CS p = compl_shown_match->cp_str.c;
+	S p = compl_shown_match->cp_str.c;
 	if ((int)compl_shown_match->cp_str.len <= len)  { //the match is too short
 		InsertCompletion* cp;
 
@@ -17045,7 +17045,7 @@ set_ctrl_x_mode(Unt c) {
 	case Ctrl_Y:
 		//scroll the window one line up or down
 		ctrl_x_mode = CTRL_X_SCROLL;
-		editSubmodeMsgG = (CS)_(" (insert) Scroll (^E/^Y)");
+		editSubmodeMsgG = (S)_(" (insert) Scroll (^E/^Y)");
 		editSubmodePreMsgG = NULL;
 		showmode();
 		break;
@@ -17150,7 +17150,7 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
 	//^P or other completion characters in CTRL-X mode.  Free up
 	//memory that was used, and make sure we can redo the insert.
 	if (compl_curr_match || compl_leader.c || c == Ctrl_E) {
-		CS ptr = NULL;
+		S ptr = NULL;
 
 		//If any of the original typed text has been changed, eg when ignorecase is set, we must
 		//add back-spaces to the redo buffer. We add as few as necessary to delete just the part
@@ -17188,7 +17188,7 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
 	//If the popup menu is displayed pressing CTRL-Y means accepting
 	//the selection without inserting anything.  When
 	//compl_enter_selects is set the Enter key does the same.
-	CS word = NULL;
+	S word = NULL;
 	if ((c == Ctrl_Y || (compl_enter_selects
 			 && (c == ENTER || c == K_KENTER || c == NL)))
 		 && pum_visible()
@@ -17200,7 +17200,7 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
 	//CTRL-E means completion is Ended, go back to the typed text.
 	//but only do this, if the Popup is still visible
 	if (c == Ctrl_E) {
-		CS p = NULL;
+		S p = NULL;
 		Unt   plen = 0;
 
 		ins_compl_delete();
@@ -17371,10 +17371,10 @@ ins_compl_prep(Unt c) {
 //text. This inserts backspaces and appends the changed text.
 //"ptr" is the known leader text or ZERO.
 private void
-ins_compl_fixRedoBufForLeader(CS ptr_arg) {
+ins_compl_fixRedoBufForLeader(S ptr_arg) {
 	 int len = 0;
-	 CS p;
-	 CS ptr = ptr_arg;
+	 S p;
+	 S ptr = ptr_arg;
 
 	if (!ptr) {
 		if (compl_leader.c)
@@ -17461,7 +17461,7 @@ copyCompletionCbs(OUT Callback* dest, Callback* src) {
 //Parse the @thesaurusfunc value and set the callback function.
 //Invoked when the 'thesaurusfunc' option is set. The option value can be a
 //name of a function (string), or function(<name>) or funcref(<name>) or a lambda expression.
-pub CS
+pub S
 did_set_thesaurusfunc(OptionChange* cha) {
 	int retval;
 	updateStringRef(cha);
@@ -17478,13 +17478,13 @@ did_set_thesaurusfunc(OptionChange* cha) {
 }
 
 //Get the user-defined completion function name for completion "type"
-private CS
+private S
 get_complete_funcname(int type) {
 	switch (type) {
 	case CTRL_X_FUNCTION: return curBook->o.completeFn->name;
 	case CTRL_X_OMNI: return curBook->o.omniFn->name;
 	case CTRL_X_THESAURUS: return curBook->o.thesaurusFn->name;
-	default: return S"";
+	default: return u8"";
 	}
 }
 
@@ -17503,7 +17503,7 @@ get_insert_callback(int type) {
 //matches in "matches". "type" can be one of CTRL_X_OMNI, CTRL_X_FUNCTION, or CTRL_X_THESAURUS.
 //Callback function "cb" is set if triggered by a function in the 'cpt' option; otherwise, it's null
 private void
-expand_by_function(int type, CS base, Callback* cb) {
+expand_by_function(int type, S base, Callback* cb) {
 	List* matchlist = NULL;
 	Bag* matchdict = NULL;
 	Var args[3];
@@ -17511,7 +17511,7 @@ expand_by_function(int type, CS base, Callback* cb) {
 	int is_cfntion = (cb != NULL);
 
 	if (!is_cfntion) {
-		CS funcname = get_complete_funcname(type);
+		S funcname = get_complete_funcname(type);
 		if (*funcname == ZERO)
 			return;
 		cb = get_insert_callback(type);
@@ -17521,7 +17521,7 @@ expand_by_function(int type, CS base, Callback* cb) {
 	args[0].tag = VAR_NUMBER;
 	args[0].number = 0;
 	args[1].tag = VAR_STRING;
-	args[1].string = base  ? base : (CS)"";
+	args[1].string = base  ? base : u8"";
 	args[2].tag = VAR_UNKNOWN;
 
 	Pos pos = curPor->cursor;
@@ -17573,7 +17573,7 @@ theend:
 }
 
 private inline Decoration
-getUserDecoration(CS name) {
+getUserDecoration(S name) {
 	if (name && name[0] != ZERO)
 		return decosByHiliteName(text(name));
 	return EMPTY_DECO;
@@ -17586,14 +17586,14 @@ getUserDecoration(CS name) {
 //When "fast" is true use fast_breakcheck() instead of ui_breakcheck().
 private int
 ins_compl_add_tv(Var* tv, Unt dir, int fast) {
-	CS word;
+	S word;
 	int dup = false;
 	int empty = false;
 	Unt flags = fast ? CP_FAST : 0;
-	CS  cptext[CPT_COUNT];
+	S  cptext[CPT_COUNT];
 	Var user_data;
-	CS user_abbr_hlname;
-	CS user_kind_hlname;
+	S user_abbr_hlname;
+	S user_kind_hlname;
 	Decoration userDecos[2] = { EMPTY_DECO, EMPTY_DECO };
 
 	user_data.tag = VAR_UNKNOWN;
@@ -17662,8 +17662,8 @@ ins_compl_add_dict(Bag* dict) {
 	compl_opt_refresh_always = false;
 	DictItem* di_refresh = bagFind(dict, tConst("refresh"));
 	if (di_refresh != NULL && di_refresh->c.tag == VAR_STRING) {
-		CS v = di_refresh->c.string;
-		if (v && STRCMP(v, (CS)"always") == 0)
+		S v = di_refresh->c.string;
+		if (v && STRCMP(v, u8"always") == 0)
 			compl_opt_refresh_always = true;
 	}
 
@@ -17777,7 +17777,7 @@ f_complete_check(Arr(Var), Var* returnVar) {
 
 //Add match item to the return list. Returns FAIL if out of memory, OK otherwise.
 private Unt
-add_match_to_list( Var  *returnVar, CS str, int len, int pos) {
+add_match_to_list( Var  *returnVar, S str, int len, int pos) {
 	List* match = list_alloc();
 
 	Unt ret;
@@ -17797,14 +17797,14 @@ f_complete_match(Arr(Var) argvars, Var* returnVar) {
 	LineNr lnum;
 	ColNr col;
 	RegMatch  regmatch;
-	CS cur_end = NULL;
+	S cur_end = NULL;
 	int bytepos = 0;
 	Byte part[MAXPATHL];
 	int ret;
 
 	allocReturnList(returnVar);
 
-	CS ise = curBook->o.expandTriggers;
+	S ise = curBook->o.expandTriggers;
 
 	if (argvars[0].tag == VAR_UNKNOWN) {
 		lnum = curPor->cursor.lnum;
@@ -17825,19 +17825,19 @@ f_complete_match(Arr(Var) argvars, Var* returnVar) {
 		}
 	}
 
-	CS line = memGetLine(curBook, lnum, false);
+	S line = memGetLine(curBook, lnum, false);
 	if (!line)
 		return;
 
-	CS before_cursor = copySubstr(line, col);
+	S before_cursor = copySubstr(line, col);
 	if (!before_cursor)
 		return;
 
 	if (!ise) {
-		regmatch.regprog = compileRegexp((CS)"\\k\\+$", RE_MAGIC);
+		regmatch.regprog = compileRegexp(u8"\\k\\+$", RE_MAGIC);
 		if (regmatch.regprog) {
 			if (eeRegexec_nl(&regmatch, before_cursor, (ColNr)0)) {
-				CS trig = copySubstr(regmatch.startp[0], regmatch.endp[0] - regmatch.startp[0]);
+				S trig = copySubstr(regmatch.startp[0], regmatch.endp[0] - regmatch.startp[0]);
 				if (!trig) {
 					eeglFree(before_cursor);
 					eeRegFree(regmatch.regprog);
@@ -17856,8 +17856,8 @@ f_complete_match(Arr(Var) argvars, Var* returnVar) {
 			eeRegFree(regmatch.regprog);
 		}
 	} else {
-		CS p = ise;
-		CS p_space = NULL;
+		S p = ise;
+		S p_space = NULL;
 
 		cur_end = before_cursor + (int)STRLEN(before_cursor);
 
@@ -17868,11 +17868,11 @@ f_complete_match(Arr(Var) argvars, Var* returnVar) {
 				memcpy(part, p_space + 1, len);
 				p_space = NULL;
 			} else {
-				CS next_comma = firstOccurrence((*p == ',') ? p + 1 : p, ',');
+				S next_comma = firstOccurrence((*p == ',') ? p + 1 : p, ',');
 				if (next_comma && *(next_comma + 1) == ' ')
 					p_space = next_comma;
 
-				len = strCutPathFromListOfPaths(OUT &p, OUT part, MAXPATHL, S",");
+				len = strCutPathFromListOfPaths(OUT &p, OUT part, MAXPATHL, u8",");
 			}
 
 			if (len > 0 && len <= col) {
@@ -17891,12 +17891,12 @@ f_complete_match(Arr(Var) argvars, Var* returnVar) {
 }
 
 //Return Insert completion mode name string
-private CS
+private S
 ins_compl_mode(void) {
 	if (ctrl_x_mode_not_defined_yet() || ctrl_x_mode_scroll() || compl_started)
-		return (CS)ctrl_x_mode_names[ctrl_x_mode & ~CTRL_X_WANT_IDENT];
+		return (S)ctrl_x_mode_names[ctrl_x_mode & ~CTRL_X_WANT_IDENT];
 
-	return (CS)"";
+	return u8"";
 }
 
 //Assign the sequence number to all the completion matches which don't have one assigned yet.
@@ -17939,18 +17939,18 @@ ins_compl_update_sequence_numbers(void) {
 //Fill the dict of complete_info
 private void
 fill_complete_info_dict(Bag *di, InsertCompletion *match, int add_match) {
-	bagAddString(di, S"word", match->cp_str.c);
-	bagAddString(di, S"abbr", match->cp_text[CPT_ABBR]);
-	bagAddString(di, S"menu", match->cp_text[CPT_MENU]);
-	bagAddString(di, S"kind", match->cp_text[CPT_KIND]);
-	bagAddString(di, S"info", match->cp_text[CPT_INFO]);
+	bagAddString(di, u8"word", match->cp_str.c);
+	bagAddString(di, u8"abbr", match->cp_text[CPT_ABBR]);
+	bagAddString(di, u8"menu", match->cp_text[CPT_MENU]);
+	bagAddString(di, u8"kind", match->cp_text[CPT_KIND]);
+	bagAddString(di, u8"info", match->cp_text[CPT_INFO]);
 	if (add_match)
-		bagAdd_bool(di, S"match", match->cp_in_match_array);
+		bagAdd_bool(di, u8"match", match->cp_in_match_array);
 	if (match->userData.tag == VAR_UNKNOWN)
 		//Add an empty string for backwards compatibility
-		bagAddString(di, S"user_data", (CS)"");
+		bagAddString(di, u8"user_data", u8"");
 	else
-		bagAddVar(di, S"user_data", &match->userData);
+		bagAddVar(di, u8"user_data", &match->userData);
 }
 
 //Get complete information
@@ -17973,7 +17973,7 @@ get_complete_info(List *what_list, Bag *retdict) {
 		what_flag = 0;
 		CHECK_LIST_MATERIALIZE(what_list);
 		FOR_ALL_LIST_ITEMS(what_list, item) {
-			CS what = tv_get_string(&item->c);
+			S what = tv_get_string(&item->c);
 
 			if (STRCMP(what, "mode") == 0)
 				what_flag |= CI_WHAT_MODE;
@@ -17991,10 +17991,10 @@ get_complete_info(List *what_list, Bag *retdict) {
 	}
 
 	if (ret == OK && (what_flag & CI_WHAT_MODE))
-		ret = bagAddString(retdict, S"mode", ins_compl_mode());
+		ret = bagAddString(retdict, u8"mode", ins_compl_mode());
 
 	if (ret == OK && (what_flag & CI_WHAT_PUM_VISIBLE))
-		ret = bagAddNumber(retdict, S"pum_visible", pum_visible());
+		ret = bagAddNumber(retdict, u8"pum_visible", pum_visible());
 
 	if (ret == OK && (what_flag & (CI_WHAT_ITEMS | CI_WHAT_SELECTED
 					 | CI_WHAT_MATCHES | CI_WHAT_COMPLETED))
@@ -18009,7 +18009,7 @@ get_complete_info(List *what_list, Bag *retdict) {
 
 		if (has_items || has_matches) {
 			li = list_alloc();
-			ret = bagAddList(retdict, (has_matches && !has_items) ? S"matches" : S"items", li);
+			ret = bagAddList(retdict, (has_matches && !has_items) ? u8"matches" : u8"items", li);
 		}
 		if (ret == OK && what_flag & CI_WHAT_SELECTED)
 			if (compl_curr_match != NULL && compl_curr_match->cp_number == -1)
@@ -18037,12 +18037,12 @@ get_complete_info(List *what_list, Bag *retdict) {
 			 while (match != NULL && !is_first_match(match));
 		}
 		if (ret == OK && (what_flag & CI_WHAT_SELECTED))
-			 ret = bagAddNumber(retdict, S"selected", selected_idx);
+			 ret = bagAddNumber(retdict, u8"selected", selected_idx);
 
 		if (ret == OK && selected_idx != -1 && has_completed) {
 			 di = allocBag();
 			 fill_complete_info_dict(di, compl_curr_match, false);
-			 ret = bagAddBag(retdict, S"completed", di);
+			 ret = bagAddBag(retdict, u8"completed", di);
 		}
 	}
 }
@@ -18069,8 +18069,8 @@ thesaurus_func_complete(int type) {
 
 //Check if 'cpt' list index can be advanced to the next completion source.
 private int
-may_advance_cpt_index(CS cpt) {
-	CS p = cpt;
+may_advance_cpt_index(S cpt) {
+	S p = cpt;
 
 	if (cpt_sources_index == -1)
 		return false;
@@ -18140,7 +18140,7 @@ process_next_cpt_value(
 		//wrap and come back there a second time.
 		st->set_match_pos = true;
 	} ei (!skip_source && !insertCompletionTimeExpiredP
-		 && firstOccurrence(S"buwU", *st->e_cpt) != NULL
+		 && firstOccurrence(u8"buwU", *st->e_cpt) != NULL
 		 && (st->scannedBook = ins_compl_next_buf(st->scannedBook, *st->e_cpt)) != curBook
 	) {
 		//Scan a buffer, but not the current one.
@@ -18208,7 +18208,7 @@ process_next_cpt_value(
 		}
 
 		//in any case e_cpt is advanced to the next entry
-		(void)strCutPathFromListOfPaths(OUT &st->e_cpt, OUT ioBuffG, IOSIZE, S",");
+		(void)strCutPathFromListOfPaths(OUT &st->e_cpt, OUT ioBuffG, IOSIZE, u8",");
 		*advance_cpt_idx = may_advance_cpt_index(st->e_cpt);
 
 		st->found_all = true;
@@ -18235,7 +18235,7 @@ get_next_include_file_completion(Unt insertCompletionType) {
 
 //Get the next set of words matching "compl_pattern" in dictionary or thesaurus files.
 private void
-get_next_dict_tsr_completion(int insertCompletionType, CS dict, int dict_f) {
+get_next_dict_tsr_completion(int insertCompletionType, S dict, int dict_f) {
 	if (thesaurus_func_complete(insertCompletionType))
 		expand_by_function(insertCompletionType, compl_pattern.c, NULL);
 	else {
@@ -18278,7 +18278,7 @@ get_next_tag_completion(void) {
 
 //insert prefix with redraw
 private void
-ins_compl_longest_insert(CS prefix) {
+ins_compl_longest_insert(S prefix) {
 	ins_compl_delete();
 	ins_compl_insert_bytes(prefix + get_compl_len(), -1);
 	redrawInInsertMode(false);
@@ -18289,9 +18289,9 @@ ins_compl_longest_insert(CS prefix) {
 private void
 fuzzy_longest_match(void) {
 	int j = 0;
-	CS match_str = NULL;
-	CS prefix_ptr = NULL;
-	CS match_ptr = NULL;
+	S match_str = NULL;
+	S prefix_ptr = NULL;
+	S match_ptr = NULL;
 	Boole more_candidates = false;
 
 	if (complCountBestS == 0)
@@ -18319,7 +18319,7 @@ fuzzy_longest_match(void) {
 		compl = compl->next;
 	}
 
-	CS prefix = compl_best_matches[0]->cp_str.c;
+	S prefix = compl_best_matches[0]->cp_str.c;
 	int prefix_len = (int)compl_best_matches[0]->cp_str.len;
 
 	for (int i = 1; i < complCountBestS; i++) {
@@ -18341,7 +18341,7 @@ fuzzy_longest_match(void) {
 			prefix_len = j;
 	}
 
-	CS leader = ins_compl_leader();
+	S leader = ins_compl_leader();
 	Unt leader_len = ins_compl_leader_len();
 
 	//skip non-consecutive prefixes
@@ -18364,11 +18364,11 @@ end:
 //Get the next set of filename matching "compl_pattern".
 private void
 get_next_filename_completion(void) {
-	CS ptr;
-	CS leader = ins_compl_leader();
+	S ptr;
+	S leader = ins_compl_leader();
 	Unt   leader_len = ins_compl_leader_len();;
 	int      inFuzzyCollect = (cfc_has_mode() && leader_len > 0);
-	CS last_sep = NULL;
+	S last_sep = NULL;
 	int need_collect_bests = inFuzzyCollect && compl_get_longest;
 	int max_score = 0;
 	int current_score = 0;
@@ -18380,7 +18380,7 @@ get_next_filename_completion(void) {
 			//No path separator or separator is the last character,
 			//fuzzy match the whole leader
 			EE_CLEAR_STRING(compl_pattern);
-			compl_pattern.c = copySubstr((CS)"*", 1);
+			compl_pattern.c = copySubstr(u8"*", 1);
 			if (!compl_pattern.c)
 				return;
 			compl_pattern.len = 1;
@@ -18389,7 +18389,7 @@ get_next_filename_completion(void) {
 		else {
 			//Split leader into path and file parts
 			int path_len = last_sep - leader + 1;
-			CS path_with_wildcard = alloc(path_len + 2);
+			S path_with_wildcard = alloc(path_len + 2);
 			eeSnprintf(path_with_wildcard, path_len + 2, "%*.*s*", path_len, path_len, leader);
 			EE_CLEAR_STRING(compl_pattern);
 			compl_pattern.c = path_with_wildcard;
@@ -18425,7 +18425,7 @@ get_next_filename_completion(void) {
 		}
 
 		if (fuzzy.len > 0) {
-			CS match = NULL;
+			S match = NULL;
 			fuzzySortByScore(OUT &fuzzy);
 
 			for (Unt i = 0; i < fuzzy.len; ++i) {
@@ -18469,7 +18469,7 @@ get_next_cmdline_completion(void) {
 
 //Return the next word or line from buffer "scannedBook" at position
 //"cur_match_pos" for completion. The length of the match is set in "len".
-private CS
+private S
 ins_compl_get_next_word_or_line(
 	Book* scannedBook,      //buffer being scanned
 	Pos* cur_match_pos,      //current match position
@@ -18478,7 +18478,7 @@ ins_compl_get_next_word_or_line(
 ) {      //next ^X<> will set initial_pos
 
 	*match_len = 0;
-	CS ptr = memGetLine(scannedBook, cur_match_pos->lnum, false) + cur_match_pos->col;
+	S ptr = memGetLine(scannedBook, cur_match_pos->lnum, false) + cur_match_pos->col;
 	int len = (int)memGetBookLen(scannedBook, cur_match_pos->lnum) - cur_match_pos->col;
 	if (ctrl_x_mode_line_or_eval()) {
 		if (compl_status_adding()) {
@@ -18486,13 +18486,13 @@ ins_compl_get_next_word_or_line(
 				return NULL;
 			ptr = memGetLine(scannedBook, cur_match_pos->lnum + 1, false);
 			len = memGetBookLen(scannedBook, cur_match_pos->lnum + 1);
-			CS tmp_ptr = ptr;
+			S tmp_ptr = ptr;
 
 			ptr = skipwhite(tmp_ptr);
 			len -= (int)(ptr - tmp_ptr);
 		}
 	} else {
-		CS tmp_ptr = ptr;
+		S tmp_ptr = ptr;
 
 		if (compl_status_adding() && compl_length <= len) {
 			tmp_ptr += compl_length;
@@ -18552,11 +18552,11 @@ ins_compl_get_next_word_or_line(
 private Unt
 get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
 	Unt found_new_match = FAIL;
-	CS ptr = NULL;
+	S ptr = NULL;
 	int len = 0;
 	Boole inFuzzyCollect = (cfc_has_mode() && compl_length > 0)
 		|| ((curBook->o.completeOpt & COT_FUZZY) && isAutocomplActiveP);
-	CS leader = ins_compl_leader();
+	S leader = ins_compl_leader();
 	int score = FUZZY_SCORE_NONE;
 	Boole inCurBook = st->scannedBook == curBook;
 
@@ -18668,11 +18668,11 @@ private int
 search_for_fuzzy_match(
 	Book* book,
 	Pos* pos,
-	CS pattern,
+	S pattern,
 	int dir,
 	Pos* start_pos,
 	OUT int* len,
-	OUT CS* ptr,
+	OUT S* ptr,
 	int* score
 ) {
 	Pos current_pos = *pos;
@@ -18753,7 +18753,7 @@ search_for_fuzzy_match(
 //Return the callback function associated with "p" if it refers to a user-defined function in
 //the 'complete' option. The "idx" parameter is used for indexing callback entries.
 private Callback *
-get_callback_if_cfn(CS p) {
+get_callback_if_cfn(S p) {
 	if (*p == 'o')
 		return curBook->o.omniFn;
 
@@ -18803,7 +18803,7 @@ get_register_completion(void) {
 		reg = (YankReg *)reg_ptr;
 
 		for (int j = 0; j < reg->y_size; j++) {
-			CS str = reg->y_array[j].c;
+			S str = reg->y_array[j].c;
 			if (!str)
 				continue;
 
@@ -18822,17 +18822,17 @@ get_register_completion(void) {
 				}
 			} else {
 				//Calculate the safe end of string to avoid null byte issues
-				CS str_end = str + STRLEN(str);
-				CS p = str;
+				S str_end = str + STRLEN(str);
+				S p = str;
 
 				//Safely iterate through the string
 				while (p < str_end && *p != ZERO) {
-					CS old_p = p;
+					S old_p = p;
 					p = findWordStart(p);
 					if (p >= str_end || *p == ZERO)
 						break;
 
-					CS word_end = find_word_end(p);
+					S word_end = find_word_end(p);
 
 					if (word_end <= p) {
 						word_end = p + utfCharLen(p);
@@ -18931,13 +18931,13 @@ get_next_completion_match(int type, InsertionCompletionNext *st, Pos *ini) {
 
 //Strip carets followed by numbers. This suffix typically represents the max_matches setting
 private void
-strip_caret_numbers_in_place(CS str) {
+strip_caret_numbers_in_place(S str) {
 	if (!str)
 		return;
 
-	CS read = str;
-	CS write = str;
-	CS p;
+	S read = str;
+	S write = str;
+	S p;
 	while (*read) {
 		if (*read == '^') {
 			p = read + 1;
@@ -18962,10 +18962,10 @@ prepare_cpt_compl_funcs(void) {
 	int startcol;
 
 	//Make a copy of 'cpt' in case the buffer gets wiped out
-	CS cpt = copyStr(curBook->o.complete);
+	S cpt = copyStr(curBook->o.complete);
 	strip_caret_numbers_in_place(cpt);
 
-	for (CS p = cpt; *p;) {
+	for (S p = cpt; *p;) {
 		while (*p == ',' || *p == ' ') //Skip delimiters
 			 p++;
 		if (*p == ZERO)
@@ -18984,7 +18984,7 @@ prepare_cpt_compl_funcs(void) {
 		} else
 			cpt_sources_array[idx].startCol = -3;
 
-		(void)strCutPathFromListOfPaths(OUT &p, OUT ioBuffG, IOSIZE, S","); //Advance p
+		(void)strCutPathFromListOfPaths(OUT &p, OUT ioBuffG, IOSIZE, u8","); //Advance p
 		idx++;
 	}
 
@@ -19044,9 +19044,9 @@ ins_compl_get_exp(Pos* ini) {
 		st.scannedBook = curBook;
 		eeglFree(st.e_cpt_copy);
 		//Make a copy of 'complete', in case the buffer is wiped out.
-		st.e_cpt_copy = copyStr((compl_cont_status & CONT_LOCAL) ? S"." : curBook->o.complete);
+		st.e_cpt_copy = copyStr((compl_cont_status & CONT_LOCAL) ? u8"." : curBook->o.complete);
 		strip_caret_numbers_in_place(st.e_cpt_copy);
-		st.e_cpt = st.e_cpt_copy ? st.e_cpt_copy : S"";
+		st.e_cpt = st.e_cpt_copy ? st.e_cpt_copy : u8"";
 
 		//In large buffers, timeout may miss nearby matches — search above cursor
 #define LOOKBACK_LINE_COUNT   1000
@@ -19228,7 +19228,7 @@ ins_compl_delete(void) {
 
 	if (curPor->cursor.lnum > compl_lnum) {
 		if (curPor->cursor.col < ml_get_curline_len()) {
-			CS line = ml_get_cursor();
+			S line = ml_get_cursor();
 			remaining.len = ml_get_cursor_len();
 			remaining.c = copySubstr(line, remaining.len);
 			if (!remaining.c)
@@ -19270,9 +19270,9 @@ ins_compl_delete(void) {
 
 //Insert a completion string that contains newlines. The string is split and inserted line by line.
 private void
-ins_compl_expand_multiple(CS str) {
-	CS  start = str;
-	CS curr = str;
+ins_compl_expand_multiple(S str) {
+	S  start = str;
+	S curr = str;
 	int base_indent = get_indent();
 
 	while (*curr != ZERO) {
@@ -19302,10 +19302,10 @@ private void
 ins_compl_insert(int move_cursor) {
 	int compl_len = get_compl_len();
 	int preinsert = ins_compl_has_preinsert();
-	CS cp_str = compl_shown_match->cp_str.c;
+	S cp_str = compl_shown_match->cp_str.c;
 	Unt cp_str_len = compl_shown_match->cp_str.len;
 	Unt leader_len = ins_compl_leader_len();
-	CS has_multiple = firstOccurrence(cp_str, '\n');
+	S has_multiple = firstOccurrence(cp_str, '\n');
 
 	//Since completion sources may provide matches with varying start positions, insert only the
 	//portion of the match that corresponds to the intended replacement range
@@ -19344,15 +19344,15 @@ ins_compl_insert(int move_cursor) {
 //for return
 private void
 ins_compl_show_filename(void) {
-	CS lead = _("match in file");
-	int space = shownCommandColG - eeglStrSize((CS)lead) - 2;
+	S lead = _("match in file");
+	int space = shownCommandColG - eeglStrSize((S)lead) - 2;
 	if (space <= 0)
 		return;
 
 	//We need the tail that fits.  With double-byte encoding going back from the end is very slow,
 	//thus go from the start and keep the text that fits in "space" between "s" and "e".
-	CS s;
-	CS e;
+	S s;
+	S e;
 	for (s = e = compl_shown_match->fName; *e != ZERO; MB_PTR_ADV(e)) {
 		space -= bookPtr2Cells(e);
 		while (space < 0) {
@@ -19714,7 +19714,7 @@ shouldNewCharInsertTheMatch(int c) {
 //Set the global variables: compl_col, compl_length and compl_pattern.
 //Use the global variables: compl_cont_status and ctrl_x_mode
 private Unt
-get_normal_compl_info(CS line, int startcol, ColNr curs_col) {
+get_normal_compl_info(S line, int startcol, ColNr curs_col) {
 	if ((compl_cont_status & CONT_SOL) || ctrl_x_mode_path_defines()) {
 		if (!compl_status_adding()) {
 			 while (--startcol >= 0 && bookIsIdentifierChar(line[startcol]))
@@ -19738,13 +19738,13 @@ get_normal_compl_info(CS line, int startcol, ColNr curs_col) {
 			compl_pattern.len = (Unt)compl_length;
 		}
 	} ei (compl_status_adding()) {
-		CS prefix = S"\\<";
+		S prefix = u8"\\<";
 		Unt prefixlen = STRLEN_LITERAL("\\<");
 
 		if (!eeIsWordPtr(line + compl_col)
 			|| (compl_col > 0 && (eeIsWordPtr(mb_prevptr(line, line + compl_col))))
 		) {
-			prefix = S"";
+			prefix = u8"";
 			prefixlen = 0;
 		}
 
@@ -19759,7 +19759,7 @@ get_normal_compl_info(CS line, int startcol, ColNr curs_col) {
 		Unt   len = STRLEN_LITERAL("\\<\\k\\k");
 
 		//Match any word of at least two chars
-		compl_pattern.c = copySubstr((CS)"\\<\\k\\k", len);
+		compl_pattern.c = copySubstr(u8"\\<\\k\\k", len);
 		if (!compl_pattern.c) {
 			compl_pattern.len = 0;
 			return FAIL;
@@ -19815,7 +19815,7 @@ get_normal_compl_info(CS line, int startcol, ColNr curs_col) {
 //Get the pattern, column and length for whole line completion or for the complete() function.
 //Set the global variables: compl_col, compl_length and compl_pattern.
 private int
-get_wholeline_compl_info(CS line, ColNr curs_col) {
+get_wholeline_compl_info(S line, ColNr curs_col) {
 	compl_col = (ColNr)getwhitecols(line);
 	compl_length = (int)curs_col - (int)compl_col;
 	if (compl_length < 0)   //cursor in indent: empty pattern
@@ -19842,10 +19842,10 @@ get_wholeline_compl_info(CS line, ColNr curs_col) {
 //Get the pattern, column and length for filename completion.
 //Set the global variables: compl_col, compl_length and compl_pattern.
 private int
-get_filename_compl_info(CS line, int startcol, ColNr curs_col) {
+get_filename_compl_info(S line, int startcol, ColNr curs_col) {
 	//Go back to just before the first filename character.
 	if (startcol > 0) {
-		CS p = line + startcol;
+		S p = line + startcol;
 
 		MB_PTR_BACK(line, p);
 		while (p > line && eeIsFnameChar(mb_ptr2char(p)))
@@ -19868,7 +19868,7 @@ get_filename_compl_info(CS line, int startcol, ColNr curs_col) {
 //Get the pattern, column and length for command-line completion.
 //Set the global variables: compl_col, compl_length and compl_pattern.
 private int
-get_cmdline_compl_info(CS line, ColNr curs_col) {
+get_cmdline_compl_info(S line, ColNr curs_col) {
 	compl_pattern.c = copySubstr(line, curs_col);
 	if (!compl_pattern.c) {
 		compl_pattern.len = 0;
@@ -19903,7 +19903,7 @@ set_compl_globals(int startcol, ColNr curs_col, int is_cpt_compl) {
 			startcol = curs_col;
 
 		//Re-obtain line in case it has changed
-		CS line = ml_get(curPor->cursor.lnum);
+		S line = ml_get(curPor->cursor.lnum);
 		int   len = curs_col - startcol;
 
 		compl_pattern.c = copySubstr(line + startcol, (Unt)len);
@@ -19931,7 +19931,7 @@ get_userdefined_compl_info(ColNr curs_col, Callback* cb, int* startcol) {
 	//set to 1 to obtain the length of text to use for completion.
 	Var   args[3];
 	int      col;
-	CS funcname = NULL;
+	S funcname = NULL;
 	Pos pos;
 	int save_State = stateG;
 	int is_cfntion = (cb != NULL);
@@ -19950,7 +19950,7 @@ get_userdefined_compl_info(ColNr curs_col, Callback* cb, int* startcol) {
 	args[0].tag = VAR_NUMBER;
 	args[0].number = 1;
 	args[1].tag = VAR_STRING;
-	args[1].string = (CS)"";
+	args[1].string = u8"";
 	args[2].tag = VAR_UNKNOWN;
 	pos = curPor->cursor;
 	++textlock;
@@ -19998,7 +19998,7 @@ get_userdefined_compl_info(ColNr curs_col, Callback* cb, int* startcol) {
 //On return, "line_invalid" is set to true, if the current line may have
 //become invalid and needs to be fetched again. Return OK on success.
 private Unt
-compl_get_info(CS line, int startcol, ColNr curs_col, OUT Boole* line_invalid) {
+compl_get_info(S line, int startcol, ColNr curs_col, OUT Boole* line_invalid) {
 	if (ctrl_x_mode_normal() || ctrl_x_mode_register()
 		 || (ctrl_x_mode & CTRL_X_WANT_IDENT
 		&& !thesaurus_func_complete(ctrl_x_mode))
@@ -20017,7 +20017,7 @@ compl_get_info(CS line, int startcol, ColNr curs_col, OUT Boole* line_invalid) {
 			return FAIL;
 		*line_invalid = true;   //"line" may have become invalid
 	} else {
-		internal_error(S"insertModeCompletion()");
+		internal_error(u8"insertModeCompletion()");
 		return FAIL;
 	}
 
@@ -20031,7 +20031,7 @@ compl_get_info(CS line, int startcol, ColNr curs_col, OUT Boole* line_invalid) {
 //because it was longer than 'tw').  if SOL is set then skip the previous pattern, a word
 //at the beginning of the line has been inserted, we'll look for that.
 private void
-ins_compl_continue_search(CS line) {
+ins_compl_continue_search(S line) {
 	//it is a continued search
 	compl_cont_status &= ~CONT_INTRPT;   //remove INTRPT
 	if (ctrl_x_mode_normal() || ctrl_x_mode_path_patterns() || ctrl_x_mode_path_defines()) {
@@ -20084,7 +20084,7 @@ ins_compl_start(void) {
 	if (stop_arrow() == FAIL)
 		return FAIL;
 
-	CS line = ml_get(curPor->cursor.lnum);
+	S line = ml_get(curPor->cursor.lnum);
 	ColNr curs_col = curPor->cursor.col;
 	compl_pending = 0;
 	compl_lnum = curPor->cursor.lnum;
@@ -20119,7 +20119,7 @@ ins_compl_start(void) {
 		line = ml_get(curPor->cursor.lnum);
 
 	if (compl_status_adding()) {
-		editSubmodePreMsgG = (CS)_(" Adding");
+		editSubmodePreMsgG = (S)_(" Adding");
 		if (ctrl_x_mode_line_or_eval()) {
 			//Insert a new line, keep indentation but ignore 'comments'.
 			compl_startpos.lnum = curPor->cursor.lnum;
@@ -20139,9 +20139,9 @@ ins_compl_start(void) {
 
 	if (!isAutocomplActiveP) {
 		if (compl_cont_status & CONT_LOCAL)
-			editSubmodeMsgG = (CS)_(ctrl_x_msgs[CTRL_X_LOCAL_MSG]);
+			editSubmodeMsgG = (S)_(ctrl_x_msgs[CTRL_X_LOCAL_MSG]);
 		else
-			editSubmodeMsgG = (CS)_(CTRL_X_MSG(ctrl_x_mode));
+			editSubmodeMsgG = (S)_(CTRL_X_MSG(ctrl_x_mode));
 	}
 
 	//If any of the original typed text has been changed we need to fix the redo buffer.
@@ -20168,7 +20168,7 @@ ins_compl_start(void) {
 	//showmode might reset the internal line pointers, so it must be called before
 	//line = ml_get(), or when this address is no longer needed.  -- Acevedo.
 	if (!isAutocomplActiveP) {
-		editSubmodeExtraMsgG = (CS)_("-- Searching...");
+		editSubmodeExtraMsgG = (S)_("-- Searching...");
 		editSubmodeHiG = 0;
 		showmode();
 		editSubmodeExtraMsgG = NULL;
@@ -20191,13 +20191,13 @@ ins_compl_show_statusmsg(void) {
 
 	if (!editSubmodeExtraMsgG) {
 		if (match_at_original_text(compl_curr_match)) {
-			editSubmodeExtraMsgG = (CS)_("Back at original");
+			editSubmodeExtraMsgG = (S)_("Back at original");
 			editSubmodeHiG = HILITE_WarningMsg;
 		} ei (compl_cont_status & CONT_S_IPOS) {
-			editSubmodeExtraMsgG = (CS)_("Word from other line");
+			editSubmodeExtraMsgG = (S)_("Word from other line");
 			editSubmodeHiG = 0;
 		} ei (compl_curr_match->next == compl_curr_match->prev) {
-			editSubmodeExtraMsgG = (CS)_("The only match");
+			editSubmodeExtraMsgG = (S)_("The only match");
 			editSubmodeHiG = 0;
 			compl_curr_match->cp_number = 1;
 		} else {
@@ -20362,7 +20362,7 @@ show_pum(int prev_cursorRow, int prev_leftCol) {
 //are copied there quoting (with a backslash) the metachars, and dest would be ZERO
 //terminated. Return the length (needed) of dest
 private unsigned
-quote_meta(CS dest, CS src, int len) {
+quote_meta(S dest, S src, int len) {
 	unsigned   m = (unsigned)len + 1;  //one extra for the ZERO
 	for ( ; --len >= 0; src++) {
 		switch (*src) {
@@ -20432,13 +20432,13 @@ setup_cpt_sources(void) {
 	cpt_sources_clear();
 	cpt_sources_array = ALLOC_CLEAR_MULT(CompletionSource, 1);
 
-	for (CS p = curBook->o.complete; *p;) {
+	for (S p = curBook->o.complete; *p;) {
 		while (*p == ',' || *p == ' ') //Skip delimiters
 			p++;
 		if (*p) { //If not end of string, count this segment
-			slen = strCutPathFromListOfPaths(OUT &p, OUT buf, LSIZE, S","); //Advance p
+			slen = strCutPathFromListOfPaths(OUT &p, OUT buf, LSIZE, u8","); //Advance p
 			if (slen > 0) {
-				CS caret = firstOccurrence(buf, '^');
+				S caret = firstOccurrence(buf, '^');
 				if (caret)
 					cpt_sources_array[idx].maxMatches = atoi((char *)caret + 1);
 			}
@@ -20559,11 +20559,11 @@ cpt_compl_refresh(void) {
 	//Make the completion list linear (non-cyclic)
 	ins_compl_make_linear();
 	//Make a copy of 'cpt' in case the buffer gets wiped out
-	CS cpt = copyStr(curBook->o.complete);
+	S cpt = copyStr(curBook->o.complete);
 	strip_caret_numbers_in_place(cpt);
 
 	cpt_sources_index = 0;
-	for (CS p = cpt; *p != ZERO;) {
+	for (S p = cpt; *p != ZERO;) {
 		while (*p == ',' || *p == ' ') //Skip delimiters
 			p++;
 		if (*p == ZERO)
@@ -20589,7 +20589,7 @@ cpt_compl_refresh(void) {
 			}
 		}
 
-		(void)strCutPathFromListOfPaths(OUT &p, OUT ioBuffG, IOSIZE, S","); //Advance p
+		(void)strCutPathFromListOfPaths(OUT &p, OUT ioBuffG, IOSIZE, u8","); //Advance p
 		if (may_advance_cpt_index(p))
 			(void)advance_cpt_sources_index_safe();
 	}
@@ -20601,12 +20601,12 @@ cpt_compl_refresh(void) {
 }
 
 //Function given to expandGeneric() to obtain the list of :disassemble arguments.
-pub CS
+pub S
 get_disassemble_argument(Expand* xp, int idx) {
 	if (idx == 0)
-		return S"debug";
+		return u8"debug";
 	if (idx == 1)
-		return S"profile";
+		return u8"profile";
 	return get_user_func_name(xp, idx - 2);
 }
 
@@ -20621,9 +20621,9 @@ copyGlobalToBookLocalCb(Callback* globcb, Callback* bookCb) {
 //Parse the @completefunc option value and set the callback function. Invoked when @completefunc
 //is set. The option value can be a name of a function (string), or function(<name>) or
 //funcref(<name>) or a lambda expression.
-pub CS
+pub S
 setCompletefunc(OptionChange* cha) {
-	CS new = cha->newVal.string;
+	S new = cha->newVal.string;
 	if (!new || *new == ZERO)
 		return e_invalid_argument;
 	if (optSetCallback(OUT &completeFnS, new) == FAIL)
@@ -20660,7 +20660,7 @@ inSetCustomCompletionCbForBook(Book* book) {
 //Parse the @omnifunc option value and set the callback function.
 //Invoked when the @omnifunc option is set. The option value can be a
 //name of a function (string), or function(<name>) or funcref(<name>) or a lambda expression.
-pub CS
+pub S
 setOmnifunc(OptionChange* cha) {
 	if (!cha->newVal.string || *cha->newVal.string == ZERO)
 		return e_invalid_argument;
@@ -20684,14 +20684,14 @@ setCompletionCallbacks(OptionChange *cha) {
 
 	curBook->o.completeFn = ALLOC_CLEAR_MULT(Callback, 1);
 
-	for (CS p = curBook->o.complete; *p != ZERO; ) {
+	for (S p = curBook->o.complete; *p != ZERO; ) {
 		while (*p == ',' || *p == ' ')
 			p++; //Skip delimiters
 
 		if (*p != ZERO) {
-			int slen = strCutPathFromListOfPaths(OUT &p, OUT buf, LSIZE, S","); //Advance p
+			int slen = strCutPathFromListOfPaths(OUT &p, OUT buf, LSIZE, u8","); //Advance p
 			if (slen > 0 && buf[0] == 'F' && buf[1] != ZERO) {
-				CS caret = firstOccurrence(buf, '^');
+				S caret = firstOccurrence(buf, '^');
 				if (caret)
 					*caret = ZERO;
 
@@ -20793,7 +20793,7 @@ internal_format(
 
 		//Don't break until after the comment leader
 		if (doComments) {
-			CS line = ml_get_curline();
+			S line = ml_get_curline();
 
 			leader_len = get_leader_len(line, NULL, false, true);
 		} else
@@ -21017,7 +21017,7 @@ internal_format(
 						 //the cursor at the end of the split line. Now we add the additional whitespace
 						 //needed after the comment leader for the numbered list.
 						 for (int i = 0; i < padding; i++)
-						    ins_str(S" ", 1);
+						    ins_str(u8" ", 1);
 					 } else {
 						 (void)doSetIndent(second_indent, SIN_CHANGED);
 					 }
@@ -21058,10 +21058,10 @@ internal_format(
 //joined to the previous line.  A new paragraph starts after a blank line, or when the
 //comment leader changes -- webb.
 pub int
-fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComments) {
-	CS flags = NULL;
+fmt_check_par(LineNr lnum, OUT int* leader_len, OUT S* leader_flags, int doComments) {
+	S flags = NULL;
 
-	CS ptr = ml_get(lnum);
+	S ptr = ml_get(lnum);
 	*leader_len = doComments ? get_leader_len(ptr, leader_flags, false, true) : 0;
 
 	if (*leader_len > 0) {
@@ -21081,15 +21081,15 @@ fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComm
 private int
 paragraph_start(LineNr lnum) {
 	int leader_len = 0;      //leader len of current line
-	CS leader_flags = NULL;   //flags for leader of current line
+	S leader_flags = NULL;   //flags for leader of current line
 	int next_leader_len;   //leader len of next line
-	CS next_leader_flags;   //flags for leader of next line
+	S next_leader_flags;   //flags for leader of next line
 	int doComments;      //format comments
 
 	if (lnum <= 1)
 		return true;      //start of the file
 
-	CS p = ml_get(lnum - 1);
+	S p = ml_get(lnum - 1);
 	if (*p == ZERO)
 		return true;      //after empty line
 
@@ -21121,7 +21121,7 @@ whAutoFormat(Boole trailblank, Boole prev_line) {   //may start in previous line
 		return;
 
 	Pos pos = curPor->cursor;
-	CS old = ml_get_curline();
+	S old = ml_get_curline();
 
 	//may remove added space
 	checkAutoFormat(false);
@@ -21176,10 +21176,10 @@ whAutoFormat(Boole trailblank, Boole prev_line) {   //may start in previous line
 	//the line was broken. Because of the rule above we need to add a space when 'w' is in
 	//@formatoptions to keep a paragraph formatted.
 	if (!wasatend && has_format_option(FO_WHITE_PAR)) {
-		CS new = ml_get_curline();
+		S new = ml_get_curline();
 		ColNr len = ml_get_curline_len();
 		if (curPor->cursor.col == len) {
-			CS pnew = copySubstr(new, len + 2);
+			S pnew = copySubstr(new, len + 2);
 			pnew[len] = ' ';
 			pnew[len + 1] = ZERO;
 			ml_replace(curPor->cursor.lnum, pnew, false);

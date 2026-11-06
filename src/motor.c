@@ -62,34 +62,34 @@ typedef struct {
 	int argc;
 	Arr(Arr(char)) argv;
 
-	CS fname;         //first file to edit
+	S fname;         //first file to edit
 
-	CS altInitFile;      //alternative init file name from -u argument
+	S altInitFile;      //alternative init file name from -u argument
 	int clean;         //--clean argument
 
 	int n_commands;                 //no. of commands from + or -c
-	CS commands[MAX_ARG_CMDS];      //commands from + or -c arg.
+	S commands[MAX_ARG_CMDS];      //commands from + or -c arg.
 	Byte cmds_tofree[MAX_ARG_CMDS]; //commands that need free()
 	int n_pre_commands;             //no. of commands from --cmd
-	CS pre_commands[MAX_ARG_CMDS];  //commands from --cmd argument
+	S pre_commands[MAX_ARG_CMDS];  //commands from --cmd argument
 
 	int edit_type; //type of editing to do
-	CS tagname;    //tag from -t argument
-	CS use_ef;     //@errorfile from -q argument
+	S tagname;    //tag from -t argument
+	S use_ef;     //@errorfile from -q argument
 
 	int want_full_screen;
 	int not_a_term;      //no warning for missing term?
 	int tty_fail;      //exit if not a tty
-	CS term;         //specified terminal name
+	S term;         //specified terminal name
 	int no_swap_file;      //"-n" argument used
 	int use_debug_break_level;
 	Unt portalCount;      //number of portals to use
 	int portalLayout;     //0, WIN_HOR, WIN_VER or WIN_TABS
 
 	int serverArg;      //TRUE when argument for a server
-	CS serverName_arg;  //cmdline arg for server name
-	CS serverStr;       //remote server command
-	CS servername;      //allocated name for our server
+	S serverName_arg;  //cmdline arg for server name
+	S serverStr;       //remote server command
+	S servername;      //allocated name for our server
 	int diff_mode;      //start with 'diff' set
 } MainParams;
 
@@ -102,14 +102,14 @@ typedef enum {
 
 //Structure used for reading from the eeglinfo file.
 typedef struct {
-	CS line;   //text of the current line
+	S line;   //text of the current line
 	FILE* vir_fd;   //file descriptor
 	int vir_version;   //eeglinfo version detected or -1
 	ArrayList vir_barlines;   //lines starting with |
 } Vir;
 
 
-#define TIME_MSG(s) do { if (time_fd != NULL) time_msg((CS)s, NULL); } while (0)
+#define TIME_MSG(s) do { if (time_fd != NULL) time_msg((S)s, NULL); } while (0)
 
 typedef sigset_t SignalSet;
 
@@ -153,7 +153,7 @@ struct Job {
 	Unt copyId;
 
 	Channel* channel; //channel for I/O, reference-counted
-	Arr(CS) argv;   //command line used to start the job
+	Arr(S) argv;   //command line used to start the job
 };
 
 
@@ -211,7 +211,7 @@ struct Channel {
 
 	int id;      //ID of the channel
 	int lastMsgId;   //ID of the last message
-	CS socketName;      //Unix domain socket name
+	S socketName;      //Unix domain socket name
 	ChannelFd fds[PART_COUNT]; //info for socket, out, err and in
 	int writeTextMode; //write book lines with CR, not NL
 
@@ -265,13 +265,13 @@ typedef struct HistoryEntry {
 //{{{@@forward declarations
 private void list_version(void);
 private void intro_message(int colon);
-private void do_intro_line(int row, CS mesg, int add_version);
+private void do_intro_line(int row, S mesg, int add_version);
 private void init1(OUT MainParams* par);
 private void initUi(void);
 private int isSafeNow(void);
 private void earlyArgScan(MainParams* par);
 private int getNumericArg(
-	CS p,       //pointer to argument
+	S p,       //pointer to argument
 	int* idx,       //index in argument, is incremented
 	int def       //default value
 );
@@ -280,18 +280,18 @@ private void scanCommandLineArgs(MainParams *par);
 private void check_tty(MainParams* par);
 private void readStdin(void);
 private void createPortals(MainParams* par);
-private void editBuffers(MainParams* par, CS cwd);
+private void editBuffers(MainParams* par, S cwd);
 private void executePreCommands(MainParams* par);
 private void exeCommands(MainParams* par);
 private void sourceStartupScripts(MainParams* par);
 private void mainerr(
 	Unt n,   //one of the ME_ defines
-	NULLABLE CS str   //extra argument
+	NULLABLE S str   //extra argument
 );
-private void main_msg(CS s);
+private void main_msg(S s);
 private void usage(void);
 private void check_swap_exists_action(void);
-private void set_progpath(CS argv0);
+private void set_progpath(S argv0);
 private void catch_sigint(int);
 private void catch_sigusr1(int);
 private void catch_sigpwr(int);
@@ -302,7 +302,7 @@ private void catch_int_signal(void);
 private void catch_signals(void (*func_deadly)(int), void (*func_other)(int));
 private void setupSignalHandlers(void);
 private void init_signal_stack(void);
-private CS get_signal_name(int sig);
+private S get_signal_name(int sig);
 private void block_signals(SignalSet* set);
 private void unblock_signals(SignalSet* set);
 private void exit_scroll(void);
@@ -327,10 +327,10 @@ private void channel_free_channel(Channel* channel);
 private void channel_free(Channel* channel);
 private int channel_may_free(Channel* channel);
 private int channel_connect(Channel* channel, SockAddr* server_addr, int server_addrlen, int *waittime);
-private Channel* channel_open_unix(CS path);
+private Channel* channel_open_unix(S path);
 private void setCallback(Callback* cbp, Callback* callback);
 private void prepareBookForWriting(Book* book);
-private Book* chaFindBook(CS name, int err, int msg);
+private Book* chaFindBook(S name, int err, int msg);
 private void channel_set_options(Channel* channel, JobOptions* opt);
 private Channel * channel_open_func(Arr(Var) argvars);
 private void channel_set_req_callback(Channel* channel, ChannelFdKind part, Callback* callback, int id);
@@ -338,9 +338,9 @@ private void write_buf_line(Book* book, LineNr lnum, Channel* channel);
 private int can_write_buf_line(Channel* channel);
 private void channel_write_input(Channel* channel);
 private void invoke_callback(Channel* channel, Callback* callback, Var* argv);
-private CS channel_get(Channel* channel, ChannelFdKind part, int *outlen);
-private CS channel_get_all(Channel *channel, ChannelFdKind part, int *outlen);
-private int saveMsg(Channel* channel, ChannelFdKind part, CS msg, int len, int prepend, CS logLead);
+private S channel_get(Channel* channel, ChannelFdKind part, int *outlen);
+private S channel_get_all(Channel *channel, ChannelFdKind part, int *outlen);
+private int saveMsg(Channel* channel, ChannelFdKind part, S msg, int len, int prepend, S logLead);
 private int channel_fill(JsReader* reader);
 private int channel_process_lsp_http_hdr(JsReader* reader);
 private Boole channel_parse_json(Channel* channel, ChannelFdKind part);
@@ -359,15 +359,15 @@ private int channel_get_json(
 private void channel_push_json(Channel* channel, ChannelFdKind part, Var* returnVar);
 private void channel_exe_cmd(Channel* channel, ChannelFdKind part, Var* argv);
 private void invoke_one_time_callback(Channel* channel, CbNode* cbhead, CbNode* item, Var* argv);
-private void appendToBook(Book* book, CS msg, Channel* channel, ChannelFdKind part);
+private void appendToBook(Book* book, S msg, Channel* channel, ChannelFdKind part);
 private void drop_messages(Channel* channel, ChannelFdKind part);
 private int channel_use_json_head(Channel* channel, ChannelFdKind part);
 private int may_invoke_callback(Channel* channel, ChannelFdKind part);
 private int channel_can_write_to(Channel* channel);
 private void * channel_readahead_pointer(Channel* channel, ChannelFdKind part);
 private int channel_has_readahead(Channel *channel, ChannelFdKind part);
-private CS channel_status(Channel *channel, int req_part);
-private void channel_part_info(Channel* channel, Bag* bag, CS name, ChannelFdKind part);
+private S channel_status(Channel *channel, int req_part);
+private void channel_part_info(Channel* channel, Bag* bag, S name, ChannelFdKind part);
 private void channelInfoIntoDict(Channel *channel, OUT Bag *dict);
 private void channel_close(Channel *channel, int invoke_close_cb);
 private void channel_close_in(Channel *channel);
@@ -379,7 +379,7 @@ private WaitResult channel_wait(Channel* channel, Socket fd, int timeout);
 private void ch_close_part_on_error(Channel *channel, ChannelFdKind part, int is_err, char *func);
 private void channel_close_now(Channel* channel);
 private void channel_read(Channel *channel, ChannelFdKind part, char *func);
-private CS channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, int *outlen);
+private S channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, int *outlen);
 private int channel_read_json_block(
 	Channel* channel,
 	ChannelFdKind part,
@@ -390,7 +390,7 @@ private int channel_read_json_block(
 private void commonChannelRead(Var* argvars, Var* returnVar, int raw, int blob);
 private Channel* send_common(
 	Var* argvars,
-	CS text,
+	S text,
 	int len,
 	int id,
 	int eval,
@@ -412,10 +412,10 @@ private ProId wait4pid(ProId child, waitstatus *status);
 private void writeFromCurBookToShell(int fromShell, int toShell);
 private PolyWithStatus callShellImpl(Text cmd, Unt opt);
 private void open_pty(int* pty_master_fd, int* pty_slave_fd, Byte** name1, Byte** name2);
-private void set_child_environment(Long rows, Long columns, CS term, Boole is_terminal);
+private void set_child_environment(Long rows, Long columns, S term, Boole is_terminal);
 private void set_default_child_environment(Boole is_terminal);
 private void mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal);
-private CS mch_job_status(Job* job);
+private S mch_job_status(Job* job);
 private Job * mch_detect_ended_job(Job* job_list);
 private int handle_mode(Var* item, JobOptions* opt, ChannelMode* modep, int jo);
 private int handle_io(Var* item, ChannelFdKind part, JobOptions* opt);
@@ -432,17 +432,17 @@ private int job_channel_still_useful(Job* job);
 private int job_channel_can_close(Job* job);
 private int job_still_useful(Job* job);
 private void job_cleanup(Job* job);
-private CS buf_prompt_text(Book* book);
+private S buf_prompt_text(Book* book);
 private Job * get_job_arg(Var* tv);
 private void job_info(Job* job, Bag* bag);
 private void job_info_all(List* l);
-private void logLead(CS what, Channel* ch, ChannelFdKind part);
-private void ch_log_literal(CS lead, Channel* ch, ChannelFdKind part, OUT Text builder);
+private void logLead(S what, Channel* ch, ChannelFdKind part);
+private void ch_log_literal(S lead, Channel* ch, ChannelFdKind part, OUT Text builder);
 private void add_user(Byte *user, int need_copy);
 private void init_users(void);
-private int ses_put_fname(FILE *fd, CS name);
+private int ses_put_fname(FILE *fd, S name);
 private int ses_fname(FILE* fd, Book* book, int add_eol);
-private int ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname);
+private int ses_arglist(FILE* fd, S cmd, ArrayList* gap, int fullname);
 private Boole portNeedsToBeSaved(Portal* po);
 private Boole ses_do_frame(Frame* fr);
 private Frame* ses_skipframe(Frame* fr);
@@ -457,17 +457,17 @@ private int put_view(
 	int current_arg_idx,     //current argument index of the portal, use -1 if unknown
 	EeSet* terminal_bufs //already encountered terminal books, can be NULL
 );
-private VarFlavor getVarFlavor(CS varname);
+private VarFlavor getVarFlavor(S varname);
 private int store_session_globals(FILE *fd);
 private int makeopens(FILE   *fd, Byte   *currDir);
-private CS find_eeglinfo_parameter(int type);
-private CS eeglinfo_filename(CS file);
-private void eeglinfo_writestring(FILE* fd, CS p);
-private int barline_writestring(FILE *fd, CS s, int remaining_start);
-private CS eeglinfo_readstring(Vir* virp, int off);
+private S find_eeglinfo_parameter(int type);
+private S eeglinfo_filename(S file);
+private void eeglinfo_writestring(FILE* fd, S p);
+private int barline_writestring(FILE *fd, S s, int remaining_start);
+private S eeglinfo_readstring(Vir* virp, int off);
 private int eeglinfo_readline(Vir* virp);
 private int readEeglinfoBookList(Vir* virp, int writing);
-private Boole removable(CS name);
+private Boole removable(S name);
 private void writeEeglInfoBookList(FILE* fp);
 private int hist_type2char(int type, int use_question);
 private void prepare_eeglinfo_history(int asklen, int writing);
@@ -479,10 +479,10 @@ private void merge_history(int type);
 private void finish_eeglinfo_history(Vir *virp);
 private void write_eeglinfo_history(FILE *fp, int merge);
 private void write_eeglinfo_barlines(Vir *virp, FILE *fp_out);
-private int barline_parse(Vir* virp, CS text, ArrayList* values);
+private int barline_parse(Vir* virp, S text, ArrayList* values);
 private void write_eeglinfo_version(FILE* fp_out);
 private int no_eeglinfo(void);
-private int eeglinfo_error(CS errnum, CS message, Byte *line);
+private int eeglinfo_error(S errnum, S message, Byte *line);
 private int read_eeglinfo_varlist(Vir* virp, int writing);
 private void write_eeglinfo_varlist(FILE* fp);
 private int read_eeglinfo_sub_string(Vir* virp, int force);
@@ -491,7 +491,7 @@ private int read_eeglinfo_search_pattern(Vir* virp, Boole force);
 private void wvsp_one(
 	FILE* fp,   //file to write to
 	int idx,   //spats[] index
-	CS s,   //search pat
+	S s,   //search pat
 	int sc   //dir char
 );
 private void write_eeglinfo_search_pattern(FILE* fp);
@@ -542,8 +542,8 @@ private int ignore_sigtstp = false;
 //It has been changed beyond recognition since then.
 //Now there is a simple IDE forked off from it, Eegl.
 
-private CS programVersion = (CS)EEGL_VERSION_SHORT;
-private CS mediumVersion = (CS)EEGL_VERSION_MEDIUM;
+private S programVersion = (S)EEGL_VERSION_SHORT;
+private S mediumVersion = (S)EEGL_VERSION_MEDIUM;
 
 //char longVersion[sizeof(EEGL_VERSION_LONG_DATE) + sizeof(__DATE__) + sizeof(__TIME__) + 3];
 
@@ -560,7 +560,7 @@ private int included_patches[] = {
 //Also add a comment marker to separate the lines.
 //See the official Eegl patches for the diff format: It must use a context of
 //one line only.  Create it by hand or use "diff -C2" and edit the patch.
-private CS extra_patches[] = {
+private S extra_patches[] = {
 	//Add your patch description below this line
 	NULL
 };
@@ -575,7 +575,7 @@ private void
 list_version(void) {
 	int i;
 	int first;
-	CS s = S"";
+	S s = u8"";
 
 	//When adding features here, don't forget to update the list of internal variables in eval.c!
 	msg(longVersion);
@@ -592,10 +592,10 @@ list_version(void) {
 				first = included_patches[i];
 			if (i == 0 || included_patches[i - 1] != included_patches[i] + 1) {
 				msg_puts(s);
-				s = S", ";
+				s = u8", ";
 				msg_outnum((Long)first);
 				if (first != included_patches[i]) {
-					msg_puts(S"-");
+					msg_puts(u8"-");
 					msg_outnum((Long)included_patches[i]);
 				}
 				first = -1;
@@ -606,10 +606,10 @@ list_version(void) {
 	//Print the list of extra patch descriptions if there is at least one.
 	if (extra_patches[0] != NULL) {
 		msg_puts(_("\nExtra patches: "));
-		s = S"";
+		s = u8"";
 		for (i = 0; extra_patches[i] != NULL; ++i) {
 			msg_puts(s);
-			s = S", ";
+			s = u8", ";
 			msg_puts(extra_patches[i]);
 		}
 	}
@@ -619,7 +619,7 @@ list_version(void) {
 
 	printMsgWithWrap(_("       defaults file: \""));
 	printMsgWithWrap(EE_DEFAULTS_FILE);
-	printMsgWithWrap((CS)"\"\n");
+	printMsgWithWrap(u8"\"\n");
 #ifdef DEBUG
 	printMsgWithWrap("\n");
 	printMsgWithWrap(_("  DEBUG BUILD"));
@@ -637,7 +637,7 @@ c_version(Invocation* invo) {
 }
 
 
-private void do_intro_line(int row, CS mesg, int add_version);
+private void do_intro_line(int row, S mesg, int add_version);
 private void intro_message(int colon);
 
 //Show the intro message when not editing a file.
@@ -653,8 +653,8 @@ maybe_intro_message(void) {
 private void
 intro_message(int colon) {     //true for ":intro"
 	int i;
-	CS p;
-	static CS lines[] = { SMAP((CS),
+	S p;
+	static S lines[] = { SMAP((S),
 		"Eegl - Extensible editor for GNU/Linux",
 		"",
 		"version ",
@@ -701,7 +701,7 @@ intro_message(int colon) {     //true for ":intro"
 					p = N_("menu  Help->Sponsor/Register  for information    ");
 			}
 			if (*p != ZERO)
-				do_intro_line(row, (CS)_(p), i == 2);
+				do_intro_line(row, (S)_(p), i == 2);
 			++row;
 		}
 	}
@@ -712,7 +712,7 @@ intro_message(int colon) {     //true for ":intro"
 }
 
 private void
-do_intro_line(int row, CS mesg, int add_version){
+do_intro_line(int row, S mesg, int add_version){
 	Byte vers[20];
 	//Center the message horizontally.
 	int col = eeglStrSize(mesg);
@@ -734,7 +734,7 @@ do_intro_line(int row, CS mesg, int add_version){
 
 	//Split up in parts to highlight <> items differently.
 	int l;
-	for (CS p = mesg; *p != ZERO; p += l) {
+	for (S p = mesg; *p != ZERO; p += l) {
 		int clen = 0;
 		for (l = 0; p[l] != ZERO
 				 && (l == 0 || (p[l] != '<' && p[l - 1] != '>')); ++l
@@ -768,10 +768,10 @@ private MainParams paramsP;
 //volatile because it is used in signal handler deathtrap().
 private volatile SigAtomic inMchDelayP = false; //sleeping in mch_delay()
 private void* virtualBuf = null;      //buffer for setvbuf()
-private CS start_dir = NULL;   //current working dir on startup
+private S start_dir = NULL;   //current working dir on startup
 
 //Different types of error messages.
-private CS main_errors[] = {
+private S main_errors[] = {
 	 N_("Unknown option argument"),
 #define ME_UNKNOWN_OPTION   0
 	 N_("Too many edit arguments"),
@@ -828,7 +828,7 @@ libMain(void) {
 	//If the error file can't be read, exit before doing anything else.
 	if (paramsP.edit_type == EDIT_QF) {
 		if (paramsP.use_ef)
-			optChangeStringOptionDirect(S"errorfile", paramsP.use_ef, 0, SID_CARG);
+			optChangeStringOptionDirect(u8"errorfile", paramsP.use_ef, 0, SID_CARG);
 		eeSnprintf(ioBuffG, IOSIZE, "cfile %s", p_ef);
 		if (llInitFromFile(NULL, p_ef, curBook->o.errorFormat, true, ioBuffG) < 0) {
 			out_char('\n');
@@ -923,7 +923,7 @@ libMain(void) {
 			exitEegl(1);
 	}
 
-	//Execute any "+", "-c" and "-S" arguments.
+	//Execute any "+", "-c" and "-u8" arguments.
 	if (paramsP.n_commands > 0)
 		exeCommands(&paramsP);
 
@@ -975,7 +975,7 @@ init0(void) {
 	cmdline_init();
 	bookInitGlobalCharTable();
 
-	CS errMsg = inputInitCharLens();
+	S errMsg = inputInitCharLens();
 	if (errMsg) {
 		emsg(errMsg);
 		return;
@@ -1003,7 +1003,7 @@ init1(OUT MainParams* par) {
 	init_homedir();      //find real value of $HOME
 	TIME_MSG("inits 0");
 
-	swapDirG = fiInitSwapDir((CS)par->argv[0]);
+	swapDirG = fiInitSwapDir((S)par->argv[0]);
 
 	//Do a first scan of the arguments in "argv[]":
 	//  -display or --display
@@ -1032,7 +1032,7 @@ init1(OUT MainParams* par) {
 
 	init_signs();
 
-	set_internal_string_var(S"g:mapleader", S",");
+	set_internal_string_var(u8"g:mapleader", u8",");
 
 	//initialize location lists. don't send an error message when memory allocation fails.
 	//do it when the user tries to access a location list
@@ -1084,7 +1084,7 @@ appMain(int argc, char** argv) {
 			TIME_MSG("--- EEGL RISING ---");
 		}
 		if (caseInsensitiveCompare(argv[i], "--log") == 0)
-			ch_logfile((CS)(argv[i + 1]), S"ao");
+			ch_logfile((S)(argv[i + 1]), u8"ao");
 	}
 
 	//Various initializations #1 shared with tests.
@@ -1229,7 +1229,7 @@ may_trigger_safestate(Boole safe) {
 //Something changed which causes the state possibly to be unsafe, e.g. a
 //character was typed.  It will remain unsafe until the next call to may_trigger_safestate().
 pub void
-state_no_longer_safe(CS reason) {
+state_no_longer_safe(S reason) {
 	if (wasSafeP)
 		lo("SafeState: reset: %s", reason);
 	wasSafeP = false;
@@ -1371,7 +1371,7 @@ mainLoop(Boole inCommPort) {  //true when working in the command-line window
 			curBook->lastUsed = eeTime();
 			//display message after redraw
 			if (msgAfterRedrawG) {
-				CS p = copyStr(msgAfterRedrawG);
+				S p = copyStr(msgAfterRedrawG);
 				//msg_start() will set msgAfterRedrawG to NULL, make a copy first. Don't reset
 				//msgAfterRedrawG, msgDeco_keep() uses it to check for duplicates. Never append this
 				//message to history.
@@ -1561,7 +1561,7 @@ earlyArgScan(MainParams* par) {
 //Get an (optional) count for a Eegl argument.
 private int
 getNumericArg(
-	CS p,       //pointer to argument
+	S p,       //pointer to argument
 	int* idx,       //index in argument, is incremented
 	int def       //default value
 ){
@@ -1578,14 +1578,14 @@ getNumericArg(
 //If the next characters are "diff" or "eegldiff" we start in diff mode.
 private void
 parseCommandName(MainParams* par) {
-	CS initstr;
+	S initstr;
 
-	initstr = fiGetShortFiName((CS)par->argv[0]);
+	initstr = fiGetShortFiName((S)par->argv[0]);
 
-	set_progpath((CS)par->argv[0]);
+	set_progpath((S)par->argv[0]);
 
 	if (STRNICMP(initstr, "view", 4) == 0) {
-		optSetByName(S"modifiable", optBoole(false), SET_GLOBAL);
+		optSetByName(u8"modifiable", optBoole(false), SET_GLOBAL);
 		curBook->o.modifiable = false;
 		swapEnabledG = true;         //don't update very often
 		initstr += 4;
@@ -1607,7 +1607,7 @@ scanCommandLineArgs(MainParams *par) {
 	int had_minmin = false;   //found "--" argument
 	int want_argument;      //option argument with argument
 	int c;
-	CS text = NULL;
+	S text = NULL;
 
 	--argc;
 	++argv;
@@ -1619,9 +1619,9 @@ scanCommandLineArgs(MainParams *par) {
 				mainerr(ME_EXTRA_CMD, NULL);
 			argv_idx = -1;       //skip to next argument
 			if (argv[0][1] == ZERO)
-				par->commands[par->n_commands++] = (CS)"$";
+				par->commands[par->n_commands++] = u8"$";
 			else
-				par->commands[par->n_commands++] = (CS)&(argv[0][1]);
+				par->commands[par->n_commands++] = (S)&(argv[0][1]);
 		}
 		//Optional argument.
 		ei (argv[0][0] == '-' && !had_minmin) {
@@ -1630,7 +1630,7 @@ scanCommandLineArgs(MainParams *par) {
 			switch (c) {
 			case ZERO:      //"eegl -"  read from stdin. "ex -" silent mode
 				if (par->edit_type != EDIT_NONE)
-					mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
+					mainerr(ME_TOO_MANY_ARGS, (S)argv[0]);
 				par->edit_type = EDIT_STDIN;
 				read_cmd_fd = 2;   //read from stderr instead of stdin
 				argv_idx = -1;      //skip to next argument
@@ -1660,9 +1660,9 @@ scanCommandLineArgs(MainParams *par) {
 					 msg_didout = false;
 					 mch_exit(0);
 				} ei (STRNICMP(argv[0] + argv_idx, "clean", 5) == 0) {
-					 par->altInitFile = (CS)"DEFAULTS";
+					 par->altInitFile = u8"DEFAULTu8";
 					 par->clean = true;
-					 optChangeAndReportError(S"eeglinfofile", optStr("NONE"), SET_GLOBAL);
+					 optChangeAndReportError(u8"eeglinfofile", optStr("NONE"), SET_GLOBAL);
 				} ei (STRNICMP(argv[0] + argv_idx, "literal", 7) == 0) {
 				} ei (STRNICMP(argv[0] + argv_idx, "nofork", 6) == 0) {
 				} ei (STRNICMP(argv[0] + argv_idx, "not-a-term", 10) == 0)
@@ -1693,7 +1693,7 @@ scanCommandLineArgs(MainParams *par) {
 					}
 				} else {
 					if (argv[0][argv_idx])
-						mainerr(ME_UNKNOWN_OPTION, (CS)argv[0]);
+						mainerr(ME_UNKNOWN_OPTION, (S)argv[0]);
 					had_minmin = true;
 				}
 				if (!want_argument)
@@ -1723,28 +1723,28 @@ scanCommandLineArgs(MainParams *par) {
 
 			case 'p':      //"-p[N]" open N tabs
 				//default is 0: open portal for each file
-				par->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
+				par->portalCount = getNumericArg((S)argv[0], &argv_idx, 0);
 				par->portalLayout = WIN_TABS;
 				break;
 
 			case 'o':      //"-o[N]" open N horizontal split windows
 				//default is 0: open window for each file
-				par->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
+				par->portalCount = getNumericArg((S)argv[0], &argv_idx, 0);
 				par->portalLayout = WIN_HOR;
 				break;
 
 			case 'O':   //"-O[N]" open N vertical split windows
 				//default is 0: open window for each file
-				par->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
+				par->portalCount = getNumericArg((S)argv[0], &argv_idx, 0);
 				par->portalLayout = WIN_VER;
 				break;
 
 			case 'q':      //"-q" QuickFix mode
 				if (par->edit_type != EDIT_NONE)
-					mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
+					mainerr(ME_TOO_MANY_ARGS, (S)argv[0]);
 				par->edit_type = EDIT_QF;
 				if (argv[0][argv_idx]) {     //"-q{errorfile}"
-					par->use_ef = (CS)argv[0] + argv_idx;
+					par->use_ef = (S)argv[0] + argv_idx;
 					argv_idx = -1;
 				} ei (argc > 1)      //"-q {errorfile}"
 					want_argument = true;
@@ -1766,10 +1766,10 @@ scanCommandLineArgs(MainParams *par) {
 
 			case 't':      //"-t {tag}" or "-t{tag}" jump to tag
 				if (par->edit_type != EDIT_NONE)
-					mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
+					mainerr(ME_TOO_MANY_ARGS, (S)argv[0]);
 				par->edit_type = EDIT_TAG;
 				if (argv[0][argv_idx]) {     //"-t{tag}"
-					par->tagname = (CS)argv[0] + argv_idx;
+					par->tagname = (S)argv[0] + argv_idx;
 					argv_idx = -1;
 				} else            //"-t {tag}"
 					 want_argument = true;
@@ -1783,10 +1783,10 @@ scanCommandLineArgs(MainParams *par) {
 				break;
 			case 'V':      //"-V{N}"   Verbose level
 				//default is 10: a little bit verbose
-				p_verbose = getNumericArg((CS)argv[0], &argv_idx, 10);
+				p_verbose = getNumericArg((S)argv[0], &argv_idx, 10);
 				if (argv[0][argv_idx] != ZERO) {
 					optChangeAndReportError(
-						S"verbosefile", optStr((CS)argv[0] + argv_idx), SET_GLOBAL
+						u8"verbosefile", optStr((S)argv[0] + argv_idx), SET_GLOBAL
 					);
 					argv_idx = (int)STRLEN(argv[0]);
 				}
@@ -1801,7 +1801,7 @@ scanCommandLineArgs(MainParams *par) {
 				if (argv[0][argv_idx] != ZERO) {
 					if (par->n_commands >= MAX_ARG_CMDS)
 						mainerr(ME_EXTRA_CMD, NULL);
-					par->commands[par->n_commands++] = (CS)argv[0] + argv_idx;
+					par->commands[par->n_commands++] = (S)argv[0] + argv_idx;
 					argv_idx = -1;
 					break;
 				}
@@ -1816,18 +1816,18 @@ scanCommandLineArgs(MainParams *par) {
 				break;
 
 			default:
-				mainerr(ME_UNKNOWN_OPTION, (CS)argv[0]);
+				mainerr(ME_UNKNOWN_OPTION, (S)argv[0]);
 			}
 
 			//Handle option arguments with argument.
 			if (want_argument) {
 				//Check for garbage immediately after the option letter.
 				if (argv[0][argv_idx] != ZERO)
-					 mainerr(ME_GARBAGE, (CS)argv[0]);
+					 mainerr(ME_GARBAGE, (S)argv[0]);
 
 				--argc;
 				if (argc < 1 && c != 'S')  //-S has an optional argument
-					 mainerr_arg_missing((CS)argv[0]);
+					 mainerr_arg_missing((S)argv[0]);
 				++argv;
 				argv_idx = -1;
 
@@ -1840,10 +1840,10 @@ scanCommandLineArgs(MainParams *par) {
 						Arr(char) fName;
 
 						if (argc < 1)
-						   //"-S" without argument: use default session file name.
+						   //"-u8" without argument: use default session file name.
 						   fName = SESSION_FILE;
 						ei (argv[0][0] == '-') {
-						   //"-S" followed by another option: use default session file name.
+						   //"-u8" followed by another option: use default session file name.
 						   fName = SESSION_FILE;
 						   ++argc;
 						   --argv;
@@ -1854,11 +1854,11 @@ scanCommandLineArgs(MainParams *par) {
 						par->cmds_tofree[par->n_commands] = true;
 						par->commands[par->n_commands++] = text;
 					} else
-						par->commands[par->n_commands++] = (CS)argv[0];
+						par->commands[par->n_commands++] = (S)argv[0];
 					break;
 
 				case 'P':   //"-P {dir}" project mode at dir
-					projectDirG = (CS)argv[0];
+					projectDirG = (S)argv[0];
 					break;
 
 				case '-':
@@ -1866,7 +1866,7 @@ scanCommandLineArgs(MainParams *par) {
 						//"--comm {command}" execute command
 						if (par->n_pre_commands >= MAX_ARG_CMDS)
 						   mainerr(ME_EXTRA_CMD, NULL);
-						par->pre_commands[par->n_pre_commands++] = (CS)argv[0];
+						par->pre_commands[par->n_pre_commands++] = (S)argv[0];
 					}
 
 					//"--startuptime <file>" already handled
@@ -1874,11 +1874,11 @@ scanCommandLineArgs(MainParams *par) {
 					break;
 
 				case 'q':   //"-q {errorfile}" QuickFix mode
-					par->use_ef = (CS)argv[0];
+					par->use_ef = (S)argv[0];
 					break;
 
 				case 'i':   //"-i {eeglinfo}" use for eeglinfo
-					optChangeAndReportError(S"eeglinfofile", optStr(argv[0]), SET_GLOBAL);
+					optChangeAndReportError(u8"eeglinfofile", optStr(argv[0]), SET_GLOBAL);
 					break;
 
 				case 's':   //"-s {scriptin}" read from script file
@@ -1902,17 +1902,17 @@ scripterror:
 					break;
 
 				case 't':   //"-t {tag}"
-					 par->tagname = (CS)argv[0];
+					 par->tagname = (S)argv[0];
 					 break;
 
 				case 'T':   //"-T {terminal}" terminal name
 					//The -T term argument is always available and when
 					//HAVE_TERMLIB is supported it overrides the environment variable TERM.
-					par->term = (CS)argv[0];
+					par->term = (S)argv[0];
 					break;
 
 				case 'u':   //"-u {vimrc}" Eegl inits file
-					 par->altInitFile = (CS)argv[0];
+					 par->altInitFile = (S)argv[0];
 					 break;
 
 				case 'w': //"-w {scriptout}" append to script file
@@ -1935,19 +1935,19 @@ scripterror:
 
 			//Check for only one type of editing.
 			if (par->edit_type != EDIT_NONE && par->edit_type != EDIT_FILE)
-				mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
+				mainerr(ME_TOO_MANY_ARGS, (S)argv[0]);
 			par->edit_type = EDIT_FILE;
 
 			//Add the file to the global argument list.
 			if (ga_grow(&argListG.al_ga, 1) == FAIL)
 				mch_exit(2);
-			text = copyStr((CS)argv[0]);
+			text = copyStr((S)argv[0]);
 			if (
 				par->diff_mode && mch_isdir(text)
 				&& GARGCOUNT > 0
 				&& !mch_isdir(alist_name(&GARGLIST[0]))
 			) {
-				CS concattedFnames =
+				S concattedFnames =
 					concat_fnames(text, fiGetShortFiName(alist_name(&GARGLIST[0])), true);
 				if (concattedFnames) {
 					eeglFree(text);
@@ -2122,7 +2122,7 @@ createPortals(MainParams* par) {
 //If opened more than one portal, start editing files in the other portals. portMakePortals() has
 //already opened the portals.
 private void
-editBuffers(MainParams* par, CS cwd) {        //current working dir
+editBuffers(MainParams* par, S cwd) {        //current working dir
 	int arg_idx;      //index in argument list
 	int advance = true;
 
@@ -2217,7 +2217,7 @@ editBuffers(MainParams* par, CS cwd) {        //current working dir
 //Execute the commands from --comm arguments "comms[cnt]".
 private void
 executePreCommands(MainParams* par) {
-	Arr(CS) comms = par->pre_commands;
+	Arr(S) comms = par->pre_commands;
 	int cnt = par->n_pre_commands;
 	int i;
 	ESTACK_CHECK_DECLARATION;
@@ -2226,7 +2226,7 @@ executePreCommands(MainParams* par) {
 		return;
 
 	curPor->cursor.lnum = 0; //just in case..
-	estack_push(ETYPE_ARGS, (CS)_("pre-vimrc command line"), 0);
+	estack_push(ETYPE_ARGS, (S)_("pre-vimrc command line"), 0);
 	ESTACK_CHECK_SETUP;
 	scriptPosG.sid = SID_CMDARG;
 	for (i = 0; i < cnt; ++i) {
@@ -2238,7 +2238,7 @@ executePreCommands(MainParams* par) {
 	TIME_MSG("--comm commands");
 }
 
-//Execute "+", "-c" and "-S" arguments.
+//Execute "+", "-c" and "-u8" arguments.
 private void
 exeCommands(MainParams* par) {
 	ESTACK_CHECK_DECLARATION;
@@ -2248,7 +2248,7 @@ exeCommands(MainParams* par) {
 	msg_scroll = true;
 	if (par->tagname == NULL && curPor->cursor.lnum <= 1)
 		curPor->cursor.lnum = 0;
-	estack_push(ETYPE_ARGS, S"command line", 0);
+	estack_push(ETYPE_ARGS, u8"command line", 0);
 	ESTACK_CHECK_SETUP;
 	scriptPosG.sid = SID_CARG;
 	scriptPosG.seq = 0;
@@ -2276,8 +2276,8 @@ private void
 sourceStartupScripts(MainParams* par) {
 	//If -u argument given, use only the initializations from that file and nothing else.
 	if (par->altInitFile) {
-		if (STRCMP(par->altInitFile, "DEFAULTS") == 0) {
-			if (scriptRunFile((CS)EE_DEFAULTS_FILE, NULL) != OK)
+		if (STRCMP(par->altInitFile, "DEFAULTu8") == 0) {
+			if (scriptRunFile((S)EE_DEFAULTS_FILE, NULL) != OK)
 				emsg(_(e_failed_to_source_defaults));
 		} ei (STRCMP(par->altInitFile, "NONE") == 0 || STRCMP(par->altInitFile, "NORC") == 0) {
 		} else {
@@ -2289,14 +2289,14 @@ sourceStartupScripts(MainParams* par) {
 		(void)scriptRunFile(INIT_FILE, NULL);
 		//(void)scriptRunFile(FILETYPES_FILE, NULL);
 	}
-	TIME_MSG(S"sourcing init.vim file(s)");
+	TIME_MSG(u8"sourcing init.vim file(s)");
 }
 
 //Give an error message main_errors["n"] and exit.
 private void
 mainerr(
 	Unt n,   //one of the ME_ defines
-	NULLABLE CS str   //extra argument
+	NULLABLE S str   //extra argument
 ){
 	reset_signals();      //kill us with CTRL-C here, if you like
 
@@ -2314,19 +2314,19 @@ mainerr(
 }
 
 pub void
-mainerr_arg_missing(CS str) {
+mainerr_arg_missing(S str) {
 	mainerr(ME_ARG_MISSING, str);
 }
 
 //print a message with three spaces prepended and '\n' appended.
 private void
-main_msg(CS s) {
+main_msg(S s) {
 	mch_msg("   ");
 	mch_msg(s);
 	mch_msg("\n");
 }
 
-pub CS
+pub S
 mainProgramVersion() {
 	return programVersion;
 }
@@ -2335,7 +2335,7 @@ mainProgramVersion() {
 private void
 usage(void) {
 	int      i;
-	static CS use[] = {
+	static S use[] = {
 		N_("[file ..]       edit specified file(s)"),
 		N_("-               read text from stdin"),
 		N_("-t tag          edit file where tag is defined"),
@@ -2425,8 +2425,8 @@ __bp() { //breakpoints for debugger
 }
 
 private void
-set_progpath(CS argv0) {
-	CS val = argv0;
+set_progpath(S argv0) {
+	S val = argv0;
 	Byte buf[MAXPATHL + 1];
 	Byte linkBuf[MAXPATHL + 1];
 	Long len = readlink("/proc/self/exe", OUT (char*)linkBuf, MAXPATHL);
@@ -2459,9 +2459,9 @@ private SignalInfo signalInfos[] = {
 	 {SIGTRAP,       "TRAP",   true},
 	 {SIGABRT,       "ABRT",   true},
 	 {SIGFPE,       "FPE",   true},
-	 {SIGBUS,       "BUS",   true},
+	 {SIGBUS,       "BUu8",   true},
 	 {SIGSEGV,       "SEGV",   true},
-	 {SIGSYS,       "SYS",   true},
+	 {SIGSYS,       "SYu8",   true},
 	 {SIGALRM,       "ALRM",   false},   //Perl's alarm() can trigger it
 	 {SIGTERM,       "TERM",   true},
 	 {SIGVTALRM,       "VTALRM",   true},
@@ -2712,7 +2712,7 @@ setupSignalHandlers(void) {
 	catch_signals(deathtrap, SIG_ERR);
 }
 
-private CS signal_stack = null;
+private S signal_stack = null;
 
 private stack_t sigstk;         //for sigaltstack()
 
@@ -2727,17 +2727,17 @@ init_signal_stack(void) {
 	(void)sigaltstack(&sigstk, NULL);
 }
 
-private CS
+private S
 get_signal_name(int sig) {
 	Byte   numbuf[NUMBUFLEN];
 
 	if (sig == SIGKILL)
-		return copySubstr((CS)"kill", STRLEN_LITERAL("kill"));
+		return copySubstr(u8"kill", STRLEN_LITERAL("kill"));
 
 	int i;
 	for (i = 0; signalInfos[i].sig != -1; i++) {
 		if (sig == signalInfos[i].sig)
-			return strlow_save((CS)signalInfos[i].name);
+			return strlow_save((S)signalInfos[i].name);
 	}
 
 	i = eeSnprintf(numbuf, NUMBUFLEN, "%d", sig);
@@ -2893,12 +2893,12 @@ eeLocaltime(
 	Tyme const* timep,      //timestamp for local representation
 	OUT Tm* result //pointer to caller return buffer
 ){
-	CS tz = mch_getenv(S"TZ");      //pointer for TZ environment var
+	S tz = mch_getenv(u8"TZ");      //pointer for TZ environment var
 	if (tz == NULL)
-		tz = S"";
+		tz = u8"";
 	if (STRNCMP(tz_cache, tz, sizeof(tz_cache) - 1) != 0) {
 		tzset();
-		copySubstrToAllocation((CS)tz_cache, (Text){tz, sizeof(tz_cache) - 1});
+		copySubstrToAllocation((S)tz_cache, (Text){tz, sizeof(tz_cache) - 1});
 	}
 	return localtime_r(timep, result);
 }
@@ -2913,7 +2913,7 @@ eeTime(void) {
 //Requires strftime(), otherwise returns "(unknown)".
 //If "thetime" is invalid returns "(invalid)".  Never returns NULL.
 //When "add_newline" is true add a newline like ctime() does. Use a static buffer.
-pub CS
+pub S
 get_ctime(Tyme thetime, int add_newline) {
 	static Byte buf[100];  //hopefully enough for every language
 	Tm tmval;
@@ -2927,7 +2927,7 @@ get_ctime(Tyme thetime, int add_newline) {
 			//> If the length of the result string (including the terminating
 			//> null byte) would exceed max bytes, then strftime() returns 0,
 			//> and the contents of the array are undefined.
-			copySubstrToAllocation((CS)buf, (Text){_("(Invalid)"), sizeof(buf) - 2});
+			copySubstrToAllocation((S)buf, (Text){_("(Invalid)"), sizeof(buf) - 2});
 		}
 	}
 	if (add_newline)
@@ -3021,14 +3021,14 @@ f_strftime(Arr(Var) argVars, OUT Var* returnVar) {
 
 	returnVar->tag = VAR_STRING;
 
-	CS arg = tv_get_string(&argVars[0]);
+	S arg = tv_get_string(&argVars[0]);
 	if (argVars[1].tag == VAR_UNKNOWN)
 		seconds = time(NULL);
 	else
 		seconds = (Tyme)tv_get_number(&argVars[1]);
 	Tm* curtime = eeLocaltime(&seconds, &tmval);
 	if (!curtime) {
-		returnVar->string = copyStr((CS)_("(Invalid)"));
+		returnVar->string = copyStr((S)_("(Invalid)"));
 		return;
 	}
 
@@ -3301,17 +3301,17 @@ add_timer_info(OUT Var* returnVar, Timer *timer) {
 
 	listAppendBag(list, dict);
 
-	bagAddNumber(dict, S"id", timer->id);
-	bagAddNumber(dict, S"time", (Long)timer->tr_interval);
+	bagAddNumber(dict, u8"id", timer->id);
+	bagAddNumber(dict, u8"time", (Long)timer->tr_interval);
 
 	profile_start(&now);
 	remaining = proftime_time_left(&timer->due, &now);
-	bagAddNumber(dict, S"remaining", (Long)remaining);
+	bagAddNumber(dict, u8"remaining", (Long)remaining);
 
-	bagAddNumber(dict, S"repeat",
+	bagAddNumber(dict, u8"repeat",
 		 (Long)(timer->tr_repeat < 0 ? -1
 				  : timer->tr_repeat + (timer->tr_firing ? 0 : 1)));
-	bagAddNumber(dict, S"paused", (Long)(timer->tr_paused));
+	bagAddNumber(dict, u8"paused", (Long)(timer->tr_paused));
 
 	DictItem* di = dictitem_alloc(tConst("callback"));
 	if (bagAdd(dict, di) == FAIL)
@@ -3490,14 +3490,14 @@ printTimeDiff(TimeSpec* then, TimeSpec* now) {
 
 //Not public because there's a special header for this file, motor.time.h!
 void
-time_msg(CS mesg, TimeSpec* tv_start){
+time_msg(S mesg, TimeSpec* tv_start){
 //only for scriptRunFile: start time;
 	static TimeSpec start;
 
 	if (!time_fd)
 		return;
 
-	if (STRSTR(mesg, S"STARTING") != NULL) {
+	if (STRSTR(mesg, u8"STARTING") != NULL) {
 		timespec_get(OUT &start, TIME_UTC);
 		prevTimeP = start;
 		fprintf(time_fd, "\n\ntimes in msec\n");
@@ -3550,7 +3550,7 @@ put_time(FILE *fd, Tyme the_time) {
 
 //Write Tyme to "buf[8]".
 pub void
-time_to_bytes(Tyme the_time, CS buf) {
+time_to_bytes(Tyme the_time, S buf) {
 	int      c;
 	int      i;
 	int      bi = 0;
@@ -3574,7 +3574,7 @@ time_to_bytes(Tyme the_time, CS buf) {
 
 //Put timestamp "tt" in "buf[buflen]" in a nice format.
 pub void
-add_time(CS buf, Unt buflen, Tyme tt) {
+add_time(S buf, Unt buflen, Tyme tt) {
 	Tm tmval;
 	Tm* curtime;
 	Unt   n;
@@ -3583,10 +3583,10 @@ add_time(CS buf, Unt buflen, Tyme tt) {
 		curtime = eeLocaltime(&tt, &tmval);
 		if (eeTime() - tt < (60L * 60L * 12L))
 			//within 12 hours
-			n = STRFTIME(buf, buflen, "%H:%M:%S", curtime);
+			n = STRFTIME(buf, buflen, "%H:%M:%u8", curtime);
 		else
 			//longer ago
-			n = STRFTIME(buf, buflen, "%Y/%m/%d %H:%M:%S", curtime);
+			n = STRFTIME(buf, buflen, "%Y/%m/%d %H:%M:%u8", curtime);
 		if (n == 0)
 			buf[0] = ZERO;
 	} else {
@@ -3666,7 +3666,7 @@ profile_zero(ProfTime *tm) {
 }
 
 //Return a string that represents the time in "tm". Use a static buffer!
-pub CS
+pub S
 profile_msg(ProfTime *tm){
 	static Byte buf[50];
 
@@ -4056,7 +4056,7 @@ channel_connect(Channel* channel, SockAddr* server_addr, int server_addrlen, int
 //Open a socket channel to the Unix socket at "path".
 //Return the channel for success. NULL for failure.
 private Channel*
-channel_open_unix(CS path) {
+channel_open_unix(S path) {
 	Unt path_len = STRLEN(path);
 	SockAddrUn server;
 
@@ -4088,7 +4088,7 @@ channel_open_unix(CS path) {
 	ch_log(channel, "Connection made");
 
 	channel->fds[PART_SOCK].fd = (Socket)sd;
-	channel->socketName = copyStr((CS)path);
+	channel->socketName = copyStr((S)path);
 	channel->ch_to_be_closed |= (1U << PART_SOCK);
 
 	return channel;
@@ -4111,7 +4111,7 @@ prepareBookForWriting(Book* book) {
 
 	optsCopyToBook(book, BCO_ENTER);
 	curBook = book;
-	optChangeAndReportError(S"book.type", optStr("nofile"), SET_LOCAL);
+	optChangeAndReportError(u8"book.type", optStr("nofile"), SET_LOCAL);
 	if (!curBook->mem.mfile)
 		ml_open(curBook);
 	curBook = curBookSaved;
@@ -4120,7 +4120,7 @@ prepareBookForWriting(Book* book) {
 //Find a buffer matching "name" or create a new one.
 //Return NULL if there is something very wrong (error already reported).
 private Book*
-chaFindBook(CS name, int err, int msg) {
+chaFindBook(S name, int err, int msg) {
 	Book* book = NULL;
 	Book* curBookSaved = curBook;
 
@@ -4140,7 +4140,7 @@ chaFindBook(CS name, int err, int msg) {
 
 	curBook = book;
 	if (msg) {
-		ml_replace(1, (CS)(err ? "Reading from channel error..."
+		ml_replace(1, (S)(err ? "Reading from channel error..."
 			 : "Reading from channel output..."), true);
 	}
 	changed_bytes(1, 0);
@@ -4275,7 +4275,7 @@ private Channel *
 channel_open_func(Arr(Var) argvars) {
 	JobOptions opt;
 
-	CS address = tv_get_string(&argvars[0]);
+	S address = tv_get_string(&argvars[0]);
 	if (argvars[1].tag != VAR_UNKNOWN && check_for_nonnull_dict_arg(argvars, 1) == FAIL)
 		return NULL;
 
@@ -4411,12 +4411,12 @@ channel_set_req_callback(Channel* channel, ChannelFdKind part, Callback* callbac
 
 private void
 write_buf_line(Book* book, LineNr lnum, Channel* channel) {
-	CS line = memGetLine(book, lnum, false);
+	S line = memGetLine(book, lnum, false);
 	int len = memGetBookLen(book, lnum);
 	int i;
 
 	//Need to make a copy to be able to append a NL.
-	CS p = alloc(len + 2);
+	S p = alloc(len + 2);
 	memcpy((char *)p, (char *)line, len);
 
 	if (channel->writeTextMode)
@@ -4539,7 +4539,7 @@ channel_write_input(Channel* channel) {
 	ChannelFd* intake = &channel->fds[PART_IN];
 
 	if (intake->ch_writeque.next)
-		channel_send(channel, PART_IN, S"", 0, "channel_write_input");
+		channel_send(channel, PART_IN, u8"", 0, "channel_write_input");
 	ei (intake->bookref.c) {
 		if (intake->ch_buf_append)
 			channel_write_new_lines(intake->bookref.c);
@@ -4598,7 +4598,7 @@ channel_write_new_lines(Book* book) {
 private void
 invoke_callback(Channel* channel, Callback* callback, Var* argv) {
 	if (safe_to_invoke_callback == 0)
-		internalErrMsg(S"Invoking callback when it is not safe");
+		internalErrMsg(u8"Invoking callback when it is not safe");
 
 	argv[0].tag = VAR_CHANNEL;
 	argv[0].channel = channel;
@@ -4619,9 +4619,9 @@ channel_peek(Channel *channel, ChannelFdKind part) {
 
 //Return a pointer to the first NL in "node".
 //Skip over ZERO characters. Return NULL if there is no NL.
-pub CS
+pub S
 channel_first_nl(ReadChunk* node) {
-	CS buffer = node->c;
+	S buffer = node->c;
 	for (Unt i = 0; i < node->len; ++i) {
 		if (buffer[i] == NL)
 			return buffer + i;
@@ -4631,7 +4631,7 @@ channel_first_nl(ReadChunk* node) {
 
 //Return the first buffer from channel "channel"/"part" and remove it.
 //The caller owns it. Return NULL if there is nothing.
-private CS
+private S
 channel_get(Channel* channel, ChannelFdKind part, int *outlen) {
 	ReadChunk* head = &channel->fds[part].head;
 	ReadChunk* node = head->next;
@@ -4641,7 +4641,7 @@ channel_get(Channel* channel, ChannelFdKind part, int *outlen) {
 	if (outlen)
 		*outlen += node->len;
 	//dispose of the node but keep the buffer
-	CS p = node->c;
+	S p = node->c;
 	head->next = node->next;
 	if (!node->next)
 		head->prev = NULL;
@@ -4652,7 +4652,7 @@ channel_get(Channel* channel, ChannelFdKind part, int *outlen) {
 }
 
 //Return the whole buffer contents concatenated for "channel"/"part". Replace ZERO bytes with NL.
-private CS
+private S
 channel_get_all(Channel *channel, ChannelFdKind part, int *outlen) {
 	ReadChunk* head = &channel->fds[part].head;
 	ReadChunk* node;
@@ -4661,8 +4661,8 @@ channel_get_all(Channel *channel, ChannelFdKind part, int *outlen) {
 	//Concatenate everything into one buffer.
 	for (node = head->next; node; node = node->next)
 		len += node->len;
-	CS res = alloc(len + 1);
-	CS p = res;
+	S res = alloc(len + 1);
+	S p = res;
 	for (node = head->next; node; node = node->next) {
 		MEMMOVE(p, node->c, node->len);
 		p += node->len;
@@ -4713,7 +4713,7 @@ pub void
 channel_consume(Channel *channel, ChannelFdKind part, int len) {
 	ReadChunk *head = &channel->fds[part].head;
 	ReadChunk *node = head->next;
-	CS buf = node->c;
+	S buf = node->c;
 
 	MEMMOVE(buf, buf + len, node->len - len);
 	node->len -= len;
@@ -4742,8 +4742,8 @@ channel_collapse(Channel *channel, ChannelFdKind part, int want_nl) {
 			 len += last_node->len;
 		}
 	}
-	CS newbuf = alloc(len + 1);
-	CS p = newbuf;
+	S newbuf = alloc(len + 1);
+	S p = newbuf;
 	MEMMOVE(p, node->c, node->len);
 	p += node->len;
 	eeglFree(node->c);
@@ -4774,7 +4774,7 @@ channel_collapse(Channel *channel, ChannelFdKind part, int want_nl) {
 //Store "buf[len]" on "channel"/"part".
 //When "prepend" is true put in front, otherwise append at the end. Return OK or FAIL.
 private int
-saveMsg(Channel* channel, ChannelFdKind part, CS msg, int len, int prepend, CS logLead) {
+saveMsg(Channel* channel, ChannelFdKind part, S msg, int len, int prepend, S logLead) {
 	ReadChunk *head = &channel->fds[part].head;
 	Byte  *p;
 	int       i;
@@ -4829,8 +4829,8 @@ private int
 channel_fill(JsReader* reader) {
 	Channel* channel = (Channel *)reader->cookie;
 	ChannelFdKind part = reader->cookieArg;
-	CS next = channel_get(channel, part, NULL);
-	CS p;
+	S next = channel_get(channel, part, NULL);
+	S p;
 
 	if (!next)
 		return false;
@@ -5223,22 +5223,22 @@ channel_push_json(Channel* channel, ChannelFdKind part, Var* returnVar) {
 //"argv[1]" etc. have further arguments, type is VAR_UNKNOWN if missing.
 private void
 channel_exe_cmd(Channel* channel, ChannelFdKind part, Var* argv) {
-	CS cmd = argv[0].string;
+	S cmd = argv[0].string;
 	if (argv[1].tag != VAR_STRING) {
 		ch_error(channel, "received command with non-string argument");
 		if (p_verbose > 2)
 			emsg(_(e_received_command_with_non_string_argument));
 		return;
 	}
-	CS arg = argv[1].string;
+	S arg = argv[1].string;
 	if (!arg)
-		arg = S"";
+		arg = u8"";
 
 	if (STRCMP(cmd, "ex") == 0) {
-		CS p = arg;
+		S p = arg;
 
 		ch_log(channel, "Executing command '%s'", (char *)arg);
-		int do_emsg_silent = !checkforcmd(&p, S"echoerr", 5);
+		int do_emsg_silent = !checkforcmd(&p, u8"echoerr", 5);
 		if (do_emsg_silent != 0)
 			++emsg_silent;
 		executeCommLine(arg);
@@ -5297,7 +5297,7 @@ channel_exe_cmd(Channel* channel, ChannelFdKind part, Var* argv) {
 					//then return the string "ERROR".
 					eeglFree(json);
 					err_tv.tag = VAR_STRING;
-					err_tv.string = (CS)"ERROR";
+					err_tv.string = u8"ERROR";
 					json = json_encode_nr_expr(id, &err_tv, JSON_NL);
 				}
 				if (json) {
@@ -5332,7 +5332,7 @@ invoke_one_time_callback(Channel* channel, CbNode* cbhead, CbNode* item, Var* ar
 }
 
 private void
-appendToBook(Book* book, CS msg, Channel* channel, ChannelFdKind part) {
+appendToBook(Book* book, S msg, Channel* channel, ChannelFdKind part) {
 	AutocommSave   aco;
 	LineNr    lnum = book->mem.lineCount;
 	int      save_write_to = book->writeToChannel;
@@ -5430,7 +5430,7 @@ appendToBook(Book* book, CS msg, Channel* channel, ChannelFdKind part) {
 
 private void
 drop_messages(Channel* channel, ChannelFdKind part) {
-	CS msg;
+	S msg;
 	while ((msg = channel_get(channel, part, NULL)) != NULL) {
 		ch_log(channel, "Dropping message '%s'", (char *)msg);
 		eeglFree(msg);
@@ -5549,7 +5549,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
 		}
 
 		if (ch_mode == CH_MODE_NL) {
-			CS nl = NULL;
+			S nl = NULL;
 			ReadChunk *node;
 
 			//See if we have a message ending in NL in the first book.  If
@@ -5565,7 +5565,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
 					return false; //incomplete message
 				}
 			}
-			CS buf = node->c;
+			S buf = node->c;
 
 			//Convert ZERO to NL, the internal representation.
 			for (p = buf; (nl == NULL || p < nl) && p < buf + node->len; ++p) {
@@ -5711,26 +5711,26 @@ channel_has_readahead(Channel *channel, ChannelFdKind part) {
 
 //Return a string indicating the status of the channel.
 //If "req_part" is not negative check that part.
-private CS
+private S
 channel_status(Channel *channel, int req_part) {
 	ChannelFdKind part;
 	int has_readahead = false;
 
 	if (!channel)
-		return S"fail";
+		return u8"fail";
 	if (req_part == PART_OUT) {
 		if (channel->fds[PART_OUT].fd != INVALID_FD)
-			return S"open";
+			return u8"open";
 		if (channel_has_readahead(channel, PART_OUT))
 			has_readahead = true;
 	} ei (req_part == PART_ERR) {
 		if (channel->fds[PART_ERR].fd != INVALID_FD)
-			return S"open";
+			return u8"open";
 		if (channel_has_readahead(channel, PART_ERR))
 			has_readahead = true;
 	} else {
 		if (channel_is_open(channel))
-			return S"open";
+			return u8"open";
 		for (part = PART_SOCK; part < PART_IN; ++part) {
 			if (channel_has_readahead(channel, part)) {
 				has_readahead = true;
@@ -5740,50 +5740,50 @@ channel_status(Channel *channel, int req_part) {
 	}
 
 	if (has_readahead)
-		return S"buffered";
-	return S"closed";
+		return u8"buffered";
+	return u8"closed";
 }
 
 private void
-channel_part_info(Channel* channel, Bag* bag, CS name, ChannelFdKind part) {
+channel_part_info(Channel* channel, Bag* bag, S name, ChannelFdKind part) {
 	ChannelFd* chanpart = &channel->fds[part];
 	Byte namebuf[20];  //longest is "sock_timeout"
-	CS s = S"";
+	S s = u8"";
 
 	copySubstrToAllocation(namebuf, (Text){name, 4});
 	STRCAT(namebuf, "_");
 	Unt tail = STRLEN(namebuf);
 
 	STRCPY(namebuf + tail, "status");
-	CS status;
+	S status;
 	if (chanpart->fd != INVALID_FD)
-		status = S"open";
+		status = u8"open";
 	ei (channel_has_readahead(channel, part))
-		status = S"buffered";
+		status = u8"buffered";
 	else
-		status = S"closed";
-	bagAddString(bag, namebuf, (CS)status);
+		status = u8"closed";
+	bagAddString(bag, namebuf, (S)status);
 
 	STRCPY(namebuf + tail, "mode");
 	switch (chanpart->ch_mode) {
-	case CH_MODE_NL: s = S"NL"; break;
-	case CH_MODE_RAW: s = S"RAW"; break;
-	case CH_MODE_JSON: s = S"JSON"; break;
-	case CH_MODE_LSP: s = S"LSP"; break;
+	case CH_MODE_NL: s = u8"NL"; break;
+	case CH_MODE_RAW: s = u8"RAW"; break;
+	case CH_MODE_JSON: s = u8"JSON"; break;
+	case CH_MODE_LSP: s = u8"LSP"; break;
 	}
 	bagAddString(bag, namebuf, s);
 
 	STRCPY(namebuf + tail, "io");
 	if (part == PART_SOCK)
-		s = S"socket";
+		s = u8"socket";
 	else switch (chanpart->ch_io) {
-		case JIO_NULL: s = S"null"; break;
-		case JIO_PIPE: s = S"pipe"; break;
-		case JIO_FILE: s = S"file"; break;
-		case JIO_BUFFER: s = S"buffer"; break;
-		case JIO_OUT: s = S"out"; break;
+		case JIO_NULL: s = u8"null"; break;
+		case JIO_PIPE: s = u8"pipe"; break;
+		case JIO_FILE: s = u8"file"; break;
+		case JIO_BUFFER: s = u8"buffer"; break;
+		case JIO_OUT: s = u8"out"; break;
 	}
-	bagAddString(bag, namebuf, (CS)s);
+	bagAddString(bag, namebuf, (S)s);
 
 	STRCPY(namebuf + tail, "timeout");
 	bagAddNumber(bag, namebuf, chanpart->ch_timeout);
@@ -5791,16 +5791,16 @@ channel_part_info(Channel* channel, Bag* bag, CS name, ChannelFdKind part) {
 
 private void
 channelInfoIntoDict(Channel *channel, OUT Bag *dict) {
-	bagAddNumber(dict, S"id", channel->id);
-	bagAddString(dict, S"status", channel_status(channel, -1));
+	bagAddNumber(dict, u8"id", channel->id);
+	bagAddString(dict, u8"status", channel_status(channel, -1));
 
 	if (channel->socketName) {
-		bagAddString(dict, S"path", (CS)channel->socketName);
-		channel_part_info(channel, dict, S"sock", PART_SOCK);
+		bagAddString(dict, u8"path", (S)channel->socketName);
+		channel_part_info(channel, dict, u8"sock", PART_SOCK);
 	} else {
-		channel_part_info(channel, dict, S"out", PART_OUT);
-		channel_part_info(channel, dict, S"err", PART_ERR);
-		channel_part_info(channel, dict, S"in", PART_IN);
+		channel_part_info(channel, dict, u8"out", PART_OUT);
+		channel_part_info(channel, dict, u8"err", PART_ERR);
+		channel_part_info(channel, dict, u8"in", PART_IN);
 	}
 }
 
@@ -6034,7 +6034,7 @@ channel_close_now(Channel* channel) {
 //PART_OUT or PART_ERR. The data is put in the read queue.  No callbacks are invoked here.
 private void
 channel_read(Channel *channel, ChannelFdKind part, char *func) {
-	static CS buf = NULL;
+	static S buf = NULL;
 	int len = 0;
 	int readlen = 0;
 	int use_socket = false;
@@ -6064,7 +6064,7 @@ channel_read(Channel *channel, ChannelFdKind part, char *func) {
 			break;   //error or nothing more to read
 
 		//Store the read message in the queue.
-		saveMsg(channel, part, buf, len, false, S"RECV ");
+		saveMsg(channel, part, buf, len, false, u8"RECV ");
 		readlen += len;
 	}
 
@@ -6078,10 +6078,10 @@ channel_read(Channel *channel, ChannelFdKind part, char *func) {
 //Read from RAW or NL "channel"/"part".  Blocks until there is something to read or the timeout
 //expires. When "raw" is true don't block waiting on a NL. Does not trigger timers or handle
 //messages. Return what was read in allocated memory. NULL in case of error or timeout.
-private CS
+private S
 channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, int *outlen){
-	CS buf;
-	CS msg;
+	S buf;
+	S msg;
 	ChannelMode mode = channel->fds[part].ch_mode;
 	Socket fd = channel->fds[part].fd;
 	Byte* nl;
@@ -6122,7 +6122,7 @@ channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, i
 		nl = channel_first_nl(node);
 
 		//Convert ZERO to NL, the internal representation.
-		for (CS p = buf; (nl == NULL || p < nl) && p < buf + node->len; ++p) {
+		for (S p = buf; (nl == NULL || p < nl) && p < buf + node->len; ++p) {
 			if (*p == ZERO)
 				*p = NL;
 		}
@@ -6347,7 +6347,7 @@ channel_set_nonblock(Channel* channel, ChannelFdKind part) {
 //Write "buf" (ZERO terminated string) to "channel"/"part".
 //When "fun" is not NULL an error message might be given. Return FAIL or OK.
 pub int
-channel_send(Channel* channel, ChannelFdKind part, CS buf_arg, int len_arg, char* fun) {
+channel_send(Channel* channel, ChannelFdKind part, S buf_arg, int len_arg, char* fun) {
 	int res;
 	ChannelFd* fds = &channel->fds[part];
 	int did_use_queue = false;
@@ -6366,13 +6366,13 @@ channel_send(Channel* channel, ChannelFdKind part, CS buf_arg, int len_arg, char
 		channel_set_nonblock(channel, part);
 
 	if (ch_log_active()) {
-		ch_log_literal(S"SEND ", channel, part, OUT (Text){buf_arg, len_arg});
+		ch_log_literal(u8"SEND ", channel, part, OUT (Text){buf_arg, len_arg});
 		did_repeated_msg = 0;
 	}
 
 	for (;;) {
 		WriteQueue* wq = &fds->ch_writeque;
-		CS buf;
+		S buf;
 		int len;
 
 		if (wq->next) {
@@ -6473,7 +6473,7 @@ channel_send(Channel* channel, ChannelFdKind part, CS buf_arg, int len_arg, char
 private Channel*
 send_common(
 	Var* argvars,
-	CS text,
+	S text,
 	int len,
 	int id,
 	int eval,
@@ -6510,7 +6510,7 @@ send_common(
 //common for "ch_evalexpr()" and "ch_sendexpr()"
 private void
 ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
-	CS text;
+	S text;
 	Var* listtv;
 	int id;
 	ChannelMode ch_mode;
@@ -6556,7 +6556,7 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
 			//callback, always assign a generated ID
 			id = ++channel->lastMsgId;
 			if (di == NULL)
-				bagAddNumber(d, (CS)"id", id);
+				bagAddNumber(d, u8"id", id);
 			else
 				di->c.number = id;
 		} else {
@@ -6566,7 +6566,7 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
 				id = di->c.number;
 		}
 		if (!bagHasKey(d, tConst("jsonrpc")))
-			bagAddString(d, S"jsonrpc", S"2.0");
+			bagAddString(d, u8"jsonrpc", u8"2.0");
 		text = json_encode_lsp_msg(&argvars[1]);
 	} else {
 		id = ++channel->lastMsgId;
@@ -6607,7 +6607,7 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
 		//return the generated identifier for the message. The user can use this to cancel the
 		//request (if needed).
 		if (returnVar->bag)
-			bagAddNumber(returnVar->bag, S"id", id);
+			bagAddNumber(returnVar->bag, u8"id", id);
 	}
 }
 
@@ -6624,7 +6624,7 @@ ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
 	returnVar->tag = VAR_STRING;
 	returnVar->string = NULL;
 
-	CS text;
+	S text;
 	if (argvars[1].tag == VAR_BLOB) {
 		text = argvars[1].blob->c.c;
 		len = argvars[1].blob->c.len;
@@ -6963,9 +6963,9 @@ f_ch_status(Arr(Var) argvars, Var* returnVar) {
 //Get a string with information about the channel in "varp" into "builder".
 //"builder" must be at least NUMBUFLEN Long.
 pub void
-channel_to_string_buf(OUT CS builder, Var* varp) {
+channel_to_string_buf(OUT S builder, Var* varp) {
 	Channel *channel = varp->channel;
-	CS status = channel_status(channel, -1);
+	S status = channel_status(channel, -1);
 
 	if (channel)
 		eeSnprintf(builder, NUMBUFLEN, "channel %d %s", channel->id, status);
@@ -6978,11 +6978,11 @@ channel_to_string_buf(OUT CS builder, Var* varp) {
 private int
 build_argv_from_list(List *l, Byte*** argv, int *argc) {
 	//Pass argv[] to chCallShell().
-	*argv = ALLOC_MULT(CS, l->len + 1);
+	*argv = ALLOC_MULT(S, l->len + 1);
 	*argc = 0;
 	ListItem* li;
 	FOR_ALL_LIST_ITEMS(l, li) {
-		CS s = convertVarToStringSingleUse(&li->c);
+		S s = convertVarToStringSingleUse(&li->c);
 		if (!s) {
 			for (int i = 0; i < *argc; ++i) {
 				EE_CLEAR((*argv)[i]);
@@ -7067,7 +7067,7 @@ private void
 writeFromCurBookToShell(int fromShell, int toShell) {
 	LineNr lnum = curBook->opStart.lnum;
 	Unt written = 0;
-	CS lp = ml_get(lnum);
+	S lp = ml_get(lnum);
 	Unt lplen = (Unt)ml_get_len(lnum);
 
 	close(fromShell);
@@ -7079,7 +7079,7 @@ writeFromCurBookToShell(int fromShell, int toShell) {
 			//NL -> ZERO translation
 			len = write(toShell, "", (Unt)1);
 		else {
-			CS s = firstOccurrence(lp + written, NL);
+			S s = firstOccurrence(lp + written, NL);
 			len = write(
 				toShell,
 				(char *)lp + written,
@@ -7165,7 +7165,7 @@ callShellImpl(Text cmd, Unt opt){   //SHELL_*, see eegl.h
 
 		if (ch_log_active()) {
 			lo("closing channel log in the child process");
-			ch_logfile(S"", S"");
+			ch_logfile(u8"", u8"");
 		}
 
 		if ((opt & SHELL_SHOW_MSG) == 0 || (opt & SHELL_EXPAND) != 0) {
@@ -7439,7 +7439,7 @@ finished:
 			if (retStatus != 0 && !emsg_silent) {
 				if (retStatus == EXEC_FAILED) {
 					msg_puts(_("\nCannot execute shell "));
-					msg_outtrans(S"bash");
+					msg_outtrans(u8"bash");
 					msg_putchar('\n');
 				} ei ((opt & SHELL_SILENT) == 0) {
 					msg_puts(_("\nshell returned "));
@@ -7612,9 +7612,9 @@ open_pty(int* pty_master_fd, int* pty_slave_fd, Byte** name1, Byte** name2) {
 		*pty_master_fd = -1;
 	} else {
 		if (name1)
-			*name1 = copyStr((CS)tty_name);
+			*name1 = copyStr((S)tty_name);
 		if (name2)
-			*name2 = copyStr((CS)tty_name);
+			*name2 = copyStr((S)tty_name);
 	}
 }
 
@@ -7685,10 +7685,10 @@ motPollCheck(int ret_in, Arr(PollFd) fds) {
 
 //Insert user name for "uid" in s[len]. Return OK if a name found.
 pub int
-mch_get_uname(uid_t uid, CS s, int len) {
+mch_get_uname(uid_t uid, S s, int len) {
 	struct passwd* pw;
 	if ((pw = getpwuid(uid)) != NULL && pw->pw_name != NULL && *(pw->pw_name) != ZERO) {
-		copySubstrToAllocation(s, (Text){(CS)pw->pw_name, len - 1});
+		copySubstrToAllocation(s, (Text){(S)pw->pw_name, len - 1});
 		return OK;
 	}
 	sprintf((char *)s, "%d", (int)uid);       //assumes s is Long enough
@@ -7697,29 +7697,29 @@ mch_get_uname(uid_t uid, CS s, int len) {
 
 //Insert host name is s[len].
 pub void
-mch_get_host_name(CS s, int len) {
+mch_get_host_name(S s, int len) {
 	struct utsname vutsname;
 
 	if (uname(&vutsname) < 0)
 		*s = ZERO;
 	else
-		copySubstrToAllocation(s, (Text){(CS)vutsname.nodename, len - 1});
+		copySubstrToAllocation(s, (Text){(S)vutsname.nodename, len - 1});
 }
 
 //Set the environment for a child process.
 private void
-set_child_environment(Long rows, Long columns, CS term, Boole is_terminal) {
+set_child_environment(Long rows, Long columns, S term, Boole is_terminal) {
 	char envbuf[50];
 
 	setenv("TERM", (char*)term, 1);
 	sprintf((char *)envbuf, "%ld", rows);
-	setenv("ROWS", (char *)envbuf, 1);
+	setenv("ROWu8", (char *)envbuf, 1);
 	sprintf((char *)envbuf, "%ld", rows);
-	setenv("LINES", (char *)envbuf, 1);
+	setenv("LINEu8", (char *)envbuf, 1);
 	sprintf((char *)envbuf, "%ld", columns);
-	setenv("COLUMNS", (char *)envbuf, 1);
+	setenv("COLUMNu8", (char *)envbuf, 1);
 	sprintf((char *)envbuf, "%d", 256);
-	setenv("COLORS", (char *)envbuf, 1);
+	setenv("COLORu8", (char *)envbuf, 1);
 	if (is_terminal) {
 		setenv("EEGL_TERMINAL", (char *)envbuf, 1);
 	}
@@ -7728,7 +7728,7 @@ set_child_environment(Long rows, Long columns, CS term, Boole is_terminal) {
 
 private void
 set_default_child_environment(Boole is_terminal) {
-	set_child_environment(visibleRowsG, visibleColsG, S"dumb", is_terminal);
+	set_child_environment(visibleRowsG, visibleColsG, u8"dumb", is_terminal);
 }
 
 //}}}
@@ -7808,7 +7808,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal) {
 	//TODO: without the channel feature connect the child to /dev/null?
 	//Open pipes for stdin, stdout, stderr.
 	if (use_file_for_in) {
-		CS fname = options->name[PART_IN];
+		S fname = options->name[PART_IN];
 
 		fd_in[0] = open((char *)fname, O_RDONLY, 0);
 		if (fd_in[0] < 0) {
@@ -7822,7 +7822,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal) {
 	}
 
 	if (use_file_for_out) {
-		CS fname = options->name[PART_OUT];
+		S fname = options->name[PART_OUT];
 
 		fd_out[1] = open((char *)fname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		if (fd_out[1] < 0) {
@@ -7833,7 +7833,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal) {
 		goto failed;
 
 	if (use_file_for_err) {
-		CS fname = options->name[PART_ERR];
+		S fname = options->name[PART_ERR];
 
 		fd_err[1] = open((char *)fname, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 		if (fd_err[1] < 0) {
@@ -7878,7 +7878,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal) {
 
 		if (ch_log_active())
 			//close the log file in the child
-			ch_logfile(S"", S"");
+			ch_logfile(u8"", u8"");
 
 		//Create our own process group, so that the child and all its
 		//children can be kill()ed.  Don't do this when using pipes,
@@ -7886,12 +7886,12 @@ mch_job_start(Byte** argv, Job* job, JobOptions* options, Boole is_terminal) {
 		(void)setsid();
 
 		if (options->jo_term_rows > 0) {
-			CS term = termCodesG[KS_NAME];
+			S term = termCodesG[KS_NAME];
 
 			//Use 'term' or $TERM if it starts with "xterm", otherwise fall
 			//back to "xterm" or "xterm-color".
 			if (!term || *term == ZERO || STRNCMP(term, "xterm", 5) != 0) {
-				term = S"xterm-256color";
+				term = u8"xterm-256color";
 			}
 			set_child_environment(
 				(Long)options->jo_term_rows,
@@ -8069,7 +8069,7 @@ failed:
 		close(pty_slave_fd);
 }
 
-private CS
+private S
 mch_job_status(Job* job) {
 	int status = -1;
 	ProId wait_pid = 0;
@@ -8081,7 +8081,7 @@ mch_job_status(Job* job) {
 			 //The process is alive, but it was probably reparented (for
 			 //example by ptrace called by a debugger like lldb or gdb).
 			 //Note: This assumes that process IDs are not reused.
-			 return S"run";
+			 return u8"run";
 
 		//process must have exited
 		if (job->status < JOB_ENDED)
@@ -8089,7 +8089,7 @@ mch_job_status(Job* job) {
 		goto return_dead;
 	}
 	if (wait_pid == 0)
-		return S"run";
+		return u8"run";
 	if (WIFEXITED(status)) {
 		//LINTED avoid "bitwise operation on signed value"
 		job->exitVal = WEXITSTATUS(status);
@@ -8104,18 +8104,18 @@ mch_job_status(Job* job) {
 			 ch_log(job->channel, "Job terminated by signal \"%s\"", job->jv_termsig);
 		goto return_dead;
 	}
-	return S"run";
+	return u8"run";
 
 return_dead:
 	if (job->status < JOB_ENDED) {
 		job->status = JOB_ENDED;
 	}
-	return S"dead";
+	return u8"dead";
 }
 
 //Send a (deadly) signal to "job". Return FAIL if "how" is not a valid name.
 pub int
-chSendSignalToJob(Job* job, CS how) {
+chSendSignalToJob(Job* job, S how) {
 	int sig = -1;
 
 	if (how[0] == ZERO || STRCMP(how, "term") == 0)
@@ -8179,7 +8179,7 @@ mch_detect_ended_job(Job* job_list) {
 
 private int
 handle_mode(Var* item, JobOptions* opt, ChannelMode* modep, int jo) {
-	CS val = tv_get_string(item);
+	S val = tv_get_string(item);
 	opt->set |= jo;
 	if (STRCMP(val, "nl") == 0)
 		*modep = CH_MODE_NL;
@@ -8198,7 +8198,7 @@ handle_mode(Var* item, JobOptions* opt, ChannelMode* modep, int jo) {
 
 private int
 handle_io(Var* item, ChannelFdKind part, JobOptions* opt) {
-	CS val = tv_get_string(item);
+	S val = tv_get_string(item);
 
 	opt->set |= JO_OUT_IO << (part - PART_OUT);
 	if (STRCMP(val, "null") == 0)
@@ -8262,7 +8262,7 @@ mch_clear_job(Job* job) {
 pub int
 get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
 	Var* item;
-	CS val;
+	S val;
 	EeSetItem* hi;
 	ChannelFdKind part;
 
@@ -8467,7 +8467,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
 				if (!(supported2 & JO2_TERM_OPENCMD))
 					break;
 				opt->set1 |= JO2_TERM_OPENCMD;
-				CS p = opt->jo_term_opencmd = convertVarToString(item, opt->jo_term_opencmd_buf);
+				S p = opt->jo_term_opencmd = convertVarToString(item, opt->jo_term_opencmd_buf);
 				if (p) {
 					//Must have %d and no other %.
 					p = firstOccurrence(p, '%');
@@ -8564,7 +8564,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
 				if (!(supported2 & JO2_TTY_TYPE))
 					break;
 				opt->set1 |= JO2_TTY_TYPE;
-				CS p = convertVarToStringSingleUse(item);
+				S p = convertVarToStringSingleUse(item);
 				if (p == NULL) {
 					showErrFmtMsg(_(e_invalid_value_for_argument_str), "tty_type");
 					return FAIL;
@@ -8579,7 +8579,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
 				if (!(supported2 & JO2_TERM_HIGHLIGHT))
 					 break;
 				opt->set1 |= JO2_TERM_HIGHLIGHT;
-				CS p = convertVarToString(item, opt->jo_term_highlight_buf);
+				S p = convertVarToString(item, opt->jo_term_highlight_buf);
 				if (!p || *p == ZERO) {
 					 showErrFmtMsg(_(e_invalid_value_for_argument_str), "term_highlight");
 					 return FAIL;
@@ -8871,7 +8871,7 @@ pub Job *
 job_alloc(void) {
 	Job* job = ALLOC_CLEAR_ONE(Job);
 	job->refCount = 1;
-	job->jv_stoponexit = copyStr(S"term");
+	job->jv_stoponexit = copyStr(u8"term");
 
 	if (firstJobS) {
 		firstJobS->prev = job;
@@ -9020,7 +9020,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
 			 goto theend;
 		if (!book->mem.mfile) {
 			Byte numbuf[NUMBUFLEN];
-			CS s;
+			S s;
 
 			if ((opt.set & JO_IN_BUF) != 0) {
 				sprintf((char *)numbuf, "%d", opt.ioText[PART_IN]);
@@ -9037,7 +9037,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
 
 	if (argv_arg->len > 0) {
 		//Make a copy of argv_arg for job->argv.
-		argv = ALLOC_MULT(CS, argv_arg->len + 1);
+		argv = ALLOC_MULT(S, argv_arg->len + 1);
 		for (Unt i = 0; i < argv_arg->len; i++)
 			argv[i] = copyStr(argv_arg->c[i]);
 		argv[argc] = NULL;
@@ -9054,7 +9054,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
 			goto theend;
 
 		//Empty command is invalid.
-		if (argc == 0 || *skipwhite((CS)argv[0]) == ZERO) {
+		if (argc == 0 || *skipwhite((S)argv[0]) == ZERO) {
 			emsg(_(e_invalid_argument));
 			goto theend;
 		}
@@ -9073,8 +9073,8 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
 		ga_init2(&ga, sizeof(char), 200);
 		for (int i = 0; i < argc; ++i) {
 			if (i > 0)
-				ga_concat(&ga, (CS)"  ");
-			ga_concat(&ga, (CS)argv[i]);
+				ga_concat(&ga, u8"  ");
+			ga_concat(&ga, (S)argv[i]);
 		}
 		ga_append(&ga, ZERO);
 		lo("Starting job: %s", (char *)ga.c);
@@ -9097,15 +9097,15 @@ theend:
 
 //Get the status of "job" and invoke the exit callback when needed.
 //The returned string is not allocated.
-pub CS
+pub S
 job_status(Job* job) {
-	CS result;
+	S result;
 
 	if (job->status >= JOB_ENDED)
 		//No need to check, dead is dead.
-		result = S"dead";
+		result = u8"dead";
 	ei (job->status == JOB_FAILED)
-		result = S"fail";
+		result = u8"fail";
 	else {
 		result = mch_job_status(job);
 		if (job->status == JOB_ENDED)
@@ -9117,13 +9117,13 @@ job_status(Job* job) {
 //Send a signal to "job".  Implements job_stop(). When "type" is not NULL use this for the type.
 //Otherwise use argvars[1] for the type.
 pub int
-job_stop(Job* job, Arr(Var) argvars, CS type) {
-	CS arg;
+job_stop(Job* job, Arr(Var) argvars, S type) {
+	S arg;
 
 	if (type)
-		arg = (CS)type;
+		arg = (S)type;
 	ei (argvars[1].tag == VAR_UNKNOWN)
-		arg = S"";
+		arg = u8"";
 	else {
 		arg = convertVarToStringSingleUse(&argvars[1]);
 		if (!arg) {
@@ -9164,8 +9164,8 @@ invoke_prompt_callback(void) {
 
 	if (curBook->promptCallback.name == NULL || *curBook->promptCallback.name == ZERO)
 		return;
-	CS text = ml_get(lnum);
-	CS prompt = prompt_text();
+	S text = ml_get(lnum);
+	S prompt = prompt_text();
 	if (STRLEN(text) >= STRLEN(prompt))
 		text += STRLEN(prompt);
 	argv[0].tag = VAR_STRING;
@@ -9196,15 +9196,15 @@ invoke_prompt_interrupt(void) {
 }
 
 //Return the effective prompt for the specified book.
-private CS
+private S
 buf_prompt_text(Book* book) {
 	if (!book->promptText)
-		return S"% ";
+		return u8"% ";
 	return book->promptText;
 }
 
 //Return the effective prompt for the current book.
-pub CS
+pub S
 prompt_text(void) {
 	return buf_prompt_text(curBook);
 }
@@ -9276,7 +9276,7 @@ f_prompt_setprompt(Arr(Var) argvars, Var*) {
 	if (!book)
 		return;
 
-	CS text = tv_get_string(&argvars[1]);
+	S text = tv_get_string(&argvars[1]);
 	eeglFree(book->promptText);
 	book->promptText = copyStr(text);
 }
@@ -9309,7 +9309,7 @@ f_job_getchannel(Arr(Var) argvars, OUT Var* returnVar) {
 
 private void
 job_info(Job* job, Bag* bag) {
-	bagAddString(bag, S"status", job_status(job));
+	bagAddString(bag, u8"status", job_status(job));
 
 	DictItem* item = dictitem_alloc(tConst("channel"));
 	item->c.tag = VAR_CHANNEL;
@@ -9320,21 +9320,21 @@ job_info(Job* job, Bag* bag) {
 		dictitem_free(item);
 
 	Long nr = job->pid;
-	bagAddNumber(bag, S"process", nr);
-	bagAddString(bag, S"tty_in", job->ttyIn);
-	bagAddString(bag, S"tty_out", job->ttyOut);
+	bagAddNumber(bag, u8"process", nr);
+	bagAddString(bag, u8"tty_in", job->ttyIn);
+	bagAddString(bag, u8"tty_out", job->ttyOut);
 
-	bagAddNumber(bag, S"exitval", job->exitVal);
-	bagAddString(bag, S"exit_cb", job->exitCb.name);
-	bagAddString(bag, S"stoponexit", job->jv_stoponexit);
-	bagAddString(bag, S"termsig", job->jv_termsig);
+	bagAddNumber(bag, u8"exitval", job->exitVal);
+	bagAddString(bag, u8"exit_cb", job->exitCb.name);
+	bagAddString(bag, u8"stoponexit", job->jv_stoponexit);
+	bagAddString(bag, u8"termsig", job->jv_termsig);
 
 	List* l = list_alloc();
 
-	bagAddList(bag, S"cmd", l);
+	bagAddList(bag, u8"cmd", l);
 	if (job->argv) {
 		for (int i = 0; job->argv[i]; i++)
-			list_append_string(l, (CS)job->argv[i], -1);
+			list_append_string(l, (S)job->argv[i], -1);
 	}
 }
 
@@ -9390,7 +9390,7 @@ f_job_status(Arr(Var) argvars, Var* returnVar) {
 	if (argvars[0].tag == VAR_JOB && argvars[0].job == NULL) {
 		//A job that never started returns "fail".
 		returnVar->tag = VAR_STRING;
-		returnVar->string = copyStr(S"fail");
+		returnVar->string = copyStr(u8"fail");
 	} else {
 		Job* job = get_job_arg(&argvars[0]);
 		if (job) {
@@ -9410,13 +9410,13 @@ f_job_stop(Arr(Var) argvars, Var* returnVar) {
 //Get a string with information about the job in "varp" into "builder".
 //"builder" must be at least NUMBUFLEN Long.
 pub void
-job_to_string_buf(OUT CS builder, Var* varp) {
+job_to_string_buf(OUT S builder, Var* varp) {
 	Job *job = varp->job;
 	if (!job) {
 		eeSnprintf(builder, NUMBUFLEN, "no process");
 		return;
 	}
-	CS status = (CS)(job->status == JOB_FAILED
+	S status = (S)(job->status == JOB_FAILED
 		? "fail"
 		: (job->status >= JOB_ENDED ? "dead" : "run")
 	);
@@ -9448,13 +9448,13 @@ chBuildArgv(Text cmd) {
 
 //Log file opened with ch_logfile().
 private FILE* log_fd = NULL;
-private CS log_name = NULL;
+private S log_name = NULL;
 private ProfTime log_start;
 
 pub void
-ch_logfile(CS fname, CS opt) {
+ch_logfile(S fname, S opt) {
 	FILE* file = NULL;
-	CS mode = S"a";
+	S mode = u8"a";
 
 	if (log_fd) {
 		if (*fname != ZERO)
@@ -9466,7 +9466,7 @@ ch_logfile(CS fname, CS opt) {
 
 	//The "a" flag overrules the "w" flag.
 	if (firstOccurrence(opt, 'a') == NULL && firstOccurrence(opt, 'w') != NULL)
-		mode = S"w";
+		mode = u8"w";
 	ch_log_output = firstOccurrence(opt, 'o') != NULL ? LOG_ALWAYS : false;
 
 	if (*fname != ZERO) {
@@ -9494,7 +9494,7 @@ ch_log_active(void) {
 }
 
 private void
-logLead(CS what, Channel* ch, ChannelFdKind part) {
+logLead(S what, Channel* ch, ChannelFdKind part) {
 	if (!log_fd)
 		return;
 
@@ -9519,7 +9519,7 @@ ch_log(Channel* ch, char const* fmt, ...) {
 
 	va_list ap;
 
-	logLead(S"", ch, PART_COUNT);
+	logLead(u8"", ch, PART_COUNT);
 	va_start(ap, fmt);
 	vfprintf(log_fd, fmt, ap);
 	va_end(ap);
@@ -9535,7 +9535,7 @@ lo(char const* fmt, ...) {
 
 	va_list ap;
 
-	logLead(S"", null, PART_COUNT);
+	logLead(u8"", null, PART_COUNT);
 	va_start(ap, fmt);
 	vfprintf(log_fd, fmt, ap);
 	va_end(ap);
@@ -9551,7 +9551,7 @@ ch_error(Channel* ch, char const* fmt, ...) {
 
 	va_list ap;
 
-	logLead(S"ERR ", ch, PART_COUNT);
+	logLead(u8"ERR ", ch, PART_COUNT);
 	va_start(ap, fmt);
 	vfprintf(log_fd, fmt, ap);
 	va_end(ap);
@@ -9563,7 +9563,7 @@ ch_error(Channel* ch, char const* fmt, ...) {
 //Log a message "builder[len]" for channel "ch" part "part".
 //Only to be called when ch_log_active() returns true.
 private void
-ch_log_literal(CS lead, Channel* ch, ChannelFdKind part, OUT Text builder) {
+ch_log_literal(S lead, Channel* ch, ChannelFdKind part, OUT Text builder) {
 	logLead(lead, ch, part);
 	fprintf(log_fd, "'");
 	(void)fwrite(builder.c, builder.len, 1, log_fd);
@@ -9574,7 +9574,7 @@ ch_log_literal(CS lead, Channel* ch, ChannelFdKind part, OUT Text builder) {
 pub void
 f_ch_log(Arr(Var) argvars, Var*) {
 	Channel   *channel = NULL;
-	CS msg = tv_get_string(&argvars[0]);
+	S msg = tv_get_string(&argvars[0]);
 	if (argvars[1].tag != VAR_UNKNOWN)
 		channel = get_channel_arg(&argvars[1], false, false, 0);
 
@@ -9585,8 +9585,8 @@ f_ch_log(Arr(Var) argvars, Var*) {
 pub void
 f_ch_logfile(Arr(Var) argvars, Var*) {
 	Byte builder[NUMBUFLEN];
-	CS fname = tv_get_string(&argvars[0]);
-	CS opt = (argvars[1].tag == VAR_STRING) ? tv_get_string_buf(&argvars[1], builder) : S"";
+	S fname = tv_get_string(&argvars[0]);
+	S opt = (argvars[1].tag == VAR_STRING) ? tv_get_string_buf(&argvars[1], builder) : u8"";
 	ch_logfile(fname, opt);
 }
 
@@ -9601,7 +9601,7 @@ private ArrayList   ga_users;
 //Add a user name to the list of users in ga_users. Do nothing if user name is NULL or empty.
 private void
 add_user(Byte *user, int need_copy) {
-	CS user_copy = (user && need_copy) ? copyStr(user) : user;
+	S user_copy = (user && need_copy) ? copyStr(user) : user;
 
 	if (!user_copy || *user_copy == ZERO || ga_grow(&ga_users, 1) == FAIL) {
 		if (need_copy)
@@ -9620,17 +9620,17 @@ init_users(void) {
 		return;
 
 	lazy_init_done = true;
-	ga_init2(&ga_users, sizeof(CS), 20);
+	ga_init2(&ga_users, sizeof(S), 20);
 
 	{
 	struct passwd*   pw;
 
 	setpwent();
 	while ((pw = getpwent()) != NULL)
-		add_user((CS)pw->pw_name, true);
+		add_user((S)pw->pw_name, true);
 	endpwent();
 	}
-	CS user_env = mch_getenv(S"USER");
+	S user_env = mch_getenv(u8"USER");
 
 	//The $USER environment variable may be a valid remote user name (NIS, LDAP) not already listed
 	//by getpwent(), as getpwent() only lists local user names.  If $USER is not already listed,
@@ -9649,13 +9649,13 @@ init_users(void) {
 		if (i == (Unt)ga_users.len) {
 			struct passwd *pw = getpwnam((char *)user_env);
 			if (pw)
-				add_user((CS)pw->pw_name, true);
+				add_user((S)pw->pw_name, true);
 		}
 	}
 }
 
 //Function given to expandGeneric() to obtain user names.
-pub CS
+pub S
 get_users(Expand*, int idx) {
 	init_users();
 	if (idx < ga_users.len)
@@ -9668,7 +9668,7 @@ get_users(Expand*, int idx) {
 //1 if name partially matches the beginning of a user name.
 //2 is name fully matches a user name.
 pub int
-match_user(CS name) {
+match_user(S name) {
 	int i;
 	int n = (int)STRLEN(name);
 	int result = 0;
@@ -9708,12 +9708,12 @@ private Boole did_lcd;   //whether ":lcd" was produced for a session
 //Takes care of the "slash" option in 'sessionoptions' and escapes special characters.
 //Return FAIL if writing fails.
 private int
-ses_put_fname(FILE *fd, CS name) {
-	CS sname = home_replace_save(NULL, name);
+ses_put_fname(FILE *fd, S name) {
+	S sname = home_replace_save(NULL, name);
 
 	int retval = OK;
 	//escape special characters
-	CS p = copyStr_fnameescape(sname, VSE_NONE);
+	S p = copyStr_fnameescape(sname, VSE_NONE);
 	eeglFree(sname);
 
 	//write the result
@@ -9728,7 +9728,7 @@ ses_put_fname(FILE *fd, CS name) {
 //Also end the line, if "add_eol" is true. Return FAIL if writing fails.
 private int
 ses_fname(FILE* fd, Book* book, int add_eol) {
-	CS name = book->shortFileName;
+	S name = book->shortFileName;
 	if (ses_put_fname(fd, name) == FAIL || (add_eol && put_eol(fd) == FAIL))
 		return FAIL;
 	return OK;
@@ -9736,14 +9736,14 @@ ses_fname(FILE* fd, Book* book, int add_eol) {
 
 //Write an argument list to the session file. Return FAIL if writing fails.
 private int
-ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname) {   //true: use full path name
+ses_arglist(FILE* fd, S cmd, ArrayList* gap, int fullname) {   //true: use full path name
 	if (FPUTS(cmd, fd) < 0 || put_eol(fd) == FAIL)
 		return FAIL;
-	if (put_line(fd, S"%argdel") == FAIL)
+	if (put_line(fd, u8"%argdel") == FAIL)
 		return FAIL;
 	for (int i = 0; i < gap->len; ++i) {
 		//NULL file names are skipped (only happens when out of memory).
-		CS s = alist_name(&((ArgFileEntry *)gap->c)[i]);
+		S s = alist_name(&((ArgFileEntry *)gap->c)[i]);
 		if (!s) {
 			continue;
 		}
@@ -9815,8 +9815,8 @@ recreatePortals(FILE* fd, Frame* fr) {
 	if (frc) {
 		while ((frc = ses_skipframe(frc->next)) != NULL) {
 			//Make window as big as possible so that we have lots of room to split.
-			if (put_line(fd, S"wincmd _ | wincmd |") == FAIL
-					|| put_line(fd, fr->layout == FR_COL ? S"split" : S"vsplit") == FAIL
+			if (put_line(fd, u8"wincmd _ | wincmd |") == FAIL
+					|| put_line(fd, fr->layout == FR_COL ? u8"split" : u8"vsplit") == FAIL
 			)
 				return FAIL;
 			++count;
@@ -9835,7 +9835,7 @@ recreatePortals(FILE* fd, Frame* fr) {
 		recreatePortals(fd, frc);
 		frc = ses_skipframe(frc->next);
 		//Go to next window.
-		if (frc && put_line(fd, S"wincmd w") == FAIL)
+		if (frc && put_line(fd, u8"wincmd w") == FAIL)
 			 return FAIL;
 	}
 
@@ -9870,7 +9870,7 @@ portalSizes(FILE* fd, int restore_size, Portal* tab_firstPor) {
 		}
 	} else {
 		//Just equalise window sizes
-		if (put_line(fd, S"wincmd =") == FAIL)
+		if (put_line(fd, u8"wincmd =") == FAIL)
 			return FAIL;
 	}
 	return OK;
@@ -9906,10 +9906,10 @@ put_view(
 
 	//Local argument list.
 	if (wp->argList == &argListG) {
-		if (put_line(fd, S"argglobal") == FAIL)
+		if (put_line(fd, u8"argglobal") == FAIL)
 			return FAIL;
 	} else {
-		if (ses_arglist(fd, S"arglocal", &wp->argList->al_ga,
+		if (ses_arglist(fd, u8"arglocal", &wp->argList->al_ga,
 				tp->localdir != NULL
 				|| wp->localDir != NULL) == FAIL)
 			return FAIL;
@@ -9926,7 +9926,7 @@ put_view(
 	//Edit the file.  Skip this when ":next" already did it.
 	if (add_edit && (!did_next || wp->isNotValid)) {
 		if (bookIsHelp(wp->book)) {
-			CS curtag = S"";
+			S curtag = u8"";
 
 			//A help book needs some options to be set.
 			//First, create a new empty book with "buftype=help".
@@ -9935,7 +9935,7 @@ put_view(
 			if (0 < wp->tagStackInd && wp->tagStackInd <= wp->tagStackLen)
 				curtag = wp->tagStack[wp->tagStackInd - 1].tagname;
 
-			if (put_line(fd, S"enew | setl bt=help") == FAIL
+			if (put_line(fd, u8"enew | setl bt=help") == FAIL
 					 || fprintf(fd, "help %s", curtag) < 0
 					 || put_eol(fd) == FAIL)
 				return FAIL;
@@ -9962,7 +9962,7 @@ put_view(
 			return FAIL;
 		} else {
 			//No file in this book, just make it empty.
-			if (put_line(fd, S"enew") == FAIL)
+			if (put_line(fd, u8"enew") == FAIL)
 				return FAIL;
 			if (wp->book->fullFileName != NULL) {
 				//The book does have a name, but it's not a file name.
@@ -10019,15 +10019,15 @@ put_view(
 			 return FAIL;
 
 		if (put_eol(fd) == FAIL
-				|| put_line(fd, S"if s:l < 1 | let s:l = 1 | endif") == FAIL
-				|| put_line(fd, S"keepjumps exe s:l") == FAIL
-				|| put_line(fd, S"normal! zt") == FAIL
+				|| put_line(fd, u8"if s:l < 1 | let s:l = 1 | endif") == FAIL
+				|| put_line(fd, u8"keepjumps exe s:l") == FAIL
+				|| put_line(fd, u8"normal! zt") == FAIL
 				|| fprintf(fd, "keepjumps %ld", (Long)wp->cursor.lnum) < 0
 				|| put_eol(fd) == FAIL)
 			 return FAIL;
 		//Restore the cursor column and left offset when not wrapping.
 		if (wp->cursor.col == 0) {
-			if (put_line(fd, S"normal! 0") == FAIL)
+			if (put_line(fd, u8"normal! 0") == FAIL)
 				return FAIL;
 		} else {
 			if (!wp->o.wrap && wp->leftCol > 0 && wp->width > 0) {
@@ -10037,14 +10037,14 @@ put_view(
 						 (Long)(wp->virtCol - wp->leftCol),
 						 (Long)wp->width / 2, (Long)wp->width) < 0
 					|| put_eol(fd) == FAIL
-					|| put_line(fd, S"if s:c > 0") == FAIL
+					|| put_line(fd, u8"if s:c > 0") == FAIL
 					|| fprintf(fd,
 						 "  exe 'normal! ' . s:c . '|zs' . %ld . '|'",
 						 (Long)wp->virtCol + 1) < 0
 					|| put_eol(fd) == FAIL
-					|| put_line(fd, S"else") == FAIL
+					|| put_line(fd, u8"else") == FAIL
 					|| put_view_curpos(fd, wp, "  ") == FAIL
-					|| put_line(fd, S"endif") == FAIL)
+					|| put_line(fd, u8"endif") == FAIL)
 					 return FAIL;
 			} ei (put_view_curpos(fd, wp, "") == FAIL)
 				return FAIL;
@@ -10065,8 +10065,8 @@ put_view(
 }
 
 private VarFlavor
-getVarFlavor(CS varname) {
-	CS p = varname;
+getVarFlavor(S varname) {
+	S p = varname;
 
 	if (ASCII_ISUPPER(*p)) {
 		while (*(++p)) {
@@ -10095,7 +10095,7 @@ store_session_globals(FILE *fd) {
 					 && getVarFlavor(this_var->key) == VAR_FLAVOR_SESSION
 			){
 				//Escape special characters with a backslash. Turn a LF and CR into \n and \r.
-				p = copyStr_escaped(tv_get_string(&this_var->c), (CS)"\\\"\n\r");
+				p = copyStr_escaped(tv_get_string(&this_var->c), u8"\\\"\n\r");
 				for (t = p; *t != ZERO; ++t)
 					if (*t == '\n')
 						*t = 'n';
@@ -10153,14 +10153,14 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 
 	//Begin by setting the this_session variable, and then other
 	//sessionable variables.
-	if (put_line(fd, S"let v:this_session=expand(\"<sfile>:p\")") == FAIL
+	if (put_line(fd, u8"let v:this_session=expand(\"<sfile>:p\")") == FAIL
 		  || store_session_globals(fd) == FAIL)
 		goto fail;
 
 	//Close all portals and tabs but one.
-	if (put_line(fd, S"silent only") == FAIL)
+	if (put_line(fd, u8"silent only") == FAIL)
 		goto fail;
-	if (put_line(fd, S"silent tabonly") == FAIL)
+	if (put_line(fd, u8"silent tabonly") == FAIL)
 		goto fail;
 
 	//Now a :cd command to the current directory
@@ -10176,17 +10176,17 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 
 	//If there is an empty, unnamed book we will wipe it out later.
 	//Remember the book number.
-	if (put_line(fd, S"if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''")
+	if (put_line(fd, u8"if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''")
 			== FAIL
 	)
 		goto fail;
-	if (put_line(fd, S"  let s:wipebuf = bufnr('%')") == FAIL)
+	if (put_line(fd, u8"  let s:wipebuf = bufnr('%')") == FAIL)
 		goto fail;
-	if (put_line(fd, S"endif") == FAIL)
+	if (put_line(fd, u8"endif") == FAIL)
 		goto fail;
 
 	//Set 'shortmess' for the following.
-	if (put_line(fd, S"set shortmess+=aoO") == FAIL)
+	if (put_line(fd, u8"set shortmess+=aoO") == FAIL)
 		goto fail;
 
 	//Now save the current files, current book first.
@@ -10201,7 +10201,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 	}
 
 	//the global argument list
-	if (ses_arglist(fd, S"argglobal", &argListG.al_ga, false)
+	if (ses_arglist(fd, u8"argglobal", &argListG.al_ga, false)
 			== FAIL
 	)
 		goto fail;
@@ -10216,10 +10216,10 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 	FOR_ALL_TABS(tp) {
 		//Use `bufhidden=wipe` to remove empty "placeholder" books once they are not needed.
 		//This prevents creating extra books (see cause of patch 8.1.0829)
-		if (tp->next != NULL && put_line(fd, S"tabnew +setlocal\\ bufhidden=wipe") == FAIL)
+		if (tp->next != NULL && put_line(fd, u8"tabnew +setlocal\\ bufhidden=wipe") == FAIL)
 			goto fail;
 	}
-	if (firstTabG->next != NULL && put_line(fd, S"tabrewind") == FAIL)
+	if (firstTabG->next != NULL && put_line(fd, u8"tabrewind") == FAIL)
 		 goto fail;
 
 	//Assume "tabs" is in 'sessionoptions'. If not then we only do "curtab" and bail out of the loop
@@ -10248,7 +10248,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 				 && !bookIsHelp(wp->book)
 				 && !bt_nofilename(wp->book)
 			){
-				if (need_tabnext && put_line(fd, S"tabnext") == FAIL)
+				if (need_tabnext && put_line(fd, u8"tabnext") == FAIL)
 					goto fail;
 				need_tabnext = false;
 
@@ -10261,20 +10261,20 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 		}
 
 		//If no file got edited create an empty tab
-		if (need_tabnext && put_line(fd, S"tabnext") == FAIL)
+		if (need_tabnext && put_line(fd, u8"tabnext") == FAIL)
 			goto fail;
 
 		if (tab_topframe->layout != FR_LEAF) {
 			 //Save current window layout.
-			 if (put_line(fd, S"let s:save_splitbelow = &splitbelow") == FAIL
-					 || put_line(fd, S"let s:save_splitright = &splitright") == FAIL)
+			 if (put_line(fd, u8"let s:save_splitbelow = &splitbelow") == FAIL
+					 || put_line(fd, u8"let s:save_splitright = &splitright") == FAIL)
 				goto fail;
-			if (put_line(fd, S"set splitbelow splitright") == FAIL)
+			if (put_line(fd, u8"set splitbelow splitright") == FAIL)
 				goto fail;
 			if (recreatePortals(fd, tab_topframe) == FAIL)
 				goto fail;
-			if (put_line(fd, S"let &splitbelow = s:save_splitbelow") == FAIL
-					 || put_line(fd, S"let &splitright = s:save_splitright") == FAIL)
+			if (put_line(fd, u8"let &splitbelow = s:save_splitbelow") == FAIL
+					 || put_line(fd, u8"let &splitright = s:save_splitright") == FAIL)
 				goto fail;
 		}
 
@@ -10292,7 +10292,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 
 		if (tab_firstPor->next) {
 			//Go to the first portal.
-			if (put_line(fd, S"wincmd t") == FAIL)
+			if (put_line(fd, u8"wincmd t") == FAIL)
 				goto fail;
 
 			 //If more than one window, see if sizes can be restored.
@@ -10302,14 +10302,14 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 			 //cursor can be set.  This is done again below.
 			 //winminheight and winminwidth need to be set to avoid an error if
 			 //the user has set winheight or winwidth.
-			 if (put_line(fd, S"let s:save_winminheight = &winminheight") == FAIL
-				 || put_line(fd, S"let s:save_winminwidth = &winminwidth")
+			 if (put_line(fd, u8"let s:save_winminheight = &winminheight") == FAIL
+				 || put_line(fd, u8"let s:save_winminwidth = &winminwidth")
 						                == FAIL)
 			goto fail;
-			 if (put_line(fd, S"set winminheight=0") == FAIL
-					 || put_line(fd, S"set winheight=1") == FAIL
-					 || put_line(fd, S"set winminwidth=0") == FAIL
-					 || put_line(fd, S"set winwidth=1") == FAIL)
+			 if (put_line(fd, u8"set winminheight=0") == FAIL
+					 || put_line(fd, u8"set winheight=1") == FAIL
+					 || put_line(fd, u8"set winminwidth=0") == FAIL
+					 || put_line(fd, u8"set winwidth=1") == FAIL)
 				goto fail;
 			restore_height_width = true;
 		}
@@ -10337,7 +10337,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 						       &terminal_bufs
 			 ) == FAIL)
 			goto fail;
-			 if (nr > 1 && put_line(fd, S"wincmd w") == FAIL)
+			 if (nr > 1 && put_line(fd, u8"wincmd w") == FAIL)
 			goto fail;
 			 next_arg_idx = wp->argListInd;
 		}
@@ -10358,17 +10358,17 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 
 	if (fprintf(fd, "tabnext %d", indexOfTab(curtab)) < 0 || put_eol(fd) == FAIL)
 		goto fail;
-	if (restore_stal && put_line(fd, S"set stal=1") == FAIL)
+	if (restore_stal && put_line(fd, u8"set stal=1") == FAIL)
 		goto fail;
 
 	//Wipe out an empty unnamed book we started in.
-	if (put_line(fd, S"if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0") == FAIL)
+	if (put_line(fd, u8"if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0") == FAIL)
 		goto fail;
-	if (put_line(fd, S"  silent exe 'bwipe ' . s:wipebuf") == FAIL)
+	if (put_line(fd, u8"  silent exe 'bwipe ' . s:wipebuf") == FAIL)
 		goto fail;
-	if (put_line(fd, S"endif") == FAIL)
+	if (put_line(fd, u8"endif") == FAIL)
 		goto fail;
-	if (put_line(fd, S"unlet! s:wipebuf") == FAIL)
+	if (put_line(fd, u8"unlet! s:wipebuf") == FAIL)
 		goto fail;
 
 	//Re-apply 'winheight' and 'winwidth'.
@@ -10376,17 +10376,17 @@ makeopens(FILE   *fd, Byte   *currDir) {  //Current directory name
 		goto fail;
 
 	if (restore_height_width //Restore 'winminheight' and 'winminwidth'.
-		 && (put_line(fd, S"let &winminheight = s:save_winminheight") == FAIL
-			|| put_line(fd, S"let &winminwidth = s:save_winminwidth") == FAIL)
+		 && (put_line(fd, u8"let &winminheight = s:save_winminheight") == FAIL
+			|| put_line(fd, u8"let &winminwidth = s:save_winminwidth") == FAIL)
 	) {
 		goto fail;
 	}
 
 	//Lastly, execute the x.vim file if it exists.
-	if (put_line(fd, S"let s:sx = expand(\"<sfile>:p:r\").\"x.vim\"") == FAIL
-			 || put_line(fd, S"if filereadable(s:sx)") == FAIL
-			 || put_line(fd, S"  exe \"source \" . fnameescape(s:sx)") == FAIL
-			 || put_line(fd, S"endif") == FAIL)
+	if (put_line(fd, u8"let s:sx = expand(\"<sfile>:p:r\").\"x.vim\"") == FAIL
+			 || put_line(fd, u8"if filereadable(s:sx)") == FAIL
+			 || put_line(fd, u8"  exe \"source \" . fnameescape(s:sx)") == FAIL
+			 || put_line(fd, u8"endif") == FAIL)
 		goto fail;
 
 	ret = OK;
@@ -10400,7 +10400,7 @@ pub void
 c_mkrc(Invocation* invo) {
 	int failed = false;
 	int using_vdir = false;   //using 'viewdir'?
-	CS viewFile = NULL;
+	S viewFile = NULL;
 
 	Boole sessionFile = (invo->id == C_mksession);
 
@@ -10408,36 +10408,36 @@ c_mkrc(Invocation* invo) {
 	//short file name when 'acd' is set, that is checked later.
 	did_lcd = false;
 
-	CS fname;
+	S fname;
 	if (*invo->arg != ZERO)
 		fname = invo->arg;
 	ei (invo->id == C_mkvimrc)
-		fname = S"~/.config/eegl/init.vim";
+		fname = u8"~/.config/eegl/init.vim";
 	ei (invo->id == C_mksession)
-		fname = (CS)SESSION_FILE;
+		fname = (S)SESSION_FILE;
 
-	FILE* fd = doOpenCommandsFile(fname, invo->forceit, (CS)WRITEBIN);
+	FILE* fd = doOpenCommandsFile(fname, invo->forceit, (S)WRITEBIN);
 	if (!fd) {
 		goto theEnd;
 	}
 
 	//Write the version command for :mkvimrc
 	if (invo->id == C_mkvimrc)
-		 (void)put_line(fd, S"version 6.0");
+		 (void)put_line(fd, u8"version 6.0");
 
 	if (invo->id == C_mksession) {
-		 if (put_line(fd, S"let SessionLoad = 1") == FAIL)
+		 if (put_line(fd, u8"let SessionLoad = 1") == FAIL)
 		failed = true;
 	}
 
-	(void)put_line(fd, S"if &cp | set nocp | endif");
+	(void)put_line(fd, u8"if &cp | set nocp | endif");
 
 	if (!sessionFile || invo->id == C_mksession) {
 		failed |= (makemap(fd, NULL) == FAIL || writeOptionsAsSet(fd) == FAIL);
 	}
 
 	if (!failed && sessionFile) {
-		if (put_line(fd, S"let s:so_save = &g:so | let s:siso_save = &g:siso | "
+		if (put_line(fd, u8"let s:so_save = &g:so | let s:siso_save = &g:siso | "
 			"setg so=0 siso=0 | setl so=-1 siso=-1") == FAIL)
 		failed = true;
 		if (invo->id == C_mksession) {
@@ -10464,18 +10464,18 @@ c_mkrc(Invocation* invo) {
 		} else {
 			failed |= (put_view(fd, curPor, curtab, !using_vdir, -1, NULL) == FAIL);
 		}
-		if (put_line(fd, S"let &g:so = s:so_save | let &g:siso = s:siso_save") == FAIL)
+		if (put_line(fd, u8"let &g:so = s:so_save | let &g:siso = s:siso_save") == FAIL)
 			failed = true;
-		if (!hiliteSearchG && put_line(fd, S"hlsearch") == FAIL)
+		if (!hiliteSearchG && put_line(fd, u8"hlsearch") == FAIL)
 			failed = true;
-		if (put_line(fd, S"doautoall SessionLoadPost") == FAIL)
+		if (put_line(fd, u8"doautoall SessionLoadPost") == FAIL)
 			failed = true;
 		if (invo->id == C_mksession) {
-			if (put_line(fd, S"unlet SessionLoad") == FAIL)
+			if (put_line(fd, u8"unlet SessionLoad") == FAIL)
 				failed = true;
 		}
 	}
-	if (put_line(fd, S"\" vim: set ft=vim :") == FAIL)
+	if (put_line(fd, u8"\" vim: set ft=vim :") == FAIL)
 		failed = true;
 
 	failed |= fclose(fd);
@@ -10500,7 +10500,7 @@ put_eol(FILE *fd) {
 
 //Write a line to "fd". Return FAIL for a write error.
 pub int
-put_line(FILE *fd, CS s) {
+put_line(FILE *fd, S s) {
 	if (FPUTS(s, fd) < 0 || put_eol(fd) == FAIL)
 		return FAIL;
 	return OK;
@@ -10541,11 +10541,11 @@ private int  eeglinfo_errcnt;
 //Find the parameter represented by the given character (eg ''', ':', '"', or
 //'/') in the @eeglinfo option and return a pointer to the string after it.
 //Return NULL if the parameter is not specified in the string.
-private CS
+private S
 find_eeglinfo_parameter(int type) {
 	if (!p_eeglinfo)
 		return null;
-	for (CS p = p_eeglinfo; *p; ++p) {
+	for (S p = p_eeglinfo; *p; ++p) {
 		if (*p == type)
 			return p + 1;
 		if (*p == 'n')          //'n' is always the last one
@@ -10562,7 +10562,7 @@ find_eeglinfo_parameter(int type) {
 //If the parameter is not specified in the string or there is no following number, return -1.
 pub int
 get_eeglinfo_parameter(int type) {
-	CS p = find_eeglinfo_parameter(type);
+	S p = find_eeglinfo_parameter(type);
 	if (p && EE_ISDIGIT(*p))
 		return atoi((char *)p);
 	return -1;
@@ -10572,13 +10572,13 @@ get_eeglinfo_parameter(int type) {
 //expanded by cmdline functions).
 //Otherwise use "-i file_name", value from 'eeglinfo' or the default, and expand environment
 //variables. Return an allocated string.
-private CS
-eeglinfo_filename(CS file) {
+private S
+eeglinfo_filename(S file) {
 	if (!file || *file == ZERO) {
 		if (p_eeglinfofile)
 			file = p_eeglinfofile;
 		ei ((file = find_eeglinfo_parameter('n')) == NULL || *file == ZERO) {
-			file = (CS)EEGLINFO_FILE;
+			file = (S)EEGLINFO_FILE;
 		}
 		Unt len = doExpandEnv(OUT nameBuffTextG, file);
 		file = nameBuffG;
@@ -10598,9 +10598,9 @@ eeglinfo_filename(CS file) {
 //- write " CTRL-V <length> \n " in first line
 //- write " < <string> \n "     in second line
 private void
-eeglinfo_writestring(FILE* fd, CS p) {
+eeglinfo_writestring(FILE* fd, S p) {
 	int c;
-	CS s;
+	S s;
 	int len = 0;
 
 	for (s = p; *s != ZERO; ++s) {
@@ -10629,7 +10629,7 @@ eeglinfo_writestring(FILE* fd, CS p) {
 //Write a string in quotes that barline_parse() can read back. Break the line in less than LSIZE
 //pieces when needed. Return remaining characters in the line.
 private int
-barline_writestring(FILE *fd, CS s, int remaining_start) {
+barline_writestring(FILE *fd, S s, int remaining_start) {
 	Byte *p;
 	int       remaining = remaining_start;
 	int       len = 2;
@@ -10683,10 +10683,10 @@ barline_writestring(FILE *fd, CS s, int remaining_start) {
 //Check for a Long line as written by eeglinfo_writestring().
 //
 //Return the string in allocated memory (NULL when out of memory).
-private CS
+private S
 eeglinfo_readstring(Vir* virp, int off) {          //offset for virp->line
-	CS retval = NULL;
-	CS s;
+	S retval = NULL;
+	S s;
 	Long len;
 
 	if (virp->line[off] == Ctrl_V && eeIsDigit(virp->line[off + 1])) {
@@ -10706,7 +10706,7 @@ eeglinfo_readstring(Vir* virp, int off) {          //offset for virp->line
 	}
 
 	//Change CTRL-V CTRL-V to CTRL-V and CTRL-V n to \n in-place.
-	CS d = retval;
+	S d = retval;
 	while (*s != ZERO && *s != '\n') {
 		if (s[0] == Ctrl_V && s[1] != ZERO) {
 			if (s[1] == 'n')
@@ -10729,14 +10729,14 @@ eeglinfo_readline(Vir* virp) {
 
 private int
 readEeglinfoBookList(Vir* virp, int writing) {
-	CS tab;
+	S tab;
 	LineNr   lnum;
 	ColNr   col;
 	Book* book;
-	CS sfname;
+	S sfname;
 
 	//Handle Long line and escaped characters.
-	CS xline = eeglinfo_readstring(virp, 1);
+	S xline = eeglinfo_readstring(virp, 1);
 
 	//don't read in if there are files on the command-line or if writing:
 	if (xline && !writing && ARGCOUNT == 0 && find_eeglinfo_parameter('%') != NULL) {
@@ -10774,7 +10774,7 @@ readEeglinfoBookList(Vir* virp, int writing) {
 
 //Return true if "name" is on removable media (depending on @eeglinfo).
 private Boole
-removable(CS name) {
+removable(S name) {
 	if (!p_eeglinfo)
 		return false;
 
@@ -10782,8 +10782,8 @@ removable(CS name) {
 	Boole retval = false;
 	Unt  n;
 	name = home_replace_save(NULL, name);
-	for (CS p = p_eeglinfo; *p; ) {
-		strCutPathFromListOfPaths(OUT &p, OUT part, 51, S", ");
+	for (S p = p_eeglinfo; *p; ) {
+		strCutPathFromListOfPaths(OUT &p, OUT part, 51, u8", ");
 		if (part[0] == 'r') {
 			n = STRLEN(part + 1);
 			if (caseInsensitiveCompareNChars(part + 1, name, n) == 0) {
@@ -10899,7 +10899,7 @@ read_eeglinfo_history(Vir* virp, int writing) {
 	if (eeglinfo_hisidx[type] >= eeglinfo_hislen[type])
 		goto done;
 
-	CS val = eeglinfo_readstring(virp, 1);
+	S val = eeglinfo_readstring(virp, 1);
 	if (!val || *val == ZERO)
 		goto done;
 
@@ -10910,7 +10910,7 @@ read_eeglinfo_history(Vir* virp, int writing) {
 
 	//Need to re-allocate to append the separator byte.
 	Ulong len = STRLEN(val);
-	CS p;
+	S p;
 	if (type == HIST_SEARCH) {
 		p = alloc((Unt)len + 1); //+1 for the ZERO. val already includes the separator.
 
@@ -10958,7 +10958,7 @@ handle_eeglinfo_history(ArrayList* values, int writing) {
 	if (eeglinfo_hisidx[type] >= eeglinfo_hislen[type])
 		return;
 
-	CS val = vp[3].bv_string;
+	S val = vp[3].bv_string;
 	if (!val || *val == ZERO)
 		return;
 
@@ -10970,7 +10970,7 @@ handle_eeglinfo_history(ArrayList* values, int writing) {
 		return;
 
 	Ulong len;
-	CS p;
+	S p;
 
 	//If lines were written by an older Eegl, we need to avoid getting duplicates. See if the
 	//entry already exists.
@@ -11185,7 +11185,7 @@ write_eeglinfo_history(FILE *fp, int merge) {
 				i = -1;
 			if (i >= 0) {
 				while (num_saved > 0 && !(round == 2 && i >= eeglinfo_hisidx[type])) {
-					CS p;
+					S p;
 					Unt plen;
 					Tyme timestamp;
 					int c = ZERO;
@@ -11280,10 +11280,10 @@ write_eeglinfo_barlines(Vir *virp, FILE *fp_out) {
 //Parse a eeglinfo line starting with '|'. Add each decoded value to "values".
 //Return true if the next line is to be read after using the parsed values.
 private int
-barline_parse(Vir* virp, CS text, ArrayList* values) {
-	CS p = text;
-	CS nextp = NULL;
-	CS buf = NULL;
+barline_parse(Vir* virp, S text, ArrayList* values) {
+	S p = text;
+	S nextp = NULL;
+	S buf = NULL;
 	BVal  *value;
 	int i;
 	int allocated = false;
@@ -11367,7 +11367,7 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
 			 ++values->len;
 		} ei (*p == '"') {
 			int len = 0;
-			CS s = p;
+			S s = p;
 
 			//Unescape special characters in-place.
 			++p;
@@ -11427,7 +11427,7 @@ no_eeglinfo(void) {
 //Report an error for reading a eeglinfo file.
 //Count the number of errors.   When there are more than 10, return true.
 private int
-eeglinfo_error(CS errnum, CS message, Byte *line) {
+eeglinfo_error(S errnum, S message, Byte *line) {
 	eeSnprintf(ioBuffG, IOSIZE, _("%seeglinfo: %s in line: "), errnum, message);
 	STRNCAT(ioBuffG, line, IOSIZE - STRLEN(ioBuffG) - 1);
 	if (ioBuffG[STRLEN(ioBuffG) - 1] == '\n')
@@ -11448,7 +11448,7 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
 	FnCallEntry funccal_entry;
 
 	if (!writing && (find_eeglinfo_parameter('!') != NULL)) {
-		CS tab = firstOccurrence(virp->line + 1, '\t');
+		S tab = firstOccurrence(virp->line + 1, '\t');
 		if (tab) {
 			*tab++ = '\0';   //isolate the variable name
 			switch (*tab) {
@@ -11514,9 +11514,9 @@ private void
 write_eeglinfo_varlist(FILE* fp) {
 	EeSet* gvht = get_globvar_ht();
 	EeSetItem* hi;
-	CS s = S"";
-	CS p;
-	CS tofree;
+	S s = u8"";
+	S p;
+	S tofree;
 	Byte numbuf[NUMBUFLEN];
 
 	if (find_eeglinfo_parameter('!') == NULL)
@@ -11531,14 +11531,14 @@ write_eeglinfo_varlist(FILE* fp) {
 			DictItem* this_var = HI2DI(hi);
 			if (getVarFlavor(this_var->key) == VAR_FLAVOR_EEGLINFO) {
 				switch (this_var->c.tag) {
-				case VAR_STRING:  s = S"STR"; break;
-				case VAR_NUMBER:  s = S"NUM"; break;
-				case VAR_FLOAT:   s = S"FLO"; break;
+				case VAR_STRING:  s = u8"STR"; break;
+				case VAR_NUMBER:  s = u8"NUM"; break;
+				case VAR_FLOAT:   s = u8"FLO"; break;
 				case VAR_BAG: {
 					Bag* di = this_var->c.bag;
 					Unt copyID = get_copyID();
 
-					s = S"DIC";
+					s = u8"DIC";
 					if (di && set_checkForCircularRefs(&di->hashTable, copyID, NULL)
 						   && di->copyId == copyID
 					)
@@ -11550,14 +11550,14 @@ write_eeglinfo_varlist(FILE* fp) {
 					List* l = this_var->c.list;
 					Unt copyID = get_copyID();
 
-					s = S"LIS";
+					s = u8"LIu8";
 					if (l && list_checkForCircularRefs(l, copyID, NULL) && l->copyId == copyID)
 						//has a circular reference, can't turn the value into a string
 						continue;
 					break;
 				}
-				case VAR_BLOB:    s = S"BLO"; break;
-				case VAR_BOOL:    s = S"XPL"; break;  //backwards compat.
+				case VAR_BLOB:    s = u8"BLO"; break;
+				case VAR_BOOL:    s = u8"XPL"; break;  //backwards compat.
 
 				case VAR_UNKNOWN:
 				case VAR_ANY:
@@ -11593,7 +11593,7 @@ read_eeglinfo_sub_string(Vir* virp, int force) {
 
 private void
 write_eeglinfo_sub_string(FILE *fp) {
-	CS old_sub = get_old_sub();
+	S old_sub = get_old_sub();
 
 	if (get_eeglinfo_parameter('/') == 0 || old_sub == NULL)
 		return;
@@ -11630,7 +11630,7 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
 	//<off>: decimal, offset
 	//<last>: '~' last used pattern
 	//<which>: '/' search pat, '&' subst. pat
-	CS lp = virp->line;
+	S lp = virp->line;
 	if (lp[0] == '~' && (lp[1] == 'm' || lp[1] == 'M')) {  //new line type
 		if (lp[1] == 'M')      //magic on
 			magic = true;
@@ -11678,7 +11678,7 @@ private void
 wvsp_one(
 	FILE* fp,   //file to write to
 	int idx,   //spats[] index
-	CS s,   //search pat
+	S s,   //search pat
 	int sc   //dir char
 ){
 	SearchPattern* spat = getPrevSearchPattern(idx);
@@ -11707,7 +11707,7 @@ write_eeglinfo_search_pattern(FILE* fp) {
 
 	fprintf(fp, "\n# hlsearch on (H) or off (h):\n~%c",
 		 (!hiliteSearchG || find_eeglinfo_parameter('h') != NULL) ? 'h' : 'H');
-	wvsp_one(fp, RE_SEARCH, S"", '/');
+	wvsp_one(fp, RE_SEARCH, u8"", '/');
 	wvsp_one(fp, RE_SUBST, _("Substitute "), '&');
 }
 
@@ -11750,7 +11750,7 @@ read_eeglinfo_register(Vir* virp, Boole force) {
 	YankReg   *y_current_p;
 
 	//We only get here (hopefully) if line[0] == '"'
-	CS str = virp->line + 1;
+	S str = virp->line + 1;
 
 	//If the line starts with "" this is the y_previous register.
 	if (*str == '"') {
@@ -11759,7 +11759,7 @@ read_eeglinfo_register(Vir* virp, Boole force) {
 	}
 
 	if (!ASCII_ISALNUM(*str) && *str != '-') {
-		if (eeglinfo_error(S"E577: ", _(e_illegal_register_name), virp->line))
+		if (eeglinfo_error(u8"E577: ", _(e_illegal_register_name), virp->line))
 			 return true;   //too many errors, pretend end-of-file
 		do_it = false;
 	}
@@ -12002,17 +12002,17 @@ write_eeglinfo_registers(FILE* fp) {
 
 		switch (y_ptr->y_type) {
 		case MLINE:
-			type = (CS)"LINE";
+			type = u8"LINE";
 			break;
 		case MCHAR:
-			type = (CS)"CHAR";
+			type = u8"CHAR";
 			break;
 		case MBLOCK:
-			type = (CS)"BLOCK";
+			type = u8"BLOCK";
 			break;
 		default:
 			showErrFmtMsg(_(e_unknown_register_type_nr), y_ptr->y_type);
-			type = (CS)"LINE";
+			type = u8"LINE";
 			break;
 		}
 		if (get_y_previous() == &y_regs_p[i])
@@ -12147,7 +12147,7 @@ write_one_filemark(FILE* fp, FileMarkExt* fm, int c1, int c2) {
 	if (fm->fmark.mark.lnum == 0)   //not set
 		return;
 
-	CS name;
+	S name;
 	if (fm->fmark.fnum != 0)      //there is a book
 		name = bookGetNameByBookNr(fm->fmark.fnum, true, false);
 	else
@@ -12173,7 +12173,7 @@ write_one_filemark(FILE* fp, FileMarkExt* fm, int c1, int c2) {
 private void
 write_eeglinfo_filemarks(FILE* fp) {
 	int i;
-	CS name;
+	S name;
 	Book* book;
 	FileMarkExt* namedfm_p = get_namedfm();
 	FileMarkExt* fm;
@@ -12280,12 +12280,12 @@ copy_eeglinfo_marks(
 	int eof,
 	int flags
 ){
-	CS line = virp->line;
+	S line = virp->line;
 	Book* book;
 	int num_marked_files;
 	int load_marks;
 	int copy_marks_out;
-	CS str;
+	S str;
 	int i;
 	Byte   *p;
 	Pos   pos;
@@ -12294,7 +12294,7 @@ copy_eeglinfo_marks(
 	int      buflist_used = 0;
 	Book* buflist_buf = NULL;
 
-	CS name_buf = alloc(LSIZE);
+	S name_buf = alloc(LSIZE);
 	*name_buf = ZERO;
 
 	if (fp_out && buflist->len > 0) {
@@ -12311,7 +12311,7 @@ copy_eeglinfo_marks(
 	while (!eof && (count < num_marked_files || fp_out == NULL)) {
 		if (line[0] != '>') {
 			if (line[0] != '\n' && line[0] != '\r' && line[0] != '#'
-				&& eeglinfo_error(S"E576: ", _(e_nonr_missing_gt), line)
+				&& eeglinfo_error(u8"E576: ", _(e_nonr_missing_gt), line)
 			)
 				break;   //too many errors, return now
 			eof = eeFgets(line, LSIZE, virp->vir_fd);
@@ -12485,7 +12485,7 @@ read_eeglinfo_filemark(Vir *virp, int force) {
 
 	//We only get here if line[0] == '\'' or '-'.
 	//Illegal mark names are ignored (for future expansion).
-	CS str = virp->line + 1;
+	S str = virp->line + 1;
 	if (*str <= 127
 		 && ((*virp->line == '\'' && (EE_ISDIGIT(*str) || SAFE_isupper(*str)))
 		  || (*virp->line == '-' && *str == '\''))
@@ -12667,7 +12667,7 @@ handle_eeglinfo_mark(ArrayList *values, int force) {
 
 private int
 read_eeglinfo_barline(Vir* virp, Boole force, int writing) {
-	CS p = virp->line + 1;
+	S p = virp->line + 1;
 	int bartype;
 	ArrayList values;
 	BVal* vp;
@@ -12798,7 +12798,7 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
 				eof = eeglinfo_readline(virp);
 			break;
 		default:
-			if (eeglinfo_error(S"E575: ", _(e_illegal_starting_char), virp->line))
+			if (eeglinfo_error(u8"E575: ", _(e_illegal_starting_char), virp->line))
 				eof = true;
 			else
 				eof = eeglinfo_readline(virp);
@@ -12830,7 +12830,7 @@ do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags) {
 	Vir  vir;
 	vir.line = alloc(LSIZE);
 	vir.vir_fd = fp_in;
-	ga_init2(&vir.vir_barlines, sizeof(CS), 100);
+	ga_init2(&vir.vir_barlines, sizeof(S), 100);
 	vir.vir_version = -1;
 
 	if (fp_in) {
@@ -12888,7 +12888,7 @@ do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags) {
 //set are not over-written unless "flags" includes EIF_FORCEIT. -- webb
 pub int
 read_eeglinfo(
-	CS file,       //file name or NULL to use default name
+	S file,       //file name or NULL to use default name
 	Unt flags       //EIF_WANT_INFO et al.
 ){
 	FileStat   st;      //stat() of existing eeglinfo file
@@ -12896,7 +12896,7 @@ read_eeglinfo(
 	if (no_eeglinfo())
 		return FAIL;
 
-	CS fname = eeglinfo_filename(file);   //get file name in allocated book
+	S fname = eeglinfo_filename(file);   //get file name in allocated book
 	if (!fname)
 		return FAIL;
 	FILE* fp = FOPEN(fname, READBIN);
@@ -12905,10 +12905,10 @@ read_eeglinfo(
 		verbose_enter();
 		smsg(_("Reading eeglinfo file \"%s\"%s%s%s%s"),
 			fname,
-			(flags & EIF_WANT_INFO) ? _(" info") : S"",
-			(flags & EIF_WANT_MARKS) ? _(" marks") : S"",
-			(flags & EIF_GET_OLDFILES) ? _(" oldfiles") : S"",
-			fp == NULL ? _(" FAILED") : S"");
+			(flags & EIF_WANT_INFO) ? _(" info") : u8"",
+			(flags & EIF_WANT_MARKS) ? _(" marks") : u8"",
+			(flags & EIF_GET_OLDFILES) ? _(" oldfiles") : u8"",
+			fp == NULL ? _(" FAILED") : u8"");
 		verbose_leave();
 	}
 
@@ -12932,9 +12932,9 @@ read_eeglinfo(
 //run simultaneously, without losing any marks etc. If "forceit" is true, then the old file is not
 //read in, and only internal info is written to the file.
 pub void
-write_eeglinfo(CS file, Boole forceit) {
+write_eeglinfo(S file, Boole forceit) {
 	FILE* fp_out = NULL;   //output eeglinfo file
-	CS tempname = NULL;   //name of temp eeglinfo file
+	S tempname = NULL;   //name of temp eeglinfo file
 	FileStat   st_new;      //stat() of potential new file
 	FileStat   st_old;      //stat() of existing eeglinfo file
 	mode_t   umask_save;
@@ -12942,7 +12942,7 @@ write_eeglinfo(CS file, Boole forceit) {
 	if (no_eeglinfo())
 		return;
 
-	CS fname = eeglinfo_filename(file);   //may set to default if NULL
+	S fname = eeglinfo_filename(file);   //may set to default if NULL
 	if (!fname)
 		return;
 
@@ -12990,12 +12990,12 @@ write_eeglinfo(CS file, Boole forceit) {
 		for (;;) {
 			int next_char = 'z';
 
-			tempname = fiAppendFileExtension(fname, S".tmp", false);
+			tempname = fiAppendFileExtension(fname, u8".tmp", false);
 			if (!tempname)      //out of memory
 				break;
 
 			//Try a series of names. Change one character, just before the extension.
-			CS wp = tempname + STRLEN(tempname) - 5;
+			S wp = tempname + STRLEN(tempname) - 5;
 			if (wp < fiGetShortFiName(tempname))       //empty file name?
 				wp = fiGetShortFiName(tempname);
 			for (;;) {

@@ -102,8 +102,8 @@ typedef struct {
 //When there is no match, the pointer is NULL.
 struct RegMatch {
 	RegProg* regprog;
-	CS startp[NSUBEXP];
-	CS endp[NSUBEXP];
+	S startp[NSUBEXP];
+	S endp[NSUBEXP];
 
 	ColNr rm_matchcol;   //match start without "\zs"
 	int rm_ic;
@@ -152,7 +152,7 @@ private SigAtomic *saved_timeout_flag;
 #define REGMAGIC   0234
 
 //Utility definitions.
-#define UCHARAT(p)   ((int)*(CS)(p))
+#define UCHARAT(p)   ((int)*(S)(p))
 
 //Used for an error (down from) compileRegexp(): give the error message, set anyRegexEmsgG and
 //return NULL
@@ -466,7 +466,7 @@ private int match_with_backref(
 	 ColNr  end_col,
 	 OUT int* bytelen
 );
-private int re_mult_next(CS what);
+private int re_mult_next(S what);
 private void mb_decompose(int c, int *c1, int *c2, int *c3);
 private int cstrncmp(Byte *s1, Byte *s2, int *n);
 private Byte * cstrchr(Byte *s, int c);
@@ -475,7 +475,7 @@ private void do_lower(int *d, int c);
 private int fill_submatch_list(int, Var *argv, int argskip);
 private void clear_submatch_list(StaticList10 *sl);
 private int eeRegsub_both(
-	CS source,
+	S source,
 	Var* expr,
 	OUT Text dest,
 	Unt flags
@@ -483,7 +483,7 @@ private int eeRegsub_both(
 private Byte * reg_getline_submatch(LineNr lnum);
 private ColNr reg_getline_submatch_len(LineNr lnum);
 private void regcomp_start(Byte* expr, Unt flags);
-private int compile_start(CS expr, Unt flags);
+private int compile_start(S expr, Unt flags);
 private int getAnchor(RState *start, int depth);
 private int getRegStart(RState* start, int depth);
 private Byte * getMatchText(RState *start);
@@ -595,15 +595,15 @@ private long parseBranchtry(
 	int* timed_out //flag set on timeout or NULL
 );
 private Long parseBranchexec_both(
-	CS line,
+	S line,
 	ColNr startcol,   //column to start looking for match
 	int* timed_out //flag set on timeout or NULL
 );
-private RegProg* compile(CS expr, int flags);
+private RegProg* compile(S expr, int flags);
 private void freeBranch(RegProg *prog);
 private int parseBranchexec_nl(
 	RegMatch   *rmp,
-	CS line,  //string to match against
+	S line,  //string to match against
 	ColNr col,   //column to start looking for match
 	int line_lbr
 );
@@ -623,7 +623,7 @@ private long matchManyLines(
 );
 private Boole eeRegexec_string(
 	RegMatch* rmp,
-	CS line,  //string to match against
+	S line,  //string to match against
 	ColNr col,    //column to start looking for match
 	int nl
 );
@@ -702,7 +702,7 @@ init_regexp_timeout(long msec) {
 pub void
 disable_regexp_timeout(void) {
 	if (timeout_nesting == 0)
-		internalErrMsg(S"disable_regexp_timeout() called without active timer");
+		internalErrMsg(u8"disable_regexp_timeout() called without active timer");
 	ei (--timeout_nesting == 0) {
 		stop_timeout();
 		timeout_flag = &dummy_timeout_flag;
@@ -795,15 +795,15 @@ skip_anyof(Byte *p) {
 //Stop at end of "startp" or where "delim" is found ('/', '?', etc).
 //Take care of characters with a backslash in front of it.
 //Skip strings inside [ and ].
-pub CS
-skip_regexp(CS startp, int delim, int magic) {
+pub S
+skip_regexp(S startp, int delim, int magic) {
 	return skip_regexp_ex(startp, delim, magic, NULL, NULL, NULL);
 }
 
 //Call skip_regexp() and when the delimiter does not match give an error and return NULL.
-pub CS
-skip_regexp_err(CS startp, int delim, int magic) {
-	CS p = skip_regexp(startp, delim, magic);
+pub S
+skip_regexp_err(S startp, int delim, int magic) {
+	S p = skip_regexp(startp, delim, magic);
 
 	if (p[0] != delim) {
 		showErrFmtMsg(_(e_missing_delimiter_after_search_pattern_str), startp);
@@ -817,9 +817,9 @@ skip_regexp_err(CS startp, int delim, int magic) {
 //"\?" to "?".  If "*newp" is not NULL the expression is changed in-place.
 //If a "\?" is changed to "?" then "dropped" is incremented, unless NULL.
 //If "magic_val" is not NULL, returns the effective magicness of the pattern
-pub CS
+pub S
 skip_regexp_ex(
-	CS startp,
+	S startp,
 	int dirc,
 	int magic,
 	Byte** newp,
@@ -1334,7 +1334,7 @@ reg_getline_common(LineNr lnum, GetlineFlags flags, Byte** line, ColNr* length) 
 	if (lnum > maxline) {
 		//must have matched the "\n" in the last line.
 		if (get_line)
-			*line = S"";
+			*line = u8"";
 		if (get_length)
 			*length = 0;
 
@@ -1488,8 +1488,8 @@ cleanup_subexpr(void) {
 		memset(exe.reg_startpos, 0xff, sizeof(PosNoVirt) * NSUBEXP);
 		memset(exe.reg_endpos, 0xff, sizeof(PosNoVirt) * NSUBEXP);
 	} else {
-		memset(exe.reg_startp, 0, sizeof(CS) * NSUBEXP);
-		memset(exe.reg_endp, 0, sizeof(CS) * NSUBEXP);
+		memset(exe.reg_startp, 0, sizeof(S) * NSUBEXP);
+		memset(exe.reg_endp, 0, sizeof(S) * NSUBEXP);
 	}
 	exe.need_clear_subexpr = false;
 }
@@ -1504,8 +1504,8 @@ cleanup_zsubexpr(void) {
 		memset(reg_startzpos, 0xff, sizeof(PosNoVirt) * NSUBEXP);
 		memset(reg_endzpos, 0xff, sizeof(PosNoVirt) * NSUBEXP);
 	} else {
-		memset(reg_startzp, 0, sizeof(CS) * NSUBEXP);
-		memset(reg_endzp, 0, sizeof(CS) * NSUBEXP);
+		memset(reg_startzp, 0, sizeof(S) * NSUBEXP);
+		memset(reg_endzp, 0, sizeof(S) * NSUBEXP);
 	}
 	exe.need_clear_zsubexpr = false;
 }
@@ -1583,7 +1583,7 @@ match_with_backref(
 
 //Used in a place where no * or \+ can follow.
 private int
-re_mult_next(CS what) {
+re_mult_next(S what) {
 	if (re_multi_type(peekchr()) == MULTI_MULT) {
 		showErrFmtMsg(_(e_nfa_regexp_cannot_repeat_str), what);
 		anyRegexEmsgG = true;
@@ -1801,15 +1801,15 @@ do_lower(int *d, int c) {
 //user to keep his hands off of "magic".
 //
 //The tildes are parsed once before the first call to eeRegsub().
-pub CS
-regtilde(CS source) {
-	CS newsub = source;
+pub S
+regtilde(S source) {
+	S newsub = source;
 	Unt newsublen = 0;
 	Byte tilde[3] = {'~', ZERO, ZERO};
 	Unt tildelen = 1;
 	int error = false;
 
-   CS p;
+   S p;
 	for (p = newsub; *p; ++p) {
 		if (STRNCMP(p, tilde, tildelen) == 0) {
 			Unt prefixlen = p - newsub;      //not including the tilde
@@ -1898,7 +1898,7 @@ fill_submatch_list(int, Var *argv, int argskip) {
 	//There are always 10 list items in StaticList10.
 	ListItem* li = listarg->list->first;
 	for (i = 0; i < 10; ++i) {
-		CS s = rsm.c->startp[i];
+		S s = rsm.c->startp[i];
 		if (!s || rsm.c->endp[i] == NULL)
 			 s = NULL;
 		else
@@ -1937,7 +1937,7 @@ clear_submatch_list(StaticList10 *sl) {
 pub int
 eeRegsub(
 	RegMatch* rmp,
-	CS source,
+	S source,
 	Var* expr,
 	Text dest,
 	Unt flags
@@ -1970,7 +1970,7 @@ pub int
 eeRegsub_multi(
 	RegMultilineMatch* rmp,
 	LineNr lnum,
-	CS source,
+	S source,
 	Text dest,
 	Unt flags
 ) {
@@ -2015,14 +2015,14 @@ free_resub_eval_result(void) {
 //Return difference in lengths minus 1, or 0 in case of error.
 private int
 eeRegsub_both(
-	CS source,
+	S source,
 	Var* expr,
 	OUT Text dest,
 	Unt flags
 ) { //:eeRegsub_both
-	CS src;
-	CS dst;
-	CS s;
+	S src;
+	S dst;
+	S s;
 	int c;
 	int cc;
 	int no = -1;
@@ -2149,7 +2149,7 @@ eeRegsub_both(
 				}
 				if (had_backslash && (flags & REGSUB_BACKSLASH)) {
 					//Backslashes will be consumed, need to double them.
-					s = copyStr_escaped(eval_result[nested], (CS)"\\");
+					s = copyStr_escaped(eval_result[nested], u8"\\");
 					if (s != NULL) {
 						eeglFree(eval_result[nested]);
 						eval_result[nested] = s;
@@ -2173,7 +2173,7 @@ eeRegsub_both(
 					no = 0;
 				} ei ('0' <= *src && *src <= '9') {
 					no = *src++ - '0';
-				} ei (firstOccurrence((CS)"uUlLeE", *src)) {
+				} ei (firstOccurrence(u8"uUlLeE", *src)) {
 					switch (*src++) {
 					case 'u':
 						func_one = do_upper;
@@ -2200,7 +2200,7 @@ eeRegsub_both(
 					//Copy a special key as-is.
 					if (copy) {
 						if (dst + 3 > dest.c + dest.len) {
-						   internalErrMsg(S"eeRegsub_both(): not enough space");
+						   internalErrMsg(u8"eeRegsub_both(): not enough space");
 						   return 0;
 						}
 						*dst++ = c;
@@ -2229,7 +2229,7 @@ eeRegsub_both(
 						   if (flags & REGSUB_BACKSLASH) {
 						      if (copy) {
 						         if (dst + 1 > dest.c + dest.len) {
-						            internalErrMsg(S"eeRegsub_both(): not enough space");
+						            internalErrMsg(u8"eeRegsub_both(): not enough space");
 						            return 0;
 						         }
 						         *dst = '\\';
@@ -2254,7 +2254,7 @@ eeRegsub_both(
 
 				if (copy) {
 					if (dst + charlen > dest.c + dest.len) {
-						internalErrMsg(S"eeRegsub_both(): not enough space");
+						internalErrMsg(u8"eeRegsub_both(): not enough space");
 						return 0;
 					}
 					mb_char2bytes(cc, dst);
@@ -2267,7 +2267,7 @@ eeRegsub_both(
 					if (clen < totlen) {
 						if (copy) {
 						   if (dst + totlen - clen > dest.c + dest.len) {
-						      internalErrMsg(S"eeRegsub_both(): not enough space");
+						      internalErrMsg(u8"eeRegsub_both(): not enough space");
 						      return 0;
 						   }
 						   MEMMOVE(dst + 1, src - 1 + clen, (Unt)(totlen - clen));
@@ -2305,7 +2305,7 @@ eeRegsub_both(
 						      break;
 						   if (copy) {
 						      if (dst + 1 > dest.c + dest.len) {
-						         internalErrMsg(S"eeRegsub_both(): not enough space");
+						         internalErrMsg(u8"eeRegsub_both(): not enough space");
 						         return 0;
 						      }
 						      *dst = ENTER;
@@ -2329,7 +2329,7 @@ eeRegsub_both(
 						   //Number of backslashes will be halved later, double them here.
 						   if (copy) {
 						      if (dst + 2 > dest.c + dest.len) {
-						         internalErrMsg(S"eeRegsub_both(): not enough space");
+						         internalErrMsg(u8"eeRegsub_both(): not enough space");
 						         return 0;
 						      }
 						      dst[0] = '\\';
@@ -2355,7 +2355,7 @@ eeRegsub_both(
 						   int charlen = mb_char2len(cc);
 						   if (copy) {
 						      if (dst + charlen > dest.c + dest.len) {
-						         internalErrMsg(S"eeRegsub_both(): not enough space");
+						         internalErrMsg(u8"eeRegsub_both(): not enough space");
 						         return 0;
 						      }
 						      mb_char2bytes(cc, dst);
@@ -2757,7 +2757,7 @@ enum {
 
 
 //When making changes to classCharsS also change classCodes.
-private Byte* classCharsS = (CS)
+private Byte* classCharsS = (S)
 	".iIkK"
 	"fFpP"
 	"sSdD"
@@ -2828,7 +2828,7 @@ regcomp_start(Byte* expr, Unt flags) {      //see eeRegcomp()
 
 //Initialize internal variables before NFA compilation. Return OK on success, FAIL otherwise
 private int
-compile_start(CS expr, Unt flags) {      //see compileRegexp()
+compile_start(S expr, Unt flags) {      //see compileRegexp()
 	Unt postfix_size;
 	int nstate_max;
 
@@ -3955,13 +3955,13 @@ parseAtom(OUT Boole* hadEol) {
 		switch (c) {
 		case 's':
 			EMIT(ZSTART);
-			if (re_mult_next(S"\\zs") == FAIL)
+			if (re_mult_next(u8"\\zs") == FAIL)
 				return FAIL;
 			break;
 		case 'e':
 			EMIT(ZEND);
 			exe.nfa_has_zend = true;
-			if (re_mult_next(S"\\ze") == FAIL)
+			if (re_mult_next(u8"\\ze") == FAIL)
 				return FAIL;
 			break;
 		case '1':
@@ -4935,7 +4935,7 @@ nfa_set_code(int c) {
 
 	case COMPOSING:         STRCPY(code, "COMPOSING"); break;
 	case END_COMPOSING:     STRCPY(code, "END_COMPOSING"); break;
-	case OPT_CHARS:         STRCPY(code, "OPT_CHARS"); break;
+	case OPT_CHARS:         STRCPY(code, "OPT_CHARu8"); break;
 
 	case MOPEN:
 	case MOPEN1:
@@ -5135,7 +5135,7 @@ printStateWorker(FILE *debugf, RState *state, ArrayList *indent) {
 	fprintf(debugf, "(%2d)", abs(state->id));
 
 	//Output indent
-	CS p = (CS)indent->c;
+	S p = (S)indent->c;
 	if (indent->len >= 3) {
 		int   last = indent->len - 3;
 		Byte   save[2];
@@ -5161,16 +5161,16 @@ printStateWorker(FILE *debugf, RState *state, ArrayList *indent) {
 	//grow indent for state->out
 	indent->len -= 1;
 	if (state->out1)
-		ga_concat(indent, (CS)"| ");
+		ga_concat(indent, u8"| ");
 	else
-		ga_concat(indent, (CS)"  ");
+		ga_concat(indent, u8"  ");
 	ga_append(indent, ZERO);
 
 	printStateWorker(debugf, state->out, indent);
 
 	//replace last part of indent for state->out1
 	indent->len -= 3;
-	ga_concat(indent, (CS)"  ");
+	ga_concat(indent, u8"  ");
 	ga_append(indent, ZERO);
 
 	printStateWorker(debugf, state->out1, indent);
@@ -5649,7 +5649,7 @@ buildAutomaton(Arr(Unt) postfix, Unt* end) {
 				return NULL;     \
 			}
 
-	//Allocate space for the stack. Max states on the stack: "countStatesS".
+	//Allocate space for the stack. Max states on the stack: "countStatesu8".
 	Frag* stack = ALLOC_MULT(Frag, countStatesS + 1);
 	Frag* stackp = stack;
 	Frag* sentinel = stack + (countStatesS + 1);
@@ -7516,7 +7516,7 @@ find_input(ColNr *startcol, int regstart, Byte *input) {
 //
 //Run NFA to determine whether it matches exe.input.
 //
-//When "mustEndAtS" is not NULL it is a required end-of-match position.
+//When "mustEndAtu8" is not NULL it is a required end-of-match position.
 //
 //Return true if there is a match, false if there is no match,
 //TOO_EXPENSIVE if we end up with too many states.
@@ -7735,7 +7735,7 @@ match(
 		//If we got here, it means that the current "invisible" group
 		//finished successfully, so return control to the parent
 		//match().  For a look-behind match only when it ends
-		//in the position in "mustEndAtS".
+		//in the position in "mustEndAtu8".
 		//Submatches are stored in *m, and used in the parent call.
 #ifdef REGEXP_LOGGING
 		if (mustEndAtS != NULL) {
@@ -7751,8 +7751,8 @@ match(
 					(int)(mustEndAtS->se_u.ptr - exe.input));
 		}
 #endif
-		//If "mustEndAtS" is set it's only a match if it ends at
-		//"mustEndAtS"
+		//If "mustEndAtu8" is set it's only a match if it ends at
+		//"mustEndAtu8"
 		if (mustEndAtS != NULL && (REG_MULTI
 			? (exe.lnum != mustEndAtS->se_u.pos.lnum
 				 || (int)(exe.input - exe.line)
@@ -8697,7 +8697,7 @@ match(
 	//The first found match is the leftmost one, thus the order of states matters!
 	//Do not add the start state in recursive calls of match(),
 	//because recursive calls should only start in the first position.
-	//Unless "mustEndAtS" is not NULL, then we match the end position.
+	//Unless "mustEndAtu8" is not NULL, then we match the end position.
 	//Also don't start a match past the first line.
 	if (nfa_match == false
 		&& ((toplevel
@@ -8935,7 +8935,7 @@ parseBranchtry(
 //Returns <= 0 for failure, number of lines contained in the match otherwise.
 private Long
 parseBranchexec_both(
-	CS line,
+	S line,
 	ColNr startcol,   //column to start looking for match
 	int* timed_out //flag set on timeout or NULL
 ){
@@ -9018,7 +9018,7 @@ parseBranchexec_both(
 	if (exe.reg_maxcol > 0 && col >= exe.reg_maxcol)
 		goto theend;
 
-	//Set the "countStatesS" used by compile() to zero to trigger an error when
+	//Set the "countStatesu8" used by compile() to zero to trigger an error when
 	//it's accidentally used during execution.
 	countStatesS = 0;
 	for (i = 0; i < prog->nstate; ++i) {
@@ -9057,7 +9057,7 @@ theend:
 //Compile a regular expression into internal code for the NFA matcher.
 //Return the program in allocated space. Returns NULL for an error.
 private RegProg*
-compile(CS expr, int flags) {
+compile(S expr, int flags) {
 	if (!expr)
 		return NULL;
 
@@ -9095,7 +9095,7 @@ compile(CS expr, int flags) {
 	}
 #endif
 
-	//PASS 1 Count number of NFA states in "countStatesS". Do not build the NFA.
+	//PASS 1 Count number of NFA states in "countStatesu8". Do not build the NFA.
 	countStatesS = countStatesInPostfix(postfix, postfixS);
 
 	//allocate the regprog with space for the compiled regexp
@@ -9168,7 +9168,7 @@ freeBranch(RegProg *prog) {
 private int
 parseBranchexec_nl(
 	RegMatch   *rmp,
-	CS line,  //string to match against
+	S line,  //string to match against
 	ColNr col,   //column to start looking for match
 	int line_lbr
 ){
@@ -9254,8 +9254,8 @@ matchManyLines(
 //Compile a regular expression into internal code. Returns the program in allocated memory.
 //Use eeRegFree() to free the memory. Returns NULL for an error.
 pub RegProg *
-compileRegexp(CS expr_arg, Unt flags) {
-	CS expr = expr_arg;
+compileRegexp(S expr_arg, Unt flags) {
+	S expr = expr_arg;
 
 #ifdef DEBUG
 	regengine.expr = expr;
@@ -9308,7 +9308,7 @@ free_regexp_stuff(void) {
 private Boole
 eeRegexec_string(
 	RegMatch* rmp,
-	CS line,  //string to match against
+	S line,  //string to match against
 	ColNr col,    //column to start looking for match
 	int nl
 ){
@@ -9344,7 +9344,7 @@ eeRegexec_string(
 
 //Note: "*prog" may be freed and changed. Return true if there is a match, false if not.
 pub Boole
-eeRegexec_prog(OUT RegProg** prog, Boole ignore_case, CS line, ColNr   col){
+eeRegexec_prog(OUT RegProg** prog, Boole ignore_case, S line, ColNr   col){
 	RegMatch regmatch;
 	regmatch.regprog = *prog;
 	regmatch.rm_ic = ignore_case;

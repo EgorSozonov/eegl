@@ -52,7 +52,7 @@ int current_quote(
 	int quotechar   //Quote character
 );
 int virtual_active(void);
-void get_mode(CS buf);
+void get_mode(S buf);
 void may_trigger_modechanged(void);
 int get_real_state(void);
 int check_text_or_curbuf_locked(Operator *oper);
@@ -63,12 +63,12 @@ void whEndVisualMode_keep_button(void);
 void reset_VIsual_and_resel(void);
 void reset_VIsual(void);
 void whRestoreVisualMode(void);
-int find_ident_under_cursor(OUT CS* text, int find_type);
+int find_ident_under_cursor(OUT S* text, int find_type);
 int find_ident_at_pos(
 	Portal* po,
 	LineNr lnum,
 	ColNr startcol,
-	OUT CS* text,
+	OUT S* text,
 	int* textcol,   //column where "text" starts, can be NULL
 	int find_type
 );
@@ -102,7 +102,7 @@ void pop_showcmd(void);
 void normPostProcessScrollbind(int check);
 void check_scrollbind(LineNr topline_diff, long leftcol_diff);
 int find_decl(
-	CS ptr,
+	S ptr,
 	int len,
 	int locally,
 	int thisblock,
@@ -110,7 +110,7 @@ int find_decl(
 );
 int get_visual_text(
 	ActionArg* aArg,
-	OUT CS* pp,       //return: start of selected text
+	OUT S* pp,       //return: start of selected text
 	OUT int* lenp       //return: length of selected text
 );
 void start_selection(void);
@@ -173,39 +173,39 @@ void do_check_cursorbind(void);
 MapBlock* getMappingTableList(int state, int c);
 MapBlock * whGetBufMappingTableList(int state, Unt c);
 int isMappingTableValid(void);
-int do_map(int maptype, CS arg, Unt mode, int abbrev);
+int do_map(int maptype, S arg, Unt mode, int abbrev);
 void mapClearAllMappingsInMode(
 	Book* book,      //book for local mappings
 	int modeClearFrom,      //mode in which to delete
 	Boole localOnly,      //true for buffer-local mappings
 	Boole abbr      //true for abbreviations
 );
-int mode_str2flags(CS modechars);
-int map_to_exists(CS str, CS modechars, int abbr);
-Boole map_to_exists_mode(CS rhs, int mode, int abbr);
-CS set_context_in_map_cmd(
+int mode_str2flags(S modechars);
+int map_to_exists(S str, S modechars, int abbr);
+Boole map_to_exists_mode(S rhs, int mode, int abbr);
+S set_context_in_map_cmd(
 	Expand* xp,
-	CS cmd,
-	CS arg,
+	S cmd,
+	S arg,
 	Boole forceit,   //true if '!' given
 	Boole isabbrev,   //true if abbreviation
 	Boole isunmap,   //true if unmap/unabbrev command
 	CommIndex   id
 );
 int expandMappings(
-	CS pat,
+	S pat,
 	RegMatch* regmatch,
 	OUT ExpandMatch* matches
 );
-Boole check_abbr(Unt c, CS ptr, int col, int mincol);
-CS eval_map_expr(MapBlock* mp, int);
-CS copyStr_escape_csi(CS p);
-void eeUnescapeCsi(CS p);
+Boole check_abbr(Unt c, S ptr, int col, int mincol);
+S eval_map_expr(MapBlock* mp, int);
+S copyStr_escape_csi(S p);
+void eeUnescapeCsi(S p);
 int makemap(FILE* fd, NULLABLE Book* book);
-int put_escstr(FILE* fd, CS strstart, int what);
+int put_escstr(FILE* fd, S strstart, int what);
 void check_map_keycodes(void);
-CS norCheckMapping(
-	CS keys,
+S norCheckMapping(
+	S keys,
 	int mode,
 	int exact,      //require exact match
 	int ign_mod,   //ignore preceding modifier
@@ -218,10 +218,10 @@ void f_maplist(Arr(Var) argvars, Var* returnVar);
 void f_maparg(Var* argvars, Var* returnVar);
 void f_mapcheck(Arr(Var) argvars, Var* returnVar);
 void f_mapset(Arr(Var) argvars, Var*);
-void add_map(CS map, int mode, int nore);
+void add_map(S map, int mode, int nore);
 int langmap_adjust_mb(int c);
 void langmap_init(void);
-CS setLangmap(OptionChange* args);
+S setLangmap(OptionChange* args);
 void c_abbreviate(Invocation* invo);
 void c_map(Invocation* invo);
 void c_unmap(Invocation* invo);
@@ -232,7 +232,7 @@ int edit(Unt commChar, int startln, long count);
 void edit_putchar(int c, Boole needDoHilite);
 void set_insstart(LineNr lnum, int col);
 void edit_unputchar(void);
-void truncate_spaces(CS line, Unt len);
+void truncate_spaces(S line, Unt len);
 void backspace_until_column(int col);
 int get_literal(int noReduceKeys);
 void insertchar0(
@@ -244,7 +244,7 @@ void start_arrow(Pos* end_insert_pos);
 int stop_arrow(void);
 void set_last_insert(Unt c);
 void free_last_insert(void);
-CS add_char2buf(Unt c, CS s);
+S add_char2buf(Unt c, S s);
 void beginline(Unt flags);
 int oneright(void);
 int oneleft(void);
@@ -258,7 +258,7 @@ int stuff_inserted(
 	int no_esc   //Don't add an ESC at the end
 );
 Text get_last_insert(void);
-CS get_last_insert_save(void);
+S get_last_insert_save(void);
 int whBracketedPaste(PasteMode mode, int drop);
 int ins_copychar(LineNr lnum);
 ColNr get_nolist_virtcol(void);
@@ -273,10 +273,10 @@ int compl_status_sol(void);
 int compl_status_local(void);
 int eeIsCtrlXKey(Unt c);
 Unt ins_compl_add_infercase(
-	CS str_arg,
+	S str_arg,
 	int len,
 	int icase,
-	CS fname,
+	S fname,
 	Unt dir,
 	int cont_s_ipos,  //next ^X<> will set initial_pos
 	int score
@@ -284,12 +284,12 @@ Unt ins_compl_add_infercase(
 Decoration getDecorationIfColumnIsWithinCompletion(LineNr lnum, int col);
 Boole ins_compl_lnum_in_range(LineNr lnum);
 void ins_compl_show_pum(void);
-CS ins_compl_leader(void);
+S ins_compl_leader(void);
 int ins_compl_active(void);
 int ins_compl_win_active(Portal *wp);
 int ins_compl_interrupted(void);
 int ins_compl_len(void);
-CS did_set_thesaurusfunc(OptionChange* cha);
+S did_set_thesaurusfunc(OptionChange* cha);
 void f_complete(Arr(Var) argvars, Var*);
 void f_complete_add(Arr(Var) argvars, Var* returnVar);
 void f_complete_check(Arr(Var), Var* returnVar);
@@ -297,12 +297,12 @@ void f_complete_match(Arr(Var) argvars, Var* returnVar);
 void f_complete_info(Arr(Var) argvars, Var* returnVar);
 void ins_compl_check_keys(int frequency, Boole in_compl_func);
 void free_insexpand_stuff(void);
-CS get_disassemble_argument(Expand* xp, int idx);
-CS setCompletefunc(OptionChange* cha);
+S get_disassemble_argument(Expand* xp, int idx);
+S setCompletefunc(OptionChange* cha);
 void inSetOmniCbForBook(Book* book);
 void inSetTagCbForBook(Book* book);
 void inSetCustomCompletionCbForBook(Book* book);
-CS setOmnifunc(OptionChange* cha);
+S setOmnifunc(OptionChange* cha);
 Unt setCompletionCallbacks(OptionChange *cha);
 Boole has_format_option(int x);
 void internal_format(
@@ -312,5 +312,5 @@ void internal_format(
 	int format_only,
 	Unt c //character to be inserted (can be ZERO)
 );
-int fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComments);
+int fmt_check_par(LineNr lnum, OUT int* leader_len, OUT S* leader_flags, int doComments);
 void whAutoFormat(Boole trailblank, Boole prev_line);

@@ -65,8 +65,8 @@ typedef struct {
 	int virtualOffset;//offset for virtual text
 	int eol_hl_off;   //1 if hilited char after EOL
 	Unt off;          //offset in screenTextP/screenDecosP
-	CS ptr;           //current position in text line
-	CS line;          //current text line start
+	S ptr;           //current position in text line
+	S line;          //current text line start
 
 	Decoration portalDeco;  //background for the whole portal, except margins and "~" lines.
 	Decoration cursorlineDeco; //set when @cursorline active
@@ -80,7 +80,7 @@ typedef struct {
 	Decoration charDeco; //decorations for the next character
 
 	int countExtraBytes; //number of extra bytes (for virtual text)
-	CS extraBytes;       //virtual text. This is only used when c_extra and c_final are ZERO
+	S extraBytes;       //virtual text. This is only used when c_extra and c_final are ZERO
 	Decoration extraDeco; //decorations for extraBytes, should be combined with portalDeco if
 						       //needed
 	int toSkipBeforeDeco;    //chars to skip before using extraDeco
@@ -92,7 +92,7 @@ typedef struct {
 	//saved "extra" items for when state becomes DRAWING_TEXT (again)
 	int saved_n_extra;
 
-	CS saved_p_extra;
+	S saved_p_extra;
 	Decoration saved_extraDeco;
 	int saved_toSkipBeforeDeco;
 	Boole saved_extra_for_textprop;
@@ -204,7 +204,7 @@ private void drawVerticalSeparator(Portal* po, int row);
 private int statusline_row(Portal* po);
 private void startDrawingHilite(Short hiId);
 private void statusLineOrRuler(Portal* po, Boole draw_ruler);
-private int utfc_char2bytes(int off, CS buf);
+private int utfc_char2bytes(int off, S buf);
 private Boole screen_comp_differs(int off, Unt* characterCombiner);
 private void start_search_hl(void);
 private void charToScreen(Unt off, int row, int col);
@@ -229,10 +229,10 @@ private void ruler(Portal* po, int always);
 private void msg_pos_mode(void);
 private void recording_mode(char flags);
 private int get_encoded_char_adv(Byte **p);
-private CS field_value_err(OUT ErrBuilder* errb, CS fmt, CS field);
+private S field_value_err(OUT ErrBuilder* errb, S fmt, S field);
 private void statusLineCustom(Portal* po);
-private int text_to_screenline(Portal* po, CS text, int col);
-private void copyTextWithDecos(int off, CS buf, int len, char flags);
+private int text_to_screenline(Portal* po, S text, int col);
+private void copyTextWithDecos(int off, S buf, int len, char flags);
 private LineNr visibleLineDistanceFromCursor(Portal* po, LineNr lnum);
 private void drawFoldedLine(Portal* po, Long foldCount, FoldInfo* foldinfo, LineNr lnum, int row);
 private void drawPortal(Portal* po, UpdatePortalInfo u);
@@ -247,7 +247,7 @@ private int textprop_size_after_trunc(
 	Unt flags,       //TEXT_PROP_ALIGN_*
 	int added,
 	int padding,
-	CS text,
+	S text,
 	OUT int* n_used_ptr
 );
 private void smoothFlushScreenLine(Portal* po, DrawCtx* m, Boole clear_end);
@@ -303,7 +303,7 @@ private int redrawingForCallbackS INIT(= 0);
 //"lineStartsP[n]" is the offset from ScreenLines[] for the start of line 'n'.
 //That value is used for ScreenLinesUC[], screenDecosP[] and ScreenCols[].
 //Note: before the screen is initialized, these can be null.
-private CS screenTextP = null;
+private S screenTextP = null;
 private Arr(Unt) lineStartsP = null;
 
 //Lower level code for displaying on the screen.
@@ -330,7 +330,7 @@ private Arr(Unt) lineStartsP = null;
 //The screen_*() functions write to the screen and handle updating screenTextP[].
 
 //One screen line to be displayed.  Points into screenTextP.
-private CS currScreenLineS = null;
+private S currScreenLineS = null;
 
 private Arr(Unt) screenLinesCG; //for composing characters. Blocks of MAX_COMBINED_SYMBOLS nums
 
@@ -687,13 +687,13 @@ drawGetKeymapStr(Portal* po, OUT Text buf) {       //buffer for the result
 	curBook = po->book;
 	curPor = po;
 	++emsg_skip;
-	CS p = eval_to_string(to_evaluate, false, false);
-	CS s = p;
+	S p = eval_to_string(to_evaluate, false, false);
+	S s = p;
 	--emsg_skip;
 	curBook = old_curbuf;
 	curPor = old_curPor;
 	if (p == NULL || *p == ZERO) {
-		p = S"lang";
+		p = u8"lang";
 	}
 	int plen = eeSnprintf(buf.c, buf.len, "<%s>", p);
 	eeglFree(s);
@@ -772,9 +772,9 @@ statusLineOrRuler(Portal* po, Boole draw_ruler) {
 	Unt fillchar = statusLineNextChar(OUT &deco, po);
 	int maxwidth = po->width;
 	Byte oname;
-	CS stl;
+	S stl;
 	if (draw_ruler) {
-		stl = p_ruf ? p_ruf : S"";
+		stl = p_ruf ? p_ruf : u8"";
 		oname = STATLINE_RULERFORMAT;
 		//advance past any leading group spec - implicit in rulerColP
 		if (*stl == '%') {
@@ -812,14 +812,14 @@ statusLineOrRuler(Portal* po, Boole draw_ruler) {
 
 	startDrawingHilite(deco.hiId);
 	int width = bookRenderStatusLine(
-		tgtPo, OUT buf, sizeof(buf), stl ? stl : S"", oname, opt_scope,
+		tgtPo, OUT buf, sizeof(buf), stl ? stl : u8"", oname, opt_scope,
 		fillchar, maxwidth
 	);
 	eeglFree(stl);
 	tgtPo->o.diff = diffSaved;
 
 	//Make all characters printable.
-	CS p = sanitizeStr(buf);
+	S p = sanitizeStr(buf);
 	int len;
 	if (p) {
 		len = eeSnprintf(buf, sizeof(buf), "%s", p);
@@ -856,7 +856,7 @@ screen_putchar(int c, Unt row, Unt col, char decoFlags) {
 //Include the composing characters. "buf" must at least have the length MB_MAXBYTES + 1.
 //Only to be used when screenLinesUCG[off] != 0. Return the produced number of bytes.
 private int
-utfc_char2bytes(int off, CS buf) {
+utfc_char2bytes(int off, S buf) {
 	int len = mb_char2bytes(screenLinesUCG[off], buf);
 	for (Unt i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
 		if (screenLinesCG[MAX_COMBINED_SYMBOLS*off + i] == 0)
@@ -904,20 +904,20 @@ screen_comp_differs(int off, Unt* characterCombiner) {
 //Note: only outputs within one row, message is truncated at screen boundary!
 //Note: if screenTextP[], row and/or col is invalid, nothing is done.
 pub void
-drawText(CS text, Unt row, Unt col, Byte decoFlags){
+drawText(S text, Unt row, Unt col, Byte decoFlags){
 	drawTextLen(text, -1, row, col, decoFlags);
 }
 
 //Like drawText(), but output "text[len]".  When "len" is -1, output up to a ZERO.
 pub void
 drawTextLen(
-	CS text,
+	S text,
 	int textlen,
 	Unt row,
 	int col,
 	Byte decoFlagsArg
 ) {
-	CS ptr = text;
+	S ptr = text;
 	int len = textlen;
 	int mbyte_blen = 1;
 	int mbyte_cells = 1;
@@ -999,7 +999,7 @@ drawTextLen(
 		ptr += mbyte_blen;
 		if (clear_next_cell) {
 			//This only happens at the end, display one space next. Keep the decorations from before
-			ptr = S" ";
+			ptr = u8" ";
 			len = -1;
 			decoFlags = screenDecosP[off].flags;
 		}
@@ -1697,7 +1697,7 @@ linecopy(int to, int from, Portal* po) {
 //It can't work when the string is empty or it won't set the right background.
 //Don't clear to end-of-line when there are popups, it may cause flicker.
 pub int
-can_clear(CS p) {
+can_clear(S p) {
 	 return (*p != ZERO
 				 && (*termCodesG[KS_UT] != ZERO)
 				 && !(p == termCodesG[KS_CE] && popup_visible)
@@ -1734,7 +1734,7 @@ drawMoveCursor(int row, int col) {
 	int cost;
 	int wouldbe_col;
 	int noinvcurs;
-	CS bs;
+	S bs;
 	int goto_cost;
 
 	//Check for valid position.
@@ -2223,7 +2223,7 @@ drawInsertLines(
 			while ((j -= line_count) >= row)
 				linecopy(j + line_count, j, po);
 			j += line_count;
-			if (can_clear(S" "))
+			if (can_clear(u8" "))
 				lineclear(lineStartsP[j] + po->windowCol, po->width, clearHiId);
 			else
 				lineinvalid(lineStartsP[j] + po->windowCol, po->width);
@@ -2237,7 +2237,7 @@ drawInsertLines(
 			}
 			lineStartsP[j + line_count] = temp;
 			lineWrapsP[j + line_count] = false;
-			if (can_clear(S" "))
+			if (can_clear(u8" "))
 				lineclear(temp, (int)visibleColsG, clearHiId);
 			else
 				lineinvalid(temp, (int)visibleColsG);
@@ -2380,7 +2380,7 @@ drawDeleteLinesFromScreen(
 			while ((j += line_count) <= end - 1)
 				linecopy(j - line_count, j, po);
 			j -= line_count;
-			if (can_clear(S" "))
+			if (can_clear(u8" "))
 				lineclear(lineStartsP[j] + po->windowCol, po->width, clearHiId);
 			else
 				lineinvalid(lineStartsP[j] + po->windowCol, po->width);
@@ -2395,7 +2395,7 @@ drawDeleteLinesFromScreen(
 			}
 			lineStartsP[j - line_count] = temp;
 			lineWrapsP[j - line_count] = false;
-			if (can_clear((CS)" "))
+			if (can_clear(u8" "))
 				lineclear(temp, (int)visibleColsG, clearHiId);
 			else
 				lineinvalid(temp, (int)visibleColsG);
@@ -2618,7 +2618,7 @@ showmode(void) {
 		cursor_off();
 		flags = getDecoFlags(HILITE_ModeName);         //hilite mode
 		if (do_mode) {
-			msgPutsDeco((CS)"--", flags);
+			msgPutsDeco(u8"--", flags);
 			//CTRL-X in Insert mode
 			if (editSubmodeMsgG) {
 				//These messages can get long, avoid a wrap in a narrow
@@ -2635,7 +2635,7 @@ showmode(void) {
 						msgPutsDeco(editSubmodeMsgG, flags);
 					}
 					if (editSubmodeExtraMsgG) {
-						msgPutsDeco((CS)" ", flags);  //add a space in between
+						msgPutsDeco(u8" ", flags);  //add a space in between
 						char subDeco = getDecoFlags(editSubmodeHiG);
 						msgPutsDeco(editSubmodeExtraMsgG, subDeco);
 					}
@@ -2651,7 +2651,7 @@ showmode(void) {
 					msgPutsDeco(_(" (replace)"), flags);
 
 				if (VIsual_active) {
-					CS p;
+					S p;
 					//Don't concatenate separate words to avoid translation problems.
 					switch ((VIsual_mode == Ctrl_V) * 2 + (VIsual_mode == 'V')) {
 					case 0:   p = N_(" VISUAL"); break;
@@ -2663,7 +2663,7 @@ showmode(void) {
 					}
 					msgPutsDeco(_(p), flags);
 				}
-				msgPutsDeco((CS)" --", flags);
+				msgPutsDeco(u8" --", flags);
 			}
 
 			need_clear = true;
@@ -2840,7 +2840,7 @@ typedef struct {
 } CharsTableEntry;
 
 #define CHARSTAB_ENTRY(cp, name) \
-	 {(cp), {(CS)(name), STRLEN_LITERAL(name)}}
+	 {(cp), {(S)(name), STRLEN_LITERAL(name)}}
 
 private CharsTableEntry fillCharsTable[] = {
 	 CHARSTAB_ENTRY(&fillCharsG.stl,       "stl"),
@@ -2862,10 +2862,10 @@ private CharsTableEntry listCharTable[] = {
 	 CHARSTAB_ENTRY(&listCharsG.trail,       "trail")
 };
 
-private CS
-field_value_err(OUT ErrBuilder* errb, CS fmt, CS field) {
+private S
+field_value_err(OUT ErrBuilder* errb, S fmt, S field) {
 	if (!errb->c)
-		return S"";
+		return u8"";
 	eeSnprintf(errb->c, errb->len, _(fmt), field);
 	return errb->c;
 }
@@ -2874,11 +2874,11 @@ field_value_err(OUT ErrBuilder* errb, CS fmt, CS field) {
 //portal-local value. "is_listchars" is true for "listchars" and false for "fillchars".
 //When "apply" is false do not store the flags, only check for errors.
 //Assume monocell characters. Return error message, NULL if it's OK.
-pub CS
-set_chars_option(CS newVal, Boole is_listchars, OUT ErrBuilder* errb){
+pub S
+set_chars_option(S newVal, Boole is_listchars, OUT ErrBuilder* errb){
 	int       round, i, entries;
-	CS  p;
-	CS s;
+	S  p;
+	S s;
 	int c1 = 0, c2 = 0, c3 = 0;
 
 	CharsTableEntry* tab;
@@ -2990,19 +2990,19 @@ set_chars_option(CS newVal, Boole is_listchars, OUT ErrBuilder* errb){
 }
 
 //Handle the new value of @fillchars
-pub CS
-drawSetFillChars(CS newVal, OUT ErrBuilder* errb){
+pub S
+drawSetFillChars(S newVal, OUT ErrBuilder* errb){
 	return set_chars_option(newVal, false, errb);
 }
 
 //Handle the new value of @listchars.
-pub CS
-drawSetListChars(CS newVal, OUT ErrBuilder* errb) {
+pub S
+drawSetListChars(S newVal, OUT ErrBuilder* errb) {
 	return set_chars_option(newVal, true, errb);
 }
 
 //Function given to expandGeneric() to obtain possible arguments of the @fillchars
-pub CS
+pub S
 get_fillchars_name(Expand *, int idx) {
 	if (idx < 0 || idx >= (int)ARRAY_LENGTH(fillCharsTable))
 		return NULL;
@@ -3010,7 +3010,7 @@ get_fillchars_name(Expand *, int idx) {
 }
 
 //Function given to expandGeneric() to obtain possible arguments of the @listchars
-pub CS
+pub S
 get_listchars_name(Expand *, int idx) {
 	if (idx < 0 || idx >= (int)ARRAY_LENGTH(listCharTable))
 		return NULL;
@@ -3020,8 +3020,8 @@ get_listchars_name(Expand *, int idx) {
 
 //Check the values of @listchars and @fillchars.
 //Return an untranslated error messages if any of them is invalid, NULL otherwise.
-pub CS
-check_chars_options(CS newVal) {
+pub S
+check_chars_options(S newVal) {
 	ErrBuilder errb = {};
 	if (drawSetListChars(newVal, &errb))
 		return e_conflicts_with_value_of_listchars;
@@ -3327,7 +3327,7 @@ redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
 	} else {
 		Unt fillchar = statusLineNextChar(OUT &deco, po);
 		drawGetTranslatedBookName(po->book);
-		CS p = nameBuffG;
+		S p = nameBuffG;
 		int plen = (int)STRLEN(p);
 
 		if ((bookIsHelp(po->book)
@@ -3354,7 +3354,7 @@ redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
 		if (this_ru_col < n)
 			this_ru_col = n;
 		if (this_ru_col <= 1) {
-			p = S"<";      //No room for file name!
+			p = u8"<";      //No room for file name!
 			plen = 1;
 		} else {
 			//Count total number of display cells.
@@ -3457,14 +3457,14 @@ drawUpdateCurBook(Unt type) {
 
 //Copy "text" to screenTextP using "deco". Returns the next screen column.
 private int
-text_to_screenline(Portal* po, CS text, int col) {
+text_to_screenline(Portal* po, S text, int col) {
 	int off = (int)(currScreenLineS - screenTextP);
 
 	Unt characterCombiner[MAX_COMBINED_SYMBOLS];
 	int idx = off + col;
 
 	//Store multibyte characters in screenTextP[] et al. correctly.
-	for (CS p = text; *p != ZERO; ) {
+	for (S p = text; *p != ZERO; ) {
 		int cells = mb_ptr2cells(p);
 		int c_len = utfCharLen(p);
 		if (col + cells > (int)po->width)
@@ -3493,7 +3493,7 @@ text_to_screenline(Portal* po, CS text, int col) {
 
 //Copy "buf[len]" to screenTextP["off"] and set decoration flags to "flags".
 private void
-copyTextWithDecos(int off, CS buf, int len, char flags) {
+copyTextWithDecos(int off, S buf, int len, char flags) {
 	MEMMOVE(screenTextP + off, buf, (Unt)len);
 	memset(screenLinesUCG + off, 0, sizeof(Unt) * (Unt)len);
 	for (int i = 0; i < len; ++i)
@@ -3572,7 +3572,7 @@ drawFoldedLine(Portal* po, Long foldCount, FoldInfo* foldinfo, LineNr lnum, int 
 		if (len > 0) {
 			if (len > 1)
 				len = 1;
-			copyTextWithDecos(off + col, S" ", len, getDecoFlags(HILITE_FoldedLine));
+			copyTextWithDecos(off + col, u8" ", len, getDecoFlags(HILITE_FoldedLine));
 			col += len;
 		}
 	}
@@ -3601,7 +3601,7 @@ drawFoldedLine(Portal* po, Long foldCount, FoldInfo* foldinfo, LineNr lnum, int 
 	}
 
 	//4. Compose the folded-line string with 'foldtext', if set.
-	CS text = get_foldtext(po, lnum, lnume, foldinfo, buf);
+	S text = get_foldtext(po, lnum, lnume, foldinfo, buf);
 
 	int txtcol = col;   //remember where text starts
 
@@ -4938,7 +4938,7 @@ textprop_size_after_trunc(
 	Unt flags,       //TEXT_PROP_ALIGN_*
 	int added,
 	int padding,
-	CS text,
+	S text,
 	OUT int* n_used_ptr
 ) {
 	int space = (flags & (TEXT_PROP_ALIGN_BELOW | TEXT_PROP_ALIGN_ABOVE))
@@ -4951,7 +4951,7 @@ textprop_size_after_trunc(
 	if (flags & (TEXT_PROP_ALIGN_BELOW | TEXT_PROP_ALIGN_ABOVE))
 		space -= padding;
 
-	CS p;
+	S p;
 	for (p = text; *p != ZERO; p += utfCharLen(p)) {
 		int clen = bookPtr2Cells(p);
 
@@ -4991,7 +4991,7 @@ text_prop_position(
 	int before = room;   //spaces before the text
 	int after = 0;      //spaces after the text
 	int n_used = *countExtraBytes;
-	CS l = NULL;
+	S l = NULL;
 	int strsize = eeglStrSize(*extraBytes);
 	int cells = wrap
 		? strsize
@@ -5056,10 +5056,10 @@ text_prop_position(
 			}
 			if (numDecoCells) {
 				if (n_used < *countExtraBytes && po->o.wrap) {
-					CS lp = l + off - 1;
+					S lp = l + off - 1;
 
 					Byte buf[MB_MAXBYTES + 1];
-					CS cp = buf;
+					S cp = buf;
 
 					//change the last character to '…', converted to the current 'encoding'
 					STRCPY(buf, "…");
@@ -5851,7 +5851,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
 		PropType* textPropType, Decoration textPropDeco
 ) {
 	Unt currSymb;
-	CS prev_ptr = m->ptr;
+	S prev_ptr = m->ptr;
 
 	//Get a character from the line itself.
 	currSymb = *m->ptr;
@@ -6054,7 +6054,7 @@ getNextCharFromMain(DrawCtx* m, Subcontext* c, Portal* port, OUT SubSubcontext* 
 						    && m->tocol != MAXCOL
 						    && m->vcol < m->tocol)
 				)
-					m->extraBytes = S"";
+					m->extraBytes = u8"";
 				m->countExtraBytes = 0;
 			}
 			if (port->o.list && listCharsG.eol > 0)
@@ -6647,7 +6647,7 @@ drawLineOnScreen(
 	if (PORTAL_IS_POPUP(port))
 		m.flushFlags |= SLF_POPUP;
 
-	CS propStart;
+	S propStart;
 	c.textPropCount = get_text_props(OUT &propStart, port->book, lnum, false);
 	//Text properties
 	if (c.textPropCount > 0) {
@@ -6894,7 +6894,7 @@ drawMsgScrollUp(void) {
 	//scrolling up always works
 	drawDeleteLinesFromScreen(0, 0, 1, (int)visibleRowsG, 0, NULL);
 
-	if (!can_clear(S" ")) {
+	if (!can_clear(u8" ")) {
 		//Scrolling up doesn't result in the right background. Set the
 		//background here. It's not efficient, but avoids that we have to do it all over the code.
 		fillRowsWithTwoChars(
@@ -6961,7 +6961,7 @@ drawGetLine(int offset) {
 	return screenTextP[offset];
 }
 
-pub CS
+pub S
 drawGetLinesWithOffset(Unt row) {
 	return screenTextP + lineStartsP[row];
 }

@@ -5,8 +5,8 @@ void set_y_current(YankReg *yreg);
 void set_y_previous(YankReg *yreg);
 void reset_y_append(void);
 int get_expr_register(void);
-void set_expr_line(CS new_line, Invocation* invo);
-CS get_expr_line(void);
+void set_expr_line(S new_line, Invocation* invo);
+S get_expr_line(void);
 int valid_yank_reg(int regname, Boole writing);
 int get_yank_register(int regname, int writing);
 void * get_register(Unt name, int copy);
@@ -25,7 +25,7 @@ int do_execreg(
 int insert_reg(Unt regname, int literally_arg);
 int get_spec_reg(
 	int regname,
-	OUT CS* retVal,
+	OUT S* retVal,
 	int* allocated,   // return: true when value was allocated
 	int errmsg      // give error message when failing
 );
@@ -42,7 +42,7 @@ void free_yank_all(void);
 int op_yank(Operator *opArg, int deleting, Boole mess);
 void do_put(
 	int      regname,
-	CS expr_result,   // result for regname "=" when compiled
+	S expr_result,   // result for regname "=" when compiled
 	Unt dir,      // BACKWARD for 'P', FORWARD for 'p'
 	Long   count,
 	Unt      flags
@@ -50,12 +50,12 @@ void do_put(
 int get_register_name(int num);
 int get_unname_register(void);
 void c_display(Invocation* invo);
-void dnd_yank_drag_data(CS str, Long len);
+void dnd_yank_drag_data(S str, Long len);
 Byte get_reg_type(int regname, Long *reglen);
-CS get_reg_contents(int regname, int flags);
+S get_reg_contents(int regname, int flags);
 void write_reg_contents(
 	int      name,
-	CS str,
+	S str,
 	int maxlen,
 	int must_append)
 ;
@@ -69,7 +69,7 @@ void write_reg_contents_lst(
 );
 void write_reg_contents_ex(
 	int name,
-	CS str,
+	S str,
 	int maxlen,
 	int must_append,
 	Unt yank_type,

@@ -108,18 +108,18 @@ HILITE_NULL
 #undef HI
 };
 void initHilite();
-void doHilite(CS line, Boole forceit, Boole init);
+void doHilite(S line, Boole forceit, Boole init);
 Short hiliteGroupByName(Text name);
 Decoration decosByHiliteName(Text name);
 Boole hiliteExists(Text name);
-CS syn_id2name(Unt id);
+S syn_id2name(Unt id);
 Byte decorationByHiliteId(Short hiId);
 Byte syn_id2colors(Short hiId, OUT VTermColor* fgp, OUT VTermColor* bgp);
-void setCompletionContextInHiliteCommand(OUT Expand* xp, CS arg);
+void setCompletionContextInHiliteCommand(OUT Expand* xp, S arg);
 Text getHiliteGroupName(Expand*, int id);
-CS getHiliteGroupNameAsCString(Expand *xp, int id);
+S getHiliteGroupNameAsCString(Expand *xp, int id);
 int expandHiliteGroup(
-	CS pattern,
+	S pattern,
 	Expand* xp,
 	RegMatch* rmp,
 	OUT ExpandMatch* matches
@@ -147,9 +147,9 @@ void c_syntax(Invocation* invo);
 void c_ownsyntax(Invocation* invo);
 int syntax_present(Portal* po);
 void reset_expand_highlight(void);
-void set_context_in_echohl_cmd(Expand* xp, CS arg);
-void set_context_in_syntax_cmd(Expand *xp, CS arg);
-CS get_syntax_name(Expand* xp, int idx);
+void set_context_in_echohl_cmd(Expand* xp, S arg);
+void set_context_in_syntax_cmd(Expand *xp, S arg);
+S get_syntax_name(Expand* xp, int idx);
 int syn_get_id(
 	Portal* wp,
 	Long lnum,

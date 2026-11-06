@@ -32,12 +32,12 @@
 
 //{{{@@forward declarations
 private YankReg * getYRegister(int reg);
-private CS get_expr_line_src(void);
-private int stuff_yank(int regname, CS p);
-private CS execreg_line_continuation(Arr(Text) lines, Long *idx);
+private S get_expr_line_src(void);
+private int stuff_yank(int regname, S p);
+private S execreg_line_continuation(Arr(Text) lines, Long *idx);
 private void put_reedit_in_typeBufG(int silent);
 private int put_in_typeBufG(
-	 CS s,
+	 S s,
 	 int esc,
 	 int colon,       // add ':' before the line
 	 int silent
@@ -52,12 +52,12 @@ private void dis_msg(
 private void writeToRegister(
 	OUT YankReg* yReg,    // pointer to yank register
 	Unt yank_type, //MCHAR, MLINE, MBLOCK, MAUTO
-	CS str,        //string to put in register
+	S str,        //string to put in register
 	Long len,      //length of string
 	Long blocklen, //width of Visual block
 	int str_list   //true iff str is a CString
 );
-private CS getreg_wrap_one_line(CS s, int flags);
+private S getreg_wrap_one_line(S s, int flags);
 private int init_write_reg(
 	int name,
 	YankReg** old_y_previous,
@@ -66,7 +66,7 @@ private int init_write_reg(
 	Unt*
 );
 private void finish_write_reg(int name, YankReg* old_y_previous, YankReg* old_y_current);
-private void clip_yank_selection(int type, CS str, Long len);
+private void clip_yank_selection(int type, S str, Long len);
 private void copyToClipboard();
 private void clip_wl_set_selection(ClipBoard *);
 private int copy0();
@@ -130,7 +130,7 @@ private Invocation   *exprInvoS = NULL;
 //Get an expression for the "\"=expr1" or "CTRL-R =expr1" Return '=' when OK, ZERO otherwise.
 pub int
 get_expr_register(void) {
-	CS new_line = getCommline('=', 0L, 0, 0);
+	S new_line = getCommline('=', 0L, 0, 0);
 	if (!new_line)
 		return ZERO;
 	if (*new_line == ZERO)   // use previous line
@@ -143,7 +143,7 @@ get_expr_register(void) {
 //Set the expression for the '=' register. Argument must be an allocated string.
 //"invo" may be used if the next line needs to be checked when evaluating the expression.
 pub void
-set_expr_line(CS new_line, Invocation* invo) {
+set_expr_line(S new_line, Invocation* invo) {
 	eeglFree(expr_line);
 	expr_line = new_line;
 	exprInvoS = invo;
@@ -151,7 +151,7 @@ set_expr_line(CS new_line, Invocation* invo) {
 
 //Get the result of the '=' register expression.
 //Return a pointer to allocated memory, or NULL for failure.
-pub CS
+pub S
 get_expr_line(void) {
 	Byte   *expr_copy;
 	Byte   *rv;
@@ -175,7 +175,7 @@ get_expr_line(void) {
 }
 
 //Get the '=' register expression itself, without evaluating it.
-private CS
+private S
 get_expr_line_src(void) {
 	if (!expr_line)
 		return NULL;
@@ -187,7 +187,7 @@ get_expr_line_src(void) {
 pub int
 valid_yank_reg(int regname, Boole writing) {      // if true check for writable registers
 	if (      (regname > 0 && ASCII_ISALNUM(regname))
-			 || (!writing && firstOccurrence((CS)"/.%:=", regname) != NULL)
+			 || (!writing && firstOccurrence(u8"/.%:=", regname) != NULL)
 			 || regname == '#'
 			 || regname == '"'
 			 || regname == '-'
@@ -338,7 +338,7 @@ do_record(int c) {
 		// needs to be removed again to put it in a register.  exec_reg then
 		// adds the escaping back later.
 		reg_recording = 0;
-		msg(S"");
+		msg(u8"");
 		p = get_recorded();
 		if (!p)
 			retval = FAIL;
@@ -365,7 +365,7 @@ do_record(int c) {
 //
 //return FAIL for failure, OK otherwise
 private int
-stuff_yank(int regname, CS p) {
+stuff_yank(int regname, S p) {
 	// check for read-only register
 	if (regname != 0 && !valid_yank_reg(regname, true)) {
 		eeglFree(p);
@@ -436,7 +436,7 @@ set_execreg_lastc(int lastc) {
  * Returns the concatenated line. The index of the line that should be
  * processed next is returned in idx.
  */
-private CS
+private S
 execreg_line_continuation(Arr(Text) lines, Long *idx) {
 	ArrayList   ga;
 	Long   i = *idx;
@@ -473,7 +473,7 @@ execreg_line_continuation(Arr(Text) lines, Long *idx) {
 		}
 	}
 	ga_append(&ga, ZERO);
-	CS retVal = copySubstr(ga.c, ga.len);
+	S retVal = copySubstr(ga.c, ga.len);
 	ga_clear(&ga);
 
 	*idx = i;
@@ -527,7 +527,7 @@ do_execreg(
 		// Escape all control characters with a CTRL-V
 		p = copyStr_escaped_ext(
 				lastCommlineG,
-				S"\001\002\003\004\005\006\007" "\010\011\012\013\014\015\016\017"
+				u8"\001\002\003\004\005\006\007" "\010\011\012\013\014\015\016\017"
 				 "\020\021\022\023\024\025\026\027" "\030\031\032\033\034\035\036\037",
 				Ctrl_V, false, null
 		);
@@ -565,13 +565,13 @@ do_execreg(
 		// Insert lines into typeahead buffer, from last one to first one.
 		put_reedit_in_typeBufG(silent);
 		for (i = y_current->y_size; --i >= 0; ) {
-			CS escaped;
-			CS str;
+			S escaped;
+			S str;
 			int free_str = false;
 
 			// insert NL between lines and after last line if type is MLINE
 			if (y_current->y_type == MLINE || i < y_current->y_size - 1 || addcr) {
-				if (insertIntoTypebuf((CS)"\n", remap, 0, true, silent) == FAIL)
+				if (insertIntoTypebuf(u8"\n", remap, 0, true, silent) == FAIL)
 					return FAIL;
 			}
 
@@ -593,7 +593,7 @@ do_execreg(
 			eeglFree(escaped);
 			if (retval == FAIL)
 				return FAIL;
-			if (colon && insertIntoTypebuf((CS)":", remap, 0, true, silent) == FAIL)
+			if (colon && insertIntoTypebuf(u8":", remap, 0, true, silent) == FAIL)
 				return FAIL;
 		}
 		reg_executing = regname == 0 ? '"' : regname; // disable "q" command
@@ -627,7 +627,7 @@ put_reedit_in_typeBufG(int silent) {
 //When "esc" is true it is to be taken literally: Escape CSI characters and no remapping.
 private int
 put_in_typeBufG(
-	 CS s,
+	 S s,
 	 int esc,
 	 int colon,       // add ':' before the line
 	 int silent
@@ -636,7 +636,7 @@ put_in_typeBufG(
 
 	put_reedit_in_typeBufG(silent);
 	if (colon)
-		retval = insertIntoTypebuf((CS)"\n", REMAP_NONE, 0, true, silent);
+		retval = insertIntoTypebuf(u8"\n", REMAP_NONE, 0, true, silent);
 	if (retval == OK) {
 		Byte   *p;
 
@@ -652,7 +652,7 @@ put_in_typeBufG(
 			eeglFree(p);
 	}
 	if (colon && retval == OK)
-		 retval = insertIntoTypebuf((CS)":", REMAP_NONE, 0, true, silent);
+		 retval = insertIntoTypebuf(u8":", REMAP_NONE, 0, true, silent);
 	return retval;
 }
 
@@ -720,13 +720,13 @@ insert_reg(Unt regname, int literally_arg) {  // insert literally, not as if typ
 pub int
 get_spec_reg(
 	int regname,
-	OUT CS* retVal,
+	OUT S* retVal,
 	int* allocated,   // return: true when value was allocated
 	int errmsg      // give error message when failing
 ){
 	int cnt;
 
-	*retVal = S"";
+	*retVal = u8"";
 	*allocated = false;
 	switch (regname) {
 	case '%':      // file name
@@ -747,20 +747,20 @@ get_spec_reg(
 	case ':':      // last command line
 		if (!lastCommlineG && errmsg)
 			emsg(_(e_no_previous_command_line));
-		*retVal = lastCommlineG != S"" ? lastCommlineG : S"";
+		*retVal = lastCommlineG ? lastCommlineG : u8"";
 		return true;
 
 	case '/':      // last search-pattern
-		CS lastPat = last_search_pat().c;
+		S lastPat = last_search_pat().c;
 		if (!lastPat && errmsg)
 			emsg(_(e_no_previous_regular_expression));
-		*retVal = lastPat ? lastPat : S"";
+		*retVal = lastPat ? lastPat : u8"";
 		return true;
 
 	case '.':      // last inserted text
 		*retVal = get_last_insert_save();
 		*allocated = true;
-		if (*retVal == S"" && errmsg)
+		if (*retVal == null && errmsg)
 			emsg(_(e_no_inserted_text_yet));
 		return true;
 
@@ -780,7 +780,7 @@ get_spec_reg(
 		return false;
 		 cnt = find_ident_under_cursor(retVal, regname == Ctrl_W
 					?  (FIND_IDENT|FIND_STRING) : FIND_STRING);
-		 *retVal = cnt ? copySubstr(*retVal, cnt) : S"";
+		 *retVal = cnt ? copySubstr(*retVal, cnt) : u8"";
 		 *allocated = true;
 		 return true;
 
@@ -793,7 +793,7 @@ get_spec_reg(
 		 return true;
 
 	case '_':      // black hole: always empty
-		 *retVal = (CS)"";
+		 *retVal = u8"";
 		 return true;
 	}
 
@@ -825,7 +825,7 @@ cmdline_paste_reg(
 		// Insert ^M between lines and after last line if type is MLINE.
 		// Don't do this when "remcr" is true.
 		if ((y_current->y_type == MLINE || i < y_current->y_size - 1) && !remcr)
-			 cmdline_paste_str((CS)"\r", literally);
+			 cmdline_paste_str(u8"\r", literally);
 
 		// Check for CTRL-C, in case someone tries to paste a few thousand
 		// lines and gets bored.
@@ -1125,7 +1125,7 @@ private int
 yank_copy_line(BlockDef* bd, Long y_idx, int exclude_trailing_space) {
 	if (exclude_trailing_space)
 		bd->endspaces = 0;
-	CS pnew = alloc(bd->startspaces + bd->endspaces + bd->textlen + 1);
+	S pnew = alloc(bd->startspaces + bd->endspaces + bd->textlen + 1);
 	y_current->y_array[y_idx].c = pnew;
 	memset(pnew, ' ', (Unt)bd->startspaces);
 	pnew += bd->startspaces;
@@ -1178,7 +1178,7 @@ copy_yank_reg(YankReg *reg) {
 pub void
 do_put(
 	int      regname,
-	CS expr_result,   // result for regname "=" when compiled
+	S expr_result,   // result for regname "=" when compiled
 	Unt dir,      // BACKWARD for 'P', FORWARD for 'p'
 	Long   count,
 	Unt      flags
@@ -1300,8 +1300,8 @@ do_put(
 			// "p" or "P" in Visual mode: split the lines to put the text in between.
 			if (u_save_cursor() == FAIL)
 				goto end;
-			CS p = ml_get_cursor();
-			CS p_orig = p;
+			S p = ml_get_cursor();
+			S p_orig = p;
 
 			Unt plen = ml_get_cursor_len();
 			if (dir == FORWARD && *p != ZERO)
@@ -1337,7 +1337,7 @@ do_put(
 
 	if (y_size == 0 || y_array == NULL) {
 		showErrFmtMsg(_(e_nothing_in_register_str),
-			  regname == 0 ? (CS)"\"" : transchar(regname));
+			  regname == 0 ? u8"\"" : transchar(regname));
 		goto end;
 	}
 
@@ -1403,7 +1403,7 @@ do_put(
 
 			// add a new line
 			if (curPor->cursor.lnum > curBook->mem.lineCount) {
-				if (ml_append(curBook->mem.lineCount, (CS)"", (ColNr)1, false) == FAIL)
+				if (ml_append(curBook->mem.lineCount, u8"", (ColNr)1, false) == FAIL)
 					break;
 				++nr_lines;
 			}
@@ -1875,7 +1875,7 @@ c_display(Invocation* invo) {
 			 yb = &(y_regs[i]);
 
 		if (name == MB_TOLOWER(redir_reg)
-			|| (firstOccurrence((CS)"\"*+", redir_reg) != NULL &&
+			|| (firstOccurrence(u8"\"*+", redir_reg) != NULL &&
 				 (yb == y_previous || yb == &y_regs[0])))
 			 continue;       // do not list register being written to, the
 					 // pointer can be freed
@@ -1887,17 +1887,17 @@ c_display(Invocation* invo) {
 
 			if (do_show || yb->y_size == 0) {
 				msg_putchar('\n');
-				msg_puts(S"  ");
+				msg_puts(u8"  ");
 				msg_putchar(type);
-				msg_puts(S"  ");
+				msg_puts(u8"  ");
 				msg_putchar('"');
 				msg_putchar(name);
-				msg_puts(S"   ");
+				msg_puts(u8"   ");
 
 				n = (int)visibleColsG - 11;
 				for (j = 0; j < yb->y_size && n > 1; ++j) {
 					if (j) {
-						msgPutsDeco(S"^J", flags);
+						msgPutsDeco(u8"^J", flags);
 						n -= 2;
 					}
 					for (p = yb->y_array[j].c; *p != ZERO && (n -= bookPtr2Cells(p)) >= 0; ++p) {
@@ -1907,7 +1907,7 @@ c_display(Invocation* invo) {
 					}
 				}
 				if (n > 1 && yb->y_type == MLINE)
-					msgPutsDeco(S"^J", flags);
+					msgPutsDeco(u8"^J", flags);
 				termOutFlush();          // show one line at a time
 			 }
 			 ui_breakcheck();
@@ -1919,7 +1919,7 @@ c_display(Invocation* invo) {
 	if ((p = insert.c) != NULL
 		  && (arg || firstOccurrence(arg, '.') != NULL) && !gotInterruptG && !message_filtered(p)
 	) {
-		msg_puts(S"\n  c  \".   ");
+		msg_puts(u8"\n  c  \".   ");
 		dis_msg(p, true);
 	}
 
@@ -1927,7 +1927,7 @@ c_display(Invocation* invo) {
 	if (lastCommlineG != NULL && (arg == NULL || firstOccurrence(arg, ':') != NULL)
 					 && !gotInterruptG && !message_filtered(lastCommlineG))
 	{
-		msg_puts(S"\n  c  \":   ");
+		msg_puts(u8"\n  c  \":   ");
 		dis_msg(lastCommlineG, false);
 	}
 
@@ -1936,7 +1936,7 @@ c_display(Invocation* invo) {
 		 && (arg == NULL || firstOccurrence(arg, '%') != NULL) && !gotInterruptG
 					&& !message_filtered(curBook->currFileName))
 	 {
-		msg_puts(S"\n  c  \"%   ");
+		msg_puts(u8"\n  c  \"%   ");
 		dis_msg(curBook->currFileName, false);
 	}
 
@@ -1946,7 +1946,7 @@ c_display(Invocation* invo) {
 		LineNr    dummy;
 
 		if (bookGetFnameByFileId(0, &fname, &dummy) != FAIL && !message_filtered(fname)) {
-			 msg_puts(S"\n  c  \"#   ");
+			 msg_puts(u8"\n  c  \"#   ");
 			 dis_msg(fname, false);
 		}
 	}
@@ -1956,14 +1956,14 @@ c_display(Invocation* invo) {
 		 && (!arg || firstOccurrence(arg, '/') != NULL) && !gotInterruptG
 						&& !message_filtered(last_search_pat().c)
 	) {
-		msg_puts(S"\n  c  \"/   ");
+		msg_puts(u8"\n  c  \"/   ");
 		dis_msg(last_search_pat().c, false);
 	}
 
 	// display last used expression
 	if (expr_line && (!arg || firstOccurrence(arg, '=') != NULL)
 				  && !gotInterruptG && !message_filtered(expr_line)) {
-		msg_puts(S"\n  c  \"=   ");
+		msg_puts(u8"\n  c  \"=   ");
 		dis_msg(expr_line, false);
 	}
 }
@@ -1990,7 +1990,7 @@ private void
 writeToRegister(
 	OUT YankReg* yReg,    // pointer to yank register
 	Unt yank_type, //MCHAR, MLINE, MBLOCK, MAUTO
-	CS str,        //string to put in register
+	S str,        //string to put in register
 	Long len,      //length of string
 	Long blocklen, //width of Visual block
 	int str_list   //true iff str is a CString
@@ -2114,7 +2114,7 @@ writeToRegister(
 
 // Replace the contents of the '~' register with str.
 pub void
-dnd_yank_drag_data(CS str, Long len) {
+dnd_yank_drag_data(S str, Long len) {
 	YankReg* curr = y_current;
 	y_current = &y_regs[TILDE_REGISTER];
 	free_yank_all();
@@ -2157,8 +2157,8 @@ get_reg_type(int regname, Long *reglen) {
 }
 
 //When "flags" has GREG_LIST, return a list with text "s". Otherwise just return "s".
-private CS
-getreg_wrap_one_line(CS s, int flags) {
+private S
+getreg_wrap_one_line(S s, int flags) {
 	if ((flags & GREG_LIST) != 0){
 		List *list = list_alloc();
 		if (list_append_string(list, NULL, -1) == FAIL) {
@@ -2166,7 +2166,7 @@ getreg_wrap_one_line(CS s, int flags) {
 			return NULL;
 		}
 		list->first->c.string = s;
-		return (CS)list;
+		return (S)list;
 	}
 	return s;
 }
@@ -2178,7 +2178,7 @@ getreg_wrap_one_line(CS s, int flags) {
 //  GREG_EXPR_SRC   For the expression register: return expression itself,
 //        not the result of its evaluation.
 //  GREG_LIST   Return a list of lines instead of a single string.
-pub CS
+pub S
 get_reg_contents(int regname, int flags) {
 	LineNr   i;
 	Byte   *retval;
@@ -2297,7 +2297,7 @@ finish_write_reg(int name, YankReg* old_y_previous, YankReg* old_y_current) {
 pub void
 write_reg_contents(
 	int      name,
-	CS str,
+	S str,
 	int maxlen,
 	int must_append)
 {
@@ -2319,7 +2319,7 @@ write_reg_contents_lst(
 		Byte   *s;
 
 		if (strings[0] == NULL)
-			s = S"";
+			s = u8"";
 		ei (strings[1]) {
 			emsg(_(e_search_pattern_and_expression_register_may_not_contain_two_or_more_lines));
 			return;
@@ -2335,14 +2335,14 @@ write_reg_contents_lst(
 	if (init_write_reg(name, &old_y_previous, &old_y_current, must_append, &yank_type) == FAIL)
 		return;
 
-	writeToRegister(OUT y_current, yank_type, (CS)strings, -1, block_len, true);
+	writeToRegister(OUT y_current, yank_type, (S)strings, -1, block_len, true);
 	finish_write_reg(name, old_y_previous, old_y_current);
 }
 
 pub void
 write_reg_contents_ex(
 	int name,
-	CS str,
+	S str,
 	int maxlen,
 	int must_append,
 	Unt yank_type,
@@ -2373,8 +2373,8 @@ write_reg_contents_ex(
 	}
 
 	if (name == '=') {
-		CS p = copySubstr(str, (Unt)len);
-		CS s;
+		S p = copySubstr(str, (Unt)len);
+		S s;
 		if (must_append && expr_line) {
 			s = concat_str(expr_line, p);
 			eeglFree(p);
@@ -2421,7 +2421,7 @@ write_reg_contents_ex(
 
 // Convert from the selection string into the '*'/'+' register.
 private void
-clip_yank_selection(int type, CS str, Long len) {
+clip_yank_selection(int type, S str, Long len) {
 	YankReg* yReg = getYRegister(STAR_REGISTER);
 	writeToRegister(OUT yReg, type, str, len, -1, false);
 }

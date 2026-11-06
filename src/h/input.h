@@ -7,7 +7,7 @@ typedef enum {
 } FlushBuffers;
 #endif
 
-CS get_recorded(void);
+S get_recorded(void);
 Text get_inserted(void);
 Unt get_keystroke(void);
 int get_number(Boole allowColonToUpdate, int* mouse_used);
@@ -20,24 +20,24 @@ void ResetRedobuff(void);
 void CancelRedo(void);
 void saveRedobuff(SaveRedo* save_redo);
 void restoreRedobuff(SaveRedo* save_redo);
-void inpAppendToRedoBuff(CS s);
-void inpAppendLitToRedoBuff(CS str, int len);
-void inpAppendSpecToRedoBuff(CS s);
+void inpAppendToRedoBuff(S s);
+void inpAppendLitToRedoBuff(S str, int len);
+void inpAppendSpecToRedoBuff(S s);
 void AppendCharToRedobuff(Unt c);
 void inpAppendNumberToRedoBuff(long n);
-void stuffReadbuff(CS s);
-void stuffRedoReadbuff(CS s);
-void stuffReadbuffLen(CS s, long len);
-void stuffReadbuffSpec(CS s);
+void stuffReadbuff(S s);
+void stuffRedoReadbuff(S s);
+void stuffReadbuffLen(S s, long len);
+void stuffReadbuffSpec(S s);
 void stuffcharReadbuff(Unt c);
 void stuffnumReadbuff(long n);
-void stuffescaped(CS arg, int literally);
+void stuffescaped(S arg, int literally);
 int start_redo(long count, int old_redo);
 int start_redo_ins(void);
 void stop_redo_ins(void);
 int noremap_keys(void);
 int insertIntoTypebuf(
-	CS str,
+	S str,
 	Unt noremap,
 	int offset,
 	Boole nottyped,
@@ -53,7 +53,7 @@ void ungetchars(int len);
 int save_typebuf(void);
 void save_typeahead(TypeaheadSave *tp);
 void restore_typeahead(TypeaheadSave* tp, Boole overwrite);
-void openscript(CS name, Boole directly);
+void openscript(S name, Boole directly);
 void close_all_scripts(void);
 int using_script(void);
 void before_blocking(void);
@@ -74,19 +74,19 @@ int input_available(void);
 void may_add_last_used_map_to_redobuff(void);
 int do_cmdkey_command(Unt key, Unt flags);
 void reset_last_used_map(MapBlock* mp);
-int eeglStrNsize(CS s, int len);
-int eeglStrSize(CS s);
+int eeglStrNsize(S s, int len);
+int eeglStrSize(S s);
 int eeIsFnameChar_or_wc(Unt c);
 int ends_in_white(LineNr lnum);
-int same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS leader2_flags);
+int same_leader(LineNr lnum, int leader1_len, S leader1_flags, int leader2_len, S leader2_flags);
 int getwhitecols_curline(void);
 void format_lines(LineNr   line_count, int avoid_fex);
-CS inputInitCharLens(void);
-int mb_get_class(CS p);
-Unt inpGetClassForBook(CS p, Book* book);
-Unt utfc_ptr2char(CS p, OUT Unt* pcc);
+S inputInitCharLens(void);
+int mb_get_class(S p);
+Unt inpGetClassForBook(S p, Book* book);
+Unt utfc_ptr2char(S p, OUT Unt* pcc);
 Unt utfc_ptr2char_len(
-	 CS p,
+	 S p,
 	 OUT Unt* pcc,   //composing chars, last one will be 0
 	 int maxlen
 );
@@ -97,13 +97,13 @@ void f_charclass(Arr(Var) argvars, Var* returnVar);
 Unt utf_class_buf(Unt c, Book* book);
 int mb_char2cells(int c);
 int utf_uint2cells(Unt c);
-CS sanitizeStr(CS s);
+S sanitizeStr(S s);
 void show_utf8(void);
-void trans_characters(CS buf, int bufsize);
-int mb_ptr2cells(CS p);
-int mb_ptr2cells_len(CS p, int size);
-Unt mb_string2cells(CS p, int len);
-CS findWordStart(CS ptr);
+void trans_characters(S buf, int bufsize);
+int mb_ptr2cells(S p);
+int mb_ptr2cells_len(S p, int size);
+Unt mb_string2cells(S p, int len);
+S findWordStart(S ptr);
 int do_mouse(
 	Operator* oper,  //operator argument, can be NULL
 	Unt c,           //K_LEFTMOUSE, etc
@@ -115,7 +115,7 @@ void ins_mouse(int c);
 void ins_mousescroll(int dir);
 Boole is_mouse_key(Unt c);
 Unt get_mouse_button(Unt code, OUT Boole* is_click, OUT Boole* is_drag);
-void set_mouse_termcode(Unt n, CS s);
+void set_mouse_termcode(Unt n, S s);
 void del_mouse_termcode(Unt n);
 void setmouse(void);
 void mouseResetDragPortal(void);
@@ -127,7 +127,7 @@ Unt jump_to_mouse(
 void nv_mousescroll(ActionArg* cap);
 void nv_mouse(ActionArg* cap);
 void reset_held_button(void);
-int termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers);
+int termTryParseTermcode_mouse(S key_name, OUT Unt* modifiers);
 int mouse_comp_pos(
 	Portal* port,
 	OUT int* rowp,

@@ -1,19 +1,19 @@
-void optSetStringDefault(CS name, CS val);
+void optSetStringDefault(S name, S val);
 void optFreeAllOptions(void);
 void optInit1(void);
-CS optSetByName(CS name, OptionValue newVal, SetScope setScope);
-Unt stringToChar(CS arg, Boole multi_byte);
-ScriptPos* optGetScriptPos(CS name);
-OptionValue optGetValue(OUT Unt* flagsp, CS name, int scope);
+S optSetByName(S name, OptionValue newVal, SetScope setScope);
+Unt stringToChar(S arg, Boole multi_byte);
+ScriptPos* optGetScriptPos(S name);
+OptionValue optGetValue(OUT Unt* flagsp, S name, int scope);
 Boole optIsFnOption(Unt flags);
-void optSetFromVar(CS varname, Var *varp);
+void optSetFromVar(S varname, Var *varp);
 int optExpandForSet(Expand* xp, RegMatch* regmatch, OUT ExpandMatch* matches);
-Boole optWasSet(CS name);
+Boole optWasSet(S name);
 int makefoldset(FILE *fd);
-CS optSetBinary(OptionChange* cha);
-CS setModifiable(OptionChange* cha);
+S optSetBinary(OptionChange* cha);
+S setModifiable(OptionChange* cha);
 void optChangeAndReportError(
-	CS name,
+	S name,
 	OptionValue newValue,
 	SetScope setScope
 );
@@ -22,14 +22,14 @@ void copyPortOpt(PortalOptions* t, PortalOptions* s);
 void optClearPortOptions(PortalOptions* t);
 void optInitExpandContextForSet(
 	OUT Expand* xp,
-	CS arg,
+	S arg,
 	SetScope setScope
 );
 int optExpandOldOption(OUT ExpandMatch* matches);
-int reset_optWasSet(CS name);
+int reset_optWasSet(S name);
 long get_sidescrolloff_value(void);
-int optSetCallback(OUT Callback* cb, CS new);
-CS setShowTabpanel(OptionChange* cha);
+int optSetCallback(OUT Callback* cb, S new);
+S setShowTabpanel(OptionChange* cha);
 void initPortalOptions(PortalOptions* o);
 void updateStringRef(OptionChange* cha);
 void optInit0();
@@ -45,34 +45,34 @@ void optsCopyToBook(OUT Book* book, Unt flags);
 int optExpandOption(
 	Expand* xp,
 	RegMatch* regmatch,
-	CS fuzzystr,
+	S fuzzystr,
 	Boole canFuzzy,
 	OUT ExpandMatch* matches
 );
 Boole optImmutableMode();
 void optChangeStringOptionDirect(
-	CS name,
-	CS val,
+	S name,
+	S val,
 	SetScope scope,
 	ScriptId set_sid
 );
 void optSetStringOptionDirectInPort(
 	OUT Portal* po,
-	CS name,
-	CS val,
+	S name,
+	S val,
 	Unt optFlags,
 	int set_sid
 );
 void optSetStringOptionDirectInBook(
 	Book* book,
-	CS name,
-	CS val,
+	S name,
+	S val,
 	Unt optFlags,
 	int set_sid
 );
-CS get_mess_lang(void);
+S get_mess_lang(void);
 void init_locale(void);
 void c_language(Invocation* invo);
 void free_locales(void);
-CS get_lang_arg(Expand*, int idx);
-CS get_locales(Expand*, int idx);
+S get_lang_arg(Expand*, int idx);
+S get_locales(Expand*, int idx);

@@ -1,5 +1,5 @@
 //Automatically generated code by the `make indices` command.
-typedef struct {CS name; Unt index;} NameIndex;
+typedef struct {S name; Unt index;} NameIndex;
 static NameIndex const NAME_INDICES[181] = {
 {(Byte*)"autocomplete", 0},
 {(Byte*)"autocompletedelay", 1},

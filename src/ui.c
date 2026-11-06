@@ -90,7 +90,7 @@ typedef struct {
 } VTermRect;
 
 typedef struct {
-	CS str;
+	S str;
 	Unt len : 30;
 	unsigned int initial : 1;
 	unsigned int final : 1;
@@ -296,7 +296,7 @@ typedef struct {
 typedef struct {
 	Portal* po;
 	Portal* currPort;
-	CS user_defined;
+	S user_defined;
 	Unt maxrow;
 	Unt offsetrow;
 	Unt* prow;
@@ -402,7 +402,7 @@ declStruct(VTermState);
 declStruct(VTermScreen);
 declStruct(VTerm);
 
-typedef void VTermOutputCallback(CS s, Unt len, void *user);
+typedef void VTermOutputCallback(S s, Unt len, void *user);
 
 declStruct(VTermGlyphInfo);
 
@@ -410,7 +410,7 @@ typedef struct {
 	int (*text)(Byte *bytes, Unt len, void *user);
 	int (*control)(Byte control, void *user);
 	int (*escape)(Byte *bytes, Unt len, void *user);
-	int (*csi)(Byte* leader, long args[], int argcount, CS intermed, Byte command, void *user);
+	int (*csi)(Byte* leader, long args[], int argcount, S intermed, Byte command, void *user);
 	int (*osc)(int command, VTermStringFragment frag, void *user);
 	int (*dcs)(Byte* command, Unt commandlen, VTermStringFragment frag, void *user);
 	int (*apc)(VTermStringFragment frag, void *user);
@@ -497,11 +497,11 @@ struct VTerm {
 	VTermOutputCallback* outfunc;
 	void* outdata;
 
-	CS outbuffer;
+	S outbuffer;
 	Unt outbuffer_len;
 	Unt outbuffer_cur;
 
-	CS tmpbuffer;
+	S tmpbuffer;
 	Unt tmpbuffer_len;
 
 	VTermState* state;
@@ -513,9 +513,9 @@ struct VTerm {
 
 typedef struct {
 	int (*control)(Byte control, void* user);
-	int (*csi)(CS leader, long args[], int argcount, CS intermed, Byte command, void *user);
+	int (*csi)(S leader, long args[], int argcount, S intermed, Byte command, void *user);
 	int (*osc)(int command, VTermStringFragment frag, void* user);
-	int (*dcs)(CS command, Unt commandlen, VTermStringFragment frag, void *user);
+	int (*dcs)(S command, Unt commandlen, VTermStringFragment frag, void *user);
 	int (*apc)(VTermStringFragment frag, void* user);
 	int (*pm)(VTermStringFragment frag, void* user);
 	int (*sos)(VTermStringFragment frag, void* user);
@@ -643,7 +643,7 @@ struct VTermState {
 	struct {
 		VTermSelectionCallbacks* callbacks;
 		void *user;
-		CS buffer;
+		S buffer;
 		Unt buflen;
 	} selection;
 };
@@ -676,7 +676,7 @@ utf8_seqlen(long codepoint) {
 
 //Does NOT ZERO-terminate the buffer
 private int
-fill_utf8(long codepoint, CS str) {
+fill_utf8(long codepoint, S str) {
 	int nbytes = utf8_seqlen(codepoint);
 
 	//This is easier done backwards
@@ -732,7 +732,7 @@ private int rect_equal(VTermRect *a, VTermRect *b);
 private int rect_contains(VTermRect *big, VTermRect *small);
 private int rect_intersects(VTermRect* a, VTermRect* b);
 private unsigned int utf8_seqlen(long codepoint);
-private int fill_utf8(long codepoint, CS str);
+private int fill_utf8(long codepoint, S str);
 private int vterm_is_modify_other_keys(VTerm *vt);
 private int vterm_is_kitty_keyboard(VTerm *vt);
 private void vterm_keyboard_unichar(VTerm *vt, uint32_t c, VTermModifier mod);
@@ -754,7 +754,7 @@ private void vterm_push_output_sprintf(VTerm *vt, const char *format, ...);
 private void vterm_push_output_sprintf_ctrl(VTerm *vt, unsigned char ctrl, const char *fmt, ...);
 private void vterm_push_output_sprintf_str(VTerm* vt, unsigned char ctrl, int term, const char *fmt, ...);
 private Unt vterm_output_get_buffer_current(const VTerm *vt);
-private Unt vterm_output_read(VTerm *vt, CS builder, Unt len);
+private Unt vterm_output_read(VTerm *vt, S builder, Unt len);
 private void vterm_scroll_rect(
 		VTermRect rect,
 		int downward,
@@ -825,7 +825,7 @@ private VTermScreen * screen_new(VTerm *vt);
 private void vterm_screen_free(VTermScreen *screen);
 private void vterm_screen_reset(VTermScreen *screen, int hard);
 private Unt _get_chars(VTermScreen* screen, void* buffer, Unt len, VTermRect rect);
-private Unt vterm_screen_get_text(VTermScreen* screen, CS str, Unt len, VTermRect rect);
+private Unt vterm_screen_get_text(VTermScreen* screen, S str, Unt len, VTermRect rect);
 private int vterm_screen_get_cell(VTermScreen* screen, VTermPos pos, OUT ScreenCell* cell);
 private VTermScreen * vterm_obtain_screen(VTerm *vt);
 private void vterm_screen_enable_altscreen(VTermScreen *screen, int altscreen);
@@ -835,8 +835,8 @@ private int is_intermed(unsigned char c);
 private void do_control(VTerm *vt, unsigned char control);
 private void do_csi(VTerm *vt, char command);
 private void do_escape(VTerm* vt, Byte command);
-private void string_fragment(VTerm *vt, CS str, Unt len, int final);
-private Unt vterm_input_write(VTerm *vt, CS bytes, Unt len);
+private void string_fragment(VTerm *vt, S str, Unt len, int final);
+private Unt vterm_input_write(VTerm *vt, S bytes, Unt len);
 private void vterm_parser_set_callbacks(VTerm* vt, VTermParserCallbacks* callbacks, void* user);
 private void statePutglyph(VTermState* state, Unt chars[], int width, VTermPos pos);
 private void updatecursor(VTermState* state, VTermPos* oldpos, Boole cancel_phantom);
@@ -852,7 +852,7 @@ private int is_col_tabstop(VTermState* state, int col);
 private int is_cursor_in_scrollregion(VTermState* state);
 private void tab(VTermState* state, int count, int direction);
 private void set_lineinfo(VTermState* state, int row, Boole force);
-private int on_text(CS, Unt, void* user);
+private int on_text(S, Unt, void* user);
 private int on_control(unsigned char control, void *user);
 private int settermprop_bool(VTermState *state, VTermProp prop, int v);
 private int settermprop_int(VTermState *state, VTermProp prop, int v);
@@ -862,10 +862,10 @@ private int on_escape(Arr(Byte) bytes, Unt len, void* user);
 private void set_mode(VTermState* state, int num, int val);
 private void request_dec_mode(VTermState* state, int num);
 private int on_csi(
-	CS leader,
+	S leader,
 	long args[],
 	int argcount,
-	CS intermed,
+	S intermed,
 	Byte command,
 	void *user
 );
@@ -873,7 +873,7 @@ private Byte unbase64one(char c);
 private void osc_selection(VTermState* state, VTermStringFragment frag);
 private int on_osc(int command, VTermStringFragment frag, void* user);
 private void request_status_string(VTermState* state, VTermStringFragment frag);
-private int on_dcs(CS command, Unt commandlen, VTermStringFragment frag, void *user);
+private int on_dcs(S command, Unt commandlen, VTermStringFragment frag, void *user);
 private int on_apc(VTermStringFragment frag, void* user);
 private int on_pm(VTermStringFragment frag, void* user);
 private int on_sos(VTermStringFragment frag, void* user);
@@ -889,9 +889,9 @@ private void vterm_state_set_unrecognized_fallbacks(
 private int vterm_state_set_termprop(VTermState* state, VTermProp prop, VTermValue* val);
 private void vterm_state_focus_in(VTermState *state);
 private void vterm_state_focus_out(VTermState *state);
-private int cursor_color_equal(CS lhs_color, CS rhs_color);
-private void cursor_color_copy(OUT CS* to_color, CS from_color);
-private CS cursor_color_get(CS color);
+private int cursor_color_equal(S lhs_color, S rhs_color);
+private void cursor_color_copy(OUT S* to_color, S from_color);
+private S cursor_color_get(S color);
 private Boole parse_termwinsize(Portal *po, OUT Unt* rows, OUT Unt* cols);
 private void set_term_and_win_size(Terminal *term, JobOptions *opt);
 private void setup_job_options(JobOptions *opt, int rows, int cols);
@@ -899,19 +899,19 @@ private Boole mch_check_messages(void);
 private void term_flush_messages(void);
 private void closeFailedTerminalBook(Book* book, Book* old_curBook);
 private Book* startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags);
-private CS get_terminaloname(Expand*, int idx);
-private CS get_termkill_name(Expand*, int idx);
+private S get_terminaloname(Expand*, int idx);
+private S get_termkill_name(Expand*, int idx);
 private void free_scrollback(Terminal* term);
 private ChannelFdKind get_tty_part(Terminal* term);
 private void term_forward_output(Terminal *term);
-private void term_write_job_output(Terminal* term, CS msg_arg, Unt len_arg);
+private void term_write_job_output(Terminal* term, S msg_arg, Unt len_arg);
 private void position_cursor(Portal *po, VTermPos* pos);
 private void update_cursor(Terminal *term, int redraw);
 private int sendMouse(VTerm *vterm, int button, int pressed);
 private int handleMouseEvent(VTerm *vterm, Unt key);
-private int term_convert_key(Terminal *term, Unt c, int modmask, CS buf);
+private int term_convert_key(Terminal *term, Unt c, int modmask, S buf);
 private Boole term_job_running_check(Terminal* term, Boole check_job_status);
-private void add_scrollback_line_to_buffer(Terminal *term, CS text, Unt len);
+private void add_scrollback_line_to_buffer(Terminal *term, S text, Unt len);
 private int equal_celattr(CellDeco *a, CellDeco *b);
 private int add_empty_scrollback(Terminal *term, CellDeco *fillDeco, int lnum);
 private void cleanup_scrollback(Terminal *term);
@@ -946,28 +946,28 @@ private void handle_postponed_scrollback(Terminal *term);
 private int term_after_channel_closed(Terminal* term);
 private void term_line2screenline(VTermScreen* screen, VTermPos* pos, Unt max_col);
 private void handle_drop_command(ListItem* item);
-private int is_permitted_term_api(CS func, CS pat);
+private int is_permitted_term_api(S func, S pat);
 private void handle_call_command(Terminal* term, Channel* channel, ListItem* item);
-private Unt url_decode(const char *src, const Unt len, CS dst);
+private Unt url_decode(const char *src, const Unt len, S dst);
 private void sync_shell_dir(ArrayList* gap);
 private int parse_osc(int command, VTermStringFragment frag, void *user);
 private int parse_csi(
-	CS,
+	S,
 	long args[],
 	int argcount,
-	CS,
+	S,
 	Byte command,
 	void* user
 );
 private void * vterm_malloc(Unt size);
 private void vterm_memfree(void *ptr);
 private int create_vterm(Terminal* term, int rows, int cols);
-private Book * term_get_buf(Var* argvars, CS where);
+private Book * term_get_buf(Var* argvars, S where);
 private void dump_term_color(FILE* fd, VTermColor color);
 private void dump_is_corrupt(ArrayList* gap);
 private void append_cell(ArrayList* gap, CellDeco* cell);
 private Unt read_dump_file(FILE *fd, VTermPos* cursor_pos);
-private CS get_separator(int text_width, CS fname);
+private S get_separator(int text_width, S fname);
 private void term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff);
 private int get_row_number(Var *tv, Terminal *term);
 private int initSubtermAndJob(
@@ -981,16 +981,16 @@ private int create_pty_only(Terminal* term, JobOptions* opt);
 private void term_free_vterm(Terminal* term);
 private void term_report_winsize(Terminal* term, int rows, int cols);
 private void prepare_to_exit(void);
-private void mch_write(CS s, int len);
+private void mch_write(S s, int len);
 private int resize_func(int check_only);
 private int mch_inchar(
-	OUT CS buf,
+	OUT S buf,
 	int maxlen,
 	long wtime,       //don't use "time", MIPS cannot handle it
 	int changeCnt
 );
 private int inchar_loop(
-	OUT CS buf,
+	OUT S buf,
 	int maxlen,
 	Long wtime,       //don't use "time", MIPS cannot handle it
 	int changeCnt,
@@ -1016,14 +1016,14 @@ private void fillRowsWithTwoCharsWithTailingArea(
 );
 private void drawTextLen_for_tabpanel(
 	Unt tplmode,
-	CS p,
+	S p,
 	Unt len,
 	Decoration deco,
 	Tabpanel* tapa
 );
 private void draw_tabpanel_default(int tplmode, Tabpanel* tapa);
 private void drawTabpanelUserdefined(int tplmode, Tabpanel* tapa);
-private CS startsWithPercentAndBang(Tabpanel* tapa);
+private S startsWithPercentAndBang(Tabpanel* tapa);
 private void do_by_tplmode(
 	Unt tplmode,
 	Unt col_start,
@@ -1628,7 +1628,7 @@ vterm_output_get_buffer_current(const VTerm *vt) {
 }
 
 private Unt
-vterm_output_read(VTerm *vt, CS builder, Unt len) {
+vterm_output_read(VTerm *vt, S builder, Unt len) {
 	if (len > vt->outbuffer_cur)
 		len = vt->outbuffer_cur;
 
@@ -3572,7 +3572,7 @@ _get_chars(VTermScreen* screen, void* buffer, Unt len, VTermRect rect) {
 }
 
 private Unt
-vterm_screen_get_text(VTermScreen* screen, CS str, Unt len, VTermRect rect) {
+vterm_screen_get_text(VTermScreen* screen, S str, Unt len, VTermRect rect) {
 	return _get_chars(screen, str, len, rect);
 }
 
@@ -3817,7 +3817,7 @@ do_escape(VTerm* vt, Byte command) {
 }
 
 private void
-string_fragment(VTerm *vt, CS str, Unt len, int final) {
+string_fragment(VTerm *vt, S str, Unt len, int final) {
 	VTermStringFragment frag;
 
 	frag.str = str;
@@ -3866,9 +3866,9 @@ string_fragment(VTerm *vt, CS str, Unt len, int final) {
 }
 
 private Unt
-vterm_input_write(VTerm *vt, CS bytes, Unt len) {
+vterm_input_write(VTerm *vt, S bytes, Unt len) {
 	Unt pos = 0;
-	CS string_start = NULL;  //init to avoid gcc warning
+	S string_start = NULL;  //init to avoid gcc warning
 
 	vt->in_backspace = 0;          //Count down with BS key and activate when it reaches 1
 
@@ -4393,7 +4393,7 @@ set_lineinfo(VTermState* state, int row, Boole force) {
 }
 
 private int
-on_text(CS, Unt, void* user) {
+on_text(S, Unt, void* user) {
 	VTermState* state = user;
 	int npoints = 0;
 	Unt eaten = 0;
@@ -4927,10 +4927,10 @@ request_dec_mode(VTermState* state, int num) {
 
 private int
 on_csi(
-	CS leader,
+	S leader,
 	long args[],
 	int argcount,
-	CS intermed,
+	S intermed,
 	Byte command,
 	void *user
 ) {
@@ -5745,7 +5745,7 @@ osc_selection(VTermState* state, VTermStringFragment frag) {
 
 	if (state->selection.callbacks->set) {
 		Unt bufcur = 0;
-		CS buffer = state->selection.buffer;
+		S buffer = state->selection.buffer;
 
 		uint32_t x = 0; // Current decoding value
 		int n = 0;      // Number of sextets consumed
@@ -5904,8 +5904,8 @@ request_status_string(VTermState* state, VTermStringFragment frag) {
 				vt->tmpbuffer + cur,
 				vt->tmpbuffer_len - cur,
 				argi == argCnt - 1
-					? S"%ld"
-					: (CSI_ARG_HAS_MORE(args[argi]) ? S"%ld:" : S"%ld;"),
+					? u8"%ld"
+					: (CSI_ARG_HAS_MORE(args[argi]) ? u8"%ld:" : u8"%ld;"),
 				CSI_ARG(args[argi])
 			);
 			if (cur >= vt->tmpbuffer_len)
@@ -5953,7 +5953,7 @@ request_status_string(VTermState* state, VTermStringFragment frag) {
 }
 
 private int
-on_dcs(CS command, Unt commandlen, VTermStringFragment frag, void *user) {
+on_dcs(S command, Unt commandlen, VTermStringFragment frag, void *user) {
 	VTermState *state = user;
 
 	if (commandlen == 2 && strneq((char*)command, "$q", 2)) {
@@ -6007,7 +6007,7 @@ on_resize(Short rows, Short cols, void* user) {
 	VTermPos oldpos = state->pos;
 
 	if (cols != state->cols) {
-		CS newtabstops = vterm_allocator_malloc(state->vt, (cols + 7) / 8);
+		S newtabstops = vterm_allocator_malloc(state->vt, (cols + 7) / 8);
 
 		//TODO: This can all be done much more efficiently bytewise
 		Unt col;
@@ -6393,7 +6393,7 @@ typedef struct sb_line_S {
 	Unt cols;   //can differ per line
 	Arr(CellDeco) sb_cells;   //allocated
 	CellDeco sb_fillDeco;   //for short line
-	CS sb_text;   //for scrollbackPostponed
+	S sb_text;   //for scrollbackPostponed
 } ScrollbackLine;
 
 //typedef Terminal in eegl.h@@structs
@@ -6417,21 +6417,21 @@ struct Terminal {
 #define TL_FINISH_CLOSE     'c'   //++close or :terminal without argument
 #define TL_FINISH_NOCLOSE   'n'   //++noclose
 #define TL_FINISH_OPEN      'o'   //++open
-	CS openComm;
-	CS tl_eof_chars;
-	CS tl_api;   //prefix for terminal API function
+	S openComm;
+	S tl_eof_chars;
+	S tl_api;   //prefix for terminal API function
 
-	CS tl_arg0_cmd;   //To format the status bar
+	S tl_arg0_cmd;   //To format the status bar
 
-	CS command;
-	CS tl_kill;
+	S command;
+	S tl_kill;
 
 	//last known vterm size
 	Unt rows;
 	Unt cols;
 
-	CS title; //NULL or allocated
-	CS tl_status_text; //NULL or allocated
+	S title; //NULL or allocated
+	S tl_status_text; //NULL or allocated
 
 	//Range of screen rows to update.  Zero based.
 	int dirtyRowStart; //MAX_ROW if nothing dirty
@@ -6445,7 +6445,7 @@ struct Terminal {
 	int scrollbackScrolled;
 	ArrayList scrollbackPostponed;
 
-	CS hiliteName; //replaces "Terminal"; allocated
+	S hiliteName; //replaces "Terminal"; allocated
 
 	CellDeco cellDeco;
 
@@ -6493,22 +6493,22 @@ private int term_backspace_char = BS;
 
 //Store the last set and the desired cursor properties, so that we only update
 //them when needed.  Doing it unnecessary may result in flicker.
-private CS last_set_cursor_color = NULL;
-private CS desired_cursor_color = NULL;
+private S last_set_cursor_color = NULL;
+private S desired_cursor_color = NULL;
 private int   last_set_cursor_shape = -1;
 private int   desired_cursor_shape = -1;
 private int   last_set_cursor_blink = -1;
 private int   desired_cursor_blink = -1;
 
 private int
-cursor_color_equal(CS lhs_color, CS rhs_color) {
+cursor_color_equal(S lhs_color, S rhs_color) {
 	if (lhs_color && rhs_color)
 		return STRCMP(lhs_color, rhs_color) == 0;
 	return !lhs_color && !rhs_color;
 }
 
 private void
-cursor_color_copy(OUT CS* to_color, CS from_color) {
+cursor_color_copy(OUT S* to_color, S from_color) {
 	//Avoid a free & alloc if the value is already right.
 	if (cursor_color_equal(*to_color, from_color))
 		return;
@@ -6516,9 +6516,9 @@ cursor_color_copy(OUT CS* to_color, CS from_color) {
 	*to_color = (from_color == NULL) ? NULL : copyStr(from_color);
 }
 
-private CS
-cursor_color_get(CS color) {
-	return color ? color : S"";
+private S
+cursor_color_get(S color) {
+	return color ? color : u8"";
 }
 
 
@@ -6533,7 +6533,7 @@ parse_termwinsize(Portal *po, OUT Unt* rows, OUT Unt* cols) {
 	if (*po->o.termWinSize == ZERO)
 		return false;
 
-	CS p = firstOccurrence(po->o.termWinSize, 'x');
+	S p = firstOccurrence(po->o.termWinSize, 'x');
 
 	//Syntax of value was already checked when it's set.
 	Boole minsize = false;
@@ -6585,7 +6585,7 @@ set_term_and_win_size(Terminal *term, JobOptions *opt) {
 			Byte buf[100];
 
 			eeSnprintf(buf, 100, "%dx%d", term->rows, term->cols);
-			optChangeAndReportError(S"termwinsize", optStr(buf), SET_LOCAL);
+			optChangeAndReportError(u8"termwinsize", optStr(buf), SET_LOCAL);
 		}
 	}
 }
@@ -6710,7 +6710,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
 	 } ei (opt->jo_hidden || (flags & TERM_START_SYSTEM)) {
 		//Create a new buffer without a portal. Make it the current buffer for
 		//a moment to be able to do the initializations.
-		Book* book = bookNew(S"", NULL, (LineNr)0, BLN_NEW | BLN_LISTED);
+		Book* book = bookNew(u8"", NULL, (LineNr)0, BLN_NEW | BLN_LISTED);
 		if (!book || ml_open(book) == FAIL) {
 			 eeglFree(term);
 			 return NULL;
@@ -6724,8 +6724,8 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
 	} else {
 		//Open a new portal or tab.
 		splitInvo.id = C_new;
-		splitInvo.comm = S"new";
-		splitInvo.arg = S"";
+		splitInvo.comm = u8"new";
+		splitInvo.arg = u8"";
 		if (opt->jo_term_rows > 0 && !vertical) {
 			splitInvo.line2 = opt->jo_term_rows;
 			splitInvo.addrCount = 1;
@@ -6772,26 +6772,26 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
 		curBook->fullFileName = copyStr(opt->jo_term_name);
 	} ei (argv->len > 0) {
 		eeglFree(curBook->fullFileName);
-		curBook->fullFileName = copyStr(S"!system");
+		curBook->fullFileName = copyStr(u8"!system");
 	} else {
 		int i;
 		Unt len;
-		CS cmd;
+		S cmd;
 
 		if (argvar->tag == VAR_STRING) {
 			cmd = argvar->string;
 			if (!cmd)
-				cmd = S"";
+				cmd = u8"";
 			ei (STRCMP(cmd, "NONE") == 0)
-				cmd = S"pty";
+				cmd = u8"pty";
 		} ei (argvar->tag != VAR_LIST
 				|| argvar->list == NULL
 				|| argvar->list->len == 0
 				|| (cmd = convertVarToStringSingleUse( &argvar->list->first->c)) == NULL)
-			cmd = S"";
+			cmd = u8"";
 
 		len = STRLEN(cmd) + 10;
-		CS p = alloc(len);
+		S p = alloc(len);
 
 		for (i = 0; p; ++i) {
 			//Prepend a ! to the command name to avoid the buffer name equals
@@ -6819,7 +6819,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
 	if (opt->jo_eof_chars)
 		term->tl_eof_chars = copyStr(opt->jo_eof_chars);
 
-	optSetByName(S"booktype", optEnum(BOOK_TERMINAL), SET_LOCAL);
+	optSetByName(u8"booktype", optEnum(BOOK_TERMINAL), SET_LOCAL);
 	//Avoid that @buftype is reset when this buffer is entered.
 	curBook->o.initialized = true;
 
@@ -6834,9 +6834,9 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
 
 	//Remember the command for the session file.
 	if (opt->jo_term_norestore || argv->len > 0)
-		term->command = copyStr(S"NONE");
+		term->command = copyStr(u8"NONE");
 	ei (argvar->tag == VAR_STRING) {
-		CS cmd = argvar->string;
+		S cmd = argvar->string;
 		if (cmd && STRCMP(cmd, "bash") != 0)
 			term->command = copyStr(cmd);
 	} ei (argvar->tag == VAR_LIST && argvar->list != NULL && argvar->list->len > 0) {
@@ -6845,10 +6845,10 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
 
 		ga_init2(&ga, 1, 100);
 		FOR_ALL_LIST_ITEMS(argvar->list, item) {
-			CS s = convertVarToStringSingleUse(&item->c);
+			S s = convertVarToStringSingleUse(&item->c);
 			if (!s)
 				break;
-			CS p = copyStr_fnameescape(s, VSE_NONE);
+			S p = copyStr_fnameescape(s, VSE_NONE);
 			ga_concat(&ga, p);
 			eeglFree(p);
 			ga_append(&ga, ' ');
@@ -6861,22 +6861,22 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
 	}
 
 	if (opt->jo_term_kill) {
-		CS p = skiptowhite(opt->jo_term_kill);
+		S p = skiptowhite(opt->jo_term_kill);
 		term->tl_kill = copySubstr(opt->jo_term_kill, p - opt->jo_term_kill);
 	}
 
 	if (opt->jo_term_api) {
-		CS p = skiptowhite(opt->jo_term_api);
+		S p = skiptowhite(opt->jo_term_api);
 		term->tl_api = copySubstr(opt->jo_term_api, p - opt->jo_term_api);
 	} else
-		term->tl_api = copyStr(S"Tapi_");
+		term->tl_api = copyStr(u8"Tapi_");
 
 	if (opt->set1 & JO2_TERM_HIGHLIGHT)
 		term->hiliteName = copyStr(opt->jo_term_highlight);
 
 	//System dependent: setup the vterm and maybe start the job in it.
 	int res;
-	if (argv->len == 0 && argvar->tag == VAR_STRING && argvar->string && eq(argvar->string, S"NONE"))
+	if (argv->len == 0 && argvar->tag == VAR_STRING && argvar->string && eq(argvar->string, u8"NONE"))
 		res = create_pty_only(term, opt);
 	else
 		res = initSubtermAndJob(term, argvar, argv, opt, &orig_opt);
@@ -6923,11 +6923,11 @@ c_terminal(Invocation* invo) {
 
 	init_job_options(&opt);
 
-	CS shellComm = invo->arg;
+	S shellComm = invo->arg;
 	while (*shellComm == '+' && *(shellComm + 1) == '+') {
 		shellComm += 2;
-		CS p = skiptowhite(shellComm);
-		CS ep = firstOccurrence(shellComm, '=');
+		S p = skiptowhite(shellComm);
+		S ep = firstOccurrence(shellComm, '=');
 		if (ep) {
 			if (ep < p)
 				p = ep;
@@ -6974,12 +6974,12 @@ c_terminal(Invocation* invo) {
 			opt.jo_term_cols = atoi((char *)ep + 1);
 			p = skiptowhite(shellComm);
 		} ei (OPTARG_HAS("eof") && ep) {
-			CS buf = NULL;
+			S buf = NULL;
 
 			eeglFree(opt.jo_eof_chars);
 			p = skiptowhite(shellComm);
 			*p = ZERO;
-			CS keys = replace_termcodes(
+			S keys = replace_termcodes(
 				ep + 1, &buf, 0, REPTERM_FROM_PART | REPTERM_DO_LT | REPTERM_SPECIAL, NULL, false
 			);
 			opt.set1 |= JO2_EOF_CHARS;
@@ -7029,10 +7029,10 @@ theend:
 	eeglFree(opt.jo_eof_chars);
 }
 
-private CS
+private S
 get_terminaloname(Expand*, int idx) {
 	//Note: Keep this in sync with c_terminal.
-	static CS p_termopt_values[] = { SMAP((CS),
+	static S p_termopt_values[] = { SMAP((S),
 		"close",
 		"noclose",
 		"open",
@@ -7053,11 +7053,11 @@ get_terminaloname(Expand*, int idx) {
 	return NULL;
 }
 
-private CS
+private S
 get_termkill_name(Expand*, int idx) {
 	//These are platform-specific values used for job_stop(). They are defined
 	//in each platform's chSendSignalToJob(). Just use a unified auto-complete list for simplicity.
-	static CS p_termkill_values[] = { SMAP((CS),
+	static S p_termkill_values[] = { SMAP((S),
 		"term",
 		"hup",
 		"quit",
@@ -7073,11 +7073,11 @@ get_termkill_name(Expand*, int idx) {
 
 //Command-line expansion for :terminal [options]
 pub int
-expand_terminal_opt(CS pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches) {
+expand_terminal_opt(S pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches) {
 	if (xp->input.c > xp->fullInput && *(xp->input.c - 1) == '=') {
 		Byte *(*cb)(Expand *, int) = NULL;
 
-		CS name_end = xp->input.c - 1;
+		S name_end = xp->input.c - 1;
 		if (name_end - xp->fullInput >= 4 && STRNCMP(name_end - 4, "kill", 4) == 0)
 			 cb = get_termkill_name;
 
@@ -7139,10 +7139,10 @@ term_write_session(FILE* fd, Portal* po, EeSet* terminal_bufs){
 		return FAIL;
 
 	if (terminal_bufs != NULL && po->book->countPortals > 1) {
-		CS hash_key = alloc(NUMBUFLEN);
+		S hash_key = alloc(NUMBUFLEN);
 
 		eeSnprintf(hash_key, NUMBUFLEN, "%d", bufnr);
-		hash_add(terminal_bufs, text(hash_key), (CS)"terminal session");
+		hash_add(terminal_bufs, text(hash_key), u8"terminal session");
 	}
 
 	return put_eol(fd);
@@ -7197,7 +7197,7 @@ free_terminal(Book* book) {
 	if (term->job) {
 		JobStatus status = motJobGetStatus(term->job);
 		if (status != JOB_ENDED && status != JOB_FINISHED && status != JOB_FAILED)
-			job_stop(term->job, NULL, S"kill");
+			job_stop(term->job, NULL, u8"kill");
 		job_unref(term->job);
 	}
 	term->next = terminals_to_free;
@@ -7263,8 +7263,8 @@ term_forward_output(Terminal *term) {
 
 //Write job output "msg[len]" to the vterm.
 private void
-term_write_job_output(Terminal* term, CS msg_arg, Unt len_arg) {
-	CS msg = msg_arg;
+term_write_job_output(Terminal* term, S msg_arg, Unt len_arg) {
+	S msg = msg_arg;
 	Unt len = len_arg;
 	VTerm* vterm = term->vterm;
 	Unt prevlen = vterm_output_get_buffer_current(vterm);
@@ -7272,7 +7272,7 @@ term_write_job_output(Terminal* term, CS msg_arg, Unt len_arg) {
 
 	//Limit the length to @termwinscroll * cols * 3 bytes.  Keep the text at the end.
 	if (len > limit) {
-		CS p = msg + len - limit;
+		S p = msg + len - limit;
 
 		p -= mb_head_off(msg, p);
 		len -= p - msg;
@@ -7323,7 +7323,7 @@ update_cursor(Terminal *term, int redraw) {
 
 //Invoked when "msg" output from a job was received.  Write it to the terminal of "buffer"
 pub void
-write_to_term(Book *book, CS msg, Channel* channel) {
+write_to_term(Book *book, S msg, Channel* channel) {
 	Unt   len = STRLEN(msg);
 	Terminal* term = book->term;
 
@@ -7427,7 +7427,7 @@ handleMouseEvent(VTerm *vterm, Unt key) {
 //Convert typed key "c" with modifiers "modmask" into bytes to send to the job.
 //Return the number of bytes in "buf".
 private int
-term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
+term_convert_key(Terminal *term, Unt c, int modmask, S buf) {
 	VTerm       *vterm = term->vterm;
 	VTermKey       key = VTERM_KEY_NONE;
 	VTermModifier   mod = VTERM_MOD_NONE;
@@ -7647,11 +7647,11 @@ term_confirm_stop(Book* book) {
 pub int
 term_try_stop_job(Book* book) {
 	int       count;
-	CS  how = book->term->tl_kill;
+	S  how = book->term->tl_kill;
 
 	if ((how == NULL || *how == ZERO) && (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM))) {
 		if (term_confirm_stop(book) == OK)
-			how = S"kill";
+			how = u8"kill";
 		else
 			return FAIL;
 	}
@@ -7683,7 +7683,7 @@ term_try_stop_job(Book* book) {
 
 //Add the last line of the scrollback buffer to the buffer in the portal.
 private void
-add_scrollback_line_to_buffer(Terminal *term, CS text, Unt len) {
+add_scrollback_line_to_buffer(Terminal *term, S text, Unt len) {
 	Book* book = term->book;
 	int      empty = (book->mem.flags & ML_EMPTY);
 	LineNr   lnum = book->mem.lineCount;
@@ -7780,7 +7780,7 @@ update_snapshot(Terminal* term) {
 				//Line was skipped, add an empty line.
 				--lines_skipped;
 				if (add_empty_scrollback(term, &fillDeco, 0) == OK)
-					 add_scrollback_line_to_buffer(term, (CS)"", 0);
+					 add_scrollback_line_to_buffer(term, u8"", 0);
 			}
 
 			if (len == 0)
@@ -7799,7 +7799,7 @@ update_snapshot(Terminal* term) {
 					if (vterm_screen_get_cell(screen, pos, OUT &cell) == 0) {
 						CLEAR_POINTER(p + pos.col);
 						if (ga_grow(&ga, 1) == OK)
-						    ga.len += mb_char2bytes(' ', (CS)ga.c + ga.len);
+						    ga.len += mb_char2bytes(' ', (S)ga.c + ga.len);
 					} else {
 						p[pos.col] = cell.deco;
 						if (width == 2)
@@ -7811,7 +7811,7 @@ update_snapshot(Terminal* term) {
 						   int c;
 
 						   for (Unt i = 0; (c = cell.chars[i]) > 0 || i == 0; ++i)
-						      ga.len += mb_char2bytes(c == ZERO ? ' ' : c, (CS)ga.c + ga.len);
+						      ga.len += mb_char2bytes(c == ZERO ? ' ' : c, (S)ga.c + ga.len);
 						}
 					}
 				}
@@ -7822,9 +7822,9 @@ update_snapshot(Terminal* term) {
 				++term->scrollback.len;
 
 				if (ga_grow(&ga, 1) == FAIL)
-					add_scrollback_line_to_buffer(term, (CS)"", 0);
+					add_scrollback_line_to_buffer(term, u8"", 0);
 				else {
-					*((CS)ga.c + ga.len) = ZERO;
+					*((S)ga.c + ga.len) = ZERO;
 					add_scrollback_line_to_buffer(term, ga.c, ga.len);
 				}
 				ga_clear(&ga);
@@ -7839,7 +7839,7 @@ update_snapshot(Terminal* term) {
 		  ++pos.row
 	) {
 		if (add_empty_scrollback(term, &fillDeco, 0) == OK)
-			add_scrollback_line_to_buffer(term, (CS)"", 0);
+			add_scrollback_line_to_buffer(term, u8"", 0);
 	}
 
 	term->dirtySnapshot = false;
@@ -8138,7 +8138,7 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
 	len = term_convert_key(term, c, modmask, msg);
 	if (len > 0)
 		//TODO: if FAIL is returned, stop?
-		channel_send(motJobGetChannel(term->job), get_tty_part(term), (CS)msg, (int)len, NULL);
+		channel_send(motJobGetChannel(term->job), get_tty_part(term), (S)msg, (int)len, NULL);
 
 	return OK;
 }
@@ -8173,10 +8173,10 @@ term_paste_register(Unt prev_c) {
 
 	ListItem* item;
 	FOR_ALL_LIST_ITEMS(l, item) {
-		CS s = tv_get_string(&item->c);
+		S s = tv_get_string(&item->c);
 		channel_send(motJobGetChannel(curBook->term->job), PART_IN, s, (int)STRLEN(s), NULL);
 		if (item->next || type == MLINE)
-			channel_send(motJobGetChannel(curBook->term->job), PART_IN, S"\r", 1, NULL);
+			channel_send(motJobGetChannel(curBook->term->job), PART_IN, u8"\r", 1, NULL);
 	}
 	list_free(l);
 }
@@ -8395,7 +8395,7 @@ terminal_loop(int blocking) {
 				send_keys_to_term(curBook->term, prev_raw_c, prev_modMaskG, true);
 			} ei (c == Ctrl_C) {
 				//"CTRL-W CTRL-C" or 'termwinkey' CTRL-C: end the job
-				chSendSignalToJob(curBook->term->job, (CS)"kill");
+				chSendSignalToJob(curBook->term->job, u8"kill");
 			} ei (c == '.') {
 				//"CTRL-W .": send CTRL-W to the job
 				//"'termwinkey' .": send 'termwinkey' to the job
@@ -8558,13 +8558,13 @@ handle_movecursor(VTermPos pos, VTermPos, int visible, void *user){
 private int
 handle_settermprop(VTermProp prop, VTermValue* value, void* user) {
 	Terminal* term = (Terminal *)user;
-	CS strval = NULL;
+	S strval = NULL;
 
 	switch (prop) {
 	case VTERM_PROP_TITLE:
 		if (disable_vterm_title_for_testing)
 			break;
-		strval = copySubstr((CS)value->string.str, value->string.len);
+		strval = copySubstr((S)value->string.str, value->string.len);
 		if (strval == NULL)
 			break;
 		eeglFree(term->title);
@@ -8606,7 +8606,7 @@ handle_settermprop(VTermProp prop, VTermValue* value, void* user) {
 		 break;
 
 	case VTERM_PROP_CURSORCOLOR:
-		strval = copySubstr((CS)value->string.str, value->string.len);
+		strval = copySubstr((S)value->string.str, value->string.len);
 		if (strval == NULL)
 			break;
 		cursor_color_copy(OUT &term->tl_cursor_color, strval);
@@ -8722,7 +8722,7 @@ handle_pushline(int cols, Arr(ScreenCell) cells, void* user) {
 	int i;
 	int c;
 	int col;
-	CS text;
+	S text;
 	ScrollbackLine   *line;
 	ArrayList   ga;
 	CellDeco fillDeco = term->cellDeco;
@@ -8745,7 +8745,7 @@ handle_pushline(int cols, Arr(ScreenCell) cells, void* user) {
 				break;
 			}
 			for (i = 0; (c = cells[col].chars[i]) > 0 || i == 0; ++i) {
-				ga.len += mb_char2bytes(c == ZERO ? ' ' : c, (CS)ga.c + ga.len);
+				ga.len += mb_char2bytes(c == ZERO ? ' ' : c, (S)ga.c + ga.len);
 			}
 			p[col] = cells[col].deco;
 		}
@@ -8753,9 +8753,9 @@ handle_pushline(int cols, Arr(ScreenCell) cells, void* user) {
 	Unt text_len;
 	if (ga_grow(&ga, 1) == FAIL) {
 		if (update_buffer)
-			text = S"";
+			text = u8"";
 		else
-			text = copyStr(S"");
+			text = copyStr(u8"");
 		text_len = 0;
 	} else {
 		text = ga.c;
@@ -8800,9 +8800,9 @@ handle_postponed_scrollback(Terminal *term) {
 			break;
 		pp_line = (ScrollbackLine *)term->scrollbackPostponed.c + i;
 
-		CS text = pp_line->sb_text;
+		S text = pp_line->sb_text;
 		if (text == NULL)
-			 text = (CS)"";
+			 text = u8"";
 		add_scrollback_line_to_buffer(term, text, (int)STRLEN(text));
 		eeglFree(pp_line->sb_text);
 
@@ -8868,7 +8868,7 @@ term_after_channel_closed(Terminal* term) {
 					do_set_locked = true;
 				if (do_set_locked)
 					curPor->locked = true;
-				do_bufdel(DOBOOK_WIPE, S"", 1, fnum, fnum, false);
+				do_bufdel(DOBOOK_WIPE, u8"", 1, fnum, fnum, false);
 				if (do_set_locked)
 					 curPor->locked = false;
 				auCommRestoreBook(&aco);
@@ -8878,9 +8878,9 @@ term_after_channel_closed(Terminal* term) {
 			return true;
 		}
 		if (term->tl_finish == TL_FINISH_OPEN && term->book->countPortals == 0) {
-			CS comm = term->openComm ? term->openComm : S"botright sbuf %d";
+			S comm = term->openComm ? term->openComm : u8"botright sbuf %d";
 			Unt len = STRLEN(comm) + 50;
-			CS buf = alloc(len);
+			S buf = alloc(len);
 
 			lo("terminal job finished, opening portal");
 			eeSnprintf(buf, len, comm, fnum);
@@ -9124,7 +9124,7 @@ uiBeforeLeavingTerminal(void) {
 	drawBookLater(term->book, UPD_NOT_VALID);
 
 	//The book is now like a normal book, it cannot be easily abandoned when changed.
-	optChangeStringOptionDirect(S"book.type", BOOK_NORMAL, OPT_LOCAL, 0);
+	optChangeStringOptionDirect(u8"book.type", BOOK_NORMAL, OPT_LOCAL, 0);
 }
 
 //Get the screen decoration for a position in the book. Use a negative "col" to get the
@@ -9152,7 +9152,7 @@ uiGetDeco(Portal* po, LineNr lnum, int col) {
 //"item->next" may have options.
 private void
 handle_drop_command(ListItem* item) {
-	CS fname = tv_get_string(&item->c);
+	S fname = tv_get_string(&item->c);
 	ListItem* opt_item = item->next;
 	Portal* po;
 	Tab* tp;
@@ -9172,7 +9172,7 @@ handle_drop_command(ListItem* item) {
 
 	if (opt_item && opt_item->c.tag == VAR_BAG && opt_item->c.bag != NULL) {
 		Bag* dict = opt_item->c.bag;
-		CS p = bagGetString(dict, tConst("bad"), false);
+		S p = bagGetString(dict, tConst("bad"), false);
 		if (p)
 			get_bad_opt(p, &invo);
 
@@ -9188,7 +9188,7 @@ handle_drop_command(ListItem* item) {
 
 	//open in new portal, like ":split fname"
 	if (!invo.comm)
-		invo.comm = (CS)"split";
+		invo.comm = u8"split";
 	invo.arg = fname;
 	invo.id = C_split;
 	c_splitview(&invo);
@@ -9198,7 +9198,7 @@ handle_drop_command(ListItem* item) {
 
 //Return true if "func" starts with "pat" and "pat" isn't empty.
 private int
-is_permitted_term_api(CS func, CS pat) {
+is_permitted_term_api(S func, S pat) {
 	return pat != NULL && *pat != ZERO && STRNICMP(func, pat, STRLEN(pat)) == 0;
 }
 
@@ -9214,7 +9214,7 @@ handle_call_command(Terminal* term, Channel* channel, ListItem* item) {
 		ch_log(channel, "Missing function arguments for call");
 		return;
 	}
-	CS func = tv_get_string(&item->c);
+	S func = tv_get_string(&item->c);
 
 	if (!is_permitted_term_api(func, term->tl_api)) {
 		ch_log(channel, "Unpermitted function: %s", func);
@@ -9241,12 +9241,12 @@ handle_call_command(Terminal* term, Channel* channel, ListItem* item) {
 //can assume all bytes are valid UTF-8 bytes. Thus we don't need to deal with invalid UTF-8
 //encoding bytes like 0xfe, 0xff.
 private Unt
-url_decode(const char *src, const Unt len, CS dst) {
+url_decode(const char *src, const Unt len, S dst) {
 	Unt i = 0, j = 0;
 
 	while (i < len) {
 		if (src[i] == '%' && i + 2 < len) {
-			 dst[j] = hexhex2nr((CS)&src[i + 1]);
+			 dst[j] = hexhex2nr((S)&src[i + 1]);
 			 j++;
 			 i += 3;
 		} else {
@@ -9267,7 +9267,7 @@ private void
 sync_shell_dir(ArrayList* gap) {
 	int offset = 7;  //len of "file://" is 7
 	char* pos = (char *)gap->c + offset;
-	CS new_dir;
+	S new_dir;
 
 	//remove HOSTNAME to get PWD
 	for (; offset < (int)gap->len && *pos != '/'; ++offset, ++pos )
@@ -9324,7 +9324,7 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
 		if (!item)
 			ch_log(channel, "Missing command");
 		else {
-			CS comm = tv_get_string(&item->c);
+			S comm = tv_get_string(&item->c);
 
 			//Make sure an invoked command doesn't delete the buffer (and the
 			//terminal) under our fingers.
@@ -9352,10 +9352,10 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
 //Called when we cannot recognize a CSI sequence. We recognize the portal position report.
 private int
 parse_csi(
-	CS,
+	S,
 	long args[],
 	int argcount,
-	CS,
+	S,
 	Byte command,
 	void* user
 ){
@@ -9466,26 +9466,26 @@ term_update_colors_all(void) {
 }
 
 //Return the text to show for the book name and status.
-pub CS
+pub S
 term_get_status_text(Terminal* term) {
 	if (term->tl_status_text)
 		return term->tl_status_text;
 
-	CS txt;
+	S txt;
 	if (term->isNormalMode) {
 		if (term_job_running(term))
-			 txt = (CS)_("Terminal");
+			 txt = (S)_("Terminal");
 		else
-			 txt = (CS)_("Terminal-finished");
+			 txt = (S)_("Terminal-finished");
 	} ei (term->title != NULL)
 		txt = term->title;
 	ei (term_none_open(term))
-		txt = (CS)_("active");
+		txt = (S)_("active");
 	ei (term_job_running(term))
-		txt = (CS)_("running");
+		txt = (S)_("running");
 	else
-		txt = (CS)_("finished");
-	CS fname = bookGetFname(term->book);
+		txt = (S)_("finished");
+	S fname = bookGetFname(term->book);
 	Unt len = 9 + STRLEN(fname) + STRLEN(txt);
 	term->tl_status_text = alloc(len);
 	if (term->tl_status_text != NULL)
@@ -9502,7 +9502,7 @@ term_clear_status_text(Terminal* term) {
 //Get the buffer from the first argument in "argvars".
 //Return NULL when the buffer is not for a terminal portal and logs a message with "where".
 private Book *
-term_get_buf(Var* argvars, CS where) {
+term_get_buf(Var* argvars, S where) {
 	++emsg_off;
 	Book* book = daGetBook(&argvars[0], false);
 	--emsg_off;
@@ -9546,7 +9546,7 @@ f_term_dumpwrite(Var* argvars, Var*) {
 	FILE* fd;
 	VTermPos cursor_pos;
 
-	Book* book = term_get_buf(argvars, S"term_dumpwrite()");
+	Book* book = term_get_buf(argvars, u8"term_dumpwrite()");
 	if (!book)
 		return;
 	Terminal* term = book->term;
@@ -9565,7 +9565,7 @@ f_term_dumpwrite(Var* argvars, Var*) {
 		}
 	}
 
-	CS fname = convertVarToStringSingleUse(&argvars[1]);
+	S fname = convertVarToStringSingleUse(&argvars[1]);
 	if (!fname)
 		return;
 	if (stat((char *)fname, &st) >= 0) {
@@ -9675,7 +9675,7 @@ f_term_dumpwrite(Var* argvars, Var*) {
 //Called when a dump is corrupted.  Put a breakpoint here when debugging.
 private void
 dump_is_corrupt(ArrayList* gap) {
-	ga_concat(gap, S"CORRUPT");
+	ga_concat(gap, u8"CORRUPT");
 }
 
 private void
@@ -9761,7 +9761,7 @@ read_dump_file(FILE *fd, VTermPos* cursor_pos) {
 			//save the character for repeating it
 			eeglFree(prev_char);
 			if (ga_text.c)
-				prev_char = copySubstr(((CS)ga_text.c) + prev_len, ga_text.len - prev_len);
+				prev_char = copySubstr(((S)ga_text.c) + prev_len, ga_text.len - prev_len);
 
 			if (c == '@' || c == '|' || c == '>' || c == '\n') {
 				//use all decorations from previous cell
@@ -9848,14 +9848,14 @@ read_dump_file(FILE *fd, VTermPos* cursor_pos) {
 
 //Return an allocated string with at least "text_width" "=" characters and
 //"fname" inserted in the middle.
-private CS
-get_separator(int text_width, CS fname) {
+private S
+get_separator(int text_width, S fname) {
 	int width = MAX(text_width, (int)curPor->width);
-	CS p = fname;
+	S p = fname;
 	int       i;
 	Unt  off;
 
-	CS textline = alloc(width + (int)STRLEN(fname) + 1);
+	S textline = alloc(width + (int)STRLEN(fname) + 1);
 	if (!textline)
 		return NULL;
 
@@ -9895,13 +9895,13 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
 	Book* book = NULL;
 	Byte buf1[NUMBUFLEN];
 	Byte buf2[NUMBUFLEN];
-	CS fname2 = NULL;
-	CS fname_tofree = NULL;
+	S fname2 = NULL;
+	S fname_tofree = NULL;
 	FILE* fd1;
 	FILE* fd2 = NULL;
 
 	//First open the files.  If this fails bail out.
-	CS fname1 = convertVarToString(&argvars[0], buf1);
+	S fname1 = convertVarToString(&argvars[0], buf1);
 	if (do_diff)
 		fname2 = convertVarToString(&argvars[1], buf2);
 	if (fname1 == NULL || (do_diff && !fname2)) {
@@ -9985,7 +9985,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
 
 	term->topDiffRows = curBook->mem.lineCount;
 
-	CS textline = get_separator(width, fname1);
+	S textline = get_separator(width, fname1);
 	if (!textline)
 		goto theend;
 	if (add_empty_scrollback(term, &term->cellDeco, 0) == OK)
@@ -10017,16 +10017,16 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
 			for (Unt i = 0; i < width; ++i)
 				textline[i] = '-';
 		} else {
-			CS line2;
-			CS p1;
-			CS p2;
+			S line2;
+			S p1;
+			S p2;
 			Unt col;
 			ScrollbackLine* sb_line = (ScrollbackLine *)term->scrollback.c;
 			CellDeco* cellattr1 = (sb_line + lnum - 1)->sb_cells;
 			CellDeco* cellattr2 = (sb_line + lnum + bot_lnum - 1) ->sb_cells;
 
 			//Make a copy, getting the second line will invalidate it.
-			CS line1 = copyStr(ml_get(lnum));
+			S line1 = copyStr(ml_get(lnum));
 			p1 = line1;
 
 			line2 = ml_get(lnum + bot_lnum);
@@ -10115,7 +10115,7 @@ term_swap_diff(void) {
 	LineNr bot_rows;
 	LineNr bot_start;
 	LineNr lnum;
-	CS p;
+	S p;
 	ScrollbackLine* sb_line;
 
 	if (!term || !term_is_finished(curBook) || term->topDiffRows == 0 || term->scrollback.len == 0)
@@ -10205,7 +10205,7 @@ f_term_dumpload(Arr(Var) argvars, Var* returnVar) {
 //"term_getaltscreen(book)" function
 pub void
 f_term_getaltscreen(Var* argvars, Var* returnVar) {
-	Book* book = term_get_buf(argvars, S"term_getaltscreen()");
+	Book* book = term_get_buf(argvars, u8"term_getaltscreen()");
 	if (book == NULL)
 		return;
 	returnVar->number = book->term->tl_using_altscreen;
@@ -10214,7 +10214,7 @@ f_term_getaltscreen(Var* argvars, Var* returnVar) {
 //"term_getcursor(book)" function
 pub void
 f_term_getcursor(Var* argvars, Var* returnVar) {
-	Book* book = term_get_buf(argvars, S"term_getcursor()");
+	Book* book = term_get_buf(argvars, u8"term_getcursor()");
 	if (!book)
 		return;
 
@@ -10227,18 +10227,18 @@ f_term_getcursor(Var* argvars, Var* returnVar) {
 
 	Bag* b = allocBag();
 
-	bagAddNumber(b, S"visible", term->tl_cursor_visible);
-	bagAddNumber(b, S"blink", blink_state_is_inverted()
+	bagAddNumber(b, u8"visible", term->tl_cursor_visible);
+	bagAddNumber(b, u8"blink", blink_state_is_inverted()
 		 ? !term->tl_cursor_blink : term->tl_cursor_blink);
-	bagAddNumber(b, S"shape", term->tl_cursor_shape);
-	bagAddString(b, S"color", cursor_color_get(term->tl_cursor_color));
+	bagAddNumber(b, u8"shape", term->tl_cursor_shape);
+	bagAddString(b, u8"color", cursor_color_get(term->tl_cursor_color));
 	listAppendBag(l, b);
 }
 
 //"term_getjob(book)" function
 pub void
 f_term_getjob(Arr(Var) argvars, Var* returnVar) {
-	Book* book = term_get_buf(argvars, S"term_getjob()");
+	Book* book = term_get_buf(argvars, u8"term_getjob()");
 	if (!book) {
 		returnVar->tag = VAR_VOID;
 		returnVar->number = 0;
@@ -10266,7 +10266,7 @@ f_term_getline(Arr(Var) argvars, Var* returnVar) {
 
 	returnVar->tag = VAR_STRING;
 
-	Book* book = term_get_buf(argvars, S"term_getline()");
+	Book* book = term_get_buf(argvars, u8"term_getline()");
 	if (!book)
 		return;
 	term = book->term;
@@ -10285,7 +10285,7 @@ f_term_getline(Arr(Var) argvars, Var* returnVar) {
 		if (row < 0 || (Unt)row >= term->rows)
 			 return;
 		int len = term->cols * MB_MAXBYTES + 1;
-		CS p = alloc(len);
+		S p = alloc(len);
 		returnVar->string = p;
 
 		rect.start_col = 0;
@@ -10299,7 +10299,7 @@ f_term_getline(Arr(Var) argvars, Var* returnVar) {
 //"term_getscrolled(book)" function
 pub void
 f_term_getscrolled(Arr(Var) argvars, Var* returnVar) {
-	Book* book = term_get_buf(argvars, S"term_getscrolled()");
+	Book* book = term_get_buf(argvars, u8"term_getscrolled()");
 	if (!book)
 		return;
 	returnVar->number = book->term->scrollbackScrolled;
@@ -10308,7 +10308,7 @@ f_term_getscrolled(Arr(Var) argvars, Var* returnVar) {
 //"term_getsize(book)" function
 pub void
 f_term_getsize(Arr(Var) argvars, Var* returnVar) {
-	Book* book = term_get_buf(argvars, S"term_getsize()");
+	Book* book = term_get_buf(argvars, u8"term_getsize()");
 	if (!book)
 		return;
 
@@ -10324,7 +10324,7 @@ f_term_setsize(Arr(Var) argvars, Var*) {
 	Terminal* term;
 	Long rows, cols;
 
-	Book* book = term_get_buf(argvars, S"term_setsize()");
+	Book* book = term_get_buf(argvars, u8"term_setsize()");
 	if (!book) {
 		emsg(_(e_not_terminal_buffer));
 		return;
@@ -10352,7 +10352,7 @@ f_term_getstatus(Arr(Var) argvars, Var* returnVar) {
 
 	returnVar->tag = VAR_STRING;
 
-	Book* book = term_get_buf(argvars, S"term_getstatus()");
+	Book* book = term_get_buf(argvars, u8"term_getstatus()");
 	if (!book)
 		return;
 	term = book->term;
@@ -10372,7 +10372,7 @@ f_term_gettitle(Arr(Var) argvars, Var* returnVar) {
 
 	returnVar->tag = VAR_STRING;
 
-	Book* book = term_get_buf(argvars, S"term_gettitle()");
+	Book* book = term_get_buf(argvars, u8"term_gettitle()");
 	if (!book)
 		return;
 
@@ -10383,11 +10383,11 @@ f_term_gettitle(Arr(Var) argvars, Var* returnVar) {
 //"term_gettty(book)" function
 pub void
 f_term_gettty(Arr(Var) argvars, Var* returnVar) {
-	Book* book = term_get_buf(argvars, S"term_gettty()");
+	Book* book = term_get_buf(argvars, u8"term_gettty()");
 	if (!book)
 		return;
 
-	CS p = NULL;
+	S p = NULL;
 	int num = 0;
 	returnVar->tag = VAR_STRING;
 	if (argvars[1].tag != VAR_UNKNOWN)
@@ -10429,12 +10429,12 @@ f_term_list(Arr(Var), Var* returnVar) {
 pub void
 f_term_scrape(Arr(Var) argvars, Var* returnVar) {
 	VTermScreen* screen = NULL;
-	CS p;
+	S p;
 	ScrollbackLine* line;
 
 	allocReturnList(returnVar);
 
-	Book* book = term_get_buf(argvars, S"term_scrape()");
+	Book* book = term_get_buf(argvars, u8"term_scrape()");
 	if (!book)
 		return;
 
@@ -10497,14 +10497,14 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
 		Bag* dcell = allocBag();
 		listAppendBag(l, dcell);
 
-		bagAddString(dcell, S"chars", mbs);
+		bagAddString(dcell, u8"chars", mbs);
 
 		eeSnprintf(colorBuf, 3, "%d", fg);
-		bagAddString(dcell, S"fg", colorBuf);
+		bagAddString(dcell, u8"fg", colorBuf);
 		eeSnprintf(colorBuf, 3, "%d", bg);
-		bagAddString(dcell, S"bg", colorBuf);
+		bagAddString(dcell, u8"bg", colorBuf);
 
-		bagAddNumber(dcell, S"deco", cellToDecoration(deco, fg, bg).flags);
+		bagAddNumber(dcell, u8"deco", cellToDecoration(deco, fg, bg).flags);
 
 		++pos.col;
 	}
@@ -10513,11 +10513,11 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
 //"term_sendkeys(book, keys)" function
 pub void
 f_term_sendkeys(Arr(Var) argvars, Var*) {
-	Book* book = term_get_buf(argvars, S"term_sendkeys()");
+	Book* book = term_get_buf(argvars, u8"term_sendkeys()");
 	if (!book)
 		return;
 
-	CS msg = convertVarToStringSingleUse(&argvars[1]);
+	S msg = convertVarToStringSingleUse(&argvars[1]);
 	if (!msg)
 		return;
 	Terminal* term = book->term;
@@ -10541,36 +10541,36 @@ f_term_sendkeys(Arr(Var) argvars, Var*) {
 //"term_setapi(book, api)" function
 pub void
 f_term_setapi(Arr(Var) argvars, Var*) {
-	Book* book = term_get_buf(argvars, S"term_setapi()");
+	Book* book = term_get_buf(argvars, u8"term_setapi()");
 	if (!book)
 		return;
 	Terminal* term = book->term;
 	eeglFree(term->tl_api);
-	CS api = convertVarToStringSingleUse(&argvars[1]);
+	S api = convertVarToStringSingleUse(&argvars[1]);
 	term->tl_api = api ? copyStr(api) : null;
 }
 
 //"term_setrestore(book, command)" function
 pub void
 f_term_setrestore(Arr(Var) argvars, Var*) {
-	Book* book = term_get_buf(argvars, S"term_setrestore()");
+	Book* book = term_get_buf(argvars, u8"term_setrestore()");
 	if (!book)
 		return;
 	Terminal* term = book->term;
 	eeglFree(term->command);
-	CS comm = convertVarToStringSingleUse(&argvars[1]);
+	S comm = convertVarToStringSingleUse(&argvars[1]);
 	term->command = comm ? copyStr(comm) : null;
 }
 
 //"term_setkill(book, how)" function
 pub void
 f_term_setkill(Arr(Var) argvars, Var*) {
-	Book* book = term_get_buf(argvars, S"term_setkill()");
+	Book* book = term_get_buf(argvars, u8"term_setkill()");
 	if (!book)
 		return;
 	Terminal* term = book->term;
 	eeglFree(term->tl_kill);
-	CS how = convertVarToStringSingleUse(&argvars[1]);
+	S how = convertVarToStringSingleUse(&argvars[1]);
 	term->tl_kill = how ? copyStr(how) : null;
 }
 
@@ -10600,7 +10600,7 @@ f_term_start(Arr(Var) argvars, Var* returnVar) {
 
 pub void
 f_term_wait(Arr(Var) argvars, Var*) {
-	Book* book = term_get_buf(argvars, S"term_wait()");
+	Book* book = term_get_buf(argvars, u8"term_wait()");
 	if (!book)
 		return;
 	if (!book->term->job) {
@@ -10655,7 +10655,7 @@ term_send_eof(Channel* ch) {
 		if (term->job == motChannelGetJob(ch)) {
 			if (term->tl_eof_chars != NULL) {
 				channel_send(ch, PART_IN, term->tl_eof_chars, (int)STRLEN(term->tl_eof_chars), NULL);
-				channel_send(ch, PART_IN, (CS)"\r", 1, NULL);
+				channel_send(ch, PART_IN, u8"\r", 1, NULL);
 			}
 		}
 	}
@@ -10724,7 +10724,7 @@ term_report_winsize(Terminal* term, int rows, int cols) {
 			break;
 	}
 	if (part < PART_COUNT && mch_report_winsize(fd, rows, cols) == OK)
-		chSendSignalToJob(term->job, S"winch");
+		chSendSignalToJob(term->job, u8"winch");
 }
 
 pub Job*
@@ -10848,7 +10848,7 @@ uiRealWaitForChar(int fd, Long msec, OUT Boole* interrupted) {
 
 //Write s[len] to the screen (stdout).
 private void
-mch_write(CS s, int len) {
+mch_write(S s, int len) {
 	(void)write(1, (char *)s, len);
 	if (p_wd > 0)      //Unix is too fast, slow down a bit more
 		uiRealWaitForChar(read_cmd_fd, p_wd, null);
@@ -10882,7 +10882,7 @@ mch_input_isatty(void) {
 //2. Input buffer stuff.
 
 pub void
-ui_write(CS s, int len, int console) {
+ui_write(S s, int len, int console) {
 	//Don't output anything in silent mode ("ex -s") unless 'verbose' set
 	if (!silentModeG || p_verbose != 0) {
 		mch_write(s, len);
@@ -10893,16 +10893,16 @@ ui_write(CS s, int len, int console) {
 
 //When executing an external program, there may be some typed characters that
 //are not consumed by it. Give them back to ui_inchar() and they are stored here for the next call.
-private CS ta_str = NULL;
+private S ta_str = NULL;
 private int ta_off;   //offset for next char to use when ta_str != NULL
 private int ta_len;   //length of ta_str when it's not NULL
 
 pub void
-ui_inBytendo(CS s, int len) {
+ui_inBytendo(S s, int len) {
 	int newlen = len;
 	if (ta_str)
 		newlen += ta_len - ta_off;
-	CS new = alloc(newlen);
+	S new = alloc(newlen);
 
 	if (ta_str) {
 		MEMMOVE(new, ta_str + ta_off, (Unt)(ta_len - ta_off));
@@ -10936,7 +10936,7 @@ resize_func(int check_only) {
 //If wtime == -1 wait forever for characters.
 private int
 mch_inchar(
-	OUT CS buf,
+	OUT S buf,
 	int maxlen,
 	long wtime,       //don't use "time", MIPS cannot handle it
 	int changeCnt
@@ -10955,7 +10955,7 @@ mch_inchar(
 //from a remote client) "buf" can no longer be used.
 pub int
 ui_inchar(
-	OUT CS buf,
+	OUT S buf,
 	int maxlen,
 	long wtime,       //don't use "time", MIPS cannot handle it
 	int changeCnt
@@ -11033,7 +11033,7 @@ ui_inchar(
 //If "wtime" == -1 wait forever for characters.
 private int
 inchar_loop(
-	OUT CS buf,
+	OUT S buf,
 	int maxlen,
 	Long wtime,       //don't use "time", MIPS cannot handle it
 	int changeCnt,
@@ -11343,7 +11343,7 @@ eeIsInputBufEmpty(void) {
 
 //Return the current contents of the input buffer and make it empty.
 //The returned pointer must be passed to set_input_buf() later.
-pub CS
+pub S
 get_input_buf(void) {
 	//We use an arraylist to store the data pointer and the length.
 	ArrayList* gap = ALLOC_ONE(ArrayList);
@@ -11354,13 +11354,13 @@ get_input_buf(void) {
 		gap->len = inbufcount;
 	}
 	trash_input_buf();
-	return (CS)gap;
+	return (S)gap;
 }
 
 //Restore the input buffer with a pointer returned from get_input_buf(). The allocated memory is
 //freed, this only works once! When "overwrite" is false input typed later is kept.
 pub void
-set_input_buf(CS p, Boole overwrite) {
+set_input_buf(S p, Boole overwrite) {
 	ArrayList   *gap = (ArrayList *)p;
 	if (!gap)
 		return;
@@ -11382,7 +11382,7 @@ set_input_buf(CS p, Boole overwrite) {
 //Add the given bytes to the input buffer Special keys start with CSI. A real CSI must have
 //been translated to CSI KS_EXTRA KE_CSI.  K_SPECIAL doesn't require translation.
 pub void
-add_to_input_buf(CS s, int len) {
+add_to_input_buf(S s, int len) {
 	if (inbufcount + len > INBUFLEN + MAX_KEY_CODE_LEN)
 		 return;       //Shouldn't ever happen!
 
@@ -11392,7 +11392,7 @@ add_to_input_buf(CS s, int len) {
 
 //Add "str[len]" to the input buffer while escaping CSI bytes.
 pub void
-add_to_input_buf_csi(CS str, int len) {
+add_to_input_buf_csi(S str, int len) {
 	Byte buf[2];
 
 	for (int i = 0; i < len; ++i) {
@@ -11414,7 +11414,7 @@ trash_input_buf(void) {
 
 pub void
 f_test_feedinput(Arr(Var) argvars, Var*) {
-	CS val = convertVarToStringSingleUse(&argvars[0]);
+	S val = convertVarToStringSingleUse(&argvars[0]);
 	if (val) {
 		trash_input_buf();
 		add_to_input_buf_csi(val, (int)STRLEN(val));
@@ -11423,7 +11423,7 @@ f_test_feedinput(Arr(Var) argvars, Var*) {
 
 //Read as much data from the input buffer as possible up to maxlen, and store it in buf.
 pub int
-read_from_input_buf(CS buf, long maxlen) {
+read_from_input_buf(S buf, long maxlen) {
 	if (inbufcount == 0)   //if the buffer is empty, fill it
 		fill_input_buf(true);
 	if (maxlen > inbufcount)
@@ -11440,7 +11440,7 @@ pub void
 fill_input_buf(Boole exit_on_error) {
 	int try;
 	static int   did_read_something = false;
-	static CS rest = NULL;       //unconverted rest of previous read
+	static S rest = NULL;       //unconverted rest of previous read
 	static int   restlen = 0;
 	int unconverted;
 
@@ -11559,7 +11559,7 @@ check_row(Unt row) {
 //Return length of line "lnum" in screen cells for horizontal scrolling.
 pub long
 scroll_line_len(LineNr lnum) {
-	CS p = ml_get(lnum);
+	S p = ml_get(lnum);
 	ColNr   col = 0;
 
 	if (*p != ZERO) {
@@ -11722,7 +11722,7 @@ pub int
 mch_get_shellsize(void) {
 	long   rows = 0;
 	long   columns = 0;
-	CS p;
+	S p;
 
 	//1. try using an ioctl. It is the most accurate method.
 	//Try using TIOCGWINSZ first, some systems that have it also define
@@ -11761,11 +11761,11 @@ mch_get_shellsize(void) {
 
 	//2. get size from environment
 	if (columns == 0 || rows == 0) {
-		if ((p = (CS)getenv("LINES"))) {
+		if ((p = (S)getenv("LINEu8"))) {
 			rows = atoi((char *)p);
 			lo("Got 'lines' from $LINES: %ld", rows);
 		}
-		if ((p = (CS)getenv("COLUMNS"))) {
+		if ((p = (S)getenv("COLUMNu8"))) {
 			columns = atoi((char *)p);
 			lo("Got 'columns' from $COLUMNS: %ld", columns);
 		}
@@ -11816,7 +11816,7 @@ private int tpl_columns = 20;
 private int tpl_is_vert = false;
 
 pub int
-uiValidateTabpanelopt(CS new) {
+uiValidateTabpanelopt(S new) {
 	if (!new) {
 		return OK;
 	}
@@ -11825,7 +11825,7 @@ uiValidateTabpanelopt(CS new) {
 	int      new_columns = 20;
 	int      new_is_vert = false;
 
-	CS p = new;
+	S p = new;
 	while (*p != ZERO) {
 		if (STRNCMP(p, "align:", 6) == 0) {
 			p += 6;
@@ -11965,14 +11965,14 @@ fillRowsWithTwoCharsWithTailingArea(
 private void
 drawTextLen_for_tabpanel(
 	Unt tplmode,
-	CS p,
+	S p,
 	Unt len,
 	Decoration deco,
 	Tabpanel* tapa
 ){
 	Unt chcells;
 	Byte buf[IOSIZE];
-	CS temp;
+	S temp;
 
 	for (Unt j = 0; j < len;) {
 		if (tplmode != TPLMODE_GET_CURTAB_ROW && tapa->maxrow + tapa->offsetrow <= *tapa->prow)
@@ -12093,7 +12093,7 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
 
 	//Make a copy, because the statusline may include a function call that
 	//might change the option value and free the memory.
-	CS p = copyStr(tapa->user_defined);
+	S p = copyStr(tapa->user_defined);
 
 	bookRenderStatusLine(tapa->currPort, buf, sizeof(buf),
 		p, STATLINE_TABPANEL, opt_scope,
@@ -12117,12 +12117,12 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
 	*tapa->pcol = tapa->col_end;
 }
 
-private CS
+private S
 startsWithPercentAndBang(Tabpanel* tapa) {
 	if (!p_tpl)
 		return NULL;
 
-	CS usefmt = p_tpl;
+	S usefmt = p_tpl;
 	int anyEmsgG_before = anyEmsgG;
 
 	//When the format starts with "%!" then evaluate it as an expression and
@@ -12133,15 +12133,15 @@ startsWithPercentAndBang(Tabpanel* tapa) {
 		tv.number = tapa->currPort->id;
 		set_var(tConst("g:tabpanel_winid"), &tv, false);
 
-		CS p = eval_to_string_safe(usefmt + 2, false);
+		S p = eval_to_string_safe(usefmt + 2, false);
 		if (p)
 			usefmt = p;
 
-		unletImpl(S"g:tabpanel_winid", true);
+		unletImpl(u8"g:tabpanel_winid", true);
 
 		if (anyEmsgG > anyEmsgG_before) {
 			usefmt = NULL;
-			optChangeStringOptionDirect(S"tab.panel", S"", opt_scope, SID_ERROR);
+			optChangeStringOptionDirect(u8"tab.panel", u8"", opt_scope, SID_ERROR);
 		}
 	}
 
@@ -12199,10 +12199,10 @@ do_by_tplmode(
 			tapa.po = t->firstPor;
 		}
 
-		CS usefmt = startsWithPercentAndBang(&tapa);
+		S usefmt = startsWithPercentAndBang(&tapa);
 		if (usefmt) {
 			Byte buf[IOSIZE];
-			CS p = usefmt;
+			S p = usefmt;
 			Unt i = 0;
 
 			while (p[i] != ZERO) {
@@ -12252,7 +12252,7 @@ do_by_tplmode(
 			draw_tabpanel_default(tplmode, &tapa);
 		}
 
-		unletImpl(S"g:actual_curtabpage", true);
+		unletImpl(u8"g:actual_curtabpage", true);
 
 		t = t->next;
 

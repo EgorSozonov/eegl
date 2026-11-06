@@ -1,8 +1,8 @@
 #ifndef AVOID_DUPLICATION
-int eeSnprintf0(CS str, Unt str_m, const char *fmt, ...);
+int eeSnprintf0(S str, Unt str_m, const char *fmt, ...);
 #endif
 
-CS msg_strtrunc(CS s, int force);
+S msg_strtrunc(S s, int force);
 void trunc_string(
 	Byte   *s,
 	Byte   *builder,
@@ -17,52 +17,52 @@ void msg_outnum(long n);
 void msg_home_replace(Byte *fname);
 void msg_home_replace_hl(Byte *fname);
 int msg_outtrans(Byte* str);
-int msgOuttransDeco(CS str, Byte flags);
+int msgOuttransDeco(S str, Byte flags);
 int msgTranslatedSlice(Text slice);
-CS msgOneChar(CS p, char flags);
+S msgOneChar(S p, char flags);
 int msgOuttransLenDeco(Text slice, char flags);
-void msg_make(CS arg);
+void msg_make(S arg);
 int msg_outtrans_special(
-	CS strstart,
+	S strstart,
 	int from,   //true for lhs of a mapping
 	int maxlen  //screen columns, 0 for unlimited
 );
-CS str2special_save(
+S str2special_save(
 	Byte  *str,
 	int       replace_spaces,   //true to replace " " with "<Space>".
 				//used for the lhs of mapping and keytrans().
 	int       replace_lt      //true to replace "<" with "<lt>".
 );
-CS str2special(
+S str2special(
 	Byte** sp,
 	int      replace_spaces,   //true to replace " " with "<Space>".
 				//used for the lhs of mapping and keytrans().
 	int  replace_lt)   //true to replace "<" with "<lt>".
 ;
 void str2specialbuf(Byte *sp, OUT Byte *builder, int len);
-void msg_prt_line(CS s, int list);
-int msg(CS s);
-int verb_msg(CS s);
-int msgDeco(CS s, char flags);
-int msgAndKeep(CS s, char flags, int keep);
+void msg_prt_line(S s, int list);
+int msg(S s);
+int verb_msg(S s);
+int msgDeco(S s, char flags);
+int msgAndKeep(S s, char flags, int keep);
 int smsg0(char const* s, ...);
 int smsgDeco0(char flags, const char *s, ...);
 int smsgDecoKeep0(char flags, const char *s, ...);
 void reset_last_sourcing(void);
-CS msgTruncDeco(CS s, char flags);
-CS msg_may_trunc(CS s);
+S msgTruncDeco(S s, char flags);
+S msg_may_trunc(S s);
 void msg_source(char flags);
 void ignore_error_for_testing(Byte *error);
-int emsg(CS s);
+int emsg(S s);
 int showErrFmtMsg0(char const* s, ...);
-void internalErrMsg(CS s);
+void internalErrMsg(S s);
 void internalErrFmtMsg0(const char *s, ...);
-void internal_error(CS where);
-void internal_error_no_abort(CS where);
+void internal_error(S where);
+void internal_error_no_abort(S where);
 void emsg_invreg(int name);
-void emsg_namelen(CS msg, CS name, int len);
+void emsg_namelen(S msg, S name, int len);
 int delete_first_msg(void);
-int messagesopt_changed(CS new);
+int messagesopt_changed(S new);
 void c_messages(Invocation *invo);
 void wait_return(Boole redraw);
 void set_keep_msg(Byte *s, char flags);
@@ -95,11 +95,11 @@ int eeDialog_yesnoallcancel(
 	Byte   *message,
 	int      dflt
 );
-void msg_puts(CS s);
-void msg_puts_title(CS s);
+void msg_puts(S s);
+void msg_puts_title(S s);
 void outputShortenedToALine(Text slice, char flags);
-void msgPutsDeco(CS s, char flags);
-int message_filtered(CS msg);
+void msgPutsDeco(S s, char flags);
+int message_filtered(S msg);
 int msg_use_printf(void);
 void repeat_message(void);
 void msg_clr_eos(void);

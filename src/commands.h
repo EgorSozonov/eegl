@@ -54,7 +54,7 @@
 
 #ifdef DO_DECLARE_COMMANDS //Full table
 
-#define C(a, b, c, d, e) {(CS)b, STRLEN_LITERAL(b), c, (Ulong)(d), e}
+#define C(a, b, c, d, e) {(S)b, STRLEN_LITERAL(b), c, (Ulong)(d), e}
 
 typedef void (*CommFn) (Invocation* invo);
 

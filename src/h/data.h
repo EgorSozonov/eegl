@@ -51,9 +51,9 @@ p##acc L##T * create_L##T (int initCapacity, Arena* a) {\
 #define eq(a, b) _Generic((a),\
 	Text: _Generic((b),\
 			Text: eq_Text_Text,\
-			CS: eq_Text_CString\
+			S: eq_Text_CString\
 		),\
-	CS: eq_CString_CString\
+	S: eq_CString_CString\
 )(a, b)
 #endif
 
@@ -75,14 +75,14 @@ long list_len(List* l);
 int list_equal(List* l1, List* l2, int ic);
 ListItem * list_find(List* l, long n);
 long list_find_nr(List* l, long idx, OUT Boole* errorp);
-CS list_find_str(List *l, long idx);
+S list_find_str(List *l, long idx);
 ListItem * list_find_index(List *l, long *idx);
 long list_idx_of_item(List *l, ListItem *item);
 void list_append(List* l, ListItem* item);
 int list_append_tv(List* l, Var* newVal);
 int listAppendBag(List *list, Bag* bag);
 int list_append_list(List *list1, List *list2);
-int list_append_string(List *l, CS str, int len);
+int list_append_string(List *l, S str, int len);
 int list_append_number(List* l, Long n);
 int list_insert_tv(List *l, Var *tv, ListItem *item);
 void list_insert(List *l, ListItem *ni, ListItem *item);
@@ -94,7 +94,7 @@ int list_assign_range(
 	long idx1_arg,
 	long idx2,
 	int empty_idx2,
-	CS op,
+	S op,
 	Text varname
 );
 void f_flatten(Arr(Var) argvars, Var* returnVar);
@@ -115,11 +115,11 @@ int list_slice_or_index(
 );
 List * list_copy(List *orig, int deep, int top, Unt copyID);
 void list_remove(List* l, ListItem* item, ListItem* item2);
-CS list2string(Var* tv, Unt copyID, int restore_copyID);
+S list2string(Var* tv, Unt copyID, int restore_copyID);
 int list_join(
 	 ArrayList* gap,
 	 List* l,
-	 CS sep,
+	 S sep,
 	 int echo_style,
 	 int restore_copyID,
 	 Unt copyID
@@ -154,26 +154,26 @@ void f_slice(Arr(Var) argvars, Var* returnVar);
 int ga_grow_id(ArrayList *gap, int n, AllocId id);
 EeSet * hash_create(void);
 void hash_init(EeSet* ht);
-int check_hashtab_frozen(EeSet* ht, CS command);
+int check_hashtab_frozen(EeSet* ht, S command);
 void hash_clear(EeSet* ht);
 void hash_clear_all(EeSet* ht, int off);
 EeSetItem * hash_find(EeSet* ht, Text key);
 EeSetItem * hash_lookup(EeSet* ht, Text key, Hash hash);
 void hash_debug_results(void);
-int hash_add(EeSet* ht, Text key, CS command);
+int hash_add(EeSet* ht, Text key, S command);
 int hash_add_item(EeSet* ht, EeSetItem* hi, Text newItem, Hash hash);
 void hash_set(EeSetItem *hi, Byte *key);
-int hash_remove(EeSet* ht, EeSetItem* hi, CS command);
+int hash_remove(EeSet* ht, EeSetItem* hi, S command);
 void hash_lock(EeSet *ht);
 void hash_lock_size(EeSet *ht, int size);
 void hash_unlock(EeSet* ht);
 Hash calcHash(Text const key);
 ExpandMatch expandMatchOfArrayList(ArrayList al);
-void addExpandMatch(CS m, OUT ExpandMatch* t);
+void addExpandMatch(S m, OUT ExpandMatch* t);
 int type_any_or_unknown(TypeSpec *type);
 Arr(char) vartype_name(VarTag type);
 Var * allocVar(void);
-Var * allocStringVar(CS s);
+Var * allocStringVar(S s);
 void freeVar(Var* varp);
 void clearVar(Var* varp);
 void initVarToNull(OUT Var* varp);
@@ -225,13 +225,13 @@ int check_for_list_or_dict_arg(Arr(Var) args, int idx);
 int check_for_list_or_dict_or_blob_arg(Arr(Var) args, int idx);
 int check_for_list_dict_blob_or_string_arg(Arr(Var) args, int idx);
 int check_for_opt_buffer_or_dict_arg(Arr(Var) args, int idx);
-CS tv_get_string(Var* varp);
-CS tv_get_string_strict(Var* varp);
-CS tv_get_string_buf(Var* varp, CS buf);
-CS convertVarToStringSingleUse(Var* varp);
-CS convertVarToString(Var* varp, CS buf);
-CS convertVarToString_strict(Var* varp, CS buf, int strict);
-CS tv_stringify(Var* varp, CS buf);
+S tv_get_string(Var* varp);
+S tv_get_string_strict(Var* varp);
+S tv_get_string_buf(Var* varp, S buf);
+S convertVarToStringSingleUse(Var* varp);
+S convertVarToString(Var* varp, S buf);
+S convertVarToString_strict(Var* varp, S buf, int strict);
+S tv_stringify(Var* varp, S buf);
 int tv_check_lock(Var* tv, Text name, Boole use_gettext);
 void copy_tv(OUT Var* to, Var* from);
 int daCompareVars(
@@ -269,80 +269,80 @@ int daCompareVars_string(
 	Boole ignoreCase,
 	int* res
 );
-CS daStringOfVar(Var *arg, int quotes);
+S daStringOfVar(Var *arg, int quotes);
 int tv_islocked(Var *tv);
 int tv_equal(Var* tv1, Var* tv2, int ic);
-int eval_number(CS* arg, Var* returnVar, int evaluate, int want_string);
-CS tv2string(Var* tv, Byte** tofree, CS numbuf, Unt copyID);
-int eval_env_var(OUT CS* arg, Var* returnVar, int evaluate);
+int eval_number(S* arg, Var* returnVar, int evaluate, int want_string);
+S tv2string(Var* tv, Byte** tofree, S numbuf, Unt copyID);
+int eval_env_var(OUT S* arg, Var* returnVar, int evaluate);
 LineNr tv_get_lnum(Arr(Var) argvars);
 LineNr daGetLnumFromBookOrVar(Var* argvars, Book* book);
 Book * daGetBook(Var* tv, Boole curtab_only);
 Book * daGetBookFromArg(Var* tv);
 int equal_type(TypeSpec *type1, TypeSpec *type2, int flags);
-ExprType get_compare_type(CS p, int* len, int* type_is);
+ExprType get_compare_type(S p, int* len, int* type_is);
 int tv2bool(Var* tv);
 Bag * allocBag(void);
 Bag * allocBag_id(AllocId id);
 Bag * allocBag_lock(int lock);
 void allocReturnDict(Var* returnVar);
 void returnVar_dict_set(Var* returnVar, Bag* b);
-CS char_from_string(CS str, Long index);
+S char_from_string(S str, Long index);
 Text textOfDi(DictItem* di);
 Text textOfDi16(DictItem16* di);
 Text textOfItem(EeSetItem* si);
 int bagAdd(Bag* b, DictItem* item);
-int bagAddNumber(Bag* d, CS key, Long nr);
-int bagAdd_bool(Bag* d, CS key, Long nr);
-int bagAddString(Bag* d, CS key, CS str);
-int bagAddString_len(Bag *d, CS key, CS str, int len);
-int bagAddList(Bag* d, CS key, List* list);
-int bagAddVar(Bag* b, CS key, Var* tv);
-int bagAddCallback(Bag* d, CS key, Callback* cb);
-int bagAddFn(Bag* d, CS key, UserFunc* fp);
+int bagAddNumber(Bag* d, S key, Long nr);
+int bagAdd_bool(Bag* d, S key, Long nr);
+int bagAddString(Bag* d, S key, S str);
+int bagAddString_len(Bag *d, S key, S str, int len);
+int bagAddList(Bag* d, S key, List* list);
+int bagAddVar(Bag* b, S key, Var* tv);
+int bagAddCallback(Bag* d, S key, Callback* cb);
+int bagAddFn(Bag* d, S key, UserFunc* fp);
 void bagIterateStart(Var* var, DictIterator* iter);
-CS bagIterateNext(DictIterator* iter, Var** tv_result);
-int bagAddBag(Bag* b, CS key, Bag* dict);
+S bagIterateNext(DictIterator* iter, Var** tv_result);
+int bagAddBag(Bag* b, S key, Bag* dict);
 Ulong bagSize(Bag* b);
 DictItem* bagFind(Bag* b, Text const key);
 int bagHasKey(Bag* b, Text key);
 int bagGetVar(Bag *d, Text key, Var* returnVar);
-CS bagGetString(Bag* d, Text key, Boole save);
+S bagGetString(Bag* d, Text key, Boole save);
 Long bagGetNumber(Bag *d, Text key);
 Long bagGetNumber_def(Bag* b, Text const key, int def);
 Long bagGetNumber_check(Bag* b, Text const key);
 Boole bagGetBool(Bag *d, Text key, Boole def);
-CS bagToString(Var* tv, Unt copyID, int restore_copyID);
-int bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal);
-int bagEvalLiteral(OUT CS* arg, Var* returnVar, EvalCtx *evalarg);
-void bagExtend(Bag* d1, Bag* d2, CS action);
+S bagToString(Var* tv, Unt copyID, int restore_copyID);
+int bagEval(OUT S* arg, Var* returnVar, EvalCtx *evalarg, int literal);
+int bagEvalLiteral(OUT S* arg, Var* returnVar, EvalCtx *evalarg);
+void bagExtend(Bag* d1, Bag* d2, S action);
 DictItem * bagLookup(EeSetItem* hi);
 int bagEqual(Bag* d1, Bag* d2, int ic);
 long bagCount(Bag* d, Var* needle, int ic);
-void bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar);
+void bagExtend_func(Var* argvars, S arg_errmsg, int is_new, Var* returnVar);
 void bagFilterMap(
 	Bag* d,
 	FilterMap filtermap,
-	CS arg_errmsg,
+	S arg_errmsg,
 	Var* expr,
 	Var* returnVar
 );
-void bagRemove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg);
+void bagRemove(Arr(Var) argvars, Var* returnVar, S arg_errmsg);
 void f_items(Arr(Var) argvars, Var* returnVar);
 void f_keys(Arr(Var) argvars, Var* returnVar);
 void f_values(Arr(Var) argvars, Var* returnVar);
 void bagSetItemsRo(Bag* di);
 void f_has_key(Arr(Var) argvars, Var* returnVar);
-CS string_slice(CS str, Long first, Long last, int exclusive);
+S string_slice(S str, Long first, Long last, int exclusive);
 void bagUnref(Bag* b);
 void hashtab_free_contents(EeSet* ht);
 void dict_free_contents(Bag* b);
 DictItem * dictitem_alloc(Text value);
-void dictitem_remove(Bag* bag, DictItem* item, CS command);
+void dictitem_remove(Bag* bag, DictItem* item, S command);
 void dictitem_free(DictItem *item);
 Bag * dict_copy(Bag* orig, int deep, int top, Unt copyID);
 int dictWrongFuncName(Bag* b, Var* tv, Text name);
-int string2float(CS text, OUT double* value, Boole skip_quotes);
+int string2float(S text, OUT double* value, Boole skip_quotes);
 void f_abs(Arr(Var) argvars, Var* returnVar);
 void f_acos(Arr(Var) argvars, Var* returnVar);
 void f_asin(Arr(Var) argvars, Var* returnVar);
@@ -403,7 +403,7 @@ int eval_index_inner(
 	Var* var1,
 	Var* var2,
 	int exclusive,
-	CS key,
+	S key,
 	int keylen,
 	int verbose
 );
@@ -418,8 +418,8 @@ int blob_get(Blob *b, int idx);
 void blob_set(Blob* blob, int idx, int byte);
 void blob_set_append(Blob *blob, int idx, int byte);
 int blob_equal(Blob   *b1, Blob   *b2);
-CS blob2string(Blob *blob, Byte **tofree, Byte *numbuf);
-Blob* string2blob(CS str);
+S blob2string(Blob *blob, Byte **tofree, Byte *numbuf);
+Blob* string2blob(S str);
 int blob_slice_or_index(
 	Blob      *blob,
 	int      is_range,
@@ -432,12 +432,12 @@ int check_blob_index(long bloblen, Long n1, int quiet);
 int check_blob_range(long bloblen, Long n1, Long n2, int quiet);
 int blob_set_range(Blob *dest, long n1, long n2, Var *src);
 void blob_add(Arr(Var) argvars, Var* returnVar);
-void blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg);
+void blob_remove(Arr(Var) argvars, Var* returnVar, S arg_errmsg);
 void blob_filter_map(
 	Blob* blob_arg,
 	FilterMap filtermap,
 	Var* expr,
-	CS arg_errmsg,
+	S arg_errmsg,
 	Var* returnVar
 );
 void blob_insert_func(Arr(Var) argvars, Var* returnVar);
@@ -449,8 +449,8 @@ void f_blob2str(Arr(Var) argvars, OUT Var* returnVar);
 void f_str2blob(Arr(Var) argvars, OUT Var* returnVar);
 void addFuzzyMatch(FuzzyMatch m, OUT Fuzzy* t);
 int fuzzy_match(
-	CS str,
-	CS pat_arg,
+	S str,
+	S pat_arg,
 	int matchseq,
 	int* outScore,
 	Arr(Unt) matches,
@@ -459,13 +459,13 @@ int fuzzy_match(
 void f_matchfuzzy(Arr(Var) argvars, OUT Var* returnVar);
 void f_matchfuzzypos(Arr(Var) argvars, OUT Var* returnVar);
 void fuzzySortByScore(OUT Fuzzy* fuzzy);
-int fuzzyMatchStr(CS str, CS pat);
-ArrayList * fuzzyMatchStr_with_pos(CS str, CS pat);
-CS find_word_end(CS ptr);
-CS find_line_end(CS ptr);
+int fuzzyMatchStr(S str, S pat);
+ArrayList * fuzzyMatchStr_with_pos(S str, S pat);
+S find_word_end(S ptr);
+S find_line_end(S ptr);
 int fuzzyMatchStr_in_line(
 	Byte   **ptr,
-	CS pat,
+	S pat,
 	int* len,
 	Pos* current_pos,
 	int* score)
@@ -476,7 +476,7 @@ int defuzz(
 	Fuzzy fuzzy,
 	Boole funcsort
 );
-void string_filter_map(CS str, FilterMap filtermap, Var* expr, Var* returnVar);
+void string_filter_map(S str, FilterMap filtermap, Var* expr, Var* returnVar);
 void f_byteidx(Arr(Var) argvars, OUT Var* returnVar);
 void f_byteidxcomp(Var* argvars, Var* returnVar);
 void f_charidx(Var* argvars, Var* returnVar);
@@ -499,17 +499,17 @@ void f_toupper(Arr(Var) argvars, OUT Var* returnVar);
 void f_tr(Arr(Var) argvars, OUT Var* returnVar);
 void f_trim(Arr(Var) argvars, OUT Var* returnVar);
 int eeVarPrintf0(
-	CS str,
+	S str,
 	Unt str_m,
 	char const* fmt,
 	va_list ap_start,
 	Var* tvs
 );
 int fex_format();
-CS copyStr_shellescape(CS string, int do_special, int do_newline);
-CS json_encode(Var* val, int options);
-CS json_encode_nr_expr(int nr, Var* val, int options);
-CS json_encode_lsp_msg(Var* val);
+S copyStr_shellescape(S string, int do_special, int do_newline);
+S json_encode(Var* val, int options);
+S json_encode_nr_expr(int nr, Var* val, int options);
+S json_encode_lsp_msg(Var* val);
 int json_decode(OUT Var* res, JsReader* reader);
 int json_find_end(JsReader* reader);
 void f_json_decode(Arr(Var) argvars, Var* returnVar);
@@ -530,11 +530,11 @@ void * lalloc_id(Unt size, int message, AllocId id);
 void * memReallocWithProfiling(void *ptr, Unt size);
 void do_outofmem_msg(Unt size);
 void free_all_mem(void);
-CS eeMemsave(Byte *p, Unt len);
+S eeMemsave(Byte *p, Unt len);
 void eeglFree(void* x);
-void eeglFreeString(CS x);
+void eeglFreeString(S x);
 void mch_free_mem(void);
-CS toFullFileName(Text fileName, DirName* dn);
+S toFullFileName(Text fileName, DirName* dn);
 Int get_copyID(void);
 Boole set_checkForCircularRefs(OUT EeSet*, Unt , ListStack** );
 Boole list_checkForCircularRefs(OUT List* , Unt , ListStack** );

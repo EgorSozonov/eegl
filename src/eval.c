@@ -62,9 +62,9 @@ typedef enum {
 //message in the list.  See cause_errthrow().
 struct MsgList {
 	MsgList* next;      //next of several messages in a row
-	CS msg;      //original message, allocated
-	CS throw_msg;   //msg to throw: usually original one
-	CS sfile;      //value from estack_sfile(), allocated
+	S msg;      //original message, allocated
+	S throw_msg;   //msg to throw: usually original one
+	S sfile;      //value from estack_sfile(), allocated
 	Long slnum;      //line number for "sfile"
 };
 
@@ -86,11 +86,11 @@ private int eval_expr_func(
 private int eval_expr_string(Var* expr, Var* returnVar);
 private Boole eval_expr_to_bool(Var *expr, OUT Boole* error);
 private void free_eval_tofree_later(EvalCtx *evalarg);
-private Var* evalExprInternal(CS arg, Invocation* invo, int use_simple_function);
+private Var* evalExprInternal(S arg, Invocation* invo, int use_simple_function);
 private int evalStringLiteral(Byte **arg, OUT Var* returnVar, Boole evaluate, Boole interpolate);
 private int evalRawString(Byte **arg, Var* returnVar, int evaluate, int interpolate);
 private int eval_interp_string(Byte **arg, Var* returnVar, int evaluate);
-private CS deref_function_name(
+private S deref_function_name(
 	 Byte   **arg,
 	 Byte   **tofree,
 	 EvalCtx   *evalarg,
@@ -102,7 +102,7 @@ private int callEeglFunction(
 	Var   *argv,
 	Var   *returnVar
 );
-private CS flags_tostring(Unt flags, FlagString* _fstring, CS buf, Unt n);
+private S flags_tostring(Unt flags, FlagString* _fstring, S buf, Unt n);
 private void fillLvalFromRoot(Lval *lp, LvalRoot* root);
 private int get_lval_dict_item(
 	OUT Lval   *lp,
@@ -127,14 +127,14 @@ private int get_lval_list(
 ;
 private int dot_allowed_after_type(Text name, VarTag tag, int quiet);
 private Boole index_allowed_after_type(Text name, VarTag tag, int quiet);
-private CS getLvalSubscript(Lval* lv, CS p, GetLval arg);
+private S getLvalSubscript(Lval* lv, S p, GetLval arg);
 private void clear_type_list(ArrayList *gap);
-private int tv_op_blob(Var* tv1, Var* tv2, CS op);
-private int tv_op_list(Var* tv1, Var* tv2, CS op);
-private int tv_op_number(Var* tv1, Var* tv2, CS op);
-private int tv_op_string(Var* tv1, Var* tv2, CS);
-private int tv_op_nr_or_string(Var *tv1, Var *tv2, CS op);
-private int tv_op_float(Var* tv1, Var* tv2, CS op);
+private int tv_op_blob(Var* tv1, Var* tv2, S op);
+private int tv_op_list(Var* tv1, Var* tv2, S op);
+private int tv_op_number(Var* tv1, Var* tv2, S op);
+private int tv_op_string(Var* tv1, Var* tv2, S);
+private int tv_op_nr_or_string(Var *tv1, Var *tv2, S op);
+private int tv_op_float(Var* tv1, Var* tv2, S op);
 private int eval_func(
 	Byte       **arg,   //points to "(", will be advanced
 	EvalCtx   *evalarg,
@@ -143,12 +143,12 @@ private int eval_func(
 	int       flags,
 	Var    *basetv)   //"expr" for "expr->name(arg)"
 ;
-private CS newline_skip_comments(CS arg);
+private S newline_skip_comments(S arg);
 private int eval0_retarg(
-	CS arg,
+	S arg,
 	Var* returnVar,
 	EvalCtx* evalarg,
-	CS* retarg
+	S* retarg
 );
 private int eval2(OUT Byte **arg, Var* returnVar, EvalCtx* evalarg);
 private int eval3(Byte **arg, Var* returnVar, EvalCtx *evalarg);
@@ -166,7 +166,7 @@ private int eval7(
 	Boole      want_string)  //after "." operator
 ;
 private int eval8(
-	OUT CS* arg,
+	OUT S* arg,
 	Var* returnVar,
 	EvalCtx* evalarg,
 	Boole want_string   //after "." operator
@@ -177,20 +177,20 @@ private void eval9_reg_contents(
 	int      evaluate)
 ;
 private int eval9_nested_expr(
-	OUT CS* arg,
+	OUT S* arg,
 	Var* returnVar,
 	EvalCtx* evalarg
 );
 private int eval9_var_func_name(
-	CS* arg,
+	S* arg,
 	Var* returnVar,
 	EvalCtx* evalarg,
 	int      evaluate,
-	CS* name_start)
+	S* name_start)
 ;
 private int eval_option(Byte** arg, Var* returnVar, Boole evaluate);
 private int eval9(
-	OUT CS* arg,
+	OUT S* arg,
 	Var* returnVar,
 	EvalCtx* evalarg,
 	Boole want_string   //after "." operator
@@ -198,8 +198,8 @@ private int eval9(
 private int eval9_leader(
 	Var* returnVar,
 	int numeric_only,
-	CS start_leader,
-	CS* end_leaderp)
+	S start_leader,
+	S* end_leaderp)
 ;
 private int call_func_returnVar(
 	Byte       **arg,
@@ -228,72 +228,72 @@ private int eval_index(
 	int verbose)   //give error messages
 ;
 private void partial_free(PartiallyApplied* pt);
-private CS string_tv2string(Var* tv, Byte** tofree, int echo_style, int composite_val);
-private CS func_tv2string(Var* tv, Byte** tofree, int echo_style);
-private CS method_tv2string(Var* tv, Byte** tofree, int echo_style);
-private CS partial_tv2string(
+private S string_tv2string(Var* tv, Byte** tofree, int echo_style, int composite_val);
+private S func_tv2string(Var* tv, Byte** tofree, int echo_style);
+private S method_tv2string(Var* tv, Byte** tofree, int echo_style);
+private S partial_tv2string(
 	 Var* tv,
 	 Byte** tofree,
 	 Byte* numbuf,
 	 Unt copyID
 );
-private CS list_tv2string(Var* tv, Byte** tofree, Unt copyID, Unt restore_copyID);
-private CS dict_tv2string(
+private S list_tv2string(Var* tv, Byte** tofree, Unt copyID, Unt restore_copyID);
+private S dict_tv2string(
 	Var* tv,
 	Byte** tofree,
 	Unt copyID,
 	int restore_copyID
 );
-private CS jobchan_tv2string(Var* tv, OUT Byte** tofree, OUT CS numBuf, int composite_val);
+private S jobchan_tv2string(Var* tv, OUT Byte** tofree, OUT S numBuf, int composite_val);
 private int buf_byteidx_to_charidx(Book *book, int lnum, int byteidx);
 private Text expandCurlyBraces(Text braces, Text outer);
-private CS eval_next_line(CS arg, EvalCtx* evalarg);
+private S eval_next_line(S arg, EvalCtx* evalarg);
 private void initGlobalAndSpecialVars(void);
 private void list_script_vars(int *first);
-private CS eval_all_expr_in_str(CS str);
+private S eval_all_expr_in_str(S str);
 private int letVars(
-	 CS arg_start,
+	 S arg_start,
 	 Var* tv,
 	 Boole      copy,      //copy values from "tv", don't move
 	 int      semicolon,   //from skip_var_list()
 	 int      var_count,   //from skip_var_list()
 	 Unt      flags,      //ASSIGN_FINAL, ASSIGN_CONST, etc.
-	 CS op
+	 S op
 );
-private CS skip_var_one(CS arg);
+private S skip_var_one(S arg);
 private void list_globVars(int* first);
 private void list_buf_vars(int* first);
 private void list_win_vars(int* first);
 private void list_tabVars(int* first);
-private CS list_arg_vars(Invocation* invo, CS arg, int* first);
-private CS letEnv(CS arg, Var* tv, Unt flags, CS endchars, CS op);
-private CS letOption(CS arg, Var* tv, Unt flags, CS endchars, CS op);
-private CS letRegister(CS arg, Var* tv, Unt flags, CS endchars, CS op);
-private CS letOne(
-	CS arg,    //points to variable name
+private S list_arg_vars(Invocation* invo, S arg, int* first);
+private S letEnv(S arg, Var* tv, Unt flags, S endchars, S op);
+private S letOption(S arg, Var* tv, Unt flags, S endchars, S op);
+private S letRegister(S arg, Var* tv, Unt flags, S endchars, S op);
+private S letOne(
+	S arg,    //points to variable name
 	Var* tv,      //value to assign to variable
 	Boole copy,      //copy value from "tv"
 	Unt flags,      //ASSIGN_CONST, ASSIGN_FINAL, etc.
-	CS endchars,   //valid chars after variable name  or NULL
-	CS op      //"+", "-", "."  or NULL
+	S endchars,   //valid chars after variable name  or NULL
+	S op      //"+", "-", "."  or NULL
 );
 private void unletOrLock(
 	Invocation* invo,
-	CS argstart,
+	S argstart,
 	int deep,
-	int (*callback)(Lval *, CommIndex, CS, Boole, int)
+	int (*callback)(Lval *, CommIndex, S, Boole, int)
 );
 private int unletVar(
 	Lval* lv,
 	CommIndex,
-	CS nameEnd,
+	S nameEnd,
 	Boole forceIt,
 	int
 );
 private int do_lock_var(
 	Lval* lp,
 	CommIndex commandId,
-	CS nameEnd,
+	S nameEnd,
 	Boole,
 	int deep
 );
@@ -305,12 +305,12 @@ private int eval_variable(
 );
 private void check_vars(Text name);
 private DictItem* findVarAndSetHtable(Text name, OUT EeSet** htp, Boole no_autoload);
-private void list_one_var(DictItem *v, CS prefix, int *first);
+private void list_one_var(DictItem *v, S prefix, int *first);
 private void list_one_var_a(
-	CS prefix,
-	CS name,
+	S prefix,
+	S name,
 	int type,
-	CS string,
+	S string,
 	int* first  //when true clear rest of screen and set to false
 );
 private int setVarImpl(
@@ -321,7 +321,7 @@ private int setVarImpl(
 	Unt      flags_arg  //ASSIGN_CONST, ASSIGN_FINAL, etc.
 );
 private void getVarFrom(
-	CS varname,
+	S varname,
 	Var* returnVar,
 	Var* deftv,       //Default value if not found.
 	VarLevel level,
@@ -335,17 +335,17 @@ private void getPortalVar(
 	int off       //1 for gettabwinvar()
 );
 private void setPortVar(Var* argvars, int off);
-private CS getRedirLval();
-private void may_add_state_char(ArrayList* gap, CS include, int c);
-private Unt find_internal_func_opt(CS name, int implemented);
-private int has_internal_func_name(CS name);
-private CS internal_func_name(int idx);
+private S getRedirLval();
+private void may_add_state_char(ArrayList* gap, S include, int c);
+private Unt find_internal_func_opt(S name, int implemented);
+private int has_internal_func_name(S name);
+private S internal_func_name(int idx);
 private void f_and(Var* argvars, Var* returnVar);
 private void f_balloon_gettext(Var*, Var* returnVar);
 private void f_balloon_show(Var* argvars, Var*);
 private void f_balloon_split(Var* argvars, Var* returnVar);
 private void* base64_encode(Blob* blob);
-private void base64_decode(CS base64, Blob* blob);
+private void base64_decode(S base64, Blob* blob);
 private void f_base64_decode(Var* argvars, Var* returnVar);
 private void f_base64_encode(Var* argvars, Var* returnVar);
 private void f_bindtextdomain(Var* argvars, Var* returnVar);
@@ -367,7 +367,7 @@ private void f_err_teapot(Arr(Var) argvars, Var*);
 private void f_escape(Var* argvars, Var*  returnVar);
 private void f_eval(Var* argvars, Var* returnVar);
 private void f_eventhandler(Arr(Var), Var* returnVar);
-private CS get_str_line(Unt, void* cookie, int, GetlineAlgo);
+private S get_str_line(Unt, void* cookie, int, GetlineAlgo);
 private void f_execute(Var* argvars, Var* returnVar);
 private void f_expand(Var* argvars, Var* returnVar);
 private void f_expandcmd(Var* argvars, Var* returnVar);
@@ -389,7 +389,7 @@ private void f_getpid(Arr(Var), Var* returnVar);
 private void f_getcurpos(Arr(Var) argvars, Var* returnVar);
 private void f_getcursorcharpos(Arr(Var) argvars, Var* returnVar);
 private void f_getpos(Var* argvars, Var* returnVar);
-private CS block_def2str(BlockDef* bd);
+private S block_def2str(BlockDef* bd);
 private int getregionpos(
 	Var* argvars,
 	Var* returnVar,
@@ -430,7 +430,7 @@ private void f_line(Arr(Var) argvars, Var* returnVar);
 private void f_line2byte(Arr(Var) argvars, Var* returnVar);
 private void find_some_match(Arr(Var) argvars, Var* returnVar, MatchTypeSpec type);
 private int get_matches_in_str(
-	CS str,
+	S str,
 	RegMatch   *rmp,
 	List   *mlist,
 	int      idx,
@@ -484,7 +484,7 @@ private void f_setcursorcharpos(Arr(Var) argvars, Var* returnVar);
 private void f_setenv(Arr(Var) argvars, Var*);
 private void f_setfperm(Arr(Var) argvars, Var* returnVar);
 private void f_setpos(Arr(Var) argvars, Var* returnVar);
-private int get_yank_type(Byte **pp, CS yank_type, long *block_len);
+private int get_yank_type(Byte **pp, S yank_type, long *block_len);
 private void f_setreg(Arr(Var) argvars, Var* returnVar);
 private void f_settagstack(Arr(Var) argvars, Var* returnVar);
 private void f_sha256(Arr(Var) argvars, Var* returnVar);
@@ -513,7 +513,7 @@ private void report_discard_pending(int pending, void* value);
 
 //words that cannot be used as a variable
 //Keep this array sorted, as bsearch() is used to search this array.
-private CS reserved[] = {SMAP((CS),
+private S reserved[] = {SMAP((S),
 	"false",
 	"null",
 	"null_blob",
@@ -535,7 +535,7 @@ compareNames(const void *s1, const void *s2) {
 
 //Return OK if "name" is not a reserved keyword. Otherwise FAIL.
 pub int
-checkIfNameReserved(CS name, int is_objm_access) {
+checkIfNameReserved(S name, int is_objm_access) {
 	//"this" can be used in an object method
 	if (is_objm_access && STRCMP("this", name) == 0)
 		return OK;
@@ -569,17 +569,17 @@ private LvalRoot* lvalRootS = null;
 //Get pointer to item relative to the bottom of the stack, -1 is the last one.
 #define STACK_TV_BOT(idx) (((Var *)ectx->ec_stack.c) + ectx->ec_stack.len + (idx))
 
-#define NAMESPACE_CHAR   S"abglstvw"
+#define NAMESPACE_CHAR   u8"abglstvw"
 
-private int eval2(OUT CS* arg, Var* returnVar, EvalCtx *evalarg);
-private int eval3(OUT CS* arg, Var* returnVar, EvalCtx *evalarg);
-private int eval4(OUT CS* arg, Var* returnVar, EvalCtx *evalarg);
-private int eval5(OUT CS* arg, Var* returnVar, EvalCtx *evalarg);
-private int eval6(OUT CS* arg, Var* returnVar, EvalCtx *evalarg);
-private int eval7(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, Boole want_string);
-private int eval8(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, Boole want_string);
-private int eval9(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, Boole want_string);
-private int eval9_leader(Var* returnVar, int numeric_only, CS start_leader, Byte **end_leaderp);
+private int eval2(OUT S* arg, Var* returnVar, EvalCtx *evalarg);
+private int eval3(OUT S* arg, Var* returnVar, EvalCtx *evalarg);
+private int eval4(OUT S* arg, Var* returnVar, EvalCtx *evalarg);
+private int eval5(OUT S* arg, Var* returnVar, EvalCtx *evalarg);
+private int eval6(OUT S* arg, Var* returnVar, EvalCtx *evalarg);
+private int eval7(OUT S* arg, Var* returnVar, EvalCtx *evalarg, Boole want_string);
+private int eval8(OUT S* arg, Var* returnVar, EvalCtx *evalarg, Boole want_string);
+private int eval9(OUT S* arg, Var* returnVar, EvalCtx *evalarg, Boole want_string);
+private int eval9_leader(Var* returnVar, int numeric_only, S start_leader, Byte **end_leaderp);
 private void initGlobalAndSpecialVars(void);
 private Text expandCurlyBraces(Text braces, Text outer);
 
@@ -661,7 +661,7 @@ fillEvalArgFromInvo(OUT EvalCtx *evalarg, Invocation* invo, int skip) {
 //Sets "error" to true if there was an error. Return true or false.
 pub int
 eval_to_bool(
-	CS arg,
+	S arg,
 	OUT Boole* error,
 	Invocation* invo,
 	Boole skip,       //only parse, don't execute
@@ -735,7 +735,7 @@ partialEvalExp(Var* expr, Var* argv, int argc, Var* returnVar) {
 	if (!partial)
 		return FAIL;
 
-	CS s = partial_name(partial);
+	S s = partial_name(partial);
 	FnExe funcexe;
 
 	if (!s || *s == ZERO)
@@ -784,7 +784,7 @@ private int
 eval_expr_string(Var* expr, Var* returnVar) {
 	Byte buf[NUMBUFLEN];
 
-	CS s = convertVarToString_strict(expr, buf, false);
+	S s = convertVarToString_strict(expr, buf, false);
 	if (!s)
 		return FAIL;
 
@@ -838,9 +838,9 @@ eval_expr_to_bool(Var *expr, OUT Boole* error) {
 //Top level evaluation function, returning a string.  If "skip" is true,
 //only parsing to "nextComm" is done, without reporting errors. Return
 //pointer to allocated memory, or NULL for failure or when "skip" is true.
-pub CS
+pub S
 eval_to_string_skip(
-	CS arg,
+	S arg,
 	Invocation* invo,
 	int      skip)       //only parse, don't execute
 {
@@ -868,7 +868,7 @@ eval_to_string_skip(
 pub void
 init_evalarg(EvalCtx *evalarg) {
 	CLEAR_POINTER(evalarg);
-	ga_init2(&evalarg->eval_tofree_ga, sizeof(CS), 20);
+	ga_init2(&evalarg->eval_tofree_ga, sizeof(S), 20);
 }
 
 //If "evalarg->eval_tofree" is not NULL free it later.
@@ -916,7 +916,7 @@ clear_evalarg(EvalCtx* evalarg, Invocation* invo) {
 
 //Skip over an expression at "*pp". Return FAIL for an error, OK otherwise.
 pub int
-skip_expr(OUT CS* pp, EvalCtx* evalarg) {
+skip_expr(OUT S* pp, EvalCtx* evalarg) {
 	 Var   returnVar;
 	 *pp = skipwhite(*pp);
 	 return eval1(OUT pp, &returnVar, evalarg);
@@ -949,7 +949,7 @@ skip_expr_concatenate(Byte** arg, Byte** start, Byte** end, EvalCtx* evalarg) {
 
 //Convert "tv" to a string. When "join_list" is true, convert a List into a sequence
 //of lines. Return an allocated string (NULL when out of memory).
-pub CS
+pub S
 typval2string(Var *tv, int join_list) {
 	ArrayList   ga;
 	Byte   *retval = NULL;
@@ -957,12 +957,12 @@ typval2string(Var *tv, int join_list) {
 	if (join_list && (tv->tag == VAR_LIST)) {
 		ga_init2(&ga, sizeof(char), 80);
 		if (tv->list) {
-			list_join(&ga, tv->list, (CS)"\n", true, false, 0);
+			list_join(&ga, tv->list, u8"\n", true, false, 0);
 			if (tv->list->len > 0)
 				 ga_append(&ga, NL);
 		}
 		ga_append(&ga, ZERO);
-		retval = (CS)ga.c;
+		retval = (S)ga.c;
 	} ei (tv->tag == VAR_LIST || tv->tag == VAR_BAG) {
 		Byte* tofree;
 		Byte numbuf[NUMBUFLEN];
@@ -979,8 +979,8 @@ typval2string(Var *tv, int join_list) {
 //Top-level evaluation function, returning a string. Do not handle line breaks.
 //When "join_list" is true, convert a List into a sequence of lines.
 //Return pointer to allocated memory, or NULL for failure.
-pub CS
-evalToStringWithInvo(CS arg, Boole join_list, Invocation* invo, Boole use_simple_function){
+pub S
+evalToStringWithInvo(S arg, Boole join_list, Invocation* invo, Boole use_simple_function){
 	Var tv;
 	Byte* retval;
 	EvalCtx   evalarg;
@@ -1002,19 +1002,19 @@ evalToStringWithInvo(CS arg, Boole join_list, Invocation* invo, Boole use_simple
 	return retval;
 }
 
-pub CS
-eval_to_string(CS arg, Boole join_list, Boole use_simple_function) {
+pub S
+eval_to_string(S arg, Boole join_list, Boole use_simple_function) {
 	return evalToStringWithInvo(arg, join_list, NULL, use_simple_function);
 }
 
 //Call eval_to_string() without using current local variables and using textlock.
-pub CS
-eval_to_string_safe(CS arg, Boole use_simple_function) {
+pub S
+eval_to_string_safe(S arg, Boole use_simple_function) {
 	FnCallEntry funccal_entry;
 
 	save_funccal(&funccal_entry);
 	++textlock;
-	CS retval = eval_to_string(arg, false, use_simple_function);
+	S retval = eval_to_string(arg, false, use_simple_function);
 	--textlock;
 	restore_funccal();
 	return retval;
@@ -1023,10 +1023,10 @@ eval_to_string_safe(CS arg, Boole use_simple_function) {
 //Top-level evaluation function, returning a number.
 //Evaluate "expr" silently. Return -1 for an error.
 pub Long
-eval_to_number(CS expr, int use_simple_function) {
+eval_to_number(S expr, int use_simple_function) {
 	Var returnVar;
 	Long retval;
-	CS p = skipwhite(expr);
+	S p = skipwhite(expr);
 	int r = NOTDONE;
 
 	++emsg_off;
@@ -1047,7 +1047,7 @@ eval_to_number(CS expr, int use_simple_function) {
 }
 
 private Var*
-evalExprInternal(CS arg, Invocation* invo, int use_simple_function) {
+evalExprInternal(S arg, Invocation* invo, int use_simple_function) {
 	EvalCtx evalarg;
 	fillEvalArgFromInvo(OUT &evalarg, invo, invo && invo->skip);
 
@@ -1069,7 +1069,7 @@ evalExprInternal(CS arg, Invocation* invo, int use_simple_function) {
 //Top-level evaluation function. Return an allocated Var with the result. Return NULL when there
 //is an error.
 pub Var*
-eval_expr(CS arg, Invocation* invo) {
+eval_expr(S arg, Invocation* invo) {
 	return evalExprInternal(arg, invo, false);
 }
 
@@ -1079,7 +1079,7 @@ eval_expr(CS arg, Invocation* invo) {
 //at a single "{". Return OK or FAIL.
 private int
 evalStringLiteral(Byte **arg, OUT Var* returnVar, Boole evaluate, Boole interpolate) {
-	CS p;
+	S p;
 	int extra = interpolate ? 1 : 0;
 	int off = interpolate ? 0 : 1;
 
@@ -1128,7 +1128,7 @@ evalStringLiteral(Byte **arg, OUT Var* returnVar, Boole evaluate, Boole interpol
 	returnVar->tag = VAR_STRING;
 	int len = (int)(p - *arg + extra);
 	returnVar->string = alloc(len);
-	CS end = returnVar->string;
+	S end = returnVar->string;
 
 	for (p = *arg + off; *p != ZERO && *p != '"'; ) {
 		if (*p == '\\') { //handle backslashed stuff like `\n`
@@ -1178,7 +1178,7 @@ evalStringLiteral(Byte **arg, OUT Var* returnVar, Boole evaluate, Boole interpol
 				if (extra != 0) {
 				  end += extra;
 				  if (end >= returnVar->string + len)
-					  internalErrMsg((CS)"evalStringLiteral() used more space than allocated");
+					  internalErrMsg(u8"evalStringLiteral() used more space than allocated");
 				  break;
 				}
 				}
@@ -1213,7 +1213,7 @@ evalRawString(Byte **arg, Var* returnVar, int evaluate, int interpolate) {
 	int off = interpolate ? 0 : 1;
 
 	//Find the end of the string, skipping ''.
-	CS p;
+	S p;
 	for (p = *arg + off; *p != ZERO; MB_PTR_ADV(p)) {
 		if (*p == '\'') {
 			if (p[1] != '\'')
@@ -1249,7 +1249,7 @@ evalRawString(Byte **arg, Var* returnVar, int evaluate, int interpolate) {
 	}
 
 	//Copy the string into allocated memory, handling '' to ' reduction and any expressions.
-	CS str = alloc((p - *arg) - reduce);
+	S str = alloc((p - *arg) - reduce);
 	returnVar->tag = VAR_STRING;
 	returnVar->string = str;
 
@@ -1332,7 +1332,7 @@ eval_interp_string(Byte **arg, Var* returnVar, int evaluate) {
 //"*arg" points to what can be a function name in the form of "import.Name" or "Funcref".
 //Return the name of the function. Set "tofree" to something that was allocated.
 //If "verbose" is false no errors are given. Return NULL for any failure.
-private CS
+private S
 deref_function_name(
 	 Byte   **arg,
 	 Byte   **tofree,
@@ -1446,7 +1446,7 @@ call_func_retstr(Byte* func, int argc, Var* argv) {
 	if (callEeglFunction(func, argc, argv, OUT &returnVar) == FAIL)
 		return NULL;
 
-	CS retval = copyStr(tv_get_string(&returnVar));
+	S retval = copyStr(tv_get_string(&returnVar));
 	clearVar(&returnVar);
 	return retval;
 }
@@ -1488,9 +1488,9 @@ call_func_retlist(Byte* func, int argc, Var* argv) {
 
 #ifdef LOG_LOCKVAR
 
-private CS
-flags_tostring(Unt flags, FlagString* _fstring, CS buf, Unt n) {
-	CS p = buf;
+private S
+flags_tostring(Unt flags, FlagString* _fstring, S buf, Unt n) {
+	S p = buf;
 	*p = ZERO;
 	for (FlagString* fstring = _fstring; fstring->flag; ++fstring) {
 		if ((fstring->flag & flags) != 0) {
@@ -1521,17 +1521,17 @@ private FlagString glv_flag_strings[] = {
 #endif
 
 //Fill in "lp" using "root". This is used in a special case when "getLval()" parses a bare word
-//when "lvalRootS" is not NULL.
+//when "lvalRootu8" is not NULL.
 //
-//This is typically called with "lvalRootS" as "root". For a class, find the name from lp in the
+//This is typically called with "lvalRootu8" as "root". For a class, find the name from lp in the
 //class from root, fill in Lval if found. For a complex type, list/dict use it as the
 //result; just put the root into var.
 
-//"lvalRootS" is a hack used during run-time/instr-execution to provide the starting point for
+//"lvalRootu8" is a hack used during run-time/instr-execution to provide the starting point for
 //"getLval()" to traverse a chain of indexes. In some cases getLval sees a bare name and uses
 //this function to populate the Lval.
 //
-//For setting up "lvalRootS" (currently only used with lockvar)
+//For setting up "lvalRootu8" (currently only used with lockvar)
 //  compile_lock_unlock - pushes object on stack (which becomes lvalRootS)
 //  execute_instructions: ISN_LOCKUNLOCK - sets lvalRootS from stack.
 private void
@@ -1579,7 +1579,7 @@ get_lval_dict_item(
 	int      quiet = arg.flags & GLV_QUIET;
 	Byte   *p = *key_end;
 
-	CS keyStr = key.c;
+	S keyStr = key.c;
 	int len = key.len;
 	if (len == 0) {
 		//"[key]": get key from "var1"
@@ -1777,8 +1777,8 @@ index_allowed_after_type(Text name, VarTag tag, int quiet) {
 //If "returnVar" is not NULL it points to the value to be assigned. "unlet" is true for ":unlet".
 //
 //Return a pointer to the character after the subscript on success or NULL on failure.
-private CS
-getLvalSubscript(Lval* lv, CS p, GetLval arg) {
+private S
+getLvalSubscript(Lval* lv, S p, GetLval arg) {
 	int      quiet = arg.flags & GLV_QUIET;
 	Text key = {};
 	int      len;
@@ -1936,7 +1936,7 @@ done:
 //
 //Return a pointer to just after the name, including indexes. When an evaluation error occurs
 //"retVal->name" is NULL; Return NULL for a parsing error. Still need to free items in "letVal"!
-pub CS
+pub S
 getLval( OUT Lval* retVal, GetLval arg) { //flags for findNameEnd()
 	DictItem* v = NULL;
 	EeSet   *ht = NULL;
@@ -1966,7 +1966,7 @@ getLval( OUT Lval* retVal, GetLval arg) { //flags for findNameEnd()
 	Text expr;
 	retVal->name = findNameEnd(arg.name, OUT &expr, arg.fneFlag);
 
-	CS tail = retVal->name.c + retVal->name.len;
+	S tail = retVal->name.c + retVal->name.len;
 	if (expr.len > 0) {
 		//Don't expand the name when we already know there is an error.
 		if (arg.unlet && !SPACE_OR_TAB(*tail) && !endsComm(tail)
@@ -2047,7 +2047,7 @@ letImpl(
 	Var* returnVar,
 	Boole copy,
 	Unt flags, //ASSIGN_CONST, ASSIGN_NO_DECL
-	NULLABLE CS op
+	NULLABLE S op
 ){
 	DictItem   *di;
 
@@ -2151,9 +2151,9 @@ letImpl(
 
 //True for success
 pub Boole
-evalLetVarSimple(CS name, Var* newValue) {
+evalLetVarSimple(S name, Var* newValue) {
 	Lval   lv;
-	CS afterName = getLval(OUT &lv, (GetLval){
+	S afterName = getLval(OUT &lv, (GetLval){
 			.name = mbText(name), .returnVar = null, .unlet = false, .skip = false,
 			.flags = 0, .fneFlag = FNE_CHECK_START
 		}
@@ -2163,7 +2163,7 @@ evalLetVarSimple(CS name, Var* newValue) {
 
 //Handle "blob1 += blob2". Return OK or FAIL.
 private int
-tv_op_blob(Var* tv1, Var* tv2, CS op) {
+tv_op_blob(Var* tv1, Var* tv2, S op) {
 	if (*op != '+' || tv2->tag != VAR_BLOB)
 		return FAIL;
 
@@ -2189,7 +2189,7 @@ tv_op_blob(Var* tv1, Var* tv2, CS op) {
 
 //Handle "list1 += list2". Return OK or FAIL.
 private int
-tv_op_list(Var* tv1, Var* tv2, CS op) {
+tv_op_list(Var* tv1, Var* tv2, S op) {
 	if (*op != '+' || tv2->tag != VAR_LIST)
 		return FAIL;
 
@@ -2209,7 +2209,7 @@ tv_op_list(Var* tv1, Var* tv2, CS op) {
 //Handle number operations: nr += nr , nr -= nr , nr *=nr , nr /= nr , nr %= nr
 //Return OK or FAIL.
 private int
-tv_op_number(Var* tv1, Var* tv2, CS op) {
+tv_op_number(Var* tv1, Var* tv2, S op) {
 	Long   n;
 	Boole failed = false;
 
@@ -2246,14 +2246,14 @@ tv_op_number(Var* tv1, Var* tv2, CS op) {
 
 //Handle "str1 .= str2" Return OK or FAIL.
 private int
-tv_op_string(Var* tv1, Var* tv2, CS) {
+tv_op_string(Var* tv1, Var* tv2, S) {
 	Byte numbuf[NUMBUFLEN];
 
 	if (tv2->tag == VAR_FLOAT)
 		return FAIL;
 
 	//str .= str
-	CS s = tv_get_string(tv1);
+	S s = tv_get_string(tv1);
 	s = concat_str(s, tv_get_string_buf(tv2, numbuf));
 	clearVar(tv1);
 	tv1->tag = VAR_STRING;
@@ -2265,11 +2265,11 @@ tv_op_string(Var* tv1, Var* tv2, CS) {
 //Handle "tv1 += tv2", "tv1 -= tv2", "tv1 *= tv2", "tv1 /= tv2", "tv1 %= tv2" and "tv1 .= tv2".
 //Return OK or FAIL
 private int
-tv_op_nr_or_string(Var *tv1, Var *tv2, CS op) {
+tv_op_nr_or_string(Var *tv1, Var *tv2, S op) {
 	if (tv2->tag == VAR_LIST)
 		return FAIL;
 
-	if (firstOccurrence((CS)"+-*/%", *op) != NULL)
+	if (firstOccurrence(u8"+-*/%", *op) != NULL)
 		return tv_op_number(tv1, tv2, op);
 
 	return tv_op_string(tv1, tv2, op);
@@ -2277,7 +2277,7 @@ tv_op_nr_or_string(Var *tv1, Var *tv2, CS op) {
 
 //Handle "f1 += f2", "f1 -= f2", "f1 *= f2", "f1 /= f2". Return OK or FAIL.
 private int
-tv_op_float(Var* tv1, Var* tv2, CS op) {
+tv_op_float(Var* tv1, Var* tv2, S op) {
 	double f;
 
 	if (*op == '%' || *op == '.'
@@ -2303,7 +2303,7 @@ tv_op_float(Var* tv1, Var* tv2, CS op) {
 //Handle "tv1 += tv2", "tv1 -= tv2", "tv1 *= tv2", "tv1 /= tv2", "tv1 %= tv2" and "tv1 .= tv2"
 //Return OK or FAIL.
 pub int
-tv_op(Var *tv1, Var *tv2, CS op) {
+tv_op(Var *tv1, Var *tv2, S op) {
 	//Can't do anything with a Funcref or Bag on the right. v:true and friends only work with "..=".
 	if (tv2->tag == VAR_FUNC || tv2->tag == VAR_BAG
 		|| ((tv2->tag == VAR_BOOL) && *op != '.')
@@ -2376,13 +2376,13 @@ op_pending(void) {
 }
 
 pub void
-set_context_for_expression(Expand   *xp, CS arg, CommIndex   id) {
+set_context_for_expression(Expand   *xp, S arg, CommIndex   id) {
 	Boole has_expr = id != C_let;
 	Byte   *p;
 
 	if (id == C_let || id == C_const || id == C_final) {
 		xp->context = EXPAND_USER_VARS;
-		if (eeStrpbrk(arg, S"\"'+-*/%.=!?~|&$([<>,#") == NULL) { //])
+		if (eeStrpbrk(arg, u8"\"'+-*/%.=!?~|&$([<>,#") == NULL) { //])
 			//":let var1 var2 ...": find last space.
 			for (p = arg + STRLEN(arg); p >= arg; ) {
 				xp->input.c = p;
@@ -2394,7 +2394,7 @@ set_context_for_expression(Expand   *xp, CS arg, CommIndex   id) {
 		}
 	} else
 		xp->context = id == C_call ? EXPAND_FUNCTIONS : EXPAND_EXPRESSION;
-	while ((xp->input.c = eeStrpbrk(arg, S"\"'+-*/%.=!?~|&$([<>,#")) != NULL) {
+	while ((xp->input.c = eeStrpbrk(arg, u8"\"'+-*/%.=!?~|&$([<>,#")) != NULL) {
 		Unt c = xp->input.c[0];
 		if (c == '&') {
 			c = xp->input.c[1];
@@ -2459,7 +2459,7 @@ set_context_for_expression(Expand   *xp, CS arg, CommIndex   id) {
 		 && xp->context == EXPAND_EXPRESSION
 	) {
 		for (;;) {
-			CS n = skiptowhite(arg);
+			S n = skiptowhite(arg);
 
 			if (n == arg || IS_WHITE_OR_ZERO(*skipwhite(n)))
 				break;
@@ -2472,7 +2472,7 @@ set_context_for_expression(Expand   *xp, CS arg, CommIndex   id) {
 
 //true if "pat" matches "text". Always uses 'magic'.
 pub int
-pattern_match(CS pat, CS text, int ic) {
+pattern_match(S pat, S text, int ic) {
 	int      matches = false;
 	RegMatch   regmatch;
 
@@ -2498,7 +2498,7 @@ eval_func(
 {
 	int      evaluate = flags & EVAL_EVALUATE;
 
-	CS s = name.c;
+	S s = name.c;
 	if (!evaluate)
 		check_vars(name);
 
@@ -2548,9 +2548,9 @@ eval_func(
 }
 
 //After a NL, skip over empty lines and comment-only lines.
-private CS
-newline_skip_comments(CS arg) {
-  CS p = arg + 1;
+private S
+newline_skip_comments(S arg) {
+  S p = arg + 1;
 
   for (;;) {
 	  p = skipwhite(p);
@@ -2565,8 +2565,8 @@ newline_skip_comments(CS arg) {
 }
 
 //Call skipwhite() and get the next line if needed.
-pub CS
-skipwhite_and_linebreak(CS arg, EvalCtx *evalarg) {
+pub S
+skipwhite_and_linebreak(S arg, EvalCtx *evalarg) {
 	if (!evalarg)
 		return skipwhite(arg);
 	return skipwhite_and_nl(arg);
@@ -2582,20 +2582,20 @@ skipwhite_and_linebreak(CS arg, EvalCtx *evalarg) {
 //Note: "returnVar.lock" is not set. "evalarg" can be NULL, EVALARG_EVALUATE or a pointer.
 //Return OK or FAIL.
 pub int
-eval0(CS arg, Var* returnVar, EvalCtx* evalarg) {
+eval0(S arg, Var* returnVar, EvalCtx* evalarg) {
 	return eval0_retarg(arg, returnVar, evalarg, NULL);
 }
 
 //If "arg" is a simple function call without arguments then call it and return
 //the result.  Otherwise return NOTDONE.
 pub int
-may_call_simple_func(CS arg, OUT Var* returnVar) {
-	CS parens = STRSTR(arg, S"()");
+may_call_simple_func(S arg, OUT Var* returnVar) {
+	S parens = STRSTR(arg, u8"()");
 	int r = NOTDONE;
 
 	//If the expression is "FuncName()" then we can skip a lot of overhead.
 	if (parens && *skipwhite(parens + 2) == ZERO) {
-		CS p = STRNCMP(arg, "<SNR>", 5) == 0 ? skipdigits(arg + 5) : arg;
+		S p = STRNCMP(arg, "<SNR>", 5) == 0 ? skipdigits(arg + 5) : arg;
 
 		if (toNameEnd(p, true) == parens)
 			r = call_simple_func(arg, (Unt)(parens - arg), OUT returnVar);
@@ -2606,7 +2606,7 @@ may_call_simple_func(CS arg, OUT Var* returnVar) {
 //Handle zero level expression with optimization for a simple function call.
 //Same arguments and return value as eval0().
 pub int
-eval0_simple_funccal(CS arg, OUT Var* returnVar, EvalCtx* evalarg) {
+eval0_simple_funccal(S arg, OUT Var* returnVar, EvalCtx* evalarg) {
 	int r = may_call_simple_func(arg, OUT returnVar);
 	if (r == NOTDONE)
 		r = eval0_retarg(arg, returnVar, evalarg, NULL);
@@ -2617,17 +2617,17 @@ eval0_simple_funccal(CS arg, OUT Var* returnVar, EvalCtx* evalarg) {
 //expression and don't check what comes after the expression.
 private int
 eval0_retarg(
-	CS arg,
+	S arg,
 	Var* returnVar,
 	EvalCtx* evalarg,
-	CS* retarg
+	S* retarg
 ){
 	int anyEmsgG_before = anyEmsgG;
 	int called_emsg_before = called_emsg;
 	int check_for_end = retarg == NULL;
 	int end_error = false;
 
-	CS p = skipwhite(arg);
+	S p = skipwhite(arg);
 	int ret = eval1(OUT &p, returnVar, evalarg);
 
 	if (ret != FAIL) {
@@ -2672,14 +2672,14 @@ eval0_retarg(
 //
 //Note: "returnVar.v_lock" is not set. Return OK or FAIL.
 pub int
-eval1(OUT CS* arg, Var* returnVar, OUT EvalCtx* evalarg) {
+eval1(OUT S* arg, Var* returnVar, OUT EvalCtx* evalarg) {
 	CLEAR_POINTER(returnVar);
 
 	//Get the first variable.
 	if (eval2(OUT arg, returnVar, evalarg) == FAIL)
 		return FAIL;
 
-	CS p = skipwhite(*arg);
+	S p = skipwhite(*arg);
 	if (*p == '?') {
 		int      op_falsy = p[1] == '?';
 		int      result;
@@ -2773,7 +2773,7 @@ eval2(OUT Byte **arg, Var* returnVar, EvalCtx* evalarg) {
 		return FAIL;
 
 	//Handle the  "||" operator.
-	CS p = skipwhite(*arg);
+	S p = skipwhite(*arg);
 	if (p[0] == '|' && p[1] == '|') {
 		EvalCtx   *evalarg_used = evalarg;
 		EvalCtx   local_evalarg;
@@ -3053,7 +3053,7 @@ eval5(Byte **arg, Var* returnVar, EvalCtx *evalarg) {
 		ExprType   exprtype;
 		int      evaluate;
 
-		CS p = skipwhite(*arg);
+		S p = skipwhite(*arg);
 		if (p[0] == '<' && p[1] == '<')
 			exprtype = EXPR_LSHIFT;
 		ei (p[0] == '>' && p[1] == '>')
@@ -3190,7 +3190,7 @@ eval6(Byte **arg, Var* returnVar, EvalCtx *evalarg) {
 
 		//"+=", "-=" and "..=" are assignments
 		//"++" and "--" on the next line are a separate command.
-		CS p = skipwhite(*arg);
+		S p = skipwhite(*arg);
 		int op = *p;
 		int concat = op == '.' && (*(p + 1) == '.');
 		if ((op != '+' && op != '-' && !concat) || p[1] == '=' || (p[1] == '.' && p[2] == '='))
@@ -3372,7 +3372,7 @@ eval7(
 //"arg" is advanced to just after the recognized expression. Return OK or FAIL.
 private int
 eval8(
-	OUT CS* arg,
+	OUT S* arg,
 	Var* returnVar,
 	EvalCtx* evalarg,
 	Boole want_string   //after "." operator
@@ -3395,7 +3395,7 @@ eval_leader(Byte **arg) {
 	Byte   *p = *arg;
 
 	while (*p == '!' || *p == '-' || *p == '+') {
-		CS n = skipwhite(p + 1);
+		S n = skipwhite(p + 1);
 		p = n;
 	}
 	*arg = p;
@@ -3404,7 +3404,7 @@ eval_leader(Byte **arg) {
 
 //Check for a predefined value "true", "false" and "null.*". Return OK when recognized.
 pub int
-handle_predefined(CS s, int len, Var* returnVar) {
+handle_predefined(S s, int len, Var* returnVar) {
 	switch (len) {
 	case 4:
 		if (STRNCMP(s, "true", 4) == 0) {
@@ -3508,7 +3508,7 @@ eval9_reg_contents(
 //Handle a nested expression: (expression) or lambda: (arg) => expr
 private int
 eval9_nested_expr(
-	OUT CS* arg,
+	OUT S* arg,
 	Var* returnVar,
 	EvalCtx* evalarg
 ) {
@@ -3540,15 +3540,15 @@ eval9_nested_expr(
 //Handle be a variable or function name. Can also be a curly-braces kind of name: {expr}.
 private int
 eval9_var_func_name(
-	CS* arg,
+	S* arg,
 	Var* returnVar,
 	EvalCtx* evalarg,
 	int      evaluate,
-	CS* name_start)
+	S* name_start)
 {
 	int      ret = OK;
-	CS s = *arg;
-	CS alias;
+	S s = *arg;
+	S alias;
 	int len = get_name_len(arg, OUT &alias, evaluate, true);
 	if (alias)
 		s = alias;
@@ -3589,7 +3589,7 @@ eval_option(Byte** arg, Var* returnVar, Boole evaluate) {
 
 	//Isolate the option name and find its value.
 	int scope;
-	CS option_end = find_option_end(OUT arg, OUT &scope);
+	S option_end = find_option_end(OUT arg, OUT &scope);
 	if (!option_end) {
 		if (returnVar)
 			showErrFmtMsg(_(e_option_name_missing_str), *arg);
@@ -3656,15 +3656,15 @@ eval_option(Byte** arg, Var* returnVar, Boole evaluate) {
 //Return OK or FAIL.
 private int
 eval9(
-	OUT CS* arg,
+	OUT S* arg,
 	Var* returnVar,
 	EvalCtx* evalarg,
 	Boole want_string   //after "." operator
 ){
 	Boole evaluate = evalarg && (evalarg->eval_flags & EVAL_EVALUATE) != 0;
-	CS name_start = NULL;
-	CS start_leader;
-	CS end_leader;
+	S name_start = NULL;
+	S start_leader;
+	S end_leader;
 	int      ret = OK;
 	static int   recurse = 0;
 
@@ -3772,10 +3772,10 @@ private int
 eval9_leader(
 	Var* returnVar,
 	int numeric_only,
-	CS start_leader,
-	CS* end_leaderp)
+	S start_leader,
+	S* end_leaderp)
 {
-	CS end_leader = *end_leaderp;
+	S end_leader = *end_leaderp;
 	int      ret = OK;
 	Long val = 0;
 	double       f = 0.0;
@@ -3859,7 +3859,7 @@ call_func_returnVar(
 			}
 		}
 	} else
-		s = S"";
+		s = u8"";
 
 	CLEAR_FIELD(funcexe);
 	funcexe.fe_firstline = curPor->cursor.lnum;
@@ -3953,8 +3953,8 @@ eval_method(
 
 	returnVar->tag = VAR_UNKNOWN;
 
-	CS name = *arg;
-	CS alias;
+	S name = *arg;
+	S alias;
 	long len = get_name_len(arg, &alias, evaluate, evaluate);
 	if (alias)
 		name = alias;
@@ -3983,7 +3983,7 @@ eval_method(
 				evalarg->eval_getline = NULL;
 			}
 
-			CS deref = deref_function_name(arg, &tofree, evalarg, verbose);
+			S deref = deref_function_name(arg, &tofree, evalarg, verbose);
 			if (!deref) {
 				*arg = name + len;
 				ret = FAIL;
@@ -4046,7 +4046,7 @@ eval_index(
 
 	initVarToNull(OUT &var1);
 	initVarToNull(OUT &var2);
-	CS key = S"";
+	S key = u8"";
 	int keylen = -1;
 	if (**arg == '.') {
 		//dict.name
@@ -4131,7 +4131,7 @@ eval_index(
 #define DICT_MAXNEST 100   //maximum nesting of lists and dicts
 
 //Return the function name of partial "pt".
-pub CS
+pub S
 partial_name(PartiallyApplied* pt) {
 	if (pt) {
 		if (pt->name)
@@ -4139,7 +4139,7 @@ partial_name(PartiallyApplied* pt) {
 		if (pt->fn)
 			return pt->fn->uf_name;
 	}
-	return S"";
+	return u8"";
 }
 
 private void
@@ -4175,7 +4175,7 @@ f_test_option_not_set(Arr(Var) argvars, Var*) {
 	if (check_for_string_arg(argvars, 0) == FAIL)
 		return;
 
-	CS name = tv_get_string(&argvars[0]);
+	S name = tv_get_string(&argvars[0]);
 	if (reset_optWasSet(name) == FAIL)
 		showErrFmtMsg(_(e_invalid_argument_str), name);
 }
@@ -4184,15 +4184,15 @@ f_test_option_not_set(Arr(Var) argvars, Var*) {
 //If the memory is allocated, "tofree" is set to it, otherwise NULL.
 //When both "echo_style" and "composite_val" are false, put quotes around
 //strings as "string()", otherwise does not put quotes around strings. May return NULL.
-private CS
+private S
 string_tv2string(Var* tv, Byte** tofree, int echo_style, int composite_val) {
-	CS r = NULL;
+	S r = NULL;
 
 	if (echo_style && !composite_val) {
 		*tofree = NULL;
 		r = tv->string;
 		if (!r)
-			r = S"";
+			r = u8"";
 	} else {
 		*tofree = string_quote(tv->string, false);
 		r = *tofree;
@@ -4205,16 +4205,16 @@ string_tv2string(Var* tv, Byte** tofree, int echo_style, int composite_val) {
 //If the memory is allocated "tofree" is set to it, otherwise NULL.
 //When "echo_style" is false, put quotes around the function name as
 //"function()", otherwise does not put quotes around function name. May return NULL.
-private CS
+private S
 func_tv2string(Var* tv, Byte** tofree, int echo_style) {
-	CS r = NULL;
+	S r = NULL;
 	Byte buf[MAX_FUNC_NAME_LEN];
 
 	if (echo_style) {
 		*tofree = NULL;
 
 		if (tv->string == NULL)
-			r = S"function()";
+			r = u8"function()";
 		else {
 			r = make_ufunc_name_readable(tv->string, buf, MAX_FUNC_NAME_LEN);
 			if (r == buf) {
@@ -4223,7 +4223,7 @@ func_tv2string(Var* tv, Byte** tofree, int echo_style) {
 			}
 		}
 	} else {
-		CS s = (tv->string) ? make_ufunc_name_readable(tv->string, buf, MAX_FUNC_NAME_LEN) : null;
+		S s = (tv->string) ? make_ufunc_name_readable(tv->string, buf, MAX_FUNC_NAME_LEN) : null;
 		r = *tofree = string_quote(s, true);
 	}
 
@@ -4234,7 +4234,7 @@ func_tv2string(Var* tv, Byte** tofree, int echo_style) {
 //If the memory is allocated "tofree" is set to it, otherwise NULL.
 //When "echo_style" is false, put quotes around the function name as
 //"function()", otherwise does not put quotes around function name. May return NULL.
-private CS
+private S
 method_tv2string(Var* tv, Byte** tofree, int echo_style) {
 	Byte buf[MAX_FUNC_NAME_LEN];
 	PartiallyApplied* pt = tv->partial;
@@ -4245,9 +4245,9 @@ method_tv2string(Var* tv, Byte** tofree, int echo_style) {
 	if (len >= sizeof(buf)) {
 		if (echo_style) {
 			*tofree = NULL;
-			return S"function()";
+			return u8"function()";
 		} else
-			return *tofree = string_quote(S"", true);
+			return *tofree = string_quote(u8"", true);
 	}
 
 	return *tofree = echo_style ? copyStr(buf) : string_quote(buf, true);
@@ -4256,7 +4256,7 @@ method_tv2string(Var* tv, Byte** tofree, int echo_style) {
 //Return a textual representation of a partial in "tv".
 //If the memory is allocated "tofree" is set to it, otherwise NULL.
 //"numbuf" is used for a number.  May return NULL.
-private CS
+private S
 partial_tv2string(
 	 Var* tv,
 	 Byte** tofree,
@@ -4270,40 +4270,40 @@ partial_tv2string(
 	Byte   *tf;
 
 	pt = tv->partial;
-	CS fname = string_quote(pt == NULL ? NULL : partial_name(pt), false);
+	S fname = string_quote(pt == NULL ? NULL : partial_name(pt), false);
 
 	ga_init2(&ga, 1, 100);
-	ga_concat(&ga, (CS)"function(");
+	ga_concat(&ga, u8"function(");
 	if (fname) {
 		//When using uf_name prepend "g:" for a global function.
 		if (pt && pt->name == NULL && fname[0] == '\'' && eeIsUpper(fname[1])) {
-			ga_concat(&ga, (CS)"'g:");
+			ga_concat(&ga, u8"'g:");
 			ga_concat(&ga, fname + 1);
 		} else
 			ga_concat(&ga, fname);
 		eeglFree(fname);
 	 }
 	if (pt && pt->argc > 0) {
-		ga_concat(&ga, (CS)", [");
+		ga_concat(&ga, u8", [");
 		for (i = 0; i < pt->argc; ++i) {
 			 if (i > 0)
-			ga_concat(&ga, (CS)", ");
+			ga_concat(&ga, u8", ");
 			 ga_concat(&ga, tv2string(&pt->argv[i], &tf, numbuf, copyID));
 			 eeglFree(tf);
 		}
-		ga_concat(&ga, (CS)"]");
+		ga_concat(&ga, u8"]");
 	}
 	if (pt && pt->self) {
 		Var dtv;
 
-		ga_concat(&ga, (CS)", ");
+		ga_concat(&ga, u8", ");
 		dtv.tag = VAR_BAG;
 		dtv.bag = pt->self;
 		ga_concat(&ga, tv2string(&dtv, &tf, numbuf, copyID));
 		eeglFree(tf);
 	}
 	//terminate with ')' and a ZERO
-	ga_concat_len(&ga, (CS)")", 2);
+	ga_concat_len(&ga, u8")", 2);
 
 	*tofree = ga.c;
 	r = *tofree;
@@ -4314,17 +4314,17 @@ partial_tv2string(
 //Return a textual representation of a List in "tv". If the memory is allocated, "tofree" is set
 //to it, otherwise NULL. When "copyID" is not zero replace recursive lists with "...". When
 //"restore_copyID" is false, repeated items in lists are replaced with "...". May return NULL.
-private CS
+private S
 list_tv2string(Var* tv, Byte** tofree, Unt copyID, Unt restore_copyID) {
-	CS r = NULL;
+	S r = NULL;
 
 	if (!tv->list) {
 		//NULL list is equivalent to empty list.
 		*tofree = NULL;
-		r = (CS)"[]";
+		r = u8"[]";
 	} ei (copyID != 0 && tv->list->copyId == copyID && tv->list->len > 0) {
 		*tofree = NULL;
-		r = (CS)"[...]";
+		r = u8"[...]";
 	} else {
 		Unt old_copyID;
 		if (restore_copyID)
@@ -4344,22 +4344,22 @@ list_tv2string(Var* tv, Byte** tofree, Unt copyID, Unt restore_copyID) {
 //it, otherwise NULL. When "copyID" is not zero replace recursive dicts with "...".
 //When "restore_copyID" is false, repeated items in the dictionary are replaced with "...". May
 //return NULL.
-private CS
+private S
 dict_tv2string(
 	Var* tv,
 	Byte** tofree,
 	Unt copyID,
 	int restore_copyID
 ) {
-	CS r = NULL;
+	S r = NULL;
 
 	if (tv->bag == NULL) {
 		//NULL dict is equivalent to empty dict.
 		*tofree = NULL;
-		r = (CS)"{}";
+		r = u8"{}";
 	} ei (copyID != 0 && tv->bag->copyId == copyID && tv->bag->hashTable.count != 0) {
 		*tofree = NULL;
-		r = (CS)"{...}";
+		r = u8"{...}";
 	} else {
 		int old_copyID;
 		if (restore_copyID)
@@ -4379,8 +4379,8 @@ dict_tv2string(
 //"tofree" is set to it, otherwise NULL. "numBuf" is used for a number.
 //When "composite_val" is false, put quotes around strings as "string()",
 //otherwise does not put quotes around strings. May return NULL.
-private CS
-jobchan_tv2string(Var* tv, OUT Byte** tofree, OUT CS numBuf, int composite_val) {
+private S
+jobchan_tv2string(Var* tv, OUT Byte** tofree, OUT S numBuf, int composite_val) {
 	Byte* r = NULL;
 
 	*tofree = NULL;
@@ -4408,7 +4408,7 @@ jobchan_tv2string(Var* tv, OUT Byte** tofree, OUT CS numBuf, int composite_val) 
 //quotes around strings, as ":echo" displays values.
 //When "restore_copyID" is false, repeated items in dictionaries and lists are replaced with "...".
 //May return NULL.
-pub CS
+pub S
 echo_string_core(
 	Var* tv,
 	Byte** tofree,
@@ -4429,7 +4429,7 @@ echo_string_core(
 			 emsg(_(e_variable_nested_too_deep_for_displaying));
 		}
 		*tofree = NULL;
-		return S"{E724}";
+		return u8"{E724}";
 	}
 	++recurse;
 
@@ -4492,7 +4492,7 @@ echo_string_core(
 //If the memory is allocated "tofree" is set to it, otherwise NULL. "numbuf" is used for a number.
 //Does not put quotes around strings, as ":echo" displays values.
 //When "copyID" is not zero, replace recursive lists and dicts with "...". May return NULL.
-pub CS
+pub S
 echo_string(Var* tv, Byte** tofree, Byte* numbuf, Unt copyID) {
 	return echo_string_core(tv, tofree, numbuf, copyID, true, false, false);
 }
@@ -4510,7 +4510,7 @@ buf_byteidx_to_charidx(Book *book, int lnum, int byteidx) {
 	if (lnum > book->mem.lineCount)
 		lnum = book->mem.lineCount;
 
-	CS str = memGetLine(book, lnum, false);
+	S str = memGetLine(book, lnum, false);
 	if (str == NULL)
 		return -1;
 
@@ -4518,7 +4518,7 @@ buf_byteidx_to_charidx(Book *book, int lnum, int byteidx) {
 		return 0;
 
 	//count the number of characters
-	CS t = str;
+	S t = str;
 	for (count = 0; *t != ZERO && t <= str + byteidx; count++)
 		t += utfCharLen(t);
 
@@ -4587,7 +4587,7 @@ var2fpos(
 	}
 
 
-	CS name = convertVarToStringSingleUse(varp);
+	S name = convertVarToStringSingleUse(varp);
 	if (!name)
 		return NULL;
 
@@ -4720,8 +4720,8 @@ list2fpos(
 //Get the length of an environment variable name.
 //Advance "arg" to the first character after the name. Return 0 for error.
 pub int
-readEnvNameAndGetItsLen(OUT CS* arg) {
-	CS p;
+readEnvNameAndGetItsLen(OUT S* arg) {
+	S p;
 	for (p = *arg; bookIsIdentifierChar(p[0]); ++p)
 		;
 	if (p == *arg)       //no name found
@@ -4735,7 +4735,7 @@ readEnvNameAndGetItsLen(OUT CS* arg) {
 //Get the length of the name of a function or internal variable.
 //"arg" is advanced to after the name. Return 0 if something is wrong.
 pub int
-get_id_len(OUT CS* arg) {
+get_id_len(OUT S* arg) {
 	Byte   *p;
 	int      len;
 
@@ -4829,8 +4829,8 @@ findNameEnd(Text const arg, OUT Text* expr, Unt flags) {
 	)
 		return arg;
 
-	CS p = arg.c;
-	CS sentinel = arg.c + arg.len;
+	S p = arg.c;
+	S sentinel = arg.c + arg.len;
 	for (;
 		  p < sentinel
 			 && (isValidForScriptName(*p)
@@ -4908,7 +4908,7 @@ expandCurlyBraces(Text braces, Text outer) {
 	Byte c1 = outer.c[outer.len];
 	outer.c[outer.len] = ZERO;
 
-	CS braceEvalResult = eval_to_string(braces.c + 1, false, false);
+	S braceEvalResult = eval_to_string(braces.c + 1, false, false);
 	if (braceEvalResult) {
 		retval.len = (Unt)(outer.len) + STRLEN(braceEvalResult) - braces.len + 1;
 
@@ -4949,7 +4949,7 @@ expandCurlyBraces(Text braces, Text outer) {
 //"name_start" points to a variable before the subscript or is NULL.
 pub int
 handle_subscript(
-	OUT CS* arg,
+	OUT S* arg,
 	Var* returnVar,
 	EvalCtx* evalarg,
 	Boole verbose   //give error messages
@@ -5081,7 +5081,7 @@ evCopyItem(Var* from, Var* to, int deep, int top, Unt copyID) {
 	case VAR_UNKNOWN:
 	case VAR_ANY:
 	case VAR_VOID:
-		internal_error_no_abort(S"evCopyItem(UNKNOWN)");
+		internal_error_no_abort(u8"evCopyItem(UNKNOWN)");
 		ret = FAIL;
 	}
 	--recurse;
@@ -5094,7 +5094,7 @@ evCopyItem(Var* from, Var* to, int deep, int top, Unt copyID) {
 //Fill the buffer 'buf' with 'len' random bytes.
 //Return FAIL if the OS PRNG is not available or something went wrong.
 pub int
-mch_get_random(OUT CS buf, int len) {
+mch_get_random(OUT S buf, int len) {
 	static int dev_urandom_state = NOTDONE;
 
 	if (dev_urandom_state == FAIL)
@@ -5121,7 +5121,7 @@ pub void
 echo_one(Var* returnVar, int with_space, int *atstart, int *needclr) {
 	Byte   *tofree;
 	Byte   numbuf[NUMBUFLEN];
-	CS p = echo_string(returnVar, &tofree, numbuf, get_copyID());
+	S p = echo_string(returnVar, &tofree, numbuf, get_copyID());
 
 	if (*atstart) {
 		*atstart = false;
@@ -5134,7 +5134,7 @@ echo_one(Var* returnVar, int with_space, int *atstart, int *needclr) {
 			msg_start();
 		}
 	} ei (with_space)
-		msgPutsDeco(S" ", echoDecoFlagsG);
+		msgPutsDeco(u8" ", echoDecoFlagsG);
 
 	if (p) {
 		for ( ; *p != ZERO && !gotInterruptG; ++p) {
@@ -5159,7 +5159,7 @@ echo_one(Var* returnVar, int with_space, int *atstart, int *needclr) {
 //":echon expr1 ..."   print each argument plain.
 pub void
 c_echo(Invocation* invo) {
-	CS arg = invo->arg;
+	S arg = invo->arg;
 	Var   returnVar;
 	Byte   *arg_start;
 	int      needclr = true;
@@ -5229,7 +5229,7 @@ c_execute(Invocation* invo) {
 	Arr(Byte) arg = invo->arg;
 	Var   returnVar;
 	int      ret = OK;
-	CS p;
+	S p;
 	ArrayList   ga;
 	int      len;
 	long   start_lnum = SOURCING_LNUM;
@@ -5266,8 +5266,8 @@ c_execute(Invocation* invo) {
 				break;
 			}
 			if (ga.len)
-				((CS)(ga.c))[ga.len++] = ' ';
-			STRCPY((CS)(ga.c) + ga.len, p);
+				((S)(ga.c))[ga.len++] = ' ';
+			STRCPY((S)(ga.c) + ga.len, p);
 			ga.len += len;
 		}
 
@@ -5297,7 +5297,7 @@ c_execute(Invocation* invo) {
 			end_echowindow();
 		} ei (invo->id == C_echoconsole) {
 			ui_write(ga.c, (int)STRLEN(ga.c), true);
-			ui_write((CS)"\r\n", 2, true);
+			ui_write(u8"\r\n", 2, true);
 		} ei (invo->id == C_echoerr) {
 			int save_anyEmsgG = anyEmsgG;
 
@@ -5306,7 +5306,7 @@ c_execute(Invocation* invo) {
 			if (!force_abort)
 				anyEmsgG = save_anyEmsgG;
 		} ei (invo->id == C_execute) {
-			doCommand((CS)ga.c, invo->ea_getline, invo->cookie, DOCMD_NOWAIT|DOCMD_VERBOSE);
+			doCommand((S)ga.c, invo->ea_getline, invo->cookie, DOCMD_NOWAIT|DOCMD_VERBOSE);
 		}
 	}
 
@@ -5322,8 +5322,8 @@ c_execute(Invocation* invo) {
 //Skip over the name of an option, i.e. "&option", "&g:option" or "&l:option".
 //"arg" points to the "&" or '+' when called, to "option" when returning.
 //Return NULL when no option name found. Otherwise pointer to the char after the option name.
-pub CS
-find_option_end(OUT CS* arg, OUT int *scope) {
+pub S
+find_option_end(OUT S* arg, OUT int *scope) {
 	Byte   *p = *arg;
 
 	++p;
@@ -5356,7 +5356,7 @@ lastSetMsg(ScriptPos script_ctx) {
 	if (script_ctx.sid == 0)
 		return;
 
-	CS p = home_replace_save(NULL, get_scriptname(script_ctx.sid));
+	S p = home_replace_save(NULL, get_scriptname(script_ctx.sid));
 	if (!p)
 		return;
 
@@ -5375,12 +5375,12 @@ lastSetMsg(ScriptPos script_ctx) {
 //Perform a substitution on "str" with pattern "pat" and substitute "sub".
 //When "sub" is NULL "expr" is used, must be a VAR_FUNC or VAR_PARTIAL.
 //"flags" can be "g" to do a global substitute. Return an allocated string, NULL for error.
-pub CS
+pub S
 do_string_sub(
-	CS str,
+	S str,
 	Unt len,
-	CS pat,
-	CS sub,
+	S pat,
+	S sub,
 	Var* expr,
 	Byte* flags,
 	Unt* ret_len      //length of returned buffer
@@ -5405,7 +5405,7 @@ do_string_sub(
 				if (zero_width == regmatch.startp[0]) {
 					//avoid getting stuck on a match with an empty string
 					i = utfCharLen(tail);
-					MEMMOVE((CS)ga.c + ga.len, tail, (Unt)i);
+					MEMMOVE((S)ga.c + ga.len, tail, (Unt)i);
 					ga.len += i;
 					tail += i;
 					continue;
@@ -5431,10 +5431,10 @@ do_string_sub(
 
 			//copy the text up to where the match is
 			i = (int)(regmatch.startp[0] - tail);
-			MEMMOVE((CS)ga.c + ga.len, tail, (Unt)i);
+			MEMMOVE((S)ga.c + ga.len, tail, (Unt)i);
 			//add the substituted text
 			(void)eeRegsub(
-				&regmatch, sub, expr, (Text){(CS)ga.c + ga.len + i, sublen},
+				&regmatch, sub, expr, (Text){(S)ga.c + ga.len + i, sublen},
 				REGSUB_COPY | REGSUB_MAGIC
 			);
 			ga.len += i + sublen - 1;
@@ -5454,10 +5454,10 @@ do_string_sub(
 	 }
 
 	if (ga.c) {
-		str = (CS)ga.c;
+		str = (S)ga.c;
 		len = (Unt)ga.len;
 	}
-	CS ret = copySubstr(str, len);
+	S ret = copySubstr(str, len);
 	ga_clear(&ga);
 
 	if (ret_len)
@@ -5469,17 +5469,17 @@ do_string_sub(
 //To be called after eval_next_non_blank() sets "getnext" to true.
 //
 //If "arg" is not NULL, then the caller should assign the return value to "arg".
-private CS
-eval_next_line(CS arg, EvalCtx* evalarg) {
+private S
+eval_next_line(S arg, EvalCtx* evalarg) {
 	ArrayList* gap = &evalarg->eval_ga;
-	CS line;
+	S line;
 
 	if (arg) {
 		if (*arg == NL)
 			return newline_skip_comments(arg);
 		//Truncate before a trailing comment, so that concatenating the lines
 		//won't turn the rest into a comment.
-		CS q = skipwhite(arg);
+		S q = skipwhite(arg);
 		if (*q == '#' || (*q == '/' && q[1] == '/'))
 			*arg = ZERO;
 	 }
@@ -5491,13 +5491,13 @@ eval_next_line(CS arg, EvalCtx* evalarg) {
 
 	++evalarg->eval_break_count;
 	if (gap->ga_itemsize > 0 && ga_grow(gap, 1) == OK) {
-		CS p = skipwhite(line);
+		S p = skipwhite(line);
 
 		//Going to concatenate the lines after parsing. For an empty or
 		//comment line use an empty string.
 		if (*p == ZERO || isComment(p)) {
 			eeglFree(line);
-			line = copyStr(S"");
+			line = copyStr(u8"");
 		}
 
 		((Byte **)gap->c)[gap->len] = line;
@@ -5567,10 +5567,10 @@ evalvars_clear(void) {
 
 //Set an internal variable to a string value. Creates the variable if it does not already exist.
 pub void
-set_internal_string_var(CS name, CS value) {
+set_internal_string_var(S name, S value) {
 	if (!name)
 		return;
-	CS val = copyStr(value);
+	S val = copyStr(value);
 
 	Var* var = allocStringVar(val);
 	set_var(text(name), var, false);
@@ -5578,11 +5578,11 @@ set_internal_string_var(CS name, CS value) {
 }
 
 pub void
-eval_diff(CS, CS, CS){
+eval_diff(S, S, S){
 //TODO re-implement without vimvars
 	ScriptPos   saved_sctx = scriptPosG;
 
-	ScriptPos* ctx = optGetScriptPos(S"diffexpr");
+	ScriptPos* ctx = optGetScriptPos(u8"diffexpr");
 	if (ctx)
 		scriptPosG = *ctx;
 
@@ -5594,10 +5594,10 @@ eval_diff(CS, CS, CS){
 }
 
 pub void
-eval_patch(CS, CS, CS) {
+eval_patch(S, S, S) {
 //TODO re-implement without vimvars
 	ScriptPos saved_sctx = scriptPosG;
-	ScriptPos* ctx = optGetScriptPos(S"patchexpr");
+	ScriptPos* ctx = optGetScriptPos(u8"patchexpr");
 	if (ctx)
 		scriptPosG = *ctx;
 
@@ -5613,7 +5613,7 @@ eval_patch(CS, CS, CS) {
 //Evaluate an expression to a list with suggestions.
 //For the "expr:" part of 'spellsuggest'. Return NULL when there is an error.
 pub List *
-eval_spell_expr(CS , CS expr) {
+eval_spell_expr(S , S expr) {
 	Var   returnVar;
 	List   *list = NULL;
 	Byte   *p = skipwhite(expr);
@@ -5623,7 +5623,7 @@ eval_spell_expr(CS , CS expr) {
 
 	if (p_verbose == 0)
 		++emsg_off;
-	ctx = optGetScriptPos(S"spellsuggest");
+	ctx = optGetScriptPos(u8"spellsuggest");
 	if (ctx)
 		scriptPosG = *ctx;
 
@@ -5648,14 +5648,14 @@ eval_spell_expr(CS , CS expr) {
 private void
 list_script_vars(int *first) {
 	if (SCRIPT_ID_VALID(scriptPosG.sid))
-	list_hashtable_vars(&SCRIPT_VARS(scriptPosG.sid), S"s:", false, first);
+	list_hashtable_vars(&SCRIPT_VARS(scriptPosG.sid), u8"s:", false, first);
 }
 
 //Return true if "name" starts with "g:", "w:", "t:" or "b:".
 //But only when an identifier character follows.
 pub int
-is_scoped_variable(CS name) {
-	return firstOccurrence(S"gwbt", name[0]) != NULL
+is_scoped_variable(S name) {
+	return firstOccurrence(u8"gwbt", name[0]) != NULL
 		&& name[1] == ':'
 		&& isValidForScriptName(name[2]);
 }
@@ -5663,8 +5663,8 @@ is_scoped_variable(CS name) {
 //Evaluate one Vim expression {expr} in string "p" and append the resulting string to "gap".
 //"p" points to the opening "{". When "evaluate" is false only skip over the expression.
 //Return a pointer to the character after "}", NULL for an error.
-pub CS
-eval_one_expr_in_str(CS p, ArrayList *gap, int evaluate) {
+pub S
+eval_one_expr_in_str(S p, ArrayList *gap, int evaluate) {
 	Byte* block_start = skipwhite(p + 1);  //skip the opening {
 	Byte* block_end = block_start;
 	Byte* expr_val;
@@ -5697,18 +5697,18 @@ eval_one_expr_in_str(CS p, ArrayList *gap, int evaluate) {
 //Evaluate all the Vim expressions {expr} in "str" and return the resulting
 //string in allocated memory. "{{" is reduced to "{" and "}}" to "}".
 //Used for a heredoc assignment. Return NULL for an error.
-private CS
-eval_all_expr_in_str(CS str) {
+private S
+eval_all_expr_in_str(S str) {
 	ArrayList   ga;
 
 	ga_init2(&ga, 1, 80);
-	CS p = str;
+	S p = str;
 
 	while (*p != ZERO) {
 		int   escaped_brace = false;
 
 		//Look for a block start.
-		CS lit_start = p;
+		S lit_start = p;
 		while (*p != '{' && *p != '}' && *p != ZERO)
 			 ++p;
 
@@ -5761,21 +5761,21 @@ eval_all_expr_in_str(CS str) {
 //
 //Return a List with {lines} or NULL on failure.
 pub List *
-heredoc_get(Invocation* invo, CS cmd, int script_get) {
-	CS theline = NULL;
-	CS marker;
+heredoc_get(Invocation* invo, S cmd, int script_get) {
+	S theline = NULL;
+	S marker;
 	List   *l;
-	CS p;
-	CS str;
+	S p;
+	S str;
 	int      marker_indent_len = 0;
 	int      text_indent_len = 0;
-	CS text_indent = NULL;
+	S text_indent = NULL;
 	Byte dot[] = ".";
 	int evalstr = false;
 	int eval_failed = false;
 	int heredoc_in_string = false;
-	CS line_arg = NULL;
-	CS nl_ptr = firstOccurrence(cmd, '\n');
+	S line_arg = NULL;
+	S nl_ptr = firstOccurrence(cmd, '\n');
 
 	if (nl_ptr) {
 		heredoc_in_string = true;
@@ -5817,7 +5817,7 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
 	if (*cmd != ZERO && isComment(cmd)) {
 		marker = skipwhite(cmd);
 		p = skiptowhite(marker);
-		CS next = skipwhite(p);
+		S next = skipwhite(p);
 		if (*next != ZERO && !isComment(next)) {
 			showErrFmtMsg(_(e_trailing_characters_str), p);
 			return NULL;
@@ -5952,8 +5952,8 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
 //":const [var1, var2] = expr"   unpack list.
 pub void
 c_let(Invocation* invo) {
-	CS arg = invo->arg;
-	CS expr = NULL;
+	S arg = invo->arg;
+	S expr = NULL;
 	Var returnVar;
 	int var_count = 0;
 	int semicolon = 0;
@@ -5972,14 +5972,14 @@ c_let(Invocation* invo) {
 	if (invo->arg == invo->comm)
 		flags |= ASSIGN_NO_DECL;
 
-	CS argend = skip_var_list(arg, &var_count, &semicolon, false);
+	S argend = skip_var_list(arg, &var_count, &semicolon, false);
 	if (!argend)
 		return;
 	if (argend > arg && argend[-1] == '.')  //for var.='str'
 		--argend;
 	expr = skipwhite(argend);
 	concat = expr[0] == '.' && (expr[1] == '.' && expr[2] == '=');
-	has_assign = *expr == '=' || (firstOccurrence((CS)"+-*/%", *expr) != NULL && expr[1] == '=');
+	has_assign = *expr == '=' || (firstOccurrence(u8"+-*/%", *expr) != NULL && expr[1] == '=');
 	if (!has_assign && !concat) {
 		//":let" without "=": list variables
 		if (*arg == '[')
@@ -6027,7 +6027,7 @@ c_let(Invocation* invo) {
 	op[0] = '=';
 	op[1] = ZERO;
 	if (*expr != '=') {
-		if (firstOccurrence((CS)"+-*/%.", *expr) != NULL) {
+		if (firstOccurrence(u8"+-*/%.", *expr) != NULL) {
 			op[0] = *expr;   //+=, -=, *=, /=, %= or .=
 			if (expr[0] == '.' && expr[1] == '.') { //..=
 				++expr;
@@ -6065,15 +6065,15 @@ c_let(Invocation* invo) {
 //Return OK or FAIL;
 private int
 letVars(
-	 CS arg_start,
+	 S arg_start,
 	 Var* tv,
 	 Boole      copy,      //copy values from "tv", don't move
 	 int      semicolon,   //from skip_var_list()
 	 int      var_count,   //from skip_var_list()
 	 Unt      flags,      //ASSIGN_FINAL, ASSIGN_CONST, etc.
-	 CS op
+	 S op
 ) {
-	CS arg = arg_start;
+	S arg = arg_start;
 	int i;
 	ListItem   *item = NULL;
 	Var ltv;
@@ -6115,7 +6115,7 @@ letVars(
 
 	while (*arg != ']') {
 		arg = skipwhite(arg + 1);
-		arg = letOne( arg, &item->c, true, flags | ASSIGN_UNPACK, (CS)",;]", op);
+		arg = letOne( arg, &item->c, true, flags | ASSIGN_UNPACK, u8",;]", op);
 		item = item->next;
 		if (!arg)
 			return FAIL;
@@ -6139,13 +6139,13 @@ letVars(
 			ltv.list = l;
 			l->refCount = 1;
 
-			arg = letOne(skipwhite(arg + 1), &ltv, false, flags | ASSIGN_UNPACK, S"]", op);
+			arg = letOne(skipwhite(arg + 1), &ltv, false, flags | ASSIGN_UNPACK, u8"]", op);
 			clearVar(&ltv);
 			if (arg == NULL)
 				return FAIL;
 			break;
 		} ei (*arg != ',' && *arg != ']') {
-			internal_error(S"letVars()");
+			internal_error(u8"letVars()");
 			return FAIL;
 		}
 	}
@@ -6154,8 +6154,8 @@ letVars(
 }
 
 //Skip one (assignable) variable name, including @r, $VAR, &option, d.key, l[idx].
-private CS
-skip_var_one(CS arg) {
+private S
+skip_var_one(S arg) {
 	if (*arg == '@' && arg[1] != ZERO)
 		return arg + 2;
 
@@ -6177,8 +6177,8 @@ skip_var_one(CS arg) {
 //For "[var, var]" increment "*var_count" for each variable.
 //for "[var, var; var]" set "semicolon" to 1.
 //If "silent" is true do not give an "invalid argument" error message. Return NULL for an error.
-pub CS
-skip_var_list(CS arg, OUT int* var_count, OUT int* semicolon, int silent) {
+pub S
+skip_var_list(S arg, OUT int* var_count, OUT int* semicolon, int silent) {
 	Byte   *p, *s;
 
 	if (*arg == '[') {
@@ -6219,7 +6219,7 @@ skip_var_list(CS arg, OUT int* var_count, OUT int* semicolon, int silent) {
 //List variables for Set "ht" with prefix "prefix".
 //If "empty" is true also list NULL strings as empty strings.
 pub void
-list_hashtable_vars(EeSet* ht, CS prefix, int empty, int* first) {
+list_hashtable_vars(EeSet* ht, S prefix, int empty, int* first) {
 	EeSetItem   *hi;
 	DictItem   *di;
 	Byte buf[IOSIZE];
@@ -6250,36 +6250,36 @@ list_hashtable_vars(EeSet* ht, CS prefix, int empty, int* first) {
 //List global variables.
 private void
 list_globVars(int* first) {
-	list_hashtable_vars(&globvarht, S"", true, first);
+	list_hashtable_vars(&globvarht, u8"", true, first);
 }
 
 //List book variables.
 private void
 list_buf_vars(int* first) {
-	list_hashtable_vars(&curBook->bVars->hashTable, S"b:", true, first);
+	list_hashtable_vars(&curBook->bVars->hashTable, u8"b:", true, first);
 }
 
 //List window variables.
 private void
 list_win_vars(int* first) {
-	list_hashtable_vars(&curPor->internalVars->hashTable, S"w:", true, first);
+	list_hashtable_vars(&curPor->internalVars->hashTable, u8"w:", true, first);
 }
 
 //List tab variables.
 private void
 list_tabVars(int* first) {
-	list_hashtable_vars(&curtab->vars->hashTable, S"t:", true, first);
+	list_hashtable_vars(&curtab->vars->hashTable, u8"t:", true, first);
 }
 
 //List variables in "arg".
-private CS
-list_arg_vars(Invocation* invo, CS arg, int* first) {
+private S
+list_arg_vars(Invocation* invo, S arg, int* first) {
 	int      error = false;
 	int      len;
-	CS name;
-	CS name_start;
-	CS arg_subsc;
-	CS tofree;
+	S name;
+	S name_start;
+	S arg_subsc;
+	S tofree;
 	Var    tv;
 
 	while (!endsComm(arg) && !gotInterruptG) {
@@ -6331,14 +6331,14 @@ list_arg_vars(Invocation* invo, CS arg, int* first) {
 						} else {
 						   Byte numbuf[NUMBUFLEN];
 						   Byte* tf;
-						   CS s = echo_string(&tv, OUT &tf, numbuf, 0);
+						   S s = echo_string(&tv, OUT &tf, numbuf, 0);
 						   int c = *arg;
 						   *arg = ZERO;
 						   list_one_var_a(
-						      S"",
+						      u8"",
 						      arg == arg_subsc ? name : name_start,
 						      tv.tag,
-						      s ? s : S"",
+						      s ? s : u8"",
 						      first);
 						   *arg = c;
 						   eeglFree(tf);
@@ -6358,9 +6358,9 @@ list_arg_vars(Invocation* invo, CS arg, int* first) {
 }
 
 //Set an environment variable, part of letOne().
-private CS
-letEnv(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
-	CS arg_end = NULL;
+private S
+letEnv(S arg, Var* tv, Unt flags, S endchars, S op) {
+	S arg_end = NULL;
 
 	if ((flags & (ASSIGN_CONST | ASSIGN_FINAL)) && (flags & ASSIGN_FOR_LOOP) == 0) {
 		emsg(_(e_cannot_lock_environment_variable));
@@ -6369,12 +6369,12 @@ letEnv(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
 
 	//Find the end of the name.
 	++arg;
-	CS name = arg;
+	S name = arg;
 	int len = readEnvNameAndGetItsLen(OUT &arg);
 	if (len == 0)
 		showErrFmtMsg(_(e_invalid_argument_str), name - 1);
 	else {
-		if (op && firstOccurrence((CS)"+-*/%", *op) != NULL)
+		if (op && firstOccurrence(u8"+-*/%", *op) != NULL)
 			 showErrFmtMsg(_(e_wrong_variable_type_for_str_equal), op);
 		ei (endchars && firstOccurrence(endchars, *skipwhite(arg)) == NULL)
 			 emsg(_(e_unexpected_characters_in_let));
@@ -6383,7 +6383,7 @@ letEnv(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
 			int      c1 = name[len];
 
 			name[len] = ZERO;
-			CS p = convertVarToStringSingleUse(tv);
+			S p = convertVarToStringSingleUse(tv);
 			if (p && op && *op == '.') {
 				int   mustfree = false;
 				Byte  *s = eeglGetEnv(name);
@@ -6406,10 +6406,10 @@ letEnv(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
 }
 
 //Set an option, part of letOne().
-private CS
-letOption(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
+private S
+letOption(S arg, Var* tv, Unt flags, S endchars, S op) {
 	int scope;
-	CS arg_end = NULL;
+	S arg_end = NULL;
 
 	if ((flags & (ASSIGN_CONST | ASSIGN_FINAL)) && (flags & ASSIGN_FOR_LOOP) == 0) {
 		emsg(_(e_cannot_lock_option));
@@ -6417,7 +6417,7 @@ letOption(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
 	}
 
 	//Find the end of the name.
-	CS p = find_option_end(&arg, &scope);
+	S p = find_option_end(&arg, &scope);
 	if (!p || (endchars && firstOccurrence(endchars, *skipwhite(p)) == NULL)) {
 		emsg(_(e_unexpected_characters_in_let));
 		return NULL;
@@ -6492,7 +6492,7 @@ letOption(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
 		}
 	}
 
-	CS err = optSetByName(arg, newVal, scope);
+	S err = optSetByName(arg, newVal, scope);
 	arg_end = p;
 	if (err)
 		emsg(_(err));
@@ -6507,16 +6507,16 @@ theend:
 }
 
 //Set a register, part of letOne().
-private CS
-letRegister(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
-	CS arg_end = NULL;
+private S
+letRegister(S arg, Var* tv, Unt flags, S endchars, S op) {
+	S arg_end = NULL;
 
 	if ((flags & (ASSIGN_CONST | ASSIGN_FINAL)) && (flags & ASSIGN_FOR_LOOP) == 0) {
 		emsg(_(e_cannot_lock_register));
 		return NULL;
 	}
 	++arg;
-	if (op && firstOccurrence(S"+-*/%", *op) != NULL)
+	if (op && firstOccurrence(u8"+-*/%", *op) != NULL)
 		showErrFmtMsg(_(e_wrong_variable_type_for_str_equal), op);
 	ei (endchars && firstOccurrence(endchars, *skipwhite(arg + 1)) == NULL)
 		emsg(_(e_unexpected_characters_in_let));
@@ -6544,16 +6544,16 @@ letRegister(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
 
 //Set one item of ":let var = expr" or ":let [v1, v2] = list" to its value.
 //Return a pointer to the char just after the var name. NULL if there is an error.
-private CS
+private S
 letOne(
-	CS arg,    //points to variable name
+	S arg,    //points to variable name
 	Var* tv,      //value to assign to variable
 	Boole copy,      //copy value from "tv"
 	Unt flags,      //ASSIGN_CONST, ASSIGN_FINAL, etc.
-	CS endchars,   //valid chars after variable name  or NULL
-	CS op      //"+", "-", "."  or NULL
+	S endchars,   //valid chars after variable name  or NULL
+	S op      //"+", "-", "."  or NULL
 ) {
-	CS arg_end = NULL;
+	S arg_end = NULL;
 
 	if (*arg == '$') {
 		//":let $VAR = expr": Set environment variable.
@@ -6576,7 +6576,7 @@ letOne(
 
 		//":let var = expr": Set internal variable.
 		//":let {expr} = expr": Idem, name made with curly braces
-		CS afterName = getLval(OUT &lv, (GetLval){
+		S afterName = getLval(OUT &lv, (GetLval){
 				.name = mbText(arg), .returnVar = tv, .unlet = false, .skip = false,
 				.flags = lval_flags, .fneFlag = FNE_CHECK_START
 			}
@@ -6601,12 +6601,12 @@ letOne(
 private void
 unletOrLock(
 	Invocation* invo,
-	CS argstart,
+	S argstart,
 	int deep,
-	int (*callback)(Lval *, CommIndex, CS, Boole, int)
+	int (*callback)(Lval *, CommIndex, S, Boole, int)
 ) {
-	CS arg = argstart;
-	CS nameEnd;
+	S arg = argstart;
+	S nameEnd;
 	Boole error = false;
 	Lval   lv;
 
@@ -6661,7 +6661,7 @@ private int
 unletVar(
 	Lval* lv,
 	CommIndex,
-	CS nameEnd,
+	S nameEnd,
 	Boole forceIt,
 	int
 ) {
@@ -6690,7 +6690,7 @@ unletVar(
 		listitem_remove(lv->ll_list, lv->ll_li);
 	else
 		//unlet a Dictionary item.
-		dictitem_remove(lv->bag, lv->ll_di, S"unlet");
+		dictitem_remove(lv->bag, lv->ll_di, u8"unlet");
 
 	return ret;
 }
@@ -6705,7 +6705,7 @@ c_unlet(Invocation* invo) {
 //":lockvar" and ":unlockvar" commands
 pub void
 c_lockvar(Invocation* invo) {
-	CS arg = invo->arg;
+	S arg = invo->arg;
 	int deep = 2;
 
 	if (invo->forceit)
@@ -6741,7 +6741,7 @@ list_unlet_range(
 
 //Unlet (undefine and free) a variable from a particular hash table, it it's there
 pub int
-unletVarFromHashTable(CS name, CS nameWithPrefix, EeSet* ht, Boole forceit) {
+unletVarFromHashTable(S name, S nameWithPrefix, EeSet* ht, Boole forceit) {
 	if (ht && *name != ZERO) {
 		Bag* d = get_current_funccal_dict(ht);
 		DictItem   *di;
@@ -6753,7 +6753,7 @@ unletVarFromHashTable(CS name, CS nameWithPrefix, EeSet* ht, Boole forceit) {
 				d = di == NULL ? NULL : di->c.bag;
 			}
 			if (!d) {
-				internal_error(S"unletImpl()");
+				internal_error(u8"unletImpl()");
 				return FAIL;
 			}
 		}
@@ -6766,7 +6766,7 @@ unletVarFromHashTable(CS name, CS nameWithPrefix, EeSet* ht, Boole forceit) {
 			if (var_check_fixed(di->flags, nmWithPrefix, false)
 					 || var_check_ro(di->flags, nmWithPrefix, false)
 					 || value_check_lock(d->lock, nmWithPrefix, false)
-					 || check_hashtab_frozen(ht, S"unlet"))
+					 || check_hashtab_frozen(ht, u8"unlet"))
 				return FAIL;
 
 			delete_var(ht, hi);
@@ -6783,8 +6783,8 @@ unletVarFromHashTable(CS name, CS nameWithPrefix, EeSet* ht, Boole forceit) {
 //"nameWithPrefix" is the full variable name like "g:foo"
 //When "forceit" is true don't complain if the variable doesn't exist.
 pub int
-unletImpl(CS nameWithPrefix, Boole forceit) {
-	CS name = NULL;
+unletImpl(S nameWithPrefix, Boole forceit) {
+	S name = NULL;
 	EeSet* ht = findVarHashTable(mbText(nameWithPrefix), OUT &name);
 	return unletVarFromHashTable(name, nameWithPrefix, ht, forceit);
 }
@@ -6795,7 +6795,7 @@ private int
 do_lock_var(
 	Lval* lp,
 	CommIndex commandId,
-	CS nameEnd,
+	S nameEnd,
 	Boole,
 	int deep
 ) {
@@ -6982,12 +6982,12 @@ del_menutrans_vars(void) {
 //Local string buffer for the next two functions to store a variable name with its prefix.
 //Allocated in cat_prefix_varname(), freed later in get_user_var_name().
 
-private CS varnamebuf = NULL;
+private S varnamebuf = NULL;
 private Unt varnamebuflen = 0;
 
 //Function to concatenate a prefix and a variable name.
-pub CS
-cat_prefix_varname(int prefix, CS name) {
+pub S
+cat_prefix_varname(int prefix, S name) {
 	Unt len = STRLEN(name) + 3;
 	if (len > varnamebuflen) {
 		eeglFree(varnamebuf);
@@ -7003,7 +7003,7 @@ cat_prefix_varname(int prefix, CS name) {
 
 //Function given to expandGeneric() to obtain the list of user defined
 //(global/book/portal/built-in) variable names.
-pub CS
+pub S
 get_user_var_name(Expand *xp, int idx) {
 	static Ulong   gdone;
 	static Ulong   bdone;
@@ -7176,8 +7176,8 @@ eval_variable(
 //Get the value of internal variable "name", also handling "import.name".
 //Return OK or FAIL. If OK is returned, "returnVar" must be cleared.
 pub int
-eval_variable_import(CS name, Var* returnVar) {
-	CS s = name;
+eval_variable_import(S name, Var* returnVar) {
+	S s = name;
 	while (ASCII_ISALNUM(*s) || *s == '_')
 		++s;
 	int len = (int)(s - name);
@@ -7185,7 +7185,7 @@ eval_variable_import(CS name, Var* returnVar) {
 	if (eval_variable(nam, returnVar, NULL, 0) == FAIL)
 		return FAIL;
 	if (returnVar->tag == VAR_ANY && *s == '.') {
-		CS ns = s + 1;
+		S ns = s + 1;
 		s = ns;
 		while (ASCII_ISALNUM(*s) || *s == '_')
 			++s;
@@ -7206,7 +7206,7 @@ check_vars(Text name) {
 	Byte cc = name.c[name.len];
 	name.c[name.len] = ZERO;
 
-	CS varname;
+	S varname;
 	EeSet* ht = findVarHashTable(name, OUT &varname);
 	if ((ht == get_funccal_local_ht() || ht == get_funccal_args_ht()) && (findVar(name.c, true))){
 		*eval_lavars_used = true;
@@ -7220,7 +7220,7 @@ check_vars(Text name) {
 //EeSet used.
 private DictItem*
 findVarAndSetHtable(Text name, OUT EeSet** htp, Boole no_autoload) {
-	CS varname;
+	S varname;
 	EeSet* ht = findVarHashTable(name, OUT &varname);
 	if (htp)
 		*htp = ht;
@@ -7242,16 +7242,16 @@ findVarAndSetHtable(Text name, OUT EeSet** htp, Boole no_autoload) {
 //Find variable "name" in the list of variables. Return a pointer to it if found, NULL if not
 //found. Careful: "a:0" variables don't have a name.
 pub DictItem *
-findVar(CS name, Boole noAutoload) {
+findVar(S name, Boole noAutoload) {
 	return findVarAndSetHtable(mbText(name), null, noAutoload);
 }
 
 //Like findVar() but if the name starts with <SNR>99_ then look in the
 //referenced script (used for a funcref).
 pub DictItem *
-findVar_also_in_script(CS name, OUT EeSet** htp, Boole no_autoload) {
+findVar_also_in_script(S name, OUT EeSet** htp, Boole no_autoload) {
 	if (STRNCMP(name, "<SNR>", 5) == 0 && SAFE_isdigit(name[5])) {
-		CS p = name + 5;
+		S p = name + 5;
 		int sid = parseLong(&p);
 
 		if (SCRIPT_ID_VALID(sid) && *p == '_') {
@@ -7331,7 +7331,7 @@ lookup_scriptitem(Text name, int cmd) {
 
 	Byte buf[30];
 	Boole is_global = false;
-	CS p;
+	S p;
 	if (name.len < sizeof(buf) - 1) {
 		//avoid an alloc/free for short names
 		copySubstrToAllocation(OUT buf, name);
@@ -7349,7 +7349,7 @@ lookup_scriptitem(Text name, int cmd) {
 	//Find a function, so that a following "->" works.
 	//When used as a command require "(" or "->" to follow, "Cmd" is a user
 	//command while "Cmd()" is a function call.
-	CS fname = name.c;
+	S fname = name.c;
 	if (res != OK) {
 		p = skipwhite(name.c + name.len);
 
@@ -7372,7 +7372,7 @@ lookup_scriptitem(Text name, int cmd) {
 //Find the hash table used for a variable name. Return NULL if the name is not valid.
 //Set "varname" to the start of name without prefixes like "b:", "g:" etc.
 pub EeSet*
-findVarHashTable(Text name, OUT CS* varname) {
+findVarHashTable(Text name, OUT S* varname) {
 	if (name.len == 0)
 		return NULL;
 	EeSet* ht;
@@ -7381,7 +7381,7 @@ findVarHashTable(Text name, OUT CS* varname) {
 		if (name.c[0] == 'g')            //global variable
 			return &globvarht;
 		//There must be no ':' or '#' in the rest of the name, unless g: is used
-		for (CS p = name.c; p < name.c + name.len; p++) {
+		for (S p = name.c; p < name.c + name.len; p++) {
 			if (*p == ':' || *p == AUTOLOAD_CHAR) {
 				return null;
 			}
@@ -7416,8 +7416,8 @@ findVarHashTable(Text name, OUT CS* varname) {
 
 //Get the string value of a (global/local) variable.
 //Note: see tv_get_string() for how long the pointer remains valid. Return NULL if it doesn't exist
-pub CS
-get_var_value(CS name) {
+pub S
+get_var_value(S name) {
 	DictItem* v = findVar(name, false);
 	if (!v)
 		return NULL;
@@ -7493,7 +7493,7 @@ pub void
 delete_var(EeSet* ht, EeSetItem *hi) {
 	 DictItem* di = HI2DI(hi);
 
-	if (hash_remove(ht, hi, S"delete variable") != OK)
+	if (hash_remove(ht, hi, u8"delete variable") != OK)
 		return;
 
 	 clearVar(&di->c);
@@ -7502,21 +7502,21 @@ delete_var(EeSet* ht, EeSetItem *hi) {
 
 //List the value of one internal variable.
 private void
-list_one_var(DictItem *v, CS prefix, int *first) {
-	CS tofree;
+list_one_var(DictItem *v, S prefix, int *first) {
+	S tofree;
 	Byte numbuf[NUMBUFLEN];
 
-	CS s = echo_string(&v->c, &tofree, numbuf, get_copyID());
-	list_one_var_a(prefix, v->key, v->c.tag, s ? s : S"", first);
+	S s = echo_string(&v->c, &tofree, numbuf, get_copyID());
+	list_one_var_a(prefix, v->key, v->c.tag, s ? s : u8"", first);
 	eeglFree(tofree);
 }
 
 private void
 list_one_var_a(
-	CS prefix,
-	CS name,
+	S prefix,
+	S name,
 	int type,
-	CS string,
+	S string,
 	int* first  //when true clear rest of screen and set to false
 ){
 	//don't use msg() or msgDeco() to avoid overwriting "v:statusmsg"
@@ -7544,7 +7544,7 @@ list_one_var_a(
 	 msg_outtrans(string);
 
 	if (type == VAR_FUNC || type == VAR_PARTIAL)
-		msg_puts(S"()");
+		msg_puts(u8"()");
 	if (*first) {
 		msg_clr_eos();
 		*first = false;
@@ -7570,8 +7570,8 @@ setVarImpl(
 	Unt      flags_arg  //ASSIGN_CONST, ASSIGN_FINAL, etc.
 ){
 	Var* tv = newValue;
-	CS varname;
-	CS name_tofree = NULL;
+	S varname;
+	S name_tofree = NULL;
 	EeSet* ht = NULL;
 	Boole var_in_autoload = false;
 	Unt flags = flags_arg;
@@ -7641,7 +7641,7 @@ setVarImpl(
 			goto failed;
 		}
 
-		if (check_hashtab_frozen(ht, S"add variable"))
+		if (check_hashtab_frozen(ht, u8"add variable"))
 			goto failed;
 
 		//Can't add "a:" variable.
@@ -7657,7 +7657,7 @@ setVarImpl(
 		di = alloc(offsetof(DictItem, key) + varNameT.len + 1);
 		STRCPY(di->key, varname);
 		di->len = varNameT.len;
-		if (hash_add(ht, textOfDi(di), S"add variable") == FAIL) {
+		if (hash_add(ht, textOfDi(di), u8"add variable") == FAIL) {
 			eeglFree(di);
 			goto failed;
 		}
@@ -7699,7 +7699,7 @@ failed:
 //- Whether the variable is locked
 //NOTE: "name" is only used for error messages.
 pub int
-var_check_permission(DictItem* di, CS name) {
+var_check_permission(DictItem* di, S name) {
 	if (var_check_ro(di->flags, mbText(name), false)
 				 || value_check_lock(di->c.lock, mbText(name), false)
 				 || var_check_lock(di->flags, mbText(name), false))
@@ -7772,7 +7772,7 @@ value_check_lock(int lock, Text name, Boole use_gettext) {
 //error if not.
 pub Boole
 valid_varname(Text varname, Boole autoload) {
-	for (CS p = varname.c; p < varname.c + varname.len; ++p) {
+	for (S p = varname.c; p < varname.c + varname.len; ++p) {
 		if (!isValidForScriptName1(*p)
 				&& (p == varname.c || !EE_ISDIGIT(*p)) && !(autoload && *p == AUTOLOAD_CHAR)) {
 			showErrFmtMsg(_(e_illegal_variable_name_str), varname.c);
@@ -7786,7 +7786,7 @@ valid_varname(Text varname, Boole autoload) {
 //Used by "getwinvar()" "gettabvar()" "gettabwinvar()" "getbufvar()".
 private void
 getVarFrom(
-	CS varname,
+	S varname,
 	Var* returnVar,
 	Var* deftv,       //Default value if not found.
 	VarLevel level,
@@ -7885,7 +7885,7 @@ getPortalVar(
 	else
 		t = curtab;
 	Portal* port = portFindByNr(&argvars[off], t);
-	CS varname = convertVarToStringSingleUse(&argvars[off + 1]);
+	S varname = convertVarToStringSingleUse(&argvars[off + 1]);
 
 	getVarFrom(varname, returnVar, &argvars[off + 2], 'w', t, port, NULL);
 }
@@ -7895,7 +7895,7 @@ private void
 setPortVar(Var* argvars, int off) {
 	Tab* t = off == 1 ? getTab((int)varGetNumberChk(argvars, NULL)) : curtab;
 	Portal* port = portFindByNr(&argvars[off], t);
-	CS varname = convertVarToStringSingleUse(&argvars[off + 1]);
+	S varname = convertVarToStringSingleUse(&argvars[off + 1]);
 	Var* varp = &argvars[off + 2];
 
 	if (!port || !varname)
@@ -7907,7 +7907,7 @@ setPortVar(Var* argvars, int off) {
 		if (*varname == '&')
 			optSetFromVar(varname + 1, varp);
 		else {
-			CS portVarname = alloc(STRLEN(varname) + 3);
+			S portVarname = alloc(STRLEN(varname) + 3);
 			STRCPY(portVarname, "w:");
 			STRCPY(portVarname + 2, varname);
 			set_var(text(portVarname), varp, true);
@@ -7919,13 +7919,13 @@ setPortVar(Var* argvars, int off) {
 }
 
 pub int
-var_exists(CS var) {
-	CS arg = var;
-	CS tofree;
+var_exists(S var) {
+	S arg = var;
+	S tofree;
 	int n = false;
 
 	//get_name_len() takes care of expanding curly braces
-	CS name = var;
+	S name = var;
 	int len = get_name_len(OUT &arg, OUT &tofree, true, false);
 	if (len > 0) {
 		if (tofree)
@@ -7950,8 +7950,8 @@ var_exists(CS var) {
 private Lval   *redirLvalS = NULL;
 #define EVALCMD_BUSY (redirLvalS == (Lval *)&redirLvalS)
 private ArrayList redirArrayList;   //only valid when redirLvalS is not NULL
-private CS redirNameEndS = NULL;
-private CS redirVarnameS = NULL;
+private S redirNameEndS = NULL;
+private S redirVarnameS = NULL;
 
 pub int
 alloc_redirLvalS(void) {
@@ -7971,7 +7971,7 @@ init_redirArrayList(void) {
 	ga_init2(&redirArrayList, sizeof(char), 500);
 }
 
-private CS
+private S
 getRedirLval() {
 	return getLval(OUT redirLvalS, (GetLval){
 			.name = mbText(redirVarnameS), .returnVar = null, .unlet = false, .skip = false,
@@ -7983,7 +7983,7 @@ getRedirLval() {
 //Start recording command output to a variable. When "append" is true append to an existing
 //variable. Return OK if successfully completed the setup. FAIL otherwise.
 pub int
-var_redir_start(CS name, int append) {
+var_redir_start(S name, int append) {
 	//Catch a bad name early.
 	if (!isValidForScriptName1(*name)) {
 		emsg(_(e_invalid_argument));
@@ -8020,8 +8020,8 @@ var_redir_start(CS name, int append) {
 	int called_emsg_before = called_emsg;
 	Var tv;
 	tv.tag = VAR_STRING;
-	tv.string = S"";
-	letImpl(OUT redirLvalS, &tv, true, ASSIGN_NO_DECL, append ? S"." : S"=");
+	tv.string = u8"";
+	letImpl(OUT redirLvalS, &tv, true, ASSIGN_NO_DECL, append ? u8"." : u8"=");
 	clear_lval(OUT redirLvalS);
 	if (called_emsg > called_emsg_before) {
 		redirNameEndS = NULL;  //don't store a value, only cleanup
@@ -8039,7 +8039,7 @@ var_redir_start(CS name, int append) {
 //  :let foo
 //  :redir END
 pub void
-var_redir_str(CS value, int value_len) {
+var_redir_str(S value, int value_len) {
 	if (!redirLvalS)
 		return;
 
@@ -8074,7 +8074,7 @@ var_redir_stop(void) {
 			//Call getLval() again, if it's inside a Bag or List it may have changed.
 			redirNameEndS = getRedirLval();
 			if (redirNameEndS && redirLvalS->name.len > 0)
-				letImpl(OUT redirLvalS, &tv, false, 0, S".");
+				letImpl(OUT redirLvalS, &tv, false, 0, u8".");
 			clear_lval(OUT redirLvalS);
 		}
 
@@ -8086,10 +8086,10 @@ var_redir_stop(void) {
 }
 
 //Get the collected redirected text and clear redirArrayList.
-pub CS
+pub S
 get_clear_redirArrayList(void) {
 	ga_append(&redirArrayList, ZERO);  //Append the trailing ZERO.
-	CS res = redirArrayList.c;
+	S res = redirArrayList.c;
 	redirArrayList.c = NULL;
 	return res;
 }
@@ -8110,7 +8110,7 @@ f_mode(Var* argvars, Var* returnVar) {
 }
 
 private void
-may_add_state_char(ArrayList* gap, CS include, int c) {
+may_add_state_char(ArrayList* gap, S include, int c) {
 	if (!include || firstOccurrence(include, c) != NULL)
 		ga_append(gap, c);
 }
@@ -8119,7 +8119,7 @@ may_add_state_char(ArrayList* gap, CS include, int c) {
 pub void
 f_state(Var* argvars, Var* returnVar) {
 	ArrayList   ga;
-	CS include = NULL;
+	S include = NULL;
 
 	ga_init2(&ga, 1, 20);
 	if (argvars[0].tag != VAR_UNKNOWN)
@@ -8151,7 +8151,7 @@ pub void
 f_gettabvar(Var* argvars, Var* returnVar) {
 	Portal* port = NULL;
 
-	CS varname = convertVarToStringSingleUse(&argvars[1]);
+	S varname = convertVarToStringSingleUse(&argvars[1]);
 	Tab* t = getTab((int)varGetNumberChk(argvars, NULL));
 	if (t)
 		port = t == curtab || t->firstPor == NULL ? firstPor : t->firstPor;
@@ -8171,7 +8171,7 @@ f_getwinvar(Arr(Var) argvars, Var* returnVar) {
 
 pub void
 f_getbufvar(Arr(Var) argvars, Var* returnVar) {
-	CS varname = convertVarToStringSingleUse(&argvars[1]);
+	S varname = convertVarToStringSingleUse(&argvars[1]);
 	Book* book = daGetBookFromArg(&argvars[0]);
 
 	getVarFrom(varname, returnVar, &argvars[2], 'b', curtab, curPor, book);
@@ -8180,7 +8180,7 @@ f_getbufvar(Arr(Var) argvars, Var* returnVar) {
 pub void
 f_settabvar(Var* argvars, Var*) {
 	Tab* t = getTab((int)varGetNumberChk(argvars, NULL));
-	CS varname = convertVarToStringSingleUse(&argvars[1]);
+	S varname = convertVarToStringSingleUse(&argvars[1]);
 	Var* varp = &argvars[2];
 
 	if (!varname || !t)
@@ -8190,7 +8190,7 @@ f_settabvar(Var* argvars, Var*) {
 	Tab* save_lu_tp = lastUsedTabG;
 	gotoTab(t, false, false);
 
-	CS tabvarname = alloc(STRLEN(varname) + 3);
+	S tabvarname = alloc(STRLEN(varname) + 3);
 	STRCPY(tabvarname, "t:");
 	STRCPY(tabvarname + 2, varname);
 	set_var(text(tabvarname), varp, true);
@@ -8216,7 +8216,7 @@ f_setwinvar(Arr(Var) argvars, Var*) {
 
 pub void
 f_setbufvar(Var* argvars, Var*) {
-	CS varname = convertVarToStringSingleUse(&argvars[1]);
+	S varname = convertVarToStringSingleUse(&argvars[1]);
 	Book* book = daGetBookFromArg(&argvars[0]);
 	Var* varp = &argvars[2];
 
@@ -8240,7 +8240,7 @@ f_setbufvar(Var* argvars, Var*) {
 		}
 		curPor->topLine = old_topline;
 	} else {
-		CS bufvarname = alloc(STRLEN(varname) + 3);
+		S bufvarname = alloc(STRLEN(varname) + 3);
 		Book* curBookSaved = curBook;
 		curBook = book;
 		STRCPY(bufvarname, "b:");
@@ -8273,7 +8273,7 @@ get_callback(Var* arg) {
 		ei (arg->tag == VAR_FUNC || arg->tag == VAR_STRING) {
 			res.name = arg->string;
 			if (arg->tag == VAR_STRING) {
-				CS name = get_scriptlocal_funcname(arg->string);
+				S name = get_scriptlocal_funcname(arg->string);
 				if (name) {
 					res.name = name;
 					res.needsFreeing = true;
@@ -8281,7 +8281,7 @@ get_callback(Var* arg) {
 			}
 			func_ref(res.name);
 		} ei (arg->tag == VAR_NUMBER && arg->number == 0)
-			res.name = S"";
+			res.name = u8"";
 		else
 			r = FAIL;
 
@@ -8370,7 +8370,7 @@ evFreeCallback(Callback* callback) {
 // - For varargs, f_argcheck must be NULL terminated. The last non-null
 //   entry in f_argcheck should validate all the remaining args.
 typedef struct {
-	CS f_name;   //function name
+	S f_name;   //function name
 	Byte f_min_argc;   //minimal number of arguments
 	Byte f_max_argc;   //maximal number of arguments
 	Byte f_argtype;   //for method: FEARG_ values; bits FE_
@@ -8396,518 +8396,518 @@ typedef struct {
 //{{{global functions
 
 private BuiltinFn globalFunctions[] = {
-	{S"abs",      1, 1, FEARG_1, &f_abs},
-	{S"acos",     1, 1, FEARG_1, &f_acos},
-	{S"add",      2, 2, FEARG_1, &f_add},
-	{S"and",      2, 2, FEARG_1, &f_and},
-	{S"append",   2, 2, FEARG_2, &f_append},
-	{S"appendbufline",   3, 3, FEARG_3, &f_appendbufline},
-	{S"argc",     0, 1, 0, &f_argc},
-	{S"argidx",   0, 0, 0, &f_argidx},
-	{S"arglistid", 0, 2, 0, &f_arglistid},
-	{S"argv",      0, 2, 0,  &f_argv},
-	{S"asin",      1, 1, FEARG_1, &f_asin},
-	{S"assert_equal", 2, 3, FEARG_2, &f_assert_equal},
-	{S"assert_equalfile", 2, 3, FEARG_1, &f_assert_equalfile},
-	{S"assert_fails", 1, 5, FEARG_1, &f_assert_fails},
-	{S"assert_false", 1, 2, FEARG_1, &f_assert_false},
-	{S"assert_inrange", 3, 4, FEARG_3, &f_assert_inrange},
-	{S"assert_match",  2, 3, FEARG_2, &f_assert_match},
-	{S"assert_notequal", 2, 3, FEARG_2, &f_assert_notequal},
-	{S"assert_notmatch", 2, 3, FEARG_2, &f_assert_notmatch},
-	{S"assert_report",   1, 1, FEARG_1, &f_assert_report},
-	{S"assert_true",   1, 2, FEARG_1, &f_assert_true},
-	{S"atan",      1, 1, FEARG_1,    &f_atan},
-	{S"atan2",     2, 2, FEARG_1,  &f_atan2},
-	{S"autocmd_add",   1, 1, FEARG_1, &f_autocmd_add},
-	{S"autocmd_delete",   1, 1, FEARG_1, &f_autocmd_delete},
-	{S"autocmd_get",   0, 1, FEARG_1, &f_autocmd_get},
-	{S"balloon_gettext",   0, 0, 0, &f_balloon_gettext },
-	{S"balloon_show",   1, 1, FEARG_1, &f_balloon_show },
-	{S"balloon_split",   1, 1, FEARG_1, &f_balloon_split },
-	{S"base64_decode",   1, 1, FEARG_1, &f_base64_decode},
-	{S"base64_encode",   1, 1, FEARG_1, &f_base64_encode},
-	{S"bindtextdomain",   2, 2, 0,  &f_bindtextdomain},
-	{S"blob2list",   1, 1, FEARG_1, &f_blob2list},
-	{S"blob2str",   1, 2, FEARG_1, &f_blob2str},
-	{S"browse",      4, 4, 0,   &f_browse},
-	{S"browsedir",   2, 2, 0,   &f_browsedir},
-	{S"bufadd",      1, 1, FEARG_1, &f_bufadd},
-	{S"bufexists",   1, 1, FEARG_1,  &f_bufexists},
-	{S"buflisted",   1, 1, FEARG_1, &f_buflisted},
-	{S"bufload",      1, 1, FEARG_1, &f_bufload},
-	{S"bufloaded",   1, 1, FEARG_1, &f_bufloaded},
-	{S"bufname",      0, 1, FEARG_1, &f_bufname},
-	{S"bufnr",      0, 2, FEARG_1,      &f_bufnr},
-	{S"bufwinid",   1, 1, FEARG_1,       &f_bufwinid},
-	{S"bufwinnr",   1, 1, FEARG_1,        &f_bufwinnr},
-	{S"byte2line",   1, 1, FEARG_1,       &f_byte2line},
-	{S"byteidx",      2, 3, FEARG_1,        &f_byteidx},
-	{S"byteidxcomp",   2, 3, FEARG_1,       &f_byteidxcomp},
-	{S"call",      2, 3, FEARG_1,           &f_call},
-	{S"ceil",      1, 1, FEARG_1,           &f_ceil},
-	{S"ch_canread",   1, 1, FEARG_1,     &f_ch_canread},
-	{S"ch_close",   1, 1, FEARG_1,          &f_ch_close},
-	{S"ch_close_in",   1, 1, FEARG_1,       &f_ch_close_in},
-	{S"ch_evalexpr",   2, 3, FEARG_1,       &f_ch_evalexpr},
-	{S"ch_evalraw",   2, 3, FEARG_1,        &f_ch_evalraw},
-	{S"ch_getbufnr",   2, 2, FEARG_1,       &f_ch_getbufnr},
-	{S"ch_getjob",   1, 1, FEARG_1,         &f_ch_getjob},
-	{S"ch_info",      1, 1, FEARG_1,        &f_ch_info},
-	{S"ch_log",      1, 2, FEARG_1,         &f_ch_log},
-	{S"ch_logfile",   1, 2, FEARG_1,        &f_ch_logfile},
-	{S"ch_open",      1, 2, FEARG_1,        &f_ch_open},
-	{S"ch_read",      1, 2, FEARG_1,        &f_ch_read},
-	{S"ch_readblob",   1, 2, FEARG_1,       &f_ch_readblob},
-	{S"ch_readraw",   1, 2, FEARG_1,        &f_ch_readraw},
-	{S"ch_sendexpr",   2, 3, FEARG_1,       &f_ch_sendexpr},
-	{S"ch_sendraw",   2, 3, FEARG_1,        &f_ch_sendraw},
-	{S"ch_setoptions",   2, 2, FEARG_1,     &f_ch_setoptions},
-	{S"ch_status",   1, 2, FEARG_1,             &f_ch_status},
-	{S"changenr",   0, 0, 0,          &f_changenr},
-	{S"char2nr",      1, 2, FEARG_1,        &f_char2nr},
-	{S"charclass",   1, 1, FEARG_1,         &f_charclass},
-	{S"charcol",      1, 2, FEARG_1,        &f_charcol},
-	{S"charidx",      2, 4, FEARG_1,        &f_charidx},
-	{S"chdir",      1, 2, FEARG_1,          &f_chdir},
-	{S"clearmatches",   0, 1, FEARG_1,        &f_clearmatches},
-	{S"cmdcomplete_info",0, 0, 0,           &f_cmdcomplete_info},
-	{S"col",      1, 2, FEARG_1,            &f_col},
-	{S"complete",   2, 2, FEARG_2,          &f_complete},
-	{S"complete_add",   1, 1, FEARG_1,        &f_complete_add},
-	{S"complete_check",   0, 0, 0,       &f_complete_check},
-	{S"complete_info",   0, 1, FEARG_1,        &f_complete_info},
-	{S"complete_match",   0, 2, 0,        &f_complete_match},
-	{S"confirm",      1, 4, FEARG_1,       &f_confirm},
-	{S"copy",      1, 1, FEARG_1,          &f_copy},
-	{S"cos",      1, 1, FEARG_1,           &f_cos},
-	{S"cosh",      1, 1, FEARG_1,          &f_cosh},
-	{S"count",      2, 4, FEARG_1,         &f_count},
-	{S"cscope_connection",0,3, 0,          &f_cscope_connection},
-	{S"cursor",      1, 3, FEARG_1,        &f_cursor},
-	{S"deepcopy",   1, 2, FEARG_1,        &f_deepcopy},
-	{S"delete",      1, 2, FEARG_1,     &f_delete},
-	{S"deletebufline",   2, 3, FEARG_1,    &f_deletebufline},
-	{S"did_filetype",   0, 0, 0,     &f_did_filetype},
-	{S"diff",      2, 3, FEARG_1,   &f_diff},
-	{S"diff_filler",   1, 1, FEARG_1,        &f_diff_filler},
-	{S"diff_hlID",   2, 2, FEARG_1,          &f_diff_hlID},
-	{S"echoraw",      1, 1, FEARG_1,         &f_echoraw},
-	{S"empty",      1, 1, FEARG_1,        &f_empty},
-	{S"environ",      0, 0, 0,      &f_environ},
-	{S"err_teapot",   0, 1, 0,      &f_err_teapot},
-	{S"escape",      2, 2, FEARG_1,        &f_escape},
-	{S"eval",      1, 1, FEARG_1,          &f_eval},
-	{S"eventhandler",   0, 0, 0,       &f_eventhandler},
-	{S"executable",   1, 1, FEARG_1,       &f_executable},
-	{S"execute",      1, 2, FEARG_1,       &f_execute},
-	{S"exepath",      1, 1, FEARG_1,        &f_exepath},
-	{S"exists",      1, 1, FEARG_1,      &f_exists},
-	{S"exp",      1, 1, FEARG_1,         &f_exp},
-	{S"expand",      1, 3, FEARG_1,       &f_expand},
-	{S"expandcmd",   1, 2, FEARG_1,       &f_expandcmd},
-	{S"extend",      2, 3, FEARG_1,       &f_extend},
-	{S"extendnew",   2, 3, FEARG_1,       &f_extendnew},
-	{S"feedkeys",   1, 2, FEARG_1,         &f_feedkeys},
-	{S"filecopy",   2, 2, FEARG_1,     &f_filecopy},
-	{S"filereadable",   1, 1, FEARG_1,     &f_filereadable},
-	{S"filewritable",   1, 1, FEARG_1,        &f_filewritable},
-	{S"filter",      2, 2, FEARG_1,         &f_filter},
-	{S"finddir",      1, 3, FEARG_1,        &f_finddir},
-	{S"findfile",   1, 3, FEARG_1,          &f_findfile},
-	{S"flatten",      1, 2, FEARG_1,        &f_flatten},
-	{S"flattennew",   1, 2, FEARG_1,       &f_flattennew},
-	{S"float2nr",   1, 1, FEARG_1,         &f_float2nr},
-	{S"floor",      1, 1, FEARG_1,         &f_floor},
-	{S"fmod",      2, 2, FEARG_1,          &f_fmod},
-	{S"fnameescape",   1, 1, FEARG_1,        &f_fnameescape},
-	{S"fnamemodify",   2, 2, FEARG_1,        &f_fnamemodify},
-	{S"foldclosed",   1, 1, FEARG_1,         &f_foldclosed},
-	{S"foldclosedend",   1, 1, FEARG_1,       &f_foldclosedend},
-	{S"foldlevel",   1, 1, FEARG_1,           &f_foldlevel},
-	{S"foldtext",   0, 0, 0,        &f_foldtext},
-	{S"foldtextresult",   1, 1, FEARG_1,        &f_foldtextresult},
-	{S"foreach",      2, 2, FEARG_1,          &f_foreach},
-	{S"fullcommand",   1, 2, FEARG_1,        &f_fullcommand},
-	{S"funcref",      1, 3, FEARG_1,     &f_funcref},
-	{S"function",   1, 3, FEARG_1,      &f_function},
-	{S"get",      2, 3, FEARG_1,          &f_get},
-	{S"getbufinfo",   0, 1, FEARG_1,   &f_getbufinfo},
-	{S"getbufline",   2, 3, FEARG_1,     &f_getbufline},
-	{S"getbufoneline",   2, 2, FEARG_1,        &f_getbufoneline},
-	{S"getbufvar",   2, 3, FEARG_1,          &f_getbufvar},
-	{S"getcellpixels",   0, 0, 0,            &f_getcellpixels},
-	{S"getchangelist",   0, 1, FEARG_1,       &f_getchangelist},
-	{S"getchar",      0, 2, 0,          &f_getchar},
-	{S"getcharmod",   0, 0, 0,          &f_getcharmod},
-	{S"getcharpos",   1, 1, FEARG_1,     &f_getcharpos},
-	{S"getcharsearch",   0, 0, 0,         &f_getcharsearch},
-	{S"getcharstr",   0, 2, 0,            &f_getcharstr},
-	{S"getcmdcomplpat",   0, 0, 0,        &f_getcmdcomplpat},
-	{S"getcmdcompltype",   0, 0, 0,       &f_getcmdcompltype},
-	{S"getcmdline",   0, 0, 0,         &f_getCommline},
-	{S"getcmdpos",   0, 0, 0,          &f_getcmdpos},
-	{S"getcmdprompt",   0, 0, 0,       &f_getcmdprompt},
-	{S"getcmdscreenpos",   0, 0, 0,        &f_getcmdscreenpos},
-	{S"getcmdtype",   0, 0, 0,          &f_getcmdtype},
-	{S"getcmdwintype",   0, 0, 0,       &f_getcmdwintype},
-	{S"getcompletion",   2, 3, FEARG_1,     &f_getcompletion},
-	{S"getcompletiontype", 1, 1, FEARG_1,       &f_getcompletiontype},
-	{S"getcurpos",   0, 1, FEARG_1,       &f_getcurpos},
-	{S"getcursorcharpos", 0, 1, FEARG_1,     &f_getcursorcharpos},
-	{S"getcwd",      0, 2, FEARG_1,           &f_getcwd},
-	{S"getenv",      1, 1, FEARG_1,           &f_getenv},
-	{S"getfontname",   0, 1, 0,           &f_getfontname},
-	{S"getfperm",   1, 1, FEARG_1,        &f_getfperm},
-	{S"getfsize",   1, 1, FEARG_1,        &f_getfsize},
-	{S"getftime",   1, 1, FEARG_1,        &f_getftime},
-	{S"getftype",   1, 1, FEARG_1,        &f_getftype},
-	{S"getjumplist",   0, 2, FEARG_1,        &f_getjumplist},
-	{S"getline",      1, 2, FEARG_1,         &f_getline},
-	{S"getloclist",   1, 2, 0,     &f_getloclist},
-	{S"getmarklist",   0, 1, FEARG_1,   &f_getmarklist},
-	{S"getmatches",   0, 1, 0,    &f_getmatches},
-	{S"getmousepos",   0, 0, 0,     &f_getmousepos},
-	{S"getpid",      0, 0, 0,           &f_getpid},
-	{S"getpos",      1, 1, FEARG_1,      &f_getpos},
-	{S"getreg",      0, 3, FEARG_1,        &f_getreg},
-	{S"getreginfo",   0, 1, FEARG_1,        &f_getreginfo},
-	{S"getregion",   2, 3, FEARG_1,      &f_getregion},
-	{S"getregionpos",   2, 3, FEARG_1,  &f_getregionpos},
-	{S"getregtype",   0, 1, FEARG_1,          &f_getregtype},
-	{S"getscriptinfo",   0, 1, 0,      &f_getscriptinfo},
-	{S"getstacktrace",   0, 0, 0,      &f_getstacktrace},
-	{S"gettabinfo",   0, 1, FEARG_1,   &f_gettabinfo},
-	{S"gettabvar",   2, 3, FEARG_1,         &f_gettabvar},
-	{S"gettabwinvar",   3, 4, FEARG_1,        &f_gettabwinvar},
-	{S"gettagstack",   0, 1, FEARG_1,         &f_gettagstack},
-	{S"gettext",      1, 2, FEARG_1,          &f_gettext},
-	{S"getwininfo",   0, 1, FEARG_1,     &f_getwininfo},
-	{S"getwinpos",   0, 1, FEARG_1,        &f_getwinpos},
-	{S"getwinposx",   0, 0, 0,        &f_getwinposx},
-	{S"getwinposy",   0, 0, 0,        &f_getwinposy},
-	{S"getwinvar",   2, 3, FEARG_1,       &f_getwinvar},
-	{S"glob",      1, 4, FEARG_1,         &f_glob},
-	{S"glob2regpat",   1, 1, FEARG_1,        &f_glob2regpat},
-	{S"globpath",   2, 5, FEARG_2,           &f_globpath},
-	{S"has_key",      2, 2, FEARG_1,      &f_has_key},
-	{S"haslocaldir",   0, 2, FEARG_1,        &f_haslocaldir},
-	{S"hasmapto",   1, 3, FEARG_1,        &f_hasmapto},
-	{S"histadd",      2, 2, FEARG_2,      &f_histadd},
-	{S"histdel",      1, 2, FEARG_1,      &f_histdel},
-	{S"histget",      1, 2, FEARG_1,         &f_histget},
-	{S"histnr",      1, 1, FEARG_1,          &f_histnr},
-	{S"hlID",      1, 1, FEARG_1,            &f_hlID},
-	{S"hlexists",   1, 1, FEARG_1,        &f_hlexists},
-	{S"hlget",      0, 2, FEARG_1,      &f_hlget},
-	{S"hostname",   0, 0, 0,           &f_hostname},
-	{S"id",      1, 1, FEARG_1,           &f_id},
-	{S"indent",      1, 1, FEARG_1,        &f_indent},
-	{S"index",      2, 4, FEARG_1,         &f_index},
-	{S"indexof",      2, 3, FEARG_1,       &f_indexof},
-	{S"input",      1, 3, FEARG_1,         &f_input},
-	{S"inputdialog",   1, 3, FEARG_1,        &f_inputdialog},
-	{S"inputlist",   1, 1, FEARG_1,          &f_inputlist},
-	{S"inputrestore",   0, 0, 0,        &f_inputrestore},
-	{S"inputsave",   0, 0, 0,         &f_inputsave},
-	{S"inputsecret",   1, 2, FEARG_1,        &f_inputsecret},
-	{S"insert",      2, 3, FEARG_1,          &f_insert},
-	{S"interrupt",   0, 0, 0,          &f_interrupt},
-	{S"invert",      1, 1, FEARG_1,        &f_invert},
-	{S"isabsolutepath",   1, 1, FEARG_1,    &f_isabsolutepath},
-	{S"isdirectory",   1, 1, FEARG_1,       &f_isdirectory},
-	{S"isinf",      1, 1, FEARG_1,             MATH_FUNC(f_isinf)},
-	{S"islocked",   1, 1, FEARG_1,          &f_islocked},
-	{S"isnan",      1, 1, FEARG_1,          MATH_FUNC(f_isnan)},
-	{S"items",      1, 1, FEARG_1,             &f_items},
-	{S"job_getchannel",   1, 1, FEARG_1,       &f_job_getchannel},
-	{S"job_info",   0, 1, FEARG_1,             &f_job_info},
-	{S"job_setoptions",   2, 2, FEARG_1,       &f_job_setoptions},
-	{S"job_start",   1, 2, FEARG_1,            &f_startJob},
-	{S"job_status",   1, 1, FEARG_1,           &f_job_status},
-	{S"job_stop",   1, 2, FEARG_1,          &f_job_stop},
-	{S"join",      1, 2, FEARG_1,             &f_join},
-	{S"json_decode",   1, 1, FEARG_1,         &f_json_decode},
-	{S"json_encode",   1, 1, FEARG_1,         &f_json_encode},
-	{S"keys",      1, 1, FEARG_1,         &f_keys},
-	{S"keytrans",   1, 1, FEARG_1,          &f_keytrans},
-	{S"last_buffer_nr",   0, 0, 0,  &f_last_buffer_nr },   //obsolete
-	{S"len",      1, 1, FEARG_1,        &f_len},
-	{S"line",      1, 2, FEARG_1,        &f_line},
-	{S"line2byte",   1, 1, FEARG_1,        &f_line2byte},
-	{S"list2blob",   1, 1, FEARG_1,         &f_list2blob},
-	{S"list2str",   1, 2, FEARG_1,          &f_list2str},
-	{S"listener_add",   1, 2, FEARG_2,        &f_listener_add},
-	{S"listener_flush",   0, 1, FEARG_1,        &f_listener_flush},
-	{S"listener_remove",   1, 1, FEARG_1,    &f_listener_remove},
-	{S"localtime",   0, 0, 0,          &f_localtime},
-	{S"log",      1, 1, FEARG_1,         &f_log},
-	{S"log10",      1, 1, FEARG_1,       &f_log10},
-	{S"map",      2, 2, FEARG_1,          &f_map},
-	{S"maparg",      1, 4, FEARG_1,         &f_maparg},
-	{S"mapcheck",   1, 3, FEARG_1,          &f_mapcheck},
-	{S"maplist",      0, 1, 0,     &f_maplist},
-	{S"mapnew",      2, 2, FEARG_1,        &f_mapnew},
-	{S"mapset",      1, 3, FEARG_1,        &f_mapset},
-	{S"match",      2, 4, FEARG_1,         &f_match},
-	{S"matchadd",   2, 5, FEARG_1,         &f_matchadd},
-	{S"matchaddpos",   2, 5, FEARG_1,        &f_matchaddpos},
-	{S"matcharg",   1, 1, FEARG_1,        &f_matcharg},
-	{S"matchbufline",   4, 5, FEARG_1,        &f_matchbufline},
-	{S"matchdelete",   1, 2, FEARG_1,      &f_matchdelete},
-	{S"matchend",   2, 4, FEARG_1,            &f_matchend},
-	{S"matchfuzzy",   2, 3, FEARG_1,          &f_matchfuzzy},
-	{S"matchfuzzypos",   2, 3, FEARG_1,       &f_matchfuzzypos},
-	{S"matchlist",   2, 4, FEARG_1,        &f_matchlist},
-	{S"matchstr",   2, 4, FEARG_1,            &f_matchstr},
-	{S"matchstrlist",   2, 3, FEARG_1,        &f_matchstrlist},
-	{S"matchstrpos",   2, 4, FEARG_1,         &f_matchstrpos},
-	{S"max",      1, 1, FEARG_1,           &f_max},
-	{S"min",      1, 1, FEARG_1,           &f_min},
-	{S"mkdir",      1, 3, FEARG_1,      &f_mkdir},
-	{S"mode",      0, 1, FEARG_1,          &f_mode},
-	{S"nextnonblank",   1, 1, FEARG_1,        &f_nextnonblank},
-	{S"ngettext",   3, 4, FEARG_3,            &f_ngettext},
-	{S"nr2char",      1, 2, FEARG_1,          &f_nr2char},
-	{S"or",      2, 2, FEARG_1,           &f_or},
-	{S"pathshorten",   1, 2, FEARG_1,        &f_pathshorten},
-	{S"popup_atcursor",   2, 2, FEARG_1,        &f_popup_atcursor},
-	{S"popup_beval",   2, 2, FEARG_1,           &f_popup_beval},
-	{S"popup_clear",   0, 1, 0,           &f_popup_clear},
-	{S"popup_close",   1, 2, FEARG_1,        &f_popup_close},
-	{S"createPopup",   2, 2, FEARG_1,        &f_createPopup},
-	{S"popup_dialog",  2, 2, FEARG_1,       &f_popup_dialog},
-	{S"popup_filter_menu", 2, 2, 0,          &f_popup_filter_menu},
-	{S"popup_filter_yesno", 2, 2, 0,         &f_popup_filter_yesno},
-	{S"popup_findecho",   0, 0, 0,           &f_popup_findecho},
-	{S"popup_findinfo",   0, 0, 0,           &f_popup_findinfo},
-	{S"popup_findpreview", 0, 0, 0,          &f_popup_findpreview},
-	{S"popup_getoptions", 1, 1, FEARG_1,        &f_popup_getoptions},
-	{S"popup_getpos", 1, 1, FEARG_1,          &f_popup_getpos},
-	{S"popup_hide",   1, 1, FEARG_1,           &f_popup_hide},
-	{S"popup_list",   0, 0, 0,       &f_popup_list},
-	{S"popup_locate", 2, 2, 0,             &f_popup_locate},
-	{S"popup_menu",   2, 2, FEARG_1,         &f_popup_menu},
-	{S"popup_move",   2, 2, FEARG_1,         &f_popup_move},
-	{S"popup_notification", 2, 2, FEARG_1,   &f_popup_notification},
-	{S"popup_setbuf", 2, 2, FEARG_1,       &f_popup_setbuf},
-	{S"popup_setoptions", 2, 2, FEARG_1,     &f_popup_setoptions},
-	{S"popup_settext",   2, 2, FEARG_1,      &f_popup_settext},
-	{S"popup_show",   1, 1, FEARG_1,         &f_popup_show},
-	{S"pow",          2, 2, FEARG_1,           &f_pow},
-	{S"prevnonblank", 1, 1, FEARG_1,        &f_prevnonblank},
-	{S"printf",       1, 19, FEARG_2,          &f_printf},
-	{S"prompt_getprompt", 1, 1, FEARG_1,        &f_prompt_getprompt},
-	{S"prompt_setcallback", 2, 2, FEARG_1,        &f_prompt_setcallback},
-	{S"prompt_setinterrupt", 2, 2, FEARG_1,       &f_prompt_setinterrupt},
-	{S"prompt_setprompt", 2, 2, FEARG_1,          &f_prompt_setprompt},
-	{S"prop_add",     3, 3, FEARG_1,            &f_prop_add},
-	{S"prop_add_list", 2, 2, FEARG_1,        &f_prop_add_list},
-	{S"prop_clear",   1, 3, FEARG_1,           &f_prop_clear},
-	{S"prop_find",    1, 2, FEARG_1,            &f_prop_find},
-	{S"prop_list",    1, 2, FEARG_1,            &f_prop_list},
-	{S"prop_remove",  1, 3, FEARG_1,          &f_prop_remove},
-	{S"prop_type_add",   2, 2, FEARG_1,        &f_prop_type_add},
-	{S"prop_type_change", 2, 2, FEARG_1,       &f_prop_type_change},
-	{S"prop_type_delete", 1, 2, FEARG_1,       &f_prop_type_delete},
-	{S"prop_type_get",   1, 2, FEARG_1,        &f_prop_type_get},
-	{S"prop_type_list",   0, 1, FEARG_1,       &f_prop_type_list},
-	{S"pum_getpos",   0, 0, 0,        &f_pum_getpos},
-	{S"pumvisible",   0, 0, 0,        &f_pumvisible},
-	{S"rand",         0, 1, FEARG_1,          &f_rand},
-	{S"range",        1, 3, FEARG_1,      &f_range},
-	{S"readblob",     1, 3, FEARG_1,         &f_readblob},
-	{S"readdir",      1, 3, FEARG_1,    &f_readdir},
-	{S"readdirex",    1, 3, FEARG_1,   &f_readdirex},
-	{S"readfile",     1, 3, FEARG_1,      &f_readfile},
-	{S"reduce",       2, 3, FEARG_1,        &f_reduce},
-	{S"reg_executing",   0, 0, 0,          &f_reg_executing},
-	{S"reg_recording",   0, 0, 0,          &f_reg_recording},
-	{S"reltime",      0, 2, FEARG_1,       &f_reltime},
-	{S"reltimefloat", 1, 1, FEARG_1,        &f_reltimefloat},
-	{S"reltimestr",   1, 1, FEARG_1,          &f_reltimestr},
-	{S"remove",       2, 3, FEARG_1,            &f_remove},
-	{S"rename",       2, 2, FEARG_1,         &f_rename},
-	{S"repeat",       2, 2, FEARG_1,            &f_repeat},
-	{S"resolve",      1, 1, FEARG_1,           &f_resolve},
-	{S"reverse",      1, 1, FEARG_1,           &f_reverse},
-	{S"round",        1, 1, FEARG_1,             &f_round},
-	{S"screenattr",   2, 2, FEARG_1,           &f_screenattr},
-	{S"screenchar",   2, 2, FEARG_1,           &f_screenchar},
-	{S"screenchars",  2, 2, FEARG_1,       &f_screenchars},
-	{S"screencol",    0, 0, 0,           &f_screencol},
-	{S"screenpos",    3, 3, FEARG_1,     &f_screenpos},
-	{S"screenrow",    0, 0, 0,           &f_screenrow},
-	{S"screenstring", 2, 2, FEARG_1,        &f_screenstring},
-	{S"search",       1, 5, FEARG_1,           &f_search},
-	{S"searchcount",  0, 1, FEARG_1,         &f_searchcount},
-	{S"searchdecl",   1, 3, FEARG_1,       &f_searchdecl},
-	{S"searchpair",   3, 7, 0,          &f_searchpair},
-	{S"searchpairpos", 3, 7, 0,      &f_searchpairpos},
-	{S"searchpos",    1, 5, FEARG_1,     &f_searchpos},
-	{S"setbufline",   3, 3, FEARG_3,     &f_setbufline},
-	{S"setbufvar",    3, 3, FEARG_3,         &f_setbufvar},
-	{S"setcharpos",   2, 2, FEARG_2,        &f_setcharpos},
-	{S"setcharsearch", 1, 1, FEARG_1,        &f_setcharsearch},
-	{S"setcmdline",   1, 2, FEARG_1,        &f_setcmdline},
-	{S"setcmdpos",    1, 1, FEARG_1,       &f_setcmdpos},
-	{S"setcursorcharpos", 1, 3, FEARG_1,      &f_setcursorcharpos},
-	{S"setenv",       2, 2, FEARG_2,            &f_setenv},
-	{S"setfperm",     2, 2, FEARG_1,          &f_setfperm},
-	{S"setline",      2, 2, FEARG_2,        &f_setline},
-	{S"setloclist",   2, 4, FEARG_2,        &f_setloclist},
-	{S"setmatches",   1, 2, FEARG_1,        &f_setmatches},
-	{S"setpos",       2, 2, FEARG_2,         &f_setpos},
-	{S"setreg",       2, 3, FEARG_2,       &f_setreg},
-	{S"settabvar",    3, 3, FEARG_3,          &f_settabvar},
-	{S"settabwinvar", 4, 4, FEARG_4,       &f_settabwinvar},
-	{S"settagstack",  2, 3, FEARG_2,     &f_settagstack},
-	{S"setwinvar",    3, 3, FEARG_3,          &f_setwinvar},
-	{S"sha256",       1, 1, FEARG_1,    &f_sha256 },
-	{S"shellescape",  1, 2, FEARG_1,          &f_shellescape},
-	{S"shiftwidth",   0, 1, FEARG_1,           &f_shiftwidth},
-	{S"sign_define",  1, 2, FEARG_1,          &f_sign_define},
-	{S"sign_getdefined",   0, 1, FEARG_1,   &f_sign_getdefined},
-	{S"sign_getplaced",   0, 2, FEARG_1,    &f_sign_getplaced},
-	{S"sign_jump",    3, 3, FEARG_1,         &f_sign_jump},
-	{S"sign_place",   4, 5, FEARG_1,        &f_sign_place},
-	{S"sign_placelist",   1, 1, FEARG_1,    &f_sign_placelist},
-	{S"sign_undefine",   0, 1, FEARG_1,     &f_sign_undefine},
-	{S"sign_unplace", 1, 2, FEARG_1,      &f_sign_unplace},
-	{S"sign_unplacelist", 1, 1, FEARG_1,    &f_sign_unplacelist},
-	{S"simplify",     1, 1, FEARG_1,          &f_simplify},
-	{S"sin",          1, 1, FEARG_1,           &f_sin},
-	{S"sinh",         1, 1, FEARG_1,          &f_sinh},
-	{S"slice",        2, 3, FEARG_1,         &f_slice},
-	{S"sort",         1, 3, FEARG_1,          &f_sort},
-	{S"split",        1, 3, FEARG_1,         &f_split},
-	{S"sqrt",         1, 1, FEARG_1,           &f_sqrt},
-	{S"srand",        0, 1, FEARG_1,       &f_srand},
-	{S"state",        0, 1, FEARG_1,          &f_state},
-	{S"str2blob",     1, 2, FEARG_1,          &f_str2blob},
-	{S"str2float",    1, 2, FEARG_1,         &f_str2float},
-	{S"str2list",     1, 2, FEARG_1,       &f_str2list},
-	{S"str2nr",       1, 3, FEARG_1,         &f_str2nr},
-	{S"strcharlen",   1, 1, FEARG_1,           &f_strcharlen},
-	{S"strcharpart",  2, 4, FEARG_1,          &f_strcharpart},
-	{S"strchars",     1, 2, FEARG_1,             &f_strchars},
-	{S"strdisplaywidth",   1, 2, FEARG_1,        &f_strdisplaywidth},
-	{S"strftime",     1, 2, FEARG_1,       &f_strftime },
-	{S"strgetchar",   2, 2, FEARG_1,           &f_strgetchar},
-	{S"stridx",       2, 3, FEARG_1,            &f_stridx},
-	{S"string",       1, 1, FEARG_1|FE_X,       &f_string},
-	{S"strlen",       1, 1, FEARG_1,            &f_strlen},
-	{S"strpart",      2, 4, FEARG_1,           &f_strpart},
-	{S"strptime",     2, 2, FEARG_1,       &f_strptime },
-	{S"strridx",      2, 3, FEARG_1,           &f_strridx},
-	{S"strtrans",     1, 1, FEARG_1,             &f_strtrans},
-	{S"strwidth",     1, 1, FEARG_1,            &f_strwidth},
-	{S"submatch",     1, 2, FEARG_1,            &f_submatch},
-	{S"substitute",   4, 4, FEARG_1,          &f_substitute},
-	{S"swapfilelist", 0, 0, 0,        &f_swapfilelist},
-	{S"swapinfo",     1, 1, FEARG_1,         &f_swapinfo},
-	{S"swapname",     1, 1, FEARG_1,         &f_swapname},
-	{S"synID",        3, 3, 0,           &f_synID},
-	{S"synIDtrans",   1, 1, FEARG_1,           &f_synIDtrans},
-	{S"synstack",     2, 2, 0,              &f_synstack},
-	{S"system",      1, 2, FEARG_1,         &f_system},
-	{S"systemlist",   1, 2, FEARG_1,     &f_systemlist},
-	{S"tabpagebuflist",   0, 1, FEARG_1,     &f_tabpagebuflist},
-	{S"tabpagenr",   0, 1, 0,           &f_tabpagenr},
-	{S"tabpagewinnr",   1, 2, FEARG_1,        &f_tabpagewinnr},
-	{S"tagfiles",   0, 0, 0,       &f_tagfiles},
-	{S"taglist",      1, 2, FEARG_1,   &f_taglist},
-	{S"tan",      1, 1, FEARG_1,            &f_tan},
-	{S"tanh",      1, 1, FEARG_1,           &f_tanh},
-	{S"tempname",   0, 0, 0,            &f_tempname},
-	{S"term_dumpdiff",   2, 3, FEARG_1,        TERM_FUNC(f_term_dumpdiff)},
-	{S"term_dumpload",   1, 2, FEARG_1,        TERM_FUNC(f_term_dumpload)},
-	{S"term_dumpwrite",   2, 3, FEARG_2,       TERM_FUNC(f_term_dumpwrite)},
-	{S"term_getaltscreen", 1, 1, FEARG_1,         TERM_FUNC(f_term_getaltscreen)},
-//  {S"term_getattr",   2, 2, FEARG_1,            TERM_FUNC(f_term_getattr)},
-	{S"term_getcursor",   1, 1, FEARG_1,          TERM_FUNC(f_term_getcursor)},
-	{S"term_getjob",   1, 1, FEARG_1,            TERM_FUNC(f_term_getjob)},
-	{S"term_getline",   2, 2, FEARG_1,           TERM_FUNC(f_term_getline)},
-	{S"term_getscrolled", 1, 1, FEARG_1,         TERM_FUNC(f_term_getscrolled)},
-	{S"term_getsize",   1, 1, FEARG_1,        TERM_FUNC(f_term_getsize)},
-	{S"term_getstatus",   1, 1, FEARG_1,         TERM_FUNC(f_term_getstatus)},
-	{S"term_gettitle",   1, 1, FEARG_1,          TERM_FUNC(f_term_gettitle)},
-	{S"term_gettty",   1, 2, FEARG_1,            TERM_FUNC(f_term_gettty)},
-	{S"term_list",   0, 0, 0,         TERM_FUNC(f_term_list)},
-	{S"term_scrape",   2, 2, FEARG_1,  TERM_FUNC(f_term_scrape)},
-	{S"term_sendkeys",   2, 2, FEARG_1,        TERM_FUNC(f_term_sendkeys)},
-	{S"term_setapi",   2, 2, FEARG_1,            TERM_FUNC(f_term_setapi)},
-	{S"term_setkill",   2, 2, FEARG_1,           TERM_FUNC(f_term_setkill)},
-	{S"term_setrestore",   2, 2, FEARG_1,        TERM_FUNC(f_term_setrestore)},
-	{S"term_setsize",   3, 3, FEARG_1,           TERM_FUNC(f_term_setsize)},
-	{S"term_start",   1, 2, FEARG_1,            TERM_FUNC(f_term_start)},
-	{S"term_wait",   1, 2, FEARG_1,            TERM_FUNC(f_term_wait)},
-	{S"terminalprops",   0, 0, 0,         &f_terminalprops},
-	{S"test_alloc_fail",   3, 3, FEARG_1,       &f_test_alloc_fail},
-	{S"test_autochdir",   0, 0, 0,           &f_test_autochdir},
-	{S"test_feedinput",   1, 1, FEARG_1,        &f_test_feedinput},
-	{S"test_getvalue",   1, 1, FEARG_1,           &f_test_getvalue},
-	{S"test_ignore_error", 1, 1, FEARG_1,         &f_test_ignore_error},
-	{S"test_null_blob",   0, 0, 0,            &f_test_null_blob},
-	{S"test_null_channel", 0, 0, 0,           &f_test_null_channel},
-	{S"test_null_dict",   0, 0, 0,           &f_test_null_dict},
-	{S"test_null_function", 0, 0, 0,         &f_test_null_function},
-	{S"test_null_job",   0, 0, 0,            &f_test_null_job},
-	{S"test_null_list",   0, 0, 0,           &f_test_null_list},
-	{S"test_null_partial", 0, 0, 0,          &f_test_null_partial},
-	{S"test_null_string", 0, 0, 0,           &f_test_null_string},
-	{S"test_option_not_set", 1, 1, FEARG_1,       &f_test_option_not_set},
-	{S"test_override",   2, 2, FEARG_2,           &f_test_override},
-	{S"test_refcount",   1, 1, FEARG_1|FE_X,       &f_test_refcount},
-	{S"test_setmouse",   2, 2, 0,          &f_test_setmouse},
-	{S"test_settime",   1, 1, FEARG_1,         &f_test_settime},
-	{S"test_srand_seed",   0, 1, FEARG_1,        &f_test_srand_seed},
-	{S"test_unknown",   0, 0, 0,           &f_test_unknown},
-	{S"test_void",   0, 0, 0,           &f_test_void},
-	{S"timer_info",   0, 1, FEARG_1,   TIMER_FUNC(f_timer_info)},
-	{S"timer_pause",   2, 2, FEARG_1,        TIMER_FUNC(f_timer_pause)},
-	{S"timer_start",   2, 3, FEARG_1,        TIMER_FUNC(f_timer_start)},
-	{S"timer_stop",   1, 1, FEARG_1,         TIMER_FUNC(f_timer_stop)},
-	{S"timer_stopall",   0, 0, 0,            TIMER_FUNC(f_timer_stopall)},
-	{S"tolower",      1, 1, FEARG_1,         &f_tolower},
-	{S"toupper",      1, 1, FEARG_1,         &f_toupper},
-	{S"tr",      3, 3, FEARG_1,            &f_tr},
-	{S"trim",      1, 3, FEARG_1,          &f_trim},
-	{S"trunc",      1, 1, FEARG_1,         &f_trunc},
-	{S"type",      1, 1, FEARG_1|FE_X,       &f_type},
-	{S"undofile",   1, 1, FEARG_1,           &f_undofile},
-	{S"undotree",   0, 1, FEARG_1,           &f_undotree},
-	{S"uniq",      1, 3, FEARG_1,            &f_uniq},
-	{S"values",      1, 1, FEARG_1,       &f_values},
-	{S"virtcol",      1, 3, FEARG_1,           &f_virtcol},
-	{S"virtcol2col",   3, 3, FEARG_1,          &f_virtcol2col},
-	{S"visualmode",   0, 1, 0,           &f_visualmode},
-	{S"wildmenumode",   0, 0, 0,         &f_wildmenumode},
-	{S"wildtrigger",   0, 0, 0,          &f_wildtrigger},
-	{S"win_execute",   2, 3, FEARG_2,        &f_win_execute},
-	{S"win_findbuf",   1, 1, FEARG_1,     &f_win_findbuf},
-	{S"win_getid",   0, 2, FEARG_1,          &f_win_getid},
-	{S"win_gettype",   0, 1, FEARG_1,        &f_win_gettype},
-	{S"gotoPortalid",   1, 1, FEARG_1,        &f_gotoPortalid},
-	{S"win_id2tabwin",   1, 1, FEARG_1,     &f_win_id2tabwin},
-	{S"win_id2win",   1, 1, FEARG_1,           &f_win_id2win},
-	{S"win_move_separator", 2, 2, FEARG_1,     &f_win_move_separator},
-	{S"win_move_statusline", 2, 2, FEARG_1,     &f_win_move_statusline},
-	{S"win_screenpos",   1, 1, FEARG_1,       &f_win_screenpos},
-	{S"splitPortalmove",   2, 3, FEARG_1,     &f_splitPortalmove},
-	{S"winbufnr",   1, 1, FEARG_1,       &f_winbufnr},
-	{S"wincol",      0, 0, 0,        &f_wincol},
-	{S"winheight",   1, 1, FEARG_1,         &f_winheight},
-	{S"winlayout",   0, 1, FEARG_1,         &f_winlayout},
-	{S"winline",      0, 0, 0,           &f_winline},
-	{S"winnr",      0, 1, FEARG_1,       &f_winnr},
-	{S"winrestcmd",   0, 0, 0,           &f_winrestcmd},
-	{S"winrestview",   1, 1, FEARG_1,        &f_winrestview},
-	{S"winsaveview",   0, 0, 0,   &f_winsaveview},
-	{S"winwidth",   1, 1, FEARG_1, &f_winwidth},
-	{S"wordcount",   0, 0, 0, &f_wordcount},
-	{S"writefile",   2, 3, FEARG_1, &f_writefile},
-	{S"xor",      2, 2, FEARG_1, &f_xor},
+	{u8"abs",      1, 1, FEARG_1, &f_abs},
+	{u8"acos",     1, 1, FEARG_1, &f_acos},
+	{u8"add",      2, 2, FEARG_1, &f_add},
+	{u8"and",      2, 2, FEARG_1, &f_and},
+	{u8"append",   2, 2, FEARG_2, &f_append},
+	{u8"appendbufline",   3, 3, FEARG_3, &f_appendbufline},
+	{u8"argc",     0, 1, 0, &f_argc},
+	{u8"argidx",   0, 0, 0, &f_argidx},
+	{u8"arglistid", 0, 2, 0, &f_arglistid},
+	{u8"argv",      0, 2, 0,  &f_argv},
+	{u8"asin",      1, 1, FEARG_1, &f_asin},
+	{u8"assert_equal", 2, 3, FEARG_2, &f_assert_equal},
+	{u8"assert_equalfile", 2, 3, FEARG_1, &f_assert_equalfile},
+	{u8"assert_fails", 1, 5, FEARG_1, &f_assert_fails},
+	{u8"assert_false", 1, 2, FEARG_1, &f_assert_false},
+	{u8"assert_inrange", 3, 4, FEARG_3, &f_assert_inrange},
+	{u8"assert_match",  2, 3, FEARG_2, &f_assert_match},
+	{u8"assert_notequal", 2, 3, FEARG_2, &f_assert_notequal},
+	{u8"assert_notmatch", 2, 3, FEARG_2, &f_assert_notmatch},
+	{u8"assert_report",   1, 1, FEARG_1, &f_assert_report},
+	{u8"assert_true",   1, 2, FEARG_1, &f_assert_true},
+	{u8"atan",      1, 1, FEARG_1,    &f_atan},
+	{u8"atan2",     2, 2, FEARG_1,  &f_atan2},
+	{u8"autocmd_add",   1, 1, FEARG_1, &f_autocmd_add},
+	{u8"autocmd_delete",   1, 1, FEARG_1, &f_autocmd_delete},
+	{u8"autocmd_get",   0, 1, FEARG_1, &f_autocmd_get},
+	{u8"balloon_gettext",   0, 0, 0, &f_balloon_gettext },
+	{u8"balloon_show",   1, 1, FEARG_1, &f_balloon_show },
+	{u8"balloon_split",   1, 1, FEARG_1, &f_balloon_split },
+	{u8"base64_decode",   1, 1, FEARG_1, &f_base64_decode},
+	{u8"base64_encode",   1, 1, FEARG_1, &f_base64_encode},
+	{u8"bindtextdomain",   2, 2, 0,  &f_bindtextdomain},
+	{u8"blob2list",   1, 1, FEARG_1, &f_blob2list},
+	{u8"blob2str",   1, 2, FEARG_1, &f_blob2str},
+	{u8"browse",      4, 4, 0,   &f_browse},
+	{u8"browsedir",   2, 2, 0,   &f_browsedir},
+	{u8"bufadd",      1, 1, FEARG_1, &f_bufadd},
+	{u8"bufexists",   1, 1, FEARG_1,  &f_bufexists},
+	{u8"buflisted",   1, 1, FEARG_1, &f_buflisted},
+	{u8"bufload",      1, 1, FEARG_1, &f_bufload},
+	{u8"bufloaded",   1, 1, FEARG_1, &f_bufloaded},
+	{u8"bufname",      0, 1, FEARG_1, &f_bufname},
+	{u8"bufnr",      0, 2, FEARG_1,      &f_bufnr},
+	{u8"bufwinid",   1, 1, FEARG_1,       &f_bufwinid},
+	{u8"bufwinnr",   1, 1, FEARG_1,        &f_bufwinnr},
+	{u8"byte2line",   1, 1, FEARG_1,       &f_byte2line},
+	{u8"byteidx",      2, 3, FEARG_1,        &f_byteidx},
+	{u8"byteidxcomp",   2, 3, FEARG_1,       &f_byteidxcomp},
+	{u8"call",      2, 3, FEARG_1,           &f_call},
+	{u8"ceil",      1, 1, FEARG_1,           &f_ceil},
+	{u8"ch_canread",   1, 1, FEARG_1,     &f_ch_canread},
+	{u8"ch_close",   1, 1, FEARG_1,          &f_ch_close},
+	{u8"ch_close_in",   1, 1, FEARG_1,       &f_ch_close_in},
+	{u8"ch_evalexpr",   2, 3, FEARG_1,       &f_ch_evalexpr},
+	{u8"ch_evalraw",   2, 3, FEARG_1,        &f_ch_evalraw},
+	{u8"ch_getbufnr",   2, 2, FEARG_1,       &f_ch_getbufnr},
+	{u8"ch_getjob",   1, 1, FEARG_1,         &f_ch_getjob},
+	{u8"ch_info",      1, 1, FEARG_1,        &f_ch_info},
+	{u8"ch_log",      1, 2, FEARG_1,         &f_ch_log},
+	{u8"ch_logfile",   1, 2, FEARG_1,        &f_ch_logfile},
+	{u8"ch_open",      1, 2, FEARG_1,        &f_ch_open},
+	{u8"ch_read",      1, 2, FEARG_1,        &f_ch_read},
+	{u8"ch_readblob",   1, 2, FEARG_1,       &f_ch_readblob},
+	{u8"ch_readraw",   1, 2, FEARG_1,        &f_ch_readraw},
+	{u8"ch_sendexpr",   2, 3, FEARG_1,       &f_ch_sendexpr},
+	{u8"ch_sendraw",   2, 3, FEARG_1,        &f_ch_sendraw},
+	{u8"ch_setoptions",   2, 2, FEARG_1,     &f_ch_setoptions},
+	{u8"ch_status",   1, 2, FEARG_1,             &f_ch_status},
+	{u8"changenr",   0, 0, 0,          &f_changenr},
+	{u8"char2nr",      1, 2, FEARG_1,        &f_char2nr},
+	{u8"charclass",   1, 1, FEARG_1,         &f_charclass},
+	{u8"charcol",      1, 2, FEARG_1,        &f_charcol},
+	{u8"charidx",      2, 4, FEARG_1,        &f_charidx},
+	{u8"chdir",      1, 2, FEARG_1,          &f_chdir},
+	{u8"clearmatches",   0, 1, FEARG_1,        &f_clearmatches},
+	{u8"cmdcomplete_info",0, 0, 0,           &f_cmdcomplete_info},
+	{u8"col",      1, 2, FEARG_1,            &f_col},
+	{u8"complete",   2, 2, FEARG_2,          &f_complete},
+	{u8"complete_add",   1, 1, FEARG_1,        &f_complete_add},
+	{u8"complete_check",   0, 0, 0,       &f_complete_check},
+	{u8"complete_info",   0, 1, FEARG_1,        &f_complete_info},
+	{u8"complete_match",   0, 2, 0,        &f_complete_match},
+	{u8"confirm",      1, 4, FEARG_1,       &f_confirm},
+	{u8"copy",      1, 1, FEARG_1,          &f_copy},
+	{u8"cos",      1, 1, FEARG_1,           &f_cos},
+	{u8"cosh",      1, 1, FEARG_1,          &f_cosh},
+	{u8"count",      2, 4, FEARG_1,         &f_count},
+	{u8"cscope_connection",0,3, 0,          &f_cscope_connection},
+	{u8"cursor",      1, 3, FEARG_1,        &f_cursor},
+	{u8"deepcopy",   1, 2, FEARG_1,        &f_deepcopy},
+	{u8"delete",      1, 2, FEARG_1,     &f_delete},
+	{u8"deletebufline",   2, 3, FEARG_1,    &f_deletebufline},
+	{u8"did_filetype",   0, 0, 0,     &f_did_filetype},
+	{u8"diff",      2, 3, FEARG_1,   &f_diff},
+	{u8"diff_filler",   1, 1, FEARG_1,        &f_diff_filler},
+	{u8"diff_hlID",   2, 2, FEARG_1,          &f_diff_hlID},
+	{u8"echoraw",      1, 1, FEARG_1,         &f_echoraw},
+	{u8"empty",      1, 1, FEARG_1,        &f_empty},
+	{u8"environ",      0, 0, 0,      &f_environ},
+	{u8"err_teapot",   0, 1, 0,      &f_err_teapot},
+	{u8"escape",      2, 2, FEARG_1,        &f_escape},
+	{u8"eval",      1, 1, FEARG_1,          &f_eval},
+	{u8"eventhandler",   0, 0, 0,       &f_eventhandler},
+	{u8"executable",   1, 1, FEARG_1,       &f_executable},
+	{u8"execute",      1, 2, FEARG_1,       &f_execute},
+	{u8"exepath",      1, 1, FEARG_1,        &f_exepath},
+	{u8"exists",      1, 1, FEARG_1,      &f_exists},
+	{u8"exp",      1, 1, FEARG_1,         &f_exp},
+	{u8"expand",      1, 3, FEARG_1,       &f_expand},
+	{u8"expandcmd",   1, 2, FEARG_1,       &f_expandcmd},
+	{u8"extend",      2, 3, FEARG_1,       &f_extend},
+	{u8"extendnew",   2, 3, FEARG_1,       &f_extendnew},
+	{u8"feedkeys",   1, 2, FEARG_1,         &f_feedkeys},
+	{u8"filecopy",   2, 2, FEARG_1,     &f_filecopy},
+	{u8"filereadable",   1, 1, FEARG_1,     &f_filereadable},
+	{u8"filewritable",   1, 1, FEARG_1,        &f_filewritable},
+	{u8"filter",      2, 2, FEARG_1,         &f_filter},
+	{u8"finddir",      1, 3, FEARG_1,        &f_finddir},
+	{u8"findfile",   1, 3, FEARG_1,          &f_findfile},
+	{u8"flatten",      1, 2, FEARG_1,        &f_flatten},
+	{u8"flattennew",   1, 2, FEARG_1,       &f_flattennew},
+	{u8"float2nr",   1, 1, FEARG_1,         &f_float2nr},
+	{u8"floor",      1, 1, FEARG_1,         &f_floor},
+	{u8"fmod",      2, 2, FEARG_1,          &f_fmod},
+	{u8"fnameescape",   1, 1, FEARG_1,        &f_fnameescape},
+	{u8"fnamemodify",   2, 2, FEARG_1,        &f_fnamemodify},
+	{u8"foldclosed",   1, 1, FEARG_1,         &f_foldclosed},
+	{u8"foldclosedend",   1, 1, FEARG_1,       &f_foldclosedend},
+	{u8"foldlevel",   1, 1, FEARG_1,           &f_foldlevel},
+	{u8"foldtext",   0, 0, 0,        &f_foldtext},
+	{u8"foldtextresult",   1, 1, FEARG_1,        &f_foldtextresult},
+	{u8"foreach",      2, 2, FEARG_1,          &f_foreach},
+	{u8"fullcommand",   1, 2, FEARG_1,        &f_fullcommand},
+	{u8"funcref",      1, 3, FEARG_1,     &f_funcref},
+	{u8"function",   1, 3, FEARG_1,      &f_function},
+	{u8"get",      2, 3, FEARG_1,          &f_get},
+	{u8"getbufinfo",   0, 1, FEARG_1,   &f_getbufinfo},
+	{u8"getbufline",   2, 3, FEARG_1,     &f_getbufline},
+	{u8"getbufoneline",   2, 2, FEARG_1,        &f_getbufoneline},
+	{u8"getbufvar",   2, 3, FEARG_1,          &f_getbufvar},
+	{u8"getcellpixels",   0, 0, 0,            &f_getcellpixels},
+	{u8"getchangelist",   0, 1, FEARG_1,       &f_getchangelist},
+	{u8"getchar",      0, 2, 0,          &f_getchar},
+	{u8"getcharmod",   0, 0, 0,          &f_getcharmod},
+	{u8"getcharpos",   1, 1, FEARG_1,     &f_getcharpos},
+	{u8"getcharsearch",   0, 0, 0,         &f_getcharsearch},
+	{u8"getcharstr",   0, 2, 0,            &f_getcharstr},
+	{u8"getcmdcomplpat",   0, 0, 0,        &f_getcmdcomplpat},
+	{u8"getcmdcompltype",   0, 0, 0,       &f_getcmdcompltype},
+	{u8"getcmdline",   0, 0, 0,         &f_getCommline},
+	{u8"getcmdpos",   0, 0, 0,          &f_getcmdpos},
+	{u8"getcmdprompt",   0, 0, 0,       &f_getcmdprompt},
+	{u8"getcmdscreenpos",   0, 0, 0,        &f_getcmdscreenpos},
+	{u8"getcmdtype",   0, 0, 0,          &f_getcmdtype},
+	{u8"getcmdwintype",   0, 0, 0,       &f_getcmdwintype},
+	{u8"getcompletion",   2, 3, FEARG_1,     &f_getcompletion},
+	{u8"getcompletiontype", 1, 1, FEARG_1,       &f_getcompletiontype},
+	{u8"getcurpos",   0, 1, FEARG_1,       &f_getcurpos},
+	{u8"getcursorcharpos", 0, 1, FEARG_1,     &f_getcursorcharpos},
+	{u8"getcwd",      0, 2, FEARG_1,           &f_getcwd},
+	{u8"getenv",      1, 1, FEARG_1,           &f_getenv},
+	{u8"getfontname",   0, 1, 0,           &f_getfontname},
+	{u8"getfperm",   1, 1, FEARG_1,        &f_getfperm},
+	{u8"getfsize",   1, 1, FEARG_1,        &f_getfsize},
+	{u8"getftime",   1, 1, FEARG_1,        &f_getftime},
+	{u8"getftype",   1, 1, FEARG_1,        &f_getftype},
+	{u8"getjumplist",   0, 2, FEARG_1,        &f_getjumplist},
+	{u8"getline",      1, 2, FEARG_1,         &f_getline},
+	{u8"getloclist",   1, 2, 0,     &f_getloclist},
+	{u8"getmarklist",   0, 1, FEARG_1,   &f_getmarklist},
+	{u8"getmatches",   0, 1, 0,    &f_getmatches},
+	{u8"getmousepos",   0, 0, 0,     &f_getmousepos},
+	{u8"getpid",      0, 0, 0,           &f_getpid},
+	{u8"getpos",      1, 1, FEARG_1,      &f_getpos},
+	{u8"getreg",      0, 3, FEARG_1,        &f_getreg},
+	{u8"getreginfo",   0, 1, FEARG_1,        &f_getreginfo},
+	{u8"getregion",   2, 3, FEARG_1,      &f_getregion},
+	{u8"getregionpos",   2, 3, FEARG_1,  &f_getregionpos},
+	{u8"getregtype",   0, 1, FEARG_1,          &f_getregtype},
+	{u8"getscriptinfo",   0, 1, 0,      &f_getscriptinfo},
+	{u8"getstacktrace",   0, 0, 0,      &f_getstacktrace},
+	{u8"gettabinfo",   0, 1, FEARG_1,   &f_gettabinfo},
+	{u8"gettabvar",   2, 3, FEARG_1,         &f_gettabvar},
+	{u8"gettabwinvar",   3, 4, FEARG_1,        &f_gettabwinvar},
+	{u8"gettagstack",   0, 1, FEARG_1,         &f_gettagstack},
+	{u8"gettext",      1, 2, FEARG_1,          &f_gettext},
+	{u8"getwininfo",   0, 1, FEARG_1,     &f_getwininfo},
+	{u8"getwinpos",   0, 1, FEARG_1,        &f_getwinpos},
+	{u8"getwinposx",   0, 0, 0,        &f_getwinposx},
+	{u8"getwinposy",   0, 0, 0,        &f_getwinposy},
+	{u8"getwinvar",   2, 3, FEARG_1,       &f_getwinvar},
+	{u8"glob",      1, 4, FEARG_1,         &f_glob},
+	{u8"glob2regpat",   1, 1, FEARG_1,        &f_glob2regpat},
+	{u8"globpath",   2, 5, FEARG_2,           &f_globpath},
+	{u8"has_key",      2, 2, FEARG_1,      &f_has_key},
+	{u8"haslocaldir",   0, 2, FEARG_1,        &f_haslocaldir},
+	{u8"hasmapto",   1, 3, FEARG_1,        &f_hasmapto},
+	{u8"histadd",      2, 2, FEARG_2,      &f_histadd},
+	{u8"histdel",      1, 2, FEARG_1,      &f_histdel},
+	{u8"histget",      1, 2, FEARG_1,         &f_histget},
+	{u8"histnr",      1, 1, FEARG_1,          &f_histnr},
+	{u8"hlID",      1, 1, FEARG_1,            &f_hlID},
+	{u8"hlexists",   1, 1, FEARG_1,        &f_hlexists},
+	{u8"hlget",      0, 2, FEARG_1,      &f_hlget},
+	{u8"hostname",   0, 0, 0,           &f_hostname},
+	{u8"id",      1, 1, FEARG_1,           &f_id},
+	{u8"indent",      1, 1, FEARG_1,        &f_indent},
+	{u8"index",      2, 4, FEARG_1,         &f_index},
+	{u8"indexof",      2, 3, FEARG_1,       &f_indexof},
+	{u8"input",      1, 3, FEARG_1,         &f_input},
+	{u8"inputdialog",   1, 3, FEARG_1,        &f_inputdialog},
+	{u8"inputlist",   1, 1, FEARG_1,          &f_inputlist},
+	{u8"inputrestore",   0, 0, 0,        &f_inputrestore},
+	{u8"inputsave",   0, 0, 0,         &f_inputsave},
+	{u8"inputsecret",   1, 2, FEARG_1,        &f_inputsecret},
+	{u8"insert",      2, 3, FEARG_1,          &f_insert},
+	{u8"interrupt",   0, 0, 0,          &f_interrupt},
+	{u8"invert",      1, 1, FEARG_1,        &f_invert},
+	{u8"isabsolutepath",   1, 1, FEARG_1,    &f_isabsolutepath},
+	{u8"isdirectory",   1, 1, FEARG_1,       &f_isdirectory},
+	{u8"isinf",      1, 1, FEARG_1,             MATH_FUNC(f_isinf)},
+	{u8"islocked",   1, 1, FEARG_1,          &f_islocked},
+	{u8"isnan",      1, 1, FEARG_1,          MATH_FUNC(f_isnan)},
+	{u8"items",      1, 1, FEARG_1,             &f_items},
+	{u8"job_getchannel",   1, 1, FEARG_1,       &f_job_getchannel},
+	{u8"job_info",   0, 1, FEARG_1,             &f_job_info},
+	{u8"job_setoptions",   2, 2, FEARG_1,       &f_job_setoptions},
+	{u8"job_start",   1, 2, FEARG_1,            &f_startJob},
+	{u8"job_status",   1, 1, FEARG_1,           &f_job_status},
+	{u8"job_stop",   1, 2, FEARG_1,          &f_job_stop},
+	{u8"join",      1, 2, FEARG_1,             &f_join},
+	{u8"json_decode",   1, 1, FEARG_1,         &f_json_decode},
+	{u8"json_encode",   1, 1, FEARG_1,         &f_json_encode},
+	{u8"keys",      1, 1, FEARG_1,         &f_keys},
+	{u8"keytrans",   1, 1, FEARG_1,          &f_keytrans},
+	{u8"last_buffer_nr",   0, 0, 0,  &f_last_buffer_nr },   //obsolete
+	{u8"len",      1, 1, FEARG_1,        &f_len},
+	{u8"line",      1, 2, FEARG_1,        &f_line},
+	{u8"line2byte",   1, 1, FEARG_1,        &f_line2byte},
+	{u8"list2blob",   1, 1, FEARG_1,         &f_list2blob},
+	{u8"list2str",   1, 2, FEARG_1,          &f_list2str},
+	{u8"listener_add",   1, 2, FEARG_2,        &f_listener_add},
+	{u8"listener_flush",   0, 1, FEARG_1,        &f_listener_flush},
+	{u8"listener_remove",   1, 1, FEARG_1,    &f_listener_remove},
+	{u8"localtime",   0, 0, 0,          &f_localtime},
+	{u8"log",      1, 1, FEARG_1,         &f_log},
+	{u8"log10",      1, 1, FEARG_1,       &f_log10},
+	{u8"map",      2, 2, FEARG_1,          &f_map},
+	{u8"maparg",      1, 4, FEARG_1,         &f_maparg},
+	{u8"mapcheck",   1, 3, FEARG_1,          &f_mapcheck},
+	{u8"maplist",      0, 1, 0,     &f_maplist},
+	{u8"mapnew",      2, 2, FEARG_1,        &f_mapnew},
+	{u8"mapset",      1, 3, FEARG_1,        &f_mapset},
+	{u8"match",      2, 4, FEARG_1,         &f_match},
+	{u8"matchadd",   2, 5, FEARG_1,         &f_matchadd},
+	{u8"matchaddpos",   2, 5, FEARG_1,        &f_matchaddpos},
+	{u8"matcharg",   1, 1, FEARG_1,        &f_matcharg},
+	{u8"matchbufline",   4, 5, FEARG_1,        &f_matchbufline},
+	{u8"matchdelete",   1, 2, FEARG_1,      &f_matchdelete},
+	{u8"matchend",   2, 4, FEARG_1,            &f_matchend},
+	{u8"matchfuzzy",   2, 3, FEARG_1,          &f_matchfuzzy},
+	{u8"matchfuzzypos",   2, 3, FEARG_1,       &f_matchfuzzypos},
+	{u8"matchlist",   2, 4, FEARG_1,        &f_matchlist},
+	{u8"matchstr",   2, 4, FEARG_1,            &f_matchstr},
+	{u8"matchstrlist",   2, 3, FEARG_1,        &f_matchstrlist},
+	{u8"matchstrpos",   2, 4, FEARG_1,         &f_matchstrpos},
+	{u8"max",      1, 1, FEARG_1,           &f_max},
+	{u8"min",      1, 1, FEARG_1,           &f_min},
+	{u8"mkdir",      1, 3, FEARG_1,      &f_mkdir},
+	{u8"mode",      0, 1, FEARG_1,          &f_mode},
+	{u8"nextnonblank",   1, 1, FEARG_1,        &f_nextnonblank},
+	{u8"ngettext",   3, 4, FEARG_3,            &f_ngettext},
+	{u8"nr2char",      1, 2, FEARG_1,          &f_nr2char},
+	{u8"or",      2, 2, FEARG_1,           &f_or},
+	{u8"pathshorten",   1, 2, FEARG_1,        &f_pathshorten},
+	{u8"popup_atcursor",   2, 2, FEARG_1,        &f_popup_atcursor},
+	{u8"popup_beval",   2, 2, FEARG_1,           &f_popup_beval},
+	{u8"popup_clear",   0, 1, 0,           &f_popup_clear},
+	{u8"popup_close",   1, 2, FEARG_1,        &f_popup_close},
+	{u8"createPopup",   2, 2, FEARG_1,        &f_createPopup},
+	{u8"popup_dialog",  2, 2, FEARG_1,       &f_popup_dialog},
+	{u8"popup_filter_menu", 2, 2, 0,          &f_popup_filter_menu},
+	{u8"popup_filter_yesno", 2, 2, 0,         &f_popup_filter_yesno},
+	{u8"popup_findecho",   0, 0, 0,           &f_popup_findecho},
+	{u8"popup_findinfo",   0, 0, 0,           &f_popup_findinfo},
+	{u8"popup_findpreview", 0, 0, 0,          &f_popup_findpreview},
+	{u8"popup_getoptions", 1, 1, FEARG_1,        &f_popup_getoptions},
+	{u8"popup_getpos", 1, 1, FEARG_1,          &f_popup_getpos},
+	{u8"popup_hide",   1, 1, FEARG_1,           &f_popup_hide},
+	{u8"popup_list",   0, 0, 0,       &f_popup_list},
+	{u8"popup_locate", 2, 2, 0,             &f_popup_locate},
+	{u8"popup_menu",   2, 2, FEARG_1,         &f_popup_menu},
+	{u8"popup_move",   2, 2, FEARG_1,         &f_popup_move},
+	{u8"popup_notification", 2, 2, FEARG_1,   &f_popup_notification},
+	{u8"popup_setbuf", 2, 2, FEARG_1,       &f_popup_setbuf},
+	{u8"popup_setoptions", 2, 2, FEARG_1,     &f_popup_setoptions},
+	{u8"popup_settext",   2, 2, FEARG_1,      &f_popup_settext},
+	{u8"popup_show",   1, 1, FEARG_1,         &f_popup_show},
+	{u8"pow",          2, 2, FEARG_1,           &f_pow},
+	{u8"prevnonblank", 1, 1, FEARG_1,        &f_prevnonblank},
+	{u8"printf",       1, 19, FEARG_2,          &f_printf},
+	{u8"prompt_getprompt", 1, 1, FEARG_1,        &f_prompt_getprompt},
+	{u8"prompt_setcallback", 2, 2, FEARG_1,        &f_prompt_setcallback},
+	{u8"prompt_setinterrupt", 2, 2, FEARG_1,       &f_prompt_setinterrupt},
+	{u8"prompt_setprompt", 2, 2, FEARG_1,          &f_prompt_setprompt},
+	{u8"prop_add",     3, 3, FEARG_1,            &f_prop_add},
+	{u8"prop_add_list", 2, 2, FEARG_1,        &f_prop_add_list},
+	{u8"prop_clear",   1, 3, FEARG_1,           &f_prop_clear},
+	{u8"prop_find",    1, 2, FEARG_1,            &f_prop_find},
+	{u8"prop_list",    1, 2, FEARG_1,            &f_prop_list},
+	{u8"prop_remove",  1, 3, FEARG_1,          &f_prop_remove},
+	{u8"prop_type_add",   2, 2, FEARG_1,        &f_prop_type_add},
+	{u8"prop_type_change", 2, 2, FEARG_1,       &f_prop_type_change},
+	{u8"prop_type_delete", 1, 2, FEARG_1,       &f_prop_type_delete},
+	{u8"prop_type_get",   1, 2, FEARG_1,        &f_prop_type_get},
+	{u8"prop_type_list",   0, 1, FEARG_1,       &f_prop_type_list},
+	{u8"pum_getpos",   0, 0, 0,        &f_pum_getpos},
+	{u8"pumvisible",   0, 0, 0,        &f_pumvisible},
+	{u8"rand",         0, 1, FEARG_1,          &f_rand},
+	{u8"range",        1, 3, FEARG_1,      &f_range},
+	{u8"readblob",     1, 3, FEARG_1,         &f_readblob},
+	{u8"readdir",      1, 3, FEARG_1,    &f_readdir},
+	{u8"readdirex",    1, 3, FEARG_1,   &f_readdirex},
+	{u8"readfile",     1, 3, FEARG_1,      &f_readfile},
+	{u8"reduce",       2, 3, FEARG_1,        &f_reduce},
+	{u8"reg_executing",   0, 0, 0,          &f_reg_executing},
+	{u8"reg_recording",   0, 0, 0,          &f_reg_recording},
+	{u8"reltime",      0, 2, FEARG_1,       &f_reltime},
+	{u8"reltimefloat", 1, 1, FEARG_1,        &f_reltimefloat},
+	{u8"reltimestr",   1, 1, FEARG_1,          &f_reltimestr},
+	{u8"remove",       2, 3, FEARG_1,            &f_remove},
+	{u8"rename",       2, 2, FEARG_1,         &f_rename},
+	{u8"repeat",       2, 2, FEARG_1,            &f_repeat},
+	{u8"resolve",      1, 1, FEARG_1,           &f_resolve},
+	{u8"reverse",      1, 1, FEARG_1,           &f_reverse},
+	{u8"round",        1, 1, FEARG_1,             &f_round},
+	{u8"screenattr",   2, 2, FEARG_1,           &f_screenattr},
+	{u8"screenchar",   2, 2, FEARG_1,           &f_screenchar},
+	{u8"screenchars",  2, 2, FEARG_1,       &f_screenchars},
+	{u8"screencol",    0, 0, 0,           &f_screencol},
+	{u8"screenpos",    3, 3, FEARG_1,     &f_screenpos},
+	{u8"screenrow",    0, 0, 0,           &f_screenrow},
+	{u8"screenstring", 2, 2, FEARG_1,        &f_screenstring},
+	{u8"search",       1, 5, FEARG_1,           &f_search},
+	{u8"searchcount",  0, 1, FEARG_1,         &f_searchcount},
+	{u8"searchdecl",   1, 3, FEARG_1,       &f_searchdecl},
+	{u8"searchpair",   3, 7, 0,          &f_searchpair},
+	{u8"searchpairpos", 3, 7, 0,      &f_searchpairpos},
+	{u8"searchpos",    1, 5, FEARG_1,     &f_searchpos},
+	{u8"setbufline",   3, 3, FEARG_3,     &f_setbufline},
+	{u8"setbufvar",    3, 3, FEARG_3,         &f_setbufvar},
+	{u8"setcharpos",   2, 2, FEARG_2,        &f_setcharpos},
+	{u8"setcharsearch", 1, 1, FEARG_1,        &f_setcharsearch},
+	{u8"setcmdline",   1, 2, FEARG_1,        &f_setcmdline},
+	{u8"setcmdpos",    1, 1, FEARG_1,       &f_setcmdpos},
+	{u8"setcursorcharpos", 1, 3, FEARG_1,      &f_setcursorcharpos},
+	{u8"setenv",       2, 2, FEARG_2,            &f_setenv},
+	{u8"setfperm",     2, 2, FEARG_1,          &f_setfperm},
+	{u8"setline",      2, 2, FEARG_2,        &f_setline},
+	{u8"setloclist",   2, 4, FEARG_2,        &f_setloclist},
+	{u8"setmatches",   1, 2, FEARG_1,        &f_setmatches},
+	{u8"setpos",       2, 2, FEARG_2,         &f_setpos},
+	{u8"setreg",       2, 3, FEARG_2,       &f_setreg},
+	{u8"settabvar",    3, 3, FEARG_3,          &f_settabvar},
+	{u8"settabwinvar", 4, 4, FEARG_4,       &f_settabwinvar},
+	{u8"settagstack",  2, 3, FEARG_2,     &f_settagstack},
+	{u8"setwinvar",    3, 3, FEARG_3,          &f_setwinvar},
+	{u8"sha256",       1, 1, FEARG_1,    &f_sha256 },
+	{u8"shellescape",  1, 2, FEARG_1,          &f_shellescape},
+	{u8"shiftwidth",   0, 1, FEARG_1,           &f_shiftwidth},
+	{u8"sign_define",  1, 2, FEARG_1,          &f_sign_define},
+	{u8"sign_getdefined",   0, 1, FEARG_1,   &f_sign_getdefined},
+	{u8"sign_getplaced",   0, 2, FEARG_1,    &f_sign_getplaced},
+	{u8"sign_jump",    3, 3, FEARG_1,         &f_sign_jump},
+	{u8"sign_place",   4, 5, FEARG_1,        &f_sign_place},
+	{u8"sign_placelist",   1, 1, FEARG_1,    &f_sign_placelist},
+	{u8"sign_undefine",   0, 1, FEARG_1,     &f_sign_undefine},
+	{u8"sign_unplace", 1, 2, FEARG_1,      &f_sign_unplace},
+	{u8"sign_unplacelist", 1, 1, FEARG_1,    &f_sign_unplacelist},
+	{u8"simplify",     1, 1, FEARG_1,          &f_simplify},
+	{u8"sin",          1, 1, FEARG_1,           &f_sin},
+	{u8"sinh",         1, 1, FEARG_1,          &f_sinh},
+	{u8"slice",        2, 3, FEARG_1,         &f_slice},
+	{u8"sort",         1, 3, FEARG_1,          &f_sort},
+	{u8"split",        1, 3, FEARG_1,         &f_split},
+	{u8"sqrt",         1, 1, FEARG_1,           &f_sqrt},
+	{u8"srand",        0, 1, FEARG_1,       &f_srand},
+	{u8"state",        0, 1, FEARG_1,          &f_state},
+	{u8"str2blob",     1, 2, FEARG_1,          &f_str2blob},
+	{u8"str2float",    1, 2, FEARG_1,         &f_str2float},
+	{u8"str2list",     1, 2, FEARG_1,       &f_str2list},
+	{u8"str2nr",       1, 3, FEARG_1,         &f_str2nr},
+	{u8"strcharlen",   1, 1, FEARG_1,           &f_strcharlen},
+	{u8"strcharpart",  2, 4, FEARG_1,          &f_strcharpart},
+	{u8"strchars",     1, 2, FEARG_1,             &f_strchars},
+	{u8"strdisplaywidth",   1, 2, FEARG_1,        &f_strdisplaywidth},
+	{u8"strftime",     1, 2, FEARG_1,       &f_strftime },
+	{u8"strgetchar",   2, 2, FEARG_1,           &f_strgetchar},
+	{u8"stridx",       2, 3, FEARG_1,            &f_stridx},
+	{u8"string",       1, 1, FEARG_1|FE_X,       &f_string},
+	{u8"strlen",       1, 1, FEARG_1,            &f_strlen},
+	{u8"strpart",      2, 4, FEARG_1,           &f_strpart},
+	{u8"strptime",     2, 2, FEARG_1,       &f_strptime },
+	{u8"strridx",      2, 3, FEARG_1,           &f_strridx},
+	{u8"strtrans",     1, 1, FEARG_1,             &f_strtrans},
+	{u8"strwidth",     1, 1, FEARG_1,            &f_strwidth},
+	{u8"submatch",     1, 2, FEARG_1,            &f_submatch},
+	{u8"substitute",   4, 4, FEARG_1,          &f_substitute},
+	{u8"swapfilelist", 0, 0, 0,        &f_swapfilelist},
+	{u8"swapinfo",     1, 1, FEARG_1,         &f_swapinfo},
+	{u8"swapname",     1, 1, FEARG_1,         &f_swapname},
+	{u8"synID",        3, 3, 0,           &f_synID},
+	{u8"synIDtrans",   1, 1, FEARG_1,           &f_synIDtrans},
+	{u8"synstack",     2, 2, 0,              &f_synstack},
+	{u8"system",      1, 2, FEARG_1,         &f_system},
+	{u8"systemlist",   1, 2, FEARG_1,     &f_systemlist},
+	{u8"tabpagebuflist",   0, 1, FEARG_1,     &f_tabpagebuflist},
+	{u8"tabpagenr",   0, 1, 0,           &f_tabpagenr},
+	{u8"tabpagewinnr",   1, 2, FEARG_1,        &f_tabpagewinnr},
+	{u8"tagfiles",   0, 0, 0,       &f_tagfiles},
+	{u8"taglist",      1, 2, FEARG_1,   &f_taglist},
+	{u8"tan",      1, 1, FEARG_1,            &f_tan},
+	{u8"tanh",      1, 1, FEARG_1,           &f_tanh},
+	{u8"tempname",   0, 0, 0,            &f_tempname},
+	{u8"term_dumpdiff",   2, 3, FEARG_1,        TERM_FUNC(f_term_dumpdiff)},
+	{u8"term_dumpload",   1, 2, FEARG_1,        TERM_FUNC(f_term_dumpload)},
+	{u8"term_dumpwrite",   2, 3, FEARG_2,       TERM_FUNC(f_term_dumpwrite)},
+	{u8"term_getaltscreen", 1, 1, FEARG_1,         TERM_FUNC(f_term_getaltscreen)},
+//  {u8"term_getattr",   2, 2, FEARG_1,            TERM_FUNC(f_term_getattr)},
+	{u8"term_getcursor",   1, 1, FEARG_1,          TERM_FUNC(f_term_getcursor)},
+	{u8"term_getjob",   1, 1, FEARG_1,            TERM_FUNC(f_term_getjob)},
+	{u8"term_getline",   2, 2, FEARG_1,           TERM_FUNC(f_term_getline)},
+	{u8"term_getscrolled", 1, 1, FEARG_1,         TERM_FUNC(f_term_getscrolled)},
+	{u8"term_getsize",   1, 1, FEARG_1,        TERM_FUNC(f_term_getsize)},
+	{u8"term_getstatus",   1, 1, FEARG_1,         TERM_FUNC(f_term_getstatus)},
+	{u8"term_gettitle",   1, 1, FEARG_1,          TERM_FUNC(f_term_gettitle)},
+	{u8"term_gettty",   1, 2, FEARG_1,            TERM_FUNC(f_term_gettty)},
+	{u8"term_list",   0, 0, 0,         TERM_FUNC(f_term_list)},
+	{u8"term_scrape",   2, 2, FEARG_1,  TERM_FUNC(f_term_scrape)},
+	{u8"term_sendkeys",   2, 2, FEARG_1,        TERM_FUNC(f_term_sendkeys)},
+	{u8"term_setapi",   2, 2, FEARG_1,            TERM_FUNC(f_term_setapi)},
+	{u8"term_setkill",   2, 2, FEARG_1,           TERM_FUNC(f_term_setkill)},
+	{u8"term_setrestore",   2, 2, FEARG_1,        TERM_FUNC(f_term_setrestore)},
+	{u8"term_setsize",   3, 3, FEARG_1,           TERM_FUNC(f_term_setsize)},
+	{u8"term_start",   1, 2, FEARG_1,            TERM_FUNC(f_term_start)},
+	{u8"term_wait",   1, 2, FEARG_1,            TERM_FUNC(f_term_wait)},
+	{u8"terminalprops",   0, 0, 0,         &f_terminalprops},
+	{u8"test_alloc_fail",   3, 3, FEARG_1,       &f_test_alloc_fail},
+	{u8"test_autochdir",   0, 0, 0,           &f_test_autochdir},
+	{u8"test_feedinput",   1, 1, FEARG_1,        &f_test_feedinput},
+	{u8"test_getvalue",   1, 1, FEARG_1,           &f_test_getvalue},
+	{u8"test_ignore_error", 1, 1, FEARG_1,         &f_test_ignore_error},
+	{u8"test_null_blob",   0, 0, 0,            &f_test_null_blob},
+	{u8"test_null_channel", 0, 0, 0,           &f_test_null_channel},
+	{u8"test_null_dict",   0, 0, 0,           &f_test_null_dict},
+	{u8"test_null_function", 0, 0, 0,         &f_test_null_function},
+	{u8"test_null_job",   0, 0, 0,            &f_test_null_job},
+	{u8"test_null_list",   0, 0, 0,           &f_test_null_list},
+	{u8"test_null_partial", 0, 0, 0,          &f_test_null_partial},
+	{u8"test_null_string", 0, 0, 0,           &f_test_null_string},
+	{u8"test_option_not_set", 1, 1, FEARG_1,       &f_test_option_not_set},
+	{u8"test_override",   2, 2, FEARG_2,           &f_test_override},
+	{u8"test_refcount",   1, 1, FEARG_1|FE_X,       &f_test_refcount},
+	{u8"test_setmouse",   2, 2, 0,          &f_test_setmouse},
+	{u8"test_settime",   1, 1, FEARG_1,         &f_test_settime},
+	{u8"test_srand_seed",   0, 1, FEARG_1,        &f_test_srand_seed},
+	{u8"test_unknown",   0, 0, 0,           &f_test_unknown},
+	{u8"test_void",   0, 0, 0,           &f_test_void},
+	{u8"timer_info",   0, 1, FEARG_1,   TIMER_FUNC(f_timer_info)},
+	{u8"timer_pause",   2, 2, FEARG_1,        TIMER_FUNC(f_timer_pause)},
+	{u8"timer_start",   2, 3, FEARG_1,        TIMER_FUNC(f_timer_start)},
+	{u8"timer_stop",   1, 1, FEARG_1,         TIMER_FUNC(f_timer_stop)},
+	{u8"timer_stopall",   0, 0, 0,            TIMER_FUNC(f_timer_stopall)},
+	{u8"tolower",      1, 1, FEARG_1,         &f_tolower},
+	{u8"toupper",      1, 1, FEARG_1,         &f_toupper},
+	{u8"tr",      3, 3, FEARG_1,            &f_tr},
+	{u8"trim",      1, 3, FEARG_1,          &f_trim},
+	{u8"trunc",      1, 1, FEARG_1,         &f_trunc},
+	{u8"type",      1, 1, FEARG_1|FE_X,       &f_type},
+	{u8"undofile",   1, 1, FEARG_1,           &f_undofile},
+	{u8"undotree",   0, 1, FEARG_1,           &f_undotree},
+	{u8"uniq",      1, 3, FEARG_1,            &f_uniq},
+	{u8"values",      1, 1, FEARG_1,       &f_values},
+	{u8"virtcol",      1, 3, FEARG_1,           &f_virtcol},
+	{u8"virtcol2col",   3, 3, FEARG_1,          &f_virtcol2col},
+	{u8"visualmode",   0, 1, 0,           &f_visualmode},
+	{u8"wildmenumode",   0, 0, 0,         &f_wildmenumode},
+	{u8"wildtrigger",   0, 0, 0,          &f_wildtrigger},
+	{u8"win_execute",   2, 3, FEARG_2,        &f_win_execute},
+	{u8"win_findbuf",   1, 1, FEARG_1,     &f_win_findbuf},
+	{u8"win_getid",   0, 2, FEARG_1,          &f_win_getid},
+	{u8"win_gettype",   0, 1, FEARG_1,        &f_win_gettype},
+	{u8"gotoPortalid",   1, 1, FEARG_1,        &f_gotoPortalid},
+	{u8"win_id2tabwin",   1, 1, FEARG_1,     &f_win_id2tabwin},
+	{u8"win_id2win",   1, 1, FEARG_1,           &f_win_id2win},
+	{u8"win_move_separator", 2, 2, FEARG_1,     &f_win_move_separator},
+	{u8"win_move_statusline", 2, 2, FEARG_1,     &f_win_move_statusline},
+	{u8"win_screenpos",   1, 1, FEARG_1,       &f_win_screenpos},
+	{u8"splitPortalmove",   2, 3, FEARG_1,     &f_splitPortalmove},
+	{u8"winbufnr",   1, 1, FEARG_1,       &f_winbufnr},
+	{u8"wincol",      0, 0, 0,        &f_wincol},
+	{u8"winheight",   1, 1, FEARG_1,         &f_winheight},
+	{u8"winlayout",   0, 1, FEARG_1,         &f_winlayout},
+	{u8"winline",      0, 0, 0,           &f_winline},
+	{u8"winnr",      0, 1, FEARG_1,       &f_winnr},
+	{u8"winrestcmd",   0, 0, 0,           &f_winrestcmd},
+	{u8"winrestview",   1, 1, FEARG_1,        &f_winrestview},
+	{u8"winsaveview",   0, 0, 0,   &f_winsaveview},
+	{u8"winwidth",   1, 1, FEARG_1, &f_winwidth},
+	{u8"wordcount",   0, 0, 0, &f_wordcount},
+	{u8"writefile",   2, 3, FEARG_1, &f_writefile},
+	{u8"xor",      2, 2, FEARG_1, &f_xor},
 };
 
 //}}}
@@ -8921,10 +8921,10 @@ private BuiltinFn globalFunctions[] = {
 
 //Function given to expandGeneric() to obtain the list of internal
 //or user defined function names.
-pub CS
+pub S
 get_function_name(Expand *xp, int idx) {
 	static int intidx = -1;
-	CS name;
+	S name;
 
 	if (idx == 0)
 		intidx = -1;
@@ -8939,7 +8939,7 @@ get_function_name(Expand *xp, int idx) {
 	if (++intidx < (int)ARRAY_LENGTH(globalFunctions)) {
 		//Skip if the function doesn't have an implementation (feature not implemented).
 		if (globalFunctions[intidx].f_func == NULL)
-			 return (CS)"";
+			 return u8"";
 		STRCPY(ioBuffG, globalFunctions[intidx].f_name);
 		STRCAT(ioBuffG, "(");
 		if (globalFunctions[intidx].f_max_argc == 0)
@@ -8952,14 +8952,14 @@ get_function_name(Expand *xp, int idx) {
 
 //Function given to expandGeneric() to obtain the list of internal or
 //user defined variable or function names.
-pub CS
+pub S
 get_expr_name(Expand* xp, int idx) {
 	static int intidx = -1;
 
 	if (idx == 0)
 		intidx = -1;
 	if (intidx < 0) {
-		CS name = get_function_name(xp, idx);
+		S name = get_function_name(xp, idx);
 		if (name)
 			return name;
 	}
@@ -8969,7 +8969,7 @@ get_expr_name(Expand* xp, int idx) {
 //Find internal function "name" in table "globalFunctions".
 //Return index, or -1 if not found or "implemented" is true and the function is not implemented.
 private Unt
-find_internal_func_opt(CS name, int implemented) {
+find_internal_func_opt(S name, int implemented) {
 	int      first = 0;
 	int      cmp;
 	int      x;
@@ -8995,21 +8995,21 @@ find_internal_func_opt(CS name, int implemented) {
 //Find internal function "name" in table "globalFunctions".
 //Return index, or UNT if not found or the function is not implemented.
 pub Unt
-find_internal_func(CS name) {
+find_internal_func(S name) {
 	return find_internal_func_opt(name, true);
 }
 
 pub int
-has_internal_func(CS name) {
+has_internal_func(S name) {
 	return find_internal_func_opt(name, true) < UNT;
 }
 
 private int
-has_internal_func_name(CS name) {
+has_internal_func_name(S name) {
 	return find_internal_func_opt(name, false) < UNT;
 }
 
-private CS
+private S
 internal_func_name(int idx) {
 	return globalFunctions[idx].f_name;
 }
@@ -9043,7 +9043,7 @@ check_internal_func(int idx, int argcount) {
 	else
 		return globalFunctions[idx].f_argtype & FEARG_MASK;
 
-	CS name = internal_func_name(idx);
+	S name = internal_func_name(idx);
 	if (res == FCERR_TOOMANY)
 		showErrFmtMsg(_(e_too_many_arguments_for_function_str), name);
 	else
@@ -9052,7 +9052,7 @@ check_internal_func(int idx, int argcount) {
 }
 
 pub FnError
-call_internal_func(CS name, int argcount, Var* argvars, Var* returnVar){
+call_internal_func(S name, int argcount, Var* argvars, Var* returnVar){
 	int i = find_internal_func(name);
 	if (i < 0)
 		return FCERR_UNKNOWN;
@@ -9073,7 +9073,7 @@ call_internal_func_by_idx(int idx, Var* argvars, Var* returnVar) {
 //Invoke a method for base->method().
 pub FnError
 call_internal_method(
-	CS name,
+	S name,
 	int argcount,
 	Var* argvars,
 	Var* returnVar,
@@ -9178,7 +9178,7 @@ f_balloon_show(Var* argvars, Var*) {
 		//empty list removes the balloon
 		post_balloon(balloonEval, NULL, l == NULL || l->len == 0 ? NULL : l);
 	} else {
-		CS mesg = convertVarToStringSingleUse(&argvars[0]);
+		S mesg = convertVarToStringSingleUse(&argvars[0]);
 		if (mesg)
 			//empty string removes the balloon
 			post_balloon(balloonEval, *mesg == ZERO ? NULL : mesg, NULL);
@@ -9189,7 +9189,7 @@ private void
 f_balloon_split(Var* argvars, Var* returnVar) {
 	allocReturnList(returnVar);
 
-	CS msg = convertVarToStringSingleUse(&argvars[0]);
+	S msg = convertVarToStringSingleUse(&argvars[0]);
 	if (msg) {
 		Arr(PopupItem) array;
 		Unt size = balloonSplitMessage(msg, OUT &array);
@@ -9211,7 +9211,7 @@ base64_encode(Blob* blob) {
 
 //Decode the base64 string "data" into "blob"
 private void
-base64_decode(CS base64, Blob* blob) {
+base64_decode(S base64, Blob* blob) {
 	ArrayList mbResult;
 	if (decodeBase64ToArrayList(OUT &mbResult, mbText(base64))) {
 		if (mbResult.len > 0) {
@@ -9233,7 +9233,7 @@ f_base64_decode(Var* argvars, Var* returnVar) {
 	if (returnVar_blob_alloc(returnVar) == FAIL)
 		return;
 
-	CS str = convertVarToStringSingleUse(&argvars[0]);
+	S str = convertVarToStringSingleUse(&argvars[0]);
 	if (str)
 		base64_decode(str, returnVar->blob);
 }
@@ -9447,14 +9447,14 @@ f_col(Arr(Var) argvars, Var* returnVar) {
 //"confirm(message, buttons[, default [, type]])" function
 private void
 f_confirm(Arr(Var) argvars, Var* returnVar) {
-	CS buttons = NULL;
+	S buttons = NULL;
 	Byte buf[NUMBUFLEN];
 	Byte buf2[NUMBUFLEN];
 	int def = 1;
 	int type = EE_GENERIC;
 	Boole error = false;
 
-	CS message = convertVarToStringSingleUse(&argvars[0]);
+	S message = convertVarToStringSingleUse(&argvars[0]);
 	if (!message)
 		error = true;
 	if (argvars[1].tag != VAR_UNKNOWN) {
@@ -9464,7 +9464,7 @@ f_confirm(Arr(Var) argvars, Var* returnVar) {
 		if (argvars[2].tag != VAR_UNKNOWN) {
 			def = (int)varGetNumberChk(argvars + 2, OUT &error);
 			if (argvars[3].tag != VAR_UNKNOWN) {
-				CS typestr = convertVarToString(&argvars[3], buf2);
+				S typestr = convertVarToString(&argvars[3], buf2);
 				if (typestr == NULL)
 					error = true;
 				else {
@@ -9481,7 +9481,7 @@ f_confirm(Arr(Var) argvars, Var* returnVar) {
 	}
 
 	if (buttons == NULL || *buttons == ZERO)
-		buttons = (CS)_("&Ok");
+		buttons = (S)_("&Ok");
 
 	if (!error)
 		returnVar->number = do_dialog(type, NULL, message, buttons, def, NULL, false);
@@ -9580,7 +9580,7 @@ f_did_filetype(Var*, Var* returnVar) {
 //"echoraw({expr})" function
 private void
 f_echoraw(Var* argvars, Var*) {
-	CS str = convertVarToStringSingleUse(&argvars[0]);
+	S str = convertVarToStringSingleUse(&argvars[0]);
 	if (str && *str != ZERO) {
 		out_str(str);
 		termOutFlush();
@@ -9630,7 +9630,7 @@ f_empty(Var* argvars, Var* returnVar) {
 	case VAR_UNKNOWN:
 	case VAR_ANY:
 	case VAR_VOID:
-		internal_error_no_abort(S"f_empty(UNKNOWN)");
+		internal_error_no_abort(u8"f_empty(UNKNOWN)");
 		n = true;
 		break;
 	}
@@ -9649,11 +9649,11 @@ f_environ(Var*, Var* returnVar) {
 		return;
 
 	for (int i = 0; ; ++i) {
-		CS entry;
-		if ((entry = (CS)environ[i]) == NULL)
+		S entry;
+		if ((entry = (S)environ[i]) == NULL)
 			return;
 		entry = copyStr(entry);
-		CS value;
+		S value;
 		if ((value = firstOccurrence(entry, '=')) == NULL) {
 			eeglFree(entry);
 			continue;
@@ -9668,7 +9668,7 @@ private void
 f_err_teapot(Arr(Var) argvars, Var*) {
 	if (argvars[0].tag != VAR_UNKNOWN) {
 		if (argvars[0].tag == VAR_STRING) {
-			CS s = tv_get_string_strict(&argvars[0]);
+			S s = tv_get_string_strict(&argvars[0]);
 			if (*skipwhite(s) == ZERO)
 				return;
 		}
@@ -9695,11 +9695,11 @@ f_escape(Var* argvars, Var*  returnVar) {
 
 private void
 f_eval(Var* argvars, Var* returnVar) {
-	CS s = convertVarToStringSingleUse(&argvars[0]);
+	S s = convertVarToStringSingleUse(&argvars[0]);
 	if (s)
 		s = skipwhite(s);
 
-	CS p = s;
+	S p = s;
 	if (!s || eval1(OUT &s, returnVar, &EVALARG_EVALUATE) == FAIL) {
 		if (p && !aborting())
 			showErrFmtMsg(_(e_invalid_expression_str), p);
@@ -9719,7 +9719,7 @@ private ArrayList   redir_execute_ga;
 
 //Append "value[value_len]" to the execute() output.
 pub void
-execute_redir_str(CS value, int value_len) {
+execute_redir_str(S value, int value_len) {
 	int      len;
 
 	if (value_len == -1)
@@ -9736,15 +9736,15 @@ execute_redir_str(CS value, int value_len) {
 //Get next line from a string containing NL separated lines.
 //Called by doCommand() to get the next line.
 //Return an allocated string, or NULL when at the end of the string.
-private CS
+private S
 get_str_line(Unt, void* cookie, int, GetlineAlgo) {
-	CS start = *(Byte **)cookie;
+	S start = *(Byte **)cookie;
 
-	CS p = start;
+	S p = start;
 	if (!p || *p == ZERO)
 		return NULL;
 	p = firstOccurrence(p, '\n');
-	CS line;
+	S line;
 	if (p) {
 		line = copySubstr(start, p - start);
 		p++;
@@ -9758,7 +9758,7 @@ get_str_line(Unt, void* cookie, int, GetlineAlgo) {
 
 //Execute a series of commands in 'str'
 pub void
-execute_cmds_from_string(CS str) {
+execute_cmds_from_string(S str) {
 	doCommand(
 		NULL, get_str_line, (void *)&str, DOCMD_NOWAIT|DOCMD_VERBOSE|DOCMD_REPEAT|DOCMD_KEYTYPED
 	);
@@ -9769,7 +9769,7 @@ execute_cmds_from_string(CS str) {
 
 //Get next line from a list. Called by doCommand() to get the next line.
 //Return allocated string, or NULL for end of function.
-pub CS
+pub S
 get_list_line(Unt, void* cookie, int, GetlineAlgo) {
 	ListItem **p = (ListItem **)cookie;
 	ListItem *item = *p;
@@ -9777,7 +9777,7 @@ get_list_line(Unt, void* cookie, int, GetlineAlgo) {
 
 	if (!item)
 		return NULL;
-	CS s = convertVarToString(&item->c, buf);
+	S s = convertVarToString(&item->c, buf);
 	*p = item->next;
 	return s ? copyStr(s) : null;
 }
@@ -9785,7 +9785,7 @@ get_list_line(Unt, void* cookie, int, GetlineAlgo) {
 //"execute()" function
 pub void
 execute_common(Arr(Var) argvars, Var* returnVar, int arg_off) {
-	CS cmd = NULL;
+	S cmd = NULL;
 	List   *list = NULL;
 	int      save_msg_silent = msg_silent;
 	int      save_emsg_silent = emsg_silent;
@@ -9892,7 +9892,7 @@ pub void
 f_exists(Var* argvars, Var* returnVar) {
 	int n = false;
 
-	CS p = tv_get_string(&argvars[0]);
+	S p = tv_get_string(&argvars[0]);
 	if (*p == '$')  {       //environment variable
 		//first try "normal" environment variables (fast)
 		if (mch_getenv(p + 1))
@@ -9935,7 +9935,7 @@ f_expand(Var* argvars, Var* returnVar) {
 	int options = WILD_SILENT|WILD_USE_NL|WILD_LIST_NOTFOUND;
 	Expand   xpc;
 	Boole error = false;
-	CS result;
+	S result;
 
 	returnVar->tag = VAR_STRING;
 	if (argvars[1].tag != VAR_UNKNOWN
@@ -9945,9 +9945,9 @@ f_expand(Var* argvars, Var* returnVar) {
 	)
 		returnVar_list_set(returnVar, NULL);
 
-	CS s = tv_get_string(&argvars[0]);
+	S s = tv_get_string(&argvars[0]);
 	if (*s == '%' || *s == '#' || *s == '<') {
-		CS errorMsg = NULL;
+		S errorMsg = NULL;
 
 		if (p_verbose == 0)
 			++emsg_off;
@@ -9992,14 +9992,14 @@ f_expand(Var* argvars, Var* returnVar) {
 //Expand all the special characters in a command string.
 private void
 f_expandcmd(Var* argvars, Var* returnVar) {
-	CS errorMsg = NULL;
+	S errorMsg = NULL;
 	Boole emsgoff = true;
 
 	if (argvars[1].tag == VAR_BAG && bagGetBool(argvars[1].bag, tConst("errmsg"), false))
 		emsgoff = false;
 
 	returnVar->tag = VAR_STRING;
-	CS cmdstr = copyStr(tv_get_string(&argvars[0]));
+	S cmdstr = copyStr(tv_get_string(&argvars[0]));
 
 	Invocation invo;
 	CLEAR_FIELD(invo);
@@ -10032,10 +10032,10 @@ f_feedkeys(Arr(Var) argvars, Var*) {
 	Boole dangerous = false;
 	Boole lowlevel = false;
 
-	CS keys = tv_get_string(&argvars[0]);
+	S keys = tv_get_string(&argvars[0]);
 
 	if (argvars[1].tag != VAR_UNKNOWN) {
-		CS flags = tv_get_string_buf(&argvars[1], nbuf);
+		S flags = tv_get_string_buf(&argvars[1], nbuf);
 		for ( ; *flags != ZERO; ++flags) {
 			switch (*flags) {
 			case 'n': remap = false; break;
@@ -10064,7 +10064,7 @@ f_feedkeys(Arr(Var) argvars, Var*) {
 			}
 		} else {
 			//Need to escape K_SPECIAL and CSI before putting the string in the typeahead buffer.
-			CS keys_esc = copyStr_escape_csi(keys);
+			S keys_esc = copyStr_escape_csi(keys);
 			if (!keys_esc)
 				return;
 
@@ -10124,13 +10124,13 @@ f_fnameescape(Arr(Var) argvars, Var* returnVar) {
 //"function()" and  "funcref()" function
 private void
 common_function(Arr(Var) argvars, Var* returnVar, int is_funcref) {
-	CS s;
-	CS name;
+	S s;
+	S name;
 	int use_string = false;
 	PartiallyApplied   *arg_pt = NULL;
-	CS trans_name = NULL;
+	S trans_name = NULL;
 	Boole is_global = false;
-	CS start_bracket = NULL;
+	S start_bracket = NULL;
 
 	if (argvars[0].tag == VAR_FUNC) {
 		//function(MyFunc, [arg], dict)
@@ -10359,10 +10359,10 @@ f_get(Var* argvars, Var*  returnVar) {
 		}
 
 		if (pt) {
-			CS what = tv_get_string(&argvars[1]);
+			S what = tv_get_string(&argvars[1]);
 
 			if (STRCMP(what, "func") == 0 || STRCMP(what, "name") == 0) {
-				CS name = partial_name(pt);
+				S name = partial_name(pt);
 
 				returnVar->tag = (*what == 'f' ? VAR_FUNC : VAR_STRING);
 				if (name == NULL)
@@ -10387,7 +10387,7 @@ f_get(Var* argvars, Var*  returnVar) {
 				}
 			} ei (STRCMP(what, "arity") == 0) {
 				int required = 0, optional = 0, varargs = false;
-				CS name = partial_name(pt);
+				S name = partial_name(pt);
 
 				get_func_arity(name, &required, &optional, &varargs);
 
@@ -10405,9 +10405,9 @@ f_get(Var* argvars, Var*  returnVar) {
 				} else
 					required -= pt->argc;
 
-				 bagAddNumber(b, S"required", required);
-				 bagAddNumber(b, S"optional", optional);
-				 bagAdd_bool(b, S"varargs", varargs);
+				 bagAddNumber(b, u8"required", required);
+				 bagAddNumber(b, u8"optional", optional);
+				 bagAdd_bool(b, u8"varargs", varargs);
 			} else
 				showErrFmtMsg(_(e_invalid_argument_str), what);
 
@@ -10479,9 +10479,9 @@ f_getchangelist(Var* argvars, Var* returnVar) {
 		Bag* b = allocBag();
 		if (listAppendBag(l, b) == FAIL)
 			return;
-		bagAddNumber(b, S"lnum", (long)book->changeList[i].lnum);
-		bagAddNumber(b, S"col", (long)book->changeList[i].col);
-		bagAddNumber(b, S"coladd", (long)book->changeList[i].coladd);
+		bagAddNumber(b, u8"lnum", (long)book->changeList[i].lnum);
+		bagAddNumber(b, u8"col", (long)book->changeList[i].col);
+		bagAddNumber(b, u8"coladd", (long)book->changeList[i].coladd);
 	}
 }
 
@@ -10548,16 +10548,16 @@ f_getcharsearch(Var*, Var* returnVar) {
 	allocReturnDict(returnVar);
 	Bag* bag = returnVar->bag;
 
-	bagAddString(bag, S"char", last_csearch());
-	bagAddNumber(bag, S"forward", last_csearch_forward());
-	bagAddNumber(bag, S"until", last_csearch_until());
+	bagAddString(bag, u8"char", last_csearch());
+	bagAddNumber(bag, u8"forward", last_csearch_forward());
+	bagAddNumber(bag, u8"until", last_csearch_until());
 }
 
 private void
 f_getenv(Var* argvars, Var* returnVar) {
 	int mustfree = false;
 
-	CS p = eeglGetEnv(tv_get_string(&argvars[0]));
+	S p = eeglGetEnv(tv_get_string(&argvars[0]));
 	if (!p) {
 		returnVar->tag = VAR_VOID;
 		returnVar->number = 0;
@@ -10601,12 +10601,12 @@ f_getjumplist(Var* argvars, Var* returnVar) {
 		Bag* b = allocBag();
 		if (listAppendBag(l, b) == FAIL)
 			return;
-		bagAddNumber(b, S"lnum", (long)wp->jumpList[i].fmark.mark.lnum);
-		bagAddNumber(b, S"col", (long)wp->jumpList[i].fmark.mark.col);
-		bagAddNumber(b, S"coladd", (long)wp->jumpList[i].fmark.mark.coladd);
-		bagAddNumber(b, S"bufnr", (long)wp->jumpList[i].fmark.fnum);
+		bagAddNumber(b, u8"lnum", (long)wp->jumpList[i].fmark.mark.lnum);
+		bagAddNumber(b, u8"col", (long)wp->jumpList[i].fmark.mark.col);
+		bagAddNumber(b, u8"coladd", (long)wp->jumpList[i].fmark.mark.coladd);
+		bagAddNumber(b, u8"bufnr", (long)wp->jumpList[i].fmark.fnum);
 		if (wp->jumpList[i].fname)
-			bagAddString(b, S"filename", wp->jumpList[i].fname);
+			bagAddString(b, u8"filename", wp->jumpList[i].fname);
 	 }
 }
 
@@ -10637,12 +10637,12 @@ f_getpos(Var* argvars, Var* returnVar) {
 //{{{API functions 3
 
 //Convert from block_def to string
-private CS
+private S
 block_def2str(BlockDef* bd) {
 	Unt size = bd->startspaces + bd->endspaces + bd->textlen;
 
-	CS ret = alloc(size + 1);
-	CS p = ret;
+	S ret = alloc(size + 1);
+	S p = ret;
 	memset(p, ' ', bd->startspaces);
 	p += bd->startspaces;
 	MEMMOVE(p, bd->textstart, bd->textlen);
@@ -10678,7 +10678,7 @@ getregionpos(
 			 || fnum1 != fnum2)
 		return FAIL;
 
-	CS type;
+	S type;
 	if (argvars[2].tag == VAR_BAG) {
 		type = bagGetString(argvars[2].bag, tConst("type"), false);
 		if (!type)
@@ -10692,7 +10692,7 @@ getregionpos(
 	ei (type[0] == 'V' && type[1] == ZERO)
 		*region_type = MLINE;
 	ei (type[0] == Ctrl_V) {
-		CS p = type + 1;
+		S p = type + 1;
 
 		if (*p != ZERO && ((block_width = parseLong(&p)) <= 0 || *p != ZERO)) {
 			showErrFmtMsg(_(e_invalid_value_for_argument_str_str), "type", type);
@@ -10769,7 +10769,7 @@ getregionpos(
 	}
 
 	//Include the trailing byte of a multi-byte char.
-	int l = utfCharLen((CS)ml_get_pos(p2));
+	int l = utfCharLen((S)ml_get_pos(p2));
 	if (l > 1)
 		p2->col += l - 1;
 
@@ -10958,7 +10958,7 @@ f_getregionpos(Arr(Var) argvars, Var* returnVar) {
 //name from the first argument. Return 0 on error.
 private int
 getreg_get_regname(Arr(Var) argvars) {
-	CS strregname;
+	S strregname;
 
 	if (argvars[0].tag != VAR_UNKNOWN) {
 		strregname = convertVarToStringSingleUse(&argvars[0]);
@@ -11052,16 +11052,16 @@ f_gettext(Arr(Var) argvars, Var* returnVar) {
 
 	returnVar->tag = VAR_STRING;
 
-	CS prev = NULL;
+	S prev = NULL;
 	if (argvars[1].tag == VAR_STRING && argvars[1].string && *(argvars[1].string) != ZERO) {
 		returnVar->string = copyStr(
-				(CS)dgettext((const char *)argvars[1].string, (const char *)argvars[0].string)
+				(S)dgettext((const char *)argvars[1].string, (const char *)argvars[0].string)
 		);
 
 		if (prev)
 			bind_textdomain_codeset((const char *)argvars[1].string, (char*)prev);
 	} else
-		returnVar->string = copyStr((CS)_(argvars[0].string));
+		returnVar->string = copyStr((S)_(argvars[0].string));
 }
 
 //{{{has function
@@ -11071,7 +11071,7 @@ f_gettext(Arr(Var) argvars, Var* returnVar) {
 //Return true if "feature" can change later.
 //Also when checking for the feature has side effects, such as loading a DLL.
 pub int
-dynamic_feature(CS feature) {
+dynamic_feature(S feature) {
 	 return (!feature
 		 || caseInsensitiveCompare(feature, "syntax_items") == 0
 		 //once "starting" is zero it will stay that way
@@ -11110,7 +11110,7 @@ f_hostname(Arr(Var), Var* returnVar) {
 pub void
 f_id(Arr(Var) argvars, Var* returnVar) {
 	Byte numbuf[NUMBUFLEN];
-	CS p = numbuf;
+	S p = numbuf;
 
 	switch (argvars[0].tag) {
 	case VAR_LIST:
@@ -11124,7 +11124,7 @@ f_id(Arr(Var) argvars, Var* returnVar) {
 	*p = ZERO;
 
 	returnVar->tag = VAR_STRING;
-	returnVar->string = copyStr((CS)numbuf);
+	returnVar->string = copyStr((S)numbuf);
 }
 
 //index() function for a blob
@@ -11406,7 +11406,7 @@ f_islocked(Arr(Var) argvars, Var* returnVar) {
 	DictItem   *di;
 	returnVar->number = -1;
 
-	CS name = tv_get_string(&argvars[0]);
+	S name = tv_get_string(&argvars[0]);
 #ifdef LOG_LOCKVAR
 	lo("LKVAR: f_islocked(): name: %s", name);
 #endif
@@ -11416,7 +11416,7 @@ f_islocked(Arr(Var) argvars, Var* returnVar) {
 	LvalRoot   *lval_root_save = lvalRootS;
 	lvalRootS = root;
 	Lval lv;
-	CS end = getLval(OUT &lv, (GetLval){
+	S end = getLval(OUT &lv, (GetLval){
 			.name = mbText(name), .returnVar = null, .unlet = false, .skip = false,
 			.flags = GLV_NO_AUTOLOAD | GLV_READ_ONLY | GLV_NO_DECL, .fneFlag = FNE_CHECK_START
 		}
@@ -11464,7 +11464,7 @@ f_keytrans(Arr(Var) argvars, Var* returnVar) {
 	if (check_for_string_arg(argvars, 0) == FAIL || argvars[0].string == NULL)
 		return;
 	//Need to escape K_SPECIAL and CSI for mb_unescape().
-	CS escaped = copyStr_escape_csi(argvars[0].string);
+	S escaped = copyStr_escape_csi(argvars[0].string);
 	returnVar->string = str2special_save(escaped, true, true);
 	eeglFree(escaped);
 }
@@ -11579,7 +11579,7 @@ find_some_match(Arr(Var) argvars, Var* returnVar, MatchTypeSpec type) {
 		//type MATCH_POS: return ["", -1, -1, -1]
 		allocReturnList(returnVar);
 		if (type == MATCH_POS
-			&& (list_append_string(returnVar->list, (CS)"", 0) == FAIL
+			&& (list_append_string(returnVar->list, u8"", 0) == FAIL
 				 || list_append_number(returnVar->list, (Long)-1) == FAIL
 				 || list_append_number(returnVar->list, (Long)-1) == FAIL
 				 || list_append_number(returnVar->list, (Long)-1) == FAIL
@@ -11606,7 +11606,7 @@ find_some_match(Arr(Var) argvars, Var* returnVar, MatchTypeSpec type) {
 		len = (long)STRLEN(str);
 	}
 
-	CS pat = convertVarToString(&argvars[1], patbuf);
+	S pat = convertVarToString(&argvars[1], patbuf);
 	if (!pat)
 		goto theend;
 
@@ -11699,7 +11699,7 @@ find_some_match(Arr(Var) argvars, Var* returnVar, MatchTypeSpec type) {
 				//return list with matched string and submatches
 				for (i = 0; i < NSUBEXP; ++i) {
 					if (regmatch.endp[i] == NULL) {
-					if (list_append_string(returnVar->list, (CS)"", 0) == FAIL)
+					if (list_append_string(returnVar->list, u8"", 0) == FAIL)
 						 break;
 					} ei (list_append_string(returnVar->list,
 						   regmatch.startp[i],
@@ -11738,7 +11738,7 @@ theend:
 //true when called for matchbufline().
 private int
 get_matches_in_str(
-	CS str,
+	S str,
 	RegMatch   *rmp,
 	List   *mlist,
 	int      idx,
@@ -11758,26 +11758,26 @@ get_matches_in_str(
 		if (listAppendBag(mlist, d) == FAIL)
 			 return FAIL;
 
-		if (bagAddNumber(d, matchbuf ? S"lnum" : S"idx", idx) == FAIL)
+		if (bagAddNumber(d, matchbuf ? u8"lnum" : u8"idx", idx) == FAIL)
 			 return FAIL;
 
-		if (bagAddNumber(d, S"byteidx", (ColNr)(rmp->startp[0] - str)) == FAIL)
+		if (bagAddNumber(d, u8"byteidx", (ColNr)(rmp->startp[0] - str)) == FAIL)
 			 return FAIL;
 
-		if (bagAddString_len(d, S"text", rmp->startp[0],
+		if (bagAddString_len(d, u8"text", rmp->startp[0],
 				 (int)(rmp->endp[0] - rmp->startp[0])) == FAIL)
 			 return FAIL;
 
 		if (submatches) {
 			List *sml = list_alloc();
 
-			if (bagAddList(d, S"submatches", sml) == FAIL)
+			if (bagAddList(d, u8"submatches", sml) == FAIL)
 				return FAIL;
 
 			//return a list with the submatches
 			for (int i = 1; i < NSUBEXP; ++i) {
 				if (rmp->endp[i] == NULL) {
-					if (list_append_string(sml, (CS)"", 0) == FAIL)
+					if (list_append_string(sml, u8"", 0) == FAIL)
 						return FAIL;
 				} ei (list_append_string(sml, rmp->startp[i], (int)(rmp->endp[i] - rmp->startp[i]))
 						== FAIL
@@ -11821,7 +11821,7 @@ f_matchbufline(Arr(Var) argvars, Var* returnVar) {
 		return;
 	}
 
-	CS pat = tv_get_string_buf(&argvars[1], patbuf);
+	S pat = tv_get_string_buf(&argvars[1], patbuf);
 
 	int      anyEmsgG_before = anyEmsgG;
 	LineNr slnum = daGetLnumFromBookOrVar(&argvars[2], book);
@@ -11864,7 +11864,7 @@ f_matchbufline(Arr(Var) argvars, Var* returnVar) {
 	regmatch.rm_ic = p_ic;
 
 	while (slnum <= elnum) {
-		CS str = memGetLine(book, slnum, false);
+		S str = memGetLine(book, slnum, false);
 		if (get_matches_in_str(str, &regmatch, retlist, slnum, submatches, true) == FAIL)
 			goto cleanup;
 		slnum++;
@@ -11916,7 +11916,7 @@ f_matchstrlist(Arr(Var) argvars, Var* returnVar) {
 	if ((l = argvars[0].list) == NULL)
 		return;
 
-	CS pat = convertVarToString(&argvars[1], patbuf);
+	S pat = convertVarToString(&argvars[1], patbuf);
 	if (!pat)
 		return;
 
@@ -11945,7 +11945,7 @@ f_matchstrlist(Arr(Var) argvars, Var* returnVar) {
 	CHECK_LIST_MATERIALIZE(l);
 	FOR_ALL_LIST_ITEMS(l, li) {
 		if (li->c.tag == VAR_STRING && li->c.string) {
-			CS str = li->c.string;
+			S str = li->c.string;
 			if (get_matches_in_str(str, &regmatch, retlist, idx, submatches, false) == FAIL)
 				goto cleanup;
 		}
@@ -12066,10 +12066,10 @@ f_ngettext(Arr(Var) argvars, Var* returnVar) {
 
 	returnVar->tag = VAR_STRING;
 
-	CS prev = NULL;
+	S prev = NULL;
 	if (argvars[3].tag == VAR_STRING && argvars[3].string && *(argvars[3].string) != ZERO) {
 		returnVar->string = copyStr(
-			(CS)dngettext((const char *)argvars[3].string,
+			(S)dngettext((const char *)argvars[3].string,
 			(const char *)argvars[0].string, (const char *)argvars[1].string, (int)argvars[2].number)
 		);
 
@@ -12077,7 +12077,7 @@ f_ngettext(Arr(Var) argvars, Var* returnVar) {
 			bind_textdomain_codeset((const char *)argvars[3].string, (char*)prev);
 	} else {
 		returnVar->string = copyStr(
-			(CS)NGETTEXT((const char *)argvars[0].string,
+			(S)NGETTEXT((const char *)argvars[0].string,
 			(const char *)argvars[1].string, argvars[2].number)
 		);
 	}
@@ -12136,10 +12136,10 @@ f_printf(Arr(Var), Var*) {
 //
 //  // Get the required length, allocate the buffer and do it for real.
 //  anyEmsgG = false;
-//  CS fmt = tv_get_string_buf(&argvars[0], buf);
+//  S fmt = tv_get_string_buf(&argvars[0], buf);
 //TODO why null?   int len = eeVarPrintf(null, 0, fmt, ap, argvars + 1);
 //  if (!anyEmsgG) {
-//     CS s = alloc(len + 1);
+//     S s = alloc(len + 1);
 //     if (s) {
 //        returnVar->string = s;
 //        (void)eeVarPrintf(s, len + 1, fmt, ap, argvars + 1);
@@ -12385,7 +12385,7 @@ f_getreginfo(Arr(Var) argvars, Var* returnVar) {
 	list = (List *)get_reg_contents(regname, GREG_EXPR_SRC | GREG_LIST);
 	if (list == NULL)
 		return;
-	(void)bagAddList(dict, S"regcontents", list);
+	(void)bagAddList(dict, u8"regcontents", list);
 
 	buf[0] = ZERO;
 	buf[1] = ZERO;
@@ -12396,12 +12396,12 @@ f_getreginfo(Arr(Var) argvars, Var* returnVar) {
 		eeSnprintf(buf, sizeof(buf), "%c%ld", Ctrl_V, reglen + 1);
 		break;
 	}
-	(void)bagAddString(dict, S"regtype", buf);
+	(void)bagAddString(dict, u8"regtype", buf);
 
 	buf[0] = get_register_name(get_unname_register());
 	buf[1] = ZERO;
 	if (regname == '"')
-		(void)bagAddString(dict, S"points_to", buf);
+		(void)bagAddString(dict, u8"points_to", buf);
 	else {
 		DictItem* item = dictitem_alloc(tConst("isunnamed"));
 		item->c.tag = VAR_BOOL;
@@ -12547,7 +12547,7 @@ get_search_arg(Var *varp, Unt *flagsp) {
 	if (varp->tag == VAR_UNKNOWN)
 		return FORWARD;
 
-	CS flags = convertVarToString(varp, nbuf);
+	S flags = convertVarToString(varp, nbuf);
 	if (!flags)
 		return 0;      //type error; errmsg already given
 	while (*flags != ZERO) {
@@ -12592,7 +12592,7 @@ search_cmn(Arr(Var) argvars, OUT Pos *match_pos, OUT Unt* flagsp) {
 	SearchitArg sia;
 	Boole use_skip = false;
 
-	CS pat = tv_get_string(&argvars[0]);
+	S pat = tv_get_string(&argvars[0]);
 	int dir = get_search_arg(&argvars[1], OUT flagsp);   //may set wrapSearchG
 	if (dir == 0)
 		goto theend;
@@ -12714,7 +12714,7 @@ f_searchdecl(Arr(Var) argvars, Var* returnVar) {
 
 	returnVar->number = 1;   //default: FAIL
 
-	CS name = convertVarToStringSingleUse(&argvars[0]);
+	S name = convertVarToStringSingleUse(&argvars[0]);
 	if (argvars[1].tag != VAR_UNKNOWN) {
 		locally = !(int)varGetNumberChk(argvars + 1, OUT &error);
 	if (!error && argvars[2].tag != VAR_UNKNOWN)
@@ -12737,9 +12737,9 @@ searchpair_cmn(Arr(Var) argvars, Pos *match_pos) {
 
 	//Get the three pattern arguments: start, middle, end. Will result in an
 	//error if not a valid argument.
-	CS spat = convertVarToStringSingleUse(&argvars[0]);
-	CS mpat = convertVarToString(&argvars[1], nbuf1);
-	CS epat = convertVarToString(&argvars[2], nbuf2);
+	S spat = convertVarToStringSingleUse(&argvars[0]);
+	S mpat = convertVarToString(&argvars[1], nbuf1);
+	S epat = convertVarToString(&argvars[2], nbuf2);
 	if (spat == NULL || mpat == NULL || epat == NULL)
 		goto theend;       //type error
 
@@ -12819,9 +12819,9 @@ f_searchpairpos(Arr(Var) argvars, Var* returnVar) {
 //Return 0 or -1 for no match,
 pub long
 do_searchpair(
-	CS spat,       //start pattern
-	CS mpat,       //middle pattern
-	CS epat,       //end pattern
+	S spat,       //start pattern
+	S mpat,       //middle pattern
+	S epat,       //end pattern
 	Unt dir,       //BACKWARD or FORWARD
 	Var* skip,       //skip expression
 	Unt flags,       //SP_SETPCMARK and other SP_ values
@@ -12843,9 +12843,9 @@ do_searchpair(
 	Unt spatlen = STRLEN(spat);
 	Unt epatlen = STRLEN(epat);
 	Unt pat2size = spatlen + epatlen + 17;
-	CS pat2 = alloc(pat2size);
+	S pat2 = alloc(pat2size);
 	Unt pat3size = spatlen + STRLEN(mpat) + epatlen + 25;
-	CS pat3 = alloc(pat3size);
+	S pat3 = alloc(pat3size);
 	(void)eeSnprintf(pat2, pat2size, "\\m\\(%s\\m\\)\\|\\(%s\\m\\)", spat, epat);
 	if (*mpat == ZERO) {
 		STRCPY(pat3, pat2);
@@ -12868,7 +12868,7 @@ do_searchpair(
 	CLEAR_POS(OUT &firstpos);
 	Pos foundpos;
 	CLEAR_POS(OUT &foundpos);
-	CS pat = pat3;
+	S pat = pat3;
 	for (;;) {
 		SearchitArg sia;
 
@@ -13057,7 +13057,7 @@ f_setenv(Arr(Var) argvars, Var*) {
 	Byte   namebuf[NUMBUFLEN];
 	Byte   valbuf[NUMBUFLEN];
 
-	CS name = tv_get_string_buf(&argvars[0], namebuf);
+	S name = tv_get_string_buf(&argvars[0], namebuf);
 	eeSetenv_ext(name, tv_get_string_buf(&argvars[1], valbuf));
 }
 
@@ -13071,7 +13071,7 @@ f_setfperm(Arr(Var) argvars, Var* returnVar) {
 
 	returnVar->number = 0;
 
-	CS fname = convertVarToStringSingleUse(&argvars[0]);
+	S fname = convertVarToStringSingleUse(&argvars[0]);
 	if (fname == NULL)
 		return;
 	mode_str = convertVarToString(&argvars[1], modeBuf);
@@ -13099,8 +13099,8 @@ f_setpos(Arr(Var) argvars, Var* returnVar) {
 
 //Translate a register type string to the yank type and block length
 private int
-get_yank_type(Byte **pp, CS yank_type, long *block_len) {
-	CS stropt = *pp;
+get_yank_type(Byte **pp, S yank_type, long *block_len) {
+	S stropt = *pp;
 	switch (*stropt) {
 	case 'v': case 'c':   //character-wise selection
 		*yank_type = MCHAR;
@@ -13134,7 +13134,7 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
 	Byte yank_type = MAUTO;
 	Boole append = false;
 
-	CS strregname = convertVarToStringSingleUse(argvars);
+	S strregname = convertVarToStringSingleUse(argvars);
 	returnVar->number = 1;      //FAIL is default
 
 	if (!strregname)
@@ -13147,7 +13147,7 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
 		Bag       *d = argvars[1].bag;
 		if (!d || d->hashTable.count == 0) {
 			 //Empty dict, clear the register (like setreg(0, []))
-			 CS lstval[2] = {NULL, NULL};
+			 S lstval[2] = {NULL, NULL};
 			 write_reg_contents_lst(regname, lstval, 0, false, MAUTO, -1);
 			 return;
 		}
@@ -13205,7 +13205,7 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
 		int len = ll == NULL ? 0 : ll->len;
 
 		//First half: use for pointers to result lines; second: use for pointers to allocated copies
-		Byte** lstval = ALLOC_MULT(CS, (len + 1) * 2);
+		Byte** lstval = ALLOC_MULT(S, (len + 1) * 2);
 		Byte** curval = lstval;
 		Byte** allocval = lstval + len + 2;
 		Byte** curallocval = allocval;
@@ -13267,7 +13267,7 @@ f_settagstack(Arr(Var) argvars, Var* returnVar) {
 	ei (check_for_string_arg(argvars, 2) == FAIL)
 		return;
 	else {
-		CS actstr = convertVarToStringSingleUse(&argvars[2]);
+		S actstr = convertVarToStringSingleUse(&argvars[2]);
 		if (actstr == NULL)
 			return;
 		if ((*actstr == 'r' || *actstr == 'a' || *actstr == 't') && actstr[1] == ZERO)
@@ -13285,7 +13285,7 @@ f_settagstack(Arr(Var) argvars, Var* returnVar) {
 //"sha256({string})" function
 private void
 f_sha256(Arr(Var) argvars, Var* returnVar) {
-	CS p = tv_get_string(&argvars[0]);
+	S p = tv_get_string(&argvars[0]);
 	returnVar->string = copyStr(sha256_bytes(p, (int)STRLEN(p), NULL, 0));
 	returnVar->tag = VAR_STRING;
 }
@@ -13325,7 +13325,7 @@ f_split(Arr(Var) argvars, Var* returnVar) {
 	int      keepempty = false;
 	Boole typeerr = false;
 
-	CS str = tv_get_string(&argvars[0]);
+	S str = tv_get_string(&argvars[0]);
 	if (argvars[1].tag != VAR_UNKNOWN) {
 		pat = convertVarToString(&argvars[1], patbuf);
 		if (!pat)
@@ -13337,7 +13337,7 @@ f_split(Arr(Var) argvars, Var* returnVar) {
 		goto theend;
 
 	if (!pat || *pat == ZERO)
-		pat = S"[\\x01- ]\\+";
+		pat = u8"[\\x01- ]\\+";
 
 	allocReturnList(returnVar);
 
@@ -13408,12 +13408,12 @@ f_substitute(Arr(Var) argvars, Var* returnVar) {
 	Byte patbuf[NUMBUFLEN];
 	Byte subbuf[NUMBUFLEN];
 	Byte flagsbuf[NUMBUFLEN];
-	CS sub = NULL;
+	S sub = NULL;
 	Var* expr = NULL;
 
-	CS str = convertVarToStringSingleUse(&argvars[0]);
-	CS pat = convertVarToString(&argvars[1], patbuf);
-	CS flg = convertVarToString(&argvars[3], flagsbuf);
+	S str = convertVarToStringSingleUse(&argvars[0]);
+	S pat = convertVarToString(&argvars[1], patbuf);
+	S flg = convertVarToString(&argvars[3], flagsbuf);
 
 	if (argvars[2].tag == VAR_FUNC || argvars[2].tag == VAR_PARTIAL)
 		expr = &argvars[2];
@@ -13527,7 +13527,7 @@ f_type(Arr(Var) argvars, Var* returnVar) {
 	case VAR_UNKNOWN:
 	case VAR_ANY:
 	case VAR_VOID:
-		internal_error_no_abort(S"f_type(UNKNOWN)");
+		internal_error_no_abort(u8"f_type(UNKNOWN)");
 		n = -1;
 		break;
 	}
@@ -13748,8 +13748,8 @@ free_global_msglist(void) {
 //value for a pending ":return" or the exception value for a pending exception.
 private void
 report_pending(int action, int pending, void* value) {
-	CS mesg;
-	CS s;
+	S mesg;
+	S s;
 	int save_msg_silent;
 
 	switch (action) {
@@ -13770,13 +13770,13 @@ report_pending(int action, int pending, void* value) {
 		 return;
 
 	case CSTP_CONTINUE:
-		 s = S":continue";
+		 s = u8":continue";
 		 break;
 	case CSTP_BREAK:
-		 s = S":break";
+		 s = u8":break";
 		 break;
 	case CSTP_FINISH:
-		 s = S":finish";
+		 s = u8":finish";
 		 break;
 	case CSTP_RETURN:
 		 //":return" command producing value, allocated
@@ -13798,7 +13798,7 @@ report_pending(int action, int pending, void* value) {
 	++no_wait_return;
 	msg_scroll = true;      //always scroll up, don't overwrite
 	smsg(mesg, s);
-	msg_puts(S"\n");   //don't overwrite this either
+	msg_puts(u8"\n");   //don't overwrite this either
 	commlineRowG = msgRowG;
 	--no_wait_return;
 	if (debug_break_level > 0)

@@ -7,12 +7,12 @@ int GET_SPECIAL_PTY_TYPE_FUNCTION(void);
 
 void init_job_options(JobOptions *opt);
 void c_terminal(Invocation* invo);
-int expand_terminal_opt(CS pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches);
+int expand_terminal_opt(S pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches);
 int term_write_session(FILE* fd, Portal* po, EeSet* terminal_bufs);
 int term_should_restore(Book* book);
 void free_terminal(Book* book);
 void free_unused_terminals(void);
-void write_to_term(Book *book, CS msg, Channel* channel);
+void write_to_term(Book *book, S msg, Channel* channel);
 Boole term_job_running(Terminal* term);
 int term_job_running_not_none(Terminal *term);
 int term_none_open(Terminal *term);
@@ -41,7 +41,7 @@ int term_shobuffer(Book* book);
 void uiBeforeLeavingTerminal(void);
 Decoration uiGetDeco(Portal* po, LineNr lnum, int col);
 void term_update_colors_all(void);
-CS term_get_status_text(Terminal* term);
+S term_get_status_text(Terminal* term);
 void term_clear_status_text(Terminal* term);
 void f_term_dumpwrite(Var* argvars, Var*);
 int term_swap_diff(void);
@@ -70,10 +70,10 @@ Job* term_getjob(Terminal* term);
 void preserve_exit(void);
 int uiRealWaitForChar(int fd, Long msec, OUT Boole* interrupted);
 int mch_input_isatty(void);
-void ui_write(CS s, int len, int console);
-void ui_inBytendo(CS s, int len);
+void ui_write(S s, int len, int console);
+void ui_inBytendo(S s, int len);
 int ui_inchar(
-	OUT CS buf,
+	OUT S buf,
 	int maxlen,
 	long wtime,       //don't use "time", MIPS cannot handle it
 	int changeCnt
@@ -88,12 +88,12 @@ void ui_breakcheck(void);
 void ui_breakcheck_force(Boole force);
 int eeIsInputBufFull(void);
 int eeIsInputBufEmpty(void);
-CS get_input_buf(void);
-void set_input_buf(CS p, Boole overwrite);
-void add_to_input_buf(CS s, int len);
-void add_to_input_buf_csi(CS str, int len);
+S get_input_buf(void);
+void set_input_buf(S p, Boole overwrite);
+void add_to_input_buf(S s, int len);
+void add_to_input_buf_csi(S str, int len);
 void f_test_feedinput(Arr(Var) argvars, Var*);
-int read_from_input_buf(CS buf, long maxlen);
+int read_from_input_buf(S buf, long maxlen);
 void fill_input_buf(Boole exit_on_error);
 void read_error_exit(void);
 void ui_cursor_shape(void);
@@ -106,7 +106,7 @@ int mch_report_winsize(int fd, int rows, int cols);
 void mch_set_shellsize(void);
 void mch_calc_cell_size(CellSize* cs_out);
 int mch_get_shellsize(void);
-int uiValidateTabpanelopt(CS new);
+int uiValidateTabpanelopt(S new);
 int tabpanel_width(void);
 int tabpanel_leftcol(void);
 void draw_tabpanel(void);

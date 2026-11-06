@@ -150,7 +150,7 @@ pub typedef enum {
 #undef AVOID_DUPLICATION
 //{{{@@forward declarations
 private void freeBuffer(TextHeader* buf);
-private CS get_buffcont(
+private S get_buffcont(
 	TextHeader* buffer,
 	Boole dozero,       //count == zero is not an error
 	OUT Unt* len       //the length of the returned buffer
@@ -158,7 +158,7 @@ private CS get_buffcont(
 private int appendDigitInt(int *value, int digit);
 private void add_buff(
 	TextHeader* buf,
-	CS s,
+	S s,
 	long slen
 );
 private void deleteBufferTail(TextHeader *buf, int slen);
@@ -171,7 +171,7 @@ private int read_redo(int init, int old_redo);
 private void copy_redo(int old_redo);
 private void initTypebuf(void);
 private int gotchars_add_byte(GotCharsState *state, Byte byte);
-private void gotchars(CS chars, int len);
+private void gotchars(S chars, int len);
 private void maySyncUndo(void);
 private void reallocateTypebuf(void);
 private void free_typeBufG(void);
@@ -187,10 +187,10 @@ private MatchFinding searchForPartialMappings(int foundKeylen, int timedout, Boo
 private MapResult handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth);
 private void check_end_reg_executing(int advance);
 private Unt vGetOrPeek(Boole advance);
-private int ingestChar(CS buf, int maxlen, long wait_time);
-private int fixInputBuffer(OUT CS buf, int len);
-private CS getCommandNameCb(Unt, void*, int, GetlineAlgo);
-private int get_mouse_class(CS p);
+private int ingestChar(S buf, int maxlen, long wait_time);
+private int fixInputBuffer(OUT S buf, int len);
+private S getCommandNameCb(Unt, void*, int, GetlineAlgo);
+private int get_mouse_class(S p);
 private void find_start_of_word(Pos*pos);
 private void find_end_of_word(Pos* pos);
 private void do_mousescroll(ActionArg* cap);
@@ -215,16 +215,16 @@ freeBuffer(TextHeader* buf) {
 
 //Return the contents of a buffer as a single string.
 //K_SPECIAL and CSI in the returned string are escaped.
-private CS
+private S
 get_buffcont(
 	TextHeader* buffer,
 	Boole dozero,       //count == zero is not an error
 	OUT Unt* len       //the length of the returned buffer
 ){
 	Ulong count = 0;
-	CS p = NULL;
-	CS p2;
-	CS str;
+	S p = NULL;
+	S p2;
+	S str;
 	Unt i = 0;
 
 	//compute the total length of the string
@@ -250,10 +250,10 @@ get_buffcont(
 
 //Return the contents of the record buffer as a single string and clear the record buffer.
 //K_SPECIAL and CSI in the returned string are escaped.
-pub CS
+pub S
 get_recorded(void) {
 	Unt len;
-	CS p = get_buffcont(&recordbuff, true, OUT &len);
+	S p = get_buffcont(&recordbuff, true, OUT &len);
 	if (!p)
 		return NULL;
 
@@ -278,7 +278,7 @@ get_recorded(void) {
 pub Text
 get_inserted(void) {
 	Unt len = 0;
-	CS str = get_buffcont(&redobuff, false, &len);
+	S str = get_buffcont(&redobuff, false, &len);
 	Text ret = { str, len };
 	return ret;
 }
@@ -289,7 +289,7 @@ get_inserted(void) {
 //Translate the interrupt character for Unix to ESC.
 pub Unt
 get_keystroke(void) {
-	CS buf = S"";
+	S buf = u8"";
 	Unt buflen = 150;
 	int maxlen;
 	int len = 0;
@@ -418,7 +418,7 @@ get_number(Boole allowColonToUpdate, int* mouse_used) {
 			++typed;
 		} ei (c == K_DEL || c == K_KDEL || c == K_BS || c == Ctrl_H) {
 			if (typed > 0) {
-				msg_puts((CS)"\b \b");
+				msg_puts(u8"\b \b");
 				--typed;
 			}
 			n /= 10;
@@ -449,7 +449,7 @@ get_number(Boole allowColonToUpdate, int* mouse_used) {
 private void
 add_buff(
 	TextHeader* buf,
-	CS s,
+	S s,
 	long slen
 ) {  //length of "s" or -1
 	if (slen < 0)
@@ -702,7 +702,7 @@ saveRedobuff(SaveRedo* save_redo) {
 
 	//Make a copy, so that ":normal ." in a function works.
 	Unt slen;
-	CS s = get_buffcont(&save_redo->sr_redobuff, false, &slen);
+	S s = get_buffcont(&save_redo->sr_redobuff, false, &slen);
 	if (s == NULL)
 		return;
 
@@ -722,7 +722,7 @@ restoreRedobuff(SaveRedo* save_redo) {
 
 //Append "s" to the redo buffer. K_SPECIAL and CSI should already have been escaped.
 pub void
-inpAppendToRedoBuff(CS s) {
+inpAppendToRedoBuff(S s) {
 	if (!block_redo)
 		add_buff(&redobuff, s, -1L);
 }
@@ -730,12 +730,12 @@ inpAppendToRedoBuff(CS s) {
 //Append to Redo buffer literally, escaping special characters with CTRL-V.
 //K_SPECIAL and CSI are escaped as well.
 pub void
-inpAppendLitToRedoBuff(CS str, int len) {      //"len" = length of "str" or -1 for up to the ZERO
+inpAppendLitToRedoBuff(S str, int len) {      //"len" = length of "str" or -1 for up to the ZERO
 	if (block_redo)
 		return;
 
-	CS s = str;
-	CS start;
+	S s = str;
+	S start;
 	while (len < 0 ? *s != ZERO : s - str < len) {
 		//Put a string of normal characters in the redo buffer (that's faster).
 		start = s;
@@ -758,7 +758,7 @@ inpAppendLitToRedoBuff(CS str, int len) {      //"len" = length of "str" or -1 f
 
 		//CTRL-V '0' must be inserted as CTRL-V 048
 		if (*s == ZERO && c == '0')
-			add_buff(&redobuff, (CS)"048", 3L);
+			add_buff(&redobuff, u8"048", 3L);
 		else
 			addCharToBuf(&redobuff, c);
 	}
@@ -767,7 +767,7 @@ inpAppendLitToRedoBuff(CS str, int len) {      //"len" = length of "str" or -1 f
 //Append "s" to the redo buffer, leaving 3-byte special key codes unmodified
 //and escaping other K_SPECIAL and CSI bytes.
 pub void
-inpAppendSpecToRedoBuff(CS s) {
+inpAppendSpecToRedoBuff(S s) {
 	if (block_redo)
 		return;
 
@@ -798,26 +798,26 @@ inpAppendNumberToRedoBuff(long n) {
 
 //Append string "s" to the stuff buffer. CSI and K_SPECIAL must already have been escaped.
 pub void
-stuffReadbuff(CS s) {
+stuffReadbuff(S s) {
 	add_buff(&readbuf1, s, -1L);
 }
 
 //Append string "s" to the redo stuff buffer.
 //CSI and K_SPECIAL must already have been escaped.
 pub void
-stuffRedoReadbuff(CS s) {
+stuffRedoReadbuff(S s) {
 	add_buff(&readbuf2, s, -1L);
 }
 
 pub void
-stuffReadbuffLen(CS s, long len) {
+stuffReadbuffLen(S s, long len) {
 	add_buff(&readbuf1, s, len);
 }
 
 //Stuff "s" into the stuff buffer, leaving special key codes unmodified and
 //escaping other K_SPECIAL and CSI bytes. Change CR, LF and ESC into a space.
 pub void
-stuffReadbuffSpec(CS s) {
+stuffReadbuffSpec(S s) {
 	while (*s != ZERO) {
 		if (*s == K_SPECIAL && s[1] != ZERO && s[2] != ZERO) {
 		//Insert special key literally.
@@ -848,9 +848,9 @@ stuffnumReadbuff(long n) {
 //Stuff a string into the typeahead buffer, such that edit() will insert it
 //literally ("literally" true) or interpret is as typed characters.
 pub void
-stuffescaped(CS arg, int literally) {
+stuffescaped(S arg, int literally) {
 	 int      c;
-	 CS start;
+	 S start;
 
 	 while (*arg != ZERO) {
 		 //Stuff a sequence of normal ASCII characters, that's fast.  Also
@@ -879,7 +879,7 @@ stuffescaped(CS arg, int literally) {
 private int
 read_redo(int init, int old_redo) {
 	static TextChunk* bp;
-	static CS p;
+	static S p;
 	int n;
 	Byte buf[MB_MAXBYTES + 1];
 	int i;
@@ -960,7 +960,7 @@ start_redo(long count, int old_redo) {
 
 	//copy the buffer name, if present
 	if (c == '"') {
-		add_buff(&readbuf2, (CS)"\"", 1L);
+		add_buff(&readbuf2, u8"\"", 1L);
 		c = read_redo(false, old_redo);
 
 		//if a numbered buffer is used, increment the number
@@ -1010,7 +1010,7 @@ start_redo_ins(void) {
 	int       c;
 	//skip the count and the command character
 	while ((c = read_redo(false, false)) != ZERO) {
-		if (firstOccurrence((CS)"AaIiRrOo", c) != NULL) {
+		if (firstOccurrence(u8"AaIiRrOo", c) != NULL) {
 			if (c == 'O' || c == 'o')
 				add_buff(&readbuf2, NL_STR, -1L);
 			break;
@@ -1068,7 +1068,7 @@ noremap_keys(void) {
 //return FAIL for failure, OK otherwise
 pub int
 insertIntoTypebuf(
-	CS str,
+	S str,
 	Unt noremap,
 	int offset,
 	Boole nottyped,
@@ -1085,7 +1085,7 @@ insertIntoTypebuf(
 	initTypebuf();
 	if (++typeBufG.changeCnt == 0)
 		typeBufG.changeCnt = 1;
-	state_no_longer_safe(S"insertIntoTypebuf()");
+	state_no_longer_safe(u8"insertIntoTypebuf()");
 
 	addlen = (int)STRLEN(str);
 
@@ -1326,8 +1326,8 @@ ret_false:
 
 //Write typed characters to script file. If recording is on put the character in the record buffer
 private void
-gotchars(CS chars, int len) {
-	 CS s = chars;
+gotchars(S chars, int len) {
+	 S s = chars;
 	 Unt i;
 	 int todo = len;
 	 static GotCharsState state;
@@ -1409,11 +1409,11 @@ reallocateTypebuf(void) {
 private void
 free_typeBufG(void) {
 	if (typeBufG.c == typeBufG_init)
-		internal_error((CS)"Free typeBufG 1");
+		internal_error(u8"Free typeBufG 1");
 	else
 		EE_CLEAR(typeBufG.c);
 	if (typeBufG.noremap == noremapbuf_init)
-		internal_error((CS)"Free typeBufG 2");
+		internal_error(u8"Free typeBufG 2");
 	else
 		EE_CLEAR(typeBufG.noremap);
 }
@@ -1485,7 +1485,7 @@ restore_typeahead(TypeaheadSave* tp, Boole overwrite) {
 
 //Open a new script file for the ";source!" command.
 pub void
-openscript(CS name, Boole directly) {
+openscript(S name, Boole directly) {
 	if (curscript + 1 == NSCRIPT) {
 		emsg(_(e_scripts_nested_too_deep));
 		return;
@@ -1646,14 +1646,14 @@ addByteToShowcmd(Byte byte) {
 	state.buf[state.buflen] = ZERO;
 	state.buflen = 0;
 
-	CS ptr = state.buf;
+	S ptr = state.buf;
 	if (ptr[0] == K_SPECIAL && ptr[1] == KS_MODIFIER && ptr[2] != ZERO) {
 		modifiers = ptr[2];
 		ptr += 3;
 	}
 
 	if (*ptr != ZERO) {
-		CS mb_ptr = mb_unescape(&ptr);
+		S mb_ptr = mb_unescape(&ptr);
 		c = mb_ptr ? mb_ptr2char(mb_ptr) : *ptr++;
 		if (c <= 0x7f) {
 			//Merge modifiers into the key to make the result more readable.
@@ -1836,7 +1836,7 @@ afterGotChar:
 
 	//Need to process the character before we know it's safe to do something else.
 	if (c != K_IGNORE)
-		{ state_no_longer_safe(S"key typed"); }
+		{ state_no_longer_safe(u8"key typed"); }
 
 	return c;
 }
@@ -1940,7 +1940,7 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number) {
 
 		simplify = bagGetBool(d, tConst("simplify"), true);
 
-		CS cursor_str = bagGetString(d, tConst("cursor"), false);
+		S cursor_str = bagGetString(d, tConst("cursor"), false);
 		if (cursor_str != NULL) {
 			if (STRCMP(cursor_str, "hide") != 0
 					&& STRCMP(cursor_str, "keep") != 0
@@ -2115,7 +2115,7 @@ parse_queued_messages(void) {
 //in Insert mode completion.  This includes the form with a CTRL modifier.
 private int
 atAnInsertCompletionKey(void) {
-	CS p = typeBufG.c + typeBufG.currPos;
+	S p = typeBufG.c + typeBufG.currPos;
 	int c = *p;
 
 	if (typeBufG.validLen > 3
@@ -2133,7 +2133,7 @@ atAnInsertCompletionKey(void) {
 private int
 checkSimplifyModifier(int const maxOffset) {
 	int      offset;
-	CS input;
+	S input;
 
 	for (offset = 0; offset < maxOffset; ++offset) {
 		if (offset + 3 >= typeBufG.validLen)
@@ -2280,8 +2280,8 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
 				//Don't allow mapping the first byte(s) of a multi-byte char.
 				//Happens when mapping <M-a> and then changing 'encoding'. Beware that 0x80 is escaped.
 				{
-					CS p1 = fin.foundMapping->lhs;
-					CS p2 = mb_unescape(&p1);
+					S p1 = fin.foundMapping->lhs;
+					S p2 = mb_unescape(&p1);
 
 					if (p2 && 1 > utfCharLen(p2))
 						fin.matchLen = 0;
@@ -2989,7 +2989,7 @@ vGetOrPeek(Boole advance) {
 //
 //Return the number of obtained characters, or -1 when end of input script reached.
 private int
-ingestChar(CS buf, int maxlen, long wait_time) {  //"wait_time" milliseconds
+ingestChar(S buf, int maxlen, long wait_time) {  //"wait_time" milliseconds
 	int len = 0;
 	int retesc = false; //return ESC when we got an interrupt
 	int changeCnt = typeBufG.changeCnt;
@@ -3073,8 +3073,8 @@ ingestChar(CS buf, int maxlen, long wait_time) {  //"wait_time" milliseconds
 //Fix typed characters for use by vgetc() and termTryParseTermcode(). "buf[]" must have room to triple
 //the number of bytes! Return the new length.
 private int
-fixInputBuffer(OUT CS buf, int len) {
-	CS p = buf;
+fixInputBuffer(OUT S buf, int len) {
+	S p = buf;
 
 	//3 characters are special: ZERO, CSI and K_SPECIAL.
 	//Replace        ZERO by K_SPECIAL KS_ZERO    KE_FILLER
@@ -3107,7 +3107,7 @@ input_available(void) {
 }
 
 //Function passed to doCommand() to get the command after a <Cmd> key from typeahead.
-private CS
+private S
 getCommandNameCb(Unt, void*, int, GetlineAlgo) {
 	ArrayList line_ga;
 	Unt c1 = UNT;
@@ -3161,7 +3161,7 @@ getCommandNameCb(Unt, void*, int, GetlineAlgo) {
 			emsg(_(e_cmd_mapping_must_end_with_cr_before_second_cmd));
 			aborted = true;
 		} ei (c1 == K_SNR)   {
-			ga_concat(&line_ga, (CS)"<SNR>");
+			ga_concat(&line_ga, u8"<SNR>");
 		} else {
 			if (cmod != 0) {
 				ga_append(&line_ga, K_SPECIAL);
@@ -3184,7 +3184,7 @@ getCommandNameCb(Unt, void*, int, GetlineAlgo) {
 	if (aborted)
 		{ ga_clear(&line_ga); }
 
-	return (CS)line_ga.c;
+	return (S)line_ga.c;
 }
 
 //If there was a mapping we get its SID.  Otherwise, use "last_used_sid", it is set when redo'ing.
@@ -3247,7 +3247,7 @@ reset_last_used_map(MapBlock* mp) {
 //Return the number of character cells string "s[len]" will take on the
 //screen, counting TABs as two characters: "^I".
 pub int
-eeglStrNsize(CS s, int len) {
+eeglStrNsize(S s, int len) {
 	int size = 0;
 
 	while (*s != ZERO && --len >= 0) {
@@ -3264,7 +3264,7 @@ eeglStrNsize(CS s, int len) {
 //Return the number of character cells string "s" will take on the screen,
 //counting TABs as two characters: "^I".
 pub int
-eeglStrSize(CS s) {
+eeglStrSize(S s) {
 	return eeglStrNsize(s, (int)MAXCOL);
 }
 
@@ -3280,7 +3280,7 @@ eeIsFnameChar_or_wc(Unt c) {
 //Return true if line "lnum" ends in a white character.
 pub int
 ends_in_white(LineNr lnum) {
-	CS s = ml_get(lnum);
+	S s = ml_get(lnum);
 	if (*s == ZERO)
 		return false;
 	Unt l = ml_get_len(lnum) - 1;
@@ -3291,7 +3291,7 @@ ends_in_white(LineNr lnum) {
 //the first line.  White-space is ignored.  Note that the whole of
 //'leader1' must match 'leader2_len' characters from 'leader2' -- webb
 pub int
-same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS leader2_flags){
+same_leader(LineNr lnum, int leader1_len, S leader1_flags, int leader2_len, S leader2_flags){
 	int idx1 = 0, idx2 = 0;
 
 	if (leader1_len == 0)
@@ -3303,7 +3303,7 @@ same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS 
 	//If first leader has 's' flag, the lines can only be joined if there is
 	//some text after it and the second line has the 'm' flag.
 	if (leader1_flags) {
-		for (CS p = leader1_flags; *p && *p != ':'; ++p) {
+		for (S p = leader1_flags; *p && *p != ':'; ++p) {
 			if (*p == COM_FIRST)
 				return (leader2_len == 0);
 			if (*p == COM_END)
@@ -3323,11 +3323,11 @@ same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS 
 
 	//Get current line and next line, compare the leaders.
 	//The first line has to be saved, only one line can be locked at a time.
-	CS line1 = copySubstr(ml_get(lnum), ml_get_len(lnum));
+	S line1 = copySubstr(ml_get(lnum), ml_get_len(lnum));
 	for (idx1 = 0; SPACE_OR_TAB(line1[idx1]); ++idx1)
 		{}
 
-	CS line2 = ml_get(lnum + 1);
+	S line2 = ml_get(lnum + 1);
 	for (idx2 = 0; idx2 < leader2_len; ++idx2) {
 		if (!SPACE_OR_TAB(line2[idx2])) {
 			if (line1[idx1++] != line2[idx2])
@@ -3359,8 +3359,8 @@ format_lines(LineNr   line_count, int avoid_fex) { //don't use 'formatexpr'
 	int next_is_start_par = false;
 	int leader_len = 0;      //leader len of current line
 	int next_leader_len;   //leader len of next line
-	CS leader_flags = NULL;   //flags for leader of current line
-	CS next_leader_flags = NULL; //flags for leader of next line
+	S leader_flags = NULL;   //flags for leader of current line
+	S next_leader_flags = NULL; //flags for leader of next line
 	int doCommentsList = 0;   //format comments with 'n' or '2'
 	int advance = true;
 	int second_indent = -1;   //indent for second line (comment aware)
@@ -3609,7 +3609,7 @@ format_lines(LineNr   line_count, int avoid_fex) { //don't use 'formatexpr'
 //- by do_set() when 'encoding' has been set.
 //When there is something wrong:
 //Return an error message and don't change anything.
-pub CS
+pub S
 inputInitCharLens(void) {
 	//The cell width depends on the type of multi-byte characters.
 	(void)bookInitCharsForKeywordsForCurbook();
@@ -3628,12 +3628,12 @@ inputInitCharLens(void) {
 //2 for an alphanumeric word character
 //>2 for other word characters, including CJK and emoji
 pub int
-mb_get_class(CS p) {
+mb_get_class(S p) {
 	return inpGetClassForBook(p, curBook);
 }
 
 pub Unt
-inpGetClassForBook(CS p, Book* book) {
+inpGetClassForBook(S p, Book* book) {
 	if (p[0] == ZERO || SPACE_OR_TAB(p[0]))
 		return 0;
 	if (bookIsWordChar(p[0], book))
@@ -3644,7 +3644,7 @@ inpGetClassForBook(CS p, Book* book) {
 //Convert a UTF-8 byte string to a wide character. Also get up to MAX_COMBINED_SYMBOLS
 //composing characters.
 pub Unt
-utfc_ptr2char(CS p, OUT Unt* pcc) {   //return: composing chars, last one is 0
+utfc_ptr2char(S p, OUT Unt* pcc) {   //return: composing chars, last one is 0
 	Unt i = 0;
 
 	Unt c = mb_ptr2char(p);
@@ -3673,7 +3673,7 @@ utfc_ptr2char(CS p, OUT Unt* pcc) {   //return: composing chars, last one is 0
 //composing characters. Use no more than p[maxlen].
 pub Unt
 utfc_ptr2char_len(
-	 CS p,
+	 S p,
 	 OUT Unt* pcc,   //composing chars, last one will be 0
 	 int maxlen
 ) {
@@ -3718,7 +3718,7 @@ mb_adjust_cursor(void) {
 //If it points to a tail byte it's moved backwards to the head byte.
 pub void
 mb_adjustpos(Book* book, Pos *lp) {
-	CS p;
+	S p;
 
 	if (lp->col > 0 || lp->coladd > 1) {
 		p = memGetLine(book, lp->lnum, false);
@@ -3882,14 +3882,14 @@ utf_uint2cells(Unt c) {
 
 
 //Translate a string into allocated memory, replacing special chars with printable chars.
-pub CS
-sanitizeStr(CS s) {
+pub S
+sanitizeStr(S s) {
 	int l;
 	Byte hexbuf[11];
 
 	//Compute the length of the result, taking account of unprintable multi-byte characters
 	int len = 0;
-	CS p = s;
+	S p = s;
 	while (*p != ZERO) {
 		if ((l = utfCharLen(p)) > 1) {
 			Unt c = mb_ptr2char(p);
@@ -3908,7 +3908,7 @@ sanitizeStr(CS s) {
 				len += 4;   //illegal byte sequence
 		}
 	}
-	CS res = alloc(len + 1);
+	S res = alloc(len + 1);
 	*res = ZERO;
 	p = s;
 	while (*p != ZERO) {
@@ -3932,10 +3932,10 @@ show_utf8(void) {
 
 	//Get the byte length of the char under the cursor, including composing
 	//characters.
-	CS line = ml_get_cursor();
+	S line = ml_get_cursor();
 	int len = utfCharLen(line);
 	if (len == 0) {
-		msg(S"ZERO");
+		msg(u8"ZERO");
 		return;
 	}
 
@@ -3963,8 +3963,8 @@ show_utf8(void) {
 //The result is a string with only printable characters, but if there is not
 //enough room, not all characters will be translated.
 pub void
-trans_characters(CS buf, int bufsize) {
-	CS trs;      //translated character
+trans_characters(S buf, int bufsize) {
+	S trs;      //translated character
 	int trs_len;   //length of trs[]
 
 	int len = (int)STRLEN(buf); //length of string needing translation
@@ -3990,7 +3990,7 @@ trans_characters(CS buf, int bufsize) {
 }
 
 pub int
-mb_ptr2cells(CS p) {
+mb_ptr2cells(S p) {
 	//Need to convert to a character number.
 	if (*p >= 0x80) {
 		Unt c = mb_ptr2char(p);
@@ -4006,7 +4006,7 @@ mb_ptr2cells(CS p) {
 }
 
 pub int
-mb_ptr2cells_len(CS p, int size) {
+mb_ptr2cells_len(S p, int size) {
 	//Need to convert to a wide character.
 	if (size > 0 && *p >= 0x80) {
 		if (utfNeedTruncate(p, size))
@@ -4026,7 +4026,7 @@ mb_ptr2cells_len(CS p, int size) {
 //Return the number of cells occupied by string "p".
 //Stop at a ZERO character.  When "len" >= 0 stop at character "p[len]".
 pub Unt
-mb_string2cells(CS p, int len) {
+mb_string2cells(S p, int len) {
 	Unt clen = 0;
 
 	for (int i = 0; (len < 0 || i < len) && p[i] != ZERO; i += utfCharLen(p + i))
@@ -4036,8 +4036,8 @@ mb_string2cells(CS p, int len) {
 
 //Find the start of the next word.
 //Return a pointer to the first char of the word. Also stop at a ZERO.
-pub CS
-findWordStart(CS ptr) {
+pub S
+findWordStart(S ptr) {
 	while (*ptr != ZERO && *ptr != '\n' && mb_get_class(ptr) <= 1)
 		ptr += utfCharLen(ptr);
 	return ptr;
@@ -4098,7 +4098,7 @@ private int do_mousescroll_horiz(Ulong leftcol);
 //2: normal word character
 //>2: multi-byte word character.
 private int
-get_mouse_class(CS p) {
+get_mouse_class(S p) {
 	Unt c = p[0];
 	if (c == ' ' || c == '\t')
 		return 0;
@@ -4110,7 +4110,7 @@ get_mouse_class(CS p) {
 	//characters to be considered as a single word.  These are things like
 	//"->", "/ *", "*=", "+=", "&=", "<=", ">=", "!=" etc.  Otherwise, each
 	//character is in its own class.
-	if (c != ZERO && firstOccurrence((CS)"-+*/%<>&|^!=", c) != NULL)
+	if (c != ZERO && firstOccurrence(u8"-+*/%<>&|^!=", c) != NULL)
 		return 1;
 	return c;
 }
@@ -4118,7 +4118,7 @@ get_mouse_class(CS p) {
 //Move "pos" back to the start of the word it's in.
 private void
 find_start_of_word(Pos*pos) {
-	CS line = ml_get(pos->lnum);
+	S line = ml_get(pos->lnum);
 	int cclass = get_mouse_class(line + pos->col);
 
 	int col;
@@ -4137,7 +4137,7 @@ private void
 find_end_of_word(Pos* pos) {
 	int col;
 
-	CS line = ml_get(pos->lnum);
+	S line = ml_get(pos->lnum);
 	int cclass = get_mouse_class(line + pos->col);
 	while (line[pos->col] != ZERO) {
 		col = pos->col + utfCharLen(line + pos->col);
@@ -4627,9 +4627,9 @@ do_mouse(
 		|| (modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK) && isLocationListBook(curBook)
 	){
 		if (curPor->locationStackRef == NULL)   //location portal
-			executeCommLine((CS)".mc");
+			executeCommLine(u8".mc");
 		else               //location list portal
-			executeCommLine((CS)".ll");
+			executeCommLine(u8".ll");
 		got_click = false;      //ignore drag&release now
 	}
 
@@ -4988,7 +4988,7 @@ get_pseudo_mouse_code(Unt button, Boole is_click, Boole is_drag) {
 private Unt haveMouseTermcodeP = 0;
 
 pub void
-set_mouse_termcode(Unt n, CS s) {
+set_mouse_termcode(Unt n, S s) {
 	Byte name[2] = {n, KE_FILLER};
 	termAddRecognizedTermcode(name, s, false);
 	if (n == KS_SGR_MOUSE)
@@ -5475,7 +5475,7 @@ reset_held_button(void) {
 //Check if typeBufG 'tp' contains a terminal mouse code and returns the
 //modifiers found in typeBufG in 'modifiers'.
 pub int
-termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
+termTryParseTermcode_mouse(S key_name, OUT Unt* modifiers){
 	Unt mouse_code = 0;
 	int is_click, is_drag;
 	int is_release, release_is_ambiguous;
@@ -5750,7 +5750,7 @@ vcol2col(Portal* po, LineNr lnum, int vcol, ColNr *coladdp) {
 	CharTableSize   cts;
 
 	//try to advance to the specified column
-	CS line = memGetLine(po->book, lnum, false);
+	S line = memGetLine(po->book, lnum, false);
 	bookInitCharsForKeywordsSizeArg(&cts, po, lnum, 0, line, line);
 	while (cts.cts_vcol < vcol && *cts.cts_ptr != ZERO) {
 		int size = win_lbr_chartabsize(&cts);
@@ -5778,8 +5778,8 @@ f_getmousepos(Arr(Var), Var* returnVar) {
 	allocReturnDict(returnVar);
 	Bag* d = returnVar->bag;
 
-	bagAddNumber(d, S"screenrow", (Long)mouseRowG + 1);
-	bagAddNumber(d, S"screencol", (Long)mouseColG + 1);
+	bagAddNumber(d, u8"screenrow", (Long)mouseRowG + 1);
+	bagAddNumber(d, u8"screencol", (Long)mouseColG + 1);
 
 	int row = mouseRowG;
 	int col = mouseColG;
@@ -5807,12 +5807,12 @@ f_getmousepos(Arr(Var), Var* returnVar) {
 			}
 		}
 	}
-	bagAddNumber(d, S"winid", winid);
-	bagAddNumber(d, S"winrow", winrow);
-	bagAddNumber(d, S"wincol", wincol);
-	bagAddNumber(d, S"line", (Long)lnum);
-	bagAddNumber(d, S"column", column);
-	bagAddNumber(d, S"coladd", coladd);
+	bagAddNumber(d, u8"winid", winid);
+	bagAddNumber(d, u8"winrow", winrow);
+	bagAddNumber(d, u8"wincol", wincol);
+	bagAddNumber(d, u8"line", (Long)lnum);
+	bagAddNumber(d, u8"column", column);
+	bagAddNumber(d, u8"coladd", coladd);
 }
 
 
@@ -5832,7 +5832,7 @@ mch_setmouse(Boole on){
 		term_enable_mouse(on);
 	} ei (ttym_flags == TTYM_SGR) {
 		//SGR mode supports columns above 223
-		out_str_nf((CS)(on ? "\033[?1006h" : "\033[?1006l"));
+		out_str_nf((S)(on ? "\033[?1006h" : "\033[?1006l"));
 		mouse_ison = on;
 	}
 
@@ -5840,19 +5840,19 @@ mch_setmouse(Boole on){
 		bevalterm_ison = (p_bevalterm && on);
 		if (xterm_mouse_vers > 1 && !bevalterm_ison)
 			//disable mouse movement events, enabling is below
-			out_str_nf((CS)("\033[?1003l"));
+			out_str_nf((S)("\033[?1003l"));
 	}
 
 	if (xterm_mouse_vers > 0) {
 		if (on) {   //enable mouse events, use mouse tracking if available
-			out_str_nf((CS)(xterm_mouse_vers > 1
+			out_str_nf((S)(xterm_mouse_vers > 1
 				? (
 					 bevalterm_ison ? "\033[?1003h" :
 						"\033[?1002h")
 				: "\033[?1000h")
 			);
 		} else   //disable mouse events, could probably always send the same
-			out_str_nf((CS) (xterm_mouse_vers > 1 ? "\033[?1002l" : "\033[?1000l"));
+			out_str_nf((S) (xterm_mouse_vers > 1 ? "\033[?1002l" : "\033[?1000l"));
 		mouse_ison = on;
 	}
 }

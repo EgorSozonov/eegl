@@ -13,7 +13,7 @@ Boole portCheckCanSetCurBookForceIt(Boole forceit);
 Portal* prevPor_curPor(void);
 Portal* switchBufGotoPortalIntoBuf(Book* book);
 void doPortal(int nchar, Long prenum, Unt xchar);
-void getPortCommAddressType(CS arg, Invocation* invo);
+void getPortCommAddressType(S arg, Invocation* invo);
 int splitPortal(int size, Unt flags);
 int splitPortal_ins(
 	int size,
@@ -233,12 +233,12 @@ void foldMarkAdjust(
 	 long amount_after
 );
 int getDeepestNesting(void);
-CS get_foldtext(
+S get_foldtext(
 	Portal* po,
 	LineNr lnum,
 	LineNr lnume,
 	FoldInfo* foldinfo,
-	CS buffer
+	S buffer
 );
 void foldMoveRange(ArrayList* gap, LineNr line1, LineNr line2, LineNr dest);
 int put_folds(FILE* fd, Portal* po);
@@ -320,7 +320,7 @@ void start_echowindow(int time_sec);
 void end_echowindow(void);
 void setPopupTitle(Portal* po);
 void popup_update_preview_title(void);
-void showNotification(CS text);
+void showNotification(S text);
 Boole canStartDrag(Portal* po, int row, int col);
 Boole isInfoPopup(Portal* po);
 void pum_display(PopupItem* array, Unt size, int selected);
@@ -334,9 +334,9 @@ int pum_redraw_in_same_position(void);
 void pum_may_redraw(void);
 int pum_get_height(void);
 void pum_set_event_info(Bag *bag);
-Unt balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array);
+Unt balloonSplitMessage(S mesg, OUT Arr(PopupItem)* array);
 void ui_remove_balloon(void);
-void ui_post_balloon(CS mesg, List* list);
+void ui_post_balloon(S mesg, List* list);
 void ui_may_remove_balloon(void);
 int find_word_under_cursor(
 	int mouserow,
@@ -345,7 +345,7 @@ int find_word_under_cursor(
 	Unt flags,   //flags for find_ident_at_pos()
 	Portal** winp,   //may be NULL
 	LineNr* lnump,   //may be NULL
-	OUT CS* textp,
+	OUT S* textp,
 	int* colp,   //column where mouse hovers, can be NULL
 	int* startcolp //column where text starts, can be NULL
 );
@@ -354,8 +354,8 @@ int get_beval_info(
 	int getword,
 	Portal**winp,
 	LineNr* lnump,
-	OUT CS* textp,
+	OUT S* textp,
 	int* colp
 );
-void post_balloon(BalloonEval*, CS mesg, List* list);
+void post_balloon(BalloonEval*, S mesg, List* list);
 void general_beval_cb(BalloonEval* beval, int);

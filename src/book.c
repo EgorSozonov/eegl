@@ -158,8 +158,8 @@ struct MemChunkSize {
 
 pub
 struct MemFile {
-	CS fullFName;      //name of the file
-	CS fName;          //idem, full path
+	S fullFName;      //name of the file
+	S fName;          //idem, full path
 	int fd;         //file descriptor
 	Unt mf_flags;      //flags used when opening this memfile
 	int mf_reopen;      //mf_fd was closed, retry opening
@@ -199,7 +199,7 @@ typedef struct {
 
 //Structure to pass arguments from bookWrite() to writeBytes().
 typedef struct {
-	CS bw_buf;   //buffer with data to be written
+	S bw_buf;   //buffer with data to be written
 	int fd;      //file descriptor
 	int bw_len;      //length of data
 	Book* tgt;   //book being written
@@ -226,9 +226,9 @@ typedef struct {
 } ArgAllState;
 
 typedef struct {
-	CS tyName;
+	S tyName;
 	int      id;
-	NULLABLE CS text; //if non-empty, the text to display above or before the line
+	NULLABLE S text; //if non-empty, the text to display above or before the line
 	int      textPaddingLeft;
 	int      textFlags;
 	LineNr   startLnum;
@@ -255,19 +255,19 @@ private int ml_check_b0_id(Block0* b0p);
 private void updateBlock0(Book *book, UpdBlock0 what);
 private void set_b0_fname(Block0 *b0p, Book *book);
 private void set_b0_dir_flag(Block0* b0p, Book* book);
-private int swapfile_process_running(Block0 *b0p, CS swap_fname);
-private int swapfile_unchanged(CS fname);
+private int swapfile_process_running(Block0 *b0p, S swap_fname);
+private int swapfile_unchanged(S fname);
 private void addTextPropsForAppend(
 	Book* book,
 	LineNr   lnum,
-	OUT CS* lineContent,
+	OUT S* lineContent,
 	OUT int* len,
 	OUT Byte** tofree
 );
 private int insertLineText(
 	Book* book,
 	LineNr lnum,      //append after this line (can be 0)
-	CS newContentArg, //text of the new line
+	S newContentArg, //text of the new line
 	ColNr lenArgWithZeroChar,   //length of line, including ZERO, or 0
 	Unt flags      //ML_APPEND_ flags
 );
@@ -281,7 +281,7 @@ private int appendFlush(
 private void adjustTextPropsForDeletion(
 	Book* book,
 	LineNr lnum,
-	CS del_props,
+	S del_props,
 	int del_props_len,
 	int above
 );
@@ -292,15 +292,15 @@ private BlockHeader * ml_new_ptr(MemFile *mfp);
 private BlockHeader * ml_find_line(Book *book, LineNr lnum, int action);
 private int ml_add_stack(Book* book);
 private void fixBlockStack(Book* book, int count);
-private void attention_message(Book* book, CS swapName);
+private void attention_message(Book* book, S swapName);
 private SeaChoice do_swapexists(Book* book);
-private CS findSwapName(Book* book, CS old_fname);
+private S findSwapName(Book* book, S old_fname);
 private int b0_magic_wrong(Block0* b0p);
-private int compareFnameWithInode(CS fname_c, CS nameFromSwap, long ino_block0);
-private void longToChar(long n, CS s);
-private long charToLong(CS s);
+private int compareFnameWithInode(S fname_c, S nameFromSwap, long ino_block0);
+private void longToChar(long n, S s);
+private long charToLong(S s);
 private void updateChunk(Book* book, LineNr line, Long len, int updtype);
-private Tyme swapfile_info(CS fname);
+private Tyme swapfile_info(S fname);
 private void mf_ins_hash(MemFile* mfp, BlockHeader* hp);
 private void mf_rem_hash(MemFile* mfp, BlockHeader* hp);
 private BlockHeader * mf_find_hash(MemFile* mfp, BlockId nr);
@@ -315,7 +315,7 @@ private int mf_read(MemFile* mfp, BlockHeader* hp);
 private int mf_write(MemFile* mfp, BlockHeader* hp);
 private int mf_write_block(MemFile* mfp, BlockHeader* hp, FileOffset, unsigned size);
 private int mf_trans_add(MemFile* mfp, BlockHeader* hp);
-private void mf_do_open(MemFile* mfp, CS fname, Unt flags);
+private void mf_do_open(MemFile* mfp, S fname, Unt flags);
 private void mf_hash_init(MfHashTable*  mht);
 private void mf_hash_free(MfHashTable *mht);
 private void mf_hash_free_all(MfHashTable* mht);
@@ -346,8 +346,8 @@ private void getLinesIntoVar(
 );
 private void getBookLineIntoVar(Var* argvars, Var* returnVar, int retlist);
 private int initCharTable(Book* book);
-private int parseAnIsOption(CS var, Book* book, Boole only_check);
-private int win_chartabsize(Portal *po, CS p, ColNr col);
+private int parseAnIsOption(S var, Book* book, Boole only_check);
+private int win_chartabsize(Portal *po, S p, ColNr col);
 private int win_nolbr_chartabsize(CharTableSize* cts);
 private int inPortalBorder(Portal *po, ColNr vcol);
 private int calc_percentage(long part, long whole);
@@ -368,25 +368,25 @@ private void enterBook(Book* book);
 private void no_write_message_buf(Book* book);
 private Boole isCurBookReusable(void);
 private void getLastKnownLineNumber(void);
-private Boole sameFileInBook(Book* book, CS fullFName, FileStat* stp);
-private Book* booklistFindName_stat(CS fullFName, FileStat* stp);
-private CS checkFilenameMatch(RegMatch* rmp, Book* book);
-private CS fname_match(RegMatch* rmp, CS name);
+private Boole sameFileInBook(Book* book, S fullFName, FileStat* stp);
+private Book* booklistFindName_stat(S fullFName, FileStat* stp);
+private S checkFilenameMatch(RegMatch* rmp, Book* book);
+private S fname_match(RegMatch* rmp, S name);
 private int wininfo_other_tab_diff(PortInfo* poInfo);
 private PortInfo* find_wininfo(Book* book, int need_options, Boole skipDiffBook);
 private int areSameInode(Book* book, FileStat* stp);
-private int append_arg_number(Portal* po, CS buf, Unt buflen);
+private int append_arg_number(Portal* po, S buf, Unt buflen);
 private int bt_nofileread(Book* book);
-private void listInColumns(Arr(CS) items, int size, int current, Boole useHilite);
-private void deleteMsg(CS name);
+private void listInColumns(Arr(S) items, int size, int current, Boole useHilite);
+private void deleteMsg(S name);
 private int writeBytes(BwInfo* ip);
 private int check_mtime(Book* book, FileStat *st);
 private void updateFileTime(
-	CS fname,
+	S fname,
 	Tyme  atime,      //access time
 	Tyme  mtime       //modification time
 );
-private CS determineBackupFilename(CS fname, CS dname);
+private S determineBackupFilename(S fname, S dname);
 private int check_arglist_locked(void);
 private void alist_set(
 	EeArgList* al,
@@ -395,8 +395,8 @@ private void alist_set(
 	Unt fnum_len,
 	OUT ExpandMatch* files
 );
-private CS do_one_arg(CS str);
-private int get_arglist(ArrayList *gap, CS str, Boole escaped);
+private S do_one_arg(S str);
+private int get_arglist(ArrayList *gap, S str, Boole escaped);
 private void alist_check_arg_idx(void);
 private void alist_add_list(
 	ExpandMatch files,
@@ -405,7 +405,7 @@ private void alist_add_list(
 );
 private void arglist_del_files(ArrayList *alist_ga);
 private int do_arglist(
-	CS str,
+	S str,
 	int what,
 	int after,   //0 means before first one
 	Boole will_edit   //will edit added argument
@@ -426,7 +426,7 @@ private int addProp(OUT Book* book, Prop prop);
 private int get_textprop_id(Book* book);
 private int text_prop_order(int flags);
 private int text_prop_compare(const void *s0, const void *s1);
-private void set_text_props(LineNr lnum, CS props, int len);
+private void set_text_props(LineNr lnum, S props, int len);
 private int compare_pt(void const * s0, void const* s1);
 private PropType* find_type_by_id(EeSet* ht, PropType*** array, int id);
 private void prop_fill_dict(Bag* dict, TextProp* prop, Book* book);
@@ -613,7 +613,7 @@ private LineNr   lowest_marked = 0;
 //Get user name from machine-specific function. Return the user name in "buf[len]".
 //Return OK or FAIL.
 pub int
-get_user_name(CS builder, int len) {
+get_user_name(S builder, int len) {
 	if (!username) {
 		if (mch_get_uname(getuid(), builder, len) == FAIL)
 			return FAIL;
@@ -723,7 +723,7 @@ ml_open(Book *book) {
 	block->c[0] = --block->startByte;   //at end of block
 	block->freeSpace -= 1 + INDEX_SIZE;
 	block->countLines = 1;
-	*((CS)block + block->startByte) = ZERO;   //empty line
+	*((S)block + block->startByte) = ZERO;   //empty line
 
 	return OK;
 
@@ -751,7 +751,7 @@ ml_setname(Book* book) {
 		return;
 	}
 
-	CS swapName = findSwapName(book, mfp->fName); //alloc's fname
+	S swapName = findSwapName(book, mfp->fName); //alloc's fname
 
 	//If swap name is open, need to close it before renaming
 	if (mfp->fd >= 0) {
@@ -809,7 +809,7 @@ memOpenSwapFile(Book* book) {
 
 	//There is a small chance that between choosing the swap file name and creating it, another
 	//Eegl creates the file. In that case the creation will fail and we will use another directory
-	CS fname = findSwapName(book, NULL); //allocates fname
+	S fname = findSwapName(book, NULL); //allocates fname
 	if (mf_open_file(mfp, fname) == OK) {//consumes fname!
 		//don't sync yet in ml_sync_all()
 		mfp->mf_dirty = MF_DIRTY_YES_NOSYNC;
@@ -1000,7 +1000,7 @@ set_b0_dir_flag(Block0* b0p, Book* book) {
 //Return true if the process with number "b0p->b0_pid" is still running. "swap_fname" is the name
 //of the swap file, if it's from before a reboot then the result is false.
 private int
-swapfile_process_running(Block0 *b0p, CS swap_fname) {
+swapfile_process_running(Block0 *b0p, S swap_fname) {
 	FileStat st;
 	struct sysinfo sinfo;
 
@@ -1021,7 +1021,7 @@ pub void
 ml_recover(Boole checkext) {
 	Book* book = NULL;
 	MemFile* mfp = NULL ;
-	CS fname_used = NULL;
+	S fname_used = NULL;
 	BlockHeader* hdr = NULL;
 	Block0* b0p;
 	PointerBlock* pp;
@@ -1044,9 +1044,9 @@ ml_recover(Boole checkext) {
 
 	//If the file name ends in ".swp", we assume this is the swap file.
 	//Otherwise a search is done to find the swap file(s).
-	CS fname = curBook->fullFileName;
+	S fname = curBook->fullFileName;
 	if (!fname)          //When there is no file name
-		fname = S"";
+		fname = u8"";
 	len = (int)STRLEN(fname);
 	if (checkext && len >= 4 && STRNICMP(fname + len - 4, ".swp", 4) == 0) {
 		directly = true;
@@ -1081,7 +1081,7 @@ ml_recover(Boole checkext) {
 	book->mem.flags = 0;
 
 	//open the memfile from the old swap file
-	CS p = copyStr(fname_used); //save "fname_used" for the message:
+	S p = copyStr(fname_used); //save "fname_used" for the message:
 				 //mf_open() will consume "fname_used"!
 	mfp = mf_open(fname_used, O_RDONLY);
 	fname_used = p;
@@ -1223,7 +1223,7 @@ ml_recover(Boole checkext) {
 				goto theend;
 			}
 			++error;
-			ml_append(lnum++, (CS)_("???MANY LINES MISSING"), (ColNr)0, true);
+			ml_append(lnum++, (S)_("???MANY LINES MISSING"), (ColNr)0, true);
 		} else   {//there is a block
 			pp = (PointerBlock *)(hdr->bh_data);
 			if (pp->id == PTR_ID) { //it is a pointer block
@@ -1245,12 +1245,12 @@ ml_recover(Boole checkext) {
 						lineCount -= pp->c[i].lineCount;
 					if (lineCount != 0) {
 						++error;
-						ml_append(lnum++, (CS)_("???LINE COUNT WRONG"), (ColNr)0, true);
+						ml_append(lnum++, (S)_("???LINE COUNT WRONG"), (ColNr)0, true);
 					}
 				}
 
 				if (pp->pointerCount == 0) {
-					ml_append(lnum++, (CS)_("???EMPTY BLOCK"), (ColNr)0, true);
+					ml_append(lnum++, (S)_("???EMPTY BLOCK"), (ColNr)0, true);
 					++error;
 				} ei (idx < (int)pp->pointerCount) {//go a block deeper
 					if (pp->c[idx].blockId < 0) {
@@ -1268,7 +1268,7 @@ ml_recover(Boole checkext) {
 						}
 						if (cannotOpen) {
 						    ++error;
-						    ml_append(lnum++, (CS)_("???LINES MISSING"), (ColNr)0, true);
+						    ml_append(lnum++, (S)_("???LINES MISSING"), (ColNr)0, true);
 						}
 						++idx;       //get same block again for next index
 						continue;
@@ -1297,7 +1297,7 @@ ml_recover(Boole checkext) {
 						goto theend;
 					}
 					++error;
-					ml_append(lnum++, (CS)_("???BLOCK MISSING"), (ColNr)0, true);
+					ml_append(lnum++, (S)_("???BLOCK MISSING"), (ColNr)0, true);
 				} else {
 					//It is a data block. Append all the lines in this block.
 					has_error = false;
@@ -1305,7 +1305,7 @@ ml_recover(Boole checkext) {
 					//Check the length of the block. If wrong, use the length given in the pointer block
 					if (pageCount * mfp->pageSize != block->endByte) {
 						ml_append(lnum++,
-						   (CS)_("??? from here until ???END lines may be messed up"),
+						   (S)_("??? from here until ???END lines may be messed up"),
 						   (ColNr)0, true
 						);
 						++error;
@@ -1315,13 +1315,13 @@ ml_recover(Boole checkext) {
 
 					//Make sure there is a ZERO at the end of the block so we
 					//don't go over the end when copying text.
-					*((CS)block + block->endByte - 1) = ZERO;
+					*((S)block + block->endByte - 1) = ZERO;
 
 					//Check the number of lines in the block.
 					//If wrong, use the count in the data block.
 					if (lineCount != block->countLines) {
 						ml_append(lnum++,
-						   (CS)_("??? from here until ???END" " lines may have been inserted/deleted"),
+						   (S)_("??? from here until ???END" " lines may have been inserted/deleted"),
 						   (ColNr)0, true
 						);
 						++error;
@@ -1330,11 +1330,11 @@ ml_recover(Boole checkext) {
 
 					int did_questions = false;
 					for (i = 0; i < block->countLines; ++i) {
-						if ((CS)&(block->c[i]) >= (CS)block + block->startByte) {
+						if ((S)&(block->c[i]) >= (S)block + block->startByte) {
 						   //line count must be wrong
 						   ++error;
 						   ml_append(
-						       lnum++, (CS)_("??? lines may be missing"), (ColNr)0, true
+						       lnum++, (S)_("??? lines may be missing"), (ColNr)0, true
 						   );
 						   break;
 						}
@@ -1346,15 +1346,15 @@ ml_recover(Boole checkext) {
 						   if (did_questions)
 						      continue;
 						   did_questions = true;
-						   p = (CS)"???";
+						   p = u8"???";
 						} else {
 						   did_questions = false;
-						   p = (CS)block + txt_start;
+						   p = (S)block + txt_start;
 						}
 						ml_append(lnum++, p, (ColNr)0, true);
 					}
 					if (has_error)
-						ml_append(lnum++, (CS)_("???END"), (ColNr)0, true);
+						ml_append(lnum++, (S)_("???END"), (ColNr)0, true);
 				}
 			}
 		}
@@ -1406,11 +1406,11 @@ ml_recover(Boole checkext) {
 		emsg(_(e_recovery_interrupted));
 	ei (error) {
 		++no_wait_return;
-		msg(S">>>>>>>>>>>>>");
+		msg(u8">>>>>>>>>>>>>");
 		emsg(_(e_errors_detected_while_recovering_look_for_lines_starting_with_questions));
 		--no_wait_return;
 		msg(_("See \":help E312\" for more information."));
-		msg(S">>>>>>>>>>>>>");
+		msg(u8">>>>>>>>>>>>>");
 	} else {
 		if (curBook->wasModified) {
 			 msg(_("Recovery completed. You should check if everything is OK."));
@@ -1424,7 +1424,7 @@ ml_recover(Boole checkext) {
 			 msg_puts(_("\nNote: process STILL RUNNING: "));
 			 msg_outnum(charToLong(b0p->b0_pid));
 		}
-		msg_puts(S"\n\n");
+		msg_puts(u8"\n\n");
 		commlineRowG = msgRowG;
 	}
 	drawCurBookLater(UPD_NOT_VALID);
@@ -1454,37 +1454,37 @@ private int process_still_running;
 //Return information found in swapfile "fname" in dictionary "d".
 //This is used by the swapinfo() function.
 pub void
-get_b0_dict(CS fname, Bag *bag) {
+get_b0_dict(S fname, Bag *bag) {
 	Block0 b0;
 	int fd;
 	if ((fd = open((char *)fname, O_RDONLY | O_EXTRA, 0)) >= 0) {
 		if (fiReadEintr(fd, &b0, sizeof(b0)) == sizeof(b0)) {
 			if (ml_check_b0_id(&b0) == FAIL)
-				bagAddString(bag, S"error", S"Not a swap file");
+				bagAddString(bag, u8"error", u8"Not a swap file");
 			ei (b0_magic_wrong(&b0))
-				bagAddString(bag, S"error", S"Magic number mismatch");
+				bagAddString(bag, u8"error", u8"Magic number mismatch");
 			else {
 				//we have swap information
-				bagAddString_len(bag, S"version", b0.b0_version, 10);
-				bagAddString_len(bag, S"user", b0.b0_uname, B0_UNAME_SIZE);
-				bagAddString_len(bag, S"host", b0.b0_hname, B0_HNAME_SIZE);
-				bagAddString_len(bag, S"fname", b0.b0_fname, B0_FNAME_SIZE_ORG);
+				bagAddString_len(bag, u8"version", b0.b0_version, 10);
+				bagAddString_len(bag, u8"user", b0.b0_uname, B0_UNAME_SIZE);
+				bagAddString_len(bag, u8"host", b0.b0_hname, B0_HNAME_SIZE);
+				bagAddString_len(bag, u8"fname", b0.b0_fname, B0_FNAME_SIZE_ORG);
 
-				bagAddNumber(bag, S"pid", charToLong(b0.b0_pid));
-				bagAddNumber(bag, S"mtime", charToLong(b0.b0_mtime));
-				bagAddNumber(bag, S"dirty", b0.b0_dirty ? 1 : 0);
-				bagAddNumber(bag, S"inode", charToLong(b0.b0_ino));
+				bagAddNumber(bag, u8"pid", charToLong(b0.b0_pid));
+				bagAddNumber(bag, u8"mtime", charToLong(b0.b0_mtime));
+				bagAddNumber(bag, u8"dirty", b0.b0_dirty ? 1 : 0);
+				bagAddNumber(bag, u8"inode", charToLong(b0.b0_ino));
 			}
 		} else
-			bagAddString(bag, S"error", (CS)"Cannot read file");
+			bagAddString(bag, u8"error", u8"Cannot read file");
 		close(fd);
 	} else
-		bagAddString(bag, S"error", (CS)"Cannot open file");
+		bagAddString(bag, u8"error", u8"Cannot open file");
 }
 
 //Return true if the swap file looks OK and there are no changes, thus it can be safely deleted.
 private int
-swapfile_unchanged(CS fname) {
+swapfile_unchanged(S fname) {
 	FileStat st;
 	int ret = true;
 
@@ -1647,25 +1647,25 @@ theend:
 //
 //On failure an error message is given and ioBuffG is returned (to avoid
 //having to check for error everywhere).
-pub CS
+pub S
 ml_get(LineNr lnum) {
 	return memGetLine(curBook, lnum, false);
 }
 
 //Return pointer to position "pos".
-pub CS
+pub S
 ml_get_pos(Pos* pos){
 	return (memGetLine(curBook, pos->lnum, false) + pos->col);
 }
 
 //Return pointer to cursor line.
-pub CS
+pub S
 ml_get_curline(void) {
 	return memGetLine(curBook, curPor->cursor.lnum, false);
 }
 
 //Return pointer to cursor position.
-pub CS
+pub S
 ml_get_cursor(void) {
 	return memGetLine(curBook, curPor->cursor.lnum, false) + curPor->cursor.col;
 }
@@ -1697,7 +1697,7 @@ ml_get_cursor_len(void) {
 //return length (excluding the ZERO) of the given line in the given book
 pub ColNr
 memGetBookLen(Book* book, LineNr lnum) {
-	CS line = memGetLine(book, lnum, false); if (*line == ZERO)
+	S line = memGetLine(book, lnum, false); if (*line == ZERO)
 		return 0;
 
 	if (book->mem.lineTextLen <= 0)
@@ -1707,7 +1707,7 @@ memGetBookLen(Book* book, LineNr lnum) {
 
 //Return a pointer to a line in a specific book
 //"willChange": if true mark the book dirty (chars in the line are expected to change)
-pub CS
+pub S
 memGetLine(Book* book, LineNr lnum, Boole willChange) { //line will be changed
 	BlockHeader* hdr;
 	DataBlock* block;
@@ -1736,7 +1736,7 @@ errorret:
 	if (book->mem.mfile == NULL) {//there are no lines
 		book->mem.lineLen = 1;
 		book->mem.lineTextLen = book->mem.lineLen;
-		return S"";
+		return u8"";
 	}
 
 	//See if it is the same line as requested last time. Otherwise may need to flush last used line.
@@ -1772,7 +1772,7 @@ errorret:
 		else
 			end = ((block->c[idx - 1]) & c_MASK);
 
-		book->mem.cachedLine = (CS)block + start;
+		book->mem.cachedLine = (S)block + start;
 		book->mem.lineLen = end - start;
 		//Text properties come after a ZERO byte, so lineLen should be
 		//larger than the size of TextProp if there is any.
@@ -1801,7 +1801,7 @@ private void
 addTextPropsForAppend(
 	Book* book,
 	LineNr   lnum,
-	OUT CS* lineContent,
+	OUT S* lineContent,
 	OUT int* len,
 	OUT Byte** tofree
 ){
@@ -1831,7 +1831,7 @@ addTextPropsForAppend(
 		}
 
 		//Get the line above to find any props that continue in the next line.
-		CS props;
+		S props;
 		count = get_text_props(OUT &props, book, lnum, false);
 		for (n = 0; n < count; ++n) {
 			MEMMOVE(&prop, props + n * sizeof(TextProp), sizeof(TextProp));
@@ -1860,7 +1860,7 @@ private int
 insertLineText(
 	Book* book,
 	LineNr lnum,      //append after this line (can be 0)
-	CS newContentArg, //text of the new line
+	S newContentArg, //text of the new line
 	ColNr lenArgWithZeroChar,   //length of line, including ZERO, or 0
 	Unt flags      //ML_APPEND_ flags
 ){
@@ -2322,7 +2322,7 @@ appendFlush(
 pub int
 ml_append(
 	LineNr lnum, //append after this line (can be 0)
-	CS newContent, //text of the new line
+	S newContent, //text of the new line
 	ColNr len, //number of bytes to copy, or if 0 - will be replaced by strlen(newContent),
 	int   newfile //flag, see above
 ){
@@ -2340,7 +2340,7 @@ ml_append(
 pub int
 ml_append_flags(
 	LineNr   lnum,      //append after this line (can be 0)
-	CS newContent,      //text of the new line
+	S newContent,      //text of the new line
 	ColNr   len,        //length of new line, including ZERO, or 0
 	Unt      flags      //ML_APPEND_ values
 ){
@@ -2357,7 +2357,7 @@ pub int
 memAppendBook(
 	Book* book,
 	LineNr lnum,  //append after this line (can be 0)
-	CS line,      //text of the new line
+	S line,      //text of the new line
 	ColNr len,    //length of new line, including ZERO, or 0
 	int newfile  //flag, see above
 ){
@@ -2375,7 +2375,7 @@ memAppendBook(
 //drawUpdateScreen(UPD_NOT_VALID) is used.
 //return FAIL for failure, OK otherwise
 pub int
-ml_replace(LineNr lnum, CS line, int copy) {
+ml_replace(LineNr lnum, S line, int copy) {
 	ColNr len = -1;
 
 	if (line)
@@ -2390,12 +2390,12 @@ ml_replace(LineNr lnum, CS line, int copy) {
 pub int
 ml_replace_len(
 	LineNr lnum,
-	CS line_arg,
+	S line_arg,
 	ColNr len_arg,
 	int has_props,
 	int copy
 ){
-	CS line = line_arg;
+	S line = line_arg;
 
 	if (!line)      //just checking...
 		return FAIL;
@@ -2464,7 +2464,7 @@ private void
 adjustTextPropsForDeletion(
 	Book* book,
 	LineNr lnum,
-	CS del_props,
+	S del_props,
 	int del_props_len,
 	int above
 ) {
@@ -2477,7 +2477,7 @@ adjustTextPropsForDeletion(
 	int line_start;
 	long   line_size;
 	int this_props_len = 0;
-	CS text;
+	S text;
 	Unt   textlen;
 	int      found;
 
@@ -2500,13 +2500,13 @@ adjustTextPropsForDeletion(
 					line_size = block->endByte - line_start;
 				else
 					line_size = ((block->c[idx - 1]) & c_MASK) - line_start;
-				text = (CS)block + line_start;
+				text = (S)block + line_start;
 				textlen = STRLEN(text) + 1;
 				if ((long)textlen >= line_size) {
 					if (above)
-						internal_error(S"no text property above deleted line");
+						internal_error(u8"no text property above deleted line");
 					else
-						internal_error(S"no text property below deleted line");
+						internal_error(u8"no text property below deleted line");
 					return;
 				}
 				this_props_len = line_size - (int)textlen;
@@ -2530,9 +2530,9 @@ adjustTextPropsForDeletion(
 			}
 			if (!found) {
 				if (above)
-					internal_error(S"text property above deleted line not found");
+					internal_error(u8"text property above deleted line not found");
 				else
-					internal_error(S"text property below deleted line not found");
+					internal_error(u8"text property below deleted line not found");
 			}
 
 			book->mem.flags |= (ML_LOCKED_DIRTY | ML_LOCKED_POS);
@@ -2557,7 +2557,7 @@ deleteLine(Book* book, LineNr lnum, int flags) {
 	long line_size;
 	int i;
 	int ret = FAIL;
-	CS textprop_save = NULL;
+	S textprop_save = NULL;
 	long textprop_len = 0;
 
 	if (lowest_marked && lowest_marked > lnum)
@@ -2566,10 +2566,10 @@ deleteLine(Book* book, LineNr lnum, int flags) {
 	//If the file becomes empty the last line is replaced by an empty line.
 	if (book->mem.lineCount == 1) {    //file becomes empty
 		 if ((flags & ML_DEL_MESSAGE)) {
-			 set_keep_msg((CS)_(no_lines_msg), 0);
+			 set_keep_msg((S)_(no_lines_msg), 0);
 		 }
 
-		 i = ml_replace((LineNr)1, S"", true);
+		 i = ml_replace((LineNr)1, u8"", true);
 		 book->mem.flags |= ML_EMPTY;
 
 		 return i;
@@ -2601,10 +2601,10 @@ deleteLine(Book* book, LineNr lnum, int flags) {
 	//If there are text properties compute their byte length.
 	//if needed make a copy, so that we can update properties in preceding and following lines.
 	if (book->hasTextprop) {
-		Unt   textlen = STRLEN((CS)block + line_start) + 1;
+		Unt   textlen = STRLEN((S)block + line_start) + 1;
 		textprop_len = line_size - (long)textlen;
 		if (!(flags & (ML_DEL_UNDO | ML_DEL_NOPROP)) && textprop_len > 0) {
-			textprop_save = eeMemsave((CS)block + line_start + textlen, textprop_len);
+			textprop_save = eeMemsave((S)block + line_start + textlen, textprop_len);
 		}
 	 }
 
@@ -2813,8 +2813,8 @@ flushLine(Book *book) {
 	BlockHeader   *hdr;
 	DataBlock   *block;
 	LineNr   lnum;
-	CS new_line;
-	CS old_line;
+	S new_line;
+	S old_line;
 	ColNr   new_len;
 	int      old_len;
 	int      extra;
@@ -2844,7 +2844,7 @@ flushLine(Book *book) {
 			block = (DataBlock *)(hdr->bh_data);
 			idx = lnum - book->mem.lockedLow;
 			start = ((block->c[idx]) & c_MASK);
-			old_line = (CS)block + start;
+			old_line = (S)block + start;
 			if (idx == 0)   //line is last in block
 				old_len = block->endByte - start;
 			else      //text of previous line follows
@@ -3167,18 +3167,18 @@ fixBlockStack(Book* book, int count) {
 
 //Print the ATTENTION message: info about an existing swap file.
 private void
-attention_message(Book* book, CS swapName) {
+attention_message(Book* book, S swapName) {
 	FileStat st;
 
 	++no_wait_return;
 	(void)emsg(_(e_attention));
 	msg_puts(_("\nFound a swap file by the name \""));
 	msg_home_replace(swapName);
-	msg_puts(S"\"\n");
+	msg_puts(u8"\"\n");
 	Tyme swap_mtime = swapfile_info(swapName);
 	msg_puts(_("While opening file \""));
 	msg_outtrans(book->currFileName);
-	msg_puts(S"\"\n");
+	msg_puts(u8"\"\n");
 	if (stat((char *)book->currFileName, &st) == -1) {
 		msg_puts(_("      CANNOT BE FOUND"));
 	} else {
@@ -3222,12 +3222,12 @@ do_swapexists(Book* book) {
 //
 //Note: If BASENAMELEN is not correct, you will get error messages for not being able to open the
 //swap or undo file. Note: May trigger SwapExists autocmd, pointers may change!
-private CS
-findSwapName(Book* book, CS old_fname) {   //don't give warning for this file name
+private S
+findSwapName(Book* book, S old_fname) {   //don't give warning for this file name
 	int n;
-	CS buf_fname = book->currFileName;
+	S buf_fname = book->currFileName;
 
-	CS fname = fiBuildSwapOrUndoFname(book->fullFileName, false);
+	S fname = fiBuildSwapOrUndoFname(book->fullFileName, false);
 
 	if ((n = (int)STRLEN(fname)) == 0) {//sanity check
 		EE_CLEAR(fname);
@@ -3334,11 +3334,11 @@ findSwapName(Book* book, CS old_fname) {   //don't give warning for this file na
 					}
 					dialog_result = do_dialog(
 						   EE_WARNING,
-						   (CS)_("EEGL - ATTENTION"),
-						   name == NULL ?  (CS)_("Swap file already exists!") : name,
+						   (S)_("EEGL - ATTENTION"),
+						   name == NULL ?  (S)_("Swap file already exists!") : name,
 						   process_still_running
-						   ? (CS)_("&Open Read-Only\n&Edit anyway\n&Recover\n&Quit\n&Abort") :
-						   (CS)_(
+						   ? (S)_("&Open Read-Only\n&Edit anyway\n&Recover\n&Quit\n&Abort") :
+						   (S)_(
 						      "&Open Read-Only\n&Edit anyway\n&Recover\n&Delete it\n&Quit\n&Abort"), 1,
 						      NULL, false
 						   );
@@ -3374,7 +3374,7 @@ findSwapName(Book* book, CS old_fname) {   //don't give warning for this file na
 					gotInterruptG = true;
 					break;
 				case SEA_CHOICE_NONE:
-					msg_puts(S"\n");
+					msg_puts(u8"\n");
 					if (msg_silent == 0)
 						//call wait_return() later
 						need_wait_return = true;
@@ -3460,7 +3460,7 @@ b0_magic_wrong(Block0* b0p) {
 //Note that when the ino_t is 64 bits, only the last 32 will be used.  This
 //can't be changed without making the block 0 incompatible with 32 bit versions.
 private int
-compareFnameWithInode(CS fname_c, CS nameFromSwap, long ino_block0){
+compareFnameWithInode(S fname_c, S nameFromSwap, long ino_block0){
 	FileStat st;
 	ino_t ino_c = 0;      //ino of current file
 	Byte buf_c[MAXPATHL]; //full path of fname_c
@@ -3492,7 +3492,7 @@ compareFnameWithInode(CS fname_c, CS nameFromSwap, long ino_block0){
 
 //Move a long integer into a four byte character array. Used for machine independency in block zero
 private void
-longToChar(long n, CS s) {
+longToChar(long n, S s) {
 	s[0] = (Byte)(n & 0xff);
 	n = (unsigned)n >> 8;
 	s[1] = (Byte)(n & 0xff);
@@ -3503,7 +3503,7 @@ longToChar(long n, CS s) {
 }
 
 private long
-charToLong(CS s) {
+charToLong(S s) {
 	long retval = s[3];
 	retval <<= 8;
 	retval |= s[2];
@@ -3652,7 +3652,7 @@ updateChunk(Book* book, LineNr line, Long len, int updtype){
 					//We cannot use the text pointers to get the text length,
 					//the text prop info would also be counted.  Go over the lines.
 					for (int i = end_idx; i < idx; ++i)
-						size += (int)STRLEN((CS)block + (block->c[i] & c_MASK)) + 1;
+						size += (int)STRLEN((S)block + (block->c[i] & c_MASK)) + 1;
 				} else {
 					if (idx == 0) //first line in block, text at the end
 						textEnd = block->endByte;
@@ -3800,8 +3800,8 @@ ml_find_line_or_offset(Book* book, LineNr lnum, long *offp) {
 
 				if (book->hasTextprop) {
 					 //compensate for the extra bytes taken by textprops
-					 Byte* l1 = (CS)block + ((block->c[idx]) & c_MASK);
-					 Byte* l2 = (CS)block
+					 Byte* l1 = (S)block + ((block->c[idx]) & c_MASK);
+					 Byte* l2 = (S)block
 						 + (idx == 0 ? block->endByte : ((block->c[idx - 1]) & c_MASK));
 					 textprop_size = (l2 - l1) - (STRLEN(l1) + 1);
 				}
@@ -3824,7 +3824,7 @@ ml_find_line_or_offset(Book* book, LineNr lnum, long *offp) {
 			//cannot use the c pointer, need to get the actual text lengths.
 			len = 0;
 			for (int i = start_idx; i <= idx; ++i) {
-				CS p = (CS)block + ((block->c[i]) & c_MASK);
+				S p = (S)block + ((block->c[i]) & c_MASK);
 				len += (int)STRLEN(p) + 1;
 			}
 		} else {
@@ -3859,7 +3859,7 @@ ml_find_line_or_offset(Book* book, LineNr lnum, long *offp) {
 
 //Give information about an existing swap file. Return timestamp (0 when unknown).
 private Tyme
-swapfile_info(CS fname) {
+swapfile_info(S fname) {
 	FileStat       st;
 	Byte uname[B0_UNAME_SIZE];
 
@@ -3893,7 +3893,7 @@ swapfile_info(CS fname) {
 					msg_outtrans(b0.b0_fname);
 
 				msg_puts(_("\n          modified: "));
-				msg_puts(b0.b0_dirty ? _("YES") : _("no"));
+				msg_puts(b0.b0_dirty ? _("YEu8") : _("no"));
 
 				if (*(b0.b0_uname) != ZERO) {
 					msg_puts(_("\n         user name: "));
@@ -3960,11 +3960,11 @@ goto_byte(long cnt) {
 //Append the full path to name with path separators made into percent
 //signs, to "dir". An unnamed book is handled as "" (<currentdir>/"")
 //The last character in "dir" must be an extra slash or backslash, it is removed.
-pub CS
-memMakePercentSwapName(CS dir, CS dir_end, CS name) {
-	CS d = NULL;
-	CS f = fiExpandAndCopy(name ? name : S"", true);
-	CS s = alloc(STRLEN(f) + 1);
+pub S
+memMakePercentSwapName(S dir, S dir_end, S name) {
+	S d = NULL;
+	S f = fiExpandAndCopy(name ? name : u8"", true);
+	S s = alloc(STRLEN(f) + 1);
 	STRCPY(s, f);
 	for (d = s; *d != ZERO; MB_PTR_ADV(d)) {
 		if (*d == '/')
@@ -4032,7 +4032,7 @@ private int mf_read(MemFile*, BlockHeader *);
 private int mf_write(MemFile*, BlockHeader *);
 private int mf_write_block(MemFile* mfp, BlockHeader *hp, FileOffset offset, unsigned size);
 private int mf_trans_add(MemFile*, BlockHeader *);
-private void mf_do_open(MemFile*, CS, Unt);
+private void mf_do_open(MemFile*, S, Unt);
 private void mf_hash_init(MfHashTable*);
 private void mf_hash_free(MfHashTable*);
 private void mf_hash_free_all(MfHashTable*);
@@ -4066,7 +4066,7 @@ private int mf_hash_grow(MfHashTable*);
 //
 //return value: identifier for this memory block file.
 pub MemFile *
-mf_open(CS fname, Unt flags) {
+mf_open(S fname, Unt flags) {
 	FileOffset      size;
 #if defined(STATFS) && !defined(__minix)
 # define USE_FSTATFS
@@ -4145,7 +4145,7 @@ mf_open(CS fname, Unt flags) {
 //is freed.
 //return value: FAIL if file could not be opened, OK otherwise
 pub int
-mf_open_file(MemFile* mfp, CS fname) {
+mf_open_file(MemFile* mfp, S fname) {
 	mf_do_open(mfp, fname, O_RDWR|O_CREAT|O_EXCL); //try to open the file
 
 	if (mfp->fd < 0)
@@ -4221,7 +4221,7 @@ mf_new_page_size(MemFile* mfp, unsigned new_size) {
 //  negative: true if negative block number desired (data block)
 pub BlockHeader *
 mf_new(MemFile* mfp, int negative, int page_count) {
-	CS p;
+	S p;
 
 	//new BlockHeader. If we reached the maximum size for the used memory blocks, release one
 	//If a BlockHeader is returned, use it and adjust the page_count if necessary.
@@ -4831,7 +4831,7 @@ mf_need_trans(MemFile* mfp) {
 //Open a swap file for a memfile.
 //The "fname" must be in allocated memory, and is consumed (also when an error occurs).
 private void
-mf_do_open(MemFile* mfp, CS fname, Unt flags) {      //flags for open()
+mf_do_open(MemFile* mfp, S fname, Unt flags) {      //flags for open()
 	mfp->fName = fname;
 
 	//Get the full path name before the open fname cannot be nameBuffG, because it must
@@ -5010,7 +5010,7 @@ mf_hash_grow(MfHashTable *mht) {
 //{{{builtins. Book related builtin functions
 
 pub Book*
-bookFindByName(CS name, Boole curtab_only) {
+bookFindByName(S name, Boole curtab_only) {
 	return bookFindFileByBookNr(
 		booklistFindPattern(name, name + STRLEN(name), true, false, curtab_only)
 	);
@@ -5102,7 +5102,7 @@ updateLinesFromVars(
 	Var* returnVar
 ) {
 	LineNr    lnum = lnum_arg + (append ? 1 : 0);
-	CS line = NULL;
+	S line = NULL;
 	List* l = NULL;
 	ListItem* li = NULL;
 	long   added = 0;
@@ -5246,7 +5246,7 @@ f_appendbufline(Var *argvars, OUT Var* returnVar) {
 //"bufadd(expr)" function
 pub void
 f_bufadd(Var *argvars, OUT Var* returnVar) {
-	CS name = tv_get_string(&argvars[0]);
+	S name = tv_get_string(&argvars[0]);
 	returnVar->number = bookOpen(*name == ZERO ? NULL : name, 0);
 }
 
@@ -5288,7 +5288,7 @@ f_bufnr(Var *argvars, OUT Var* returnVar) {
 	Book* book = (argvars[0].tag == VAR_UNKNOWN) ? curBook : daGetBookFromArg(&argvars[0]);
 
 	//If the book isn't found and the second argument is not 0, create a new book.
-	CS name;
+	S name;
 	if (!book
 		  && argvars[1].tag != VAR_UNKNOWN
 		  && varGetNumberChk(&argvars[1], OUT &error) != 0
@@ -5413,19 +5413,19 @@ getBookInfo(Book* book) {
 	Portal   *po;
 
 	Bag* bag = allocBag();
-	bagAddNumber(bag, S"bufnr", book->fiNum);
-	bagAddString(bag, S"name", book->fullFileName);
-	bagAddNumber(bag, S"lnum", book == curBook ? curPor->cursor.lnum : findLnum(book));
-	bagAddNumber(bag, S"linecount", book->mem.lineCount);
-	bagAddNumber(bag, S"loaded", book->mem.mfile != null);
-	bagAddNumber(bag, S"listed", book->o.bookListed);
-	bagAddNumber(bag, S"changed", bookWasChanged(book));
-	bagAddNumber(bag, S"changedtick", CHANGEDTICK(book));
-	bagAddNumber(bag, S"hidden", book->mem.mfile && book->countPortals == 0);
-	bagAddNumber(bag, S"command", book == commPortBookG);
+	bagAddNumber(bag, u8"bufnr", book->fiNum);
+	bagAddString(bag, u8"name", book->fullFileName);
+	bagAddNumber(bag, u8"lnum", book == curBook ? curPor->cursor.lnum : findLnum(book));
+	bagAddNumber(bag, u8"linecount", book->mem.lineCount);
+	bagAddNumber(bag, u8"loaded", book->mem.mfile != null);
+	bagAddNumber(bag, u8"listed", book->o.bookListed);
+	bagAddNumber(bag, u8"changed", bookWasChanged(book));
+	bagAddNumber(bag, u8"changedtick", CHANGEDTICK(book));
+	bagAddNumber(bag, u8"hidden", book->mem.mfile && book->countPortals == 0);
+	bagAddNumber(bag, u8"command", book == commPortBookG);
 
 	//Get a reference to book variables
-	bagAddBag(bag, S"variables", book->bVars);
+	bagAddBag(bag, u8"variables", book->bVars);
 
 	//List of portals displaying this book
 	List* portals = list_alloc();
@@ -5433,7 +5433,7 @@ getBookInfo(Book* book) {
 		if (po->book == book)
 			list_append_number(portals, (Long)po->id);
 	}
-	bagAddList(bag, S"portals", portals);
+	bagAddList(bag, u8"portals", portals);
 
 	//List of popup portals displaying this book
 	portals = list_alloc();
@@ -5448,16 +5448,16 @@ getBookInfo(Book* book) {
 		}
 	}
 
-	bagAddList(bag, S"popups", portals);
+	bagAddList(bag, u8"popups", portals);
 
 	if (book->signList) {
 		//List of signs placed in this book
 		List* signs = list_alloc();
 		llGetBookSigns(book, signs);
-		bagAddList(bag, S"signs", signs);
+		bagAddList(bag, u8"signs", signs);
 	}
 
-	bagAddNumber(bag, S"lastused", book->lastUsed);
+	bagAddNumber(bag, u8"lastused", book->lastUsed);
 
 	return bag;
 }
@@ -5518,7 +5518,7 @@ getLinesIntoVar(
 	int      retlist,
 	OUT Var   *returnVar
 ) {
-	CS p;
+	S p;
 
 	if (retlist) {
 		allocReturnList(returnVar);
@@ -5531,7 +5531,7 @@ getLinesIntoVar(
 		return;
 
 	if (!retlist) {
-		p = (start >= 1 && start <= book->mem.lineCount) ? memGetLine(book, start, false) : S"";
+		p = (start >= 1 && start <= book->mem.lineCount) ? memGetLine(book, start, false) : u8"";
 		returnVar->string = copyStr(p);
 	} else {
 		if (end < start)
@@ -5651,7 +5651,7 @@ initCharTable(Book* book) {
 
 	//Walk through the 'isident', 'iskeyword', 'isfname' and 'isprint' options.
 	for (Unt i = 0; i < 3; ++i) {
-		CS p;
+		S p;
 		if (i == 0)
 			p = p_isi;      //first round: 'isident'
 		ei (i == 1)
@@ -5707,8 +5707,8 @@ bookIsCharPrintable_strict(int c) {
 
 //Parse an "is" option: @iskeyword, @isident, @isfname, @isprint. Return OK/FAIL.
 private int
-parseAnIsOption(CS var, Book* book, Boole only_check) {  //false: refill charTableP[]
-	CS p = var;
+parseAnIsOption(S var, Book* book, Boole only_check) {  //false: refill charTableP[]
+	S p = var;
 	Long c;
 	Boole negation;
 
@@ -5791,12 +5791,12 @@ parseAnIsOption(CS var, Book* book, Boole only_check) {  //false: refill charTab
 //Also doesn't work for the first byte of a multi-byte, "c" must be a character!
 private Byte translateScratch[7];
 
-pub CS
+pub S
 transchar(Unt c) {
 	return transchar_buf(c);
 }
 
-pub CS
+pub S
 transchar_buf(Unt c) {
 	int i = 0;
 	if (IS_SPECIAL(c)) {      //special key code, display as ~@ char
@@ -5846,7 +5846,7 @@ bookChar2Cells(Unt c) {
 //Return number of display cells occupied by character at "*p".
 //A TAB is counted as two cells: "^I" or four: "<09>".
 pub int
-bookPtr2Cells(CS p) {
+bookPtr2Cells(S p) {
 	//For UTF-8 we need to look at more bytes if the first byte is >= 0x80.
 	if (*p >= 0x80)
 		return mb_ptr2cells(p);
@@ -5855,7 +5855,7 @@ bookPtr2Cells(CS p) {
 
 //Like transchar_buf(), but called with a byte instead of a character. Check
 //for an illegal UTF-8 byte.
-pub CS
+pub S
 bookTranscharByte(Unt c) {
 	if (c >= 0x80) {
 		transchar_nonprint(translateScratch, c);
@@ -5874,25 +5874,25 @@ bookTranscharByte(Unt c) {
 		return bookPtr2Cells(p);
 
 pub int
-chartabsize(CS p, ColNr col) {
+chartabsize(S p, ColNr col) {
 	RET_PORT_BOOK_CHARSIZE(curPor, curBook, p, col)
 }
 
 private int
-win_chartabsize(Portal *po, CS p, ColNr col) {
+win_chartabsize(Portal *po, S p, ColNr col) {
 	RET_PORT_BOOK_CHARSIZE(po, po->book, p, col)
 }
 
 //Return the number of characters the string "s" will take on the screen, taking into account the
 //size of a tab. Does not handle text properties, since "s" is not a book line.
 pub Unt
-linetabsize_str(CS s) {
+linetabsize_str(S s) {
 	return linetabsize_col(0, s);
 }
 
 //Like linetabsize_str(), but "s" starts at column "startcol".
 pub int
-linetabsize_col(int startcol, CS s) {
+linetabsize_col(int startcol, S s) {
 	CharTableSize cts;
 
 	bookInitCharsForKeywordsSizeArg(&cts, curPor, 0, startcol, s, s);
@@ -5913,7 +5913,7 @@ linetabsize_col(int startcol, CS s) {
 //Like linetabsize_str(), but for a given portal instead of the current one.
 //Doesn't count the size of @listchars "eol".
 pub Unt
-drawLineOnScreentabsize(Portal* po, LineNr lnum, CS line, ColNr len) {
+drawLineOnScreentabsize(Portal* po, LineNr lnum, S line, ColNr len) {
 	CharTableSize cts;
 	bookInitCharsForKeywordsSizeArg(&cts, po, lnum, 0, line, line);
 	drawLineOnScreentabsize_cts(&cts, len);
@@ -5940,7 +5940,7 @@ linetabsize_eol(Portal *po, LineNr lnum) {
 pub int
 linetabsize_no_outer(Portal *po, LineNr lnum) {
 	CharTableSize cts;
-	CS line = memGetLine(po->book, lnum, false);
+	S line = memGetLine(po->book, lnum, false);
 
 	bookInitCharsForKeywordsSizeArg(&cts, po, lnum, 0, line, line);
 
@@ -6018,13 +6018,13 @@ eeIsWordc(Unt c) {
 }
 
 pub int
-eeIsWordPtr_buf(CS p, Book* book) {
+eeIsWordPtr_buf(S p, Book* book) {
 	return bookIsWordChar(p[0], book);
 }
 
 //Just like eeIsWordc() but uses a pointer to the (multi-byte) character.
 pub int
-eeIsWordPtr(CS p) {
+eeIsWordPtr(S p) {
 	return eeIsWordPtr_buf(p, curBook);
 }
 
@@ -6060,8 +6060,8 @@ bookInitCharsForKeywordsSizeArg(
 	Portal* po,
 	LineNr lnum,
 	ColNr col,
-	CS line,
-	CS ptr
+	S line,
+	S ptr
 ) {
 	CLEAR_POINTER(cts);
 	cts->port = po;
@@ -6069,7 +6069,7 @@ bookInitCharsForKeywordsSizeArg(
 	cts->cts_line = line;
 	cts->cts_ptr = ptr;
 	if (lnum > 0 && !ignore_text_props) {
-		CS propStart;
+		S propStart;
 		int count = get_text_props(OUT &propStart, po->book, lnum, false);
 		cts->cts_text_prop_count = count;
 		if (count > 0) {
@@ -6143,8 +6143,8 @@ lbr_chartabsize_adv(CharTableSize *cts) {
 pub int
 win_lbr_chartabsize(CharTableSize* cts){
 	Portal* po = cts->port;
-	CS line = cts->cts_line; //start of the line
-	CS s = cts->cts_ptr;
+	S line = cts->cts_line; //start of the line
+	S s = cts->cts_ptr;
 	ColNr vcol = cts->cts_vcol;
 	int n;
 
@@ -6197,7 +6197,7 @@ win_lbr_chartabsize(CharTableSize* cts){
 						)
 					&& -tp->id - 1 < gap->len
 			) {
-				CS p = ((Byte **)gap->c)[-tp->id - 1];
+				S p = ((Byte **)gap->c)[-tp->id - 1];
 
 				if (p) {
 					int cells;
@@ -6277,7 +6277,7 @@ win_lbr_chartabsize(CharTableSize* cts){
 private int
 win_nolbr_chartabsize(CharTableSize* cts){
 	Portal* po = cts->port;
-	CS s = cts->cts_ptr;
+	S s = cts->cts_ptr;
 	ColNr col = cts->cts_vcol;
 
 	if (s[0] == TAB && (!po->o.list || listCharsG.tab1)) {
@@ -6324,8 +6324,8 @@ getvcol(
 	int      on_ZERO = false;
 
 	ColNr vcol = 0;
-	CS ptr = memGetLine(po->book, pos->lnum, false);  //points to current char
-	CS line = ptr;  //start of the line
+	S ptr = memGetLine(po->book, pos->lnum, false);  //points to current char
+	S line = ptr;  //start of the line
 
 	bookInitCharsForKeywordsSizeArg(&cts, po, pos->lnum, 0, line, line);
 
@@ -6350,7 +6350,7 @@ getvcol(
 				incr = (c >= 0x80) ? mb_ptr2cells(ptr) : (charTableP[c] & CT_CELL_MASK);
 			}
 
-			CS next_ptr = ptr + utfCharLen(ptr);
+			S next_ptr = ptr + utfCharLen(ptr);
 			if (next_ptr - line > pos->col) //character at pos->col
 				break;
 
@@ -6374,7 +6374,7 @@ getvcol(
 				//do not count the virtual text above for cursWant
 				po->virtColFirstChar = cts.cts_first_char;
 
-			CS next_ptr = cts.cts_ptr + utfCharLen(cts.cts_ptr);
+			S next_ptr = cts.cts_ptr + utfCharLen(cts.cts_ptr);
 			if (next_ptr - line > pos->col) //character at pos->col
 				break;
 
@@ -6449,7 +6449,7 @@ bookGetVirtualColInVirtualMode(
 		ColNr coladd = pos->coladd;
 		ColNr endadd = 0;
 		//Cannot put the cursor on part of a wide character.
-		CS ptr = memGetLine(po->book, pos->lnum, false);
+		S ptr = memGetLine(po->book, pos->lnum, false);
 		if (pos->col < memGetBookLen(po->book, pos->lnum)) {
 			Unt c = mb_ptr2char(ptr + pos->col);
 
@@ -6513,8 +6513,8 @@ typedef dev_t Device;
 #define FOR_ALL_BOOKS_FROM_LAST(book) \
 	 for ((book) = lastBook; (book); (book) = (book)->prev)
 
-private CS msg_loclist = S"[Location List]";
-private CS msg_qflist = S"[Quickfix List]";
+private S msg_loclist = u8"[Location List]";
+private S msg_qflist = u8"[Quickfix List]";
 
 //Number of times freeBook() was called.
 private int freeCallCountS = 0;
@@ -6545,12 +6545,12 @@ bookCharidxToByteidx(Book* book, int lnum, int charidx) {
 	if (lnum > book->mem.lineCount)
 		lnum = book->mem.lineCount;
 
-	CS str = memGetLine(book, lnum, false);
+	S str = memGetLine(book, lnum, false);
 	if (str == NULL)
 		return -1;
 
 	//Convert the character offset to a byte offset
-	CS t = str;
+	S t = str;
 	while (*t != ZERO && --charidx > 0)
 		t += utfCharLen(t);
 
@@ -6803,7 +6803,7 @@ addBookToHashtable(Book* book){
 	if (book->key.len == 0) {
 		book->key = text(book->keyContainer);
 	}
-	if (hash_add(&buf_hashtab, book->key, S"create book") == FAIL)
+	if (hash_add(&buf_hashtab, book->key, u8"create book") == FAIL)
 		emsg(_(e_book_cannot_be_registered));
 }
 
@@ -6812,7 +6812,7 @@ removeBookFromHashtable(Book* book) {
 	EeSetItem* hi = hash_find(&buf_hashtab, book->key);
 
 	if (!HASHITEM_EMPTY(hi))
-		hash_remove(&buf_hashtab, hi, S"close book");
+		hash_remove(&buf_hashtab, hi, u8"close book");
 }
 
 //Return true when book "book" can be unloaded.
@@ -6831,9 +6831,9 @@ canUnloadBook(Book* book) {
 			}
 	}
 	if (!canUnload) {
-		CS fname = book->currFileName ? book->currFileName : book->fullFileName;
+		S fname = book->currFileName ? book->currFileName : book->fullFileName;
 
-		showErrFmtMsg(_(e_attempt_to_delete_buffer_that_is_in_use_str), fname ? fname : S"[No Name]");
+		showErrFmtMsg(_(e_attempt_to_delete_buffer_that_is_in_use_str), fname ? fname : u8"[No Name]");
 	}
 	return canUnload;
 }
@@ -7189,7 +7189,7 @@ freeBook(Book* book){
 	++freeCallCountS;
 	freeAttachedData(book, true);
 	//b:changedtick uses an item in Book, remove it now
-	dictitem_remove(book->bVars, (DictItem *)&book->changedTick, S"free book");
+	dictitem_remove(book->bVars, (DictItem *)&book->changedTick, u8"free book");
 	unref_var_dict(book->bVars);
 	remove_listeners(book);
 	chaFreeBook(book);
@@ -7257,7 +7257,7 @@ freeAttachedData(Book* book, int free_options) {     //free options as well
 		remove_listeners(book);
 	}
 	uc_clear(&book->userCommands);      //clear local user commands
-	llDeleteSigns(book, S"*");   //delete any signs
+	llDeleteSigns(book, u8"*");   //delete any signs
 	ga_clear_strings(&book->textPropText);
 	mapClearAllMappingsInMode(book, MAP_ALL_MODES, true, false);  //clear local mappings
 	mapClearAllMappingsInMode(book, MAP_ALL_MODES, true, true);   //clear local abbrevs
@@ -7365,7 +7365,7 @@ handle_swap_exists(BookRef *oldCurBook) {
 		//User selected Recover at ATTENTION prompt.
 		msg_scroll = true;
 		ml_recover(false);
-		msg_puts(S"\n");   //don't overwrite the last message
+		msg_puts(u8"\n");   //don't overwrite the last message
 		commlineRowG = msgRowG;
 
 		//Restore the error/interrupt/exception state if not discarded by a
@@ -7411,7 +7411,7 @@ emptyCurBook(int portCloseOthers, Boole forceit, Unt action) {
 //action == DOBOOK_UNLOAD   unload specified book(s)
 //action == DOBOOK_DEL       delete specified book(s) from book list
 //action == DOBOOK_WIPE       delete specified book(s) really
-//action == DOBOOK_WIPE_REUSE idem, and add number to "recycledFileNumberS"
+//action == DOBOOK_WIPE_REUSE idem, and add number to "recycledFileNumberu8"
 //
 //start == DOBOOK_CURRENT   go to "count" book from current book
 //start == DOBOOK_FIRST       go to "count" book from first book
@@ -7720,10 +7720,10 @@ bookDo(
 //command can be DOBOOK_UNLOAD (";bunload"), DOBOOK_WIPE (";bwipeout") or DOBOOK_DEL (";bdel")
 //
 //Return error message or NULL
-pub CS
+pub S
 do_bufdel(
 	int command,
-	CS arg,      //pointer to extra arguments
+	S arg,      //pointer to extra arguments
 	int addrCount,
 	int start_bnr,   //first book number in a range
 	int end_bnr,   //book nr or last book nr in a range
@@ -7731,9 +7731,9 @@ do_bufdel(
 ) {
 	int do_current = 0;   //delete current book?
 	int deleted = 0;   //number of books deleted
-	CS errormsg = NULL; //return value
+	S errormsg = NULL; //return value
 	int bnr;      //book number
-	CS p;
+	S p;
 
 	if (addrCount == 0) {
 		(void)bookDo(command, DOBOOK_CURRENT, FORWARD, 0, forceit);
@@ -7808,7 +7808,7 @@ do_bufdel(
 //DOBOOK_UNLOAD     unload it
 //DOBOOK_DEL        delete it
 //DOBOOK_WIPE       wipe it out
-//DOBOOK_WIPE_REUSE wipe it out and add to "recycledFileNumberS"
+//DOBOOK_WIPE_REUSE wipe it out and add to "recycledFileNumberu8"
 pub void
 bookSetCurBook(Book* book, int action) {
 	int unload = (action == DOBOOK_UNLOAD || action == DOBOOK_DEL
@@ -8005,17 +8005,17 @@ isCurBookReusable(void) {
 //If (flags & BLN_DUMMY) is true, don't count it as a real book.
 //If (flags & BLN_NEW) is true, don't use an existing book.
 //If (flags & BLN_NOOPT), don't copy options from the current book if the book already exists.
-//If (flags & BLN_REUSE) is true, may use book number from "recycledFileNumberS".
+//If (flags & BLN_REUSE) is true, may use book number from "recycledFileNumberu8".
 //This is the ONLY way to create a new book.
 pub Book*
 bookNew(
-	CS ffname_arg, //full path of fname or relative
-	CS sfname_arg, //short fname or NULL
+	S ffname_arg, //full path of fname or relative
+	S sfname_arg, //short fname or NULL
 	LineNr lnum,   //preferred cursor line
 	Unt flags
 ) {                    //BLN_ defines
-	CS fullFName = ffname_arg;
-	CS sfname = sfname_arg;
+	S fullFName = ffname_arg;
+	S sfname = sfname_arg;
 
 	if (top_file_num == 1)
 		hash_init(&buf_hashtab);
@@ -8301,9 +8301,9 @@ getLastKnownLineNumber(void) {
 
 //Find file in book list by name. Return NULL if not found.
 pub Book *
-booklistFindByNameExpandingLinks(CS fname) {
+booklistFindByNameExpandingLinks(S fname) {
 	//First make the name into a full path name
-	CS fullFName = fiExpandAndCopy(fname, true);      //force expansion, get rid of symbolic links
+	S fullFName = fiExpandAndCopy(fname, true);      //force expansion, get rid of symbolic links
 	Book* book = NULL;
 	if (fullFName) {
 		book = booklistFindName(fullFName);
@@ -8315,7 +8315,7 @@ booklistFindByNameExpandingLinks(CS fname) {
 //Find file in book list by name. "fullFName" must have a full path.
 //Skip dummy books. Return NULL if not found.
 pub Book*
-booklistFindName(CS fullFName){
+booklistFindName(S fullFName){
 	FileStat st;
 	if (stat((char *)fullFName, &st) < 0)
 		st.st_dev = (Device)-1;
@@ -8323,7 +8323,7 @@ booklistFindName(CS fullFName){
 }
 
 private Boole
-sameFileInBook(Book* book, CS fullFName, FileStat* stp) {
+sameFileInBook(Book* book, S fullFName, FileStat* stp) {
 	//no name is different
 	if (fullFName == NULL || *fullFName == ZERO || book->fullFileName == NULL)
 		return false;
@@ -8355,7 +8355,7 @@ sameFileInBook(Book* book, CS fullFName, FileStat* stp) {
 //Find file in book list by name, but pass the stat structure to avoid getting it twice for
 //the same file. Return NULL if not found.
 private Book*
-booklistFindName_stat(CS fullFName, FileStat* stp) {
+booklistFindName_stat(S fullFName, FileStat* stp) {
 	//Start at the last book, expect to find a match sooner.
 	Book* book;
 	FOR_ALL_BOOKS_FROM_LAST(book) {
@@ -8369,8 +8369,8 @@ booklistFindName_stat(CS fullFName, FileStat* stp) {
 //Return fnum of the found book. Return < 0 for error.
 pub int
 booklistFindPattern(
-	CS pattern,
-	CS pattern_end,   //pointer to first char after pattern
+	S pattern,
+	S pattern_end,   //pointer to first char after pattern
 	int unlisted,   //find unlisted books
 	int diffmode, //find diff-mode books only
 	int curtab_only  //find books in current tab only
@@ -8378,7 +8378,7 @@ booklistFindPattern(
 	Book* book;
 	int match = -1;
 	int find_listed;
-	CS p;
+	S p;
 
 	//"%" is current file, "%%" or "#" is alternate file
 	if ((pattern_end == pattern + 1 && (*pattern == '%' || *pattern == '#'))) {
@@ -8397,8 +8397,8 @@ booklistFindPattern(
 	//attempt == 3: with '^' at start and '$' at end (only full match)
 	//Repeat this for finding an unlisted book if there was no matching listed book.
 	else {
-		CS pat = file_pat_to_reg_pat(pattern, pattern_end, NULL);
-		CS patend = pat + STRLEN(pat) - 1;
+		S pat = file_pat_to_reg_pat(pattern, pattern_end, NULL);
+		S patend = pat + STRLEN(pat) - 1;
 		Boole toggledollar = (patend > pat && *patend == '$');
 
 		//First try finding a listed book.  If not found and "unlisted" is true, try finding an
@@ -8466,7 +8466,7 @@ booklistFindPattern(
 
 typedef struct {
 	Book* book;
-	CS match;
+	S match;
 } BufMatch;
 
 GEN_TYPE_L(BufMatch);
@@ -8477,12 +8477,12 @@ generic(2) GEN_add_L(rivate, BufMatch);
 //Return OK if matches found, FAIL otherwise.
 pub int
 bufExpandBufnames(
-	CS pat,
+	S pat,
 	Unt options,
 	OUT ExpandMatch* matches
 ){
-	CS p;
-	CS patSaved = NULL;
+	S p;
+	S patSaved = NULL;
 	LBufMatch* bufMatches = create(L, BufMatch)(2, matches->a);
 	Fuzzy fuzzy = {};
 	fuzzy.a = matches->a;
@@ -8505,7 +8505,7 @@ bufExpandBufnames(
 			patSaved[len - 1] = ZERO;
 			to_free = true;
 		} ei (*pat == '^')
-			patSaved = S"";
+			patSaved = u8"";
 		else
 			patSaved = pat;
 		regmatch.regprog = compileRegexp(patSaved, RE_MAGIC);
@@ -8578,10 +8578,10 @@ bufExpandBufnames(
 }
 
 //Check for a match on the file name for book "book" with regprog "prog".
-private CS
+private S
 checkFilenameMatch(RegMatch* rmp, Book* book) {
 	//First try the short file name, then the long file name.
-	CS match = fname_match(rmp, book->shortFileName);
+	S match = fname_match(rmp, book->shortFileName);
 	if (!match && rmp->regprog)
 		match = fname_match(rmp, book->fullFileName);
 
@@ -8591,20 +8591,20 @@ checkFilenameMatch(RegMatch* rmp, Book* book) {
 //Try matching the regexp in "rmp->regprog" with file name "name".
 //Note that rmp->regprog may become NULL when switching regexp engine.
 //Return "name" when there is a match, NULL when not.
-private CS
-fname_match(RegMatch* rmp, CS name){
+private S
+fname_match(RegMatch* rmp, S name){
 	//extra check for valid arguments
 	if (!name || !rmp->regprog)
 		return NULL;
 
 	//Ignore case when 'fileignorecase' or the argument is set.
 	rmp->rm_ic = false;
-	CS match = null;
+	S match = null;
 	if (eeRegexec(rmp, name, (ColNr)0))
 		match = name;
 	ei (rmp->regprog) {
 		//Replace $(HOME) with '~' and try matching again.
-		CS p = home_replace_save(NULL, name);
+		S p = home_replace_save(NULL, name);
 		if (p && eeRegexec(rmp, p, (ColNr)0))
 			match = name;
 		eeglFree(p);
@@ -8625,14 +8625,14 @@ bookFindFileByBookNr(int nr){
 	EeSetItem* hi = hash_find(&buf_hashtab, (Text){.c = key, .len = sizeof(key)});
 
 	if (!HASHITEM_EMPTY(hi))
-		return (Book *)(hi->hi_key - ((unsigned)(curBook->keyContainer - (CS)curBook)));
+		return (Book *)(hi->hi_key - ((unsigned)(curBook->keyContainer - (S)curBook)));
 	return NULL;
 }
 
 //Get name of file 'n' in the book list. When the file has no name an empty string is returned.
 //home_replace() is used to shorten the file name (used for marks).
 //Return a pointer to allocated memory, of NULL when failed.
-pub CS
+pub S
 bookGetNameByBookNr(int n, int fullname, Boole helptail) {   //for help books, return tail only
 	Book* book = bookFindFileByBookNr(n);
 	if (!book)
@@ -8851,7 +8851,7 @@ bookListFiles(Invocation* invo) {
 						&& (book == curBook || curPor->altFnum != book->fiNum))
 					)
 			continue;
-		CS name = bookSpName(book);
+		S name = bookSpName(book);
 		if (name)
 			copySubstrToAllocation(OUT nameBuffG, (Text){name, MAXPATHL - 1});
 		ei (book && book->kind == BOOK_HELP) {
@@ -8907,7 +8907,7 @@ bookListFiles(Invocation* invo) {
 //Get file name and line number for file 'fnum'. Used by DoOneCmd() for translating '%' and '#'.
 //Used by insert_reg() and cmdline_paste() for '#' register. Return FAIL if not found, or OK.
 pub int
-bookGetFnameByFileId(int fnum, OUT CS* fname, OUT LineNr* lnum){
+bookGetFnameByFileId(int fnum, OUT S* fname, OUT LineNr* lnum){
 	Book* book = bookFindFileByBookNr(fnum);
 	if (!book || book->currFileName == NULL)
 		return FAIL;
@@ -8922,9 +8922,9 @@ bookGetFnameByFileId(int fnum, OUT CS* fname, OUT LineNr* lnum){
 //The file name with the full path is also remembered, for when :cd is used.
 //Return FAIL for failure (file name already in use by other book) OK otherwise.
 pub int
-setfname(Book* book, CS ffname_arg, CS sfname_arg, Boole message) {
-	CS fullFName = ffname_arg;
-	CS sfname = sfname_arg;
+setfname(Book* book, S ffname_arg, S sfname_arg, Boole message) {
+	S fullFName = ffname_arg;
+	S sfname = sfname_arg;
 	Book* obook = NULL;
 	FileStat   st;
 
@@ -8997,7 +8997,7 @@ setfname(Book* book, CS ffname_arg, CS sfname_arg, Boole message) {
 //Crude way of changing the name of a book.  Use with care!
 //The name should be relative to the current directory.
 pub void
-bookSetName(int fnum, CS name) {
+bookSetName(int fnum, S name) {
 	Book* book = bookFindFileByBookNr(fnum);
 	if (!book)
 		return;
@@ -9033,7 +9033,7 @@ bookHandleNameChange(Book* book) {
 //
 //Used by do_one_cmd(), do_write() and bookStartEditingFile(). Return the book.
 pub Book *
-setaltfname(CS fullFName, CS sfname, LineNr lnum){
+setaltfname(S fullFName, S sfname, LineNr lnum){
 	//Create a book.  'buflisted' is not set if it's a new book
 	Book* book = bookNew(fullFName, sfname, lnum, 0);
 	if (book && (commModifierG.cmod_flags & CMOD_KEEPALT) == 0)
@@ -9043,9 +9043,9 @@ setaltfname(CS fullFName, CS sfname, LineNr lnum){
 
 //Get alternate file name for current portal.
 //Return NULL if there isn't any, and give error message if requested.
-pub CS
+pub S
 getaltfname(int errmsg) {      //give error message
-	CS fname;
+	S fname;
 	LineNr dummy;
 	if (bookGetFnameByFileId(0, OUT &fname, OUT &dummy) == FAIL) {
 		if (errmsg)
@@ -9058,7 +9058,7 @@ getaltfname(int errmsg) {      //give error message
 //Open a file and add it to the booklist. Return its number or 0 if failed.
 //Use same flags as bookNew(), except BLN_DUMMY. Used by qfInit(), main() and doarglist()
 pub int
-bookOpen(CS fname, Unt flags){
+bookOpen(S fname, Unt flags){
 	Book* book = bookNew(fname, NULL, (LineNr)0, flags);
 	if (book)
 		return book->fiNum;
@@ -9068,7 +9068,7 @@ bookOpen(CS fname, Unt flags){
 //Return true if 'fullFName' is not the same file as current file.
 //Fname must have a full path (expanded by mch_FullName()).
 pub Boole
-fNameMatchesCurBook(CS fullFName){
+fNameMatchesCurBook(S fullFName){
 	return sameFileInBook(curBook, fullFName, NULL);
 }
 
@@ -9098,14 +9098,14 @@ fileinfo(
 	Boole dont_truncate
 ){
 	Unt bufLen = 0;
-	CS buf = alloc(IOSIZE);
+	S buf = alloc(IOSIZE);
 
 	if (fullname > 1)       //2 CTRL-G: include book number
 		bufLen = eeSnprintfSafelen(buf, IOSIZE, "buf %d: ", curBook->fiNum);
 
 	buf[bufLen++] = '"';
 
-	CS name = bookSpName(curBook);
+	S name = bookSpName(curBook);
 	if (name)
 		bufLen += eeSnprintfSafelen(buf + bufLen, IOSIZE - bufLen, "%s", name);
 	else {
@@ -9114,9 +9114,9 @@ fileinfo(
 		else
 			name = curBook->fullFileName;
 		if (shorthelp && curBook->kind == BOOK_HELP) {
-			strPrintShortName(name, (CS)buf + bufLen, IOSIZE - (int)bufLen);
+			strPrintShortName(name, (S)buf + bufLen, IOSIZE - (int)bufLen);
 		} else {
-			home_replace(name, (CS)buf + bufLen, IOSIZE - (int)bufLen, true);
+			home_replace(name, (S)buf + bufLen, IOSIZE - (int)bufLen, true);
 		}
 		bufLen += STRLEN(buf + bufLen);
 	}
@@ -9125,12 +9125,12 @@ fileinfo(
 		buf + bufLen,
 		IOSIZE - bufLen,
 		"\"%s%s%s%s%s%s",
-		bookWasChanged(curBook) ? (S" (+)") : S" ",
-		(curBook->flags & BF_NOTEDITED) && !bookDontWrite(curBook) ? _("[Not edited]") : S"",
-		(curBook->flags & BF_NEW) && !bookDontWrite(curBook) ? new_file_message() : S"",
-		(curBook->flags & BF_READERR) ? _("[Read errors]") : S"",
-		curBook->o.modifiable ? S"" : S"[-]",
-		(bookWasChanged(curBook) || (curBook->flags & BF_WRITE_MASK) || !curBook->o.modifiable) ? S" " : S""
+		bookWasChanged(curBook) ? (u8" (+)") : u8" ",
+		(curBook->flags & BF_NOTEDITED) && !bookDontWrite(curBook) ? _("[Not edited]") : u8"",
+		(curBook->flags & BF_NEW) && !bookDontWrite(curBook) ? new_file_message() : u8"",
+		(curBook->flags & BF_READERR) ? _("[Read errors]") : u8"",
+		curBook->o.modifiable ? u8"" : u8"[-]",
+		(bookWasChanged(curBook) || (curBook->flags & BF_WRITE_MASK) || !curBook->o.modifiable) ? u8" " : u8""
 	);
 
 	if (curBook->mem.flags & ML_EMPTY) {
@@ -9159,19 +9159,19 @@ fileinfo(
 		msg(buf);
 		msg_scroll = n;
 	} else {
-		CS p = msgTruncDeco(buf, 0);
+		S p = msgTruncDeco(buf, 0);
 		if (restart_edit != 0 || (msg_scrolled && !need_wait_return))
 			 //Need to repeat the message after redrawing when:
 			 //- When restart_edit is set (otherwise there will be a delay before redrawing).
 			 //- When the screen was scrolled but there is no wait-return prompt.
-			 set_keep_msg((CS)p, 0);
+			 set_keep_msg((S)p, 0);
 	}
 
 	eeglFree(buf);
 }
 
 pub int
-col_print(CS buf, Unt  buflen, int col, int vcol){
+col_print(S buf, Unt  buflen, int col, int vcol){
 	if (col == vcol)
 		return (int)eeSnprintfSafelen(buf, buflen, "%d", col);
 	return (int)eeSnprintfSafelen(buf, buflen, "%d-%d", col, vcol);
@@ -9179,7 +9179,7 @@ col_print(CS buf, Unt  buflen, int col, int vcol){
 
 //Used for building in the status line.
 typedef struct {
-	CS start;
+	S start;
 	int minWidth;
 	int maxWidth;
 	enum {
@@ -9209,22 +9209,22 @@ private int* stlSeparatorLocationsP = NULL;
 pub int
 bookRenderStatusLine(
 	Portal* po,
-	OUT CS out,      //string book to write into != nameBuffG
+	OUT S out,      //string book to write into != nameBuffG
 	Unt outlen,      //length of out[]
-	CS fmt,
+	S fmt,
 	Byte oname,      //one of STATLINE_* constants
 	int opt_scope,   //scope for "oname"
 	Unt fillchar,
 	int maxwidth
 ){
-	CS s;
+	S s;
 	int save_VIsual_active;
 	long l;
 	int prevchar_isflag;
 	int prevchar_isitem;
 	int itemisflag;
 	int fillable;
-	CS str;
+	S str;
 	long num;
 	int minwid;
 	int maxwid;
@@ -9233,7 +9233,7 @@ bookRenderStatusLine(
 	Byte opt;
 #define TMPLEN 70
 	Byte buf_tmp[TMPLEN];
-	CS usefmt = fmt;
+	S usefmt = fmt;
 	int save_redraw_not_allowed = redraw_not_allowed;
 	int save_keyWasTypedG = keyWasTypedG;
 	//TODO: find out why using called_emsg_before makes tests fail, does it matter?
@@ -9263,7 +9263,7 @@ bookRenderStatusLine(
 		if (!usefmt)
 			usefmt = fmt;
 
-		unletImpl(S"g:statusline_winid", true);
+		unletImpl(u8"g:statusline_winid", true);
 	}
 
 	if (fillchar == ZERO)
@@ -9279,7 +9279,7 @@ bookRenderStatusLine(
 
 	//Get line & check if empty (cursorpos will show "0-1"). Note that
 	//p will become invalid when getting another book line.
-	CS p = memGetLine(po->book, lnum, false);
+	S p = memGetLine(po->book, lnum, false);
 	Boole empty_line = (*p == ZERO);
 
 	//Get the byte value now, in case we need it below. This is more efficient
@@ -9357,7 +9357,7 @@ bookRenderStatusLine(
 				continue;
 			groupdepth--;
 
-			CS t = statusItemsP[stlGroupItemP[groupdepth]].start;
+			S t = statusItemsP[stlGroupItemP[groupdepth]].start;
 			*p = ZERO;
 			l = eeglStrSize(t);
 			if (curitem > stlGroupItemP[groupdepth] + 1
@@ -9531,11 +9531,11 @@ bookRenderStatusLine(
 		case STL_FULLPATH:
 		case STL_FILENAME: {
 			fillable = false;   //don't change ' ' to fillchar
-			CS name = bookSpName(po->book);
+			S name = bookSpName(po->book);
 			if (name)
 				copySubstrToAllocation(OUT nameBuffG, (Text){name, MAXPATHL - 1});
 			else {
-				CS t = (opt == STL_FULLPATH) ? po->book->fullFileName : po->book->currFileName;
+				S t = (opt == STL_FULLPATH) ? po->book->fullFileName : po->book->currFileName;
 				if (po->book->kind == BOOK_HELP) {
 					strPrintShortName(t, nameBuffG, MAXPATHL);
 				} else {
@@ -9551,13 +9551,13 @@ bookRenderStatusLine(
 		}
 
 		case STL_EE_EXPR: { //opening curly brace
-			CS block_start = s - 1;
+			S block_start = s - 1;
 			Boole reevaluate = (*s == '%');
 
 			if (reevaluate)
 				s++;
 			itemisflag = true;
-			CS t = p;
+			S t = p;
 			while ((*s != '}' || (reevaluate && s[-1] != '%')) && *s != ZERO && p + 1 < out + outlen)
 				*p++ = *s++;
 			if (*s != '}')   //missing '}' or out of space
@@ -9569,9 +9569,9 @@ bookRenderStatusLine(
 				*p = ZERO;
 			p = t;
 			eeSnprintf(buf_tmp, sizeof(buf_tmp), "%d", curBook->fiNum);
-			set_internal_string_var(S"g:actual_curbuf", buf_tmp);
+			set_internal_string_var(u8"g:actual_curbuf", buf_tmp);
 			eeSnprintf(buf_tmp, sizeof(buf_tmp), "%d", curPor->id);
-			set_internal_string_var(S"g:actual_curPor", buf_tmp);
+			set_internal_string_var(u8"g:actual_curPor", buf_tmp);
 
 			Book* curBookSaved = curBook;
 			Portal* save_curPor = curPor;
@@ -9587,8 +9587,8 @@ bookRenderStatusLine(
 			curPor = save_curPor;
 			curBook = curBookSaved;
 			VIsual_active = save_VIsual_active;
-			unletImpl(S"g:actual_curbuf", true);
-			unletImpl(S"g:actual_curPor", true);
+			unletImpl(u8"g:actual_curbuf", true);
+			unletImpl(u8"g:actual_curPor", true);
 
 			if (str && *str != ZERO) {
 				if (*skipdigits(str) == ZERO) {
@@ -9608,14 +9608,14 @@ bookRenderStatusLine(
 				Unt str_length = strlen((const char *)str);
 				Unt fmt_length = strlen((const char *)s);
 				Unt new_fmt_len = parsed_usefmt + str_length + fmt_length + 3;
-				CS new_fmt = (CS)alloc(new_fmt_len * sizeof(Byte));
+				S new_fmt = (S)alloc(new_fmt_len * sizeof(Byte));
 
-				CS new_fmt_p = new_fmt;
+				S new_fmt_p = new_fmt;
 
-				new_fmt_p = (CS)memcpy(new_fmt_p, usefmt, parsed_usefmt) + parsed_usefmt;
-				new_fmt_p = (CS)memcpy(new_fmt_p , str, str_length) + str_length;
-				new_fmt_p = (CS)memcpy(new_fmt_p, "%}", 2) + 2;
-				new_fmt_p = (CS)memcpy(new_fmt_p , s, fmt_length) + fmt_length;
+				new_fmt_p = (S)memcpy(new_fmt_p, usefmt, parsed_usefmt) + parsed_usefmt;
+				new_fmt_p = (S)memcpy(new_fmt_p , str, str_length) + str_length;
+				new_fmt_p = (S)memcpy(new_fmt_p, "%}", 2) + 2;
+				new_fmt_p = (S)memcpy(new_fmt_p , s, fmt_length) + fmt_length;
 				*new_fmt_p = 0;
 				new_fmt_p = NULL;
 
@@ -9713,7 +9713,7 @@ bookRenderStatusLine(
 		case STL_HELPFLAG_ALT:
 			itemisflag = true;
 			if (po->book->kind == BOOK_HELP)
-				str = (CS)((opt == STL_HELPFLAG_ALT) ? S",HLP" : _("[Help]"));
+				str = (S)((opt == STL_HELPFLAG_ALT) ? u8",HLP" : _("[Help]"));
 			break;
 
 		case STL_FILETYPE:
@@ -9727,7 +9727,7 @@ bookRenderStatusLine(
 			itemisflag = true;
 			if (po->book->fileType && STRLEN(po->book->fileType) < TMPLEN - 2) {
 				eeSnprintf(buf_tmp, sizeof(buf_tmp), ",%s", po->book->fileType);
-				for (CS t = buf_tmp; *t != 0; t++)
+				for (S t = buf_tmp; *t != 0; t++)
 					*t = TOUPPER_LOC(*t);
 				str = buf_tmp;
 			}
@@ -9737,12 +9737,12 @@ bookRenderStatusLine(
 		case STL_PREVIEWFLAG_ALT:
 			itemisflag = true;
 			if (po->isPreview)
-				str = (CS)((opt == STL_PREVIEWFLAG_ALT) ? S",PRV" : _("[Preview]"));
+				str = (S)((opt == STL_PREVIEWFLAG_ALT) ? u8",PRV" : _("[Preview]"));
 			break;
 
 		case STL_QUICKFIX:
 			if (isLocationListBook(po->book)) {
-				str = (CS)(po->locationStackRef ? _(msg_loclist) : _(msg_qflist));
+				str = (S)(po->locationStackRef ? _(msg_loclist) : _(msg_qflist));
 			}
 			break;
 
@@ -9753,18 +9753,18 @@ bookRenderStatusLine(
 					(opt == STL_MODIFIED_ALT) + bookWasChanged(po->book) * 2
 					 + (!po->book->o.modifiable) * 4
 			) {
-			case 2: str = S"(+)"; break;
-			case 3: str = S",+"; break;
+			case 2: str = u8"(+)"; break;
+			case 3: str = u8",+"; break;
 			case 4:
 			case 5:
 			case 6:
 			case 7:
-				str = S"[-]"; break;
+				str = u8"[-]"; break;
 			}
 			break;
 
 		case STL_HIGHLIGHT: {
-			CS t = s;
+			S t = s;
 
 			while (*s != '#' && *s != ZERO)
 				++s;
@@ -9783,7 +9783,7 @@ bookRenderStatusLine(
 		statusItemsP[curitem].start = p;
 		statusItemsP[curitem].StatusTag = Normal;
 		if (str && *str) {
-			CS t = str;
+			S t = str;
 
 			if (itemisflag) {
 				if ((t[0] && t[1])
@@ -9826,7 +9826,7 @@ bookRenderStatusLine(
 		} ei (num >= 0) {
 			int nbase = (base == 'D' ? 10 : (base == 'O' ? 8 : 16));
 			Byte nstr[20];
-			CS t = nstr;
+			S t = nstr;
 
 			if (p + 20 >= out + outlen)
 				break;      //not sufficient space
@@ -9919,7 +9919,7 @@ bookRenderStatusLine(
 			*s++ = '>';
 			*s = ZERO;
 		} else {
-			CS end = out + outputlen;
+			S end = out + outputlen;
 
 			Long n = 0;
 			while (width >= maxwidth) {
@@ -9968,8 +9968,8 @@ bookRenderStatusLine(
 			for (l = 0; l < num_separators; l++) {
 				int dislocation = (l == (num_separators - 1)) ? final_spaces : standard_spaces;
 				dislocation *= MB_CHAR2LEN(fillchar);
-				CS start = statusItemsP[stlSeparatorLocationsP[l]].start;
-				CS seploc = start + dislocation;
+				S start = statusItemsP[stlSeparatorLocationsP[l]].start;
+				S seploc = start + dislocation;
 				STRMOVE(seploc, start);
 				for (s = start; s < seploc;)
 					MB_CHAR2BYTES(fillchar, s);
@@ -9991,12 +9991,12 @@ bookRenderStatusLine(
 	//TODO: find out why using called_emsg_before makes tests fail, does it matter?
 	//if (called_emsg > called_emsg_before)
 	if (anyEmsgG > anyEmsgSaved) {
-		CS optionName = oname == STATLINE_TABPANEL
-			? S"tabpanel"
+		S optionName = oname == STATLINE_TABPANEL
+			? u8"tabpanel"
 			: (oname == STATLINE_STATUSLINE)
-				? S"statusline"
-				: S"rulerformat";
-		optChangeStringOptionDirect(optionName, S"", opt_scope, SID_ERROR);
+				? u8"statusline"
+				: u8"rulerformat";
+		optChangeStringOptionDirect(optionName, u8"", opt_scope, SID_ERROR);
 	}
 
 	return width;
@@ -10005,7 +10005,7 @@ bookRenderStatusLine(
 //Get relative cursor position in portal into "buf[]", in the localized
 //percentage form like %99, 99%; using "Top", "Bot" or "All" when appropriate.
 pub int
-get_rel_pos(Portal* po, CS buf, int buflen){
+get_rel_pos(Portal* po, S buf, int buflen){
 	long above; //number of lines above portal
 	long below; //number of lines below portal
 
@@ -10035,11 +10035,11 @@ get_rel_pos(Portal* po, CS buf, int buflen){
 //Append (file 2 of 8) to "buf[]", if editing more than one file. Return the number of appended
 //characters
 private int
-append_arg_number(Portal* po, CS buf, Unt buflen){
+append_arg_number(Portal* po, S buf, Unt buflen){
 	if (ARGCOUNT <= 1)      //nothing to do
 		return 0;
 
-	CS msg = po->isNotValid ? _(" (%d of %d)") : _(" ((%d) of %d)");
+	S msg = po->isNotValid ? _(" (%d of %d)") : _(" ((%d) of %d)");
 	return (int)eeSnprintfSafelen(buf, buflen, msg, po->argListInd + 1, ARGCOUNT);
 }
 
@@ -10050,7 +10050,7 @@ append_arg_number(Portal* po, CS buf, Unt buflen){
 //The "*fullFName" and "*sfname" pointer values on call will not be freed.
 //Note that the resulting "*fullFName" pointer should be considered not allocated.
 pub void
-fname_expand(CS* fullFName, CS* sfname){
+fname_expand(S* fullFName, S* sfname){
 	if (*fullFName == NULL)       //no file name given, nothing to do
 		return;
 	if (*sfname == NULL)       //no short file name given, use fullFName
@@ -10305,15 +10305,15 @@ bookDontWrite_msg(Book* book) {
 }
 
 //Return special book name. Returns NULL when the book has a normal file name.
-pub CS
+pub S
 bookSpName(Book* book) {
 	if (isLocationListBook(book)) {
 		//Differentiate between the quickfix and location list books using
 		//the book number stored in the global quickfix stack.
 		if (book->fiNum == qf_stack_get_bufnr())
-			 return (CS)_(msg_qflist);
+			 return (S)_(msg_qflist);
 		else
-			 return (CS)_(msg_loclist);
+			 return (S)_(msg_loclist);
 	}
 
 	//There is no _file_ when 'buftype' is "nofile", shortFileName
@@ -10324,12 +10324,12 @@ bookSpName(Book* book) {
 		if (book->currFileName)
 			 return book->currFileName;
 		if (book == commPortBookG)
-			 return (CS)_("[Command Line]");
+			 return (S)_("[Command Line]");
 		if (bt_prompt(book))
-			 return (CS)_("[Prompt]");
+			 return (S)_("[Prompt]");
 		if (bt_popup(book))
-			 return (CS)_("[Popup]");
-		return (CS)_("[Scratch]");
+			 return (S)_("[Popup]");
+		return (S)_("[Scratch]");
 	}
 
 	if (book->currFileName == NULL)
@@ -10338,10 +10338,10 @@ bookSpName(Book* book) {
 }
 
 //Get "book->currFileName", use "[No Name]" if it is NULL.
-pub CS
+pub S
 bookGetFname(Book* book) {
 	if (book->currFileName == NULL)
-		return (CS)_("[No Name]");
+		return (S)_("[No Name]");
 	return book->currFileName;
 }
 
@@ -10434,7 +10434,7 @@ bookWipe(Book* book, int aucmd) { //When true, trigger autocommands.
 //Output a string for the version message.  If it's going to wrap, output a
 //newline, unless the message is too long to fit on the screen anyway.
 pub void
-printMsgWithWrap(CS s) {
+printMsgWithWrap(S s) {
 	int len = eeglStrSize(s);
 
 	if (!gotInterruptG && len < (int)visibleColsG
@@ -10449,7 +10449,7 @@ printMsgWithWrap(CS s) {
 //List string items nicely aligned in columns. When "size" is < 0 then the last entry is marked
 //with NULL. The entry with index "current" is inclosed in [].
 private void
-listInColumns(Arr(CS) items, int size, int current, Boole useHilite) {
+listInColumns(Arr(S) items, int size, int current, Boole useHilite) {
 	Unt cur_row = 1;
 	Unt itemCount = 0;
 	int width = 0;
@@ -10587,8 +10587,8 @@ drawGetTranslatedBookName(Book* book) {
 pub int
 bookStartEditingFile(
 	int fnum,
-	CS fullFName,
-	CS sfname,
+	S fullFName,
+	S sfname,
 	Invocation* invo,         //can be NULL!
 	LineNr newlnum,
 	Unt flags,
@@ -10599,11 +10599,11 @@ bookStartEditingFile(
 
 	int oldbuf;           //true if using existing book
 	int auto_buf = false; //true if autocommands brought us into the book unexpectedly
-	CS new_name = NULL;
+	S new_name = NULL;
 	Book* book;
 	BookRef bookRef;
 	BookRef curBookSaved;
-	CS free_fname = NULL;
+	S free_fname = NULL;
 	int retval = FAIL;
 	long n;
 	Pos orig_pos;
@@ -10611,7 +10611,7 @@ bookStartEditingFile(
 	int newcol = -1;
 	int solcol = -1;
 	Pos* pos;
-	CS command = NULL;
+	S command = NULL;
 	Unt readfile_flags = 0;
 	int did_inc_redrawing_disabled = false;
 	Long* so_ptr = &curPor->o.scrollOff;
@@ -11021,7 +11021,7 @@ bookStartEditingFile(
 		//If autocommands change the cursor position or topline, we should
 		//keep it.  Also when it moves within a line. But not when it moves to the first non-blank.
 		if (!EQUAL_POS(curPor->cursor, orig_pos)) {
-			CS text = ml_get_curline();
+			S text = ml_get_curline();
 
 			if (curPor->cursor.lnum != orig_pos.lnum
 				  || curPor->cursor.col != (int)(skipwhite(text) - text)) {
@@ -11115,8 +11115,8 @@ theend:
 }
 
 private void
-deleteMsg(CS name) {
-	showErrFmtMsg(_(e_autocommands_unexpectedly_deleted_new_buffer_str), name == NULL ? (CS)"" : name);
+deleteMsg(S name) {
+	showErrFmtMsg(_(e_autocommands_unexpectedly_deleted_new_buffer_str), name == NULL ? u8"" : name);
 	eeglFree(name);
 	auNewCurBookG.c = NULL;
 	auNewCurBookG.freeCount = 0;
@@ -11140,7 +11140,7 @@ bookNoFname(Book* book) {
 	return (!book || book->mem.mfile || !book->mem.mfile->fName);
 }
 
-pub CS
+pub S
 bookGetSwapName(Book* book) {
 	return book->mem.mfile->fName;
 }
@@ -11167,8 +11167,8 @@ bookCheckTimestamp(Book* book){
 	FileStat st;
 	int stat_res;
 	int retval = 0;
-	CS mesg = NULL;
-	CS mesg2 = S"";
+	S mesg = NULL;
+	S mesg2 = u8"";
 	int helpmesg = false;
 	enum {
 		RELOAD_NONE,
@@ -11222,20 +11222,20 @@ bookCheckTimestamp(Book* book){
 		ei (!bookWasChanged(book) && stat_res >= 0)
 			reload = RELOAD_NORMAL;
 		else {
-			CS reason;
+			S reason;
 			if (stat_res < 0) {
-				reason = S"deleted";
+				reason = u8"deleted";
 			} ei (bookWasChanged(book)) {
-				reason = S"conflict";
+				reason = u8"conflict";
 			}
 			//Check if the file contents really changed to avoid giving a warning when only the
 			//timestamp was set (e.g., checked out of CVS).  Always warn when the buffer was changed.
 			ei (orig_size != book->origSize || bookContentsChanged(book)) {
-				reason = S"changed";
+				reason = u8"changed";
 			} ei (orig_mode != book->origMode) {
-				reason = S"mode";
+				reason = u8"mode";
 			} else {
-				reason = S"time";
+				reason = u8"time";
 			}
 
 			//Only give the warning if there are no FileChangedShell autocommands.
@@ -11288,21 +11288,21 @@ bookCheckTimestamp(Book* book){
 	}
 
 	if (mesg) {
-		CS path = home_replace_save(book, book->currFileName);
+		S path = home_replace_save(book, book->currFileName);
 		Boole alreadyWarned = false;
 		if (path) {
 			if (!helpmesg)
-				mesg2 = S"";
+				mesg2 = u8"";
 			Unt tbufsize = STRLEN(mesg) + STRLEN(path) + 2 + STRLEN(mesg2) + 1; //+2 for "\n" or "; "
 						                                                       //and +1 for ZERO
-			CS tbuf = alloc(tbufsize);
+			S tbuf = alloc(tbufsize);
 			int tbuflen = eeSnprintf(tbuf, tbufsize, mesg, path);
 			if (can_reload) {
 				if (*mesg2 != ZERO)
 					eeSnprintf(tbuf + tbuflen, tbufsize - tbuflen, "\n%s", mesg2);
-				switch (do_dialog(EE_WARNING, (CS)_("Warning"),
-					 (CS)tbuf,
-					 (CS)_("&OK\n&Load File\nLoad File &and Options"),
+				switch (do_dialog(EE_WARNING, (S)_("Warning"),
+					 (S)tbuf,
+					 (S)_("&OK\n&Load File\nLoad File &and Options"),
 					 1, NULL, true)
 				) {
 					case 2:
@@ -11374,7 +11374,7 @@ bookCheckTimestamp(Book* book){
 //When "force" is false: Only try to shorten absolute file names.
 //For books that have buftype "nofile" or "scratch": never change the file name.
 pub void
-bookShortenName(Book* book, CS dirname, int force) {
+bookShortenName(Book* book, S dirname, int force) {
 	if (book->currFileName
 		 && !bt_nofilename(book)
 		 && !strStartsWithUrl(book->currFileName)
@@ -11382,7 +11382,7 @@ bookShortenName(Book* book, CS dirname, int force) {
 	) {
 		if (book->shortFileName != book->fullFileName)
 			EE_CLEAR(book->shortFileName);
-		CS p = shorten_fname(book->fullFileName, dirname);
+		S p = shorten_fname(book->fullFileName, dirname);
 		if (p) {
 			book->shortFileName = copyStr(p);
 			book->currFileName = book->shortFileName;
@@ -11432,7 +11432,7 @@ bookSetDirtyFlag(Book* book) {
 //Return FAIL for failure, OK otherwise.
 private int
 writeBytes(BwInfo* ip) {
-	CS buf = ip->bw_buf;   //data to write
+	S buf = ip->bw_buf;   //data to write
 	int len = ip->bw_len;   //length of data
 
 	if (ip->fd < 0)
@@ -11456,7 +11456,7 @@ check_mtime(Book* book, FileStat *st) {
 		msgDeco(_("WARNING: The file has been changed since reading it!!!"),
 						          getDecoFlags(HILITE_ErrorMsg)
 		);
-		if (ask_yesno((CS)_("Do you really want to write to it"), true) == 'n')
+		if (ask_yesno((S)_("Do you really want to write to it"), true) == 'n')
 			return FAIL;
 		msg_scroll = false;       //always overwrite the file message now
 	 }
@@ -11465,7 +11465,7 @@ check_mtime(Book* book, FileStat *st) {
 
 private void
 updateFileTime(
-	CS fname,
+	S fname,
 	Tyme  atime,      //access time
 	Tyme  mtime       //modification time
 ){
@@ -11477,7 +11477,7 @@ updateFileTime(
 	utimensat(0, (char*)fname, newTimes, 0);
 }
 
-pub CS
+pub S
 new_file_message(void) {
 	return _("(New)");
 }
@@ -11489,12 +11489,12 @@ new_file_message(void) {
 //- Otherwise, prepend "dname" to the tail of "fname" (swap file in specific dir).
 //
 //The return value is an allocated string and can be NULL.
-private CS
-determineBackupFilename(CS fname, CS dname){
-	CS t;
-	CS retval;
+private S
+determineBackupFilename(S fname, S dname){
+	S t;
+	S retval;
 
-	CS tail = fiGetShortFiName(fname);
+	S tail = fiGetShortFiName(fname);
 
 	if (dname[0] == '.' && dname[1] == ZERO)
 		retval = copyStr(fname);
@@ -11536,8 +11536,8 @@ determineBackupFilename(CS fname, CS dname){
 pub int
 bookWrite(
 	Book* book,
-	CS fname,
-	CS sfname,
+	S fname,
+	S sfname,
 	LineNr start,
 	LineNr end,
 	Invocation* invo,      //for forced 'ff', can be NULL!
@@ -11551,15 +11551,15 @@ bookWrite(
 	}
 
 	int fd;
-	CS backup = NULL;
+	S backup = NULL;
 	int backup_copy = false; //copy the original file?
-	CS s;
+	S s;
 	Byte c;
-	CS errmsg = NULL;
+	S errmsg = NULL;
 	int errmsg_allocated = false;
-	CS errnum = NULL;
+	S errnum = NULL;
 	Byte smallbuf[SMALLBUFSIZE];
-	CS backup_ext;
+	S backup_ext;
 	int bufsize;
 	long perm;          //file permissions
 	int retval = OK;
@@ -11618,7 +11618,7 @@ bookWrite(
 		sfname = fname;
 	//Use the short file name whenever possible.
 	//Avoids problems with networks and when directory names are changed.
-	CS fullFName = fname;             //remember full fname
+	S fullFName = fname;             //remember full fname
 	fname = sfname;
 
 	Boole overwriting = (book->fullFileName && fnamecmp(fullFName, book->fullFileName) == 0);
@@ -11795,10 +11795,10 @@ bookWrite(
 
 	msg_scroll = isExitingG; //overwrite previous file message?
 	if (!filtering)
-		filemess(book, fname, S"", 0);   //show that we are busy
+		filemess(book, fname, u8"", 0);   //show that we are busy
 	msg_scroll = false;          //always overwrite the file message now
 
-	CS buffer = tryBigAlloc(WRITEBUFSIZE);
+	S buffer = tryBigAlloc(WRITEBUFSIZE);
 	if (buffer == NULL) { //can't allocate big buffer, use small
 						       //one (to be able to write when out of memory)
 		buffer = smallbuf;
@@ -11818,13 +11818,13 @@ bookWrite(
 		perm = stOld.st_mode;
 		if (!S_ISREG(stOld.st_mode)) {    //not a file
 			if (S_ISDIR(stOld.st_mode)) {
-				errnum = (CS)"E502: ";
-				errmsg = (CS)_(e_is_a_directory);
+				errnum = u8"E502: ";
+				errmsg = (S)_(e_is_a_directory);
 				goto fail;
 			}
 			if (mch_nodetype(fname) != NODE_WRITABLE) {
-				errnum = (CS)"E503: ";
-				errmsg = (CS)_(e_is_not_file_or_writable_device);
+				errnum = u8"E503: ";
+				errmsg = (S)_(e_is_not_file_or_writable_device);
 				goto fail;
 			}
 			//It's a device of some kind (or a fifo) which we can write to
@@ -11841,8 +11841,8 @@ bookWrite(
 		file_readonly = check_file_readonly(fname, (int)perm);
 
 		if (!forceit && file_readonly) {
-			 errnum = (CS)"E505: ";
-			 errmsg = (CS)_(e_is_read_only_add_bang_to_override);
+			 errnum = u8"E505: ";
+			 errmsg = (S)_(e_is_read_only_add_bang_to_override);
 			 goto fail;
 		}
 
@@ -11946,18 +11946,18 @@ bookWrite(
 		}
 
 		//make sure we have a valid backup extension to use
-		backup_ext = p_bex ? p_bex : S".bak";
+		backup_ext = p_bex ? p_bex : u8".bak";
 
 		if (backup_copy && (fd = open((char *)fname, O_RDONLY | O_EXTRA, 0)) >= 0) {
 			int bfd;
-			CS po;
+			S po;
 			int some_error = false;
 			FileStat stNew;
-			CS rootname;
-			CS p;
+			S rootname;
+			S p;
 			mode_t umask_save;
 
-			CS copybuf = tryBigAlloc(WRITEBUFSIZE + 1);
+			S copybuf = tryBigAlloc(WRITEBUFSIZE + 1);
 			if (!copybuf) {
 				some_error = true;       //out of memory
 				goto nobackup;
@@ -11976,14 +11976,14 @@ bookWrite(
 			if (!p_bdir)
 				goto nobackup;
 
-			CS backupDirRemainder = p_bdir; //@backupdir
+			S backupDirRemainder = p_bdir; //@backupdir
 			while (*backupDirRemainder != ZERO) {
 				stNew.st_ino = 0;
 				stNew.st_dev = 0;
 				stNew.st_gid = 0;
 
 				//Isolate one directory name, using an entry in 'bdir'.
-				(void)strCutPathFromListOfPaths(OUT &backupDirRemainder, OUT copybuf, WRITEBUFSIZE, S",");
+				(void)strCutPathFromListOfPaths(OUT &backupDirRemainder, OUT copybuf, WRITEBUFSIZE, u8",");
 
 				p = copybuf + STRLEN(copybuf);
 				if (after_pathsep(copybuf, p) && p[-1] == p[-2]
@@ -12062,20 +12062,20 @@ endOfName:
 						writeInfo.bw_buf = copybuf;
 						while ((writeInfo.bw_len = fiReadEintr(fd, copybuf, WRITEBUFSIZE)) > 0) {
 						   if (writeBytes(&writeInfo) == FAIL) {
-						      errmsg = (CS)_(e_cant_write_to_backup_file_add_bang_to_override);
+						      errmsg = (S)_(e_cant_write_to_backup_file_add_bang_to_override);
 						      break;
 						   }
 						   ui_breakcheck();
 						   if (gotInterruptG) {
-						      errmsg = (CS)_(e_interrupted);
+						      errmsg = (S)_(e_interrupted);
 						      break;
 						   }
 						}
 
 						if (close(bfd) < 0 && !errmsg)
-						   errmsg = (CS)_(e_close_error_for_backup_file_add_bang_to_write_anyway);
+						   errmsg = (S)_(e_close_error_for_backup_file_add_bang_to_write_anyway);
 						if (writeInfo.bw_len < 0)
-						   errmsg = (CS)_(e_cant_read_file_for_backup_add_bang_to_write_anyway);
+						   errmsg = (S)_(e_cant_read_file_for_backup_add_bang_to_write_anyway);
 						updateFileTime(backup, stOld.st_atime, stOld.st_mtime);
 						mch_copy_xattr(fname, backup);
 						break;
@@ -12088,7 +12088,7 @@ endOfName:
 			eeglFree(copybuf);
 
 			if (backup == NULL && errmsg == NULL)
-				errmsg = (CS)_(e_cannot_create_backup_file_add_bang_to_write_anyway);
+				errmsg = (S)_(e_cannot_create_backup_file_add_bang_to_write_anyway);
 			//ignore errors when forceit is true
 			if ((some_error || errmsg) && !forceit) {
 				retval = FAIL;
@@ -12096,7 +12096,7 @@ endOfName:
 			}
 			errmsg = NULL;
 		} else {
-			CS p;
+			S p;
 
 			//Make a backup by renaming the original file.
 
@@ -12105,10 +12105,10 @@ endOfName:
 			if (!p_bdir)
 				goto finishedParsing;
 
-			CS backupDirRemainder = p_bdir;
+			S backupDirRemainder = p_bdir;
 			while (*backupDirRemainder) {
 				//Isolate one directory name and make the backup file name.
-				(void)strCutPathFromListOfPaths(&backupDirRemainder, ioBuffG, IOSIZE, S",");
+				(void)strCutPathFromListOfPaths(&backupDirRemainder, ioBuffG, IOSIZE, u8",");
 
 				p = ioBuffG + STRLEN(ioBuffG);
 				if (after_pathsep(ioBuffG, p) && p[-1] == p[-2]) {
@@ -12119,7 +12119,7 @@ endOfName:
 					}
 				}
 				if (!backup) {
-					CS rootname = determineBackupFilename(fname, ioBuffG);
+					S rootname = determineBackupFilename(fname, ioBuffG);
 					if (rootname) {
 						backup = fiAppendFileExtension(rootname, backup_ext, false);
 						eeglFree(rootname);
@@ -12155,7 +12155,7 @@ endOfName:
 			}
 		finishedParsing:
 			if (backup == NULL && !forceit) {
-				errmsg = (CS)_(e_cant_make_backup_file_add_bang_to_write_anyway);
+				errmsg = (S)_(e_cant_make_backup_file_add_bang_to_write_anyway);
 				goto fail;
 			}
 		}
@@ -12173,13 +12173,13 @@ endOfName:
 	if (reset_changed && !newfile && overwriting && !(isExitingG && backup)) {
 		ml_preserve(book, false);
 		if (gotInterruptG) {
-			errmsg = (CS)_(e_interrupted);
+			errmsg = (S)_(e_interrupted);
 			goto fail;
 		}
 	}
 
 	//Default: write the file directly.  May write to a temp file for multi-byte conversion.
-	CS wfname = fname;   //name of file to write to
+	S wfname = fname;   //name of file to write to
 
 
 #define TRUNC_ON_OPEN 0
@@ -12205,9 +12205,9 @@ endOfName:
 					|| (lstat((char *)fname, &st) == 0 && (st.st_dev != stOld.st_dev
 					 || st.st_ino != stOld.st_ino))
 			) {
-				errmsg = (CS)_(e_cant_open_linked_file_for_writing);
+				errmsg = (S)_(e_cant_open_linked_file_for_writing);
 			} else {
-				errmsg = (CS)_(e_cant_open_file_for_writing);
+				errmsg = (S)_(e_cant_open_file_for_writing);
 				if (forceit && perm >= 0) {
 					//we write to the file, thus it should be marked writable after all
 					if (!(perm & 0200))
@@ -12266,7 +12266,7 @@ endOfName:
 			&& st.st_ino != stOld.st_ino
 	){
 		 close(fd);
-		 errmsg = (CS)_(e_file_changed_while_writing);
+		 errmsg = (S)_(e_file_changed_while_writing);
 		 goto fail;
 	}
 	}
@@ -12303,7 +12303,7 @@ endOfName:
 	LineNr lnum;
 	for (lnum = start; lnum <= end; ++lnum) {
 		//The next while loop is done once for each character written. Keep it fast!
-		CS ptr = memGetLine(book, lnum, false) - 1;
+		S ptr = memGetLine(book, lnum, false) - 1;
 		if (write_undo_file)
 			sha256_update(&sha_ctx, ptr + 1, (Unt)(STRLEN(ptr + 1) + 1));
 		while ((c = *++ptr) != ZERO) {
@@ -12365,7 +12365,7 @@ endOfName:
 	//but don't complain if it does not work (could be a pipe). If the @fsync option is off,
 	//don't fsync(). Useful for laptops.
 	if (p_fs && eeFsync(fd) != 0 && !device) {
-		errmsg = (CS)_(e_fsync_failed);
+		errmsg = (S)_(e_fsync_failed);
 		end = 0;
 	}
 
@@ -12402,7 +12402,7 @@ endOfName:
 	if (perm >= 0)
 		(void)mch_fsetperm(fd, perm);
 	if (close(fd) != 0) {
-		errmsg = (CS)_(e_close_failed);
+		errmsg = (S)_(e_close_failed);
 		end = 0;
 	}
 
@@ -12414,9 +12414,9 @@ endOfName:
 	if (end == 0) { //Error encountered.
 		if (errmsg == NULL) {
 			if (gotInterruptG)
-				errmsg = (CS)_(e_interrupted);
+				errmsg = (S)_(e_interrupted);
 			else
-				errmsg = (CS)_(e_write_error_file_system_full);
+				errmsg = (S)_(e_write_error_file_system_full);
 		}
 
 		//If we have a backup file, try to put it in place of the new file, because the new file is
@@ -12718,7 +12718,7 @@ alist_set(
 pub void
 arglistIngest(
 	 EeArgList* al,
-	 CS fname,
+	 S fname,
 	 int set_fnum   //1: set book number; 2: re-use curBook
 ){
 	if (fname == NULL)      //don't add NULL file names
@@ -12741,9 +12741,9 @@ arglistIngest(
 
 //Isolate one argument, taking backticks. Change the argument in-place, puts a ZERO after it.
 //Backticks remain. Return a pointer to the start of the next argument.
-private CS
-do_one_arg(CS str) {
-	CS p;
+private S
+do_one_arg(S str) {
+	S p;
 	Boole inbacktick = false;
 	for (p = str; *str; ++str) {
 		//When the backslash is used for escaping the special meaning of a
@@ -12768,8 +12768,8 @@ do_one_arg(CS str) {
 
 //Separate the arguments in "str" and return a list of pointers in the growarray "gap".
 private int
-get_arglist(ArrayList *gap, CS str, Boole escaped) {
-	ga_init2(gap, sizeof(CS), 20);
+get_arglist(ArrayList *gap, S str, Boole escaped) {
+	ga_init2(gap, sizeof(S), 20);
 	while (*str != ZERO) {
 		if (ga_grow(gap, 1) == FAIL) {
 			ga_clear(gap);
@@ -12790,7 +12790,7 @@ get_arglist(ArrayList *gap, CS str, Boole escaped) {
 //Parse a list of arguments (file names), expand them and return in "fnames[fcountp]".
 //When "wildignore" is true, removes files matching 'wildignore'. Return FAIL or OK.
 pub int
-bookParseAndExpandFnames(CS str, Boole omitWildignore, OUT ExpandMatch* matches){
+bookParseAndExpandFnames(S str, Boole omitWildignore, OUT ExpandMatch* matches){
 	ArrayList   ga;
 
 	if (get_arglist(&ga, str, false) == FAIL)
@@ -12864,7 +12864,7 @@ arglist_del_files(ArrayList *alist_ga) {
 	RegMatch   regmatch;
 	int didone;
 	int i;
-	CS p;
+	S p;
 	int match;
 
 	//Delete the items: use each item as a regexp and find a match in the argument list.
@@ -12907,7 +12907,7 @@ arglist_del_files(ArrayList *alist_ga) {
 //Return FAIL for failure, OK otherwise.
 private int
 do_arglist(
-	CS str,
+	S str,
 	int what,
 	int after,   //0 means before first one
 	Boole will_edit   //will edit added argument
@@ -12963,7 +12963,7 @@ cleanup:
 
 //Redefine the argument list.
 pub void
-set_arglist(CS str) {
+set_arglist(S str) {
 	 do_arglist(str, AL_SET, 0, true);
 }
 
@@ -13036,7 +13036,7 @@ c_args(Invocation* invo) {
 		if (ARGCOUNT <= 0)
 			return;      //empty argument list
 
-		Arr(CS) items = ALLOC_MULT(CS, ARGCOUNT);
+		Arr(S) items = ALLOC_MULT(S, ARGCOUNT);
 
 		//Overwrite the command, for a short list there is no scrolling
 		//required and no wait_return().
@@ -13105,7 +13105,7 @@ c_argument(Invocation* invo){
 //Edit file "argn" of the argument lists.
 pub void
 do_argfile(Invocation* invo, int argn){
-	CS p;
+	S p;
 	int old_arg_idx = curPor->argListInd;
 	Boole isSplitCommand = *invo->comm == 's';
 
@@ -13185,12 +13185,12 @@ pub void
 c_argdedupe(Invocation*){
 	for (int i = 0; i < ARGCOUNT; ++i) {
 		//Expand each argument to a full path to catch different paths leading to the same file
-		CS firstFullname = fiExpandAndCopy(ARGLIST[i].fname, false);
+		S firstFullname = fiExpandAndCopy(ARGLIST[i].fname, false);
 		if (!firstFullname)
 			return;
 
 		for (int j = i + 1; j < ARGCOUNT; ++j) {
-			CS secondFullname = fiExpandAndCopy(ARGLIST[j].fname, false);
+			S secondFullname = fiExpandAndCopy(ARGLIST[j].fname, false);
 			if (secondFullname == NULL)
 				break;  //out of memory
 			int areNamesDuplicate = fnamecmp(firstFullname, secondFullname) == 0;
@@ -13289,13 +13289,13 @@ c_argdelete(Invocation* invo) {
 
 //Function given to expandGeneric() to obtain the possible arguments of the argedit and argdelete
 //commands.
-pub CS
+pub S
 get_arglist_name(Expand*, int idx) {
-	return (idx >= ARGCOUNT) ? S"" : alist_name(&ARGLIST[idx]);
+	return (idx >= ARGCOUNT) ? u8"" : alist_name(&ARGLIST[idx]);
 }
 
 //Get the file name for an argument list entry.
-pub CS
+pub S
 alist_name(ArgFileEntry *afe) {
 	//Use the name from the associated book if it exists.
 	Book* b = bookFindFileByBookNr(afe->fnum);
@@ -13582,12 +13582,12 @@ c_all(Invocation* invo) {
 //Concatenate all files in the argument list, separated by spaces, and return it in one allocated
 //string. Spaces and backslashes in the file names are escaped with a backslash.
 //Return NULL when out of memory.
-pub CS
+pub S
 arg_all(void) {
 	int      len;
 	int      idx;
-	CS retval = NULL;
-	CS p;
+	S retval = NULL;
+	S p;
 
 	//Do this loop twice: first time: compute the total length second time: concatenate the names
 	for (;;) {
@@ -13824,12 +13824,12 @@ private int
 addProp(OUT Book* book, Prop prop) {
 	LineNr   lnum;
 	int      proplen;
-	CS newprops;
+	S newprops;
 	Unt textlen;
-	CS newtext;
+	S newtext;
 	int i;
 	TextProp tmpProp;
-	NULLABLE CS text = prop.text;
+	NULLABLE S text = prop.text;
 	int res = FAIL;
 
 	PropType* type = lookup_prop_type(mbText(prop.tyName), book);
@@ -13852,11 +13852,11 @@ addProp(OUT Book* book, Prop prop) {
 
 	if (prop.text) {
 		ArrayList* gap = &book->textPropText;
-		CS p;
+		S p;
 
 		//double check we got the right ID
 		if (-prop.id - 1 != gap->len)
-			internalErrMsg(S"text prop ID mismatch");
+			internalErrMsg(u8"text prop ID mismatch");
 		if (gap->ga_growsize == 0)
 			ga_init2(gap, sizeof(char *), 50);
 		if (ga_grow(gap, 1) == FAIL)
@@ -13878,7 +13878,7 @@ addProp(OUT Book* book, Prop prop) {
 		long   length;       //in bytes
 
 		//Fetch the line to get the lineLen field updated.
-		CS props;
+		S props;
 		proplen = get_text_props(OUT &props, book, lnum, true);
 		textlen = book->mem.lineLen - proplen * sizeof(TextProp);
 
@@ -14064,7 +14064,7 @@ prop_add_common(
 ){
 	Book* book = defaultBook;
 	int      id = 0;
-	CS text = NULL;
+	S text = NULL;
 
 	if (!dict || !bagHasKey(dict, tConst("type"))) {
 		emsg(_(e_missing_property_type_name));
@@ -14077,7 +14077,7 @@ prop_add_common(
 	if (bagHasKey(dict, tConst("end_lnum"))) {
 		prop.endLnum = bagGetNumber(dict, tConst("end_lnum"));
 		if (prop.endLnum < startLnum) {
-			showErrFmtMsg(_(e_invalid_value_for_argument_str), S"end_lnum");
+			showErrFmtMsg(_(e_invalid_value_for_argument_str), u8"end_lnum");
 			goto theend;
 		}
 	} else
@@ -14128,7 +14128,7 @@ prop_add_common(
 		prop.endCol = startCol + 1;
 
 		if (bagHasKey(dict, tConst("text_align"))) {
-			CS p = bagGetString(dict, tConst("text_align"), false);
+			S p = bagGetString(dict, tConst("text_align"), false);
 			if (!p)
 				goto theend;
 
@@ -14157,7 +14157,7 @@ prop_add_common(
 		}
 
 		if (bagHasKey(dict, tConst("text_wrap"))) {
-			CS p = bagGetString(dict, tConst("text_wrap"), false);
+			S p = bagGetString(dict, tConst("text_wrap"), false);
 			if (!p)
 				goto theend;
 			if (STRCMP(p, "wrap") == 0)
@@ -14217,14 +14217,14 @@ theend:
 //Return the number of text properties and, when non-zero, a pointer to the
 //first one in "props" (note that it is not aligned, therefore the Byte pointer).
 pub int
-get_text_props(OUT CS* props, Book* book, LineNr lnum, Boole will_change) {
+get_text_props(OUT S* props, Book* book, LineNr lnum, Boole will_change) {
 	//Be quick when no text property types have been defined for the book,
 	//unless we are adding one.
 	if ((!book->hasTextprop && !will_change) || book->mem.mfile == NULL)
 		return 0;
 
 	//Fetch the line to get the lineLen field updated.
-	CS text = memGetLine(book, lnum, will_change);
+	S text = memGetLine(book, lnum, will_change);
 	Unt textlen = memGetBookLen(book, lnum) + 1;
 	Unt proplen = book->mem.lineLen - textlen;
 	if (proplen == 0)
@@ -14242,7 +14242,7 @@ get_text_props(OUT CS* props, Book* book, LineNr lnum, Boole will_change) {
 //other "right" aligned property.
 pub int
 prop_count_above_below(Book* book, LineNr lnum) {
-	CS props;
+	S props;
 	int count = get_text_props(OUT &props, book, lnum, false);
 	int result = 0;
 	TextProp   prop;
@@ -14270,7 +14270,7 @@ prop_count_above_below(Book* book, LineNr lnum) {
 //When "last_line" is false then text properties after the line are not counted.
 pub int
 count_props(LineNr lnum, int only_starting, int last_line) {
-	CS props;
+	S props;
 	int      proplen = get_text_props(OUT &props, curBook, lnum, false);
 	int      result = proplen;
 	int      i;
@@ -14386,7 +14386,7 @@ find_visible_prop(
 	//bottomLine may not have been updated yet.
 	validate_botline_win(wp);
 	for (LineNr lnum = wp->topLine; lnum < wp->bottomLine; ++lnum) {
-		CS props;
+		S props;
 		int   count = get_text_props(OUT &props, wp->book, lnum, false);
 		for (int i = 0; i < count; ++i) {
 			MEMMOVE(prop, props + i * sizeof(TextProp), sizeof(TextProp));
@@ -14403,10 +14403,10 @@ find_visible_prop(
 //If "len" is zero text properties are removed, "props" is not used.
 //Any existing text properties are dropped. Only work for the current book.
 private void
-set_text_props(LineNr lnum, CS props, int len) {
-	CS text = ml_get(lnum);
+set_text_props(LineNr lnum, S props, int len) {
+	S text = ml_get(lnum);
 	int textlen = ml_get_len(lnum) + 1;
-	CS newtext = alloc(textlen + len);
+	S newtext = alloc(textlen + len);
 	MEMMOVE(newtext, text, textlen);
 	if (len > 0)
 		MEMMOVE(newtext + textlen, props, len);
@@ -14422,8 +14422,8 @@ pub void
 add_text_props(LineNr lnum, TextProp *text_props, int text_prop_count) {
 	int       proplen = text_prop_count * (int)sizeof(TextProp);
 
-	CS text = ml_get(lnum);
-	CS newtext = alloc(curBook->mem.lineLen + proplen);
+	S text = ml_get(lnum);
+	S newtext = alloc(curBook->mem.lineLen + proplen);
 	MEMMOVE(newtext, text, curBook->mem.lineLen);
 	MEMMOVE(newtext + curBook->mem.lineLen, text_props, proplen);
 	if ((curBook->mem.flags & ML_LINE_DIRTY) != 0)
@@ -14488,13 +14488,13 @@ prop_fill_dict(Bag* dict, TextProp* prop, Book* book) {
 	int buflocal = true;
 	int virtualtext_prop = prop->id < 0;
 
-	bagAddNumber(dict, S"col", (prop->col == MAXCOL) ? 0 : prop->col);
+	bagAddNumber(dict, u8"col", (prop->col == MAXCOL) ? 0 : prop->col);
 	if (!virtualtext_prop) {
-		bagAddNumber(dict, S"length", prop->len);
-		bagAddNumber(dict, S"id", prop->id);
+		bagAddNumber(dict, u8"length", prop->len);
+		bagAddNumber(dict, u8"id", prop->id);
 	}
-	bagAddNumber(dict, S"start", !(prop->flags & TEXT_PROP_CONT_PREV));
-	bagAddNumber(dict, S"end", !(prop->flags & TEXT_PROP_CONT_NEXT));
+	bagAddNumber(dict, u8"start", !(prop->flags & TEXT_PROP_CONT_PREV));
+	bagAddNumber(dict, u8"end", !(prop->flags & TEXT_PROP_CONT_NEXT));
 
 	pt = find_type_by_id(book->propTypes, &book->propArray, prop->type);
 	if (!pt) {
@@ -14502,36 +14502,36 @@ prop_fill_dict(Bag* dict, TextProp* prop, Book* book) {
 		buflocal = false;
 	}
 	if (pt)
-		bagAddString(dict, S"type", pt->name);
+		bagAddString(dict, u8"type", pt->name);
 
 	if (buflocal)
-		bagAddNumber(dict, S"type_bufnr", book->fiNum);
+		bagAddNumber(dict, u8"type_bufnr", book->fiNum);
 	else
-		bagAddNumber(dict, S"type_bufnr", 0);
+		bagAddNumber(dict, u8"type_bufnr", 0);
 	if (virtualtext_prop) {
 		//virtual text property
 		ArrayList    *gap = &book->textPropText;
 
 		//negate the property id to get the string index
-		CS text = ((Byte **)gap->c)[-prop->id - 1];
-		bagAddString(dict, S"text", text);
+		S text = ((Byte **)gap->c)[-prop->id - 1];
+		bagAddString(dict, u8"text", text);
 
 		//text_align
-		CS text_align = NULL;
+		S text_align = NULL;
 		if (prop->flags & TEXT_PROP_ALIGN_RIGHT)
-			 text_align = S"right";
+			 text_align = u8"right";
 		ei (prop->flags & TEXT_PROP_ALIGN_ABOVE)
-			 text_align = S"above";
+			 text_align = u8"above";
 		ei (prop->flags & TEXT_PROP_ALIGN_BELOW)
-			 text_align = S"below";
+			 text_align = u8"below";
 		if (text_align != NULL)
-			 bagAddString(dict, S"text_align", text_align);
+			 bagAddString(dict, u8"text_align", text_align);
 
 		//text_wrap
 		if (prop->flags & TEXT_PROP_WRAP)
-			 bagAddString(dict, S"text_wrap", S"wrap");
+			 bagAddString(dict, u8"text_wrap", u8"wrap");
 		if (prop->leftPad != 0)
-			 bagAddNumber(dict, S"text_padding_left", prop->leftPad);
+			 bagAddNumber(dict, u8"text_padding_left", prop->leftPad);
 	}
 }
 
@@ -14571,12 +14571,12 @@ f_prop_clear(Var *argvars, OUT Var*) {
 	for (LineNr lnum = start; lnum <= end; ++lnum) {
 		if (lnum > book->mem.lineCount)
 			break;
-		CS text = memGetLine(book, lnum, false);
+		S text = memGetLine(book, lnum, false);
 		Unt len = memGetBookLen(book, lnum) + 1;
 		if ((Unt)book->mem.lineLen > len) {
 			did_clear = true;
 			if (!(book->mem.flags & ML_LINE_DIRTY)) {
-				CS newtext = copyStr(text);
+				S newtext = copyStr(text);
 
 				book->mem.cachedLine = newtext;
 				book->mem.flags |= ML_LINE_DIRTY;
@@ -14613,7 +14613,7 @@ f_prop_find(Var *argvars, OUT Var* returnVar) {
 		return;
 
 	if (argvars[1].tag != VAR_UNKNOWN) {
-		CS dir_s = tv_get_string(&argvars[1]);
+		S dir_s = tv_get_string(&argvars[1]);
 
 		if (*dir_s == 'b')
 			dir = BACKWARD;
@@ -14649,7 +14649,7 @@ f_prop_find(Var *argvars, OUT Var* returnVar) {
 		id_found = true;
 	}
 	if (bagHasKey(b, tConst("type"))) {
-		CS name = bagGetString(b, tConst("type"), false);
+		S name = bagGetString(b, tConst("type"), false);
 		PropType* type = lookup_prop_type(mbText(name), book);
 
 		if (type == NULL)
@@ -14671,7 +14671,7 @@ f_prop_find(Var *argvars, OUT Var* returnVar) {
 	allocReturnDict(returnVar);
 
 	while (1) {
-		CS text = memGetLine(book, lnum, false);
+		S text = memGetLine(book, lnum, false);
 		Unt   textlen = memGetBookLen(book, lnum) + 1;
 		int   count = (int)((book->mem.lineLen - textlen) / sizeof(TextProp));
 		int       i;
@@ -14728,7 +14728,7 @@ f_prop_find(Var *argvars, OUT Var* returnVar) {
 			}
 
 			prop_fill_dict(returnVar->bag, &prop, book);
-			bagAddNumber(returnVar->bag, S"lnum", lnum);
+			bagAddNumber(returnVar->bag, u8"lnum", lnum);
 
 			return;
 			 }
@@ -14773,7 +14773,7 @@ get_props_in_line(
 	List* retlist,
 	int add_lnum
 ) {
-	CS text = memGetLine(book, lnum, false);
+	S text = memGetLine(book, lnum, false);
 	Unt textlen = memGetBookLen(book, lnum) + 1;
 	TextProp prop;
 
@@ -14788,7 +14788,7 @@ get_props_in_line(
 			Bag *b = allocBag();
 			prop_fill_dict(b, &prop, book);
 			if (add_lnum)
-				bagAddNumber(b, S"lnum", lnum);
+				bagAddNumber(b, u8"lnum", lnum);
 			listAppendBag(retlist, b);
 		}
 	}
@@ -14810,7 +14810,7 @@ get_prop_types_from_names(List *l, Book* book, OUT int *num_types) {
 			 emsg(_(e_string_required));
 			 goto errret;
 		}
-		CS name = li->c.string;
+		S name = li->c.string;
 		if (!name)
 			 goto errret;
 
@@ -14987,7 +14987,7 @@ f_prop_remove(Var *argvars, OUT Var* returnVar) {
 	//if a specific type was supplied "type": check that (and ignore "types".
 	//Otherwise check against the list of "types".
 	if (bagHasKey(dict, tConst("type"))) {
-		CS name = bagGetString(dict, tConst("type"), false);
+		S name = bagGetString(dict, tConst("type"), false);
 		PropType  *type = lookup_prop_type(mbText(name), book);
 
 		if (!type)
@@ -15044,7 +15044,7 @@ f_prop_remove(Var *argvars, OUT Var* returnVar) {
 			unsigned      idx;
 
 			for (idx = 0; idx < (book->mem.lineLen - len) / sizeof(TextProp); ++idx) {
-				CS cur_prop = book->mem.cachedLine + len + idx * sizeof(TextProp);
+				S cur_prop = book->mem.cachedLine + len + idx * sizeof(TextProp);
 				Unt   taillen;
 				int matches_id = 0;
 				int matchty = 0;
@@ -15062,7 +15062,7 @@ f_prop_remove(Var *argvars, OUT Var* returnVar) {
 				if (both ? matches_id && matchty : matches_id || matchty) {
 					if (!(book->mem.flags & ML_LINE_DIRTY)) {
 						//need to allocate the line to be able to change it
-						CS newptr = alloc(book->mem.lineLen);
+						S newptr = alloc(book->mem.lineLen);
 						MEMMOVE(newptr, book->mem.cachedLine, book->mem.lineLen);
 						book->mem.cachedLine = newptr;
 						book->mem.flags |= ML_LINE_DIRTY;
@@ -15122,7 +15122,7 @@ private void
 prop_type_set(Var *argvars, int add) {
 	Book* book = NULL;
 	DictItem* di;
-	CS name = tv_get_string(&argvars[0]);
+	S name = tv_get_string(&argvars[0]);
 	if (*name == ZERO) {
 		showErrFmtMsg(_(e_invalid_argument_str), "\"\"");
 		return;
@@ -15155,7 +15155,7 @@ prop_type_set(Var *argvars, int add) {
 			*htp = ALLOC_ONE(EeSet);
 			hash_init(*htp);
 		}
-		hash_add(*htp, PT2HIKEY(prop), S"prop type");
+		hash_add(*htp, PT2HIKEY(prop), u8"prop type");
 	} else {
 		if (prop == NULL) {
 			showErrFmtMsg(_(e_property_type_str_does_not_exist), name);
@@ -15168,11 +15168,11 @@ prop_type_set(Var *argvars, int add) {
 		if (di) {
 			Short hiId = SHORT;
 
-			CS hiliteName = bagGetString(dict, tConst("highlight"), false);
+			S hiliteName = bagGetString(dict, tConst("highlight"), false);
 			if (hiliteName && *hiliteName != ZERO)
 				hiId = hiliteGroupByName(mbText(hiliteName));
 			if (hiId == SHORT) {
-				showErrFmtMsg(_(e_unknown_highlight_group_name_str), hiliteName ? hiliteName : S"");
+				showErrFmtMsg(_(e_unknown_highlight_group_name_str), hiliteName ? hiliteName : u8"");
 				return;
 			}
 			prop->hilite = hiId;
@@ -15233,7 +15233,7 @@ pub void
 f_prop_type_delete(Var *argvars, OUT Var*) {
 	Book   *book = NULL;
 
-	CS name = tv_get_string(&argvars[0]);
+	S name = tv_get_string(&argvars[0]);
 	if (*name == ZERO) {
 		showErrFmtMsg(_(e_invalid_argument_str), "\"\"");
 		return;
@@ -15256,7 +15256,7 @@ f_prop_type_delete(Var *argvars, OUT Var*) {
 		ht = book->propTypes;
 		EE_CLEAR(book->propArray);
 	}
-	hash_remove(ht, hi, S"prop type delete");
+	hash_remove(ht, hi, u8"prop type delete");
 	eeglFree(prop);
 
 	//currently visible text properties will disappear
@@ -15267,7 +15267,7 @@ f_prop_type_delete(Var *argvars, OUT Var*) {
 //prop_type_get({name} [, {props}])
 pub void
 f_prop_type_get(Var *argvars, OUT Var* returnVar) {
-	CS name = tv_get_string(&argvars[0]);
+	S name = tv_get_string(&argvars[0]);
 	if (*name == ZERO) {
 		showErrFmtMsg(_(e_invalid_argument_str), "\"\"");
 		return;
@@ -15286,13 +15286,13 @@ f_prop_type_get(Var *argvars, OUT Var* returnVar) {
 	Bag *d = returnVar->bag;
 
 	if (prop->hilite != SHORT)
-		bagAddString(d, S"highlight", syn_id2name(prop->hilite));
-	bagAddNumber(d, S"priority", prop->priority);
-	bagAddNumber(d, S"combine", (prop->flags & PT_FLAG_COMBINE) ? 1 : 0);
-	bagAddNumber(d, S"start_incl", (prop->flags & PT_FLAG_INS_START_INCL) ? 1 : 0);
-	bagAddNumber(d, S"end_incl", (prop->flags & PT_FLAG_INS_END_INCL) ? 1 : 0);
+		bagAddString(d, u8"highlight", syn_id2name(prop->hilite));
+	bagAddNumber(d, u8"priority", prop->priority);
+	bagAddNumber(d, u8"combine", (prop->flags & PT_FLAG_COMBINE) ? 1 : 0);
+	bagAddNumber(d, u8"start_incl", (prop->flags & PT_FLAG_INS_START_INCL) ? 1 : 0);
+	bagAddNumber(d, u8"end_incl", (prop->flags & PT_FLAG_INS_END_INCL) ? 1 : 0);
 	if (book)
-		bagAddNumber(d, S"bufnr", book->fiNum);
+		bagAddNumber(d, u8"bufnr", book->fiNum);
 }
 
 private void
@@ -15449,7 +15449,7 @@ adjustPropColumns(LineNr lnum, ColNr col, int bytes_added, Unt flags) {
 	if (textPropFrozenG > 0)
 		return false;
 
-	CS props;
+	S props;
 	int proplen = get_text_props(OUT &props, curBook, lnum, true);
 	if (proplen == 0)
 		return false;
@@ -15480,7 +15480,7 @@ adjustPropColumns(LineNr lnum, ColNr col, int bytes_added, Unt flags) {
 	if (dirty) {
 		ColNr newlen = (int)textlen + wi * (ColNr)sizeof(TextProp);
 		if ((curBook->mem.flags & ML_LINE_DIRTY) == 0) {
-			CS p = eeMemsave(curBook->mem.cachedLine, newlen);
+			S p = eeMemsave(curBook->mem.cachedLine, newlen);
 			curBook->mem.cachedLine = p;
 		}
 		curBook->mem.flags |= ML_LINE_DIRTY;
@@ -15508,7 +15508,7 @@ adjustPropsForSplit(
 		return;
 
 	//Get the text properties from "lnumProps".
-	CS props;
+	S props;
 	int count = get_text_props(OUT &props, curBook, lnumProps, false);
 	ArrayList prevProp;
 	ArrayList nextProp;
@@ -15581,7 +15581,7 @@ adjustPropsForSplit(
 //Prepend properties of joined line "lnum" to "new_props".
 pub void
 prepend_joined_props(
-	CS new_props,
+	S new_props,
 	int       propcount,
 	OUT int* props_remaining,
 	LineNr    lnum,
@@ -15589,7 +15589,7 @@ prepend_joined_props(
 	long       col,
 	int       removed
 ) {
-	CS props;
+	S props;
 	int proplen = get_text_props(OUT &props, curBook, lnum, false);
 	for (int i = proplen; i-- > 0; ) {
 		TextProp  prop;
@@ -15625,7 +15625,7 @@ prepend_joined_props(
 				}
 			}
 			if (!found)
-				internal_error(S"text property above joined line not found");
+				internal_error(u8"text property above joined line not found");
 		}
 	}
 }

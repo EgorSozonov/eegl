@@ -27,9 +27,9 @@ int stl_connected(Portal* po);
 int drawGetKeymapStr(Portal* po, OUT Text buf);
 void screen_putchar(int c, Unt row, Unt col, char decoFlags);
 void screen_getbytes(int row, int col, Byte* bytes, OUT Byte* decoFlags);
-void drawText(CS text, Unt row, Unt col, Byte decoFlags);
+void drawText(S text, Unt row, Unt col, Byte decoFlags);
 void drawTextLen(
-	CS text,
+	S text,
 	int textlen,
 	Unt row,
 	int col,
@@ -54,7 +54,7 @@ void screenalloc(Boole doclear);
 void free_screenlines(void);
 int screenclear(void);
 void drawLineWasClobbered(int screen_lnum);
-int can_clear(CS p);
+int can_clear(S p);
 void screen_start(void);
 void drawMoveCursor(int row, int col);
 void setcursor(void);
@@ -99,12 +99,12 @@ int redrawing(void);
 void computeColumnsForRulerAndCommand(void);
 int screen_screencol(void);
 int screen_screenrow(void);
-CS set_chars_option(CS newVal, Boole is_listchars, OUT ErrBuilder* errb);
-CS drawSetFillChars(CS newVal, OUT ErrBuilder* errb);
-CS drawSetListChars(CS newVal, OUT ErrBuilder* errb);
-CS get_fillchars_name(Expand *, int idx);
-CS get_listchars_name(Expand *, int idx);
-CS check_chars_options(CS newVal);
+S set_chars_option(S newVal, Boole is_listchars, OUT ErrBuilder* errb);
+S drawSetFillChars(S newVal, OUT ErrBuilder* errb);
+S drawSetListChars(S newVal, OUT ErrBuilder* errb);
+S get_fillchars_name(Expand *, int idx);
+S get_listchars_name(Expand *, int idx);
+S check_chars_options(S newVal);
 int drawUpdateScreen(Unt type_arg);
 void redrawPortalStatusLine(Portal* po, Boole ignore_pum);
 void showruler(int always);
@@ -151,6 +151,6 @@ ColNr drawGetScreenCol(int offset);
 ColNr drawGetOffset(int row);
 Boole drawHasLines();
 Byte drawGetLine(int offset);
-CS drawGetLinesWithOffset(Unt row);
+S drawGetLinesWithOffset(Unt row);
 Unt drawGetScreenComposingChar(int offset, Unt composeInd);
 Unt drawGetScreenUnicodeChar(int offset);

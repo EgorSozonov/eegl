@@ -1,6 +1,5 @@
 
-typedef unsigned char* CS; // ZERO-terminated byte arrays only
-#define S (unsigned char*)
+typedef unsigned char* S; // ZERO-terminated byte arrays only
 
 #define _DEFAULT_SOURCE 1
 #define _GNU_SOURCE 1
@@ -46,21 +45,21 @@ typedef _Atomic int32_t AtomicInt;
 
 // Strings with length
 typedef struct Text {
-   CS c; //non-ZERO bytes followed by a ZERO (possibly outside of slice but in
+   S c; //non-ZERO bytes followed by a ZERO (possibly outside of slice but in
               //allocated memory). @c is non-null if len > 0.
    Unt  len;  //length of the slice
 } Text;
 
 // String builder containing multiple ZERO-terminated strings with free space at the tail
 typedef struct {
-   CS c;    //ZERO-terminated bytes, perhaps with ZEROes inside of it, too.
+   S c;    //ZERO-terminated bytes, perhaps with ZEROes inside of it, too.
             //If len > 0, then c is non-null and points to (cap + 1) bytes, and .c[cap] = ZERO
    Unt len; //Length of the already filled part. Includes the final ZERO!
    Unt cap; //Total capacity. Can all be filled with any bytes
 } Polystring;
 
 typedef struct {
-   Arr(CS) c;      //array of args
+   Arr(S) c;      //array of args
    Unt len;        //num of args in .c
    Unt cap;        //capacity of .c
    Polystring buf; //container where .c points into
@@ -82,7 +81,7 @@ typedef struct Arena Arena;
 // Mutable directory name. Always ends in a slash (unless empty). Can be appended or shortened
 // (corresponds to descending into a sub-directory or coming back up). see string.c
 typedef struct {
-   CS c;
+   S c;
    Int len;
    Int cap;
    Arena* a;
@@ -150,11 +149,11 @@ typedef struct pollfd {
 #define STRCOLL(d, s)      strcoll((char *)(d), (char *)(s))
 #define STRTOD(a, b)       strtod((char*)a, (char**) b)
 #define STRTOL(a, b, c)    strtol((char*)a, (char**) b, c)
-#define STRCHR(a, b)       (CS)strchr((char*)a, (char)b)
-#define STRSTR(a, b)       (CS)strstr((char*)a, (char*)b)
+#define STRCHR(a, b)       (S)strchr((char*)a, (char)b)
+#define STRSTR(a, b)       (S)strstr((char*)a, (char*)b)
 #define STRFTIME(a, b, fmt, ...)    strftime((char*)a, b, (char*)fmt, ##__VA_ARGS__)
 #define BINDTEXTDOMAIN(a, b) bindtextdomain((char*)a, (char*)b)
-#define FGETS(a, b, c) (CS)fgets((char*)a, b, c)
+#define FGETS(a, b, c) (S)fgets((char*)a, b, c)
 #define FREAD(a, b, c, d) fread((char*)a, b, c, d)
 #define FPUTS(a, b)    fputs((char*)a, b)
 #define FOPEN(a, b)    fopen((char*)a, (char*)b)
@@ -162,8 +161,8 @@ typedef struct pollfd {
 #define ATOI(a)    atoi((char*)a)
 #define STAT(a, b)    stat((char*)a, b)
 #define LSTAT(a, b)    lstat((char*)a, b)
-#define TGETSTR(a, b)  (CS)tgetstr((char*)a, (char**)b)
-#define TGOTO(a, b, c) (CS)tgoto((char*)a, b, c)
+#define TGETSTR(a, b)  (S)tgetstr((char*)a, (char**)b)
+#define TGOTO(a, b, c) (S)tgoto((char*)a, b, c)
 
 // Like strcpy() but allows overlapped source and destination.
 #define STRMOVE(d, s)      memmove((char*)(d), (char*)(s), STRLEN(s) + 1)
@@ -192,14 +191,14 @@ typedef struct pollfd {
 #define BS          8
 #define TAB         9
 #define NL         10
-#define NL_STR     S"\012"
+#define NL_STR     u8"\012"
 #define FF         12
 #define ENTER      13
 #define ESC        27
-#define ESC_STR    S"\033"
+#define ESC_STR    u8"\033"
 #define ESC_STR_nc "\033"
 #define DEL        0x7f
-#define DEL_STR    S"\177"
+#define DEL_STR    u8"\177"
 
 #define POUND      0xA3
 

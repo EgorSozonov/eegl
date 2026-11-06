@@ -8,7 +8,7 @@
 #define _GNU_SOURCE 1
 
 #ifndef PREFIX
-#define PREFIX S"/usr"
+#define PREFIX u8"/usr"
 #endif
 
 //============ the header file puzzle: order matters =========
@@ -44,9 +44,9 @@ typedef struct sigaction SignalAction;
 
 #define MAIN_HELPFILE PREFIX "/share/doc/eegl/help.txt"
 
-#define EE_DEFAULTS_FILE (CS)"$EEGLRUNTIME/defaults.vim"
+#define EE_DEFAULTS_FILE (S)"$EEGLRUNTIME/defaults.vim"
 
-#define EEGLINFO_FILE (CS)"$HOME/.config/eegl/.eeglinfo"
+#define EEGLINFO_FILE (S)"$HOME/.config/eegl/.eeglinfo"
 
 #define SYNTAX_FNAME   "$EEGLRUNTIME/ftype/%s.vim"
 
@@ -66,7 +66,7 @@ typedef struct sigaction SignalAction;
 #define DFLT_MAXMEM   (12*1024)    //use up to 12 Mbytes for a buffer
 
 #define mch_rename(src, dst) rename(src, dst)
-#define mch_getenv(x) (CS)getenv((char *)(x))
+#define mch_getenv(x) (S)getenv((char *)(x))
 #define mch_setenv(name, val, x) setenv((char *)name, (char *)val, x)
 
 //use fork/exec to start the shell
@@ -505,9 +505,9 @@ typedef struct tm Tm;
 //- single - message for singular form
 //- multi  - message for plural form
 //- number - the count
-#define _(x) (CS)gettext((char *)(x))
-#define NGETTEXT(x, xs, n) (CS)ngettext((char*)(x), (char*)(xs), (n))
-#define N_(x) (CS)x
+#define _(x) (S)gettext((char *)(x))
+#define NGETTEXT(x, xs, n) (S)ngettext((char*)(x), (char*)(xs), (n))
+#define N_(x) (S)x
 
 //{{{enums
 
@@ -1332,7 +1332,7 @@ typedef int Socket;
 #define STL_HIGHLIGHT    '#'      //highlight name
 #define STL_TABPAGENR    'T'      //tab label nr
 #define STL_TABCLOSENR   'X'      //tab close nr
-#define STL_ALL          (S"fFtcvVlLknoObBrRhHmYyWwMqpPaNS{#")
+#define STL_ALL          (u8"fFtcvVlLknoObBrRhHmYyWwMqpPaNS{#")
 
 //Kinds of status lines
 #define STATLINE_TABPANEL    1
@@ -1349,7 +1349,7 @@ typedef int Socket;
 
 //The following are actual variables for the options
 
-EXTERN CS p_tsrfu;      //@thesaurus.func
+EXTERN S p_tsrfu;      //@thesaurus.func
 EXTERN Boole p_aw;      //@autowrite
 EXTERN Boole p_awa;     //@autowriteall
 EXTERN Boole p_bk;      //@backup
@@ -1358,19 +1358,19 @@ EXTERN Boole p_bk;      //@backup
 #define BKC_NO            0x004
 #define BKC_BREAKSYMLINK  0x008
 #define BKC_BREAKHARDLINK 0x010
-EXTERN CS p_bdir;       //@backup.dir
-EXTERN CS p_bex;        //@backup.ext
+EXTERN S p_bdir;       //@backup.dir
+EXTERN S p_bex;        //@backup.ext
 EXTERN unsigned bo_flags;
-EXTERN CS p_bsk;        //@backup.skip
+EXTERN S p_bsk;        //@backup.skip
 EXTERN Long p_bdlay;    //@balloon.delay
 EXTERN Boole p_bevalterm; //@balloon.evalterm
-EXTERN CS p_bt;         //@book.type
+EXTERN S p_bt;         //@book.type
 EXTERN Boole p_delcomb; //@delcombine
 EXTERN Long p_cwh;      //@cmdwinheight
 EXTERN Long commlineHeightG;//@commheight
-EXTERN CS p_cpt;        //@complete
+EXTERN S p_cpt;        //@complete
 EXTERN Boole p_confirm; //@confirm
-EXTERN CS p_cfc;        //@complete.fuzzycollect
+EXTERN S p_cfc;        //@complete.fuzzycollect
 EXTERN unsigned cfc_flags; //flags from @complete.fuzzycollect
 EXTERN Unt p_cia;       //@complete.itemalign
 EXTERN Unt cot_flags;   //flags from @complete.opt
@@ -1396,24 +1396,24 @@ EXTERN Long p_acl;      //@autocompletedelay
 EXTERN Long   p_ph;      //@pumheight
 EXTERN Long   p_pw;      //@pumwidth
 EXTERN Long   p_pmw;     //@pummaxwidth
-EXTERN CS p_csprg;       //@cscope.prg
+EXTERN S p_csprg;       //@cscope.prg
 EXTERN Boole p_csre;     //@cscope.relative
 EXTERN Boole p_cst;      //@cscope.tag
 EXTERN Long   p_csto;    //@cscope.tagorder
 EXTERN Long   p_cspc;    //@cscope.pathcomp
 EXTERN Boole p_csverbose;//@cscope.verbose
-EXTERN CS p_debug;  //@debug
-EXTERN CS p_dip;    //@diffopt
-EXTERN CS p_dex;    //@diffexpr
+EXTERN S p_debug;  //@debug
+EXTERN S p_dip;    //@diffopt
+EXTERN S p_dex;    //@diffexpr
 EXTERN Byte p_ead;    //@eadirection
 #define EAD_VERTICAL   1 //must be >0
 #define EAD_HORIZONTAL 2
 #define EAD_BOTH       3
 
 EXTERN Boole p_ea;       //@equalalways
-EXTERN CS globOpt;  //@errorfile
+EXTERN S globOpt;  //@errorfile
 EXTERN int   p_eof;      //@endoffile
-EXTERN CS p_ei;     //@eventignore
+EXTERN S p_ei;     //@eventignore
 EXTERN Long foldLevelStart; //@fold.levelstart
 EXTERN Unt p_fdo;        //@fold.open
 //keep in sync with option.c:p_fdo_values
@@ -1428,28 +1428,28 @@ EXTERN Unt p_fdo;        //@fold.open
 #define FDO_INSERT   0x100
 #define FDO_UNDO     0x200
 #define FDO_JUMP     0x400
-EXTERN CS p_fp;     //@formatprg
+EXTERN S p_fp;     //@formatprg
 EXTERN Boole  p_fs;      //@fsync
-EXTERN CS p_cpp;    //@complete.popup
+EXTERN S p_cpp;    //@complete.popup
 EXTERN Byte cursorNormalG;   //@cursor.normal
 EXTERN Byte cursorInsertG;   //@cursor.insert
 EXTERN Long p_hh;      //@helpheight
-EXTERN CS p_hlg;    //@helplang
+EXTERN S p_hlg;    //@helplang
 EXTERN Boole p_hls;     //@hlsearch
 EXTERN Long p_hi;      //@history
 EXTERN Boole p_ic;      //@ignorecase
-EXTERN CS p_imaf;   //@imactivatefunc
-EXTERN CS p_imsf;   //@imstatusfunc
+EXTERN S p_imaf;   //@imactivatefunc
+EXTERN S p_imsf;   //@imstatusfunc
 EXTERN int p_imcmdline;//@imcmdline
 EXTERN int p_imdisable;//@imdisable
 EXTERN Boole p_is;       //@incsearch
-EXTERN CS p_isf;    //@isfname
-EXTERN CS p_isi;    //@isident
-EXTERN CS p_ise;    //@isexpand
-EXTERN CS p_isk;    //@iskeyword
-EXTERN CS p_kp;     //@keywordprg
-EXTERN CS p_kpc;    //@keyprotocol
-EXTERN CS p_langmap;//@langmap
+EXTERN S p_isf;    //@isfname
+EXTERN S p_isi;    //@isident
+EXTERN S p_ise;    //@isexpand
+EXTERN S p_isk;    //@iskeyword
+EXTERN S p_kp;     //@keywordprg
+EXTERN S p_kpc;    //@keyprotocol
+EXTERN S p_langmap;//@langmap
 
 //Characters from the @listchars option
 typedef struct {
@@ -1476,38 +1476,38 @@ typedef struct {
    Unt trunc;
 } FillChars;
 
-EXTERN CS p_lcs;    //@listchars
+EXTERN S p_lcs;    //@listchars
 EXTERN ListChars listCharsG;     //@listchars characters
-EXTERN CS p_fcs;    //@fillchars
+EXTERN S p_fcs;    //@fillchars
 EXTERN FillChars fillCharsG;     //@fillchars characters
 EXTERN Boole p_intro;//@intro
 EXTERN Boole p_lrm;  //@langremap
 EXTERN Boole p_more; //@more
 EXTERN Boole makeOpenWhenDoneG; //@makeOpenWhenDone
-EXTERN CS p_mef;     //@makeef
+EXTERN S p_mef;     //@makeef
 EXTERN Long p_mfd;   //@maxfuncdepth
 EXTERN Long p_mm;    //@maxmem
 EXTERN Long p_mmp;   //@maxmempattern
-EXTERN CS p_mopt;    //@messagesopt
+EXTERN S p_mopt;    //@messagesopt
 EXTERN Long p_msc;   //@maxsearchcount
 EXTERN Boole p_modifiable; //command-line option "-R" (or "-M" - same thing)
 EXTERN Long p_mouset;//@mousetime
-EXTERN CS p_nf;      //@nrformats
-EXTERN CS p_opfunc;  //@operatorfunc
-EXTERN CS p_pex;     //@patchexpr
-EXTERN CS p_cdpath;  //@cdpath
+EXTERN S p_nf;      //@nrformats
+EXTERN S p_opfunc;  //@operatorfunc
+EXTERN S p_pex;     //@patchexpr
+EXTERN S p_cdpath;  //@cdpath
 EXTERN Long p_rdt;   //@redrawtime
 EXTERN Long p_pvh;   //@previewheight
-EXTERN CS p_ruf;     //@rulerformat
-EXTERN CS p_qftf;    //@quickfixtextfunc
-#define runtimePath (CS)"~/.config/eegl/runtime/"
+EXTERN S p_ruf;     //@rulerformat
+EXTERN S p_qftf;    //@quickfixtextfunc
+#define runtimePath (S)"~/.config/eegl/runtime/"
 EXTERN Long p_sj;    //@scroll.jump
 #define SCR_VER  1   //keep in sync with scrolloptValues
 #define SCR_HOR  2
 #define SCR_JUMP 3
 EXTERN Unt p_sbo;    //@scroll.opt
 
-EXTERN CS p_ef;      //@errorfile
+EXTERN S p_ef;      //@errorfile
 EXTERN Byte p_sloc;  //@showcmdloc
 #define SHOW_COMM_LAST       1 //last screnline
 #define SHOW_COMM_STATUSLINE 2 //portal statusline
@@ -1517,11 +1517,11 @@ EXTERN Boole p_smd;  //@showmode
 EXTERN Long  p_ss;   //@sidescroll
 EXTERN Boole p_scs;  //@smartcase
 EXTERN Boole p_swf;  //@swapfile
-EXTERN CS p_sps;     //@spellsuggest
+EXTERN S p_sps;     //@spellsuggest
 EXTERN Boole p_spr;  //@splitright
 EXTERN Boole p_sb;   //@splitbelow
 EXTERN Boole p_sol;  //@startofline
-EXTERN CS p_lpSuff;  //@lowPrioSuffixes
+EXTERN S p_lpSuff;  //@lowPrioSuffixes
 EXTERN Boole p_sws;  //@swapsync
 EXTERN Unt p_swb;    //@switchbuf
 //Keep in sync with option.c:p_swb_values
@@ -1532,9 +1532,9 @@ EXTERN Unt p_swb;    //@switchbuf
 #define SWB_VSPLIT   0x010
 #define SWB_USELAST  0x020
 
-EXTERN CS p_tpl;     //@tabpanel
+EXTERN S p_tpl;     //@tabpanel
 EXTERN Boole p_stpl; //@showtabpanel
-EXTERN CS p_tplo;    //@tabpanel.opt
+EXTERN S p_tplo;    //@tabpanel.opt
 
 EXTERN Byte p_tcl;    //@tab.close
 EXTERN Boole   p_tbs; //@tag.bsearch
@@ -1555,10 +1555,10 @@ EXTERN unsigned ttym_flags;
 EXTERN Long p_ul;   //@undo.levels
 EXTERN Long p_ur;   //@undo.reload
 EXTERN Long p_ut;   //@updatetime
-EXTERN CS p_eeglinfo; //@eeglinfo
-EXTERN CS p_eeglinfofile; //@eeglinfofile
+EXTERN S p_eeglinfo; //@eeglinfo
+EXTERN S p_eeglinfofile; //@eeglinfofile
 EXTERN Long p_verbose;//@verbose
-EXTERN CS p_vfile;    //@verbosefile
+EXTERN S p_vfile;    //@verbosefile
 EXTERN Unt p_wop;     //@wild.options
 
 //Sync with option.c:p_wop_values
@@ -1567,12 +1567,12 @@ EXTERN Unt p_wop;     //@wild.options
 #define WILDOPT_PUM     4
 #define WILDOPT_TAGFILE 8
 
-EXTERN CS p_wig;     //@wild.ignore
-EXTERN CS p_ww;      //@whichwrap
+EXTERN S p_wig;     //@wild.ignore
+EXTERN S p_ww;      //@whichwrap
 EXTERN Long p_wc;    //@wild.char
 EXTERN Long p_wcm;   //@wild.charm
 EXTERN Boole p_wic;  //@wild.ignorecase
-EXTERN CS p_wim;     //@wild.mode
+EXTERN S p_wim;     //@wild.mode
 EXTERN Boole p_wmnu; //@wild.menu
 EXTERN Long p_wh;    //@port.height
 EXTERN Long p_wiw;   //@port.width
@@ -1651,7 +1651,7 @@ declStruct(Callback);
 
 //TODO
 #define get(needle, d) _Generic((needle),\
-   CS: _Generic((d),\
+   S: _Generic((d),\
                DictStringInt128*: get_DictStringInt128\
             ),\
    Text:  _Generic((d),\
@@ -1660,7 +1660,7 @@ declStruct(Callback);
 )((needle), (d))
 
 #define getOrDefault(needle, defa, d) _Generic((needle),\
-   CS: _Generic((d),\
+   S: _Generic((d),\
                DictStringInt128*: getOrDefault_DictStringInt128\
             ),\
    Text:  _Generic((d),\
@@ -1676,7 +1676,7 @@ declStruct(Callback);
 )((outKey), (needle), (d))
 
 typedef struct {
-   CS c;
+   S c;
    int len;
 } ErrBuilder;
 
@@ -1701,7 +1701,7 @@ typedef enum {
 typedef struct {
    OptionValueTag tag;
    union {
-      CS string;
+      S string;
       Long num;
       Boole boole;
       Unt flags;
@@ -1711,14 +1711,14 @@ typedef struct {
 } OptionValue;
 
 #define getDefault(optField, optDef) _Generic((optField),\
-   CS: optDef->defaultValue.string,\
+   S: optDef->defaultValue.string,\
    Long: optDef->defaultValue.num,\
    Boole: optDef->defaultValue.boole,\
    Unt: optDef->defaultValue.flags,\
    Byte: optDef->defaultValue.enum\
 )
 
-#define optStr(x) (OptionValue){.tag = OPTION_STRING, .string = (CS)(x)}
+#define optStr(x) (OptionValue){.tag = OPTION_STRING, .string = (S)(x)}
 #define optNum(x) (OptionValue){.tag = OPTION_NUM, .num = (x)}
 #define optEnum(x) (OptionValue){.tag = OPTION_ENUM, .num = (Long)(x)}
 #define optBoole(x) (OptionValue){.tag = OPTION_BOOLE, .boole = (x)}
@@ -1729,7 +1729,7 @@ typedef struct {
 typedef struct {
    OptionValueTag tag;
    union {
-      CS* string;
+      S* string;
       Long* num;
       Boole* boole;
       Byte* enume;
@@ -1830,7 +1830,7 @@ typedef struct xfilemark {
 
 //The taggy struct is used to store the information about a :tag command.
 typedef struct taggy {
-   CS tagname;   //tag name
+   S tagname;   //tag name
    FileMark fmark;    //cursor position BEFORE ":tag"
    Unt cur_match;  //match number
    int cur_fnum;   //book number used for cur_match
@@ -1903,7 +1903,7 @@ typedef struct {
 //One line saved for undo.  After the ZERO terminated text there might be text
 //properties, thus ul_len can be larger than STRLEN(ul_line) + 1.
 typedef struct {
-   CS ul_line;   //text of the line
+   S ul_line;   //text of the line
    Long ul_len;      //length of the line including ZERO, plus text properties
    ColNr ul_textlen;   //length of the line excluding ZERO and any text properties
 } UndoLine;
@@ -1986,8 +1986,8 @@ declStruct(RegProg);
 //just before "endp[no]". When there is no match, the pointer is NULL.
 typedef struct {
    RegProg* regprog;
-   CS startp[NSUBEXP];
-   CS endp[NSUBEXP];
+   S startp[NSUBEXP];
+   S endp[NSUBEXP];
    ColNr rm_matchcol;   //match start without "\zs"
    int rm_ic;
 } RegMatch;
@@ -2090,22 +2090,22 @@ typedef enum {
    GETLINE_CONCAT_ALL      //concatenate continuation and Vim9 # comment lines
 } GetlineAlgo;
 
-typedef CS (*LineGetter)(Unt, void *, int, GetlineAlgo);
+typedef S (*LineGetter)(Unt, void *, int, GetlineAlgo);
 
 //An invocation of a Command
 struct Invocation {
-   CS comm;         //the name of the command (except for :make)
+   S comm;         //the name of the command (except for :make)
    CommIndex id;    //the index for the command
-   CS arg;          //argument of the command
-   CS*  commline;     //pointer to pointer of allocated cmdline
-   CS commlineToFree; //free later
+   S arg;          //argument of the command
+   S*  commline;     //pointer to pointer of allocated cmdline
+   S commlineToFree; //free later
    Long argFlags;   //flags for the command
    Unt addrCount;  //the number of addresses given
    LineNr line1;    //the first line number
    LineNr line2;    //the second line number or count
    CommandAddress addressKind; //kind of the count/range
    Unt flags;       //extra flags after count: EXFLAG_
-   CS higherOrderComm; //+command arg to be used in edited file
+   S higherOrderComm; //+command arg to be used in edited file
    LineNr higherOrderLnum; //the line number in an edited file
    Boole skip;      //don't execute the command, only parse it
    Boole forceit;   //true if ! present
@@ -2117,13 +2117,13 @@ struct Invocation {
    Boole read_edit; //++edit argument
    Unt bad_char;    //BAD_KEEP, BAD_DROP or replacement byte
    Unt useridx;     //user command index
-   CS errmsg;       //returned error message
+   S errmsg;       //returned error message
    LineGetter ea_getline;
    void* cookie;    //argument for getline()
 };
 
 typedef struct {
-   Arr(CS) c;
+   Arr(S) c;
    Unt len;
    Unt cap;
    Arena* a;
@@ -2133,7 +2133,7 @@ typedef struct {
 //usually sorted by 'score'. The 'idx' member is used for stable-sort.
 typedef struct {
    int idx;
-   CS str;
+   S str;
    int score;
 } FuzzyMatch;
 
@@ -2147,16 +2147,16 @@ typedef struct {
 //used for completion on the command line
 typedef struct expand {
    Text input;   //start of item to expand, guaranteed to be part of fullInput
-   CS fullInput; //text being completed
+   S fullInput; //text being completed
    Unt context;       //type of expansion, EXPAND_* constants
    ExpandPrefixKind xp_prefix;
-   CS completionFn;
+   S completionFn;
    ScriptPos scriptCtx;//SCTX for completion function
    int backslash;      //one of the XP_BS_ values
    int isShell;  //true for a shell command, more characters need to be escaped
    int xp_col; //cursor position in line
    Unt xp_selected; //selected index in completion
-   CS orig; //originally expanded string
+   S orig; //originally expanded string
    ExpandMatch files; //list of files
 #define EXPAND_BUF_LEN 256
    Byte matchBuilder[EXPAND_BUF_LEN]; //buffer for returned match
@@ -2173,14 +2173,14 @@ typedef struct expand {
 //Variables shared between getcommline(), redrawcommline() and others.
 //These need to be saved when using CTRL-R |, that's why they are in a structure.
 typedef struct {
-   CS commBuf;   //pointer to command line buffer
+   S commBuf;   //pointer to command line buffer
    int cmdbufflen;   //length of commbuff
    int cmdlen;      //number of chars in command line
    int cmdpos;      //current cursor position
    int cmdspos;   //cursor column on screen
    int cmdfirstc;   //':', '/', '?', '=', '>' or ZERO
    int cmdindent;   //number of spaces before commline
-   CS cmdprompt;   //message in front of commline
+   S cmdprompt;   //message in front of commline
    int cmdattr;   //attributes for prompt
    int overstrike; //Typing mode on the command line. Shared by getcommline() and put_on_cmdline()
    Expand* xpc;      //struct being used for expansion, xp_pattern. may point into cmdbuff
@@ -2215,7 +2215,7 @@ typedef struct {
    int cmod_verbose;      //0 if not set, > 0 to set 'verbose' to cmod_verbose - 1
 
    //values for undo_cmdmod()
-   CS cmod_save_ei;      //saved value of 'eventignore'
+   S cmod_save_ei;      //saved value of 'eventignore'
    Long cmod_verbose_save;   //if 'verbose' was set: value of p_verbose plus one
    int cmod_save_msg_silent;   //if non-zero: saved value of msg_silent + 1
    int cmod_save_msg_scroll;   //for restoring msg_scroll
@@ -2249,7 +2249,7 @@ typedef struct memline {
    ColNr   lineLen;   //length of the cached line + ZERO + text properties
    ColNr   lineTextLen;//length of the cached line + ZERO, 0 if not known yet
    LineNr   ml_line_lnum;   //line number of cached line, 0 if not valid
-   CS cachedLine;
+   S cachedLine;
 
    BlockHeader* locked;   //block used by last ml_get
    LineNr   lockedLow;   //first line in locked
@@ -2342,7 +2342,7 @@ typedef struct {
 //For each argument remember the file name as it was given, and the book number that contains
 //the expanded file name (required for when ":cd" is used).
 typedef struct ArgFileEntry {
-   CS fname;   //file name as specified
+   S fname;   //file name as specified
    int fnum;   //book number with expanded file name
 } ArgFileEntry;
 
@@ -2403,8 +2403,8 @@ declStruct(SyntaxState);
 
 //Used for the typeahead buffer: typebuf.
 typedef struct {
-   CS c;   //The contents. Vbuffer for typed characters
-   CS noremap;   //mapping flags for characters in c[]
+   S c;   //The contents. Vbuffer for typed characters
+   S noremap;   //mapping flags for characters in c[]
    int len;   //length of c[]
    int currPos;      //current position in c[]
    int validLen;   //number of valid bytes in tb_buf[]
@@ -2431,9 +2431,9 @@ struct mapblock {
    MapBlock* next;  //next mapblock in list
    MapBlock* alt;   //pointer to mapblock of the same mapping
                     //with an alternative form of m_keys, or NULL iff there is no such mapblock
-   CS lhs;   //mapped from, lhs
-   CS rhs;      //mapped to, rhs
-   CS origRhs;   //rhs as entered by the user
+   S lhs;   //mapped from, lhs
+   S rhs;      //mapped to, rhs
+   S origRhs;   //rhs as entered by the user
    int keylen;   //strlen(m_keys)
    int mode;      //valid mode
    int simplified;   //lhs was simplified: don't use this mapping
@@ -2491,7 +2491,7 @@ typedef Ulong Hash;      //Type for hi_hash
 //argument. When used temporarily, "name" is not allocated. The refcounts to either the
 //function or the partial are incremented and need to be decremented later with free_callback().
 struct Callback {
-   CS name;
+   S name;
    PartiallyApplied* cb_partial;
    Boole needsFreeing;
 };
@@ -2835,7 +2835,7 @@ typedef struct {
 } Svar;
 
 typedef struct {
-   CS imp_name;       //name imported as (allocated)
+   S imp_name;       //name imported as (allocated)
    ScriptId imp_sid;       //script ID of "from"
    int imp_flags;       //IMP_FLAGS_ values
 } Imported;
@@ -2846,7 +2846,7 @@ typedef struct {
 //Info about an encountered script.
 //When sn_state has SN_STATE_NOT_LOADED, it has not been sourced yet.
 typedef struct {
-   CS sn_name;       //full path of script file
+   S sn_name;       //full path of script file
    int sn_script_seq;       //latest ScriptPos sc_seq value
 
    //When non-zero, the script ID of the actually sourced script. Used if a
@@ -2893,7 +2893,7 @@ typedef struct {
    ArrayList eval_freega;
 
    //pointer to the last line obtained with getsourceline()
-   CS eval_tofree;
+   S eval_tofree;
 
    //array with lines of an inline function
    ArrayList eval_tofree_ga;
@@ -2929,7 +2929,7 @@ typedef struct {
 struct PartiallyApplied {
    Unt refCount; //reference count
    Boole isAuto; //when true the partial is for using dict.member in handle_subscript()
-   CS name;      //function name; when NULL use pt_func->uf_name
+   S name;      //function name; when NULL use pt_func->uf_name
    UserFunc* fn; //function pointer; when NULL lookup function with pt_name
    Var* argv;    //arguments in allocated array
    int argc;     //number of arguments
@@ -2938,7 +2938,7 @@ struct PartiallyApplied {
 
 typedef struct {
    Unt group; //augroup id or AUGROUP_ALL
-   NULLABLE CS commandBody; //the body of the new command, or null if we are not creating
+   NULLABLE S commandBody; //the body of the new command, or null if we are not creating
    Boole deleteExisting; //delete any existing autocommands?
    Boole once;
    Boole nested;
@@ -2961,7 +2961,7 @@ typedef enum {
 
 typedef struct {
    Long lnum;      //replaces "sourcing_lnum"
-   CS name;     //replaces "sourcing_name"
+   S name;     //replaces "sourcing_name"
    CallFrame ty;
    union {
       ScriptPos* sctx;    //script info
@@ -3227,11 +3227,11 @@ typedef struct {
    Byte initChars[64]; //2 bits per possible byte
    Boole isInline; //are the filters inline in this obj or in separate allocations
    union {
-      CS external;
+      S external;
 		Byte internal[128];
 	} prefixes;
 	Text a[36];
-	CS tails;
+	S tails;
 } ProgrammingLanguage;
 
 //}}}
@@ -3278,10 +3278,10 @@ typedef struct {
    //for spell checking
    ArrayList b_langp;     //list of pointers to slang_T, see spell.c
    Byte midwordFlags[256];  //flags: is midword char
-   CS multibyteMidwordChars;   //multi-byte midword chars
-   CS spellFile;
-   CS spellLang;
-   CS spellOpts;       //'spelloptions'
+   S multibyteMidwordChars;   //multi-byte midword chars
+   S spellFile;
+   S spellLang;
+   S spellOpts;       //'spelloptions'
    Byte b_syn_chartab[32];  //syntax iskeyword option
 } SyntaxBlock;
 
@@ -3299,10 +3299,10 @@ typedef struct {
 //Must be in sync with p_buftype_values
 #define p_buftypeValuesLen 10
 
-EXTERN CS p_buftype_values[]
+EXTERN S p_buftype_values[]
 #ifdef MAIN_C
 //must be in sync with eegl.h:p_buftypeValuesLen
-= (CS[]){ SMAP((CS),
+= (S[]){ SMAP((S),
    "normal", "nofile", "nowrite", "location", "help", "terminal", "acwrite", "prompt", "popup",
    "spell"
 )}
@@ -3389,10 +3389,10 @@ struct Book { //:Book
    //shortFileName is the name as the user typed it (or NULL).
    //currFileName is the same as shortFileName, unless ":cd" has been done,
    //    then it is the same as fullFileName (NULL for no name).
-   CS fullFileName;  //full path file name, allocated
-   CS shortFileName; //short file name, allocated, may be equal to full name
-   CS currFileName;  //current file name, points to short or full file name
-   CS swapName;      //file name of the swap (temporary copy)
+   S fullFileName;  //full path file name, allocated
+   S shortFileName; //short file name, allocated, may be equal to full name
+   S currFileName;  //current file name, points to short or full file name
+   S swapName;      //file name of the swap (temporary copy)
 
    int isDevNumValid; //true when b_dev has a valid number
    dev_t devNum;      //device number
@@ -3431,7 +3431,7 @@ struct Book { //:Book
    Tyme lastUsed;  //time when the book was last used; used for eeglinfo
 
    Pos namedMarks[NMARKS]; //current named marks (see location.c)
-   CS fileType;
+   S fileType;
 
    //These variables are set when VIsual_active becomes false
    VisualInfo visual;
@@ -3502,7 +3502,7 @@ struct Book { //:Book
    int maySwap;
    int didWarnReadonly; //Set to 1 if user has been warned on first change of a read-only file
 
-   CS promptText;      //set by prompt_setprompt()
+   S promptText;      //set by prompt_setprompt()
    Callback promptCallback;   //set by prompt_setcallback()
    Callback promptInterrupt;   //set by prompt_setinterrupt()
    int promptInsert;   //value for restart_edit when entering a prompt book portal.
@@ -3515,7 +3515,7 @@ struct Book { //:Book
    int writeToChannel;  //true when appended lines are written to a channel.
 
    int mappedCtrlC; //modes where CTRL-C is mapped
-   CS syntaxName;
+   S syntaxName;
 
    Terminal* term;   //When not NULL this book is for a terminal portal.
    int diffFailed;   //internal diff failed for this book
@@ -3589,8 +3589,8 @@ struct Tab {        //:Tab
    Long old_Columns; //Columns when tab was left, -1 when calling shell_new_columns() postponed
    int old_coloff;  //Column offset when tab was left
    Long ch_used;       //value of @commheight when frame size was set
-   CS localdir;   //absolute path of local directory or NULL
-   CS prevdir;   //previous directory
+   S localdir;   //absolute path of local directory or NULL
+   S prevdir;   //previous directory
 
    DiffBlock* first_diff;
    Book* diffbuf[DB_COUNT];
@@ -3667,7 +3667,7 @@ typedef struct {
 typedef struct {
    int flags;      //POPF_ values
    int handled;    //POPUP_HANDLE[0-9] flags
-   CS title;
+   S title;
    PopupPosition   pos;
    int fixed;      //do not shift popup to fit on screen
    int propType;  //when not zero: textprop type ID
@@ -3714,7 +3714,7 @@ typedef struct {
    PopupClosing close;     //allow closing the popup with the mouse
 
    List* mask;         //list of lists for "mask"
-   CS maskCells; //cached mask cells
+   S maskCells; //cached mask cells
    int maskHeight; //height of w_popup_mask_cells
    int maskWidth;  //width of w_popup_mask_cells
    Timer* timer;     //timer for closing popup portal
@@ -3857,8 +3857,8 @@ struct Portal { //:Portal
    int argListInd;       //current index in argument list (can be out of range!)
    Boole isNotValid;  //editing another file than w_arg_idx
 
-   CS localDir;       //absolute path of local directory or NULL
-   CS prevdir;       //previous directory
+   S localDir;       //absolute path of local directory or NULL
+   S prevdir;       //previous directory
 
    //Options local to a portal.
    //They are local because they influence the layout of the portal or depend on the portal layout.
@@ -3943,7 +3943,7 @@ typedef struct {
    Long count1;    //count before command, default 1
    int arg;        //extra argument from actions[]
    int retval;     //return: CA_* values
-   CS searchbuf;//return: pointer to search pattern or NULL
+   S searchbuf;//return: pointer to search pattern or NULL
 } ActionArg;
 
 //}}}
@@ -3967,8 +3967,8 @@ typedef struct {
    int new_curPor_id;        //ID of new curPor
    int save_prevPor_id;      //ID of saved prevPor
    BookRef newCurBook;       //new curBook
-   CS localdir;              //saved value of tp_localdir
-   CS globaldir;             //saved value of globaldir
+   S localdir;              //saved value of tp_localdir
+   S globaldir;             //saved value of globaldir
    int save_VIsual_active;   //saved VIsual_active
    int save_State;           //saved State
    int save_prompt_insert;   //saved b_prompt_insert
@@ -3976,10 +3976,10 @@ typedef struct {
 
 //Used for popup menu items.
 typedef struct {
-   CS pum_text;      //main menu text
-   CS pum_kind;      //extra kind text (may be truncated)
-   CS pum_extra;     //extra menu text (may be truncated)
-   CS pum_info;      //extra info
+   S pum_text;      //main menu text
+   S pum_kind;      //extra kind text (may be truncated)
+   S pum_extra;     //extra menu text (may be truncated)
+   S pum_info;      //extra info
    int pum_cpt_source_idx;   //index of completion source in 'cpt'
    Decoration abbreviationDeco; //hilite decoration for abbr
    Decoration kindDeco;   //hilite decoration for kind
@@ -4175,8 +4175,8 @@ typedef struct {
 //Argument for lbr_chartabsize().
 typedef struct {
    Portal* port;
-   CS cts_line;     //start of the line
-   CS cts_ptr;      //current position in line
+   S cts_line;     //start of the line
+   S cts_ptr;      //current position in line
    int cts_text_prop_count;   //number of text props; when zero cts_text_props is not used
    TextProp* cts_text_props;    //text props (allocated)
    char cts_has_prop_with_text; //true if a property inserts text
@@ -4491,16 +4491,16 @@ int showErrFmtMsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2
 //These prototypes cannot be produced automatically.
 void internalErrFmtMsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
 #define internalErrFmtMsg(a, ...) internalErrFmtMsg0((char const*)a, ##__VA_ARGS__)
-int eeSnprintfAdd0(CS, Unt, char const *, ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
+int eeSnprintfAdd0(S, Unt, char const *, ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
 #define eeSnprintfAdd(a, b, fmt, ...) eeSnprintfAdd0(a, b, (char const*)fmt, ##__VA_ARGS__)
 
-int eeSnprintf0(CS, Unt, char const* , ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
+int eeSnprintf0(S, Unt, char const* , ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
 #define eeSnprintf(a, len, fmt, ...) eeSnprintf0(a, len, (char const*)(fmt), ##__VA_ARGS__)
-Unt eeSnprintfSafelen0(CS, Unt, char const*, ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
+Unt eeSnprintfSafelen0(S, Unt, char const*, ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
 #define eeSnprintfSafelen(a, b, fmt, ...) eeSnprintfSafelen0(a, b, (char const*)fmt, ##__VA_ARGS__)
 
 
-int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
+int eeVarPrintf0(S str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
    ATTRIBUTE_FORMAT_PRINTF(3, 0);
 #define eeVarPrintf(a, b, fmt, ...) eeVarPrintf0((char*)a, b, (char const*)fmt, ##__VA_ARGS__)
 
@@ -4528,13 +4528,13 @@ EXTERN Long visibleRowsG         //nr of rows in the screen
 ;
 EXTERN Long visibleColsG INIT(= 80);   //nr of columns in the screen
 
-EXTERN CS username INIT(= null); //cached result of mch_get_user_name()
+EXTERN S username INIT(= null); //cached result of mch_get_user_name()
 
-EXTERN CS termCodesG[]; //current terminal output strings, defined in term.c
+EXTERN S termCodesG[]; //current terminal output strings, defined in term.c
 //Contains currently used terminal codes (strings used to communicate with the terminal).
 //The values can be changed by setting the option with the same name.
 //Nulls are not allowed! Only empty strings
-EXTERN CS termCodesG[KS_LAST + 1];
+EXTERN S termCodesG[KS_LAST + 1];
 
 //Note: before the screen is initialized and when out of memory these can be null.
 EXTERN Boole wrapSearchG INIT(= true); //search wraps on file end
@@ -4558,7 +4558,7 @@ typedef sig_atomic_t SigAtomic;
 EXTERN volatile SigAtomic doResizeG INIT(= false);
 EXTERN Unt* tabIndsG INIT(= NULL);
 
-EXTERN CS projectDirG INIT(= null);   //project directory if started in project mode
+EXTERN S projectDirG INIT(= null);   //project directory if started in project mode
 
 //Array with size Rows x Columns containing zindex of popups.
 EXTERN Arr(Short) popupMaskG INIT(= NULL);
@@ -4598,9 +4598,9 @@ EXTERN Boole isModeDisplayedG INIT(= false);   //mode is being displayed
 EXTERN Boole executingFromRegG INIT(= false);   //executing register
 
 //Variables for Insert mode completion.
-EXTERN CS editSubmodeMsgG INIT(= NULL); //msg for CTRL-X submode
-EXTERN CS editSubmodePreMsgG INIT(= NULL); //prepended to edit_submode
-EXTERN CS editSubmodeExtraMsgG INIT(= NULL);//appended to edit_submode
+EXTERN S editSubmodeMsgG INIT(= NULL); //msg for CTRL-X submode
+EXTERN S editSubmodePreMsgG INIT(= NULL); //prepended to edit_submode
+EXTERN S editSubmodeExtraMsgG INIT(= NULL);//appended to edit_submode
 EXTERN Unt editSubmodeHiG;   //hilite method for extra info
 
 //Functions for putting characters into the command line while keeping ScreenLines[] updated.
@@ -4626,9 +4626,9 @@ EXTERN int need_clr_eos INIT(= false);  //need to clear text before displaying a
 EXTERN int emsg_skip INIT(= 0);         //don't display errors for expression that is skipped
 EXTERN int emsg_severe INIT(= false);   //use message of next of several emsg() calls for throw
                                         //used by assert_fails()
-EXTERN CS emsg_assert_fails_msg INIT(= NULL);
+EXTERN S emsg_assert_fails_msg INIT(= NULL);
 EXTERN Long emsg_assert_fails_lnum INIT(= 0);
-EXTERN CS emsg_assert_fails_context INIT(= NULL);
+EXTERN S emsg_assert_fails_context INIT(= NULL);
 
 EXTERN int anyEmsgG; //incremented by emsg() when a message is displayed or thrown
 EXTERN int uncaught_emsg; //number of times emsg() was called and did show a message
@@ -5036,8 +5036,8 @@ EXTERN Text swapDirG; //Directory for swap files
 EXTERN int   swap_exists_action INIT(= SEA_NONE); //For dialog when swap file already exists.
 EXTERN Boole   swap_exists_did_quit INIT(= false); //Selected "quit" at the dialog.
 
-EXTERN CS ioBuffG;      //sprintf's are done in this buffer, size is IOSIZE
-EXTERN CS nameBuffG;      //file names are expanded in this array, size is MAXPATHL
+EXTERN S ioBuffG;      //sprintf's are done in this buffer, size is IOSIZE
+EXTERN S nameBuffG;      //file names are expanded in this array, size is MAXPATHL
 EXTERN Byte msg_buf[MSG_BUF_LEN];   //small buffer for messages
 
 //When non-zero, postpone redrawing.
@@ -5112,13 +5112,13 @@ EXTERN int undo_off INIT(= false);       //undo switched off for now
 EXTERN int global_busy INIT(= 0);       //set when :global is executing
 EXTERN int listcmd_busy INIT(= false); //set when :argdo, :windo or :bufdo is executing
 EXTERN Byte last_mode[MODE_MAX_LENGTH] INIT(= "n"); //for ModeChanged event
-EXTERN CS lastCommlineG INIT(= S""); //last command line (for ":")
-EXTERN CS repeatCommlineG INIT(= S""); //command line for "."
-EXTERN CS newLastCommlineG INIT(= S"");   //new value for lastCommlineG
-EXTERN CS autocmd_fname INIT(= S""); //fname for <afile> on commline
+EXTERN S lastCommlineG INIT(= u8""); //last command line (for ":")
+EXTERN S repeatCommlineG INIT(= u8""); //command line for "."
+EXTERN S newLastCommlineG INIT(= u8"");   //new value for lastCommlineG
+EXTERN S autocmd_fname INIT(= u8""); //fname for <afile> on commline
 EXTERN int autocmd_fname_full;        //autocmd_fname is full path
 EXTERN int autocmd_bufnr INIT(= 0);     //fnum for <abuf> on commline
-EXTERN CS autocmd_match INIT(= S""); //name for <amatch> on commline
+EXTERN S autocmd_match INIT(= u8""); //name for <amatch> on commline
 
 EXTERN int did_cursorhold INIT(= true);  //set when CursorHold triggered
 EXTERN Pos last_cursormoved         //for CursorMoved event
@@ -5154,13 +5154,13 @@ EXTERN int wild_menu_showing INIT(= 0);
 #define WM_SCROLLED  2      //wildmenu showing with scroll
 
 //These are in main.c, call initLongVersion() before use.
-extern CS Version;
-EXTERN CS homedir INIT(= NULL);
+extern S Version;
+EXTERN S homedir INIT(= NULL);
 
 //When a window has a local directory, the absolute path of the global
 //current directory is stored here (in allocated memory).  If the current
 //directory is not a local directory, globaldir is NULL.
-EXTERN CS globaldir INIT(= NULL);
+EXTERN S globaldir INIT(= NULL);
 
 //EXTERN int disable_fold_update INIT(= 0);
 
@@ -5187,7 +5187,7 @@ EXTERN int balloonEvalForTerm INIT(= false);
 
 EXTERN int typebuf_was_filled INIT(= false); //received text from client or from feedkeys()
 
-EXTERN CS serverName INIT(= NULL);   //name of the server
+EXTERN S serverName INIT(= NULL);   //name of the server
 
 EXTERN int term_is_xterm INIT(= false);   //xterm-like 'term'
 
@@ -7317,7 +7317,7 @@ EXTERN Byte e_symlink_dereference_error[] INIT(= "E1575: Symlink derefence error
 EXTERN Byte e_symlink_dereference_buffer_overflow[]
    INIT(= "E1576: Buffer overflow during symlink derefence");
 
-EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
+EXTERN S e_printf INIT(= e_insufficient_arguments_for_printf);
 
 //}}}
 
@@ -7436,10 +7436,10 @@ typedef struct dirent DirEntry;
 
 void __attribute__((noinline)) __bp(); //breakpoints for debugger
 #define _bp(cond) if (cond) {__bp();}
-#define tConst(literal) (Text){.c = (CS)literal, .len = sizeof(literal) - 1}
+#define tConst(literal) (Text){.c = (S)literal, .len = sizeof(literal) - 1}
 
-#define INIT_FILE S"~/.config/eegl/init.vim"
-#define FILETYPES_FILE S"~/.config/eegl/filetype.vim"
+#define INIT_FILE u8"~/.config/eegl/init.vim"
+#define FILETYPES_FILE u8"~/.config/eegl/filetype.vim"
 #define SESSION_FILE   "Session.vim"
 #define FILETYPE_FILE   "filetype.vim" //used for file type detection
 #define FTPLUGIN_FILE   "ftplugin.vim" //used for loading filetype plugin files

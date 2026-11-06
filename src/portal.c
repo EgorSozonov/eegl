@@ -72,7 +72,7 @@ private Portal * horizNeighbor(Tab* t, Portal* po, Boole left, long count);
 private Portal * vertNeighbor(Tab* t, Portal* po, Boole up, long count);
 private void gotoPortal_hor(Boole goLeft, long count);
 private void gotoPortal_ver(Boole goUp, long count);
-private void cmd_with_count(CS cmd, CS bufp, Unt bufsize, Long prenum);
+private void cmd_with_count(S cmd, S bufp, Unt bufsize, Long prenum);
 private int check_split_disallowed(Portal* po);
 private void init(Portal* newp, Portal* oldp, Unt);
 private void initg_some(Portal* newp, Portal* oldp);
@@ -222,10 +222,10 @@ private Boole check_closed(
 private void checkSmall(Portal* po, Fold* fp, LineNr lnum_off);
 private void setSmallMaybe(ArrayList* gap);
 private void foldCreateMarkers(LineNr start, LineNr end);
-private void foldAddMarker(LineNr lnum, CS marker, int markerlen);
+private void foldAddMarker(LineNr lnum, S marker, int markerlen);
 private void deleteFoldMarkers(Fold* fp, int recursive, LineNr lnum_off);
-private void foldDelMarker(LineNr lnum, CS marker, int markerlen);
-private void foldtext_cleanup(CS str);
+private void foldDelMarker(LineNr lnum, S marker, int markerlen);
+private void foldtext_cleanup(S str);
 private void foldUpdateIEMS(Portal* po, LineNr top, LineNr bot);
 private LineNr foldUpdateIEMSRecurse(
 	ArrayList   *gap,
@@ -249,8 +249,8 @@ private void foldlevelMarker(FoldLine *flp);
 private int put_foldopen_recurse(FILE* fd, Portal* po, ArrayList* gap, LineNr off);
 private int put_fold_open_close(FILE *fd, Fold *fp, LineNr off);
 private void foldclosed_both(Var* argvars, Var* returnVar, int end);
-private int popup_options_one(Bag *dict, CS key);
-private int set_padding_border(Bag* dict, int* array, CS name, int max_val);
+private int popup_options_one(Bag *dict, S key);
+private int set_padding_border(Bag* dict, int* array, S name, int max_val);
 private void set_moved_values(Portal* po);
 private void set_moved_columns(Portal* po, int flags);
 private void set_mousemoved_values(Portal* po);
@@ -260,9 +260,9 @@ private void addTimeout(Portal* po, int time, int close);
 private PopupPosition get_pos_entry(Bag *d, int give_error);
 private void applyMoveParams(Portal* po, Bag* params);
 private void handle_moved_argument(Portal* po, DictItem* di, int mousemoved);
-private void check_highlight(Bag* dict, CS name, OUT Unt* pval);
+private void check_highlight(Bag* dict, S name, OUT Unt* pval);
 private void scrollToCurrent(Portal* po);
-private CS popup_get_sign_name(Portal* po);
+private S popup_get_sign_name(Portal* po);
 private void highlightCurrentLine(Portal* po);
 private int apply_general_options(Portal* po, Bag* dict);
 private int applyParams(Portal* po, Bag* params, int create);
@@ -285,7 +285,7 @@ private void filter_handle_drag(Portal* po, int c, Var* returnVar);
 private Portal * findPopupPortal(int id);
 private void popup_free(Portal* po);
 private void error_for_popup_portal(void);
-private void get_padding_border(Bag* dict, int* array, CS name);
+private void get_padding_border(Bag* dict, int* array, S name);
 private void getBorderHilite(Bag* dict, Portal* po);
 private void get_borderchars(Bag* bag, Portal* po);
 private void get_moved_list(Bag* bag, Portal* po);
@@ -295,27 +295,27 @@ private int popupMaskGed(Portal* po, int width, int height, int screencol, int s
 private void update_popupTransparencyG(Portal* po, int val);
 private int check_popup_unhidden(Portal* po);
 private inline int popup_need_position_adjust(Portal* po);
-private CS get_spaces(int len);
+private S get_spaces(int len);
 private void popup_hide_info(void);
 private void mayStartMessagePortalTimer(Portal* po);
 private int popup_closePortal(Portal* port);
 private void computeSize(void);
-private Arr(Decoration) computeTextDeco(CS text, Short hiId, Decoration userDeco);
+private Arr(Decoration) computeTextDeco(S text, Short hiId, Decoration userDeco);
 private void pum_drawText_withDecos(
 	int row,
 	int col,
 	int,
-	CS text,
+	S text,
 	int textlen,
 	Arr(Decoration) decos)
 ;
 private inline void pum_align_order(int* order);
-private inline CS pum_get_item(int index, int type);
+private inline S pum_get_item(int index, int type);
 private inline Decoration combineUserDecos(int idx, int type, Decoration defaultDeco);
 private int displayText(
 	int row,
 	int col,
-	CS text,
+	S text,
 	Decoration deco,
 	Arr(Decoration) decos,
 	int width,        //width already calculated in outer loop
@@ -343,11 +343,11 @@ private void pum_position_at_mouse(int min_width);
 private int can_use_beval(void);
 private void bexpr_eval(
 	BalloonEval* beval,
-	CS bexpr,
+	S bexpr,
 	Portal* po,
 	LineNr,
 	int,
-	CS text
+	S text
 );
 //}}}
 //{{{portals
@@ -370,7 +370,7 @@ private void bexpr_eval(
 #define WEE_TRIGGER_LEAVE_AUTOCMDS 0x10
 #define WEE_ALLOW_PARSE_MESSAGES   0x20
 
-private CS m_onlyone = S"Already only one portal";
+private S m_onlyone = u8"Already only one portal";
 
 //When non-zero splitting a portal is forbidden.  Used to avoid that nasty
 //autocommands mess up the portal structure.
@@ -588,7 +588,7 @@ gotoPortal_ver(Boole goUp, long count) {
 pub void
 doPortal(int nchar, Long prenum, Unt xchar) { //extra char from ";wincmd gx" or ZERO
 	Portal* po;
-	CS ptr;
+	S ptr;
 	LineNr lnum = -1;
 	Unt type = FIND_DEFINE;
 	int len;
@@ -675,7 +675,7 @@ newPortal:
 	case Ctrl_Q:
 	case 'q':
 		reset_VIsual_and_resel();   //stop Visual mode
-		cmd_with_count((CS)"quit", cbuf, sizeof(cbuf), prenum);
+		cmd_with_count(u8"quit", cbuf, sizeof(cbuf), prenum);
 		executeCommLine(cbuf);
 		break;
 
@@ -683,7 +683,7 @@ newPortal:
 	case Ctrl_C:
 	case 'c':
 		reset_VIsual_and_resel();   //stop Visual mode
-		cmd_with_count((CS)"close", cbuf, sizeof(cbuf), prenum);
+		cmd_with_count(u8"close", cbuf, sizeof(cbuf), prenum);
 		executeCommLine(cbuf);
 		break;
 
@@ -692,7 +692,7 @@ newPortal:
 	case 'z':
 		CHECK_COMMPORT;
 		reset_VIsual_and_resel();   //stop Visual mode
-		executeCommLine((CS)"pclose");
+		executeCommLine(u8"pclose");
 		break;
 
 	//cursor to preview portal
@@ -712,7 +712,7 @@ newPortal:
 	case 'o':
 		CHECK_COMMPORT;
 		reset_VIsual_and_resel();   //stop Visual mode
-		cmd_with_count((CS)"only", cbuf, sizeof(cbuf), prenum);
+		cmd_with_count(u8"only", cbuf, sizeof(cbuf), prenum);
 		executeCommLine(cbuf);
 		break;
 
@@ -1060,7 +1060,7 @@ portGotoFile:
 
 //Figure out the address type for ":wincmd".
 pub void
-getPortCommAddressType(CS arg, Invocation* invo) {
+getPortCommAddressType(S arg, Invocation* invo) {
 	switch (*arg) {
 	case 'S':
 	case Ctrl_S:
@@ -1147,7 +1147,7 @@ getPortCommAddressType(CS arg, Invocation* invo) {
 }
 
 private void
-cmd_with_count(CS cmd, CS bufp, Unt bufsize, Long prenum) {
+cmd_with_count(S cmd, S bufp, Unt bufsize, Long prenum) {
 	if (prenum > 0)
 		eeSnprintf(bufp, bufsize, "%s %ld", cmd, prenum);
 	else
@@ -2002,7 +2002,7 @@ portMoveAfter(Portal* port0, Portal* port1) {
 	//check if there is something to do
 	if (port1->next != port0) {
 		if (port0->frame->parent != port1->frame->parent) {
-			internalErrMsg((CS)"Trying to move a portal into another frame");
+			internalErrMsg(u8"Trying to move a portal into another frame");
 			return;
 		}
 
@@ -2713,7 +2713,7 @@ closePortal(Portal* port, int free_buf) {
 				++diffcount;
 		}
 		if (diffcount == 1)
-			executeCommLine(S"diffoff!");
+			executeCommLine(u8"diffoff!");
 	}
 
 	redraw_all_later(UPD_NOT_VALID);
@@ -2822,22 +2822,22 @@ makePortInfoDict(
 		tv.tag = VAR_NUMBER;
 
 		tv.number = width;
-		if (bagAddVar(d, S"width", &tv) == FAIL)
+		if (bagAddVar(d, u8"width", &tv) == FAIL)
 			break;
 		tv.number = height;
-		if (bagAddVar(d, S"height", &tv) == FAIL)
+		if (bagAddVar(d, u8"height", &tv) == FAIL)
 			break;
 		tv.number = topline;
-		if (bagAddVar(d, S"topline", &tv) == FAIL)
+		if (bagAddVar(d, u8"topline", &tv) == FAIL)
 			break;
 		tv.number = topfill;
-		if (bagAddVar(d, S"topfill", &tv) == FAIL)
+		if (bagAddVar(d, u8"topfill", &tv) == FAIL)
 			break;
 		tv.number = leftcol;
-		if (bagAddVar(d, S"leftcol", &tv) == FAIL)
+		if (bagAddVar(d, u8"leftcol", &tv) == FAIL)
 			break;
 		tv.number = skipcol;
-		if (bagAddVar(d, S"skipcol", &tv) == FAIL)
+		if (bagAddVar(d, u8"skipcol", &tv) == FAIL)
 			break;
 		return d;
 	 }
@@ -2942,7 +2942,7 @@ checkWhichPortalsResized(
 			tot_width, tot_height, tot_topline, tot_topfill, tot_leftcol, tot_skipcol
 		);
 		if (alldict) {
-			if (bagAddBag(v_event, S"all", alldict) == FAIL)
+			if (bagAddBag(v_event, u8"all", alldict) == FAIL)
 				bagUnref(alldict);
 			else
 				--alldict->refCount;
@@ -3057,7 +3057,7 @@ closePortal_othertab(Portal* port, int free_buf, Tab *t) {
 				{}
 
 			if (!ptp) {
-				internal_error((CS)"closePortal_othertab()");
+				internal_error(u8"closePortal_othertab()");
 				return;
 			}
 			ptp->next = t->next;
@@ -3430,7 +3430,7 @@ frame_new_height(
 		int new_ch = MAX(min_set_ch, commlineHeightG + topFr->height - height);
 		int save_ch = min_set_ch;
 		if (new_ch != commlineHeightG)
-			optSetByName(S"commheight", (OptionValue){.tag = OPTION_NUM, .num = new_ch}, SET_LOCAL);
+			optSetByName(u8"commheight", (OptionValue){.tag = OPTION_NUM, .num = new_ch}, SET_LOCAL);
 		min_set_ch = save_ch;
 		height = MIN(height, ROWS_AVAIL);
 	}
@@ -4212,7 +4212,7 @@ enterTab(Tab* t, Book* oldCurBuf, Boole trigger_enter_autocmds, Boole trigger_le
 		int new_ch = curtab->ch_used;
 		curtab->ch_used = commlineHeightG;
 		command_frame_height = false;
-		optSetByName(S"commheight", (OptionValue){.tag = OPTION_NUM, .num = new_ch}, SET_LOCAL);
+		optSetByName(u8"commheight", (OptionValue){.tag = OPTION_NUM, .num = new_ch}, SET_LOCAL);
 		command_frame_height = true;
 	}
 
@@ -4445,7 +4445,7 @@ portFixCurrentDir(void) {
 			if (mch_dirname(cwd, MAXPATHL) == OK)
 				globaldir = copyStr(cwd);
 		}
-		CS dirname = (curPor->localDir) ? curPor->localDir : curtab->localdir;
+		S dirname = (curPor->localDir) ? curPor->localDir : curtab->localdir;
 
 		if (mch_chdir(dirname) == 0) {
 			shorten_fnames(true);
@@ -5698,7 +5698,7 @@ plines_win_nofill(
 //"wp". Does not care about folding, 'wrap' or 'diff'.
 pub int
 plines_win_nofold(Portal *wp, LineNr lnum) {
-	CS s = memGetLine(wp->book, lnum, false);
+	S s = memGetLine(wp->book, lnum, false);
 	CharTableSize cts;
 	bookInitCharsForKeywordsSizeArg(OUT &cts, wp, lnum, 0, s, s);
 	if (*s == ZERO && !cts.cts_has_prop_with_text)
@@ -5765,7 +5765,7 @@ plinesUpToCol(Portal *wp, LineNr lnum, long column) {
 	if (wp->width == 0)
 		return lines + 1;
 
-	CS line = memGetLine(wp->book, lnum, false);
+	S line = memGetLine(wp->book, lnum, false);
 
 	CharTableSize cts;
 	bookInitCharsForKeywordsSizeArg(OUT &cts, wp, lnum, 0, line, line);
@@ -6557,12 +6557,12 @@ get_framelayout(Frame* fr, List* l, int outer) {
 
 	if (fr->layout == FR_LEAF) {
 		if (fr->port) {
-			 list_append_string(fr_list, (CS)"leaf", -1);
+			 list_append_string(fr_list, u8"leaf", -1);
 			 list_append_number(fr_list, fr->port->id);
 		}
 	} else {
 		list_append_string(fr_list,
-			  fr->layout == FR_ROW ?  (CS)"row" : (CS)"col", -1);
+			  fr->layout == FR_ROW ?  u8"row" : u8"col", -1);
 
 		List* portList = list_alloc();
 		if (list_append_list(fr_list, portList) == FAIL) {
@@ -6588,7 +6588,7 @@ getPortalIdInTab(Tab* t, Var* argvar) {
 	if (argvar->tag != VAR_UNKNOWN) {
 		int   invalid_arg = false;
 
-		CS arg = convertVarToStringSingleUse(argvar);
+		S arg = convertVarToStringSingleUse(argvar);
 		if (!arg)
 			nr = 0;      //type error; errmsg already given
 		ei (STRCMP(arg, "$") == 0)
@@ -6597,7 +6597,7 @@ getPortalIdInTab(Tab* t, Var* argvar) {
 			tPort = (t == curtab) ? prevPor : t->prevPor;
 		} else {
 			long   count;
-			CS endp;
+			S endp;
 
 			//Extract the portal count (if specified). e.g. winnr('3j')
 			count = strtol((char *)arg, (char **)&endp, 10);
@@ -6648,24 +6648,24 @@ get_win_info(Portal* po, short tpnr, short winnr) {
 	//make sure bottomLine is valid
 	validate_botline_win(po);
 
-	bagAddNumber(bag, S"tabnr", tpnr);
-	bagAddNumber(bag, S"winnr", winnr);
-	bagAddNumber(bag, S"winid", po->id);
-	bagAddNumber(bag, S"height", po->height);
-	bagAddNumber(bag, S"winrow", po->windowRow + 1);
-	bagAddNumber(bag, S"topline", po->topLine);
-	bagAddNumber(bag, S"botline", po->bottomLine - 1);
-	bagAddNumber(bag, S"width", po->width);
-	bagAddNumber(bag, S"wincol", po->windowCol + 1);
-	bagAddNumber(bag, S"textoff", normalPortalColumnOffset(po));
-	bagAddNumber(bag, S"bufnr", po->book->fiNum);
-	bagAddNumber(bag, S"leftcol", po->leftCol);
-	bagAddNumber(bag, S"terminal", bt_terminal(po->book));
-	bagAddNumber(bag, S"quickfix", isLocationListBook(po->book));
-	bagAddNumber(bag, S"loclist", (isLocationListBook(po->book) && po->locationStackRef));
+	bagAddNumber(bag, u8"tabnr", tpnr);
+	bagAddNumber(bag, u8"winnr", winnr);
+	bagAddNumber(bag, u8"winid", po->id);
+	bagAddNumber(bag, u8"height", po->height);
+	bagAddNumber(bag, u8"winrow", po->windowRow + 1);
+	bagAddNumber(bag, u8"topline", po->topLine);
+	bagAddNumber(bag, u8"botline", po->bottomLine - 1);
+	bagAddNumber(bag, u8"width", po->width);
+	bagAddNumber(bag, u8"wincol", po->windowCol + 1);
+	bagAddNumber(bag, u8"textoff", normalPortalColumnOffset(po));
+	bagAddNumber(bag, u8"bufnr", po->book->fiNum);
+	bagAddNumber(bag, u8"leftcol", po->leftCol);
+	bagAddNumber(bag, u8"terminal", bt_terminal(po->book));
+	bagAddNumber(bag, u8"quickfix", isLocationListBook(po->book));
+	bagAddNumber(bag, u8"loclist", (isLocationListBook(po->book) && po->locationStackRef));
 
 	//Add a reference to portal variables
-	bagAddBag(bag, S"variables", po->internalVars);
+	bagAddBag(bag, u8"variables", po->internalVars);
 
 	return bag;
 }
@@ -6675,16 +6675,16 @@ private Bag *
 getTabInfo(Tab *t, int tp_idx) {
 	Bag* bag = allocBag();
 
-	bagAddNumber(bag, S"tabnr", tp_idx);
+	bagAddNumber(bag, u8"tabnr", tp_idx);
 
 	List* l = list_alloc();
 	Portal* po;
 	FOR_ALL_PORTALS_IN_TAB(t, po)
 		list_append_number(l, (Long)po->id);
-	bagAddList(bag, S"portals", l);
+	bagAddList(bag, u8"portals", l);
 
 	//Make a reference to tabpage variables
-	bagAddBag(bag, S"variables", t->vars);
+	bagAddBag(bag, u8"variables", t->vars);
 
 	return bag;
 }
@@ -6804,7 +6804,7 @@ f_tabpagenr(Arr(Var) argvars, Var* returnVar) {
 	int nr = 1;
 
 	if (argvars[0].tag != VAR_UNKNOWN) {
-		CS arg = convertVarToStringSingleUse(&argvars[0]);
+		S arg = convertVarToStringSingleUse(&argvars[0]);
 		nr = 0;
 		if (arg) {
 			if (STRCMP(arg, "$") == 0)
@@ -7036,20 +7036,20 @@ f_win_gettype(Arr(Var) argvars, Var* returnVar) {
 	if (argvars[0].tag != VAR_UNKNOWN) {
 		po = portFindByNrOrId(&argvars[0]);
 		if (!po) {
-			returnVar->string = copyStr(S"unknown");
+			returnVar->string = copyStr(u8"unknown");
 			return;
 		}
 	}
 	if (is_autoCommPort(po))
-		returnVar->string = copyStr(S"autocmd");
+		returnVar->string = copyStr(u8"autocmd");
 	ei (po->isPreview)
-		returnVar->string = copyStr(S"preview");
+		returnVar->string = copyStr(u8"preview");
 	ei (PORTAL_IS_POPUP(po))
-		returnVar->string = copyStr(S"popup");
+		returnVar->string = copyStr(u8"popup");
 	ei (po == commPortPortG)
-		returnVar->string = copyStr(S"command");
+		returnVar->string = copyStr(u8"command");
 	ei (isLocationListBook(po->book))
-		returnVar->string = copyStr(po->locationStackRef ? S"loclist" : S"quickfix");
+		returnVar->string = copyStr(po->locationStackRef ? u8"loclist" : u8"quickfix");
 
 }
 
@@ -7178,16 +7178,16 @@ f_winsaveview(Arr(Var), Var* returnVar) {
 	allocReturnDict(returnVar);
 
 	Bag* dict = returnVar->bag;
-	bagAddNumber(dict, S"lnum", (long)curPor->cursor.lnum);
-	bagAddNumber(dict, S"col", (long)curPor->cursor.col);
-	bagAddNumber(dict, S"coladd", (long)curPor->cursor.coladd);
+	bagAddNumber(dict, u8"lnum", (long)curPor->cursor.lnum);
+	bagAddNumber(dict, u8"col", (long)curPor->cursor.col);
+	bagAddNumber(dict, u8"coladd", (long)curPor->cursor.coladd);
 	update_curswant();
-	bagAddNumber(dict, S"curswant", (long)curPor->cursWant);
+	bagAddNumber(dict, u8"curswant", (long)curPor->cursWant);
 
-	bagAddNumber(dict, S"topline", (long)curPor->topLine);
-	bagAddNumber(dict, S"topfill", (long)curPor->topFill);
-	bagAddNumber(dict, S"leftcol", (long)curPor->leftCol);
-	bagAddNumber(dict, S"skipcol", (long)curPor->skipCol);
+	bagAddNumber(dict, u8"topline", (long)curPor->topLine);
+	bagAddNumber(dict, u8"topfill", (long)curPor->topFill);
+	bagAddNumber(dict, u8"leftcol", (long)curPor->leftCol);
+	bagAddNumber(dict, u8"skipcol", (long)curPor->skipCol);
 }
 
 //"winwidth(nr)" function
@@ -7306,7 +7306,7 @@ private int prev_lnum_lvl = -1;
 #define DONE_FOLD    2 //did find a fold
 
 private int foldstartmarkerlen;
-private CS foldendmarker;
+private S foldendmarker;
 private int foldendmarkerlen;
 
 //Exported folding functions.
@@ -8546,15 +8546,15 @@ foldCreateMarkers(LineNr start, LineNr end) {
 
 //Add "marker[markerlen]" in 'commentstring' to line "lnum".
 private void
-foldAddMarker(LineNr lnum, CS marker, int markerlen) {
-	CS cms = curBook->o.commentString;
+foldAddMarker(LineNr lnum, S marker, int markerlen) {
+	S cms = curBook->o.commentString;
 	if (!cms)
 		return;
-	CS p = STRSTR(curBook->o.commentString, "%s");
+	S p = STRSTR(curBook->o.commentString, "%s");
 	Boole lineIsComment = false;
 
 	//Allocate a new line: old-line + 'cms'-start + marker + 'cms'-end
-	CS line = ml_get(lnum);
+	S line = ml_get(lnum);
 	Unt line_len = ml_get_len(lnum);
 
 	if (u_save(lnum - 1, lnum + 1) != OK)
@@ -8562,7 +8562,7 @@ foldAddMarker(LineNr lnum, CS marker, int markerlen) {
 
 	//Check if the line ends with an unclosed comment
 	(void)skip_comment(line, false, false, OUT &lineIsComment);
-	CS newline = alloc(line_len + markerlen + STRLEN(cms) + 1);
+	S newline = alloc(line_len + markerlen + STRLEN(cms) + 1);
 	STRCPY(OUT newline, line);
 
 	//Append the marker to the end of the line
@@ -8594,15 +8594,15 @@ deleteFoldMarkers(Fold* fp, int recursive, LineNr lnum_off) {  //offset for fp->
 //Delete 'commentstring' if it matches.
 //If the marker is not found, there is no error message. Could be a missing close-marker.
 private void
-foldDelMarker(LineNr lnum, CS marker, int markerlen) {
+foldDelMarker(LineNr lnum, S marker, int markerlen) {
 	int len;
-	CS cms = curBook->o.commentString;
+	S cms = curBook->o.commentString;
 
 	//end marker may be missing and fold extends below the last line
 	if (lnum > curBook->mem.lineCount)
 		return;
-	CS line = ml_get(lnum);
-	for (CS p = line; *p != ZERO; ++p) {
+	S line = ml_get(lnum);
+	for (S p = line; *p != ZERO; ++p) {
 		if (STRNCMP(p, marker, markerlen) == 0) {
 			//Found the marker, include a digit if it's there.
 			len = markerlen;
@@ -8610,7 +8610,7 @@ foldDelMarker(LineNr lnum, CS marker, int markerlen) {
 				++len;
 			if (cms) {
 				//Also delete 'commentstring' if it matches.
-				CS cms2 = (CS)STRSTR(cms, "%s");
+				S cms2 = (S)STRSTR(cms, "%s");
 				if (cms2 && p - line >= cms2 - cms
 						&& STRNCMP(p - (cms2 - cms), cms, cms2 - cms) == 0
 						&& STRNCMP(p + len, cms2 + 2, STRLEN(cms2 + 2)) == 0
@@ -8621,7 +8621,7 @@ foldDelMarker(LineNr lnum, CS marker, int markerlen) {
 			}
 			if (u_save(lnum - 1, lnum + 1) == OK) {
 				//Make new line: text-before-marker + text-after-marker
-				CS newline = alloc(ml_get_len(lnum) - len + 1);
+				S newline = alloc(ml_get_len(lnum) - len + 1);
 				STRNCPY(newline, line, p - line);
 				STRCPY(newline + (p - line), p + len);
 				ml_replace(lnum, newline, false);
@@ -8634,15 +8634,15 @@ foldDelMarker(LineNr lnum, CS marker, int markerlen) {
 //Return the text for a closed fold at line "lnum", with last line "lnume".
 //When 'foldtext' isn't set puts the result in "buffer[FOLD_TEXT_LEN]".
 //Otherwise the result is in allocated memory.
-pub CS
+pub S
 get_foldtext(
 	Portal* po,
 	LineNr lnum,
 	LineNr lnume,
 	FoldInfo* foldinfo,
-	CS buffer
+	S buffer
 ) {
-	CS text = NULL;
+	S text = NULL;
 	  //an error occurred when evaluating 'fdt' setting
 	static int       got_fdt_error = false;
 	int          save_anyEmsgG = anyEmsgG;
@@ -8659,7 +8659,7 @@ get_foldtext(
 
 	if (po->o.foldText) {
 		 Byte dashes[MAX_LEVEL + 2];
-		 CS p;
+		 S p;
 
 		 //Set "v:folddashes" to a string of "level" dashes.
 		 //Set "v:foldlevel" to "level".
@@ -8728,14 +8728,14 @@ get_foldtext(
 
 //Remove 'foldmarker' and 'commentstring' from "str" (in-place).
 private void
-foldtext_cleanup(CS str) {
-	CS s;
-	CS p;
+foldtext_cleanup(S str) {
+	S s;
+	S p;
 	int len;
 	int did1 = false;
 	int did2 = false;
-	CS cmsStart = null;   //first part or the whole comment
-	CS cmsEnd = null;  //last part of the comment or NULL
+	S cmsStart = null;   //first part or the whole comment
+	S cmsEnd = null;  //last part of the comment or NULL
 	int cms_slen = 0; //length of cmsStart
 	int cms_elen = 0;   //length of cmsEnd
 	//Ignore leading and trailing white space in 'commentstring'.
@@ -8746,7 +8746,7 @@ foldtext_cleanup(CS str) {
 			--cms_slen;
 
 		//locate "%s" in 'commentstring', use the part before and after it.
-		CS cmsEnd = (CS)STRSTR(cmsStart, "%s");  //last part of the comment or NULL
+		S cmsEnd = (S)STRSTR(cmsStart, "%s");  //last part of the comment or NULL
 		if (cmsEnd) {
 			cms_elen = cms_slen - (int)(cmsEnd - cmsStart);
 			cms_slen = (int)(cmsEnd - cmsStart);
@@ -9640,7 +9640,7 @@ private void
 foldlevelIndent(FoldLine* flp) {
 	LineNr lnum = flp->lnum + flp->off;
 	Book* book = flp->po->book;
-	CS s = skipwhite(memGetLine(book, lnum, false));
+	S s = skipwhite(memGetLine(book, lnum, false));
 
 	//empty line or lines starting with a character in 'foldignore': level
 	//depends on surrounding lines
@@ -9689,7 +9689,7 @@ foldlevelMarker(FoldLine *flp) {
 	int      n;
 
 	//cache a few values for speed
-	CS startmarker = flp->po->o.foldMarker;
+	S startmarker = flp->po->o.foldMarker;
 	cstart = *startmarker;
 	++startmarker;
 	cend = *foldendmarker;
@@ -9698,7 +9698,7 @@ foldlevelMarker(FoldLine *flp) {
 	flp->start = 0;
 	flp->lvl_next = flp->lvl;
 
-	CS s = memGetLine(flp->po->book, flp->lnum + flp->off, false);
+	S s = memGetLine(flp->po->book, flp->lnum + flp->off, false);
 	while (*s != ZERO) {
 		if (*s == cstart && STRNCMP(s + 1, startmarker, foldstartmarkerlen - 1) == 0) {
 			//found startmarker: set flp->lvl
@@ -9770,7 +9770,7 @@ put_foldopen_recurse(FILE* fd, Portal* po, ArrayList* gap, LineNr off) {
 				//open nested folds while this fold is open ignore errors
 				if (fprintf(fd, FMT_INT, fp->fd_top + off) < 0
 						|| put_eol(fd) == FAIL
-						|| put_line(fd, S"sil! normal! zo") == FAIL)
+						|| put_line(fd, u8"sil! normal! zo") == FAIL)
 					return FAIL;
 				if (put_foldopen_recurse(fd, po, &fp->fd_nested, off + fp->fd_top) == FAIL)
 					return FAIL;
@@ -9845,7 +9845,7 @@ f_foldlevel(Arr(Var) argvars, Var* returnVar) {
 
 pub void
 f_foldtext(Arr(Var), Var* returnVar) {
-	CS r;
+	S r;
 	int len;
 
 	returnVar->tag = VAR_STRING;
@@ -9853,7 +9853,7 @@ f_foldtext(Arr(Var), Var* returnVar) {
 	//TODO re-implement without vimvars
 	int foldstart = 0;
 	int foldend = 10;
-	CS dashes = S"--";
+	S dashes = u8"--";
 	if (foldstart <= 0 || foldend > curBook->mem.lineCount || dashes) {
 		return;
 	}
@@ -9865,7 +9865,7 @@ f_foldtext(Arr(Var), Var* returnVar) {
 	}
 
 	//Find interesting text in this line.
-	CS s = skipwhite(ml_get(lnum));
+	S s = skipwhite(ml_get(lnum));
 	//skip C comment-start
 	if (s[0] == '/' && (s[1] == '*' || s[1] == '/')) {
 		s = skipwhite(s + 2);
@@ -9876,7 +9876,7 @@ f_foldtext(Arr(Var), Var* returnVar) {
 		}
 	}
 	Long count = (long)(foldend - foldstart + 1);
-	CS txt = NGETTEXT("+-%s%3ld line: ", "+-%s%3ld lines: ", count);
+	S txt = NGETTEXT("+-%s%3ld line: ", "+-%s%3ld lines: ", count);
 	r = alloc(STRLEN(txt)
 			 + STRLEN(dashes)       //for %s
 			 + 20          //for %3ld
@@ -9912,7 +9912,7 @@ f_foldtextresult(Arr(Var) argvars, Var* returnVar) {
 		lnum = 0;
 	fold_count = foldedCount(curPor, lnum, OUT &foldinfo);
 	if (fold_count > 0) {
-		CS text = get_foldtext(curPor, lnum, lnum + fold_count - 1, &foldinfo, buffer);
+		S text = get_foldtext(curPor, lnum, lnum + fold_count - 1, &foldinfo, buffer);
 		if (text == buffer)
 			text = copyStr(text);
 		returnVar->string = text;
@@ -9945,16 +9945,16 @@ private Tab* popupMaskTabS INIT(= NULL);
 #define POPF_POSINVERT  0x800   //vertical position can be inverted
 
 typedef struct {
-	CS pp_name;
+	S pp_name;
 	PopupPosition pp_val;
 } PopposEntry;
 
 private PopposEntry popposEntriesS[] = {
-	{S"botleft", POPPOS_BOTLEFT},
-	{S"topleft", POPPOS_TOPLEFT},
-	{S"botright", POPPOS_BOTRIGHT},
-	{S"topright", POPPOS_TOPRIGHT},
-	{S"center", POPPOS_CENTER}
+	{u8"botleft", POPPOS_BOTLEFT},
+	{u8"topleft", POPPOS_TOPLEFT},
+	{u8"botright", POPPOS_BOTRIGHT},
+	{u8"topright", POPPOS_TOPRIGHT},
+	{u8"center", POPPOS_CENTER}
 };
 
 private int const defaultBorderChars[] = { 9472, 9474, 9472, 9474, 9484, 9488, 9496, 9492 };
@@ -9978,15 +9978,15 @@ private void adjustPosition(Portal* po);
 //Get option value for "key", which is "line" or "col". Handle "cursor+N" and "cursor-N".
 //Return MAXCOL if the entry is not present.
 private int
-popup_options_one(Bag *dict, CS key) {
+popup_options_one(Bag *dict, S key) {
 	DictItem* di = bagFind(dict, mbText(key));
 	if (!di)
 		return MAXCOL;
 
-	CS s;
-	CS endp;
+	S s;
+	S endp;
 	int n = 0;
-	CS val = tv_get_string(&di->c);
+	S val = tv_get_string(&di->c);
 	if (STRNCMP(val, "cursor", 6) != 0)
 		return bagGetNumber_check(dict, mbText(key));
 
@@ -10014,7 +10014,7 @@ popup_options_one(Bag *dict, CS key) {
 }
 
 private int
-set_padding_border(Bag* dict, int* array, CS name, int max_val) {
+set_padding_border(Bag* dict, int* array, S name, int max_val) {
 	DictItem* di = bagFind(dict, mbText(name));
 	if (!di)
 		return OK;
@@ -10055,7 +10055,7 @@ set_moved_values(Portal* po) {
 //Used when popup options contain "moved" with "word" or "WORD"
 private void
 set_moved_columns(Portal* po, int flags) {
-	CS ptr;
+	S ptr;
 	int len = find_ident_under_cursor(&ptr, flags | FIND_NOERROR);
 
 	if (len <= 0)
@@ -10098,7 +10098,7 @@ update_popup_uses_mouse_move(void) {
 private void
 set_mousemoved_columns(Portal* po, Unt flags) {
 	Portal* textwp;
-	CS text;
+	S text;
 	int col;
 	Pos pos;
 	ColNr   mcol;
@@ -10313,7 +10313,7 @@ addTimeout(Portal* po, int time, int close) {
 
 private PopupPosition
 get_pos_entry(Bag *d, int give_error) {
-	CS str = bagGetString(d, tConst("pos"), false);
+	S str = bagGetString(d, tConst("pos"), false);
 
 	if (!str)
 		return POPPOS_NONE;
@@ -10344,10 +10344,10 @@ applyMoveParams(Portal* po, Bag* params) {
 	if ((nr = bagGetNumber_def(params, tConst("maxheight"), -1)) >= 0)
 		po->pup.maxHeight = nr;
 
-	nr = popup_options_one(params, (CS)"line");
+	nr = popup_options_one(params, u8"line");
 	if (nr != MAXCOL)
 		po->pup.wantLine = nr;
-	nr = popup_options_one(params, (CS)"col");
+	nr = popup_options_one(params, u8"col");
 	if (nr != MAXCOL)
 		po->pup.wantCol = nr;
 
@@ -10358,7 +10358,7 @@ applyMoveParams(Portal* po, Bag* params) {
 	if (ppt != POPPOS_NONE)
 		po->pup.pos = ppt;
 
-	CS str = bagGetString(params, tConst("textprop"), false);
+	S str = bagGetString(params, tConst("textprop"), false);
 	if (str) {
 		po->pup.propType = 0;
 		if (*str != ZERO) {
@@ -10389,7 +10389,7 @@ applyMoveParams(Portal* po, Bag* params) {
 private void
 handle_moved_argument(Portal* po, DictItem* di, int mousemoved) {
 	if (di->c.tag == VAR_STRING && di->c.string != NULL) {
-		CS s = di->c.string;
+		S s = di->c.string;
 		Unt   flags = 0;
 
 		if (STRCMP(s, "word") == 0)
@@ -10444,7 +10444,7 @@ handle_moved_argument(Portal* po, DictItem* di, int mousemoved) {
 }
 
 private void
-check_highlight(Bag* dict, CS name, OUT Unt* pval) {
+check_highlight(Bag* dict, S name, OUT Unt* pval) {
 	DictItem* di = bagFind(dict, mbText(name));
 	if (!di)
 		return;
@@ -10481,7 +10481,7 @@ scrollToCurrent(Portal* po) {
 
 //Get the sign group name for portal "po". Return a pointer to a static buffer, overwritten on the
 //next call.
-private CS
+private S
 popup_get_sign_name(Portal* po) {
 	static Byte buf[30];
 
@@ -10493,20 +10493,20 @@ popup_get_sign_name(Portal* po) {
 private void
 highlightCurrentLine(Portal* po) {
 	int       sign_id = 0;
-	CS sign_name = popup_get_sign_name(po);
+	S sign_name = popup_get_sign_name(po);
 
-	llDeleteSigns(po->book, (CS)"PopUpMenu");
+	llDeleteSigns(po->book, u8"PopUpMenu");
 
 	if ((po->pup.flags & POPF_CURSORLINE) != 0) {
 		scrollToCurrent(po);
 
 		if (!sign_exists_by_name(sign_name)) {
 			char *linehl = "PopupSelected";
-			sign_define_by_name( sign_name, NULL, (CS)linehl, NULL, NULL, NULL, SIGN_DEF_PRIO);
+			sign_define_by_name( sign_name, NULL, (S)linehl, NULL, NULL, NULL, SIGN_DEF_PRIO);
 		}
 
 		sign_place(
-			&sign_id, (CS)"PopUpMenu", sign_name, po->book, po->cursor.lnum, SIGN_DEF_PRIO
+			&sign_id, u8"PopUpMenu", sign_name, po->book, po->cursor.lnum, SIGN_DEF_PRIO
 		);
 		redrawPortLater(po, UPD_NOT_VALID);
 	} else
@@ -10536,7 +10536,7 @@ apply_general_options(Portal* po, Bag* dict) {
 	Boole nr = bagGetBool(dict, tConst("scrollbar"), false);
 	po->pup.wantScrollbar = nr;
 
-	CS str = bagGetString(dict, tConst("title"), false);
+	S str = bagGetString(dict, tConst("title"), false);
 	if (str) {
 		eeglFree(po->pup.title);
 		po->pup.title = copyStr(str);
@@ -10574,7 +10574,7 @@ apply_general_options(Portal* po, Bag* dict) {
 		int ok = true;
 
 		if (di->c.tag == VAR_STRING && di->c.string != NULL) {
-			CS s = di->c.string;
+			S s = di->c.string;
 			if (STRCMP(s, "none") == 0)
 				po->pup.close = POPCLOSE_NONE;
 			ei (STRCMP(s, "button") == 0)
@@ -10589,8 +10589,8 @@ apply_general_options(Portal* po, Bag* dict) {
 			showErrFmtMsg(_(e_invalid_value_for_argument_str_str), "close", tv_get_string(&di->c));
 	}
 
-	if (set_padding_border(dict, po->pup.padding, S"padding", 999) == FAIL
-			|| set_padding_border(dict, po->pup.border, S"border", 1) == FAIL
+	if (set_padding_border(dict, po->pup.padding, u8"padding", 999) == FAIL
+			|| set_padding_border(dict, po->pup.border, u8"border", 1) == FAIL
 	)
 		return FAIL;
 
@@ -10640,8 +10640,8 @@ apply_general_options(Portal* po, Bag* dict) {
 		}
 	}
 
-	check_highlight(dict, S"scrollbarhilite", &po->pup.scrollbarHilite);
-	check_highlight(dict, S"thumbhighlilite", &po->pup.thumbHilite);
+	check_highlight(dict, u8"scrollbarhilite", &po->pup.scrollbarHilite);
+	check_highlight(dict, u8"thumbhighlilite", &po->pup.thumbHilite);
 
 	di = bagFind(dict, tConst("zindex"));
 	if (di) {
@@ -10748,7 +10748,7 @@ applyParams(Portal* po, Bag* params, int create) {
 	applyMoveParams(po, params);
 
 	if (create) {
-		optSetStringOptionDirectInPort(po, S"signcolumn", S"no", OPT_LOCAL, 0);
+		optSetStringOptionDirectInPort(po, u8"signcolumn", u8"no", OPT_LOCAL, 0);
 	}
 
 	if (apply_general_options(po, params) == FAIL)
@@ -10783,8 +10783,8 @@ add_popup_strings(Book* book, List* l) {
 	LineNr    lnum = 0;
 	FOR_ALL_LIST_ITEMS(l, li) {
 		if (li->c.tag == VAR_STRING) {
-			CS p = li->c.string;
-			memAppendBook(book, lnum++, p == NULL ? S"" : p, (ColNr)0, true);
+			S p = li->c.string;
+			memAppendBook(book, lnum++, p == NULL ? u8"" : p, (ColNr)0, true);
 		}
 	}
 }
@@ -10795,7 +10795,7 @@ add_popup_dicts(Book* book, List *l) {
 	ListItem* li;
 	ListItem* pli;
 	LineNr    lnum = 0;
-	CS p;
+	S p;
 	Bag* dict;
 
 	//first add the text lines
@@ -10806,7 +10806,7 @@ add_popup_dicts(Book* book, List *l) {
 		}
 		dict = li->c.bag;
 		p = dict == NULL ? NULL : bagGetString(dict, tConst("text"), false);
-		memAppendBook(book, lnum++, p == NULL ? (CS)"" : p, (ColNr)0, true);
+		memAppendBook(book, lnum++, p == NULL ? u8"" : p, (ColNr)0, true);
 	}
 
 	//add the text properties
@@ -11313,7 +11313,7 @@ setBookText(Book* book, Var text) {
 
 	//Add text to the book.
 	if (text.tag == VAR_STRING) {
-		CS s = text.string ? text.string : S"";
+		S s = text.string ? text.string : u8"";
 		Unt len = STRLEN(s) + 1;
 
 		//just a string
@@ -11346,23 +11346,23 @@ parse_popup_option(Portal* po, Boole is_preview) {
 	if (!p_cpp)
 		return OK;
 
-	CS p = p_cpp;
+	S p = p_cpp;
 
 	if (po)
 		po->pup.flags &= ~POPF_INFO_MENU;
 
 	for ( ; *p != ZERO; p += (*p == ',' ? 1 : 0)) {
-		CS s = p;
+		S s = p;
 		int x;
 
-		CS e = firstOccurrence(p, ':');
+		S e = firstOccurrence(p, ':');
 		if (!e || e[1] == ZERO)
 			return FAIL;
 
 		p = firstOccurrence(e, ',');
 		if (!p)
 			p = e + STRLEN(e);
-		CS dig = e + 1;
+		S dig = e + 1;
 		x = parseLong(&dig);
 
 		//Note: Keep this in sync with p_popup_option_values.
@@ -11388,12 +11388,12 @@ parse_popup_option(Portal* po, Boole is_preview) {
 				int c = *p;
 
 				*p = ZERO;
-				optSetStringOptionDirectInPort(po, S"portcolor", s + 10, OPT_LOCAL, 0);
+				optSetStringOptionDirectInPort(po, u8"portcolor", s + 10, OPT_LOCAL, 0);
 				*p = c;
 			}
 		} ei (STRNCMP(s, "border:", 7) == 0) {
 			 //Note: Keep this in sync with p_popup_option_border_values.
-			 CS arg = s + 7;
+			 S arg = s + 7;
 			 int on = STRNCMP(arg, "on", 2) == 0 && arg + 2 == p;
 			 int off = STRNCMP(arg, "off", 3) == 0 && arg + 3 == p;
 			 int i;
@@ -11409,7 +11409,7 @@ parse_popup_option(Portal* po, Boole is_preview) {
 			}
 		} ei (STRNCMP(s, "align:", 6) == 0) {
 			//Note: Keep this in sync with p_popup_option_align_values.
-			CS arg = s + 6;
+			S arg = s + 6;
 			int      item = STRNCMP(arg, "item", 4) == 0 && arg + 4 == p;
 			int      menu = STRNCMP(arg, "menu", 4) == 0 && arg + 4 == p;
 
@@ -11517,12 +11517,12 @@ popup_redraw_all(void) {
 private void
 updateNotificationColor(Portal* po, PopupKind type) {
 	Arr(char) hiname = type == POPUP_MESSAGE_WIN ? "InfoMsg" : "PopupNotification";
-	optSetStringOptionDirectInPort(po, S"portcolor", (CS)hiname, OPT_LOCAL, 0);
+	optSetStringOptionDirectInPort(po, u8"portcolor", (S)hiname, OPT_LOCAL, 0);
 }
 
 private void
 initPopupBook(Book* book) {
-	optSetStringOptionDirectInBook( book, S"booktype", S"popup", OPT_LOCAL, 0);
+	optSetStringOptionDirectInBook( book, u8"booktype", u8"popup", OPT_LOCAL, 0);
 	book->o.swapFile = false;   //no swap file
 	book->o.bookListed = false;    //unlisted book
 	book->locked = true;   //prevent deleting the book
@@ -11729,7 +11729,7 @@ createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind) { //:createPop
 	} ei (kind == POPUP_MENU) {
 		Var   tv;
 		tv.tag = VAR_STRING;
-		tv.string = (CS)"popup_filter_menu";
+		tv.string = u8"popup_filter_menu";
 		Callback callback = get_callback(&tv);
 		if (callback.name != NULL) {
 			set_callback(&po->pup.filterCb, &callback);
@@ -11976,7 +11976,7 @@ f_popup_filter_menu(Arr(Var) argvars, Var* returnVar) {
 	if (!po)
 		return;
 
-	CS key = tv_get_string(&argvars[1]);
+	S key = tv_get_string(&argvars[1]);
 	Unt c = *key;
 	if (c == K_SPECIAL && key[1] != ZERO)
 		c = TO_SPECIAL(key[1], key[2]);
@@ -12026,7 +12026,7 @@ pub void
 f_popup_filter_yesno(Arr(Var) argvars, Var* returnVar) {
 	int id = tv_get_number(&argvars[0]);
 	Portal* po = getPortalById(id);
-	CS key = tv_get_string(&argvars[1]);
+	S key = tv_get_string(&argvars[1]);
 	//If the popup has been closed don't consume the key.
 	if (!po)
 		return;
@@ -12362,22 +12362,22 @@ f_popup_getpos(Arr(Var) argvars, Var* returnVar) {
 	Bag* dict = returnVar->bag;
 	hash_lock_size(&dict->hashTable, 11);
 
-	bagAddNumber(dict, S"line", po->windowRow + 1);
-	bagAddNumber(dict, S"col", po->windowCol + 1);
-	bagAddNumber(dict, S"width", po->width + left_extra
+	bagAddNumber(dict, u8"line", po->windowRow + 1);
+	bagAddNumber(dict, u8"col", po->windowCol + 1);
+	bagAddNumber(dict, u8"width", po->width + left_extra
 		 + po->pup.border[1] + po->pup.padding[1]);
-	bagAddNumber(dict, S"height", po->height + top_extra
+	bagAddNumber(dict, u8"height", po->height + top_extra
 		 + po->pup.border[2] + po->pup.padding[2]);
 
-	 bagAddNumber(dict, S"core_line", po->windowRow + 1 + top_extra);
-	 bagAddNumber(dict, S"core_col", po->windowCol + 1 + left_extra);
-	 bagAddNumber(dict, S"core_width", po->width);
-	 bagAddNumber(dict, S"core_height", po->height);
+	 bagAddNumber(dict, u8"core_line", po->windowRow + 1 + top_extra);
+	 bagAddNumber(dict, u8"core_col", po->windowCol + 1 + left_extra);
+	 bagAddNumber(dict, u8"core_width", po->width);
+	 bagAddNumber(dict, u8"core_height", po->height);
 
-	 bagAddNumber(dict, S"scrollbar", po->pup.hasScrollbar);
-	 bagAddNumber(dict, S"firstline", po->topLine);
-	 bagAddNumber(dict, S"lastline", po->bottomLine - 1);
-	 bagAddNumber(dict, S"visible",
+	 bagAddNumber(dict, u8"scrollbar", po->pup.hasScrollbar);
+	 bagAddNumber(dict, u8"firstline", po->topLine);
+	 bagAddNumber(dict, u8"lastline", po->bottomLine - 1);
+	 bagAddNumber(dict, u8"visible",
 		 portalIsValid(po) && (po->pup.flags & POPF_HIDDEN) == 0);
 
 	 hash_unlock(&dict->hashTable);
@@ -12411,7 +12411,7 @@ f_popup_locate(Arr(Var) argvars, Var* returnVar) {
 
 //For popup_getoptions(): add a "border" or "padding" entry to "dict".
 private void
-get_padding_border(Bag* dict, int* array, CS name) {
+get_padding_border(Bag* dict, int* array, S name) {
 	if (array[0] == 0 && array[1] == 0 && array[2] == 0 && array[3] == 0)
 		return;
 
@@ -12435,7 +12435,7 @@ getBorderHilite(Bag* dict, Portal* po) {
 		return;
 
 	List* list = list_alloc();
-	bagAddList(dict, S"borderhilite", list);
+	bagAddList(dict, u8"borderhilite", list);
 	for (i = 0; i < 4; ++i)
 		list_append_number(list, po->pup.borderHilite[i]);
 }
@@ -12454,7 +12454,7 @@ get_borderchars(Bag* bag, Portal* po) {
 		return;
 
 	List* list = list_alloc();
-	bagAddList(bag, S"borderchars", list);
+	bagAddList(bag, u8"borderchars", list);
 	for (i = 0; i < 8; ++i) {
 		int len = mb_char2bytes(po->pup.borderChar[i], buf);
 		list_append_string(list, buf, len);
@@ -12465,13 +12465,13 @@ get_borderchars(Bag* bag, Portal* po) {
 private void
 get_moved_list(Bag* bag, Portal* po) {
 	List* list = list_alloc();
-	bagAddList(bag, S"moved", list);
+	bagAddList(bag, u8"moved", list);
 	list_append_number(list, po->pup.lnum);
 	list_append_number(list, po->pup.minCol);
 	list_append_number(list, po->pup.maxCol);
 
 	list = list_alloc();
-	bagAddList(bag, S"mousemoved", list);
+	bagAddList(bag, u8"mousemoved", list);
 	list_append_number(list, po->pup.mouseRow);
 	list_append_number(list, po->pup.mouseMinCol);
 	list_append_number(list, po->pup.mouseMaxCol);
@@ -12488,36 +12488,36 @@ f_popup_getoptions(Arr(Var) argvars, OUT Var* returnVar) {
 		return;
 
 	Bag* b = returnVar->bag;
-	bagAddNumber(b, S"line", po->pup.wantLine);
-	bagAddNumber(b, S"col", po->pup.wantCol);
-	bagAddNumber(b, S"minwidth", po->pup.minWidth);
-	bagAddNumber(b, S"minheight", po->pup.minHeight);
-	bagAddNumber(b, S"maxheight", po->pup.maxHeight);
-	bagAddNumber(b, S"maxwidth", po->pup.maxWidth);
-	bagAddNumber(b, S"firstline", po->pup.firstLine);
-	bagAddNumber(b, S"scrollbar", po->pup.wantScrollbar);
-	bagAddNumber(b, S"zindex", po->pup.zIndex);
-	bagAddNumber(b, S"fixed", po->pup.fixed);
+	bagAddNumber(b, u8"line", po->pup.wantLine);
+	bagAddNumber(b, u8"col", po->pup.wantCol);
+	bagAddNumber(b, u8"minwidth", po->pup.minWidth);
+	bagAddNumber(b, u8"minheight", po->pup.minHeight);
+	bagAddNumber(b, u8"maxheight", po->pup.maxHeight);
+	bagAddNumber(b, u8"maxwidth", po->pup.maxWidth);
+	bagAddNumber(b, u8"firstline", po->pup.firstLine);
+	bagAddNumber(b, u8"scrollbar", po->pup.wantScrollbar);
+	bagAddNumber(b, u8"zindex", po->pup.zIndex);
+	bagAddNumber(b, u8"fixed", po->pup.fixed);
 	if (po->pup.propType && doesPortalExistInAnyTab(po->pup.propPort)) {
 		PropType* pt = text_prop_type_by_id(po->pup.propPort->book, po->pup.propType);
 
 		if (pt != NULL)
-			bagAddString(b, S"textprop", pt->name);
-		bagAddNumber(b, S"textpropwin", po->pup.propPort->id);
-		bagAddNumber(b, S"textpropid", po->pup.propId);
+			bagAddString(b, u8"textprop", pt->name);
+		bagAddNumber(b, u8"textpropwin", po->pup.propPort->id);
+		bagAddNumber(b, u8"textpropid", po->pup.propId);
 	}
-	bagAddString(b, S"title", po->pup.title);
-	bagAddNumber(b, S"wrap", po->o.wrap);
-	bagAddNumber(b, S"drag", (po->pup.flags & POPF_DRAG) != 0);
-	bagAddNumber(b, S"dragall", (po->pup.flags & POPF_DRAGALL) != 0);
-	bagAddNumber(b, S"mapping", (po->pup.flags & POPF_MAPPING) != 0);
-	bagAddNumber(b, S"resize", (po->pup.flags & POPF_RESIZE) != 0);
-	bagAddNumber(b, S"posinvert", (po->pup.flags & POPF_POSINVERT) != 0);
-	bagAddNumber(b, S"cursorline", (po->pup.flags & POPF_CURSORLINE) != 0);
+	bagAddString(b, u8"title", po->pup.title);
+	bagAddNumber(b, u8"wrap", po->o.wrap);
+	bagAddNumber(b, u8"drag", (po->pup.flags & POPF_DRAG) != 0);
+	bagAddNumber(b, u8"dragall", (po->pup.flags & POPF_DRAGALL) != 0);
+	bagAddNumber(b, u8"mapping", (po->pup.flags & POPF_MAPPING) != 0);
+	bagAddNumber(b, u8"resize", (po->pup.flags & POPF_RESIZE) != 0);
+	bagAddNumber(b, u8"posinvert", (po->pup.flags & POPF_POSINVERT) != 0);
+	bagAddNumber(b, u8"cursorline", (po->pup.flags & POPF_CURSORLINE) != 0);
 	if (po->pup.scrollbarHilite)
-		bagAddNumber(b, S"scrollbarhilite", po->pup.scrollbarHilite);
+		bagAddNumber(b, u8"scrollbarhilite", po->pup.scrollbarHilite);
 	if (po->pup.thumbHilite)
-		bagAddNumber(b, S"thumbhilite", po->pup.thumbHilite);
+		bagAddNumber(b, u8"thumbhilite", po->pup.thumbHilite);
 
 	//find the tab that holds this popup
 	int i = 1;
@@ -12536,33 +12536,33 @@ f_popup_getoptions(Arr(Var) argvars, OUT Var* returnVar) {
 		i = -1;  //must be global
 	ei (t == curtab)
 		i = 0;
-	bagAddNumber(b, S"tabpage", i);
+	bagAddNumber(b, u8"tabpage", i);
 
-	get_padding_border(b, po->pup.padding, S"padding");
-	get_padding_border(b, po->pup.border, S"border");
+	get_padding_border(b, po->pup.padding, u8"padding");
+	get_padding_border(b, po->pup.border, u8"border");
 	getBorderHilite(b, po);
 	get_borderchars(b, po);
 	get_moved_list(b, po);
 
 	if (po->pup.filterCb.name)
-		bagAddCallback(b, S"filter", &po->pup.filterCb);
+		bagAddCallback(b, u8"filter", &po->pup.filterCb);
 	if (po->pup.closeCb.name)
-		bagAddCallback(b, S"callback", &po->pup.closeCb);
+		bagAddCallback(b, u8"callback", &po->pup.closeCb);
 
 	for (i = 0; i < (int)ARRAY_LENGTH(popposEntriesS); ++i) {
 		if (po->pup.pos == popposEntriesS[i].pp_val) {
-			bagAddString(b, S"pos", (CS)popposEntriesS[i].pp_name);
+			bagAddString(b, u8"pos", (S)popposEntriesS[i].pp_name);
 			break;
 		}
 	}
 
-	bagAddString(b, S"close",
-		(CS)( po->pup.close == POPCLOSE_BUTTON
+	bagAddString(b, u8"close",
+		(S)( po->pup.close == POPCLOSE_BUTTON
 			? "button" : po->pup.close == POPCLOSE_CLICK ? "click" : "none"
 		)
 	);
 
-	bagAddNumber(b, S"time", po->pup.timer ? (long)po->pup.timer->tr_interval : 0L);
+	bagAddNumber(b, u8"time", po->pup.timer ? (long)po->pup.timer->tr_interval : 0L);
 }
 
 //Return true if the current portal is running a terminal in a popup portal.
@@ -13103,7 +13103,7 @@ may_update_popup_position(void) {
 }
 
 //Return a string of "len" spaces in ioBuffG.
-private CS
+private S
 get_spaces(int len) {
 	 memset(ioBuffG, ' ', (Unt)len);
 	 ioBuffG[len] = ZERO;
@@ -13216,7 +13216,7 @@ update_popups(void (*portUpdate)(Portal* po, Boole *)) {
 			//truncate the title if too long
 			if (title_len > total_width - 2) {
 				int title_byte_len = (int)STRLEN(po->pup.title);
-				CS title_text = alloc(title_byte_len + 1);
+				S title_text = alloc(title_byte_len + 1);
 
 				trunc_string(po->pup.title, title_text, total_width - 2, title_byte_len + 1);
 				drawText(
@@ -13666,7 +13666,7 @@ popup_update_preview_title(void) {
 
 //Show a popup notification (like a toast) with a timeout.
 pub void
-showNotification(CS text) {
+showNotification(S text) {
 	Var vars[2];
 	vars[0] = *allocStringVar(text);
 	Bag* emptyBag = allocBag();
@@ -13687,7 +13687,7 @@ pub Boole isInfoPopup(Portal* po) {
 //{{{pop-up menus (pum)
 
 private Arr(PopupItem) displayedItemsS = NULL;   //items of displayed popup menu
-private Unt menuLen;         //nr of items in "displayedItemsS"
+private Unt menuLen;         //nr of items in "displayedItemsu8"
 private int selectedItemInd;      //index of selected item or -1
 private int firstItemIndS = 0;      //index of top item
 
@@ -13973,7 +13973,7 @@ pum_under_menu(int row, int col, int only_redrawing) {
 //Computes decorations of text on the popup menu.
 //Return decorations for every cell, or NULL if all decorations are the same.
 private Arr(Decoration)
-computeTextDeco(CS text, Short hiId, Decoration userDeco) {
+computeTextDeco(S text, Short hiId, Decoration userDeco) {
 	if (*text == ZERO || (hiId != HILITE_PmenuSelected && hiId != HILITE_Pmenu)
 			 || (getFullDecoration(HILITE_PmenuMatchedInSelected).hiId
 					 == getFullDecoration(HILITE_PmenuSelected).hiId
@@ -13983,7 +13983,7 @@ computeTextDeco(CS text, Short hiId, Decoration userDeco) {
 		return NULL;
 
 	Boole isSelect = hiId == HILITE_PmenuSelected;
-	CS leader = (stateG & MODE_COMMLINE) ? cmdline_compl_pattern() : ins_compl_leader();
+	S leader = (stateG & MODE_COMMLINE) ? cmdline_compl_pattern() : ins_compl_leader();
 	if (!leader || *leader == ZERO)
 		return NULL;
 
@@ -14003,7 +14003,7 @@ computeTextDeco(CS text, Short hiId, Decoration userDeco) {
 	int cellIdx = 0;
 	int matchedLen = -1;
 	Unt char_pos = 0;
-	CS ptr = text;
+	S ptr = text;
 	while (*ptr != ZERO) {
 		newDeco = decorationsG[hiId];
 
@@ -14054,12 +14054,12 @@ pum_drawText_withDecos(
 	int row,
 	int col,
 	int,
-	CS text,
+	S text,
 	int textlen,
 	Arr(Decoration) decos)
 {
 	int col_start = col;
-	CS ptr = text;
+	S ptr = text;
 	int char_len;
 	//Render text with proper decorations
 	while (*ptr != ZERO && ptr < text + textlen) {
@@ -14078,7 +14078,7 @@ pum_align_order(int* order) {
 	order[2] = is_default ? CPT_MENU : p_cia % 10;
 }
 
-private inline CS
+private inline S
 pum_get_item(int index, int type) {
 	switch(type) {
 	case CPT_ABBR: return displayedItemsS[index].pum_text;
@@ -14104,7 +14104,7 @@ private int
 displayText(
 	int row,
 	int col,
-	CS text,
+	S text,
 	Decoration deco,
 	Arr(Decoration) decos,
 	int width,        //width already calculated in outer loop
@@ -14113,7 +14113,7 @@ displayText(
 	int next_isempty,
 	int selected
 ) {
-	CS st_end = NULL;
+	S st_end = NULL;
 	int over_cell = 0;
 	int pad = next_isempty ? 0 : 2;
 	int truncated = false;
@@ -14188,8 +14188,8 @@ drawMenuItem(
 	int next_isempty
 ){
 	int item_type = order[j];
-	CS s = NULL;
-	CS p = pum_get_item(idx, item_type);
+	S s = NULL;
+	S p = pum_get_item(idx, item_type);
 	int width = 0; //item width
 	int w;         //char width
 	int selected = idx == selectedItemInd;
@@ -14209,7 +14209,7 @@ drawMenuItem(
 
 		if (saved != ZERO)
 			*p = ZERO;
-		CS sanitizedText = sanitizeStr(s);
+		S sanitizedText = sanitizeStr(s);
 		if (saved != ZERO)
 			*p = saved;
 
@@ -14227,7 +14227,7 @@ drawMenuItem(
 			 break;
 
 		//Display two spaces for a Tab.
-		drawTextLen(S"  ", 2, row, col, deco.flags);
+		drawTextLen(u8"  ", 2, row, col, deco.flags);
 		col += 2;
 		*totwidth_ptr += 2;
 		s = NULL;  //start text at next char
@@ -14247,7 +14247,7 @@ pum_draw_scrollbar(int row, int i, int thumb_pos, int thumb_height){
 	screen_putchar(' ', row, pumColP + pum_width, deco);
 }
 
-//Redraw the popup menu, using "firstItemIndS" and "selectedItemInd".
+//Redraw the popup menu, using "firstItemIndu8" and "selectedItemInd".
 pub void
 pum_redraw(void) {
 	int row = pumRowP;
@@ -14257,7 +14257,7 @@ pum_redraw(void) {
 	Decoration deco;
 	int i, j;
 	int idx;
-	CS p = NULL;
+	S p = NULL;
 	int thumb_pos = 0;
 	int thumb_height = 1;
 	int item_type;
@@ -14501,21 +14501,21 @@ pum_set_selected(int n, int repeat) {
 				if (res == OK) {
 					//Edit a new, empty book. Set options for a "wipeout" book.
 					optChangeAndReportError(
-						S"swapfile", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
+						u8"swapfile", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
 					);
 					optChangeAndReportError(
-						S"book.listed", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
+						u8"book.listed", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
 					);
-					optChangeAndReportError(S"book.type", optStr("nofile"), OPT_LOCAL);
+					optChangeAndReportError(u8"book.type", optStr("nofile"), OPT_LOCAL);
 					optChangeAndReportError(
-						S"diff", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
+						u8"diff", (OptionValue){.tag = OPTION_BOOLE, .boole = false}, SET_LOCAL
 					);
 				}
 				if (res == OK) {
-					CS e;
+					S e;
 					LineNr   lnum = 0;
 
-					for (CS p = displayedItemsS[selectedItemInd].pum_info; *p != ZERO; ) {
+					for (S p = displayedItemsS[selectedItemInd].pum_info; *p != ZERO; ) {
 						e = firstOccurrence(p, '\n');
 						if (!e) {
 						   ml_append(lnum++, p, 0, false);
@@ -14716,12 +14716,12 @@ pub void
 pum_set_event_info(Bag *bag) {
 	if (!pum_visible())
 		return;
-	(void)bagAddNumber(bag, S"height", pum_height);
-	(void)bagAddNumber(bag, S"width", pum_width);
-	(void)bagAddNumber(bag, S"row", pumRowP);
-	(void)bagAddNumber(bag, S"col", pumColP);
-	(void)bagAddNumber(bag, S"size", menuLen);
-	(void)bagAdd_bool(bag, S"scrollbar", pum_scrollbar ? VVAL_TRUE : VVAL_FALSE);
+	(void)bagAddNumber(bag, u8"height", pum_height);
+	(void)bagAddNumber(bag, u8"width", pum_width);
+	(void)bagAddNumber(bag, u8"row", pumRowP);
+	(void)bagAddNumber(bag, u8"col", pumColP);
+	(void)bagAddNumber(bag, u8"size", menuLen);
+	(void)bagAdd_bool(bag, u8"scrollbar", pum_scrollbar ? VVAL_TRUE : VVAL_FALSE);
 }
 
 private void
@@ -14763,7 +14763,7 @@ private Unt balloonArraySizeS;
 # define BALLOON_MIN_HEIGHT 10
 
 typedef struct {
-	CS start;
+	S start;
 	int bytelen;
 	int cells;
 	int indent;
@@ -14773,7 +14773,7 @@ typedef struct {
 //at white space, preserve quoted strings and make a struct look good. Resulting array is stored
 //in "array" and its the size is returned. Return value is at least 1
 pub Unt
-balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
+balloonSplitMessage(S mesg, OUT Arr(PopupItem)* array) {
 	ArrayList   ga;
 	BalPart   *item;
 	int quoted = false;
@@ -14784,7 +14784,7 @@ balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
 	int split_long_items = false;
 
 	ga_init2(&ga, sizeof(BalPart), 20);
-	CS p = mesg;
+	S p = mesg;
 
 	while (*p != ZERO) {
 		if (ga_grow(&ga, 1) == FAIL)
@@ -14840,8 +14840,8 @@ balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
 		goto failed;
 
 	//Add an empty line above and below, looks better.
-	(*array)->pum_text = copyStr(S"");
-	(*array + height - 1)->pum_text = copyStr(S"");
+	(*array)->pum_text = copyStr(u8"");
+	(*array + height - 1)->pum_text = copyStr(u8"");
 
 	for (Unt line = 1, item_idx = 0; line < height - 1; ++item_idx) {
 		int   skip;
@@ -14852,7 +14852,7 @@ balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
 
 		item = ((BalPart *)ga.c) + item_idx;
 		if (item->bytelen == 0)
-			(*array)[line++].pum_text = copyStr((CS)"");
+			(*array)[line++].pum_text = copyStr(u8"");
 		else {
 			for (skip = 0; skip < item->bytelen; skip += thislen) {
 				if (split_long_items && item->cells >= BALLOON_MIN_WIDTH) {
@@ -14907,7 +14907,7 @@ ui_remove_balloon(void) {
 
 //Terminal version of a balloon, uses the popup menu code.
 pub void
-ui_post_balloon(CS mesg, List* list) {
+ui_post_balloon(S mesg, List* list) {
 	ui_remove_balloon();
 
 	if (!mesg && !list) {
@@ -14922,8 +14922,8 @@ ui_post_balloon(CS mesg, List* list) {
 		CHECK_LIST_MATERIALIZE(list);
 		ListItem  *li = list->first;
 		for (int idx = 0; li; li = li->next, ++idx) {
-			CS text = convertVarToStringSingleUse(&li->c);
-			balloon_array[idx].pum_text = copyStr(text == NULL ? (CS)"" : text);
+			S text = convertVarToStringSingleUse(&li->c);
+			balloon_array[idx].pum_text = copyStr(text == NULL ? u8"" : text);
 		}
 	} else
 		balloonArraySizeS = balloonSplitMessage(mesg, &balloon_array);
@@ -14966,7 +14966,7 @@ find_word_under_cursor(
 	Unt flags,   //flags for find_ident_at_pos()
 	Portal** winp,   //may be NULL
 	LineNr* lnump,   //may be NULL
-	OUT CS* textp,
+	OUT S* textp,
 	int* colp,   //column where mouse hovers, can be NULL
 	int* startcolp //column where text starts, can be NULL
 ){
@@ -14985,7 +14985,7 @@ find_word_under_cursor(
 		return FAIL;      //position is below the last line
 
 	//Not past end of the file.
-	CS lbuf = memGetLine(po->book, lnum, false);
+	S lbuf = memGetLine(po->book, lnum, false);
 	if (col > (int)drawLineOnScreentabsize(po, lnum, lbuf, (ColNr)MAXCOL))
 		return FAIL;      //past end of line
 
@@ -15063,7 +15063,7 @@ get_beval_info(
 	int getword,
 	Portal**winp,
 	LineNr* lnump,
-	OUT CS* textp,
+	OUT S* textp,
 	int* colp
 ) {
 	int row = mouseRowG;
@@ -15085,7 +15085,7 @@ get_beval_info(
 
 //Show a balloon with "mesg" or "list". Hide the balloon when both are NULL.
 pub void
-post_balloon(BalloonEval*, CS mesg, List* list) {
+post_balloon(BalloonEval*, S mesg, List* list) {
 	ui_post_balloon(mesg, list);
 }
 
@@ -15101,15 +15101,15 @@ can_use_beval(void) {
 private void
 bexpr_eval(
 	BalloonEval* beval,
-	CS bexpr,
+	S bexpr,
 	Portal* po,
 	LineNr,
 	int,
-	CS text
+	S text
 ) {
 	//Long portNr = 0;
 	Book* curBookSaved;
-	static CS result = NULL;
+	static S result = NULL;
 	Unt len;
 
 	ScriptPos save_sctx = scriptPosG;
@@ -15128,7 +15128,7 @@ bexpr_eval(
 	++textlock;
 
 	if (bexpr == curBook->o.balloonExpr) {
-		ScriptPos* sp = optGetScriptPos(S"balloonexpr");
+		ScriptPos* sp = optGetScriptPos(u8"balloonexpr");
 		if (sp)
 			scriptPosG = *sp;
 	} else
@@ -15174,11 +15174,11 @@ general_beval_cb(BalloonEval* beval, int) {
 		return;
 	recursive = true;
 
-	CS text;
+	S text;
 	LineNr lnum;
 	Portal* po;
 	if (get_beval_info(beval, true, &po, &lnum, &text, &col) == OK) {
-		CS bexpr = po->book->o.balloonExpr;
+		S bexpr = po->book->o.balloonExpr;
 		if (*bexpr != ZERO) {
 			bexpr_eval(beval, bexpr, po, lnum, col, text);
 			recursive = false;

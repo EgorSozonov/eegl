@@ -4,34 +4,34 @@ typedef struct {
 	int argc;
 	Arr(Arr(char)) argv;
 
-	CS fname;         //first file to edit
+	S fname;         //first file to edit
 
-	CS altInitFile;      //alternative init file name from -u argument
+	S altInitFile;      //alternative init file name from -u argument
 	int clean;         //--clean argument
 
 	int n_commands;                 //no. of commands from + or -c
-	CS commands[MAX_ARG_CMDS];      //commands from + or -c arg.
+	S commands[MAX_ARG_CMDS];      //commands from + or -c arg.
 	Byte cmds_tofree[MAX_ARG_CMDS]; //commands that need free()
 	int n_pre_commands;             //no. of commands from --cmd
-	CS pre_commands[MAX_ARG_CMDS];  //commands from --cmd argument
+	S pre_commands[MAX_ARG_CMDS];  //commands from --cmd argument
 
 	int edit_type; //type of editing to do
-	CS tagname;    //tag from -t argument
-	CS use_ef;     //@errorfile from -q argument
+	S tagname;    //tag from -t argument
+	S use_ef;     //@errorfile from -q argument
 
 	int want_full_screen;
 	int not_a_term;      //no warning for missing term?
 	int tty_fail;      //exit if not a tty
-	CS term;         //specified terminal name
+	S term;         //specified terminal name
 	int no_swap_file;      //"-n" argument used
 	int use_debug_break_level;
 	Unt portalCount;      //number of portals to use
 	int portalLayout;     //0, WIN_HOR, WIN_VER or WIN_TABS
 
 	int serverArg;      //TRUE when argument for a server
-	CS serverName_arg;  //cmdline arg for server name
-	CS serverStr;       //remote server command
-	CS servername;      //allocated name for our server
+	S serverName_arg;  //cmdline arg for server name
+	S serverStr;       //remote server command
+	S servername;      //allocated name for our server
 	int diff_mode;      //start with 'diff' set
 } MainParams;
 typedef struct HistoryEntry {
@@ -55,14 +55,14 @@ int is_not_a_term(void);
 int is_not_a_term_or_gui(void);
 void free_vbuf(void);
 void may_trigger_safestate(Boole safe);
-void state_no_longer_safe(CS reason);
+void state_no_longer_safe(S reason);
 Boole get_was_safe_state(void);
 void may_trigger_safestateagain(void);
 int work_pending(void);
 void mainLoop(Boole inCommPort);
 void exitEegl(int exitval);
-void mainerr_arg_missing(CS str);
-CS mainProgramVersion();
+void mainerr_arg_missing(S str);
+S mainProgramVersion();
 void __attribute__((noinline)) __bp();
 void sig_winch(int);
 void sig_tstp(int);
@@ -71,7 +71,7 @@ int eeHandleSignal(int sig);
 void may_core_dump(void);
 void mch_exit(int r);
 Tyme eeTime(void);
-CS get_ctime(Tyme thetime, int add_newline);
+S get_ctime(Tyme thetime, int add_newline);
 void f_localtime(Arr(Var), OUT Var* returnVar);
 void f_reltime(Arr(Var) argVars, OUT Var* returnVar);
 void f_reltimefloat(Arr(Var) argVars, OUT Var* returnVar);
@@ -92,15 +92,15 @@ void f_timer_stop(Arr(Var) argVars, OUT Var*);
 void f_timer_stopall(Arr(Var), OUT Var*);
 Tyme get8ctime(FILE *fd);
 int put_time(FILE *fd, Tyme the_time);
-void time_to_bytes(Tyme the_time, CS buf);
-void add_time(CS buf, Unt buflen, Tyme tt);
+void time_to_bytes(Tyme the_time, S buf);
+void add_time(S buf, Unt buflen, Tyme tt);
 void profile_start(ProfTime *tm);
 void profile_setlimit(Long msec, ProfTime *tm);
 int profile_passed_limit(ProfTime *tm);
 void profile_end(ProfTime *tm);
 void profile_sub(ProfTime *tm, ProfTime *tm2);
 void profile_zero(ProfTime *tm);
-CS profile_msg(ProfTime *tm);
+S profile_msg(ProfTime *tm);
 void stop_timeout(void);
 volatile SigAtomic * start_timeout(Long msec);
 void delete_timer(void);
@@ -118,7 +118,7 @@ void chaFreeBook(Book* book);
 void channel_write_any_lines(void);
 void channel_write_new_lines(Book* book);
 ReadChunk * channel_peek(Channel *channel, ChannelFdKind part);
-CS channel_first_nl(ReadChunk* node);
+S channel_first_nl(ReadChunk* node);
 void channel_consume(Channel *channel, ChannelFdKind part, int len);
 int channel_collapse(Channel *channel, ChannelFdKind part, int want_nl);
 int channel_is_open(Channel *channel);
@@ -127,7 +127,7 @@ void channel_free_all(void);
 int channel_in_blocking_wait(void);
 Channel * get_channel_arg(Var* tv, int check_open, int reading, ChannelFdKind part);
 void channel_set_nonblock(Channel* channel, ChannelFdKind part);
-int channel_send(Channel* channel, ChannelFdKind part, CS buf_arg, int len_arg, char* fun);
+int channel_send(Channel* channel, ChannelFdKind part, S buf_arg, int len_arg, char* fun);
 int channel_parse_messages(void);
 int channel_any_readahead(void);
 void f_ch_canread(Var* argvars, Var* returnVar);
@@ -146,7 +146,7 @@ void f_ch_evalraw(Arr(Var) argvars, Var* returnVar);
 void f_ch_sendraw(Arr(Var) argvars, Var* returnVar);
 void f_ch_setoptions(Arr(Var) argvars, Var*);
 void f_ch_status(Arr(Var) argvars, Var* returnVar);
-void channel_to_string_buf(OUT CS builder, Var* varp);
+void channel_to_string_buf(OUT S builder, Var* varp);
 PolyWithStatus chCallShell(Text shellComm, Unt opt);
 int mch_create_pty_channel(Job* job, JobOptions* options);
 void motBreakCheck(Boole force);
@@ -156,8 +156,8 @@ Long mch_get_pid(void);
 int mch_process_running(Long pid);
 int motChannelPollSetup(int nfd_in, OUT Arr(PollFd) fds_in, OUT int* towait);
 int motPollCheck(int ret_in, Arr(PollFd) fds);
-int mch_get_uname(uid_t uid, CS s, int len);
-void mch_get_host_name(CS s, int len);
+int mch_get_uname(uid_t uid, S s, int len);
+void mch_get_host_name(S s, int len);
 Channel* motJobGetChannel(Job* job);
 Job* motChannelGetJob(Channel* ch);
 int motJobGetFd(Job* job, Unt part);
@@ -165,7 +165,7 @@ Boole motJobIsKeepOpen(Job* job);
 JobStatus motJobGetStatus(Job* job);
 void motJobSetStatus(Job* job, JobStatus newVal);
 Arr(Byte) motJobGetTty(Job* job, Boole out);
-int chSendSignalToJob(Job* job, CS how);
+int chSendSignalToJob(Job* job, S how);
 void free_job_options(JobOptions* opt);
 void mch_clear_job(Job* job);
 int get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2);
@@ -177,11 +177,11 @@ void job_stop_on_exit(void);
 int has_pending_job(void);
 Boole job_check_ended(void);
 Job* startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** term_job);
-CS job_status(Job* job);
-int job_stop(Job* job, Arr(Var) argvars, CS type);
+S job_status(Job* job);
+int job_stop(Job* job, Arr(Var) argvars, S type);
 void invoke_prompt_callback(void);
 int invoke_prompt_interrupt(void);
-CS prompt_text(void);
+S prompt_text(void);
 int prompt_curpos_editable(void);
 void f_prompt_setcallback(Arr(Var) argvars, Var*);
 void f_prompt_setinterrupt(Arr(Var) argvars, Var*);
@@ -193,26 +193,26 @@ void f_job_setoptions(Arr(Var) argvars, Var*);
 void f_startJob(Arr(Var) argvars, OUT Var* returnVar);
 void f_job_status(Arr(Var) argvars, Var* returnVar);
 void f_job_stop(Arr(Var) argvars, Var* returnVar);
-void job_to_string_buf(OUT CS builder, Var* varp);
+void job_to_string_buf(OUT S builder, Var* varp);
 Multistring chBuildArgv(Text cmd);
-void ch_logfile(CS fname, CS opt);
+void ch_logfile(S fname, S opt);
 int ch_log_active(void);
 void ch_log(Channel* ch, char const* fmt, ...);
 void lo(char const* fmt, ...);
 void ch_error(Channel* ch, char const* fmt, ...);
 void f_ch_log(Arr(Var) argvars, Var*);
 void f_ch_logfile(Arr(Var) argvars, Var*);
-CS get_users(Expand*, int idx);
-int match_user(CS name);
+S get_users(Expand*, int idx);
+int match_user(S name);
 void free_homedir(void);
 void free_users(void);
 void c_mkrc(Invocation* invo);
 int put_eol(FILE *fd);
-int put_line(FILE *fd, CS s);
+int put_line(FILE *fd, S s);
 int get_eeglinfo_parameter(int type);
 void check_marks_read(void);
 int read_eeglinfo(
-	CS file,       //file name or NULL to use default name
+	S file,       //file name or NULL to use default name
 	Unt flags       //EIF_WANT_INFO et al.
 );
-void write_eeglinfo(CS file, Boole forceit);
+void write_eeglinfo(S file, Boole forceit);

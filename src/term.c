@@ -36,12 +36,12 @@
 
 typedef struct termios TermIos;
 
-private CS TC_CURSOR_SHAPES[] = {
-	S"\033[2 q", //block cursor
-	S"\033[4 q", //underline cursor
-	S"\033[6 q"  //bar cursor
+private S TC_CURSOR_SHAPES[] = {
+	u8"\033[2 q", //block cursor
+	u8"\033[4 q", //underline cursor
+	u8"\033[6 q"  //bar cursor
 };
-private CS TC_CURSOR_DEFAULT_SHAPE = S"\033[0 q";
+private S TC_CURSOR_DEFAULT_SHAPE = u8"\033[0 q";
 
 //{{{types
 
@@ -54,7 +54,7 @@ private CS TC_CURSOR_DEFAULT_SHAPE = S"\033[0 q";
 //
 //Entries marked with "guessed" may be wrong.
 typedef struct {
-	CS value; //value
+	S value; //value
 	Unt c;   //either a KS_xxx code (>= 0), or a K_xxx code.
 } TinfoEntry;
 
@@ -81,16 +81,16 @@ pub
 
 //}}}
 //{{{@@forward declarations
-private int isEeglXterm(CS name);
+private int isEeglXterm(S name);
 private void applyBuiltinCapability(Arr(TinfoEntry) entries, int len);
 private void get_term_entries(OUT int* height, OUT int* width);
-private CS invoke_tgetent(CS tbuf, CS terminalName);
-private CS eeTgetstr(CS s, Byte **pp);
+private S invoke_tgetent(S tbuf, S terminalName);
+private S eeTgetstr(S s, Byte **pp);
 private int out_char_nf(int c);
 private int can_get_termresponse(void);
 private void requestSent(TermRequest* status);
 private int termrequest_any_pending(void);
-private int get_long_from_buf(CS buffer, Ulong* val);
+private int get_long_from_buf(S buffer, Ulong* val);
 private void set_shellsize_inner(int width, int height, int mustset);
 private void adjust_modlen(int idx);
 private void accept_modifiers_for_function_keys(void);
@@ -110,9 +110,9 @@ private int putStr(
 	NULLABLE OUT Text buffer,
 	OUT int* bufLen
 );
-private int modifiers2keycode(Unt modifiers, Unt* key, OUT CS string);
-private void handle_u7_response(int* arg, CS, int);
-private int add_key_to_buf(Unt key, OUT CS buffer);
+private int modifiers2keycode(Unt modifiers, Unt* key, OUT S string);
+private void handle_u7_response(int* arg, S, int);
+private int add_key_to_buf(Unt key, OUT S buffer);
 private int putKeyModifiersIntoTypeBuf(
 	Unt key_arg,
 	Unt modifiers_arg,
@@ -141,29 +141,29 @@ private int handle_csi_function_key(
 	int arg[static 3],
 	int trail,
 	int csi_len,
-	OUT CS key_name,
+	OUT S key_name,
 	int offset,
 	NULLABLE OUT Text buffer,
 	OUT int* bufLen
 );
 private int handleControlSequenceIntroducer(
-	CS tp,
+	S tp,
 	int len,
-	CS argp,
+	S argp,
 	int offset,
 	NULLABLE OUT Text buffer,
 	OUT int* bufLen,
-	CS key_name,
+	S key_name,
 	int* slen
 );
-private int handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen);
+private int handle_dcs(S tp, S argp, int len, S key_name, int* slen);
 private Unt handleXKeys(Unt key);
 private int mch_tcgetattr(int fd, TermIos* term);
-private Unt find_term_bykeys(CS src);
+private Unt find_term_bykeys(S src);
 private void gatherTermLeaders(void);
 private int keyNameEntryComparer(void const* a, void const* b);
 private void req_more_codes_from_term(void);
-private void got_code_from_term(CS code, int len);
+private void got_code_from_term(S code, int len);
 private void handleUnansweredRequests(void);
 private int extractModifiers(Unt key, OUT Unt* modifiers, Boole doSimplify, OUT Boole* didSimplify);
 private int nameToModMask(Byte c);
@@ -186,10 +186,10 @@ private void initmaster(int f);
 
 private void gatherTermLeaders(void);
 private void req_more_codes_from_term(void);
-private void got_code_from_term(CS code, int len);
+private void got_code_from_term(S code, int len);
 private void handleUnansweredRequests(void);
 private void del_termcode_idx(Unt idx);
-private Unt find_term_bykeys(CS src);
+private Unt find_term_bykeys(S src);
 private void accept_modifiers_for_function_keys(void);
 private Unt may_remove_shift_modifier(Unt modifiers, Unt key);
 
@@ -208,7 +208,7 @@ private Unt may_remove_shift_modifier(Unt modifiers, Unt key);
 # define LOG_TRN(fmt,...) do { /**/ } while (0)
 #endif
 
-private CS invoke_tgetent(CS , CS );
+private S invoke_tgetent(S , S );
 
 #define TERMREQUEST_INIT {STATUS_GET, -1}
 
@@ -246,7 +246,7 @@ private int write_t_8u_state = false;
 pub extern char *UP, *BC, PC; //in termcap.h
 
 # define TGETENT(b, t)   tgetent((char *)(b), (char *)(t))
-private CS eeTgetstr(CS s, Byte **pp);
+private S eeTgetstr(S s, Byte **pp);
 
 private int focus_state = MAYBE; //true if the Eegl window has focus
 
@@ -266,10 +266,10 @@ private int initial_cursor_blink = false;
 
 //Reset all text attributes (like colors, boldness, or background shades) back to the terminal's
 //default settings.
-//private CS resetDecorationsCode = S"\033[0m";
+//private S resetDecorationsCode = u8"\033[0m";
 
 //Additions for using the Kitty keyboard protocol.
-private TinfoEntry builtin_kitty[] = {SMAP1((CS),
+private TinfoEntry builtin_kitty[] = {SMAP1((S),
 	"\033[=1;1u", KS_CTI, //t_TI enables the kitty keyboard protocol.
 	"\033[?u", KS_CRK,    //t_RK requests the kitty keyboard protocol state
 	"\033[>4;m\033[=0;1u", KS_CTE //t_TE also disables modifyOtherKeys, because t_TI from
@@ -278,7 +278,7 @@ private TinfoEntry builtin_kitty[] = {SMAP1((CS),
 
 private TinfoEntry special_term[] = {
 	//These are printf strings, not terminal codes.
-	{S"\033[%dm", (Unt)KS_CF},
+	{u8"\033[%dm", (Unt)KS_CF},
 	{null, (Unt)KS_NAME}  //end marker
 };
 
@@ -288,7 +288,7 @@ private TinfoEntry special_term[] = {
 //using the "xterm-kitty" terminfo entry should work better.
 //Seiichi Sato mentioned that "mlterm" works like xterm.
 private int
-isEeglXterm(CS name) {
+isEeglXterm(S name) {
 	if (!name)
 		return false;
 	return (
@@ -724,7 +724,7 @@ isEeglXterm(CS name) {
 //{{{functions for controlling the terminal
 
 //DEFAULT_TERM is used, when no terminal is specified with -T option or $TERM.
-#define DEFAULT_TERM S"ansi"
+#define DEFAULT_TERM u8"ansi"
 
 private int  needToGatherTermLeaders = false; //need to fill termLeaderG[]
 private Byte termLeaderG[256 + 1];            //for termTryParseTermcode()
@@ -734,7 +734,7 @@ private int  check_for_codes = false;         //check for key code response
 //querying the terminal.  Either by inspecting the termresponse or a more
 //specific request.  Besides this there are:
 typedef struct {
-	CS name;
+	S name;
 	int setByTermResponse;
 	int status;
 } TermProp;
@@ -762,13 +762,13 @@ private TermProp term_props[TPR_COUNT];
 //When "all" is false only set those that are detected from the version response.
 pub void
 termInitProps(Boole all) {
-	term_props[TPR_CURSOR_STYLE].name = S"cursor_style";
+	term_props[TPR_CURSOR_STYLE].name = u8"cursor_style";
 	term_props[TPR_CURSOR_STYLE].setByTermResponse = false;
-	term_props[TPR_CURSOR_BLINK].name = S"cursor_blink_mode";
+	term_props[TPR_CURSOR_BLINK].name = u8"cursor_blink_mode";
 	term_props[TPR_CURSOR_BLINK].setByTermResponse = false;
-	term_props[TPR_MOUSE].name = S"mouse";
+	term_props[TPR_MOUSE].name = u8"mouse";
 	term_props[TPR_MOUSE].setByTermResponse = true;
-	term_props[TPR_KITTY].name = S"kitty";
+	term_props[TPR_KITTY].name = u8"kitty";
 	term_props[TPR_KITTY].setByTermResponse = false;
 
 	for (int i = 0; i < TPR_COUNT; ++i) {
@@ -796,21 +796,21 @@ applyBuiltinCapability(Arr(TinfoEntry) entries, int len) {
 			Byte  name[2];
 			name[0] = KEY2TERMCAP0((int)p->c);
 			name[1] = KEY2TERMCAP1((int)p->c);
-			termAddRecognizedTermcode(name, (CS)p->value, false);
+			termAddRecognizedTermcode(name, (S)p->value, false);
 		}
 	}
 }
 
-private CS key_names[] = {SMAP((CS),
+private S key_names[] = {SMAP((S),
 	//Do those ones first, both may cause a screen redraw.
 	"Co",
 	//disabled, because it switches termguicolors, but that is noticeable and confuses users,
 	"ku", "kd", "kr", "kl", "#2", "#4", "%i", "*7",
 	"k1", "k2", "k3", "k4", "k5", "k6"
-	), SMAP((CS),
+	), SMAP((S),
 	"k7", "k8", "k9", "k;", "F1", "F2", "%1", "&8", "kb", "kI", "kD", "kh"
-	), SMAP((CS),
-	"@7", "kP", "kN", "K1", "K3", "K4", "K5", "kB", "PS", "PE"
+	), SMAP((S),
+	"@7", "kP", "kN", "K1", "K3", "K4", "K5", "kB", "Pu8", "PE"
 )};
 
 //Get the terminfo entries we need with tgetstr(), tgetflag() and tgetnum().
@@ -819,58 +819,54 @@ private CS key_names[] = {SMAP((CS),
 private void
 get_term_entries(OUT int* height, OUT int* width) {
 	static struct {
-		CS name;  //capability name
+		S name;  //capability name
 		Unt dest; //index in termCodesG[]
-	} entryNames[] = { SMAP1((CS),
+	} entryNames[] = { SMAP1((S),
 		"ce", KS_CE,  "al", KS_AL,  "AL", KS_CAL, "dl", KS_DL,  "DL", KS_CDL,  "cs", KS_CS,
 		"cl", KS_CL,  "cd", KS_CD,  "vi", KS_VI,  "ve", KS_VE,  "me", KS_ME,
 		"mr", KS_MR,  "md", KS_MD,  "se", KS_SE,  "so", KS_SO,  "ZH", KS_CZH,  "ZR", KS_CZR
-		), SMAP1((CS),
+		), SMAP1((S),
 		"ue", KS_UE,  "us", KS_US,  "Ce", KS_UCE, "Cs", KS_UCS, "Us", KS_USS, "ds", KS_DS,
 		"cm", KS_CM,  "sr", KS_SR,  "RI", KS_CRI,
 		"ks", KS_KS,  "ke", KS_KE,  "ti", KS_TI,  "te", KS_TE
-		), SMAP1((CS),
+		), SMAP1((S),
 		"TI", KS_CTI, "RK", KS_CRK, "TE", KS_CTE, "Sb", KS_CSB, "Sf", KS_CSF,
 		"AB", KS_CAB, "AF", KS_CAF, "AU", KS_CAU, "le", KS_LE,  "nd", KS_ND,  "op", KS_OP,
-		"XM", KS_CXM, "vs", KS_VS,  "VS", KS_CVS
-		), SMAP1((CS),
-		"SC", KS_CSC, "EC", KS_CEC, "ts", KS_TS,  "fs", KS_FS,  "WP", KS_CWP, "WS", KS_CWS,
+		"XM", KS_CXM, "vs", KS_VS,  "Vu8", KS_CVS
+		), SMAP1((S),
+		"SC", KS_CSC, "EC", KS_CEC, "ts", KS_TS,  "fs", KS_FS,  "WP", KS_CWP, "Wu8", KS_CWS,
 		"u7", KS_U7,  "BE", KS_CBE, "BD", KS_CBD, "CF", KS_CF
 		)
 	};
 	static Byte tstrbuf[TBUFSZ];
-	CS tp = tstrbuf;
+	S tp = tstrbuf;
 
 	//get output strings
 	for (Unt i = 0; i < ARRAY_LENGTH(entryNames); ++i) {
-		if (termCodesG[entryNames[i].dest] == S"") {
+		if (termCodesG[entryNames[i].dest] == null) {
 			termCodesG[entryNames[i].dest] = eeTgetstr(entryNames[i].name, &tp);
 		}
-	}
-	for (Unt i = 0; i < ARRAY_LENGTH(termCodesG); i++) {
-		if (!termCodesG[i])
-			termCodesG[i] = S"";
 	}
 
 	//tgetflag() returns 1 if the flag is present, 0 if not and
 	//possibly -1 if the flag doesn't exist.
-	if (termCodesG[KS_MS] == S"" && tgetflag("ms") > 0)
-		termCodesG[KS_MS] = S"y";
-	if (termCodesG[KS_XS] == S"" && tgetflag("xs") > 0)
-		termCodesG[KS_XS] = S"y";
-	if (termCodesG[KS_XN] == S"" && tgetflag("xn") > 0)
-		termCodesG[KS_XN] = S"y";
-	if (termCodesG[KS_DB] == S"" && tgetflag("db") > 0)
-		termCodesG[KS_DB] = S"y";
-	if (termCodesG[KS_DA] == S"" && tgetflag("da") > 0)
-		termCodesG[KS_DA] = S"y";
-	if (termCodesG[KS_UT] == S"" && tgetflag("ut") > 0)
-		termCodesG[KS_UT] = S"y";
+	if (!termCodesG[KS_MS] && tgetflag("ms") > 0)
+		termCodesG[KS_MS] = u8"y";
+	if (!termCodesG[KS_XS] && tgetflag("xs") > 0)
+		termCodesG[KS_XS] = u8"y";
+	if (!termCodesG[KS_XN] && tgetflag("xn") > 0)
+		termCodesG[KS_XN] = u8"y";
+	if (!termCodesG[KS_DB] && tgetflag("db") > 0)
+		termCodesG[KS_DB] = u8"y";
+	if (!termCodesG[KS_DA] && tgetflag("da") > 0)
+		termCodesG[KS_DA] = u8"y";
+	if (!termCodesG[KS_UT] && tgetflag("ut") > 0)
+		termCodesG[KS_UT] = u8"y";
 
 	//get key codes
 	for (Unt i = 0; i < ARRAY_LENGTH(key_names); ++i) {
 		if (find_termcode(key_names[i]) == NULL) {
-			CS p = TGETSTR(key_names[i], &tp);
+			S p = TGETSTR(key_names[i], &tp);
 
 			//if cursor-left == backspace, ignore it (televideo 925)
 			if (p && (*p != Ctrl_H || key_names[i][0] != 'k' || key_names[i][1] != 'l'))
@@ -885,7 +881,7 @@ get_term_entries(OUT int* height, OUT int* width) {
 
 	BC = tgetstr("bc", (char**)&tp);
 	UP = tgetstr("up", (char**)&tp);
-	CS p = TGETSTR("pc", &tp);
+	S p = TGETSTR("pc", &tp);
 	if (p)
 		PC = *p;
 }
@@ -895,10 +891,10 @@ get_term_entries(OUT int* height, OUT int* width) {
 //
 //While doing this, until ttest(), some options may be NULL, be careful.
 pub int
-set_termname(CS termName) {
+set_termname(S termName) {
 	int termcap_cleared = false;
 	int width = 0, height = 0;
-	CS errorMsg = NULL;
+	S errorMsg = NULL;
 
 	//In silect mode (ex -s) we don't use the 'term' option.
 	if (silentModeG)
@@ -918,16 +914,16 @@ set_termname(CS termName) {
 	applyBuiltinCapability(builtin_kitty, ARRAY_LENGTH(builtin_kitty));
 	accept_modifiers_for_function_keys();
 
-	if (termCodesG[KS_CF] == S"")
+	if (!termCodesG[KS_CF])
 		applyBuiltinCapability(special_term, ARRAY_LENGTH(special_term));
 
 	//special: There is no info in the termcap about whether the cursor
 	//positioning is relative to the start of the screen or to the start of the
 	//scrolling region. We just guess here. Only msdos pcterm is known to do it relative.
 	if (STRCMP(termName, "pcterm") == 0)
-		termCodesG[KS_CCS] = S"yes";
+		termCodesG[KS_CCS] = u8"yes";
 	else
-		termCodesG[KS_CCS] = S"";
+		termCodesG[KS_CCS] = u8"";
 
 	//Any "stty" settings override the default for t_kb from the termcap.
 	//This is in os_unix.c, because it depends a lot on the version of unix that is being used.
@@ -940,12 +936,12 @@ set_termname(CS termName) {
 	//The copyStr'd strings are probably lost forever, well it's only two
 	//bytes.  Don't do this when the GUI is active, it uses "t_kb" and "t_kD" directly.
 	{
-	CS bs_p = find_termcode(S"kb");
-	CS del_p = find_termcode(S"kD");
+	S bs_p = find_termcode(u8"kb");
+	S del_p = find_termcode(u8"kD");
 	if (bs_p == NULL || *bs_p == ZERO)
-		 termAddRecognizedTermcode(S"kb", (bs_p = (CS)CTRL_H_STR), false);
+		 termAddRecognizedTermcode(u8"kb", (bs_p = (S)CTRL_H_STR), false);
 	if ((del_p == NULL || *del_p == ZERO) && (bs_p == NULL || *bs_p != DEL))
-		 termAddRecognizedTermcode(S"kD", (CS)DEL_STR, false);
+		 termAddRecognizedTermcode(u8"kD", (S)DEL_STR, false);
 	}
 
 	term_is_xterm = isEeglXterm(termName);
@@ -955,7 +951,7 @@ set_termname(CS termName) {
 
 	//If the first number in t_XM is 1006 then the terminal will support SGR mouse reporting.
 	if (termCodesG[KS_CXM] != NULL && *termCodesG[KS_CXM] != ZERO) {
-		CS p = termCodesG[KS_CXM];
+		S p = termCodesG[KS_CXM];
 
 		while (*p != ZERO && !EE_ISDIGIT(*p))
 			 ++p;
@@ -964,7 +960,7 @@ set_termname(CS termName) {
 	//Set the 'ttymouse' option to the type of mouse to be used.
 	//The termcode for the mouse is added as a side effect in option.c.
 	{
-	CS p = S"";
+	S p = u8"";
 
 	if (!p)
 		check_mouse_termcode();   //set mouse termcode anyway
@@ -1035,8 +1031,8 @@ free_cur_term(void) {
 
 //Call tgetent() to get terminal capabilities
 //Return error message if it fails, NULL if it's OK.
-private CS
-invoke_tgetent(CS tbuf, CS terminalName) {
+private S
+invoke_tgetent(S tbuf, S terminalName) {
 	//Note: Valgrind may report a leak here, because the library keeps one text buffer around that
 	//we can't ever free.
 	int i = TGETENT(tbuf, terminalName);
@@ -1061,12 +1057,12 @@ invoke_tgetent(CS tbuf, CS terminalName) {
 }
 
 //Some versions of tgetstr() have been reported to return -1 instead of NULL. Fix that here.
-private CS
-eeTgetstr(CS s, Byte **pp) {
-	CS p = TGETSTR(s, pp);
+private S
+eeTgetstr(S s, Byte **pp) {
+	S p = TGETSTR(s, pp);
 	if (p == (Byte *)-1)
 		p = NULL;
-	return (CS)p;
+	return (S)p;
 }
 
 //Get visibleColsG and visibleRowsG from the termcap. Used after a window signal if the
@@ -1077,7 +1073,7 @@ pub void
 getlinecol(Arr(long) cols, Arr(long) rows) {
 	Byte tbuf[TBUFSZ];
 
-	if (termCodesG[KS_NAME] == S""
+	if (!termCodesG[KS_NAME]
 			|| *termCodesG[KS_NAME] == ZERO
 			|| invoke_tgetent(tbuf, termCodesG[KS_NAME]) != NULL
 	)
@@ -1094,21 +1090,21 @@ getlinecol(Arr(long) cols, Arr(long) rows) {
 //Give an error message for failure when not sourcing. If force given, replace an existing entry.
 //Return FAIL if the entry was not found, OK if the entry was added.
 pub int
-add_termcap_entry(CS name, int force) {
-	CS string;
+add_termcap_entry(S name, int force) {
+	S string;
 	Byte tbuf[TBUFSZ];
 	Byte tstrbuf[TBUFSZ];
-	CS tp = tstrbuf;
+	S tp = tstrbuf;
 
 	if (!force && find_termcode(name) != NULL)       //it's already there
 		return OK;
 
-	CS term = termCodesG[KS_NAME];
-	if (term == S"")       //'term' not defined yet
+	S term = termCodesG[KS_NAME];
+	if (!term)       //'term' not defined yet
 		return FAIL;
 
 	//Search in external terminfos
-	CS errorMsg = invoke_tgetent(tbuf, term);
+	S errorMsg = invoke_tgetent(tbuf, term);
 	if (!errorMsg) {
 		string = TGETSTR(name, &tp);
 		if (string && *string != ZERO) {
@@ -1129,23 +1125,23 @@ add_termcap_entry(CS name, int force) {
 //Set the terminal name and initialize the terminal options. If "name" is NULL or empty, get the
 //terminal name from the environment. If that fails, use the default terminal name.
 pub void
-termInitTerminfo(CS name) {
+termInitTerminfo(S name) {
 	for (Unt i = 0; i < ARRAY_LENGTH(termCodesG); i++) {
-		termCodesG[i] = S"";
+		termCodesG[i] = u8"";
 	}
 
-	CS termName = name;
+	S termName = name;
 	if (termName && *termName == ZERO)
 		termName = null;       //empty name is equal to no name
 
 	if (!termName)
-		termName = mch_getenv(S"TERM");
+		termName = mch_getenv(u8"TERM");
 	if (!termName || *termName == ZERO)
 		termName = DEFAULT_TERM;
-	optChangeStringOptionDirect(S"term", termName, 0, 0);
+	optChangeStringOptionDirect(u8"term", termName, 0, 0);
 
 	//Set the default terminal name.
-	optSetStringDefault(S"term", termName);
+	optSetStringDefault(u8"term", termName);
 
 	//Avoid using "term" here, because the next mch_getenv() may overwrite it.
 	set_termname(termName);
@@ -1214,12 +1210,12 @@ out_char_nf(int c) {
 //This should only be used for writing terminal codes, not for outputting normal text (use
 //functions like msg_puts() and screen_putchar() for that).
 pub void
-out_str_nf(CS s) {
+out_str_nf(S s) {
 	//avoid terminal strings being split up
 	if (out_pos > OUT_SIZE - MAX_ESC_SEQ_LEN)
 		termOutFlush();
 
-	for (CS p = s; *p != ZERO; ++p)
+	for (S p = s; *p != ZERO; ++p)
 		out_char_nf(*p);
 
 	//For testing we write one string at a time.
@@ -1232,7 +1228,7 @@ out_str_nf(CS s) {
 //This should only be used for writing terminal codes, not for outputting
 //normal text (use functions like msg_puts() and screen_putchar() for that).
 pub void
-out_str(CS s) {
+out_str(S s) {
 	if (!s || *s == ZERO)
 		return;
 
@@ -1328,7 +1324,7 @@ term_get_winpos(int* x, int* y, Long timeout) {
 	int prev_winpos_x = winpos_x;
 	int prev_winpos_y = winpos_y;
 
-	if (termCodesG[KS_CGP] == S"" || !can_get_termresponse())
+	if (!termCodesG[KS_CGP] || !can_get_termresponse())
 		return FAIL;
 	winpos_x = -1;
 	winpos_y = -1;
@@ -1462,7 +1458,7 @@ ttest(int pairs) {
 //Represent the given Ulong as individual bytes, with the most significant
 //byte first, and store them in dst.
 pub void
-add_long_to_buf(Ulong val, CS dst) {
+add_long_to_buf(Ulong val, S dst) {
 	for (int i = 1; i <= (int)sizeof(Ulong); i++) {
 		int shift = 8 * (sizeof(Ulong) - i);
 		dst[i - 1] = (Byte) ((val >> shift) & 0xff);
@@ -1475,7 +1471,7 @@ add_long_to_buf(Ulong val, CS dst) {
 //Puts result in val, and returns the number of bytes read from buf
 //(between sizeof(Ulong) and 2 * sizeof(Ulong)), or -1 if not enough bytes were present.
 private int
-get_long_from_buf(CS buffer, Ulong* val) {
+get_long_from_buf(S buffer, Ulong* val) {
 	Byte  bytes[sizeof(Ulong)];
 
 	*val = 0;
@@ -1493,7 +1489,7 @@ get_long_from_buf(CS buffer, Ulong* val) {
 //that buffer has been through inchar().   Returns the actual number of bytes used
 //from buf (between num_bytes and num_bytes*2), or -1 if not enough bytes were available.
 pub int
-get_bytes_from_buf(CS buffer, CS bytes, int num_bytes) {
+get_bytes_from_buf(S buffer, S bytes, int num_bytes) {
 	int len = 0;
 	int i;
 	Byte  c;
@@ -1722,11 +1718,11 @@ out_str_t_TI(void) {
 //Output termCodesG[KS_CBE], but only when t_PS and t_PE are set.
 pub void
 out_str_t_BE(void) {
-	Byte *p;
+	S p;
 
-	if (termCodesG[KS_CBE] == S""
-		 || (p = find_termcode(S"PS")) == NULL || *p == ZERO
-		 || (p = find_termcode(S"PE")) == NULL || *p == ZERO
+	if (!termCodesG[KS_CBE]
+		 || (p = find_termcode(u8"Pu8")) == NULL || *p == ZERO
+		 || (p = find_termcode(u8"PE")) == NULL || *p == ZERO
 	)
 		return;
 	out_str(termCodesG[KS_CBE]);
@@ -1797,7 +1793,7 @@ starttermcap(void) {
 	out_str_t_BE();              //enable bracketed paste mode
 
 	//Enable xterm's focus reporting mode when 'esckeys' is set.
-	if (termCodesG[KS_FE] != S"")
+	if (termCodesG[KS_FE])
 		out_str(termCodesG[KS_FE]);
 
 	termOutFlush();
@@ -1826,7 +1822,7 @@ termStopTerminfo(void) {
 	MAY_WANT_TO_LOG_THIS;
 
 	//Disable xterm's focus reporting mode if 'esckeys' is set.
-	if (termCodesG[KS_FD] != S"")
+	if (termCodesG[KS_FD])
 		out_str(termCodesG[KS_FD]);
 
 	out_str(termCodesG[KS_CBD]);
@@ -1840,7 +1836,7 @@ termStopTerminfo(void) {
 	//When using the Kitty keyboard protocol the main and alternate screen use a separate state.
 	//If we are (or were) using the Kitty keyboard protocol and t_te is not empty (possibly
 	//switching screens) then output t_TE both before and after outputting t_te.
-	if (termCodesG[KS_TE] != S"")
+	if (termCodesG[KS_TE])
 		out_str_t_TE();      //probably disables the kitty keyboard protocol
 
 	out_str(termCodesG[KS_TE]);  //stop termcap mode
@@ -1857,7 +1853,7 @@ pub void
 check_terminal_behavior(void) {
 	Boole did_send = false;
 
-	if (!can_get_termresponse() || starting != 0 || termCodesG[KS_U7] == S"")
+	if (!can_get_termresponse() || starting != 0 || !termCodesG[KS_U7])
 		return;
 
 	if (u7_status.progress == STATUS_GET) {
@@ -1885,7 +1881,7 @@ check_terminal_behavior(void) {
 		//after this. Clear them out for now.
 		drawStopHilite();
 		termMoveCursor(1, 0);
-		out_str(S"  ");
+		out_str(u8"  ");
 		drawLineWasClobbered(1);
 	}
 
@@ -1900,9 +1896,9 @@ check_terminal_behavior(void) {
 		//Do this in the third row.  Second row is used by ambiguous character width check.
 		termMoveCursor(2, 0);
 		//send the test DCS string.
-		out_str((CS)"\033Pzz\033\\");
+		out_str(u8"\033Pzz\033\\");
 		//send the test CSI sequence with intermediate byte.
-		out_str((CS)"\033[0%m");
+		out_str(u8"\033[0%m");
 		out_str(termCodesG[KS_U7]);
 		requestSent(&xcc_status);
 		termOutFlush();
@@ -1912,7 +1908,7 @@ check_terminal_behavior(void) {
 		//displayed. Clear them out for now.
 		drawStopHilite();
 		termMoveCursor(2, 0);
-		out_str(S"           ");
+		out_str(u8"           ");
 		drawLineWasClobbered(2);
 	}
 
@@ -1931,7 +1927,7 @@ check_terminal_behavior(void) {
 //Return true when saving and restoring the screen.
 pub int
 termIsScreenBeingSwapped(void) {
-	return (fullScreenG && termCodesG[KS_TI] != S"");
+	return (fullScreenG && termCodesG[KS_TI]);
 }
 
 //By outputting the 'cursor very visible' termcap code, for some windowed
@@ -1939,7 +1935,7 @@ termIsScreenBeingSwapped(void) {
 //Used when starting Eegl or returning from a shell.
 pub void
 scroll_start(void) {
-	if (termCodesG[KS_VS] == S"" || termCodesG[KS_CVS] == S"")
+	if (!termCodesG[KS_VS] || termCodesG[KS_CVS])
 		return;
 
 	MAY_WANT_TO_LOG_THIS;
@@ -2017,8 +2013,8 @@ term_cursor_mode(int forced) {
 }
 
 pub void
-term_cursor_color(CS color) {
-	if (termCodesG[KS_CSC] == S"")
+term_cursor_color(S color) {
+	if (!termCodesG[KS_CSC])
 		return;
 
 	out_str(termCodesG[KS_CSC]);      //set cursor color start
@@ -2037,7 +2033,7 @@ blink_state_is_inverted(void) {
 //"shape": 1 = block, 2 = underline, 3 = vertical bar
 pub void
 termSetCursorShape(int shape, int blink) {
-	if (termCodesG[KS_CSH] != S"") {
+	if (termCodesG[KS_CSH]) {
 		OUT_STR(TGOTO(termCodesG[KS_CSH], 0, shape * 2 - blink));
 		termOutFlush();
 	} else {
@@ -2049,10 +2045,10 @@ termSetCursorShape(int shape, int blink) {
 		if (blink_state_is_inverted())
 			do_blink = !blink;
 
-		if (do_blink && termCodesG[KS_VS] != S"") {
+		if (do_blink && termCodesG[KS_VS]) {
 			out_str(termCodesG[KS_VS]);
 			termOutFlush();
-		} ei (!do_blink && termCodesG[KS_CVS] != S"") {
+		} ei (!do_blink && termCodesG[KS_CVS]) {
 			out_str(termCodesG[KS_CVS]);
 			termOutFlush();
 		}
@@ -2065,7 +2061,7 @@ termSetCursorShape(int shape, int blink) {
 pub void
 scroll_region_set(Portal* wp, int off) {
 	OUT_STR(TGOTO( termCodesG[KS_CS], wp->windowRow + wp->height - 1, wp->windowRow + off));
-	if (termCodesG[KS_CSV] != S"" && wp->width != visibleColsG)
+	if (termCodesG[KS_CSV] && wp->width != visibleColsG)
 		OUT_STR(TGOTO(termCodesG[KS_CSV], wp->windowCol + wp->width - 1, wp->windowCol));
 	screen_start();          //don't know where cursor is now
 }
@@ -2074,7 +2070,7 @@ scroll_region_set(Portal* wp, int off) {
 pub void
 scroll_region_reset(void) {
 	OUT_STR(TGOTO(termCodesG[KS_CS], (int)visibleRowsG - 1, 0));
-	if (termCodesG[KS_CSV] != S"")
+	if (termCodesG[KS_CSV])
 		OUT_STR(TGOTO(termCodesG[KS_CSV], (int)visibleColsG - 1, 0));
 	screen_start();          //don't know where cursor is now
 }
@@ -2084,7 +2080,7 @@ scroll_region_reset(void) {
 
 typedef struct {
 	Byte name[2];       //termcap name of entry
-	CS code;       //terminal code (in allocated memory)
+	S code;       //terminal code (in allocated memory)
 	int len;       //STRLEN(code)
 	int modlen;       //length of part before ";*~".
 } TermCode;
@@ -2134,14 +2130,14 @@ adjust_modlen(int idx) {
 //"flags" is true when replacing 7-bit by 8-bit controls is desired.
 //"flags" can also be ATC_FROM_TERM for got_code_from_term().
 pub void
-termAddRecognizedTermcode(CS name, CS string, Boole isAtcFromTerm) {
+termAddRecognizedTermcode(S name, S string, Boole isAtcFromTerm) {
 	if (!string || *string == ZERO) {
 		del_termcode(name);
 		return;
 	}
 
-	CS action = S"Setting";
-	CS s = copyStr(string);
+	S action = u8"Setting";
+	S s = copyStr(string);
 
 	TermCode* new_tc;
 	int j;
@@ -2195,7 +2191,7 @@ termAddRecognizedTermcode(CS name, CS string, Boole isAtcFromTerm) {
 			}
 		}
 		//Found alphabetically larger entry, move rest to insert new entry
-		action = S"Adding";
+		action = u8"Adding";
 		for (Unt j = recognizedLen; j > i; --j)
 			recognizedTermcodesP[j] = recognizedTermcodesP[j - 1];
 		break;
@@ -2218,7 +2214,7 @@ accept_modifiers_for_function_keys(void) {
 	RegMatch regmatch;
 	CLEAR_FIELD(regmatch);
 	regmatch.rm_ic = true;
-	regmatch.regprog = compileRegexp(S"^\033[\\d\\+\\~$", RE_MAGIC);
+	regmatch.regprog = compileRegexp(u8"^\033[\\d\\+\\~$", RE_MAGIC);
 
 	for (Unt i = 0; i < recognizedLen; ++i) {
 		if (!regmatch.regprog)
@@ -2230,7 +2226,7 @@ accept_modifiers_for_function_keys(void) {
 		)
 			continue;
 
-		CS s = recognizedTermcodesP[i].code;
+		S s = recognizedTermcodesP[i].code;
 		if (s && eeRegexec(&regmatch, s, (ColNr)0)) {
 			Unt len = STRLEN(s);
 			Byte *ns = alloc(len + 3);
@@ -2257,8 +2253,8 @@ endsInStar(Text code) {
 	return 0;
 }
 
-pub CS
-find_termcode(CS name) {
+pub S
+find_termcode(S name) {
 	for (Unt i = 0; i < recognizedLen; ++i) {
 		if (recognizedTermcodesP[i].name[0] == name[0] && recognizedTermcodesP[i].name[1] == name[1])
 			return recognizedTermcodesP[i].code;
@@ -2267,7 +2263,7 @@ find_termcode(CS name) {
 }
 
 pub void
-del_termcode(CS name) {
+del_termcode(S name) {
 	if (!recognizedTermcodesP)   //nothing there yet
 		return;
 
@@ -2389,7 +2385,7 @@ decode_modifiers(int n) {
 }
 
 private int
-modifiers2keycode(Unt modifiers, Unt* key, OUT CS string) {
+modifiers2keycode(Unt modifiers, Unt* key, OUT S string) {
 	int new_slen = 0;
 
 	if (modifiers == 0)
@@ -2408,7 +2404,7 @@ modifiers2keycode(Unt modifiers, Unt* key, OUT CS string) {
 
 //Handle a cursor position report.
 private void
-handle_u7_response(int* arg, CS, int) {
+handle_u7_response(int* arg, S, int) {
 	if (arg[0] == 2 && arg[1] >= 2) {
 		LOG_TRN("Received U7 status: %s", tp);
 		u7_status.progress = STATUS_GOT;
@@ -2429,7 +2425,7 @@ handle_u7_response(int* arg, CS, int) {
 //Add "key" to "buf" and return the number of bytes used.
 //Handle special keys and multi-byte characters.
 private int
-add_key_to_buf(Unt key, OUT CS buffer) {
+add_key_to_buf(Unt key, OUT S buffer) {
 	int idx = 0;
 
 	if (IS_SPECIAL(key)) {
@@ -2539,7 +2535,7 @@ handle_csi_function_key(
 	int arg[static 3],
 	int trail,
 	int csi_len,
-	OUT CS key_name,
+	OUT S key_name,
 	int offset,
 	NULLABLE OUT Text buffer,
 	OUT int* bufLen
@@ -2551,7 +2547,7 @@ handle_csi_function_key(
 	case 'C': key_name[1] = 'r'; break;  //K_RIGHT
 	case 'D': key_name[1] = 'l'; break;  //K_LEFT
 
-	//case 'S""': keypad BEGIN - not supported
+	//case 'u8""': keypad BEGIN - not supported
 	case 'F': key_name[0] = '@'; key_name[1] = '7'; break;  //K_END
 	case 'H': key_name[1] = 'h'; break;  //K_HOME
 
@@ -2590,13 +2586,13 @@ handle_csi_function_key(
 //Return 0 for no match, -1 for partial match, > 0 for full match.
 private int
 handleControlSequenceIntroducer(
-	CS tp,
+	S tp,
 	int len,
-	CS argp,
+	S argp,
 	int offset,
 	NULLABLE OUT Text buffer,
 	OUT int* bufLen,
-	CS key_name,
+	S key_name,
 	int* slen
 ){
 	int first = -1;  //optional char right after {lead}
@@ -2700,7 +2696,7 @@ handleControlSequenceIntroducer(
 		key_name[0] = (int)KS_EXTRA;
 		key_name[1] = (int)KE_IGNORE;
 		*slen = csi_len;
-		applyAutocomms(EVENT_TERMRESPONSEALL, S"cursorblink", NULL, false, curBook);
+		applyAutocomms(EVENT_TERMRESPONSEALL, u8"cursorblink", NULL, false, curBook);
 	}
 	//Kitty keyboard protocol status response: CSI ? flags u
 	ei (first == '?' && argc == 1 && trail == 'u') {
@@ -2767,7 +2763,7 @@ handleControlSequenceIntroducer(
 //
 //Consume any code that starts with "{lead}.+r" or "{lead}.$r".
 private int
-handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen) {
+handle_dcs(S tp, S argp, int len, S key_name, int* slen) {
 	int i;
 
 	LOG_TRN("Received DCS response: %s", (char*)tp);
@@ -2817,7 +2813,7 @@ handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen) {
 				key_name[0] = (int)KS_EXTRA;
 				key_name[1] = (int)KE_IGNORE;
 				*slen = i + 1;
-				applyAutocomms(EVENT_TERMRESPONSEALL, S"cursorshape", NULL, false, curBook);
+				applyAutocomms(EVENT_TERMRESPONSEALL, u8"cursorshape", NULL, false, curBook);
 				break;
 			}
 		}
@@ -2865,7 +2861,7 @@ handleXKeys(Unt key) {
 //"bufLen" is then the length of the string in buffer[] and is updated for inserts and deletes.
 pub int
 termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
-	CS readPos;
+	S readPos;
 	int slen = 0;
 	int modslen;
 	int len;
@@ -2873,7 +2869,7 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
 	int offset;
 	Byte keyName[2];
 	Unt modifiers;
-	CS modifiers_start = NULL;
+	S modifiers_start = NULL;
 	Unt key;
 	int new_slen;   //Length of what will replace the termcode
 	Byte string[MAX_KEY_CODE_LEN + 1];
@@ -3072,7 +3068,7 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
 			//      {lead}{key};{modifier}u
 			if (((readPos[0] == ESC && len >= 3 && readPos[1] == '[')
 					|| (readPos[0] == CSI && len >= 2))
-						 && firstOccurrence(S"0123456789>?ABCDEFHPQRS", *argp) != NULL
+						 && firstOccurrence(u8"0123456789>?ABCDEFHPQRu8", *argp) != NULL
 			){
 				int resp = handleControlSequenceIntroducer(
 						readPos, len, argp, offset, OUT buffer, bufLen, keyName, &slen
@@ -3174,10 +3170,10 @@ get_stty(void) {
 	extraInterruptCharG = info.interrupt;
 	buffer[0] = info.backspace;
 	buffer[1] = ZERO;
-	termAddRecognizedTermcode(S"kb", buffer, false);
+	termAddRecognizedTermcode(u8"kb", buffer, false);
 
 	//If <BS> and <DEL> are now the same, redefine <DEL>.
-	CS p = find_termcode((CS)"kD");
+	S p = find_termcode(u8"kD");
 	if (p && p[0] == buffer[0] && p[1] == buffer[1])
 		do_fixdel(NULL);
 }
@@ -3263,8 +3259,8 @@ mch_termSetMode(TermInputMode tmode) {
 //Set the mouse termcode, depending on the 'term' and 'ttymouse' options.
 pub void
 check_mouse_termcode(void) {
-	set_mouse_termcode(KS_SGR_MOUSE, S"\233<*M");
-	set_mouse_termcode(KS_SGR_MOUSE_RELEASE, S"\233<*m");
+	set_mouse_termcode(KS_SGR_MOUSE, u8"\233<*M");
+	set_mouse_termcode(KS_SGR_MOUSE_RELEASE, u8"\233<*m");
 
 	mch_setmouse(false);
 	setmouse();
@@ -3401,7 +3397,7 @@ private KeyNameEntry keyNamesTable[] = {
 //Must be sorted by the 'name.c' field in ascending order because it is used by bsearch()!
 	{true, K_BS, tConst("BackSpace"), true},
 	{true, '|', tConst("Bar"), false},
-	{true, K_BS, tConst("BS"), false},
+	{true, K_BS, tConst("Bu8"), false},
 	{true, '\\', tConst("Bslash"), false},
 	{true, K_COMMAND, tConst("Cmd"), false},
 	{true, ENTER, tConst("CR"), false},
@@ -3554,7 +3550,7 @@ private KeyNameEntry keyNamesTable[] = {
 	 //NOTE: When adding a long name update MAX_KEY_NAME_LEN.
 };
 
-pub CS
+pub S
 get_key_name(int i) {
 	if (i < 0 || i >= (int)ARRAY_LENGTH(keyNamesTable))
 		return NULL;
@@ -3583,10 +3579,10 @@ get_key_name(int i) {
 // REPTERM_NO_SIMPLIFY   do not simplify <C-H> to 0x08 and set 8th bit for <A-x>
 //
 //"didSimplify" is set when some <C-H> or <A-x> code was simplified, unless it is NULL.
-pub CS
+pub S
 replace_termcodes(
-	CS from,
-	CS* bufP,
+	S from,
+	S* bufP,
 	ScriptId sid_arg,   //script ID to use for <SID>, or 0 to use scriptPosG
 	Unt flags,
 	OUT Boole* didSimplify,
@@ -3598,7 +3594,7 @@ replace_termcodes(
 	Unt   dlen = 0;
 	ArrayList   ga;
 
-	CS src = from;
+	S src = from;
 
 	//Allocate space for the translation.  Worst case a single character is
 	//replaced by 6 bytes (shifted special key), plus a ZERO at the end.
@@ -3608,7 +3604,7 @@ replace_termcodes(
 		*bufP = NULL;
 		return from;
 	}
-	CS result = ga.c;   //buffer for resulting string
+	S result = ga.c;   //buffer for resulting string
 
 	//Check for #n at start only: function key n
 	if ((flags & REPTERM_FROM_PART) && src[0] == '#' && EE_ISDIGIT(src[1])) {
@@ -3672,7 +3668,7 @@ replace_termcodes(
 		  }
 	  }
 
-	  CS p;
+	  S p;
 	  Byte len;
 
 	  //Replace <Leader> by the value of "mapleader".
@@ -3680,19 +3676,19 @@ replace_termcodes(
 	  //If "mapleader" or "maplocalleader" isn't set use a backslash.
 	  if (STRNICMP(src, "<Leader>", 8) == 0) {
 		  len = 8;
-		  p = get_var_value(S"g:mapleader");
+		  p = get_var_value(u8"g:mapleader");
 	  } ei (STRNICMP(src, "<LocalLeader>", 13) == 0) {
 		  len = 13;
-		  p = get_var_value(S"g:maplocalleader");
+		  p = get_var_value(u8"g:maplocalleader");
 	  } else {
 		  len = 0;
 		  p = NULL;
 	  }
-	  CS s;
+	  S s;
 	  if (len != 0) {
 		  //Allow up to 8 * 6 characters for "mapleader".
 		  if (p == NULL || *p == ZERO || STRLEN(p) > 8 * 6)
-			  s = (CS)"\\";
+			  s = u8"\\";
 		  else
 			  s = p;
 		  while (*s != ZERO)
@@ -3762,7 +3758,7 @@ simplify_key(Unt key, Unt* modifiers) {
 //Find a termcode with keys 'src' (must be ZERO terminated).
 //Return the index in recognizedTermcodesP[], or -1 if not found.
 private Unt
-find_term_bykeys(CS src) {
+find_term_bykeys(S src) {
 	int slen = (int)STRLEN(src);
 	for (Unt i = 0; i < recognizedLen; ++i) {
 		if (slen == recognizedTermcodesP[i].len
@@ -3778,7 +3774,7 @@ find_term_bykeys(CS src) {
 private void
 gatherTermLeaders(void) {
 	int len = 0;
-	if (check_for_codes || termCodesG[KS_CRS] != S"") {
+	if (check_for_codes || termCodesG[KS_CRS]) {
 		termLeaderG[len] = DCS; //the termcode response starts with DCS in 8-bit mode
 		len++;
 	}
@@ -3872,8 +3868,8 @@ show_termcodes(Unt flags) {
 //These characters are identified by bookIsAsciiIdentifierChar().
 private int
 keyNameEntryComparer(void const* a, void const* b) {
-	CS p1 = ((KeyNameEntry *)a)->name.c;
-	CS p2 = ((KeyNameEntry *)b)->name.c;
+	S p1 = ((KeyNameEntry *)a)->name.c;
+	S p2 = ((KeyNameEntry *)b)->name.c;
 	int result = 0;
 
 	if (p1 == p2)
@@ -3899,7 +3895,7 @@ keyNameEntryComparer(void const* a, void const* b) {
 }
 
 //Return a string which contains the name of the given key when the given modifiers are down.
-pub CS
+pub S
 get_special_key_name(Unt c, int modifiers) {
 	static Byte string[MAX_KEY_NAME_LEN + 1];
 	int len;
@@ -3965,7 +3961,7 @@ get_special_key_name(Unt c, int modifiers) {
 			ei (len > 1)
 				idx += mb_char2bytes(c, string + idx);
 			else {
-				CS s = transchar(c);
+				S s = transchar(c);
 				while (*s)
 					string[idx++] = *s++;
 			}
@@ -3990,7 +3986,7 @@ get_special_key_name(Unt c, int modifiers) {
 //If the name starts with "t_" the next two characters are interpreted as a termcap name.
 //Return the key code, or 0 if not found.
 pub int
-get_special_key_code(CS name) {
+get_special_key_code(S name) {
 	//If it's <t_xx> we get the code for xx from the termcap
 	if (name[0] == 'z' && name[1] == 'z' && name[2] != ZERO && name[3] != ZERO) {
 		Byte string[3] = {name[2], name[3], ZERO};
@@ -4022,7 +4018,7 @@ get_special_key_code(CS name) {
 
 //Show one termcode entry. Output goes into ioBuffG[]
 pub int
-show_one_termcode(CS name, CS code, int printit) {
+show_one_termcode(S name, S code, int printit) {
 	int len;
 	if (name[0] > '~') {
 		ioBuffG[0] = ' ';
@@ -4037,7 +4033,7 @@ show_one_termcode(CS name, CS code, int printit) {
 	}
 	ioBuffG[4] = ' ';
 
-	CS p = get_special_key_name(TERMCAP2KEY(name[0], name[1]), 0);
+	S p = get_special_key_name(TERMCAP2KEY(name[0], name[1]), 0);
 	if (p[1] == 'z')
 		ioBuffG[5] = ZERO;
 	else
@@ -4056,7 +4052,7 @@ show_one_termcode(CS name, CS code, int printit) {
 	if (printit) {
 		msg_puts(ioBuffG);
 		if (!code)
-			msg_puts((CS)"NULL");
+			msg_puts(u8"NULL");
 		else
 			msg_outtrans(code);
 	}
@@ -4080,7 +4076,7 @@ req_more_codes_from_term(void) {
 	//Send up to 10 more requests out than we received.  Avoid sending too
 	//many, there can be a buffer overflow somewhere.
 	while (xt_index_out < xt_index_in + 10 && (Unt)xt_index_out < ARRAY_LENGTH(key_names)) {
-		CS key = key_names[xt_index_out];
+		S key = key_names[xt_index_out];
 
 		MAY_WANT_TO_LOG_THIS;
 		LOG_TRN("Requesting XT %d: %s", xt_index_out, key);
@@ -4104,7 +4100,7 @@ req_more_codes_from_term(void) {
 //Both <name> and <string> are encoded in hex.
 //"code" points to the "0" or "1".
 private void
-got_code_from_term(CS code, int len) {
+got_code_from_term(S code, int len) {
 # define XT_LEN 100
 	Byte   name[4];
 	Byte   str[XT_LEN];
@@ -4279,7 +4275,7 @@ cterm_color2rgb(int nr, Byte* r, Byte* g, Byte* b, Byte* ansi_idx) {
 //Replace K_BS by <BS> and K_DEL by <DEL>. Include any modifiers into the key and drop them.
 //Return "len" adjusted for replaced codes.
 pub int
-term_replace_keycodes(CS ta_buf, int ta_len, int len_arg) {
+term_replace_keycodes(S ta_buf, int ta_len, int len_arg) {
 	int len = len_arg;
 	int i;
 	Unt c;
@@ -4378,8 +4374,8 @@ termFindSpecialKey(
 	Unt flags,      //FSK_ values
 	OUT Boole* didSimplify //found <C-H> or <A-x>
 ){
-	CS end_of_name;
-	CS bp;
+	S end_of_name;
+	S bp;
 	int in_string = flags & FSK_IN_STRING;
 	Unt modifiers;
 	int bit;
@@ -4387,14 +4383,14 @@ termFindSpecialKey(
 	Ulong   n;
 	int      l;
 
-	CS src = *srcp;
+	S src = *srcp;
 	if (src[0] != '<')
 		return 0;
 	if (src[1] == '*')       //<*xxx>: do not simplify
 		++src;
 
 	//Find end of modifier list
-	CS last_dash = src;
+	S last_dash = src;
 	for (bp = src + 1; *bp == '-' || bookIsAsciiIdentifierChar(*bp); bp++) {
 		if (*bp == '-') {
 			last_dash = bp;
@@ -4572,7 +4568,7 @@ termFindSpecialKey_in_table(int c) {
 //When "escape_ks" is true escape K_SPECIAL bytes in the character.
 //The sequence is not ZERO terminated. This is how characters in a string are encoded.
 pub int
-special_to_buf(Unt key, Unt modifiers, int escape_ks, OUT CS dst) {
+special_to_buf(Unt key, Unt modifiers, int escape_ks, OUT S dst) {
 	int dlen = 0;
 
 	//Put the appropriate modifier in a string
@@ -4601,7 +4597,7 @@ special_to_buf(Unt key, Unt modifiers, int escape_ks, OUT CS dst) {
 pub int
 trans_special(
 	OUT Byte** srcp,
-	CS dst,
+	S dst,
 	Unt flags,      //FSK_ values
 	int escape_ks,   //escape K_SPECIAL bytes in the character
 	OUT Boole* didSimplify  //FSK_SIMPLIFY and found <C-H> or <A-x>
@@ -4702,9 +4698,9 @@ openpty(char **ttyn) {
 		return -1;
 
 	//SIGCHLD set to SIG_DFL for grantpt() because it fork()s and exec()s pt_chmod
-	CS m;
+	S m;
 	sighandler_T sigcld = motSignalHandler(SIGCHLD, SIG_DFL);
-	if ((m = (CS)ptsname(f)) == NULL || grantpt(f) || unlockpt(f)) {
+	if ((m = (S)ptsname(f)) == NULL || grantpt(f) || unlockpt(f)) {
 		motSignalHandler(SIGCHLD, sigcld);
 		close(f);
 		return -1;

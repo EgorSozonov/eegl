@@ -34,7 +34,7 @@
 typedef struct MsgHist MsgHist;
 struct MsgHist {
 	MsgHist* next;
-	CS c;
+	S c;
 	char deco;
 };
 
@@ -63,26 +63,26 @@ private int  verbose_did_open = false;
 private Text longestLineS = (Text){.len = 0, .c = null};
 private Boole emsg_to_channel_log = false;
 private Boole confirm_msg_used = false;
-private CS confirm_msg = null;
-private CS confirm_msg_tail = null;
+private S confirm_msg = null;
+private S confirm_msg_tail = null;
 
 declStruct(MsgChunk);
 private MsgChunk *lastChunkS = NULL; //last displayed text
 
 //{{{@@forward declarations
-private void homeReplaceDeco(CS fname, char flags);
-private CS drawText_mbyte(CS s, int l, char flags);
+private void homeReplaceDeco(S fname, char flags);
+private S drawText_mbyte(S s, int l, char flags);
 private void ensureLength(Unt len);
-private void toPrintf(CS str, int maxlen);
+private void toPrintf(S str, int maxlen);
 private Boole isVerboseFileDefined();
 private int other_sourcing_name(void);
-private CS get_emsg_source(void);
-private CS get_emsg_lnum(void);
+private S get_emsg_source(void);
+private S get_emsg_lnum(void);
 private int emsg_not_now(void);
 private int ignore_error(Arr(Byte const) msg);
-private int emsgImpl(CS s);
+private int emsgImpl(S s);
 private void addMsgHistory(
-	CS s,
+	S s,
 	int      len,      //-1 for undetermined length
 	char      flags
 );
@@ -93,8 +93,8 @@ private void display_confirm_msg(void);
 private int do_more_prompt(int typedChar);
 private void printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags);
 private void put_messagePort(Portal *wp, int where, Byte *t_s, Byte *end, LineNr lnum);
-private void toDisplay(CS str, int maxlen, Byte flags, Boole recurse);
-private void t_puts(int* t_col, CS theText, CS sentinel, Byte flags);
+private void toDisplay(S str, int maxlen, Byte flags, Boole recurse);
+private void t_puts(int* t_col, S theText, S sentinel, Byte flags);
 private void msg_screen_putchar(int c, char flags);
 private void msg_moremsg(int full);
 private int msg_check_screen(void);
@@ -158,9 +158,9 @@ private MsgChunk * disp_sb_line(int row, MsgChunk* smp, int clear_to_eol);
 
 //Truncate a string such that it can be printed without causing a scroll.
 //Return an allocated string or NULL when no truncating is done.
-pub CS
-msg_strtrunc(CS s, int force) {      //always truncate
-	CS buf = null;
+pub S
+msg_strtrunc(S s, int force) {      //always truncate
+	S buf = null;
 
 	//May truncate message to avoid a hit-return prompt
 	if ((!msg_scroll && !need_wait_return && msg_silent == 0) || force) {
@@ -296,7 +296,7 @@ msg_start(void) {
 			 //start a new line
 			 curBook = wp->book;
 			 ml_append(wp->book->mem.lineCount,
-						      (CS)"", (ColNr)0, false);
+						      u8"", (ColNr)0, false);
 			 curBook = curPor->book;
 		}
 		msgColG = 0;
@@ -319,7 +319,7 @@ msg_start(void) {
 
 	//when redirecting, may need to start a new line.
 	if (!did_return)
-		redir_write((CS)"\n", -1);
+		redir_write(u8"\n", -1);
 }
 
 //Note that the current msg position is where messages start.
@@ -367,8 +367,8 @@ msg_home_replace_hl(Byte *fname) {
 }
 
 private void
-homeReplaceDeco(CS fname, char flags) {
-	CS name = home_replace_save(NULL, fname);
+homeReplaceDeco(S fname, char flags) {
+	S name = home_replace_save(NULL, fname);
 	if (name)
 		msgOuttransDeco(name, flags);
 	eeglFree(name);
@@ -382,7 +382,7 @@ msg_outtrans(Byte* str) {
 }
 
 pub int
-msgOuttransDeco(CS str, Byte flags) {
+msgOuttransDeco(S str, Byte flags) {
 	return msgOuttransLenDeco(mbText(str), flags);
 }
 
@@ -392,8 +392,8 @@ msgTranslatedSlice(Text slice) {
 }
 
 //Output one character at "p". Return pointer to the next character. Handle multi-byte characters
-pub CS
-msgOneChar(CS p, char flags) {
+pub S
+msgOneChar(S p, char flags) {
 	int l;
 
 	if ((l = utfCharLen(p)) > 1) {
@@ -436,7 +436,7 @@ msgOuttransLenDeco(Text slice, char flags) {
 	//If the string starts with a composing character, first draw a space on which the composing
 	//char can be drawn
 	if (utf_iscomposing(mb_ptr2char(str)))
-		msgPutsDeco(S" ", flags);
+		msgPutsDeco(u8" ", flags);
 
 	//Go over the string.  Special characters are translated and printed.
 	//Normal characters are printed several at a time.
@@ -486,10 +486,10 @@ msgOuttransLenDeco(Text slice, char flags) {
 }
 
 pub void
-msg_make(CS arg) {
+msg_make(S arg) {
 	int       i;
-	static CS str = S"eeffoc";
-	static CS rs = S"Plon#dqg#vxjduB";
+	static S str = u8"eeffoc";
+	static S rs = u8"Plon#dqg#vxjduB";
 
 	arg = skipwhite(arg);
 	for (i = 5; *arg && i >= 0; --i) {
@@ -516,31 +516,31 @@ msg_make(CS arg) {
 //the character/string -- webb
 pub int
 msg_outtrans_special(
-	CS strstart,
+	S strstart,
 	int from,   //true for lhs of a mapping
 	int maxlen  //screen columns, 0 for unlimited
 ){
-	CS str = strstart;
+	S str = strstart;
 	int retval = 0;
-	CS text;
+	S text;
 	int len;
 
 	Byte flags = getDecoFlags(HILITE_MetaSpecialKeys);
 	while (*str != ZERO) {
 		//Leading and trailing spaces need to be displayed in <> form.
 		if ((str == strstart || str[1] == ZERO) && *str == ' ') {
-			text = S"<Space>";
+			text = u8"<Space>";
 			++str;
 		} else
 			text = str2special(&str, from, false);
 		if (text[0] != ZERO && text[1] == ZERO)
 			//single-byte character or illegal byte
 			text = bookTranscharByte((Byte)text[0]);
-		len = eeglStrSize((CS)text);
+		len = eeglStrSize((S)text);
 		if (maxlen > 0 && retval + len >= maxlen)
 			break;
 		//Highlight special keys
-		msgPutsDeco(text, len > 1 && utfCharLen((CS)text) <= 1 ? flags : 0);
+		msgPutsDeco(text, len > 1 && utfCharLen((S)text) <= 1 ? flags : 0);
 		retval += len;
 	 }
 	 return retval;
@@ -548,7 +548,7 @@ msg_outtrans_special(
 
 //Return the lhs or rhs of a mapping, with the key codes turned into printable
 //strings, in an allocated string.
-pub CS
+pub S
 str2special_save(
 	Byte  *str,
 	int       replace_spaces,   //true to replace " " with "<Space>".
@@ -562,13 +562,13 @@ str2special_save(
 	while (*p != ZERO)
 		ga_concat(&ga, str2special(&p, replace_spaces, replace_lt));
 	ga_append(&ga, ZERO);
-	return (CS)ga.c;
+	return (S)ga.c;
 }
 
 //Return the printable string for the key codes at "*sp". On illegal byte return a string with only
 //that byte. Used for translating the lhs or rhs of a mapping to printable chars.
 //Advances "sp" to the next code.
-pub CS
+pub S
 str2special(
 	Byte** sp,
 	int      replace_spaces,   //true to replace " " with "<Space>".
@@ -631,15 +631,15 @@ str2specialbuf(Byte *sp, OUT Byte *builder, int len) {
 
 //print line for :print or :list command
 pub void
-msg_prt_line(CS s, int list) {
+msg_prt_line(S s, int list) {
 	Unt      c;
 	int      n_extra = 0;
 	Unt      c_extra = 0;
 	int      c_final = 0;
-	CS p_extra = NULL;       //init to make SASC shut up
+	S p_extra = NULL;       //init to make SASC shut up
 	int      n;
 	char      flags = 0;
-	CS trail = NULL;
+	S trail = NULL;
 	int      l;
 	Byte builder[MB_MAXBYTES + 1];
 
@@ -704,7 +704,7 @@ msg_prt_line(CS s, int list) {
 				c = listCharsG.nbsp;
 				flags = getDecoFlags(HILITE_MetaSpecialKeys);
 			} ei (c == ZERO && list && listCharsG.eol != ZERO) {
-				p_extra = S"";
+				p_extra = u8"";
 				c_extra = ZERO;
 				c_final = ZERO;
 				n_extra = 1;
@@ -738,8 +738,8 @@ msg_prt_line(CS s, int list) {
 
 //Use drawText() to output one multi-byte character.
 //Return the pointer "s" advanced to the next character.
-private CS
-drawText_mbyte(CS s, int l, char flags) {
+private S
+drawText_mbyte(S s, int l, char flags) {
 	msg_didout = true;      //remember that line is not empty
 	int cw = mb_ptr2cells(s);
 	if (cw > 1 && ( msgColG == visibleColsG - 1)) {
@@ -768,11 +768,11 @@ ensureLength(Unt len) {
 
 //Print a message when there is no valid screen.
 private void
-toPrintf(CS str, int maxlen) {
-	CS bbb = str;
+toPrintf(S str, int maxlen) {
+	S bbb = str;
 	Boole isSilent = silentModeG && p_verbose == 0;
 
-	for (CS aaa = str; (maxlen < 0 || (int)(aaa - str) < maxlen) && *aaa != ZERO; aaa++) {
+	for (S aaa = str; (maxlen < 0 || (int)(aaa - str) < maxlen) && *aaa != ZERO; aaa++) {
 		if (isSilent) {
 			goto skipped;
 		}
@@ -796,9 +796,9 @@ toPrintf(CS str, int maxlen) {
 					mch_errmsg(longestLineS.c);
 			} else {
 				if (info_message)   //informative message, not an error
-					mch_msg(S"\r\n");
+					mch_msg(u8"\r\n");
 				else
-					mch_errmsg(S"\r\n");
+					mch_errmsg(u8"\r\n");
 			}
 			bbb = aaa + 1;
 		}
@@ -832,13 +832,13 @@ isVerboseFileDefined() {
 //When terminal not initialized (yet) mch_errmsg(..) is used.
 //return true if wait_return() not called
 pub int
-msg(CS s) {
+msg(S s) {
 	return msgAndKeep(s, 0, false);
 }
 
 //Like msg() but keep it silent when 'verbosefile' is set.
 pub int
-verb_msg(CS s) {
+verb_msg(S s) {
 	verbose_enter();
 	int n = msgAndKeep(s, 0, false);
 	verbose_leave();
@@ -847,12 +847,12 @@ verb_msg(CS s) {
 }
 
 pub int
-msgDeco(CS s, char flags) {
+msgDeco(S s, char flags) {
 	return msgAndKeep(s, flags, false);
 }
 
 pub int
-msgAndKeep(CS s, char flags, int keep) {       //true: set msgAfterRedrawG if it doesn't scroll
+msgAndKeep(S s, char flags, int keep) {       //true: set msgAfterRedrawG if it doesn't scroll
 	static int   entered = 0;
 
 	//Skip messages not matching ":filter pattern".
@@ -869,10 +869,10 @@ msgAndKeep(CS s, char flags, int keep) {       //true: set msgAfterRedrawG if it
 
 	//Add message to history (unless it's a repeated kept message or a
 	//truncated message)
-	if ((CS)s != msgAfterRedrawG
+	if ((S)s != msgAfterRedrawG
 			 || (*s != '<' && last_msg_hist && last_msg_hist->c && STRCMP(s, last_msg_hist->c))
 	)
-		addMsgHistory((CS)s, -1, flags);
+		addMsgHistory((S)s, -1, flags);
 
 	if (emsg_to_channel_log)
 		//Write message in the channel log.
@@ -884,11 +884,11 @@ msgAndKeep(CS s, char flags, int keep) {       //true: set msgAfterRedrawG if it
 	if (builder)
 		s = builder;
 
-	msgOuttransDeco((CS)s, flags);
+	msgOuttransDeco((S)s, flags);
 	msg_clr_eos();
 	int retval = msg_end();
 
-	if (keep && retval && eeglStrSize((CS)s)
+	if (keep && retval && eeglStrSize((S)s)
 				 < (int)(visibleRowsG - commlineRowG - 1) * visibleColsG + shownCommandColG)
 		set_keep_msg(s, 0);
 
@@ -899,14 +899,14 @@ msgAndKeep(CS s, char flags, int keep) {       //true: set msgAfterRedrawG if it
 	return retval;
 }
 
-pub int eeSnprintf0(CS str, Unt str_m, const char *fmt, ...);
+pub int eeSnprintf0(S str, Unt str_m, const char *fmt, ...);
 
 pub int
 smsg0(char const* s, ...) {
 	if (!ioBuffG) {
 		//Very early in initialisation and already something wrong, just
 		//give the raw message so the user at least gets a hint.
-		return msg((CS)s);
+		return msg((S)s);
 	}
 
 	va_list arglist;
@@ -922,7 +922,7 @@ smsgDeco0(char flags, const char *s, ...) {
 	if (!ioBuffG) {
 		//Very early in initialisation and already something wrong, just
 		//give the raw message so the user at least gets a hint.
-		return msgDeco((CS)s, flags);
+		return msgDeco((S)s, flags);
 	}
 
 	va_list arglist;
@@ -938,7 +938,7 @@ smsgDecoKeep0(char flags, const char *s, ...) {
 	if (!ioBuffG) {
 		//Very early in initialisation and already something wrong, just
 		//give the raw message so the user at least gets a hint.
-		return msgAndKeep((CS)s, flags, true);
+		return msgAndKeep((S)s, flags, true);
 	}
 
 	va_list arglist;
@@ -977,12 +977,12 @@ other_sourcing_name(void) {
 //Like msg(), but truncate to a single line if "force" is true. This
 //truncates in another way as for normal messages. Careful: The string may be changed by
 //msg_may_trunc()! Returns a pointer to the printed message, if wait_return() not called.
-pub CS
-msgTruncDeco(CS s, char flags) {
+pub S
+msgTruncDeco(S s, char flags) {
 	//Add message to history before truncating
-	addMsgHistory((CS)s, -1, flags);
+	addMsgHistory((S)s, -1, flags);
 
-	CS ts = msg_may_trunc(s);
+	S ts = msg_may_trunc(s);
 
 	msg_hist_off = true;
 	int n = msgDeco(ts, flags);
@@ -996,8 +996,8 @@ msgTruncDeco(CS s, char flags) {
 //Check if message "s" should be truncated at the start (for filenames).
 //Return a pointer to where the truncated message starts.
 //Note: May change the message by replacing a character with '<'.
-pub CS
-msg_may_trunc(CS s) {
+pub S
+msg_may_trunc(S s) {
 	int      n;
 	int      room;
 
@@ -1027,7 +1027,7 @@ msg_may_trunc(CS s) {
 
 //Get the message about the source, as used for an error message.
 //Return an allocated string with room for one more character. NULL when no message is to be given.
-private CS
+private S
 get_emsg_source(void) {
 	Byte   *p;
 
@@ -1037,7 +1037,7 @@ get_emsg_source(void) {
 		if (!sname)
 			sname = SOURCING_NAME;
 
-		p = (CS)_("Error detected while processing %s:");
+		p = (S)_("Error detected while processing %s:");
 		Arr(Byte) builder = alloc(STRLEN(sname) + STRLEN(p));
 		SPRINTF(builder, p, sname);
 		eeglFree(tofree);
@@ -1049,7 +1049,7 @@ get_emsg_source(void) {
 //Get the message about the source lnum, as used for an error message.
 //Returns an allocated string with room for one more character.
 //Returns NULL when no message is to be given.
-private CS
+private S
 get_emsg_lnum(void) {
 	Byte   *builder, *p;
 
@@ -1059,7 +1059,7 @@ get_emsg_lnum(void) {
 		 && (other_sourcing_name() || SOURCING_LNUM != last_sourcing_lnum)
 		 && SOURCING_LNUM != 0
 	) {
-		p = (CS)_("line %4ld:");
+		p = (S)_("line %4ld:");
 		builder = alloc(STRLEN(p) + 20);
 		sprintf((char *)builder, (char *)p, (long)SOURCING_LNUM);
 		return builder;
@@ -1125,7 +1125,7 @@ private ArrayList ignore_error_list = GA_EMPTY;
 pub void
 ignore_error_for_testing(Byte *error) {
 	if (ignore_error_list.ga_itemsize == 0)
-		ga_init2(&ignore_error_list, sizeof(CS), 1);
+		ga_init2(&ignore_error_list, sizeof(S), 1);
 
 	if (STRCMP("RESET", error) == 0)
 		ga_clear_strings(&ignore_error_list);
@@ -1147,9 +1147,9 @@ ignore_error(Arr(Byte const) msg) {
 //Return true if wait_return() not called.
 //Note: caller must check 'emsg_not_now()' before calling this.
 private int
-emsgImpl(CS s) {
+emsgImpl(S s) {
 	Byte flags;
-	CS p;
+	S p;
 
 	//When testing some errors are turned into a normal message.
 	if (ignore_error(s))
@@ -1165,10 +1165,10 @@ emsgImpl(CS s) {
 	if (!emsg_off || firstOccurrence(p_debug, 't') != NULL) {
 
 		if (in_assert_fails && emsg_assert_fails_msg == NULL) {
-			emsg_assert_fails_msg = copyStr((CS)s);
+			emsg_assert_fails_msg = copyStr((S)s);
 			emsg_assert_fails_lnum = SOURCING_LNUM;
 			eeglFree(emsg_assert_fails_context);
-			emsg_assert_fails_context = copyStr(SOURCING_NAME ? SOURCING_NAME : S"");
+			emsg_assert_fails_context = copyStr(SOURCING_NAME ? SOURCING_NAME : u8"");
 		}
 
 		//When using ":silent! cmd", ignore error messages. But do write it to the redirection file
@@ -1187,7 +1187,7 @@ emsgImpl(CS s) {
 					redir_write(p, -1);
 					eeglFree(p);
 				}
-				redir_write((CS)s, -1);
+				redir_write((S)s, -1);
 			}
 			lo("ERROR silent: %s", s);
 			return true;
@@ -1231,7 +1231,7 @@ emsgImpl(CS s) {
 
 //Print error message "s".  Should already be translated. Return true if wait_return() not called
 pub int
-emsg(CS s) {
+emsg(S s) {
 	//Skip this if not giving error messages at the moment.
 	if (emsg_not_now())
 		return true;
@@ -1253,7 +1253,7 @@ showErrFmtMsg0(char const* s, ...) {
 	if (!ioBuffG)
 		//Very early in initialisation and already something wrong, just
 		//give the raw message so the user at least gets a hint.
-		return emsgImpl((CS)s);
+		return emsgImpl((S)s);
 
 	va_list ap;
 
@@ -1266,7 +1266,7 @@ showErrFmtMsg0(char const* s, ...) {
 //Same as emsg(...), but abort on error when ABORT_ON_INTERNAL_ERROR is defined. It is used for
 //internal errors only, so that they can be detected when fuzzing Eegl.
 pub void
-internalErrMsg(CS s) {
+internalErrMsg(S s) {
 	if (emsg_not_now())
 		return;
 
@@ -1298,7 +1298,7 @@ internalErrFmtMsg0(const char *s, ...) {
 	if (ioBuffG == NULL) {
 		//Very early in initialisation and already something wrong, just
 		//give the raw message so the user at least gets a hint.
-		emsgImpl((CS)s);
+		emsgImpl((S)s);
 	} else {
 		va_list ap;
 
@@ -1316,7 +1316,7 @@ internalErrFmtMsg0(const char *s, ...) {
 
 //Give an "Internal error" message.
 pub void
-internal_error(CS where) {
+internal_error(S where) {
 	//Give a generic error which is translated. The error itself may not be
 	//translated, it almost never shows.
 	emsgImpl(_(e_internal_error_please_report_a_bug));
@@ -1326,7 +1326,7 @@ internal_error(CS where) {
 //Like internal_error() but do not call abort(), to avoid tests using
 //test_unknown() and test_void() causing Eegl to exit.
 pub void
-internal_error_no_abort(CS where) {
+internal_error_no_abort(S where) {
 	//Give a generic error which is translated. The error itself may not be
 	//translated, it almost never shows.
 	emsgImpl(_(e_internal_error_please_report_a_bug));
@@ -1342,8 +1342,8 @@ emsg_invreg(int name) {
 
 //Give an error message which contains %s for "name[len]".
 pub void
-emsg_namelen(CS msg, CS name, int len) {
-	CS copy = copySubstr(name, len);
+emsg_namelen(S msg, S name, int len) {
+	S copy = copySubstr(name, len);
 	showErrFmtMsg(msg, copy);
 	eeglFree(copy);
 }
@@ -1353,7 +1353,7 @@ emsg_namelen(CS msg, CS name, int len) {
 
 private void
 addMsgHistory(
-	CS s,
+	S s,
 	int      len,      //-1 for undetermined length
 	char      flags
 ){
@@ -1415,7 +1415,7 @@ check_msg_hist(void) {
 
 
 pub int
-messagesopt_changed(CS new) {
+messagesopt_changed(S new) {
 	if (!new)
 		return OK;
 
@@ -1423,7 +1423,7 @@ messagesopt_changed(CS new) {
 	int messages_wait_new = 0;
 	int messages_history_new = 0;
 
-	CS p = new;
+	S p = new;
 	while (*p != ZERO) {
 		if (STRNCMP(p, MESSAGES_OPT_HIT_ENTER,
 			  STRLEN_LITERAL(MESSAGES_OPT_HIT_ENTER)) == 0)
@@ -1674,7 +1674,7 @@ wait_return(Boole redraw) {
 					|| c == K_X1MOUSE || c == K_X2MOUSE
 			)
 				(void)jump_to_mouse(MOUSE_SETPOS, NULL, 0);
-			ei (firstOccurrence((CS)"\r\n ", c) == NULL && c != Ctrl_C) {
+			ei (firstOccurrence(u8"\r\n ", c) == NULL && c != Ctrl_C) {
 				//Put the character back in the typeahead buffer.  Don't use
 				//the stuff buffer, because lmaps wouldn't work.
 				ins_char_typebuf(vgetcOrigCharG, vgetcModMaskG);
@@ -1778,9 +1778,9 @@ msgmore(long n) {
 		 eeSnprintf(msg_buf, MSG_BUF_LEN,
 			 NGETTEXT("%ld line less", "%ld fewer lines", pn), pn);
 	if (gotInterruptG)
-		 concatenateStrings((CS)msg_buf, (CS)_(" (Interrupted)"), MSG_BUF_LEN);
+		 concatenateStrings((S)msg_buf, (S)_(" (Interrupted)"), MSG_BUF_LEN);
 	if (msg(msg_buf)) {
-		 set_keep_msg((CS)msg_buf, 0);
+		 set_keep_msg((S)msg_buf, 0);
 		 keep_msg_more = true;
 	}
 }
@@ -1912,9 +1912,9 @@ eeDialog_yesno(
 	 int      dflt)
 {
 	if (do_dialog(type,
-		title == NULL ? (CS)_("Question") : title,
+		title == NULL ? (S)_("Question") : title,
 		message,
-		(CS)_("&Yes\n&No"), dflt, NULL, false) == 1) {
+		(S)_("&Yes\n&No"), dflt, NULL, false) == 1) {
 		return EE_YES;
 	}
 	return EE_NO;
@@ -1929,9 +1929,9 @@ eeDialog_yesnocancel(
 {
 	switch (do_dialog(
 			type,
-			title == NULL ? (CS)_("Question") : title,
+			title == NULL ? (S)_("Question") : title,
 			message,
-			(CS)_("&Yes\n&No\n&Cancel"), dflt, NULL, false
+			(S)_("&Yes\n&No\n&Cancel"), dflt, NULL, false
 	)){
 	case 1: return EE_YES;
 	case 2: return EE_NO;
@@ -1947,9 +1947,9 @@ eeDialog_yesnoallcancel(
 	int      dflt
 ){
 	switch (do_dialog(type,
-		title == NULL ? (CS)"Question" : title,
+		title == NULL ? u8"Question" : title,
 		message,
-		(CS)_("&Yes\n&No\nSave &All\n&Discard All\n&Cancel"), dflt, NULL, false)
+		(S)_("&Yes\n&No\nSave &All\n&Discard All\n&Cancel"), dflt, NULL, false)
 	) {
 	case 1: return EE_YES;
 	case 2: return EE_NO;
@@ -2173,12 +2173,12 @@ do_more_prompt(int typedChar) {
 //Output a string to the screen at position msgRowG, msgColG.
 //Update msgRowG and msgColG for the next message.
 pub void
-msg_puts(CS s) {
+msg_puts(S s) {
 	msgPutsDeco(s, 0);
 }
 
 pub void
-msg_puts_title(CS s) {
+msg_puts_title(S s) {
 	msgPutsDeco(s, getDecoFlags(HILITE_OutputOfAutocmd));
 }
 
@@ -2191,14 +2191,14 @@ outputShortenedToALine(Text slice, char flags) {
 	if (room >= 20 && slice.len > (Unt)room) {
 		slen = (room - 3) / 2;
 		msgOuttransLenDeco(slice, flags);
-		msgPutsDeco((CS)"...", getDecoFlags(HILITE_MetaSpecialKeys));
+		msgPutsDeco(u8"...", getDecoFlags(HILITE_MetaSpecialKeys));
 	}
 	msgOuttransLenDeco((Text){.c = slice.c + slice.len - slen, .len = slen}, flags);
 }
 
 //Basic function for writing a message with hilite decorations.
 pub void
-msgPutsDeco(CS s, char flags) {
+msgPutsDeco(S s, char flags) {
 	printWithDecoAndMaxLen(s, -1, flags);
 }
 
@@ -2208,7 +2208,7 @@ msgPutsDeco(CS s, char flags) {
 private void
 printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags) {
 	//If redirection is on, also write to the redirection file.
-	redir_write((CS)str, maxlen);
+	redir_write((S)str, maxlen);
 
 	//Don't print anything when using ":silent cmd".
 	if (msg_silent != 0)
@@ -2219,7 +2219,7 @@ printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags) {
 
 	//if MSG_HIST flag set, add message to history
 	if ((flags & MSG_HIST) && maxlen < 0) {
-		addMsgHistory((CS)str, -1, flags);
+		addMsgHistory((S)str, -1, flags);
 		flags &= ~MSG_HIST;
 	}
 
@@ -2234,9 +2234,9 @@ printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags) {
 	//If termcap is not active, we may be writing in an alternate console portal, cursor
 	//positioning may not work correctly or we just don't know where the cursor is.
 	if (msg_use_printf())
-		toPrintf((CS)str, maxlen);
+		toPrintf((S)str, maxlen);
 	else
-		toDisplay((CS)str, maxlen, flags, false);
+		toDisplay((S)str, maxlen, flags, false);
 
 	needFileinfoG = false;
 }
@@ -2285,7 +2285,7 @@ put_messagePort(Portal *wp, int where, Byte *t_s, Byte *end, LineNr lnum) {
 //The display part of printWithDecoAndMaxLen().
 //May be called recursively to display scroll-back text.
 private void
-toDisplay(CS str, int maxlen, Byte flags, Boole recurse){
+toDisplay(S str, int maxlen, Byte flags, Boole recurse){
 	Byte *s = str;
 	Byte *t_s = str;   //string from "t_s" to "s" is still todo
 	int t_col = 0;   //screen cells todo, 0 when "t_s" not used
@@ -2486,7 +2486,7 @@ toDisplay(CS str, int maxlen, Byte flags, Boole recurse){
 
 //Return true when ":filter pattern" was used and "msg" does not match "pattern".
 pub int
-message_filtered(CS msg) {
+message_filtered(S msg) {
 	if (commModifierG.cmod_filter_regmatch.regprog == NULL)
 		return false;
 	int  match = eeRegexec(&commModifierG.cmod_filter_regmatch, msg, (ColNr)0);
@@ -2495,7 +2495,7 @@ message_filtered(CS msg) {
 
 //Output any postponed text for printWithDecoAndMaxLen().
 private void
-t_puts(int* t_col, CS theText, CS sentinel, Byte flags){
+t_puts(int* t_col, S theText, S sentinel, Byte flags){
 	//output postponed text
 	msg_didout = true;      //remember that line is not empty
 	drawTextLen(theText, (int)(sentinel - theText), msgRowG, msgColG, flags);
@@ -2538,12 +2538,12 @@ msg_screen_putchar(int c, char flags) {
 
 private void
 msg_moremsg(int full) {
-	Byte   *s = (CS)_("-- More --");
+	Byte   *s = (S)_("-- More --");
 
 	char flags = getDecoFlags(HILITE_MoreMsg);
 	drawText(s, (int)visibleRowsG - 1, 0, flags);
 	if (full) {
-		drawText((CS)
+		drawText((S)
 			_(" SPACE/d/j: screen/page/line down, b/u/k: up, q: quit "),
 				(int)visibleRowsG - 1, eeglStrSize(s), flags
 		);
@@ -2675,11 +2675,11 @@ redir_write(Byte *str, int maxlen) {
 		if (*s != '\n' && *s != '\r') {
 			while (cur_col < msgColG) {
 				if (redir_execute)
-					execute_redir_str((CS)" ", -1);
+					execute_redir_str(u8" ", -1);
 				ei (redir_reg)
-					write_reg_contents(redir_reg, (CS)" ", -1, true);
+					write_reg_contents(redir_reg, u8" ", -1, true);
 				ei (redir_vname)
-					var_redir_str((CS)" ", -1);
+					var_redir_str(u8" ", -1);
 				ei (redir_fd) {
 					fputs(" ", redir_fd);
 				}
@@ -2812,7 +2812,7 @@ give_warning_with_source(Byte *message, int hl, int with_source) {
 		//be after the mode message.
 		msg_start();
 		msg_source(getDecoFlags(HILITE_WarningMsg));
-		msg_puts(S" ");
+		msg_puts(u8" ");
 		msgPutsDeco(message, getDecoFlags(HILITE_WarningMsg) | MSG_HIST);
 		msg_clr_eos();
 		(void)msg_end();
@@ -3178,7 +3178,7 @@ disp_sb_line(int row, MsgChunk* smp, int clear_to_eol) {
 	for (mp = smp;;mp = mp->sb_next) {
 		msgRowG = row;
 		msgColG = mp->sb_msgColG;
-		CS p = mp->sb_text;
+		S p = mp->sb_text;
 		if (*p == '\n')       //don't display the line break
 			++p;
 		toDisplay(p, -1, mp->sb_attr, true);

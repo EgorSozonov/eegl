@@ -115,11 +115,11 @@ typedef enum {
 //Type for the hook that is invoked after an option value is changed to apply the new value.
 //
 //Return NULL if the post-application hook ran succesfully, or error message if not.
-typedef CS (*OptionSetter)(OptionChange* cha);
+typedef S (*OptionSetter)(OptionChange* cha);
 
 //Return NULL if the new value is valid and can be applied to the option.
 //Otherwise return an error message.
-typedef CS (*OptionValidator)(OptionChange* cha);
+typedef S (*OptionValidator)(OptionChange* cha);
 
 //Argument for the callback function (OptionExpander) invoked after a string
 //option value is expanded for cmdline completion.
@@ -141,7 +141,7 @@ typedef struct {
 	//The full argument passed to :set. For example, if the user inputs
 	//':set dip=icase,algorithm:my<Tab>', @expand->pattern will only have
 	//'my', but @setArg will contain the whole 'icase,algorithm:my'.
-	CS setArg;
+	S setArg;
 } OptExpand;
 
 //Type for the callback function that is invoked when expanding possible string option values
@@ -154,7 +154,7 @@ typedef struct {
 //Note: If returned FAIL or matches->len is 0, matches->c will NOT be freed by caller.
 typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
 
-#define refStr(x) (OptionRef){.tag = OPTION_STRING, .string = (CS*)x}
+#define refStr(x) (OptionRef){.tag = OPTION_STRING, .string = (S*)x}
 #define refNum(x) (OptionRef){.tag = OPTION_NUM, .num = x}
 #define refBoole(x) (OptionRef){.tag = OPTION_BOOLE, .boole = x}
 #define refEnum(x) (OptionRef){.tag = OPTION_ENUM, .enume = x}
@@ -173,7 +173,7 @@ typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
 	for (Option* o = OPTIONS_BOOK; o < OPTIONS_BOOK + OPTION_BOOK_COUNT; o++)
 
 typedef struct { //:Option
-	CS fullName;   //full option name
+	S fullName;   //full option name
 	OptionValue defaultValue; //default value for option
 
 	//callback function to validate and apply the change as well as the post-processing
@@ -198,193 +198,193 @@ typedef struct { //:Option
 //}}}
 //{{{@@forward declarations
 private int isOptionAtDefault(Option* o, OptionRef ref);
-private void optSetStringDefault_esc(CS name, CS val, Boole escape);
-private CS setBoolImpl(
+private void optSetStringDefault_esc(S name, S val, Boole escape);
+private S setBoolImpl(
 	OUT Option* o,
 	Boole newValue,
 	SetScope setScope
 );
-private CS findUnchangedItemInCommaList(CS origVal, CS newVal, Unt newVallen, Ulong flags);
+private S findUnchangedItemInCommaList(S origVal, S newVal, Unt newVallen, Ulong flags);
 private void set_init_default_backupskip(void);
 private void set_init_default_cdpath(void);
 private void setDefault(Option* o, SetScope setScope);
-private Byte parseCursorShape(CS input);
-private void set_helplang_default(CS lang);
-private CS stropt_copy_value( CS arg);
-private CS getNewValOfStringOption(Option* o, OUT CS* argp, OUT CS* origval_arg);
+private Byte parseCursorShape(S input);
+private void set_helplang_default(S lang);
+private S stropt_copy_value( S arg);
+private S getNewValOfStringOption(Option* o, OUT S* argp, OUT S* origval_arg);
 private Boole checkIllegalPathNames(Option* o, OptionRef ref);
 private Polystring* getPolystring(Option* o, SetScope setScope);
-private CS setStringImpl(
+private S setStringImpl(
 	Option* o,
-	CS oldVal,    //previous value of the option
-	CS newVal,
+	S oldVal,    //previous value of the option
+	S newVal,
 	SetScope setScope
 );
-private CS parseAndSetEnum(OUT Option* o, CS arg, SetScope setScope);
-private CS parseAndSetFlags(OUT Option* o, CS arg, SetScope setScope);
-private CS parseAndSetCallback(OUT Option* o, CS arg, SetScope setScope);
-private CS changeStringOption(OUT Option* o, CS arg, SetScope scope);
-private CS parseAndSetBool(OUT Option* o, CS newString, SetScope setScope);
-private CS setNumericImpl(
+private S parseAndSetEnum(OUT Option* o, S arg, SetScope setScope);
+private S parseAndSetFlags(OUT Option* o, S arg, SetScope setScope);
+private S parseAndSetCallback(OUT Option* o, S arg, SetScope setScope);
+private S changeStringOption(OUT Option* o, S arg, SetScope scope);
+private S parseAndSetBool(OUT Option* o, S newString, SetScope setScope);
+private S setNumericImpl(
 	OUT Option* o,
 	OUT OptionRef ref,
 	long newValue,
 	SetScope setScope
 );
-private CS parseAndSetNumeric(OUT Option* o, CS arg, SetScope setScope);
+private S parseAndSetNumeric(OUT Option* o, S arg, SetScope setScope);
 private void did_set_option(Option* o);
-private CS setImpl(Option* o, OptionValue newValue, SetScope setScope);
-private CS setFromString(OUT Option* o, CS arg, CS newVal, SetScope setScope);
-private CS parseAndSetImpl(Option* o, CS arg, SetScope setScope);
-private CS tryFindOptionFromCommand(OUT Option** o, OUT CS* arg);
-private CS parseAndSet(SetScope setScope, OUT CS* arg);
-private CS expandEnvVarsInStringOption(Option* o, CS newVal);
+private S setImpl(Option* o, OptionValue newValue, SetScope setScope);
+private S setFromString(OUT Option* o, S arg, S newVal, SetScope setScope);
+private S parseAndSetImpl(Option* o, S arg, SetScope setScope);
+private S tryFindOptionFromCommand(OUT Option** o, OUT S* arg);
+private S parseAndSet(SetScope setScope, OUT S* arg);
+private S expandEnvVarsInStringOption(Option* o, S newVal);
 private void check_redraw(Unt flags);
-private CS escape_option_str_cmdline(CS var);
+private S escape_option_str_cmdline(S var);
 private Boole matchString(
-	CS optStr,
+	S optStr,
 	RegMatch* regmatch,
 	ExpandMatch* matches,
 	Boole isFuzzy,
-	CS fuzzystr,
+	S fuzzystr,
 	Fuzzy* fuzzy
 );
 private void toString(Option* o, SetScope scope);
 private Unt calcNewBufferCap(Unt oldSize);
-private CS readOptionFlags(OptionChange* cha, Arr(CS) validValues, OUT Unt *flagp);
-private CS validateAndSetListOfStrings(OUT OptionChange* cha, Arr(CS) values);
+private S readOptionFlags(OptionChange* cha, Arr(S) validValues, OUT Unt *flagp);
+private S validateAndSetListOfStrings(OUT OptionChange* cha, Arr(S) values);
 private int expandFlagOption(
 	OUT ExpandMatch* matches,
 	OptExpand* args,
-	Arr(CS) const values,
+	Arr(S) const values,
 	Unt const numValues
 );
-private int expand_set_opt_listflag(OUT ExpandMatch* matches, OptExpand *args, CS flags);
-private CS illegal_char(OUT ErrBuilder* errb, Unt c);
-private CS did_set_option_listflag(CS val, CS flags, OUT ErrBuilder* errb);
+private int expand_set_opt_listflag(OUT ExpandMatch* matches, OptExpand *args, S flags);
+private S illegal_char(OUT ErrBuilder* errb, Unt c);
+private S did_set_option_listflag(S val, S flags, OUT ErrBuilder* errb);
 private void printOptionGroup(
 	Arr(Option*) items, Arr(Option) group, Unt count, Unt printFlags,
 	ToPrint which, int run
 );
 private void showoneopt(Option* o, SetScope setScope);
-private Byte parseEnumValue(CS newVal, Arr(CS) validValues);
-private CS check_stl_option(CS s);
-private CS did_set_balloonevalterm(OptionChange* cha);
+private Byte parseEnumValue(S newVal, Arr(S) validValues);
+private S check_stl_option(S s);
+private S did_set_balloonevalterm(OptionChange* cha);
 private void resizeOrPlanResizingWindow();
-private CS setVisibleLines(OptionChange* cha);
-private CS setVisibleCols(OptionChange* cha);
-private CS setBookListed(OptionChange* cha);
-private CS setCommHeight(OptionChange* cha);
-private CS did_set_diff(OptionChange* cha);
-private CS did_set_equalalways(OptionChange* cha);
-private CS did_set_foldlevel(OptionChange* cha);
-private CS did_set_hlsearch(OptionChange* cha);
-private CS did_set_ignorecase(OptionChange* cha);
-private CS did_set_maxsearchcount(OptionChange* cha);
-private CS setShiftWidth(OptionChange* cha);
-private CS did_set_smoothscroll(OptionChange* cha);
-private CS did_set_swapfile(OptionChange* cha);
-private CS did_set_termwinscroll(OptionChange* cha);
-private CS did_set_textwidth(OptionChange* cha);
-private CS did_set_undofile(OptionChange* cha);
-private CS did_set_undolevels(OptionChange* cha);
-private CS did_set_wildchar(OptionChange* cha);
-private CS setWinHeight(OptionChange* cha);
-private CS setHelpHeight(OptionChange* cha);
-private CS did_set_winwidth(OptionChange* cha);
-private CS did_set_wrap(OptionChange* cha);
-private CS setTimeoutLen(OptionChange* cha);
-private CS setHistory(OptionChange* cha);
-private CS setScrollJump(OptionChange* cha);
-private CS setScrollOff(OptionChange* cha);
-private CS setSideScrollOff(OptionChange* cha);
-private CS setStrictlyPositive(OptionChange* cha);
-private CS setNonNegative(OptionChange* cha);
-private int find_key_option(CS arg_arg, Boole has_lt);
+private S setVisibleLines(OptionChange* cha);
+private S setVisibleCols(OptionChange* cha);
+private S setBookListed(OptionChange* cha);
+private S setCommHeight(OptionChange* cha);
+private S did_set_diff(OptionChange* cha);
+private S did_set_equalalways(OptionChange* cha);
+private S did_set_foldlevel(OptionChange* cha);
+private S did_set_hlsearch(OptionChange* cha);
+private S did_set_ignorecase(OptionChange* cha);
+private S did_set_maxsearchcount(OptionChange* cha);
+private S setShiftWidth(OptionChange* cha);
+private S did_set_smoothscroll(OptionChange* cha);
+private S did_set_swapfile(OptionChange* cha);
+private S did_set_termwinscroll(OptionChange* cha);
+private S did_set_textwidth(OptionChange* cha);
+private S did_set_undofile(OptionChange* cha);
+private S did_set_undolevels(OptionChange* cha);
+private S did_set_wildchar(OptionChange* cha);
+private S setWinHeight(OptionChange* cha);
+private S setHelpHeight(OptionChange* cha);
+private S did_set_winwidth(OptionChange* cha);
+private S did_set_wrap(OptionChange* cha);
+private S setTimeoutLen(OptionChange* cha);
+private S setHistory(OptionChange* cha);
+private S setScrollJump(OptionChange* cha);
+private S setScrollOff(OptionChange* cha);
+private S setSideScrollOff(OptionChange* cha);
+private S setStrictlyPositive(OptionChange* cha);
+private S setNonNegative(OptionChange* cha);
+private int find_key_option(S arg_arg, Boole has_lt);
 private void printSingleOption(
 		Option* o, SetScope setScope, Unt printFlags, ToPrint which, int run,
 		OUT Arr(Option*) items, OUT Unt* item_count
 );
-private CS copyOptionVal(OUT Polystring* buf, CS val);
-private void expand1(OUT Expand* xp, Option* o, CS argend);
+private S copyOptionVal(OUT Polystring* buf, S val);
+private void expand1(OUT Expand* xp, Option* o, S argend);
 private int wildcharUseKeyname(OptionRef ref, long* wcp);
-private CS setFormatListPat(OptionChange* cha);
-private CS setCompletefuzzycollect(OptionChange* cha);
+private S setFormatListPat(OptionChange* cha);
+private S setCompletefuzzycollect(OptionChange* cha);
 private int expandCompletefuzzycollect(OptExpand* args, OUT ExpandMatch *matches);
-private CS did_set_completeitemalign(OptionChange* cha);
-private CS did_set_completepopup(OptionChange*);
-private CS did_set_debug(OptionChange* cha);
+private S did_set_completeitemalign(OptionChange* cha);
+private S did_set_completepopup(OptionChange*);
+private S did_set_debug(OptionChange* cha);
 private int expand_set_debug(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_diffanchors(OptionChange* cha);
-private CS setDiffopt(OptionChange* cha);
+private S did_set_diffanchors(OptionChange* cha);
+private S setDiffopt(OptionChange* cha);
 private int expandDiffopt(OptExpand* args, OUT ExpandMatch* matches);
 private int expand_set_popupoption(OptExpand* args, OUT ExpandMatch* matches);
-private CS setCursorInsert(OptionChange* cha);
-private CS setCursorNormal(OptionChange* cha);
+private S setCursorInsert(OptionChange* cha);
+private S setCursorNormal(OptionChange* cha);
 private int expand_set_formatoptions(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_helplang(OptionChange* cha);
-private CS setOptexpr(OptionChange* cha);
-private CS setEadirection(OptionChange* cha);
+private S did_set_helplang(OptionChange* cha);
+private S setOptexpr(OptionChange* cha);
+private S setEadirection(OptionChange* cha);
 private int expandEadirection(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_eventignore(OptionChange* cha);
-private CS did_set_verbosefile(OptionChange*);
-private CS setEeglinfo(OptionChange* cha);
-private CS did_set_whichwrap(OptionChange* cha);
+private S did_set_eventignore(OptionChange* cha);
+private S did_set_verbosefile(OptionChange*);
+private S setEeglinfo(OptionChange* cha);
+private S did_set_whichwrap(OptionChange* cha);
 private int expand_set_whichwrap(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_wildmode(OptionChange*);
+private S did_set_wildmode(OptionChange*);
 private int expand_set_wildmode(OptExpand* args, OUT ExpandMatch* matches);
-private CS setWildoptions(OptionChange* cha);
+private S setWildoptions(OptionChange* cha);
 private int expandWildoptions(OptExpand* args, OUT ExpandMatch* matches);
 private int expand_set_eventignore(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_foldignore(OptionChange*);
-private CS did_set_foldmarker(OptionChange* cha);
-private CS setFoldMethod(OptionChange* cha);
+private S did_set_foldignore(OptionChange*);
+private S did_set_foldmarker(OptionChange* cha);
+private S setFoldMethod(OptionChange* cha);
 private int expand_set_foldmethod(OptExpand* args, OUT ExpandMatch *matches);
-private CS setFoldopen(OptionChange* cha);
+private S setFoldopen(OptionChange* cha);
 private int expandFoldopen(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_formatoptions(OptionChange* cha);
-private CS setIsopt(OptionChange* cha);
-private CS did_set_matchpairs(OptionChange* cha);
-private CS did_set_messagesopt(OptionChange* cha);
+private S did_set_formatoptions(OptionChange* cha);
+private S setIsopt(OptionChange* cha);
+private S did_set_matchpairs(OptionChange* cha);
+private S did_set_messagesopt(OptionChange* cha);
 private int expand_set_messagesopt(OptExpand* args, OUT ExpandMatch* matches);
-private CS setExpandTriggers(OptionChange* cha);
-private CS did_set_iskeyword(OptionChange* cha);
-private CS parse_status_rulerformat(OptionChange* cha);
-private CS setRulerFormat(OptionChange* cha);
-private CS did_set_tabpanelopt(OptionChange* cha);
+private S setExpandTriggers(OptionChange* cha);
+private S did_set_iskeyword(OptionChange* cha);
+private S parse_status_rulerformat(OptionChange* cha);
+private S setRulerFormat(OptionChange* cha);
+private S did_set_tabpanelopt(OptionChange* cha);
 private int expand_set_tabpanelopt(OptExpand* args, OUT ExpandMatch* matches);
-private CS setScrollopt(OptionChange* cha);
+private S setScrollopt(OptionChange* cha);
 private int expand_set_scrollopt(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_showcmdloc(OptionChange* cha);
+private S did_set_showcmdloc(OptionChange* cha);
 private int expand_set_showcmdloc(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_statusline(OptionChange* cha);
-private CS setSwitchbook(OptionChange* cha);
+private S did_set_statusline(OptionChange* cha);
+private S setSwitchbook(OptionChange* cha);
 private int expand_set_switchbook(OptExpand* args, OUT ExpandMatch* matches);
-private CS setTabClose(OptionChange* cha);
+private S setTabClose(OptionChange* cha);
 private int expand_set_tabclose(OptExpand* args, OUT ExpandMatch* matches);
-private CS setTagcase(OptionChange* cha);
+private S setTagcase(OptionChange* cha);
 private int expand_set_tagcase(OptExpand* args, OUT ExpandMatch* matches);
-private CS setTerm(OptionChange* cha);
-private CS did_set_termwinkey(OptionChange* cha);
-private CS did_set_termwinsize(OptionChange* cha);
-private CS setBufType(OptionChange* cha);
+private S setTerm(OptionChange* cha);
+private S did_set_termwinkey(OptionChange* cha);
+private S did_set_termwinsize(OptionChange* cha);
+private S setBufType(OptionChange* cha);
 private int expand_set_buftype(OptExpand* args, OUT ExpandMatch* matches);
-private CS setListChars(OptionChange* cha);
-private CS setFillChars(OptionChange* cha);
+private S setListChars(OptionChange* cha);
+private S setFillChars(OptionChange* cha);
 private int expand_set_chars_option(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_comments(OptionChange* cha);
-private CS did_set_commentstring(OptionChange *cha);
-private CS setBackupCopy(OptionChange* cha);
+private S did_set_comments(OptionChange* cha);
+private S did_set_commentstring(OptionChange *cha);
+private S setBackupCopy(OptionChange* cha);
 private int expand_set_backupcopy(OptExpand* args, OUT ExpandMatch* matches);
-private CS setComplete(OptionChange* cha);
+private S setComplete(OptionChange* cha);
 private int expandComplete(OptExpand* args, ExpandMatch* matches);
-private CS setCompleteopt(OptionChange* cha);
+private S setCompleteopt(OptionChange* cha);
 private int expandCompleteopt(OptExpand* args, OUT ExpandMatch* matches);
 private Unt calcDefaultStringValuesLen(Arr(Option) opts, Unt count);
 private Unt calcGlobalStringValuesLen();
 private Unt calcLocalStringsLength(Arr(Option) opts, Unt count);
 private void copyDefaultsToGlobalStringValues(OUT Polystring* bui, Arr(Option) opts, Unt count);
-private void copyStringOptToBook(OUT CS wr, CS* old, OptionChange* cha);
+private void copyStringOptToBook(OUT S wr, S* old, OptionChange* cha);
 private void updateBoolRef(OptionChange* cha);
 private void updateNumRef(OptionChange* cha);
 private void didset_options(void);
@@ -393,33 +393,33 @@ private void expandEnvVarsInDefaults(void);
 private void printOptions(ToPrint which);
 private int put_setstring(
 	FILE   *fd,
-	CS cmd,
-	CS name,
+	S cmd,
+	S name,
 	OptionRef ref,
 	Ulong   flags
 );
-private int put_setnum(FILE* fd, CS cmd, CS name, OptionRef ref);
+private int put_setnum(FILE* fd, S cmd, S name, OptionRef ref);
 private int put_setbool(
 	FILE   *fd,
-	CS cmd,
-	CS name,
+	S cmd,
+	S name,
 	Boole value
 );
 private void setScriptPos(Option* o, SetScope scope, ScriptPos scriptPos);
 private void setDefaultValuesForAllOptions(SetScope setScope);
-private Option* findOption(CS arg);
+private Option* findOption(S arg);
 private OptionRef getRefInScope(Option* o, SetScope setScope);
 private void copyGlobalToBookImpl(OUT Book* book);
 private void copyGlobalToPortalImpl(OUT PortalOptions* t);
-private CS illegal_char_after_chr(OUT ErrBuilder* errb, int c);
-private void changeStringOptionDirectImpl(Option* o, CS val, SetScope scope, ScriptId setSid);
-private CS optionCompletionExpand_cb(Expand *xp, int idx);
-private int optionCompletionExpand(OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Expand *, int)));
-private CS get_eventignore_name(Expand *xp, int idx);
+private S illegal_char_after_chr(OUT ErrBuilder* errb, int c);
+private void changeStringOptionDirectImpl(Option* o, S val, SetScope scope, ScriptId setSid);
+private S optionCompletionExpand_cb(Expand *xp, int idx);
+private int optionCompletionExpand(OUT ExpandMatch* matches, OptExpand* args, S ((*func)(Expand *, int)));
+private S get_eventignore_name(Expand *xp, int idx);
 private void do_spelllang_source(void);
-private CS get_locale_val(int what);
+private S get_locale_val(int what);
 private int is_valid_mess_lang(Byte *lang);
-private Arr(CS) getLocalesFromEnv(OUT Unt* countOfLocales);
+private Arr(S) getLocalesFromEnv(OUT Unt* countOfLocales);
 private void init_locales(void);
 //}}}
 //{{{general option code
@@ -451,15 +451,15 @@ isOptionAtDefault(Option* o, OptionRef ref) {
 //Set the default value of a string option from @Option.defaultValue.
 //Used for @sh, @backupskip and @term. When "escape" is true, escape spaces with a backslash.
 private void
-optSetStringDefault_esc(CS name, CS val, Boole escape) {
+optSetStringDefault_esc(S name, S val, Boole escape) {
 	Option* o = findOption(name);
 	if (!o) {
 		return;
 	}
 
-	CS p;
+	S p;
 	if (escape && firstOccurrence(val, ' ') != NULL)
-		p = copyStr_escaped(val, S" ");
+		p = copyStr_escaped(val, u8" ");
 	else
 		p = copyStr(val);
 
@@ -469,7 +469,7 @@ optSetStringDefault_esc(CS name, CS val, Boole escape) {
 
 //Set the value of a boolean option, and take care of side effects.
 //Return NULL for success, or an error message for an error.
-private CS
+private S
 setBoolImpl(
 	OUT Option* o,
 	Boole newValue,
@@ -477,7 +477,7 @@ setBoolImpl(
 ){
 	OptionRef ref = getRefInScope(o, setScope);
 	Boole oldValue = *ref.boole;
-	CS errmsg = NULL;
+	S errmsg = NULL;
 
 	//Remember where the option was set.
 	setScriptPos(OUT o, setScope, scriptPosG);
@@ -501,13 +501,13 @@ setBoolImpl(
 
 //For an option value that contains comma separated items, find "newVal" in
 //"origVal". Return NULL if not found.
-private CS
-findUnchangedItemInCommaList(CS origVal, CS newVal, Unt newVallen, Ulong flags) {
+private S
+findUnchangedItemInCommaList(S origVal, S newVal, Unt newVallen, Ulong flags) {
 	if (!origVal)
 		return null;
 
 	int bs = 0;
-	for (CS s = origVal; *s != ZERO; ++s) {
+	for (S s = origVal; *s != ZERO; ++s) {
 		if ((!(flags & P_COMMA)
 				 || s == origVal
 				 || (s[-1] == ',' && !(bs & 1)))
@@ -530,20 +530,20 @@ findUnchangedItemInCommaList(CS origVal, CS newVal, Unt newVallen, Ulong flags) 
 //Set the default for @backupskip to include environment variables for temp files.
 private void
 set_init_default_backupskip(void) {
-	static CS names[4] = {S"", S"TMPDIR", S"TEMP", S"TMP"};
+	static S names[4] = {u8"", u8"TMPDIR", u8"TEMP", u8"TMP"};
 
-	Option* o = findOption(S"backup.skip");
+	Option* o = findOption(u8"backup.skip");
 
 	ArrayList ga;
 	ga_init2(&ga, 1, 100);
-	CS p;
+	S p;
 	for (Unt i = 0; i < (int)ARRAY_LENGTH(names); ++i) {
 		int plen;
 		if (*names[i] == ZERO) {
-			p = S"/tmp";
+			p = u8"/tmp";
 			plen = (int)STRLEN_LITERAL("/tmp");
 		} else {
-			p = eeglGetEnv((CS)names[i]);
+			p = eeglGetEnv((S)names[i]);
 			plen = 0;       //will be calculated below
 		}
 		if (p && *p != ZERO) {
@@ -566,12 +566,12 @@ set_init_default_backupskip(void) {
 			//add a preceding comma as a separator after the first item
 			Unt itemseplen = (ga.len == 0) ? 0 : 1;
 			Unt itemlen = eeSnprintf(
-				item, itemsize, "%s%s*", p, hasTrailingSlash ? S"" : S"/"
+				item, itemsize, "%s%s*", p, hasTrailingSlash ? u8"" : u8"/"
 			);
 
-			if (findUnchangedItemInCommaList((CS)ga.c, item, itemlen, o->flags) == NULL
+			if (findUnchangedItemInCommaList((S)ga.c, item, itemlen, o->flags) == NULL
 					&& ga_grow(&ga, (int)(itemseplen + itemlen + 1)) == OK) {
-				ga.len += eeSnprintf((CS)ga.c + ga.len,
+				ga.len += eeSnprintf((S)ga.c + ga.len,
 						 itemseplen + itemlen + 1, "%s%s", (itemseplen > 0) ? "," : "", item
 				);
 			}
@@ -579,7 +579,7 @@ set_init_default_backupskip(void) {
 		}
 	}
 	if (ga.c) {
-		optSetStringDefault(S"backupskip", ga.c);
+		optSetStringDefault(u8"backupskip", ga.c);
 		eeglFree(ga.c);
 	}
 }
@@ -587,11 +587,11 @@ set_init_default_backupskip(void) {
 //Initialize the @cdpath to a default value.
 private void
 set_init_default_cdpath(void) {
-	CS cdpath = eeglGetEnv(S"CDPATH");
+	S cdpath = eeglGetEnv(u8"CDPATH");
 	if (!cdpath)
 		return;
 
-	CS buffer = alloc((STRLEN(cdpath) << 1) + 2);
+	S buffer = alloc((STRLEN(cdpath) << 1) + 2);
 	buffer[0] = ',';       //start with ",", current dir first
 	int j = 1;
 	for (int i = 0; cdpath[i] != ZERO; ++i) {
@@ -606,7 +606,7 @@ set_init_default_cdpath(void) {
 		}
 	}
 	buffer[j] = ZERO;
-	Option* cdPath = findOption(S"cdpath");
+	Option* cdPath = findOption(u8"cdpath");
 	cdPath->defaultValue = optStr(buffer);
 }
 
@@ -647,7 +647,7 @@ setDefault(Option* o, SetScope setScope){
 }
 
 pub void
-optSetStringDefault(CS name, CS val) {
+optSetStringDefault(S name, S val) {
 	optSetStringDefault_esc(name, val, false);
 }
 
@@ -670,7 +670,7 @@ optFreeAllOptions(void) {
 //Parse the @cursorNormal and @cursorInsert options
 //Return error message for an illegal option, NULL otherwise.
 private Byte
-parseCursorShape(CS input) {
+parseCursorShape(S input) {
 	if (STRCMP(input, "block") == 0) {
 		return CURSOR_BLOCK;
 	} ei (STRCMP(input, "bar") == 0) {
@@ -692,7 +692,7 @@ optInit1(void) {
 //When @helplang is still at its default value, set it to "lang". Only the first two characters
 //of "lang" are used.
 private void
-set_helplang_default(CS lang) {
+set_helplang_default(S lang) {
 	if (!lang)   //safety check
 		return;
 
@@ -700,7 +700,7 @@ set_helplang_default(CS lang) {
 	if (langlen < 2)   //safety check
 		return;
 
-	Option* o = findOption(S"help.lang");
+	Option* o = findOption(u8"help.lang");
 	if (!o || (o->flags & P_WAS_SET) != 0)
 		return;
 
@@ -720,12 +720,12 @@ set_helplang_default(CS lang) {
 
 //Copy the new string value into allocated memory for the option.
 //Can't use optChangeStringOptionDirect(), because we need to remove the backslashes.
-private CS
-stropt_copy_value( CS arg) {
+private S
+stropt_copy_value( S arg) {
 	//get a bit too much
 	Unt newlen = STRLEN(arg) + 1;
-	CS newVal = alloc(newlen);
-	CS s = newVal;
+	S newVal = alloc(newlen);
+	S s = newVal;
 
 	//Copy the string, skip over escaped chars.
 	//The reverse is found in escape_option_str_cmdline().
@@ -749,16 +749,16 @@ stropt_copy_value( CS arg) {
 
 //Get the string value specified for a ":set" command. The following set options are supported:
 // set {o}={val}
-private CS
-getNewValOfStringOption(Option* o, OUT CS* argp, OUT CS* origval_arg) {
-	CS arg = *argp;
-	CS origVal = *origval_arg;
-	CS save_arg = NULL;
+private S
+getNewValOfStringOption(Option* o, OUT S* argp, OUT S* origval_arg) {
+	S arg = *argp;
+	S origVal = *origval_arg;
+	S save_arg = NULL;
 
 	++arg;   //consume the `=` or `:`
 
 	//Copy the new string into allocated memory.
-	CS newVal = stropt_copy_value(arg);
+	S newVal = stropt_copy_value(arg);
 
 	//Expand environment variables and ~.
 	newVal = expandEnvVarsInStringOption(o, newVal);
@@ -779,9 +779,9 @@ getNewValOfStringOption(Option* o, OUT CS* argp, OUT CS* origval_arg) {
 private Boole
 checkIllegalPathNames(Option* o, OptionRef ref) {
 	return (((o->flags & P_NFNAME) != 0
-			&& eeStrpbrk(*ref.string, S"/*?[<>\r\n") != NULL
+			&& eeStrpbrk(*ref.string, u8"/*?[<>\r\n") != NULL
 		 )
-		|| ((o->flags & P_NDNAME) != 0 && eeStrpbrk(*ref.string, S"*?[|;&<>\r\n") != NULL)
+		|| ((o->flags & P_NDNAME) != 0 && eeStrpbrk(*ref.string, u8"*?[|;&<>\r\n") != NULL)
 	);
 }
 
@@ -808,14 +808,14 @@ getPolystring(Option* o, SetScope setScope) {
 //Handle string options that need some action to perform when changed.
 //The new value must be allocated.
 //Returns NULL for success, or an untranslated error message for an error.
-private CS
+private S
 setStringImpl(
 	Option* o,
-	CS oldVal,    //previous value of the option
-	CS newVal,
+	S oldVal,    //previous value of the option
+	S newVal,
 	SetScope setScope
 ){
-	CS errmsg = NULL;
+	S errmsg = NULL;
 	OptionSetter setter = o->setter;
 
 	OptionChange cha;
@@ -859,8 +859,8 @@ setStringImpl(
 	return errmsg;
 }
 
-private CS
-parseAndSetEnum(OUT Option* o, CS arg, SetScope setScope) {
+private S
+parseAndSetEnum(OUT Option* o, S arg, SetScope setScope) {
 	OptionRef ref = getRefInScope(o, setScope);
 	Byte oldValue = *ref.enume;
 
@@ -876,8 +876,8 @@ parseAndSetEnum(OUT Option* o, CS arg, SetScope setScope) {
 	return o->setter(&cha);
 }
 
-private CS
-parseAndSetFlags(OUT Option* o, CS arg, SetScope setScope) {
+private S
+parseAndSetFlags(OUT Option* o, S arg, SetScope setScope) {
 	OptionRef ref = getRefInScope(o, setScope);
 	Unt oldValue = *ref.flags;
 
@@ -893,8 +893,8 @@ parseAndSetFlags(OUT Option* o, CS arg, SetScope setScope) {
 	return o->setter(&cha);
 }
 
-private CS
-parseAndSetCallback(OUT Option* o, CS arg, SetScope setScope) {
+private S
+parseAndSetCallback(OUT Option* o, S arg, SetScope setScope) {
 	OptionRef ref = getRefInScope(o, setScope);
 	Unt oldValue = *ref.flags;
 
@@ -911,18 +911,18 @@ parseAndSetCallback(OUT Option* o, CS arg, SetScope setScope) {
 }
 
 //Part of c_set() for string options. Return FAIL on failure, do not process further options.
-private CS
-changeStringOption(OUT Option* o, CS arg, SetScope scope) {
-	CS errmsg = null;
+private S
+changeStringOption(OUT Option* o, S arg, SetScope scope) {
+	S errmsg = null;
 
-	CS oldVal = NULL;
-	CS saved_newVal = NULL;
+	S oldVal = NULL;
+	S saved_newVal = NULL;
 
 	//The old value is kept until we are sure that the new value is valid.
-	CS origVal = *(getRefInScope(o, scope)).string;
+	S origVal = *(getRefInScope(o, scope)).string;
 
 	//Get the new value for the option
-	CS newVal = getNewValOfStringOption(o, &arg, &origVal);
+	S newVal = getNewValOfStringOption(o, &arg, &origVal);
 
 	if (!starting && origVal && newVal) {
 		//newVal (and ref) may become invalid if the buffer is closed by autocommands.
@@ -939,11 +939,11 @@ changeStringOption(OUT Option* o, CS arg, SetScope scope) {
 }
 
 //Set a boolean option. Return an untranslated error message or NULL.
-private CS
-parseAndSetBool(OUT Option* o, CS newString, SetScope setScope){
-	if (eq(newString, S"true")) {
+private S
+parseAndSetBool(OUT Option* o, S newString, SetScope setScope){
+	if (eq(newString, u8"true")) {
 		return setBoolImpl(o, true, setScope);
-	} ei (eq(newString, S"false")) {
+	} ei (eq(newString, u8"false")) {
 		return setBoolImpl(o, false, setScope);
 	} else {
 		return e_bool_required_for_argument_nr;
@@ -952,14 +952,14 @@ parseAndSetBool(OUT Option* o, CS newString, SetScope setScope){
 
 //Set the value of a number option, and take care of side effects.
 //Return NULL for success, or an error message for an error.
-private CS
+private S
 setNumericImpl(
 	OUT Option* o,
 	OUT OptionRef ref,
 	long newValue,
 	SetScope setScope
 ){
-	CS errmsg = NULL;
+	S errmsg = NULL;
 
 	long oldValue = *(ref.num);
 
@@ -998,10 +998,10 @@ setNumericImpl(
 }
 
 //Set a numeric option. Return an untranslated error message or NULL.
-private CS
-parseAndSetNumeric(OUT Option* o, CS arg, SetScope setScope) {
+private S
+parseAndSetNumeric(OUT Option* o, S arg, SetScope setScope) {
 	Long newValue;
-	CS errmsg = NULL;
+	S errmsg = NULL;
 
 	//Different ways to set a number option:
 	//[-]0-9       set number
@@ -1034,9 +1034,9 @@ did_set_option(Option* o){
 }
 
 //The only way to set an option to a new value
-private CS
+private S
 setImpl(Option* o, OptionValue newValue, SetScope setScope) {
-	CS errmsg;
+	S errmsg;
 	OptionRef ref = getRefInScope(o, setScope);
 	switch (o->defaultValue.tag) {
 	case OPTION_BOOLE:
@@ -1101,9 +1101,9 @@ setImpl(Option* o, OptionValue newValue, SetScope setScope) {
 	return errmsg;
 }
 
-private CS
-setFromString(OUT Option* o, CS arg, CS newVal, SetScope setScope) {
-	CS errmsg;
+private S
+setFromString(OUT Option* o, S arg, S newVal, SetScope setScope) {
+	S errmsg;
 	switch (o->defaultValue.tag) {
 	case OPTION_BOOLE:
 		errmsg = parseAndSetBool(OUT o, newVal, setScope);
@@ -1146,12 +1146,12 @@ end:
 }
 
 //Set an option to a new value.
-private CS
-parseAndSetImpl(Option* o, CS arg, SetScope setScope) {
-	CS errmsg = NULL;
+private S
+parseAndSetImpl(Option* o, S arg, SetScope setScope) {
+	S errmsg = NULL;
 
 	//Copy the new string into allocated memory.
-	CS newVal = stropt_copy_value(arg);
+	S newVal = stropt_copy_value(arg);
 
 	//Expand environment variables and ~.
 	newVal = expandEnvVarsInStringOption(o, newVal);
@@ -1159,8 +1159,8 @@ parseAndSetImpl(Option* o, CS arg, SetScope setScope) {
 	return errmsg;
 }
 
-private CS
-tryFindOptionFromCommand(OUT Option** o, OUT CS* arg) {
+private S
+tryFindOptionFromCommand(OUT Option** o, OUT S* arg) {
 	//find end of name
 	if (!ASCII_ISALNUM((*arg)[0]))
 		return e_invalid_argument;
@@ -1180,10 +1180,10 @@ tryFindOptionFromCommand(OUT Option** o, OUT CS* arg) {
 
 //:set an option to a new value. Return NULL if OK, return an untranslated error message when
 //something is wrong. "errb[errbuflen]" can be used to create the error message.
-private CS
-parseAndSet(SetScope setScope, OUT CS* arg) {
+private S
+parseAndSet(SetScope setScope, OUT S* arg) {
 	Option* o;
-	CS errmsg = tryFindOptionFromCommand(OUT &o, OUT arg);
+	S errmsg = tryFindOptionFromCommand(OUT &o, OUT arg);
 	if (errmsg)
 		return errmsg;
 
@@ -1201,8 +1201,8 @@ parseAndSet(SetScope setScope, OUT CS* arg) {
 	return parseAndSetImpl(o, *arg, (o->flags & P_GLOBAL) != 0 ? SET_GLOBAL : setScope);
 }
 
-pub CS
-optSetByName(CS name, OptionValue newVal, SetScope setScope) {
+pub S
+optSetByName(S name, OptionValue newVal, SetScope setScope) {
 	Option* o = findOption(name);
 	if (!o) {
 		return e_option_not_supported;
@@ -1213,7 +1213,7 @@ optSetByName(CS name, OptionValue newVal, SetScope setScope) {
 //Convert a key name or string into a key value. Used for @termwinkey, @wildchar and @wildcharm
 //options. When "multi_byte" is true, allow for multi-byte characters.
 pub Unt
-stringToChar(CS arg, Boole multi_byte) {
+stringToChar(S arg, Boole multi_byte) {
 	if (*arg == '<' && arg[1] != ZERO)
 		return find_key_option(arg + 1, true);
 	if (*arg == '^' && arg[1] != ZERO) {
@@ -1229,8 +1229,8 @@ stringToChar(CS arg, Boole multi_byte) {
 
 //Expand environment variables for some string options. If "newVal" is NULL, expand the current
 //value of the option. Return a fresh allocation if expanded, or "newVal".
-private CS
-expandEnvVarsInStringOption(Option* o, CS newVal) {
+private S
+expandEnvVarsInStringOption(Option* o, S newVal) {
 	//if option doesn't need expansion, nothing to do
 	if ((o->flags & P_EXPAND) == 0)
 		return newVal;
@@ -1260,7 +1260,7 @@ expandEnvVarsInStringOption(Option* o, CS newVal) {
 
 //Get the script context of global option "name".
 pub ScriptPos*
-optGetScriptPos(CS name) {
+optGetScriptPos(S name) {
 	Option* o = findOption(name);
 
 	if (o)
@@ -1296,7 +1296,7 @@ check_redraw(Unt flags) {
 //Get the value for an option.
 //"flagsp" (if not NULL) is set to the option flags (P_xxxx).
 pub OptionValue
-optGetValue(OUT Unt* flagsp, CS name, int scope) {
+optGetValue(OUT Unt* flagsp, S name, int scope) {
 	Option* o = findOption(name);
 	if (!o) {        //option not in the table
 		return (OptionValue){};
@@ -1329,7 +1329,7 @@ optIsFnOption(Unt flags) {
 
 //Set option "varname" to the value of "varp" for the current buffer/portal.
 pub void
-optSetFromVar(CS varname, Var *varp) {
+optSetFromVar(S varname, Var *varp) {
 	Byte   nbuf[NUMBUFLEN];
 	Boole error = false;
 
@@ -1357,8 +1357,8 @@ optSetFromVar(CS varname, Var *varp) {
 
 //Escape an option value that can be used on the command-line with :set.
 //Caller needs to free the returned string, unless NULL is returned.
-private CS
-escape_option_str_cmdline(CS var) {
+private S
+escape_option_str_cmdline(S var) {
 	//A backslash is required before some characters. This is the reverse of what happens in c_set()
 	return copyStr_escaped(var, escape_chars);
 }
@@ -1373,11 +1373,11 @@ escape_option_str_cmdline(CS var) {
 //'fuzzystr', then store the match details in fuzmatch[idx] and return true.
 private Boole
 matchString(
-	CS optStr,
+	S optStr,
 	RegMatch* regmatch,
 	ExpandMatch* matches,
 	Boole isFuzzy,
-	CS fuzzystr,
+	S fuzzystr,
 	Fuzzy* fuzzy
 ) {
 	if (isFuzzy) {
@@ -1416,8 +1416,8 @@ optExpandForSet(Expand* xp, RegMatch* regmatch, OUT ExpandMatch* matches){
 	//Retrieve the existing value, but escape it as a reverse of setting it. We technically only
 	//need to do this when append or includeOrigVal is true.
 	toString(expandOptionS, expandOptionScopeS);
-	CS var = nameBuffG;
-	CS buffer = escape_option_str_cmdline(var);
+	S var = nameBuffG;
+	S buffer = escape_option_str_cmdline(var);
 
 	cha.origValue = optStr(buffer);
 
@@ -1441,9 +1441,9 @@ toString(Option* o, SetScope scope) {
 			SPRINTF(nameBuffG, "%ld", *ref.num);
 	} ei (ref.tag == OPTION_BOOLE) {
 		if (*ref.boole) {
-			STRCPY(nameBuffG, S"true");
+			STRCPY(nameBuffG, u8"true");
 		} else {
-			STRCPY(nameBuffG, S"false");
+			STRCPY(nameBuffG, u8"false");
 		}
 	} ei (ref.tag == OPTION_STRING) {   //P_STRING
 		if (*ref.string) {
@@ -1457,7 +1457,7 @@ toString(Option* o, SetScope scope) {
 
 //Return true when option "name" has been set.
 pub Boole
-optWasSet(CS name) {
+optWasSet(S name) {
 	Option* o = findOption(name);
 	if (!o)
 		return false;
@@ -1475,10 +1475,10 @@ calcNewBufferCap(Unt oldSize) {
 
 //An option that accepts a list of flags is changed. eg. @viewoptions, @switchbook etc
 //Check an option that can be a range of string values. Empty is always OK.
-private CS
-readOptionFlags(OptionChange* cha, Arr(CS) validValues, OUT Unt *flagp) {
+private S
+readOptionFlags(OptionChange* cha, Arr(S) validValues, OUT Unt *flagp) {
 	Unt newFlags = 0;
-	CS newVal = cha->newVal.string;
+	S newVal = cha->newVal.string;
 	while (*newVal != ZERO) {
 		for (int i = 0; ; ++i) {
 			if (!validValues[i])
@@ -1502,10 +1502,10 @@ readOptionFlags(OptionChange* cha, Arr(CS) validValues, OUT Unt *flagp) {
 
 //A flag option is changed. cha->ref must be a string option ref.
 //e.g. @scrollopt, @wildoptions, etc.
-private CS
-validateAndSetListOfStrings(OUT OptionChange* cha, Arr(CS) values) {
+private S
+validateAndSetListOfStrings(OUT OptionChange* cha, Arr(S) values) {
 	Unt new;
-	CS errMsg = readOptionFlags(cha, values, OUT &new);
+	S errMsg = readOptionFlags(cha, values, OUT &new);
 	if (!errMsg) {
 		*(cha->ref.flags) = new;
 	}
@@ -1518,7 +1518,7 @@ private int
 expandFlagOption(
 	OUT ExpandMatch* matches,
 	OptExpand* args,
-	Arr(CS) const values,
+	Arr(S) const values,
 	Unt const numValues
 ) {
 	RegMatch   *regmatch = args->oe_regmatch;
@@ -1529,7 +1529,7 @@ expandFlagOption(
 		addExpandMatch(origVal.string, OUT matches);
 	}
 
-	for (CS* val = values; val < values + numValues; val++) {
+	for (S* val = values; val < values + numValues; val++) {
 		if (include_orig_val && *origVal.string != ZERO) {
 			if (STRCMP(*val, origVal.string) == 0)
 				continue;
@@ -1546,16 +1546,16 @@ expandFlagOption(
 
 //Expand an option which is a string of single-char flags.
 private int
-expand_set_opt_listflag(OUT ExpandMatch* matches, OptExpand *args, CS flags) {
+expand_set_opt_listflag(OUT ExpandMatch* matches, OptExpand *args, S flags) {
 	OptionValue origVal = args->origValue;
-	CS cmdline_val = args->setArg;
+	S cmdline_val = args->setArg;
 	Boole include_orig_val = args->includeOrigVal && (*origVal.string != ZERO);
 
 	if (include_orig_val) {
 		addExpandMatch(copyStrA(origVal.string, matches->a), OUT matches);
 	}
 
-	for (CS flag = flags; *flag != ZERO; flag++) {
+	for (S flag = flags; *flag != ZERO; flag++) {
 		if (args->append && firstOccurrence(origVal.string, *flag) != NULL)
 			continue;
 
@@ -1575,7 +1575,7 @@ expand_set_opt_listflag(OUT ExpandMatch* matches, OptExpand *args, CS flags) {
 	return OK;
 }
 
-private CS
+private S
 illegal_char(OUT ErrBuilder* errb, Unt c) {
 	if (!errb->c)
 		return null;
@@ -1584,9 +1584,9 @@ illegal_char(OUT ErrBuilder* errb, Unt c) {
 }
 
 //An option which is a list of flags is set.  Valid values are in 'flags'.
-private CS
-did_set_option_listflag(CS val, CS flags, OUT ErrBuilder* errb) {
-	for (CS s = val; *s; ++s) {
+private S
+did_set_option_listflag(S val, S flags, OUT ErrBuilder* errb) {
+	for (S s = val; *s; ++s) {
 		if (firstOccurrence(flags, *s) == NULL)
 			return illegal_char(OUT errb, *s);
 	}
@@ -1653,11 +1653,11 @@ showoneopt(Option* o, SetScope setScope) {   //OPT_LOCAL or OPT_GLOBAL
 	if (o->defaultValue.tag == OPTION_BOOLE
 			&& (ref.boole == &curBook->wasModified ? !bookWasChanged(curBook) : !(*(ref.boole)))
 	)
-		msg_puts(S"no");
+		msg_puts(u8"no");
 	ei ((o->defaultValue.tag == OPTION_BOOLE) && !(*(ref.boole)))
-		msg_puts(S"--");
+		msg_puts(u8"--");
 	else
-		msg_puts(S"  ");
+		msg_puts(u8"  ");
 	msg_puts(o->fullName);
 	if (o->defaultValue.tag != OPTION_BOOLE) {
 		msg_putchar('=');
@@ -1674,11 +1674,11 @@ showoneopt(Option* o, SetScope setScope) {   //OPT_LOCAL or OPT_GLOBAL
 //[sessionoptions] or [viewoptions] contains "folds" but not "options".
 pub int
 makefoldset(FILE *fd) {
-	if (put_setnum(fd, S"set", S"foldmethod", refNum((long*)&curPor->o.foldMethod)) == FAIL
-		 || put_setstring(fd, S"set", S"foldmarker", refStr(&curPor->o.foldMarker), 0) == FAIL
-		 || put_setstring(fd, S"set", S"foldignore", refStr(&curPor->o.foldIgnore), 0) == FAIL
-		 || put_setnum(fd, S"set", S"foldlevel", refNum(&curPor->o.foldLevel)) == FAIL
-		 || put_setbool(fd, S"set", S"foldenable", curPor->o.foldEnable) == FAIL
+	if (put_setnum(fd, u8"set", u8"foldmethod", refNum((long*)&curPor->o.foldMethod)) == FAIL
+		 || put_setstring(fd, u8"set", u8"foldmarker", refStr(&curPor->o.foldMarker), 0) == FAIL
+		 || put_setstring(fd, u8"set", u8"foldignore", refStr(&curPor->o.foldIgnore), 0) == FAIL
+		 || put_setnum(fd, u8"set", u8"foldlevel", refNum(&curPor->o.foldLevel)) == FAIL
+		 || put_setbool(fd, u8"set", u8"foldenable", curPor->o.foldEnable) == FAIL
 	)
 		return FAIL;
 
@@ -1687,12 +1687,12 @@ makefoldset(FILE *fd) {
 
 ////Return true if "val" is a valid @filetype name. Also used for @syntax and @keymap.
 //private int
-//valid_filetype(CS val) {
-//  return valid_name(val, S".-_");
+//valid_filetype(S val) {
+//  return valid_name(val, u8".-_");
 //}
 
 private Byte
-parseEnumValue(CS newVal, Arr(CS) validValues) {
+parseEnumValue(S newVal, Arr(S) validValues) {
 	for (Unt i = 0; validValues[i]; ++i) {
 		if (STRCMP(validValues[i], newVal) == 0) {
 			return i;
@@ -1705,8 +1705,8 @@ parseEnumValue(CS newVal, Arr(CS) validValues) {
 
 //Check validity of options with the @statusline format.
 //Return an untranslated error message or NULL.
-private CS
-check_stl_option(CS s) {
+private S
+check_stl_option(S s) {
 	int groupdepth = 0;
 	static Byte errbuf[ERR_BUFLEN];
 	ErrBuilder errb = (ErrBuilder){.c = errbuf, .len = ERR_BUFLEN};
@@ -1767,7 +1767,7 @@ check_stl_option(CS s) {
 //{{{setter functions (validation, option setting and postprocessing actions)
 
 //Process the updated @balloonevalterm option value.
-private CS
+private S
 did_set_balloonevalterm(OptionChange* cha) {
 	updateStringRef(cha);
 	mch_bevalterm_changed();
@@ -1775,7 +1775,7 @@ did_set_balloonevalterm(OptionChange* cha) {
 }
 
 //Process the updated @binary option value.
-pub CS
+pub S
 optSetBinary(OptionChange* cha) {
 	if (cha->setScope != SET_LOCAL) {
 		return e_unknown_option;
@@ -1792,7 +1792,7 @@ optSetBinary(OptionChange* cha) {
 		curBook->o.expandTab = 0;   //no expandtab
 	}
 	//Remember where the dependent option were reset
-	CS options[] = {S "textwidth", S"expandtab"};
+	S options[] = {u8"textwidth", u8"expandtab"};
 
 	for (Unt i = 0; i < 2; ++i) {
 		setScriptPos(findOption(options[i]), SET_LOCAL, scriptPosG);
@@ -1815,7 +1815,7 @@ resizeOrPlanResizingWindow() {
 	}
 }
 
-private CS
+private S
 setVisibleLines(OptionChange* cha) {
 	if (updating_screen) {
 		//Changing the window size is not allowed while updating the screen.
@@ -1834,7 +1834,7 @@ setVisibleLines(OptionChange* cha) {
 	return null;
 }
 
-private CS
+private S
 setVisibleCols(OptionChange* cha) {
 	if (updating_screen) {
 		//Changing the window size is not allowed while updating the screen.
@@ -1857,7 +1857,7 @@ setVisibleCols(OptionChange* cha) {
 }
 
 //Process the updated @buflisted
-private CS
+private S
 setBookListed(OptionChange* cha) {
 	//when @buflisted changes, trigger autocommands
 	updateBoolRef(cha);
@@ -1869,7 +1869,7 @@ setBookListed(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 setCommHeight(OptionChange* cha) {
 	long oldVal = cha->oldVal.num;
 	long newVal = cha->newVal.num;
@@ -1893,7 +1893,7 @@ setCommHeight(OptionChange* cha) {
 }
 
 //Process the updated @diff
-private CS
+private S
 did_set_diff(OptionChange* cha) {
 	//May add or remove the book from the list of diff books.
 	updateBoolRef(cha);
@@ -1911,7 +1911,7 @@ did_set_diff(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_equalalways(OptionChange* cha) {
 	updateBoolRef(cha);
 	if (cha->newVal.boole && !cha->oldVal.boole)
@@ -1919,7 +1919,7 @@ did_set_equalalways(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_foldlevel(OptionChange* cha) {
 	if (cha->newVal.num < 0)
 		return e_argument_must_not_be_negative;
@@ -1928,7 +1928,7 @@ did_set_foldlevel(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_hlsearch(OptionChange* cha) {
 	//when @hlsearch is set or reset: reset hiliteSearchG
 	updateBoolRef(cha);
@@ -1936,7 +1936,7 @@ did_set_hlsearch(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_ignorecase(OptionChange* cha) {
 	//when @ignorecase is set or reset and @hlsearch is set, redraw
 	updateBoolRef(cha);
@@ -1945,14 +1945,14 @@ did_set_ignorecase(OptionChange* cha) {
 	return NULL;
 }
 
-pub CS
+pub S
 setModifiable(OptionChange* cha) {
 	updateBoolRef(cha);
 	return NULL;
 }
 
 //Process the new @maxsearchcount option value.
-private CS
+private S
 did_set_maxsearchcount(OptionChange* cha) {
 	long new = cha->newVal.num;
 	if (new <= 0)
@@ -1964,7 +1964,7 @@ did_set_maxsearchcount(OptionChange* cha) {
 	return null;
 }
 
-private CS
+private S
 setShiftWidth(OptionChange* cha) {
 	if (cha->newVal.num <= 0) {
 		return e_argument_must_be_positive;
@@ -1977,7 +1977,7 @@ setShiftWidth(OptionChange* cha) {
 	return null;
 }
 
-private CS
+private S
 did_set_smoothscroll(OptionChange* cha) {
 	updateBoolRef(cha);
 	if (cha->newVal.boole == false)
@@ -1985,7 +1985,7 @@ did_set_smoothscroll(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_swapfile(OptionChange* cha) {
 	updateStringRef(cha);
 	//when @swapfile is set, create swapfile, when reset remove swapfile
@@ -1997,7 +1997,7 @@ did_set_swapfile(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_termwinscroll(OptionChange* cha) {
 	if (cha->newVal.num < 1) {
 		return e_argument_must_be_positive;
@@ -2006,7 +2006,7 @@ did_set_termwinscroll(OptionChange* cha) {
 	return null;
 }
 
-private CS
+private S
 did_set_textwidth(OptionChange* cha) {
 	if (cha->newVal.num < 1) {
 		return e_argument_must_be_positive;
@@ -2016,7 +2016,7 @@ did_set_textwidth(OptionChange* cha) {
 	return null;
 }
 
-private CS
+private S
 did_set_undofile(OptionChange* cha) {
 	updateBoolRef(cha);
 	//Only take action when the option was set.
@@ -2045,7 +2045,7 @@ did_set_undofile(OptionChange* cha) {
 }
 
 //Process the new @undolevels option value.
-private CS
+private S
 did_set_undolevels(OptionChange* cha) {
 	if (cha->newVal.num < 0) {
 		return e_argument_must_not_be_negative;
@@ -2055,7 +2055,7 @@ did_set_undolevels(OptionChange* cha) {
 }
 
 //Process the new @wildchar / @wildcharm option value.
-private CS
+private S
 did_set_wildchar(OptionChange* cha){
 	long new = cha->newVal.num;
 
@@ -2068,7 +2068,7 @@ did_set_wildchar(OptionChange* cha){
 }
 
 //Process the new @winheight or the @helpheight value.
-private CS
+private S
 setWinHeight(OptionChange* cha) {
 	long new = cha->newVal.num;
 
@@ -2088,7 +2088,7 @@ setWinHeight(OptionChange* cha) {
 }
 
 //Process the new @winheight value
-private CS
+private S
 setHelpHeight(OptionChange* cha) {
 	long new = cha->newVal.num;
 	if (new < 0) {
@@ -2103,7 +2103,7 @@ setHelpHeight(OptionChange* cha) {
 }
 
 //Process the new @winwidth value.
-private CS
+private S
 did_set_winwidth(OptionChange* cha) {
 	long new = cha->newVal.num;
 
@@ -2123,7 +2123,7 @@ did_set_winwidth(OptionChange* cha) {
 }
 
 //Process the updated @wrap value.
-private CS
+private S
 did_set_wrap(OptionChange* cha) {
 	//Set leftCol or skipCol to zero.
 	if (cha->newVal.boole)
@@ -2134,14 +2134,14 @@ did_set_wrap(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 setTimeoutLen(OptionChange* cha) {
 	if (cha->newVal.num < 0) return e_argument_must_be_positive;
 	updateNumRef(cha);
 	return null;
 }
 
-private CS
+private S
 setHistory(OptionChange* cha) {
 	long new = cha->newVal.num;
 	if (new < 0) {
@@ -2153,7 +2153,7 @@ setHistory(OptionChange* cha) {
 	return null;
 }
 
-private CS
+private S
 setScrollJump(OptionChange* cha) {
 	long new = cha->newVal.num;
 	if (new == cha->oldVal.num)
@@ -2165,7 +2165,7 @@ setScrollJump(OptionChange* cha) {
 	return null;
 }
 
-private CS
+private S
 setScrollOff(OptionChange* cha) {
 	if (cha->newVal.num < 0 && fullScreenG) {
 		return e_argument_must_not_be_negative;
@@ -2174,7 +2174,7 @@ setScrollOff(OptionChange* cha) {
 	return null;
 }
 
-private CS
+private S
 setSideScrollOff(OptionChange* cha) {
 	if (cha->newVal.num < 0) {
 		return e_argument_must_not_be_negative;
@@ -2183,7 +2183,7 @@ setSideScrollOff(OptionChange* cha) {
 	return null;
 }
 
-private CS
+private S
 setStrictlyPositive(OptionChange* cha) {
 	if (cha->newVal.num < 1) {
 		return e_argument_must_be_positive;
@@ -2192,7 +2192,7 @@ setStrictlyPositive(OptionChange* cha) {
 	return null;
 }
 
-private CS
+private S
 setNonNegative(OptionChange* cha) {
 	if (cha->newVal.num < 0) {
 		return e_argument_must_not_be_negative;
@@ -2204,7 +2204,7 @@ setNonNegative(OptionChange* cha) {
 //Call optChangeValue() and when an error is returned report it.
 pub void
 optChangeAndReportError(
-	CS name,
+	S name,
 	OptionValue newValue,
 	SetScope setScope
 ){
@@ -2213,7 +2213,7 @@ optChangeAndReportError(
 		emsg(_(e_option_not_supported));
 		return;
 	}
-	CS errmsg = setImpl(o, newValue, setScope);
+	S errmsg = setImpl(o, newValue, setScope);
 	if (errmsg)
 		emsg(_(errmsg));
 }
@@ -2221,9 +2221,9 @@ optChangeAndReportError(
 //Translate a string like "t_xx", "<t_XX>" or "<S-Tab>" to a key number.
 //When "has_lt" is true there is a '<' before "*arg_arg". Return 0 when the key is not recognized.
 private int
-find_key_option(CS arg_arg, Boole has_lt) {
+find_key_option(S arg_arg, Boole has_lt) {
 	int key = 0;
-	CS arg = arg_arg;
+	S arg = arg_arg;
 
 	//Don't use get_special_key_code() for t_XX, we don't want it to call add_termcap_entry().
 	if (arg[0] == 't' && arg[1] == '_' && arg[2] && arg[3]) {
@@ -2272,12 +2272,12 @@ afterCopyPortOpt(Portal* po) {
 		po->skipCol = 0;
 }
 
-private CS
-copyOptionVal(OUT Polystring* buf, CS val) {
+private S
+copyOptionVal(OUT Polystring* buf, S val) {
 	if (!val)
 		return null;  //no need to allocate memory
 	int len = STRLEN(val) + 1;
-	CS valueInBuffer = buf->c + buf->len;
+	S valueInBuffer = buf->c + buf->len;
 	memcpy(valueInBuffer, val, len);
 	buf->len += len;
 	return valueInBuffer;
@@ -2313,7 +2313,7 @@ optClearPortOptions(PortalOptions* t) {
 }
 
 private void
-expand1(OUT Expand* xp, Option* o, CS argend) {
+expand1(OUT Expand* xp, Option* o, S argend) {
 	//Now pick. If the option has a custom expander, use that. Otherwise, just
 	//fill with the existing option value.
 	if (expandOptionS && expandOptionS->expander) {
@@ -2354,10 +2354,10 @@ expand1(OUT Expand* xp, Option* o, CS argend) {
 	//pattern, while accounting for backslash-escaped space/commas/colons.
 	//Triple-backslashed escaped file names (e.g. @path) can also be delimited by space.
 	if ((o->flags & (P_EXPAND|P_COMMA|P_COLON)) != 0) {
-		for (CS p = argend - 1; p >= xp->input.c; --p) {
+		for (S p = argend - 1; p >= xp->input.c; --p) {
 			//count number of backslashes before ' ' or ',' or ':'
 			if (*p == ' ' || *p == ',' || (*p == ':' && (o->flags & P_COLON) != 0)) {
-				CS backslashStart = p;
+				S backslashStart = p;
 				while (backslashStart > xp->input.c && *(backslashStart - 1) == '\\')
 					--backslashStart;
 				if ((*p == ' ' && ((xp->backslash & XP_BS_THREE) && (p - backslashStart) < 3))
@@ -2382,7 +2382,7 @@ expand1(OUT Expand* xp, Option* o, CS argend) {
 pub void
 optInitExpandContextForSet(
 	OUT Expand* xp,
-	CS arg,
+	S arg,
 	SetScope setScope
 ){
 	expandOptionScopeS = setScope;
@@ -2391,15 +2391,15 @@ optInitExpandContextForSet(
 		xp->input = mbText(arg);
 		return;
 	}
-	CS argend = arg + STRLEN(arg);
-	CS p = argend - 1;
+	S argend = arg + STRLEN(arg);
+	S p = argend - 1;
 	if (*p == ' ' && *(p - 1) != '\\') {
 		xp->input = (Text){argend, 0};
 		return;
 	}
 
 	while (p > arg) {
-		CS backslashStart = p;
+		S backslashStart = p;
 		//count number of backslashes before ' ' or ','
 		if (*p == ' ' || *p == ',') {
 			while (backslashStart > arg && *(backslashStart - 1) == '\\')
@@ -2451,10 +2451,10 @@ optInitExpandContextForSet(
 
 	//Certain options currently have special case handling to reuse the
 	//expansion logic with other commands.
-	if (eq(o->fullName, S"syntax")) {
+	if (eq(o->fullName, u8"syntax")) {
 		xp->context = EXPAND_OWNSYNTAX;
 		return;
-	} ei (eq(o->fullName, S"filetype")) {
+	} ei (eq(o->fullName, u8"filetype")) {
 		xp->context = EXPAND_FILETYPE;
 		return;
 	}
@@ -2467,7 +2467,7 @@ pub int
 optExpandOldOption(OUT ExpandMatch* matches) {
 	matches->len = 0;
 
-	CS var = NULL;
+	S var = NULL;
 
 	if (expandOptionS) {
 		//put string of option value in nameBuffG
@@ -2475,7 +2475,7 @@ optExpandOldOption(OUT ExpandMatch* matches) {
 		var = nameBuffG;
 	}
 
-	CS buffer = escape_option_str_cmdline(var);
+	S buffer = escape_option_str_cmdline(var);
 
 	matches->c[0] = buffer;
 	matches->len = 1;
@@ -2496,7 +2496,7 @@ wildcharUseKeyname(OptionRef ref, long* wcp) {
 
 //Reset the flag indicating option "name" was set.
 pub int
-reset_optWasSet(CS name) {
+reset_optWasSet(S name) {
 	Option* o = findOption(name);
 	if (!o)
 		return FAIL;
@@ -2516,7 +2516,7 @@ get_sidescrolloff_value(void) {
 //lambda, et al. (e.g. @operatorfunc, @tagfunc, etc.)
 //Return OK if the option is successfully set to a function, otherwise return FAIL.
 pub int
-optSetCallback(OUT Callback* cb, CS new) {
+optSetCallback(OUT Callback* cb, S new) {
 	if (!new || *new == ZERO) {
 		evFreeCallback(cb);
 		return OK;
@@ -2552,21 +2552,21 @@ optSetCallback(OUT Callback* cb, CS new) {
 }
 
 //Process the new @showtabpanel value.
-pub CS
+pub S
 setShowTabpanel(OptionChange* cha) {
 	updateBoolRef(cha);
 	shell_new_columns();
 	return NULL;
 }
 
-private CS
+private S
 setFormatListPat(OptionChange* cha) {
 	updateStringRef(cha);
 	return null;
 }
 
-private CS p_cfc_values[] = {SMAP((CS), "keyword", "files", "whole_line")};
-private CS
+private S p_cfc_values[] = {SMAP((S), "keyword", "files", "whole_line")};
+private S
 setCompletefuzzycollect(OptionChange* cha) {
 	return validateAndSetListOfStrings(OUT cha, p_cfc_values);
 }
@@ -2576,7 +2576,7 @@ expandCompletefuzzycollect(OptExpand* args, OUT ExpandMatch *matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_cfc_values));
 }
 
-private CS
+private S
 did_set_completeitemalign(OptionChange* cha) {
 	if (!cha->newVal.string) {
 		p_cia = 0;
@@ -2587,9 +2587,9 @@ did_set_completeitemalign(OptionChange* cha) {
 	int seen[3] = { false, false, false };
 	int count = 0;
 	Byte   buffer[10];
-	CS p = cha->newVal.string;
+	S p = cha->newVal.string;
 	while (*p) {
-		strCutPathFromListOfPaths(OUT &p, OUT buffer, sizeof(buffer), S",");
+		strCutPathFromListOfPaths(OUT &p, OUT buffer, sizeof(buffer), u8",");
 		if (count >= 3)
 			 return e_invalid_argument;
 
@@ -2621,7 +2621,7 @@ did_set_completeitemalign(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_completepopup(OptionChange*) {
 	if (parse_completepopup(NULL) == FAIL)
 		return e_invalid_argument;
@@ -2630,9 +2630,9 @@ did_set_completepopup(OptionChange*) {
 	return NULL;
 }
 
-private CS p_debug_values[] = {SMAP((CS), "msg", "throw", "beep")};
+private S p_debug_values[] = {SMAP((S), "msg", "throw", "beep")};
 
-private CS
+private S
 did_set_debug(OptionChange* cha) {
 	return validateAndSetListOfStrings(OUT cha, p_debug_values);
 }
@@ -2642,7 +2642,7 @@ expand_set_debug(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_debug_values));
 }
 
-private CS
+private S
 did_set_diffanchors(OptionChange* cha) {
 	if (diffanchors_changed(cha->newVal.string, cha->setScope == SET_LOCAL) == FAIL)
 		return e_invalid_argument;
@@ -2650,7 +2650,7 @@ did_set_diffanchors(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 setDiffopt(OptionChange* cha) {
 	if (diffopt_changed(cha->newVal.string) == FAIL)
 		return e_invalid_argument;
@@ -2658,18 +2658,18 @@ setDiffopt(OptionChange* cha) {
 }
 
 //Note: Keep this in sync with diffopt_changed()
-private CS p_dip_values[] = {SMAP((CS),
+private S p_dip_values[] = {SMAP((S),
 	"filler", "anchor", "context:", "iblank", "icase", "iwhite",
 	"iwhiteall", "iwhiteeol", "horizontal", "vertical", "closeoff", "hiddenoff",
 	"followwrap", "internal", "indent-heuristic", "algorithm:", "inline:", "linematch:"
 )};
 
 
-private CS p_dip_algorithm_values[] = {SMAP((CS),
+private S p_dip_algorithm_values[] = {SMAP((S),
 	"myers", "minimal", "patience", "histogram"
 )};
 
-private CS p_dip_inline_values[] = {SMAP((CS), "none", "simple", "char", "word")};
+private S p_dip_inline_values[] = {SMAP((S), "none", "simple", "char", "word")};
 
 private int
 expandDiffopt(OptExpand* args, OUT ExpandMatch* matches) {
@@ -2696,12 +2696,12 @@ expandDiffopt(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_dip_values));
 }
 
-private CS p_popup_option_align_values[] = {S"item", S"menu"};
+private S p_popup_option_align_values[] = {u8"item", u8"menu"};
 
-private CS p_popup_option_border_values[] = {S"on", S"off"};
+private S p_popup_option_border_values[] = {u8"on", u8"off"};
 
 //Note: Keep this in sync with portal.c:parse_popup_option()
-private CS p_popup_option_values[] = {SMAP((CS),
+private S p_popup_option_values[] = {SMAP((S),
 	"height:", "width:", "highlight:", "border:", "align:"
 )};
 
@@ -2736,7 +2736,7 @@ expand_set_popupoption(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_popup_option_values));
 }
 
-private CS
+private S
 setCursorInsert(OptionChange* cha) {
 	Byte newShape = parseCursorShape(cha->newVal.string);
 	if (newShape >= 3)
@@ -2745,7 +2745,7 @@ setCursorInsert(OptionChange* cha) {
 	return null; //success
 }
 
-private CS
+private S
 setCursorNormal(OptionChange* cha) {
 	Byte newShape = parseCursorShape(cha->newVal.string);
 	if (newShape >= 3)
@@ -2759,9 +2759,9 @@ expand_set_formatoptions(OptExpand* args, OUT ExpandMatch* matches) {
 	return expand_set_opt_listflag(OUT matches, args, (Byte*)FO_ALL);
 }
 
-private CS
+private S
 did_set_helplang(OptionChange* cha) {
-	CS new = cha->newVal.string;
+	S new = cha->newVal.string;
 	if (!new) {
 		p_hlg = null;
 		return null;
@@ -2782,20 +2782,20 @@ did_set_helplang(OptionChange* cha) {
 
 //One of the '*expr' options is changed: @balloonexpr, @diffexpr, @foldtext,
 //@formatexpr, @includeexpr, @indentexpr, @patchexpr or @printexpr.
-private CS
+private S
 setOptexpr(OptionChange* cha) {
 	OptionRef ref = cha->ref;
 
 	//If the option value starts with <SID> or s:, then replace that with the script identifier.
-	CS name = get_scriptlocal_funcname(*ref.string);
+	S name = get_scriptlocal_funcname(*ref.string);
 	cha->newVal.string = name;
 	updateStringRef(cha);
 
 	return NULL;
 }
 
-private CS p_ead_values[] = {SMAP((CS), "both", "ver", "hor")};
-private CS
+private S p_ead_values[] = {SMAP((S), "both", "ver", "hor")};
+private S
 setEadirection(OptionChange* cha) {
 	Byte v = parseEnumValue(cha->newVal.string, p_ead_values);
 	if (v == 255)
@@ -2810,7 +2810,7 @@ expandEadirection(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_ead_values));
 }
 
-private CS
+private S
 did_set_eventignore(OptionChange* cha) {
 	OptionRef ref = cha->ref;
 
@@ -2819,7 +2819,7 @@ did_set_eventignore(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_verbosefile(OptionChange*) {
 	verbose_stop();
 	if (p_vfile && verbose_open() == FAIL)
@@ -2828,19 +2828,19 @@ did_set_verbosefile(OptionChange*) {
 	return NULL;
 }
 
-private CS
+private S
 setEeglinfo(OptionChange* cha) {
-	CS new = cha->newVal.string;
+	S new = cha->newVal.string;
 	if (!new) {
 		p_eeglinfo = null;
 		return null;
 	}
 
-	CS errmsg = NULL;
+	S errmsg = NULL;
 
-	for (CS s = new; *s != ZERO;) {
+	for (S s = new; *s != ZERO;) {
 		//Check it's a valid character
-		if (firstOccurrence(S"!\"%'/:<@cfhnrs", *s) == NULL) {
+		if (firstOccurrence(u8"!\"%'/:<@cfhnrs", *s) == NULL) {
 			errmsg = illegal_char(OUT &cha->errb, *s);
 			break;
 		}
@@ -2892,21 +2892,21 @@ setEeglinfo(OptionChange* cha) {
 }
 
 //The 'whichwrap' option is changed.
-private CS
+private S
 did_set_whichwrap(OptionChange* cha) {
 	//Add ',' to the list flags because 'whichwrap' is a flag list that is comma-separated
-	return did_set_option_listflag(*(cha->ref.string), (CS)(WW_ALL ","), OUT &cha->errb);
+	return did_set_option_listflag(*(cha->ref.string), (S)(WW_ALL ","), OUT &cha->errb);
 }
 
 private int
 expand_set_whichwrap(OptExpand* args, OUT ExpandMatch* matches) {
-	return expand_set_opt_listflag(OUT matches, args, (CS)WW_ALL);
+	return expand_set_opt_listflag(OUT matches, args, (S)WW_ALL);
 }
 
 //Note: Keep this in sync with check_opt_wim()
-private CS p_wim_values[] = {SMAP((CS), "full", "longest", "list", "lastused", "noselect")};
+private S p_wim_values[] = {SMAP((S), "full", "longest", "list", "lastused", "noselect")};
 
-private CS
+private S
 did_set_wildmode(OptionChange*) {
 	if (check_opt_wim() == FAIL)
 		return e_invalid_argument;
@@ -2918,8 +2918,8 @@ expand_set_wildmode(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_wim_values));
 }
 
-private CS p_wop_values[] = {SMAP((CS), "fuzzy", "tagfile", "pum", "exacttext")};
-private CS
+private S p_wop_values[] = {SMAP((S), "fuzzy", "tagfile", "pum", "exacttext")};
+private S
 setWildoptions(OptionChange* cha) {
 	return validateAndSetListOfStrings(OUT cha, p_wop_values);
 }
@@ -2941,18 +2941,18 @@ expand_set_eventignore(OptExpand* args, OUT ExpandMatch* matches) {
 	);
 }
 
-private CS
+private S
 did_set_foldignore(OptionChange*) {
 	if (curPor->o.foldMethod == FOLD_INDENT)
 		foldUpdateAll(curPor);
 	return NULL;
 }
 
-private CS
+private S
 did_set_foldmarker(OptionChange* cha) {
 	OptionRef ref = cha->ref;
 
-	CS p = firstOccurrence(*ref.string, ',');
+	S p = firstOccurrence(*ref.string, ',');
 	if (!p)
 		return e_comma_required;
 	ei (p == *ref.string || p[1] == ZERO)
@@ -2964,11 +2964,11 @@ did_set_foldmarker(OptionChange* cha) {
 	return NULL;
 }
 
-private CS p_fdm_values[] = {SMAP((CS),
+private S p_fdm_values[] = {SMAP((S),
 		"manual", "expr", "marker", "indent", "syntax", "diff"
 )};
 
-private CS
+private S
 setFoldMethod(OptionChange* cha) {
 	Byte v = parseEnumValue(cha->newVal.string, p_fdm_values);
 	if (v == 255)
@@ -2987,11 +2987,11 @@ expand_set_foldmethod(OptExpand* args, OUT ExpandMatch *matches) {
 }
 
 //keep in sync with eegl.h:FDO_ flags
-private CS p_fdo_values[] = {SMAP((CS),
+private S p_fdo_values[] = {SMAP((S),
 	"all", "block", "hor", "mark", "percent", "quickfix", "search", "tag", "insert", "undo", "jump"
 )};
 
-private CS
+private S
 setFoldopen(OptionChange* cha) {
 	return readOptionFlags(cha, p_fdo_values, &p_fdo);
 }
@@ -3001,13 +3001,13 @@ expandFoldopen(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_fdo_values));
 }
 
-private CS
+private S
 did_set_formatoptions(OptionChange* cha) {
-	return did_set_option_listflag(*(cha->ref.string), (CS)FO_ALL, OUT &cha->errb);
+	return did_set_option_listflag(*(cha->ref.string), (S)FO_ALL, OUT &cha->errb);
 }
 
 //The @isident or the @iskeyword or the @isprint or the @isfname options are changed.
-private CS
+private S
 setIsopt(OptionChange* cha) {
 	//'isident', 'iskeyword' or 'isfname' option: refill g_chartab[]
 	//If the new option is invalid, use old value.
@@ -3018,10 +3018,10 @@ setIsopt(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_matchpairs(OptionChange* cha) {
 	OptionRef ref = cha->ref;
-	for (CS p = *ref.string; *p != ZERO; ++p) {
+	for (S p = *ref.string; *p != ZERO; ++p) {
 		int x2 = -1;
 		int x3 = -1;
 
@@ -3040,9 +3040,9 @@ did_set_matchpairs(OptionChange* cha) {
 	return NULL;
 }
 
-private CS p_mopt_values[] = {SMAP((CS), "hit-enter", "wait:", "history:")};
+private S p_mopt_values[] = {SMAP((S), "hit-enter", "wait:", "history:")};
 
-private CS
+private S
 did_set_messagesopt(OptionChange* cha) {
 	if (messagesopt_changed(cha->newVal.string) == FAIL)
 		return e_invalid_argument;
@@ -3056,12 +3056,12 @@ expand_set_messagesopt(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_mopt_values));
 }
 
-private CS
+private S
 setExpandTriggers(OptionChange* cha) {
 	Boole     lastWasStick = false;
-	CS newVal = cha->newVal.string;
+	S newVal = cha->newVal.string;
 
-	for (CS p = newVal; *p != ZERO;) {
+	for (S p = newVal; *p != ZERO;) {
 		if (*p == '|') {
 			if (lastWasStick)
 				return e_invalid_argument;
@@ -3079,23 +3079,23 @@ setExpandTriggers(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_iskeyword(OptionChange* cha) {
 	return setIsopt(cha);
 }
 
 //The @statusline or the @rulerformat option is changed.
 //"rulerformat" is true if the @rulerformat is changed.
-private CS
+private S
 parse_status_rulerformat(OptionChange* cha) {
 	OptionRef ref = cha->ref;
-	CS errmsg = NULL;
+	S errmsg = NULL;
 	int      wid;
 
-	CS new = cha->newVal.string;
+	S new = cha->newVal.string;
 	if (new)   //reset rulerWidthG first
 		rulerWidthG = 0;
-	CS s = new;
+	S s = new;
 	if (new && *s == '%') {
 		//set rulerWidthG if 'ruf' starts with "%99("
 		if (*++s == '-')   //ignore a '-'
@@ -3122,12 +3122,12 @@ parse_status_rulerformat(OptionChange* cha) {
 	return errmsg;
 }
 
-private CS
+private S
 setRulerFormat(OptionChange* cha) {
 	return parse_status_rulerformat(cha);
 }
 
-private CS
+private S
 did_set_tabpanelopt(OptionChange* cha) {
 	if (uiValidateTabpanelopt(cha->newVal.string) == FAIL)
 		return e_invalid_argument;
@@ -3135,10 +3135,10 @@ did_set_tabpanelopt(OptionChange* cha) {
 	return NULL;
 }
 
-private CS p_tplo_align_values[] = {S"left", S"right"};
+private S p_tplo_align_values[] = {u8"left", u8"right"};
 
 //Note: Keep this in sync with ui.c:tabpanelopt_changed()
-private CS p_tplo_values[] = {SMAP((CS), "align:", "columns:", "vert")};
+private S p_tplo_values[] = {SMAP((S), "align:", "columns:", "vert")};
 
 private int
 expand_set_tabpanelopt(OptExpand* args, OUT ExpandMatch* matches) {
@@ -3157,13 +3157,13 @@ expand_set_tabpanelopt(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_tplo_values));
 }
 
-private CS p_scbopt_values[] = {SMAP((CS), "ver", "hor", "jump")};
+private S p_scbopt_values[] = {SMAP((S), "ver", "hor", "jump")};
 
 //The @scrollopt option is changed.
-private CS
+private S
 setScrollopt(OptionChange* cha) {
 	Unt new;
-	CS errmsg = readOptionFlags(cha, p_scbopt_values, OUT &new);
+	S errmsg = readOptionFlags(cha, p_scbopt_values, OUT &new);
 	if (errmsg)
 		return errmsg;
 	p_sbo = new;
@@ -3175,13 +3175,13 @@ expand_set_scrollopt(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_scbopt_values));
 }
 
-private CS backupCopyValues[] = {SMAP((CS),
+private S backupCopyValues[] = {SMAP((S),
 	"yes", "auto", "no", "breaksymlink", "breakhardlink"
 )};
 
-private CS p_sloc_values[] = {S"last", S"statusline"};
+private S p_sloc_values[] = {u8"last", u8"statusline"};
 
-private CS
+private S
 did_set_showcmdloc(OptionChange* cha) {
 	Byte v = parseEnumValue(cha->newVal.string, p_sloc_values);
 	if (v == 255)
@@ -3195,16 +3195,16 @@ expand_set_showcmdloc(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_sloc_values));
 }
 
-private CS
+private S
 did_set_statusline(OptionChange* cha) {
 	return parse_status_rulerformat(cha);
 }
 
-private CS p_swb_values[] = {SMAP((CS),
+private S p_swb_values[] = {SMAP((S),
 	"useopen", "usetab", "split", "newtab", "vsplit", "uselast"
 )};
 
-private CS
+private S
 setSwitchbook(OptionChange* cha) {
 	return validateAndSetListOfStrings(OUT cha, p_swb_values);
 }
@@ -3215,9 +3215,9 @@ expand_set_switchbook(OptExpand* args, OUT ExpandMatch* matches) {
 }
 
 //Keep in sync with portal.c:TCL_ flags
-private CS p_tcl_values[] = {S"left", S"uselast"};
+private S p_tcl_values[] = {u8"left", u8"uselast"};
 
-private CS
+private S
 setTabClose(OptionChange* cha) {
 	Byte v = parseEnumValue(cha->newVal.string, p_tcl_values);
 	if (v == 255)
@@ -3232,9 +3232,9 @@ expand_set_tabclose(OptExpand* args, OUT ExpandMatch* matches) {
 }
 
 //Keep in sync with SWB_ flags
-private CS tagCaseValues[] = {SMAP((CS), "followic", "ignore", "match", "followscs", "smart")};
+private S tagCaseValues[] = {SMAP((S), "followic", "ignore", "match", "followscs", "smart")};
 
-private CS
+private S
 setTagcase(OptionChange* cha) {
 	Byte new = parseEnumValue(cha->newVal.string, tagCaseValues);
 	if (new == 255)
@@ -3248,7 +3248,7 @@ expand_set_tagcase(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(tagCaseValues));
 }
 
-private CS
+private S
 setTerm(OptionChange* cha) {
 	if (*cha->newVal.string == ZERO)
 		return e_cannot_set_term_to_empty_string;
@@ -3261,7 +3261,7 @@ setTerm(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_termwinkey(OptionChange* cha) {
 	OptionRef ref = cha->ref;
 
@@ -3271,22 +3271,22 @@ did_set_termwinkey(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 did_set_termwinsize(OptionChange* cha) {
 	OptionRef ref = cha->ref;
 	if ((*ref.string)[0] == ZERO)
 		return NULL;
 
-	CS p = skipdigits(*ref.string);
+	S p = skipdigits(*ref.string);
 	if (p == *ref.string || (*p != 'x' && *p != '*') || *skipdigits(p + 1) != ZERO)
 		return e_invalid_argument;
 
 	return NULL;
 }
 
-private CS
+private S
 setBufType(OptionChange* cha) {
-	CS newVal = cha->newVal.string;
+	S newVal = cha->newVal.string;
 	Byte v = 255;
 	for (Unt i = 0; i < p_buftypeValuesLen; i++) {
 		if (eq(p_buftype_values[i], newVal)) {
@@ -3309,11 +3309,11 @@ expand_set_buftype(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, p_buftype_values, p_buftypeValuesLen);
 }
 
-private CS
+private S
 setListChars(OptionChange* cha) {
 	//only apply the global value to "curPor" when it does not have a local value
 	ErrBuilder errb = {};
-	CS errmsg = drawSetListChars(cha->newVal.string, OUT &errb);
+	S errmsg = drawSetListChars(cha->newVal.string, OUT &errb);
 	if (errmsg)
 		return errmsg;
 	else {
@@ -3325,11 +3325,11 @@ setListChars(OptionChange* cha) {
 	return NULL;
 }
 
-private CS
+private S
 setFillChars(OptionChange* cha) {
 	//only apply the global value to "curPor" when it does not have a local value
 	ErrBuilder errb = {};
-	CS errmsg = drawSetFillChars(cha->newVal.string, OUT &errb);
+	S errmsg = drawSetFillChars(cha->newVal.string, OUT &errb);
 	if (errmsg)
 		return errmsg;
 	else {
@@ -3353,14 +3353,14 @@ expand_set_chars_option(OptExpand* args, OUT ExpandMatch* matches) {
 	);
 }
 
-private CS
+private S
 did_set_comments(OptionChange* cha) {
 	OptionRef ref = cha->ref;
-	CS errmsg = NULL;
+	S errmsg = NULL;
 
-	for (CS s = *ref.string; *s; ) {
+	for (S s = *ref.string; *s; ) {
 		while (*s && *s != ':') {
-			if (firstOccurrence((CS)COM_ALL, *s) == NULL && !EE_ISDIGIT(*s) && *s != '-') {
+			if (firstOccurrence((S)COM_ALL, *s) == NULL && !EE_ISDIGIT(*s) && *s != '-') {
 				errmsg = illegal_char(OUT &cha->errb, *s);
 				break;
 			}
@@ -3383,7 +3383,7 @@ did_set_comments(OptionChange* cha) {
 	return errmsg;
 }
 
-private CS
+private S
 did_set_commentstring(OptionChange *cha) {
 	OptionRef ref = cha->ref;
 
@@ -3394,10 +3394,10 @@ did_set_commentstring(OptionChange *cha) {
 	return NULL;
 }
 
-private CS
+private S
 setBackupCopy(OptionChange* cha) {
 	Unt newVal = 0;
-	CS errmsg = readOptionFlags(cha, backupCopyValues, OUT &newVal);
+	S errmsg = readOptionFlags(cha, backupCopyValues, OUT &newVal);
 	if (errmsg)
 		return errmsg;
 
@@ -3423,14 +3423,14 @@ expand_set_backupcopy(OptExpand* args, OUT ExpandMatch* matches) {
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(backupCopyValues));
 }
 
-private CS
+private S
 setComplete(OptionChange* cha) {
 	OptionRef ref = cha->ref;
 	Byte* t;
 	Byte buffer[LSIZE];
-	CS bufferPtr;
+	S bufferPtr;
 
-	for (CS p = *ref.string; *p; ) {
+	for (S p = *ref.string; *p; ) {
 		memset(buffer, 0, LSIZE);
 		bufferPtr = buffer;
 		Boole escape = false;
@@ -3448,11 +3448,11 @@ setComplete(OptionChange* cha) {
 		}
 		*bufferPtr = ZERO;
 
-		if (firstOccurrence(S".wbuksid]tUFo", *buffer) == NULL)
+		if (firstOccurrence(u8".wbuksid]tUFo", *buffer) == NULL)
 			return illegal_char(OUT &cha->errb, *buffer);
 
 		Byte charBefore = ZERO;
-		if (firstOccurrence(S"ksF", *buffer) == NULL && *(buffer + 1) != ZERO
+		if (firstOccurrence(u8"ksF", *buffer) == NULL && *(buffer + 1) != ZERO
 				&& *(buffer + 1) != '^'
 		)
 			charBefore = buffer[0];
@@ -3486,21 +3486,21 @@ setComplete(OptionChange* cha) {
 
 private int
 expandComplete(OptExpand* args, ExpandMatch* matches) {
-	static CS (completeValues[]) = {SMAP((CS),
+	static S (completeValues[]) = {SMAP((S),
 		".", "w", "b", "u", "k", "kspell", "s", "i", "d", "]", "t", "U", "F", "o"
 	)};
 	return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(completeValues));
 }
 
 //Keep in sync with eegl.h:COT_*
-private CS completeOptValues[] = {SMAP((CS), "menu", "menuone", "longest", "preview",
+private S completeOptValues[] = {SMAP((S), "menu", "menuone", "longest", "preview",
 	"popup", "popuphidden", "noinsert", "noselect", "fuzzy", "nosort", "preinsert", "nearest"
 )};
 
-private CS
+private S
 setCompleteopt(OptionChange* cha) {
 	Unt new;
-	CS errmsg = readOptionFlags(cha, completeOptValues, OUT &new);
+	S errmsg = readOptionFlags(cha, completeOptValues, OUT &new);
 	if (errmsg)
 		return errmsg;
 
@@ -3609,7 +3609,7 @@ copyDefaultsToGlobalStringValues(OUT Polystring* bui, Arr(Option) opts, Unt coun
 	Unt newCap = calcNewBufferCap(totalLen);
 	*bui = polystring(newCap);
 
-	CS wr = bui->c;
+	S wr = bui->c;
 
 	for (Option* o = opts; o < opts + count; o++) {
 		if (o->defaultValue.tag == OPTION_STRING
@@ -3631,7 +3631,7 @@ copyDefaultsToGlobalStringValues(OUT Polystring* bui, Arr(Option) opts, Unt coun
 
 //Invoked by code in defoption.h
 private void
-copyStringOptToBook(OUT CS wr, CS* old, OptionChange* cha) {
+copyStringOptToBook(OUT S wr, S* old, OptionChange* cha) {
 	if (*old && old != cha->ref.string) {
 		Unt len = STRLEN(*old) + 1;
 		memcpy(wr, *old, len);
@@ -3641,7 +3641,7 @@ copyStringOptToBook(OUT CS wr, CS* old, OptionChange* cha) {
 
 pub void
 updateStringRef(OptionChange* cha) {
-	CS const new = cha->newVal.string;
+	S const new = cha->newVal.string;
 	Unt newLen = STRLEN(new) + 1;
 
 	if (newLen == 1) {
@@ -3657,7 +3657,7 @@ updateStringRef(OptionChange* cha) {
 
 	if (cha->buf->len + newLen < cha->buf->cap) { //allocate new val at buffer's tail
 		*cha->ref.string = new;
-		CS wr = cha->buf->c + cha->buf->len;
+		S wr = cha->buf->c + cha->buf->len;
 		memcpy(wr, new, newLen);
 		cha->buf->len += newLen;
 		return;
@@ -3666,7 +3666,7 @@ updateStringRef(OptionChange* cha) {
 	//allocate new val at buffer's tail
 	if (cha->setScope == SET_LOCAL) {
 		//copy all local string opts except the old one into the buffer
-		CS wr = cha->buf->c;
+		S wr = cha->buf->c;
 		*cha->ref.string = new;
 		if (cha->buf == &curBook->o.stringOptions) {
 
@@ -3694,7 +3694,7 @@ updateStringRef(OptionChange* cha) {
 			Unt newCap = calcNewBufferCap(totalLen);
 			Polystring buf = polystring(newCap);
 
-			CS wr = buf.c;
+			S wr = buf.c;
 			FOR_GLOBAL(o) {
 				if (*o->c.reference.string == cha->oldVal.string) {
 
@@ -3724,7 +3724,7 @@ updateStringRef(OptionChange* cha) {
 			Unt totalLen = calcLocalStringsLength(opts, count) + newLen - oldLen;
 			Unt newCap = calcNewBufferCap(totalLen);
 			Polystring buf = polystring(newCap);
-			CS wr = buf.c;
+			S wr = buf.c;
 
 			for (Unt i = 0; i < count; i++) {
 				Option* o = opts + i;
@@ -3766,7 +3766,7 @@ didset_options(void) {
 private void
 expandEnvVarsInDefault(Option* o) {
 	if (o->defaultValue.tag == OPTION_STRING) {
-		CS p = expandEnvVarsInStringOption(o, NULL);
+		S p = expandEnvVarsInStringOption(o, NULL);
 		if (p) {
 			*(o->c.reference.string) = p;
 			o->defaultValue.string = p;
@@ -3852,14 +3852,14 @@ printOptions(ToPrint which) {  //OPT_LOCAL and/or OPT_GLOBAL
 private int
 put_setstring(
 	FILE   *fd,
-	CS cmd,
-	CS name,
+	S cmd,
+	S name,
 	OptionRef ref,
 	Ulong   flags
 ) {
-	CS buffer = NULL;
-	CS  part = NULL;
-	CS p;
+	S buffer = NULL;
+	S  part = NULL;
+	S p;
 
 	if (fprintf(fd, "%s %s=", cmd, name) < 0)
 		return FAIL;
@@ -3890,7 +3890,7 @@ put_setstring(
 				//for each comma separated option part, append value to the option, :set rtp+=value
 				if (fprintf(fd, "%s %s+=", cmd, name) < 0)
 					goto fail;
-				(void)strCutPathFromListOfPaths(OUT &p, OUT part, size,  S",");
+				(void)strCutPathFromListOfPaths(OUT &p, OUT part, size,  u8",");
 				if (put_escstr(fd, part, 2) == FAIL || put_eol(fd) == FAIL)
 					goto fail;
 			}
@@ -3917,7 +3917,7 @@ fail:
 }
 
 private int
-put_setnum(FILE* fd, CS cmd, CS name, OptionRef ref) {
+put_setnum(FILE* fd, S cmd, S name, OptionRef ref) {
 	long   wc;
 	if (fprintf(fd, "%s %s=", cmd, name) < 0)
 		return FAIL;
@@ -3935,8 +3935,8 @@ put_setnum(FILE* fd, CS cmd, CS name, OptionRef ref) {
 private int
 put_setbool(
 	FILE   *fd,
-	CS cmd,
-	CS name,
+	S cmd,
+	S name,
 	Boole value
 ) {
 	if (fprintf(fd, "%s %s%s", cmd, value ? "" : "no", name) < 0 || put_eol(fd) < 0)
@@ -4071,7 +4071,7 @@ c_get(Invocation* invo) {
 		scope = SET_GLOBAL;
 	}
 
-	CS arg = invo->arg;
+	S arg = invo->arg;
 	Boole didShow = false;   //already showed one value
 	if (*arg == ZERO) {
 		printOptions(PRINT_NONTERMINAL);
@@ -4089,7 +4089,7 @@ c_get(Invocation* invo) {
 	}
 
 	Option* o;
-	CS errmsg = tryFindOptionFromCommand(OUT &o, OUT &arg);
+	S errmsg = tryFindOptionFromCommand(OUT &o, OUT &arg);
 	if (errmsg) {
 		emsg(errmsg);
 		return;
@@ -4144,16 +4144,16 @@ pub void
 c_set(Invocation* invo) {
 	SetScope setScope = (invo->id == C_setglobal) ? SET_GLOBAL : SET_LOCAL;
 
-	CS arg = invo->arg;
+	S arg = invo->arg;
 	Boole didShow = false;   //already showed one value
 
 	//Byte errbuf[ERR_BUFLEN];
-	CS startarg = arg;
+	S startarg = arg;
 
-	CS errmsg = parseAndSet(setScope, OUT &arg);
+	S errmsg = parseAndSet(setScope, OUT &arg);
 
 	if (errmsg) {
-		int i = eeSnprintf(ioBuffG, IOSIZE, "%s", (CS)_(errmsg)) + 2;
+		int i = eeSnprintf(ioBuffG, IOSIZE, "%s", (S)_(errmsg)) + 2;
 		if (i + (arg - startarg) < IOSIZE) {
 			//append the argument with the error
 			STRCPY(ioBuffG + i - 2, ": ");
@@ -4186,7 +4186,7 @@ c_set(Invocation* invo) {
 
 //Find index for option 'arg'. Return null if not found.
 private Option*
-findOption(CS arg) {
+findOption(S arg) {
 	//Check for name starting with an illegal character.
 	if (arg[0] < 'a' || arg[0] > 'z')
 		return null;
@@ -4252,7 +4252,7 @@ getRefInScope(Option* o, SetScope setScope) {
 		switch (o->defaultValue.tag) {
 		case OPTION_NUM:  return refNum((long*)offsetPtr);
 		case OPTION_ENUM: return refEnum((Byte*)offsetPtr);
-		case OPTION_STRING: return refStr((CS*)offsetPtr);
+		case OPTION_STRING: return refStr((S*)offsetPtr);
 		case OPTION_BOOLE: return refBoole((Boole*)offsetPtr);
 		case OPTION_FLAGS: return refFlag((Unt*)offsetPtr);
 		case OPTION_CALLBACK: return refCallback((Callback**)offsetPtr);
@@ -4364,7 +4364,7 @@ pub int
 optExpandOption(
 	Expand* xp,
 	RegMatch* regmatch,
-	CS fuzzystr,
+	S fuzzystr,
 	Boole canFuzzy,
 	OUT ExpandMatch* matches
 ){
@@ -4376,7 +4376,7 @@ optExpandOption(
 
 	regmatch->rm_ic = ic;
 
-	static CS names[] = {S"all", S"termcap"};
+	static S names[] = {u8"all", u8"termcap"};
 	for (match = 0; match < 2; ++match) {
 		(void)matchString(names[match], regmatch, matches, doFuzzy, fuzzystr, &fuzzy);
 	}
@@ -4409,7 +4409,7 @@ optImmutableMode() {
 //}}}
 //{{{option strings: Functions related to string options
 
-private CS
+private S
 illegal_char_after_chr(OUT ErrBuilder* errb, int c) {
 	if (!errb->c)
 		return null;
@@ -4422,7 +4422,7 @@ illegal_char_after_chr(OUT ErrBuilder* errb, int c) {
 //When "set_sid" is 0, set the scriptID to scriptPosG.sid.
 //When "set_sid" is SID_NONE don't set the scriptID. Otherwise set the scriptID to "set_sid".
 private void
-changeStringOptionDirectImpl(Option* o, CS val, SetScope scope, ScriptId setSid) {
+changeStringOptionDirectImpl(Option* o, S val, SetScope scope, ScriptId setSid) {
 	OptionRef ref = getRefInScope(o, scope);
 	if (val) {
 		*ref.string = copyStr(val);
@@ -4450,8 +4450,8 @@ changeStringOptionDirectImpl(Option* o, CS val, SetScope scope, ScriptId setSid)
 //When "set_sid" is SID_NONE don't set the scriptID. Otherwise set the scriptID to "set_sid".
 pub void
 optChangeStringOptionDirect(
-	CS name,
-	CS val,
+	S name,
+	S val,
 	SetScope scope,
 	ScriptId set_sid
 ) {
@@ -4470,8 +4470,8 @@ optChangeStringOptionDirect(
 pub void
 optSetStringOptionDirectInPort(
 	OUT Portal* po,
-	CS name,
-	CS val,
+	S name,
+	S val,
 	Unt optFlags,
 	int set_sid
 ) {
@@ -4491,8 +4491,8 @@ optSetStringOptionDirectInPort(
 pub void
 optSetStringOptionDirectInBook(
 	Book* book,
-	CS name,
-	CS val,
+	S name,
+	S val,
 	Unt optFlags,
 	int set_sid
 ) {
@@ -4506,29 +4506,29 @@ optSetStringOptionDirectInBook(
 	unblock_autocmds();
 }
 
-private CS set_opt_callback_orig_option = NULL;
+private S set_opt_callback_orig_option = NULL;
 private Byte *((*set_opt_callback_func)(Expand *, int));
 
 //Callback used by optionCompletionExpand to also include the original value as the first item.
-private CS
+private S
 optionCompletionExpand_cb(Expand *xp, int idx) {
 	if (idx == 0) {
 		if (set_opt_callback_orig_option)
 			return set_opt_callback_orig_option;
 		else
-			return S""; //empty strings are ignored
+			return u8""; //empty strings are ignored
 	}
 	return set_opt_callback_func(xp, idx - 1);
 }
 
 //Expand an option with a callback that iterates through a list of possible names using an index.
 private int
-optionCompletionExpand(OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Expand *, int))) {
+optionCompletionExpand(OUT ExpandMatch* matches, OptExpand* args, S ((*func)(Expand *, int))) {
 	set_opt_callback_orig_option = args->includeOrigVal ? args->origValue.string : NULL;
 	set_opt_callback_func = func;
 
 	int ret = expandGeneric(
-		 S"", //not using fuzzy as currently EXPAND_STRING_OPTION doesn't use it
+		 u8"", //not using fuzzy as currently EXPAND_STRING_OPTION doesn't use it
 		 args->expand,
 		 args->oe_regmatch,
 		 optionCompletionExpand_cb,
@@ -4541,14 +4541,14 @@ optionCompletionExpand(OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Ex
 	return ret;
 }
 
-private CS
+private S
 get_eventignore_name(Expand *xp, int idx) {
 	int subtract = *xp->input.c == '-';
 	//'eventignore(win)' allows special keyword "all" in addition to all event names.
 	if (!subtract && idx == 0)
-		return S"all";
+		return u8"all";
 
-	CS name = get_event_name_no_group(xp, idx - 1 + subtract, expandEipS);
+	S name = get_event_name_no_group(xp, idx - 1 + subtract, expandEipS);
 	if (!name)
 		return NULL;
 
@@ -4560,8 +4560,8 @@ get_eventignore_name(Expand *xp, int idx) {
 private void
 do_spelllang_source(void) {
 	Byte fname[200];
-	CS p;
-	CS q = curPor->ownSyntax->spellLang;
+	S p;
+	S q = curPor->ownSyntax->spellLang;
 
 	//Skip the first name if it is "cjk".
 	if (STRNCMP(q, "cjk,", 4) == 0)
@@ -4582,10 +4582,10 @@ do_spelllang_source(void) {
 //}}}
 //{{{ locale: functions for language/locale configuration
 
-private CS
+private S
 get_locale_val(int what) {
 	//Obtain the locale value from the libraries.
-	CS loc = (CS)setlocale(what, NULL);
+	S loc = (S)setlocale(what, NULL);
 	return loc;
 }
 
@@ -4598,9 +4598,9 @@ is_valid_mess_lang(Byte *lang) {
 
 //Obtain the current messages language.  Used to set the default for @helplang.
 //May return NULL or an empty string.
-pub CS
+pub S
 get_mess_lang(void) {
-	CS p = get_locale_val(LC_MESSAGES);
+	S p = get_locale_val(LC_MESSAGES);
 	return is_valid_mess_lang(p) ? p : NULL;
 }
 
@@ -4617,7 +4617,7 @@ init_locale(void) {
 
 	//doExpandEnv() doesn't work yet, because g_chartab[] is not
 	//initialized yet, call eeglGetEnv() directly
-	CS p = eeglGetEnv((CS)"EEGLRUNTIME");
+	S p = eeglGetEnv(u8"EEGLRUNTIME");
 	if (p && *p != ZERO) {
 		eeSnprintf(nameBuffG, MAXPATHL, "%s/lang", p);
 		BINDTEXTDOMAIN(EEGLPACKAGE, nameBuffG);
@@ -4632,9 +4632,9 @@ init_locale(void) {
 pub void
 c_language(Invocation* invo) {
 	char* loc;
-	CS name;
+	S name;
 	int      what = LC_ALL;
-	CS whatstr = S"";
+	S whatstr = u8"";
 #  define EE_LC_MESSAGES LC_MESSAGES
 
 	name = invo->arg;
@@ -4642,31 +4642,31 @@ c_language(Invocation* invo) {
 	//Check for "messages {name}", "ctype {name}" or "time {name}" argument.
 	//Allow abbreviation, but require at least 3 characters to avoid
 	//confusion with a two letter language name "me" or "ct".
-	CS p = skiptowhite(invo->arg);
+	S p = skiptowhite(invo->arg);
 	if ((*p == ZERO || SPACE_OR_TAB(*p)) && p - invo->arg >= 3) {
 		if (STRNICMP(invo->arg, "messages", p - invo->arg) == 0) {
 			 what = EE_LC_MESSAGES;
 			 name = skipwhite(p);
-			 whatstr = S"messages ";
+			 whatstr = u8"messages ";
 		} ei (STRNICMP(invo->arg, "ctype", p - invo->arg) == 0) {
 			 what = LC_CTYPE;
 			 name = skipwhite(p);
-			 whatstr = S"ctype ";
+			 whatstr = u8"ctype ";
 		} ei (STRNICMP(invo->arg, "time", p - invo->arg) == 0) {
 			 what = LC_TIME;
 			 name = skipwhite(p);
-			 whatstr = S"time ";
+			 whatstr = u8"time ";
 		} ei (STRNICMP(invo->arg, "collate", p - invo->arg) == 0) {
 			 what = LC_COLLATE;
 			 name = skipwhite(p);
-			 whatstr = S"collate ";
+			 whatstr = u8"collate ";
 		}
 	}
 
 	if (*name == ZERO) {
-			 p = (CS)setlocale(what, NULL);
+			 p = (S)setlocale(what, NULL);
 		if (p == NULL || *p == ZERO)
-			 p = (CS)"Unknown";
+			 p = u8"Unknown";
 		smsg(_("Current %slanguage: \"%s\""), whatstr, p);
 	} else {
 		loc = setlocale(what, (char *)name);
@@ -4680,21 +4680,21 @@ c_language(Invocation* invo) {
 
 			 ++_nl_msg_cat_cntr;
 			 //Reset $LC_ALL, otherwise it would overrule everything.
-			 eeSetenv(S"LC_ALL", S"");
+			 eeSetenv(u8"LC_ALL", u8"");
 
 			 if (what != LC_TIME && what != LC_COLLATE) {
 				//Tell gettext() what to translate to. It apparently doesn't
 				//use the currently effective locale.
 				if (what == LC_ALL) {
-					eeSetenv(S"LANG", name);
+					eeSetenv(u8"LANG", name);
 
 					//Clear $LANGUAGE because GNU gettext uses it.
-					eeSetenv(S"LANGUAGE", (CS)"");
+					eeSetenv(u8"LANGUAGE", u8"");
 				}
 				if (what != LC_CTYPE) {
 					Byte   *mname;
 					mname = name;
-					eeSetenv(S"LC_MESSAGES", mname);
+					eeSetenv(u8"LC_MESSAGEu8", mname);
 					set_helplang_default(mname);
 				}
 			}
@@ -4702,23 +4702,23 @@ c_language(Invocation* invo) {
 	}
 }
 
-private Arr(CS) locales = NULL;   //Array of all available locales
+private Arr(S) locales = NULL;   //Array of all available locales
 private Unt countLocales = 0;
 private Boole did_init_locales = false;
 
 //Return an array of strings for all available locales + NULL for the
 //last element.  Return NULL in case of error.
-private Arr(CS)
+private Arr(S)
 getLocalesFromEnv(OUT Unt* countOfLocales) {
 	//Find all available locales by running command "locale -a".  If this
 	//doesn't work we won't have completion.
-	CS localeList = fiGetShellOutput(S"locale -a", NULL, SHELL_SILENT, NULL);
+	S localeList = fiGetShellOutput(u8"locale -a", NULL, SHELL_SILENT, NULL);
 	if (!localeList)
 		return NULL;
 
 	//Transform locale_list string where each locale is separated by "\n"
 	//into an array of locale strings.
-	Arr(CS) locales = splitByCharIntoArray(localeList, '\n', OUT countOfLocales);
+	Arr(S) locales = splitByCharIntoArray(localeList, '\n', OUT countOfLocales);
 
 	eeglFree(localeList);
 
@@ -4749,13 +4749,13 @@ free_locales(void) {
 # endif
 
 //Function given to expandGeneric() to obtain the possible arguments of the ":language" command.
-pub CS
+pub S
 get_lang_arg(Expand*, int idx) {
 	switch (idx) {
-	case 0: return S"messages";
-	case 1: return S"ctype";
-	case 2: return S"time";
-	case 3: return S"collate";
+	case 0: return u8"messages";
+	case 1: return u8"ctype";
+	case 2: return u8"time";
+	case 3: return u8"collate";
 	}
 
 	init_locales();
@@ -4763,7 +4763,7 @@ get_lang_arg(Expand*, int idx) {
 }
 
 //Function given to expandGeneric() to obtain the available locales.
-pub CS
+pub S
 get_locales(Expand*, int idx) {
 	init_locales();
 	return locales ? locales[idx] : null;

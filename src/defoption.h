@@ -4,18 +4,18 @@
 #endif
 
 #ifdef OPTIONS_NAMES
-#define OPTION(oName, oFieldName, oType, oDefaultValue, flags, postCb, completeCb) (CS)oName,
+#define OPTION(oName, oFieldName, oType, oDefaultValue, flags, postCb, completeCb) (S)oName,
 #endif
 
 #ifdef GLOBAL_OPTION_DEFS
 #define TYPEBASED_Boole Boole
 #define TYPEBASED_long Num
-#define TYPEBASED_CS Str
+#define TYPEBASED_S Str
 #define TYPEBASED_Byte Enum
 #define TYPEBASED_Unt Flag
 #define TYPEBASED_CallbackPtr Callback
 #define OPTION(oName, oVar, oType, oDefaultValue, flagsArg, setterArg, expanderArg) \
-    {.fullName = (CS)oName, .defaultValue = GLUE(opt, TYPEBASED_##oType)(oDefaultValue),\
+    {.fullName = (S)oName, .defaultValue = GLUE(opt, TYPEBASED_##oType)(oDefaultValue),\
        .c = {.reference = GLUE(ref, TYPEBASED_##oType)(&oVar) },\
        .setter = setterArg, .expander = expanderArg,\
        .flags = flagsArg | P_GLOBAL, .scriptPos = {0, 0, 0} },
@@ -24,12 +24,12 @@
 #ifdef PORTAL_OPTION_DEFS
 #define TYPEBASED_Boole Boole
 #define TYPEBASED_long Num
-#define TYPEBASED_CS Str
+#define TYPEBASED_S Str
 #define TYPEBASED_Byte Enum
 #define TYPEBASED_Unt Flag
 #define TYPEBASED_CallbackPtr Callback
 #define OPTION(oName, oVar, oType, oDefaultValue, flagsArg, setterArg, expanderArg) \
-    {.fullName = (CS)oName, .defaultValue = GLUE(opt, TYPEBASED_##oType)(oDefaultValue),\
+    {.fullName = (S)oName, .defaultValue = GLUE(opt, TYPEBASED_##oType)(oDefaultValue),\
     .c = {.local = {.offset = offsetof(PortalOptions, oVar) }}, \
     .setter = setterArg, .expander = expanderArg, \
     .flags = flagsArg, .scriptPos = {0, 0, 0} },
@@ -38,12 +38,12 @@
 #ifdef BOOK_OPTION_DEFS
 #define TYPEBASED_Boole Boole
 #define TYPEBASED_long Num
-#define TYPEBASED_CS Str
+#define TYPEBASED_S Str
 #define TYPEBASED_Byte Enum
 #define TYPEBASED_Unt Flag
 #define TYPEBASED_CallbackPtr Callback
 #define OPTION(oName, oVar, oType, oDefaultValue, flagsArg, setterArg, expanderArg) \
-    {.fullName = (CS)oName, .defaultValue = GLUE(opt, TYPEBASED_##oType)(oDefaultValue),\
+    {.fullName = (S)oName, .defaultValue = GLUE(opt, TYPEBASED_##oType)(oDefaultValue),\
     .c = {.local = {.offset = offsetof(BookOptions, oVar) }}, \
     .setter = setterArg, .expander = expanderArg, \
     .flags = flagsArg, .scriptPos = {0, 0, 0} },
@@ -63,7 +63,7 @@
 
 #define TYPEBASED_Boole boole
 #define TYPEBASED_long num
-#define TYPEBASED_CS string
+#define TYPEBASED_S string
 #define TYPEBASED_Byte enume
 #define TYPEBASED_Unt flags
 #define TYPEBASED_CallbackPtr callback
@@ -72,7 +72,7 @@
 #endif
 
 #ifdef OPTIONS_COPY
-#define TYPEBASED_CS(x) t->x = copyOptionVal(&t->stringOptions, s->x);
+#define TYPEBASED_S(x) t->x = copyOptionVal(&t->stringOptions, s->x);
 #define TYPEBASED_Boole(x) t->x = s->x;
 #define TYPEBASED_long(x) t->x = s->x;
 #define TYPEBASED_Byte(x) t->x = s->x;
@@ -84,7 +84,7 @@
 
 #ifdef COPY_GLOBAL_TO_BOOK
 
-#define TYPEBASED_CS(f, localInd) \
+#define TYPEBASED_S(f, localInd) \
    f = copyOptionVal(&t->stringOptions, OPTIONS_BOOK[localInd].c.local.val.string);
 #define TYPEBASED_Boole(f, localInd) f = OPTIONS_BOOK[localInd].c.local.val.boole;
 #define TYPEBASED_long(f, localInd) f = OPTIONS_BOOK[localInd].c.local.val.num;
@@ -99,7 +99,7 @@
 
 #ifdef COPY_GLOBAL_TO_PORTAL
 
-#define TYPEBASED_CS(f, localInd) \
+#define TYPEBASED_S(f, localInd) \
    f = copyOptionVal(&t->stringOptions, OPTIONS_PORTAL[localInd].c.local.val.string);
 #define TYPEBASED_Boole(f, localInd) f = OPTIONS_PORTAL[localInd].c.local.val.boole;
 #define TYPEBASED_long(f, localInd) f = OPTIONS_PORTAL[localInd].c.local.val.num;
@@ -115,7 +115,7 @@
 
 #ifdef COPY_STRINGS_TO_BOOK
 
-#define TYPEBASED_CS(old) copyStringOptToBook(wr, old, cha);
+#define TYPEBASED_S(old) copyStringOptToBook(wr, old, cha);
 #define TYPEBASED_Boole(x)
 #define TYPEBASED_long(x)
 #define TYPEBASED_Byte(x)
@@ -128,7 +128,7 @@
 
 #ifdef COPY_STRINGS_TO_PORTAL
 
-#define TYPEBASED_CS(old)  copyStringOptToBook(wr, old, cha);
+#define TYPEBASED_S(old)  copyStringOptToBook(wr, old, cha);
 #define TYPEBASED_Boole(x)
 #define TYPEBASED_long(x)
 #define TYPEBASED_Byte(x)
@@ -147,26 +147,26 @@ OPTION("autocompletedelay", p_acl, long, 0, 0, null, null)
 OPTION("autowrite", p_aw, Boole, false, 0, null, null)
 OPTION("autowriteall", p_awa, Boole, false, 0, null, null)
 OPTION("backup", p_bk, Boole, false,  0, null, null)
-OPTION("backup.dir", p_bdir, CS, DFLT_BDIR, P_EXPAND_DIR|P_ONECOMMA|P_NODUP, null, null)
-OPTION("backup.ext", p_bex, CS, ".bak", P_NFNAME, null, null)
-OPTION("backup.skip",  p_bsk, CS,  "/tmp/*,$TMPDIR/*,$TMP/*,$TEMP/*", P_ONECOMMA|P_NODUP,
+OPTION("backup.dir", p_bdir, S, DFLT_BDIR, P_EXPAND_DIR|P_ONECOMMA|P_NODUP, null, null)
+OPTION("backup.ext", p_bex, S, ".bak", P_NFNAME, null, null)
+OPTION("backup.skip",  p_bsk, S,  "/tmp/*,$TMPDIR/*,$TMP/*,$TEMP/*", P_ONECOMMA|P_NODUP,
    null, null)
 OPTION("balloon.delay", p_bdlay, long, 600, 0, null, null)
 OPTION("balloon.evalterm", p_bevalterm, Boole, true, P_NO_MKRC, &did_set_balloonevalterm, null)
-OPTION("cdpath", p_cdpath, CS, ",,", P_EXPAND_DIR|P_EXPAND_3_BS|P_COMMA|P_NODUP,
+OPTION("cdpath", p_cdpath, S, ",,", P_EXPAND_DIR|P_EXPAND_3_BS|P_COMMA|P_NODUP,
       null, null)
 OPTION("commheight", commlineHeightG, long, 1, P_RALL, &setCommHeight, null)
 OPTION("commportheight", p_cwh, long, 7, 0, &setStrictlyPositive, null)
 OPTION("columns", visibleColsG, long, 100, P_NODEFAULT|P_NO_MKRC|P_RCLR, &setVisibleCols, null)
-OPTION("complete.fuzzy.collect", p_cfc, CS, null, P_ONECOMMA|P_NODUP,
+OPTION("complete.fuzzy.collect", p_cfc, S, null, P_ONECOMMA|P_NODUP,
    &setCompletefuzzycollect, &expandCompletefuzzycollect)
 OPTION("complete.itemalign", p_cia, Unt, CPT_ABBR|CPT_KIND|CPT_MENU, P_ONECOMMA|P_NODUP,
    &did_set_completeitemalign, NULL)
-OPTION("complete.popup", p_cpp, CS, null, P_COMMA|P_NODUP|P_COLON,
+OPTION("complete.popup", p_cpp, S, null, P_COMMA|P_NODUP|P_COLON,
    &did_set_completepopup, &expand_set_popupoption)
 OPTION("confirm", p_confirm, Boole, false, 0, null, null)
 OPTION("cscope.pathcomp", p_cspc, long, 0, 0, null, null)
-OPTION("cscope.prog", p_csprg, CS, "cscope", P_EXPAND, null, null)
+OPTION("cscope.prog", p_csprg, S, "cscope", P_EXPAND, null, null)
 OPTION("cscope.relative", p_csre, Boole, false, 0, null, null)
 OPTION("cscope.tag", p_cst, Boole, false, 0, null, null)
 OPTION("cscope.tagorder", p_csto, long, 0, 0, null, null)
@@ -174,19 +174,19 @@ OPTION("cscope.verbose", p_csverbose, Boole, false, 0, null, null)
 OPTION("cursor.insert", cursorInsertG, Byte, CURSOR_BAR, P_ONECOMMA|P_NODUP, &setCursorInsert, NULL)
 OPTION("cursor.normal", cursorNormalG, Byte, CURSOR_BLOCK, P_ONECOMMA|P_NODUP,
    &setCursorNormal, null)
-OPTION("debug", p_debug, CS, null, 0, &did_set_debug, &expand_set_debug)
+OPTION("debug", p_debug, S, null, 0, &did_set_debug, &expand_set_debug)
 OPTION("delcombine", p_delcomb, Boole, false, 0, null, null)
-OPTION("diff.expr", p_dex, CS, null, P_CURSWANT, &setOptexpr, null)
-OPTION("diff.opt",  p_dip, CS, "internal,filler,closeoff,inline:simple",
+OPTION("diff.expr", p_dex, S, null, P_CURSWANT, &setOptexpr, null)
+OPTION("diff.opt",  p_dip, S, "internal,filler,closeoff,inline:simple",
    P_REDRAW_PORT|P_ONECOMMA|P_COLON|P_NODUP, &setDiffopt, &expandDiffopt)
 OPTION("eadirection", p_ead, Byte, EAD_BOTH, 0, &setEadirection, &expandEadirection)
-OPTION("eeglinfo", p_eeglinfo, CS, "'100,<50,s10,h", P_ONECOMMA|P_NODUP,
+OPTION("eeglinfo", p_eeglinfo, S, "'100,<50,s10,h", P_ONECOMMA|P_NODUP,
       &setEeglinfo, NULL)
-OPTION("eeglinfofile", p_eeglinfofile, CS, null, P_EXPAND|P_ONECOMMA|P_NODUP,
+OPTION("eeglinfofile", p_eeglinfofile, S, null, P_EXPAND|P_ONECOMMA|P_NODUP,
       null, null)
 OPTION("equalalways", p_ea, Boole, false, P_RALL, &did_set_equalalways, NULL)
-OPTION("errorfile", p_ef, CS, DFLT_ERRORFILE, P_EXPAND, null, null)
-OPTION("eventignore", p_ei, CS, null, P_ONECOMMA|P_NODUP,
+OPTION("errorfile", p_ef, S, DFLT_ERRORFILE, P_EXPAND, null, null)
+OPTION("eventignore", p_ei, S, null, P_ONECOMMA|P_NODUP,
       &did_set_eventignore, &expand_set_eventignore)
 OPTION("fold.levelstart", foldLevelStart, long, 0, P_CURSWANT, null, null)
 OPTION("fold.open", p_fdo, Unt,
@@ -194,39 +194,39 @@ OPTION("fold.open", p_fdo, Unt,
       P_ONECOMMA|P_NODUP|P_CURSWANT, &setFoldopen, &expandFoldopen)
 OPTION("fsync", p_fs, Boole, false, 0, null, null)
 OPTION("help.height", p_hh, long, 20, 0, &setHelpHeight, NULL)
-OPTION("help.lang", p_hlg, CS, null, P_ONECOMMA, &did_set_helplang, NULL)
+OPTION("help.lang", p_hlg, S, null, P_ONECOMMA, &did_set_helplang, NULL)
 OPTION("history", p_hi, long, 200, 0, &setHistory, null)
 OPTION("hlsearch", p_hls, Boole, true, P_RALL|P_HLONLY, &did_set_hlsearch, NULL)
 OPTION("ignorecase", p_ic, Boole, true, 0, &did_set_ignorecase, null)
 OPTION("incsearch", p_is, Boole, false, 0, null, null)
 OPTION("intro", p_intro, Boole, true, 0, null, null)
-OPTION("isfname", p_isf, CS, "@,48-57,/,.,-,_,+,,,#,$,%,~,=", P_COMMA|P_NODUP,
+OPTION("isfname", p_isf, S, "@,48-57,/,.,-,_,+,,,#,$,%,~,=", P_COMMA|P_NODUP,
    &setIsopt, NULL)
-OPTION("isident", p_isi, CS, "@,48-57,_,192-255", P_COMMA|P_NODUP, &setIsopt, NULL)
-OPTION("langmap", p_langmap, CS, null, P_ONECOMMA|P_NODUP, &setLangmap, NULL)
+OPTION("isident", p_isi, S, "@,48-57,_,192-255", P_COMMA|P_NODUP, &setIsopt, NULL)
+OPTION("langmap", p_langmap, S, null, P_ONECOMMA|P_NODUP, &setLangmap, NULL)
 OPTION("langremap", p_lrm, Boole, false, 0, null, NULL)
 OPTION("lines", visibleRowsG, long, 24, P_NODEFAULT|P_NO_MKRC|P_RCLR, &setVisibleLines, NULL)
-OPTION("lowPrioSuffixes", p_lpSuff, CS, ".bak,~,.o,.h,.info,.swp,.obj", P_ONECOMMA|P_NODUP, null, null)
-OPTION("makeef", p_mef, CS, "make.err", P_EXPAND, NULL, NULL)
+OPTION("lowPrioSuffixes", p_lpSuff, S, ".bak,~,.o,.h,.info,.swp,.obj", P_ONECOMMA|P_NODUP, null, null)
+OPTION("makeef", p_mef, S, "make.err", P_EXPAND, NULL, NULL)
 // open the location list when "make" is done
 OPTION("makeOpenWhenDone", makeOpenWhenDoneG, Boole, true, 0, null, null)
 OPTION("maxfuncdepth", p_mfd, long, 128, 0, null, null)
 OPTION("maxmem", p_mm, long, DFLT_MAXMEM, 0, null, null)
 OPTION("maxmempattern", p_mmp, long, 1000, 0, null, null)
 OPTION("maxsearchcount", p_msc, long, 1000, 0, &did_set_maxsearchcount, NULL)
-OPTION("messagesopt", p_mopt, CS, "history", P_ONECOMMA|P_COLON|P_NODUP,
+OPTION("messagesopt", p_mopt, S, "history", P_ONECOMMA|P_COLON|P_NODUP,
    &did_set_messagesopt, &expand_set_messagesopt)
 OPTION("more", p_more, Boole, true, 0, NULL, NULL)
 OPTION("mousetime", p_mouset, long, 100, 0, null, null)
-OPTION("operatorfunc", p_opfunc, CS, null, P_FUNC, &did_set_operatorfunc, null)
-OPTION("patchexpr", p_pex, CS, null, 0, &setOptexpr, null)
+OPTION("operatorfunc", p_opfunc, S, null, P_FUNC, &did_set_operatorfunc, null)
+OPTION("patchexpr", p_pex, S, null, 0, &setOptexpr, null)
 OPTION("previewheight", p_pvh, long, 12, 0, null, null)
 OPTION("pum.height", p_ph, long, 0, 0, null, null)
 OPTION("pum.maxwidth", p_pmw, long, 0, 0, null, null)
 OPTION("pum.width", p_pw, long, 15, 0, null, null)
-OPTION("quickfixtextfunc", p_qftf, CS, null, P_FUNC, &setQuickfixtextfunc, NULL)
+OPTION("quickfixtextfunc", p_qftf, S, null, P_FUNC, &setQuickfixtextfunc, NULL)
 OPTION("redrawtime", p_rdt, long, 2000, 0, null, null)
-OPTION("rulerformat", p_ruf, CS, null, P_RSTAT, &setRulerFormat, NULL)
+OPTION("rulerformat", p_ruf, S, null, P_RSTAT, &setRulerFormat, NULL)
 OPTION("scroll.jump", p_sj, long, 1, 0, &setScrollJump, null)
 OPTION("scroll.opt", p_sbo, Unt, SCR_VER|SCR_JUMP, P_ONECOMMA|P_NODUP,
    &setScrollopt, &expand_set_scrollopt)
@@ -242,12 +242,12 @@ OPTION("startofline", p_sol, Boole, false, 0, null, null)
 OPTION("swapsync", p_sws, Boole, false, 0, null, null)
 OPTION("switchbook", p_swb, Unt, 0, P_ONECOMMA|P_NODUP, &setSwitchbook, &expand_set_switchbook)
 OPTION("tabclose", p_tcl, Byte, 0, P_ONECOMMA|P_NODUP, &setTabClose, &expand_set_tabclose)
-OPTION("tab.panel",  p_tpl, CS, null, P_RALL, null, null)
-OPTION("tab.panelopt",p_tplo, CS, null, P_ONECOMMA|P_COLON|P_NODUP,
+OPTION("tab.panel",  p_tpl, S, null, P_RALL, null, null)
+OPTION("tab.panelopt",p_tplo, S, null, P_ONECOMMA|P_COLON|P_NODUP,
    &did_set_tabpanelopt, &expand_set_tabpanelopt)
 OPTION("tag.bsearch", p_tbs, Boole, true, 0, null, null)
 OPTION("tag.stack", p_tgst, Boole, false, 0, null, null)
-OPTION("term", termCodesG[KS_NAME], CS, null, P_EXPAND|P_NODEFAULT|P_NO_MKRC|P_RALL, &setTerm, null)
+OPTION("term", termCodesG[KS_NAME], S, null, P_EXPAND|P_NODEFAULT|P_NO_MKRC|P_RALL, &setTerm, null)
 OPTION("timeout", p_timeout, Boole, false, 0, null, null)
 OPTION("timeoutlen", p_tm, long, 0,  0, &setTimeoutLen, null)
 OPTION("ttimeout", p_ttimeout, Boole, false, 0, null, null)
@@ -255,29 +255,29 @@ OPTION("ttimeoutlen", p_ttm, long, -1, 0, null, null)
 OPTION("undo.reload", p_ur, long, 10000, 0, null, null)
 OPTION("updatetime", p_ut, long, 2000, 0, &setNonNegative, null)
 OPTION("verbose", p_verbose, long, 0, 0, null, null)
-OPTION("verbosefile", p_vfile, CS, null, P_EXPAND, &did_set_verbosefile, NULL)
-OPTION("whichwrap", p_ww, CS, "b,s", P_ONECOMMA|P_FLAGLIST,
+OPTION("verbosefile", p_vfile, S, null, P_EXPAND, &did_set_verbosefile, NULL)
+OPTION("whichwrap", p_ww, S, "b,s", P_ONECOMMA|P_FLAGLIST,
    &did_set_whichwrap, &expand_set_whichwrap)
 OPTION("wild.char", p_wc, long, (long)TAB, 0, &did_set_wildchar, NULL)
 OPTION("wild.charm", p_wcm, long, 0, 0, &did_set_wildchar, NULL)
-OPTION("wild.ignore", p_wig, CS, null, P_ONECOMMA|P_NODUP, null, null)
+OPTION("wild.ignore", p_wig, S, null, P_ONECOMMA|P_NODUP, null, null)
 OPTION("wild.ignorecase", p_wic, Boole, false, 0, null, null)
 OPTION("wild.menu", p_wmnu, Boole, false, 0, null, null)
-OPTION("wild.mode", p_wim, CS, "full", P_ONECOMMA|P_NODUP|P_COLON,
+OPTION("wild.mode", p_wim, S, "full", P_ONECOMMA|P_NODUP|P_COLON,
    &did_set_wildmode, &expand_set_wildmode)
 OPTION("wild.options", p_wop, Unt, WILDOPT_PUM, P_ONECOMMA|P_NODUP,
    &setWildoptions, &expandWildoptions)
 OPTION("port.height", p_wh, long, 0, 0, &setWinHeight, NULL)
 OPTION("port.width", p_wiw, long, 20, 0, &did_set_winwidth, NULL)
 OPTION("writedelay", p_wd, long, 0, 0, null, null)
-OPTION("listchars", p_lcs, CS, "eol:$", P_RALL|P_ONECOMMA|P_NODUP,
+OPTION("listchars", p_lcs, S, "eol:$", P_RALL|P_ONECOMMA|P_NODUP,
    &setListChars, &expand_set_chars_option)
-OPTION("fillchars", p_fcs, CS, "vert:|,fold: ,lastline: ",
+OPTION("fillchars", p_fcs, S, "vert:|,fold: ,lastline: ",
    P_RALL|P_ONECOMMA|P_NODUP, &setFillChars, &expand_set_chars_option)
 OPTION("undo.levels", p_ul, long, 128, 0, &did_set_undolevels, NULL)
 OPTION("termport.scroll", p_twsl, long, 10000, P_RBUF, &did_set_termwinscroll, null)
 
-#undef TYPEBASED_CS
+#undef TYPEBASED_S
 #undef TYPEBASED_Boole
 #undef TYPEBASED_long
 #undef TYPEBASED_Byte
@@ -290,16 +290,16 @@ OPTION("termport.scroll", p_twsl, long, 10000, P_RBUF, &did_set_termwinscroll, n
 #ifdef OPTIONS_LIST_PORTAL
 
 OPTION("diff", diff, Boole, false, P_REDRAW_PORT, &did_set_diff, null)
-OPTION("eventignore.port", eventIgnorePort, CS, null, P_ONECOMMA|P_NODUP,
+OPTION("eventignore.port", eventIgnorePort, S, null, P_ONECOMMA|P_NODUP,
    &did_set_eventignore, &expand_set_eventignore)
 OPTION("fold.enable", foldEnable, Boole, false, P_REDRAW_PORT, null, null)
-OPTION("fold.ignore", foldIgnore, CS, "#", P_REDRAW_PORT, &did_set_foldignore, NULL)
+OPTION("fold.ignore", foldIgnore, S, "#", P_REDRAW_PORT, &did_set_foldignore, NULL)
 OPTION("fold.level", foldLevel, long, 0, P_REDRAW_PORT, &did_set_foldlevel, NULL)
 OPTION("fold.method", foldMethod, Byte, FOLD_MARKER, P_REDRAW_PORT,
       &setFoldMethod, &expand_set_foldmethod)
-OPTION("fold.text", foldText, CS, "foldtext()", P_REDRAW_PORT,
+OPTION("fold.text", foldText, S, "foldtext()", P_REDRAW_PORT,
    &setOptexpr, null)
-OPTION("fold.marker", foldMarker, CS, "{{{,}}}",  P_REDRAW_PORT|P_ONECOMMA|P_NODUP,
+OPTION("fold.marker", foldMarker, S, "{{{,}}}",  P_REDRAW_PORT|P_ONECOMMA|P_NODUP,
     &did_set_foldmarker, NULL)
 OPTION("list", list, Boole, false, P_REDRAW_PORT, null, null)
 OPTION("portfix.buf", portFixBuf, Boole, false, 0, null, null)
@@ -307,17 +307,17 @@ OPTION("portfix.height", portFixHeight, Boole, false, P_RSTAT, null, null)
 OPTION("portfix.width", portFixWidth, Boole, false, P_RSTAT, null, null)
 OPTION("smoothscroll", smoothScroll, Boole, false, P_REDRAW_PORT, &did_set_smoothscroll, NULL)
 OPTION("cursor.line", cursorLine, Boole, true, P_REDRAW_PORT|P_HLONLY, null, null)
-OPTION("statusline", statusLine, CS,
+OPTION("statusline", statusLine, S,
       "%n\\:%f%m\\ \\|%l\\:%c\\/%L\\L\\|\\ %{strftime('%H:%M')}",
       P_RSTAT, &did_set_statusline, NULL)
 OPTION("wrap", wrap, Boole, true, P_REDRAW_PORT, &did_set_wrap, NULL)
 OPTION("signcolumn", signColumn, Boole, false, P_RCLR, null, null)
 OPTION("sidescrolloff", sideScrollOff, long, 0, P_RBUF, &setSideScrollOff, null)
 OPTION("scroll.off", scrollOff, long, 3, P_RALL, &setScrollOff, null)
-OPTION("termport.key", termWinKey, CS, null, P_REDRAW_PORT, &did_set_termwinkey, null)
-OPTION("termport.size", termWinSize, CS, null, P_REDRAW_PORT, &did_set_termwinsize, null)
+OPTION("termport.key", termWinKey, S, null, P_REDRAW_PORT, &did_set_termwinkey, null)
+OPTION("termport.size", termWinSize, S, null, P_REDRAW_PORT, &did_set_termwinsize, null)
 
-#undef TYPEBASED_CS
+#undef TYPEBASED_S
 #undef TYPEBASED_Boole
 #undef TYPEBASED_long
 #undef TYPEBASED_Byte
@@ -332,16 +332,16 @@ OPTION("termport.size", termWinSize, CS, null, P_REDRAW_PORT, &did_set_termwinsi
 OPTION("autoindent", autoIndent, Boole, false, 0, null, null)
 OPTION("backup.copy", backupCopy, Unt, BKC_AUTO, P_ONECOMMA|P_NODUP,
     &setBackupCopy, &expand_set_backupcopy)
-OPTION("balloon.expr", balloonExpr, CS, null, 0, &setOptexpr, null)
+OPTION("balloon.expr", balloonExpr, S, null, 0, &setOptexpr, null)
 OPTION("binary", binary, Boole, false, P_RSTAT, &optSetBinary, NULL)
 OPTION("book.listed", bookListed, Boole, false, 0, &setBookListed, NULL)
 OPTION("book.type", kind, Byte, BOOK_NORMAL, 0, &setBufType, &expand_set_buftype)
-OPTION("cinwords", indentKeywords, CS, "if,else,while,do,for,switch",
+OPTION("cinwords", indentKeywords, S, "if,else,while,do,for,switch",
       P_ONECOMMA|P_NODUP, null, null)
-OPTION("comments", comments, CS, "s1:/" "*,mb:*,ex:*" "/,://,b:#,:%,:XCOMM,n:>,fb:-",
+OPTION("comments", comments, S, "s1:/" "*,mb:*,ex:*" "/,://,b:#,:%,:XCOMM,n:>,fb:-",
       P_ONECOMMA|P_NODUP, &did_set_comments, NULL)
-OPTION("commentstring", commentString, CS, "//%s", 0, &did_set_commentstring, null)
-OPTION("complete", complete, CS, ".,w,b,u,t,i", P_ONECOMMA|P_NODUP,
+OPTION("commentstring", commentString, S, "//%s", 0, &did_set_commentstring, null)
+OPTION("complete", complete, S, ".,w,b,u,t,i", P_ONECOMMA|P_NODUP,
       &setComplete, &expandComplete)
 OPTION("completeopt", completeOpt, Unt, COT_MENU|COT_PREVIEW, P_ONECOMMA|P_NODUP,
       &setCompleteopt, &expandCompleteopt)
@@ -350,51 +350,51 @@ OPTION("omnifunc", omniFn, CallbackPtr, null, P_FUNC, &setOmnifunc, NULL)
 OPTION("tagfunc", tagFn, CallbackPtr, null, P_FUNC, &did_set_tagfunc, NULL)
 OPTION("findfunc", findFn, CallbackPtr, null, P_FUNC, &setFindFn, NULL)
 OPTION("expandtab", expandTab, Boole, true, 0, null, null)
-OPTION("formatoptions", formatOptions, CS, "tcq", P_FLAGLIST,
+OPTION("formatoptions", formatOptions, S, "tcq", P_FLAGLIST,
       &did_set_formatoptions, &expand_set_formatoptions)
-OPTION("formatlistpat", formatListPattern, CS, "^\\s*\\d\\+[\\]:.)}\\t ]\\s*",
+OPTION("formatlistpat", formatListPattern, S, "^\\s*\\d\\+[\\]:.)}\\t ]\\s*",
       0, &setFormatListPat, null)
 OPTION("infercase", inferCase, Boole, false, 0, null, null)
-OPTION("isexpand", expandTriggers, CS, ".|->|/*", P_ONECOMMA|P_NODUP, &setExpandTriggers, NULL)
-OPTION("iskeyword", isKeyword, CS, "@,48-57,_,192-255", P_COMMA|P_NODUP,
+OPTION("isexpand", expandTriggers, S, ".|->|/*", P_ONECOMMA|P_NODUP, &setExpandTriggers, NULL)
+OPTION("iskeyword", isKeyword, S, "@,48-57,_,192-255", P_COMMA|P_NODUP,
       &did_set_iskeyword, NULL)
-OPTION("define", definer, CS, "^\\s*#\\s*define", 0, null, null)
-OPTION("include", includer, CS, "^\\s*#\\s*include", 0, null, null)
-OPTION("include.expr", includeExpr, CS, null,  0, &setOptexpr, NULL)
-OPTION("indentexpr", indentExpr, CS, null, 0, &setOptexpr, null)
-OPTION("format.prog", formatProg, CS, null, P_EXPAND, null, null)
-OPTION("format.expr", formatExpr, CS, null, 0, &setOptexpr, null)
+OPTION("define", definer, S, "^\\s*#\\s*define", 0, null, null)
+OPTION("include", includer, S, "^\\s*#\\s*include", 0, null, null)
+OPTION("include.expr", includeExpr, S, null,  0, &setOptexpr, NULL)
+OPTION("indentexpr", indentExpr, S, null, 0, &setOptexpr, null)
+OPTION("format.prog", formatProg, S, null, P_EXPAND, null, null)
+OPTION("format.expr", formatExpr, S, null, 0, &setOptexpr, null)
 // Can use ":help" for @keywordprog
-OPTION("keywordprog", keywordProg, CS, "man -S", P_EXPAND, null, null)
-OPTION("matchpairs", matchPairs, CS, "(:),{S:},[:]", P_ONECOMMA|P_NODUP,
+OPTION("keywordprog", keywordProg, S, "man -u8", P_EXPAND, null, null)
+OPTION("matchpairs", matchPairs, S, "(:),{S:},[:]", P_ONECOMMA|P_NODUP,
       &did_set_matchpairs, null)
 OPTION("modifiable",  modifiable, Boole, true, 0, &setModifiable, NULL)
 OPTION("shiftwidth", shiftWidth, long, 4, 0, &setShiftWidth, null)
 OPTION("swapfile", swapFile, Boole, true, P_RSTAT, &did_set_swapfile, null)
 OPTION("smartindent", smartIndent, Boole, true, 0, null, null)
-OPTION("suffixesadd", suffixesAdd, CS, ".java,.rust", P_ONECOMMA|P_NODUP,
+OPTION("suffixesadd", suffixesAdd, S, ".java,.rust", P_ONECOMMA|P_NODUP,
       NULL, NULL)
 OPTION("textwidth", textWidth, long, 96, P_RBUF|P_HLONLY, &did_set_textwidth, NULL)
-OPTION("grep.format", grepFormat, CS, "%f:%l:%m,%f:%l%m,%f  %l%m", P_ONECOMMA|P_NODUP,
+OPTION("grep.format", grepFormat, S, "%f:%l:%m,%f:%l%m,%f  %l%m", P_ONECOMMA|P_NODUP,
       null, null)
 //Add an extra file name so that grep will always insert a file name in the match line
-OPTION("grep.prog", grepProg, CS, "grep -n $* /dev/null", P_EXPAND, null, null)
-OPTION("path", path, CS, PREFIX "/include,.,", P_EXPAND_DIR|P_EXPAND_3_BS|P_COMMA|P_NODUP,
+OPTION("grep.prog", grepProg, S, "grep -n $* /dev/null", P_EXPAND, null, null)
+OPTION("path", path, S, PREFIX "/include,.,", P_EXPAND_DIR|P_EXPAND_3_BS|P_COMMA|P_NODUP,
       null, null)
-OPTION("makeprog", makeProg, CS, "make", P_EXPAND, null, null)
-OPTION("errorformat", errorFormat, CS, DFLT_EFM, P_ONECOMMA|P_NODUP, null, null)
+OPTION("makeprog", makeProg, S, "make", P_EXPAND, null, null)
+OPTION("errorformat", errorFormat, S, DFLT_EFM, P_ONECOMMA|P_NODUP, null, null)
 OPTION("autoread", autoRead, Boole, true, 0, null, null)
-OPTION("tags", tags, CS, "./tags,tags", P_EXPAND|P_EXPAND_3_BS|P_ONECOMMA|P_NODUP, null, null)
+OPTION("tags", tags, S, "./tags,tags", P_EXPAND|P_EXPAND_3_BS|P_ONECOMMA|P_NODUP, null, null)
 OPTION("tag.case", tagCase, Byte, TC_FOLLOWIC, 0, &setTagcase, &expand_set_tagcase)
-OPTION("dictionary", dictionary, CS, null, P_EXPAND|P_ONECOMMA|P_NODUP|P_NDNAME,
+OPTION("dictionary", dictionary, S, null, P_EXPAND|P_ONECOMMA|P_NODUP|P_NDNAME,
       NULL, NULL)
-OPTION("diffanchors", diffAnchors, CS, null, P_ONECOMMA, &did_set_diffanchors, NULL)
-OPTION("thesaurus", thesaurus, CS, null, P_EXPAND|P_ONECOMMA|P_NODUP|P_NDNAME, NULL, NULL)
+OPTION("diffanchors", diffAnchors, S, null, P_ONECOMMA, &did_set_diffanchors, NULL)
+OPTION("thesaurus", thesaurus, S, null, P_EXPAND|P_ONECOMMA|P_NODUP|P_NDNAME, NULL, NULL)
 OPTION("thesaurus.func", thesaurusFn, CallbackPtr, null, P_FUNC,
       &did_set_thesaurusfunc, null)
 OPTION("undo.file", undoFile, Boole, false, 0, &did_set_undofile, null)
 
-#undef TYPEBASED_CS
+#undef TYPEBASED_S
 #undef TYPEBASED_Boole
 #undef TYPEBASED_long
 #undef TYPEBASED_Byte

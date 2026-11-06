@@ -59,7 +59,7 @@ typedef struct s_diffdata {
 	long nrec;
 	unsigned long const *ha;
 	long *rindex;
-	CS rchg;
+	S rchg;
 } DiffData;
 
 typedef struct s_xdg {
@@ -78,7 +78,7 @@ typedef struct s_xdchange {
 pub declStruct(Record);
 struct Record {
 	Record* next;
-	CS ptr;
+	S ptr;
 	long size;
 	unsigned long ha;
 };
@@ -105,7 +105,7 @@ typedef struct s_xdfile {
 	Record **rhash;
 	long dstart, dend;
 	Record **recs;
-	CS rchg;
+	S rchg;
 	long *rindex;
 	long nreff;
 	unsigned long *ha;
@@ -133,7 +133,7 @@ typedef struct s_xpparam {
 } XpParam;
 
 typedef long (*FindFn)(
-	CS line, long line_len, char* buffer, long buffer_size, void *priv
+	S line, long line_len, char* buffer, long buffer_size, void *priv
 );
 
 typedef int (*XdlEmitHunkConsumeFn)(
@@ -162,13 +162,13 @@ typedef struct s_xdemitcb {
 
 //used for diff input
 typedef struct {
-	CS externalFname;  //for external diff
+	S externalFname;  //for external diff
 	MmFile mmfile;     //for internal diff
 } DiffInp;
 
 //used for diff DiffResult
 typedef struct {
-	CS outFname;       //for external diff
+	S outFname;       //for external diff
 	ArrayList dout_ga; //for internal diff
 } DiffResult;
 
@@ -254,7 +254,7 @@ pub declStruct(XdlClass);
 struct XdlClass {
 	XdlClass* next;
 	Ulong ha;
-	CS line;
+	S line;
 	long size;
 	long idx;
 	long len1;
@@ -465,10 +465,10 @@ private void calculate_topfill_and_topline(
 private void apply_linematch_results(DiffBlock* dp, Unt decisions_length, int* decisions);
 private void run_linematch_algorithm(DiffBlock* dp);
 private int diff_equal_entry(DiffBlock *dp, Unt idx1, Unt idx2);
-private int diff_equal_char(CS p1, CS p2, OUT int* len);
-private int diff_cmp(CS s1, CS s2);
+private int diff_equal_char(S p1, S p2, OUT int* len);
+private int diff_cmp(S s1, S s2);
 private int parse_diffanchors(
-	NULLABLE CS diffAnchors,
+	NULLABLE S diffAnchors,
 	Boole check_only, //will only make sure the syntax is correct.
 	Book* book,
 	LineNr* anchors,
@@ -487,7 +487,7 @@ private void diff_find_change_inline_diff(DiffBlock* dp);
 private int valid_diff(DiffBlock *diff);
 private void diff_fold_update(DiffBlock* dp, Unt skip_idx);
 private LineNr diff_get_corresponding_line_int(Book* book, LineNr lnum1);
-private int parse_diff_unified(CS line, Hunk* hunk);
+private int parse_diff_unified(S line, Hunk* hunk);
 private int xdiff_out_indices(Long start_a, Long count_a, Long start_b, Long count_b, void* priv);
 private int xdiff_out_unified(void* priv, MmBuffer* mb, int nbuf);
 private int parse_diff_optarg(
@@ -518,7 +518,7 @@ private inline int group_next(XdFile* xdf, XdlGroup* g);
 private inline int group_previous(XdFile* xdf, XdlGroup* g);
 private int group_slide_down(XdFile* xdf, XdlGroup* g);
 private int group_slide_up(XdFile* xdf, XdlGroup* g);
-private void xdl_bug(CS msg);
+private void xdl_bug(S msg);
 private int xdl_change_compact(XdFile* xdf, XdFile* xdfo, long flags);
 private int xdl_build_script(XdfEnv* xe, XdChange** xscr);
 private void xdl_free_script(XdChange* xscr);
@@ -528,22 +528,22 @@ private int xdl_call_hunk_func(
 private void xdl_mark_ignorable_lines(XdChange *xscr, XdfEnv *xe, long flags);
 private int xdl_diff(MmFile* mf1, MmFile* mf2, XpParam* xpp, XdEmitConf* xecfg, XdEmitCb* ecb);
 private long xdl_bogosqrt(long n);
-private int xdl_emit_diffrec(CS rec, long size, CS pre, long psize, XdEmitCb* ecb);
+private int xdl_emit_diffrec(S rec, long size, S pre, long psize, XdEmitCb* ecb);
 private void* xdl_mmfile_first(MmFile* mmf, long* size);
 private long xdl_mmfile_size(MmFile* mmf);
 private int xdl_cha_init(ChaStore* cha, long isize, long icount);
 private void xdl_cha_free(ChaStore* cha);
 private void* xdl_cha_alloc(ChaStore* cha);
 private long xdl_guess_lines(MmFile* mf, long sample);
-private int xdl_blankline(CS line, long size, long flags);
-private int ends_with_optional_cr(CS l, long s, long i);
-private int xdl_recmatch(CS l1, long s1, CS l2, long s2, long flags);
-private unsigned long xdl_hash_record_with_whitespace( 	Byte** data, CS top, long flags
+private int xdl_blankline(S line, long size, long flags);
+private int ends_with_optional_cr(S l, long s, long i);
+private int xdl_recmatch(S l1, long s1, S l2, long s2, long flags);
+private unsigned long xdl_hash_record_with_whitespace( 	Byte** data, S top, long flags
 );
-private Ulong xdl_hash_record(Byte** data, CS top, long flags);
+private Ulong xdl_hash_record(Byte** data, S top, long flags);
 private Unt xdl_hashbits(Unt size);
-private int xdl_num_out(CS out, long val);
-private int xdl_format_hunk_hdr( 	long s1, long c1, long s2, long c2, CS func, long funclen, XdEmitCb* ecb
+private int xdl_num_out(S out, long val);
+private int xdl_format_hunk_hdr( 	long s1, long c1, long s2, long c2, S func, long funclen, XdEmitCb* ecb
 );
 private int xdl_emit_hunk_hdr(
 	long s1, long c1, long s2, long c2, Byte* func, long funclen, XdEmitCb *ecb
@@ -564,7 +564,7 @@ private int xdl_clean_mmatch(Byte* dis, long i, long s, long e);
 private int xdl_cleanup_records(Classifier *cf, XdFile *xdf1, XdFile *xdf2);
 private int xdl_trim_ends(XdFile *xdf1, XdFile *xdf2);
 private int xdl_optimize_ctxs(Classifier* cf, XdFile* xdf1, XdFile* xdf2);
-private int is_anchor(XpParam const *xpp, CS line);
+private int is_anchor(XpParam const *xpp, S line);
 private void insert_record(XpParam const *xpp, int line, DiffMap* map, int pass);
 private int fill_hashmap(
 		XpParam const *xpp,
@@ -597,7 +597,7 @@ private int find_lcs(
 private int histogram_diff(XpParam const* xpp, XdfEnv* env, int line1, int count1, int line2, int count2);
 private int xdl_do_histogram_diff(XpParam const *xpp, XdfEnv *env);
 private long xdl_get_rec(XdFile *xdf, long ri, Byte** rec);
-private int xdl_emit_record(XdFile *xdf, long ri, CS pre, XdEmitCb* ecb);
+private int xdl_emit_record(XdFile *xdf, long ri, S pre, XdEmitCb* ecb);
 private XdChange * xdl_get_hunk(XdChange** xscr, XdEmitConf const* xecfg);
 private int xdl_emit_diff(XdfEnv* xe, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg);
 //}}}
@@ -727,7 +727,7 @@ private MmFile
 fastforward_buf_to_lnum(MmFile s, LineNr lnum) {
 	for (int i = 0; i < lnum - 1; i++) {
 
-		CS line_end = memchr(s.ptr, '\n', (Unt)s.size);
+		S line_end = memchr(s.ptr, '\n', (Unt)s.size);
 		s.size = line_end ? (int)(s.size - (line_end - s.ptr)) : 0;
 		s.ptr = line_end;
 		if (!s.ptr)
@@ -1421,7 +1421,7 @@ diff_alloc_new(Tab* t, DiffBlock* dprev, DiffBlock* dp) {
 //the caller must take care of removing it.
 private void
 diff_check_unchanged(Tab* t, DiffBlock *dp) {
-	CS line_org;
+	S line_org;
 	Unt dir = FORWARD;
 
 	//Find the first book, use it as the original, compare the other book lines against this one.
@@ -1577,7 +1577,7 @@ diff_write_buffer(Book* book, DiffInp* din, LineNr start, LineNr end) {
 	LineNr lnum;
 	for (lnum = start; lnum <= end; ++lnum)
 		len += memGetBookLen(book, lnum) + 1;
-	CS ptr = tryBigAlloc(len);
+	S ptr = tryBigAlloc(len);
 	if (!ptr) {
 		//Allocating memory failed. This can happen, because we try to read
 		//the whole book text into memory. Set the failed flag, the diff
@@ -1594,7 +1594,7 @@ diff_write_buffer(Book* book, DiffInp* din, LineNr start, LineNr end) {
 	din->mmfile.size = len;
 
 	len = 0;
-	CS s;
+	S s;
 	for (lnum = start; lnum <= end; ++lnum) {
 		for (s = memGetLine(book, lnum, false); *s != ZERO; ) {
 			if (diff_flags & DIFF_ICASE) {
@@ -1993,9 +1993,9 @@ diff_file_internal(DiffIo* diffio) {
 //Return OK or FAIL;
 private int
 diff_file(DiffIo* dio) {
-	CS tmp_orig = dio->orig.externalFname;
-	CS tmp_new = dio->new.externalFname;
-	CS tmp_diff = dio->dio_diff.outFname;
+	S tmp_orig = dio->orig.externalFname;
+	S tmp_new = dio->new.externalFname;
+	S tmp_diff = dio->dio_diff.outFname;
 
 	if (p_dex) {
 		//Use @diffexpr to generate the diff file.
@@ -2011,11 +2011,11 @@ diff_file(DiffIo* dio) {
 	Unt lenDiff = STRLEN(tmp_diff);
 	//6 is for `> 2>&1` which will turn into `>FILENAME 2>&1`; 27 is for
 	Unt len = lenOrig + lenNew + STRLEN(tmp_diff) + 6 + 27;
-	CS shellComm = alloc(len);
+	S shellComm = alloc(len);
 
 	//Build the diff command and execute it. Always use -a, binary differences are of no use.
 	//Ignore errors, diff returns non-zero when differences have been found.
-	CS wr = shellComm;
+	S wr = shellComm;
 	if (diff_a_works != 0) {
 		memcpy(wr, "-a ", 3);
 		wr += 3;
@@ -2068,13 +2068,13 @@ diff_file(DiffIo* dio) {
 pub void
 c_diffpatch(Invocation* invo) {
 	Portal* old_curPor = curPor;
-	CS newname = NULL;   //name of patched file book
+	S newname = NULL;   //name of patched file book
 	Byte dirbuf[MAXPATHL];
 	FileStat st;
 
 	//We need two temp file names.
-	CS tmp_orig = eeTempName('o', false); //name of original temp file
-	CS tmp_new = eeTempName('n', false); //name of patched temp file
+	S tmp_orig = eeTempName('o', false); //name of original temp file
+	S tmp_new = eeTempName('n', false); //name of patched temp file
 	if (!tmp_orig || !tmp_new)
 		goto theend;
 
@@ -2084,12 +2084,12 @@ c_diffpatch(Invocation* invo) {
 		goto theend;
 
 	//Get the absolute path of the patchfile, changing directory below.
-	CS fullname = fiExpandAndCopy(invo->arg, false);
-	CS esc_name = copyStr_shellescape(
+	S fullname = fiExpandAndCopy(invo->arg, false);
+	S esc_name = copyStr_shellescape(
 			 fullname != NULL ? fullname : invo->arg, true, true
 	);
 	Unt buflen = STRLEN(tmp_orig) + STRLEN(esc_name) + STRLEN(tmp_new) + 16;
-	CS buf = alloc(buflen);
+	S buf = alloc(buflen);
 
 	//Temporarily chdir to /tmp, to avoid patching files in the current directory when the patch
 	//file contains more than one patch. When we have our own temp dir use that instead, it will
@@ -2101,7 +2101,7 @@ c_diffpatch(Invocation* invo) {
 		if (eeTempDirG)
 			(void)mch_chdir(eeTempDirG);
 		else
-			(void)mch_chdir(S"/tmp");
+			(void)mch_chdir(u8"/tmp");
 		shorten_fnames(true);
 	}
 
@@ -2166,8 +2166,8 @@ c_diffpatch(Invocation* invo) {
 					c_file(invo);
 
 					//Do filetype detection with the new name.
-					if (auGroupExists((CS)"filetypedetect"))
-						executeCommLine((CS)":doau filetypedetect BufRead");
+					if (auGroupExists(u8"filetypedetect"))
+						executeCommLine(u8":doau filetypedetect BufRead");
 				}
 			}
 		}
@@ -2237,7 +2237,7 @@ set_diff_option(Portal* po, int value) {
 	curBook = curPor->book;
 	++curBookLock;
 	optChangeAndReportError(
-		S"diff", (OptionValue){.tag = OPTION_NUM, .num = (long)value}, SET_LOCAL
+		u8"diff", (OptionValue){.tag = OPTION_NUM, .num = (long)value}, SET_LOCAL
 	);
 	--curBookLock;
 	curPor = old_curPor;
@@ -2263,7 +2263,7 @@ diff_win_options(Portal* po, int addbuf) {     //Add book to diff.
 	if (!po->o.diff) {
 		po->o.foldMethodSaved = po->o.foldMethod;
 	}
-	optSetStringOptionDirectInPort(po, S"foldmethod", S"diff", OPT_LOCAL, 0);
+	optSetStringOptionDirectInPort(po, u8"foldmethod", u8"diff", OPT_LOCAL, 0);
 	if (!po->o.diff) {
 		po->o.foldEnableSave = po->o.foldEnable;
 		po->o.foldLevelSaved = po->o.foldLevel;
@@ -2274,7 +2274,7 @@ diff_win_options(Portal* po, int addbuf) {     //Add book to diff.
 	//make sure topline is not halfway a fold
 	didChangePortalSetting(po);
 	if ((p_sbo & SCR_HOR) != 0)
-		executeCommLine((CS)"set sbo+=hor");
+		executeCommLine(u8"set sbo+=hor");
 	//Save the current values, to be restored in c_diffoff().
 	po->o.diffSaved = true;
 
@@ -2339,7 +2339,7 @@ c_diffoff(Invocation* invo) {
 
 	//Remove "hor" from @scrollopt if there are no diff portals left.
 	if (!isDiffPortal && (p_sbo & SCR_HOR) != 0)
-		executeCommLine(S"set scrollopt-=hor");
+		executeCommLine(u8"set scrollopt-=hor");
 }
 
 //Read the diff output and add each entry to the diff list.
@@ -2939,7 +2939,7 @@ diff_equal_entry(DiffBlock *dp, Unt idx1, Unt idx2) {
 	if (checkSanity(curtab, dp) == FAIL)
 		return false;
 	for (int i = 0; i < dp->count[idx1]; ++i) {
-		CS line = copyStr(memGetLine(curtab->diffbuf[idx1], dp->lnum[idx1] + i, false));
+		S line = copyStr(memGetLine(curtab->diffbuf[idx1], dp->lnum[idx1] + i, false));
 		int cmp = diff_cmp(line, memGetLine(curtab->diffbuf[idx2], dp->lnum[idx2] + i, false));
 		eeglFree(line);
 		if (cmp != 0)
@@ -2951,7 +2951,7 @@ diff_equal_entry(DiffBlock *dp, Unt idx1, Unt idx2) {
 //Compare the characters at "p1" and "p2".  If they are equal (possibly
 //ignoring case) return true and set "len" to the number of bytes.
 private int
-diff_equal_char(CS p1, CS p2, OUT int* len) {
+diff_equal_char(S p1, S p2, OUT int* len) {
 	Unt l  = utfCharLen(p1);
 
 	if (l != utfCharLen(p2))
@@ -2973,7 +2973,7 @@ diff_equal_char(CS p1, CS p2, OUT int* len) {
 
 //Compare strings "s1" and "s2" according to 'diffopt'. Return non-zero when they are different.
 private int
-diff_cmp(CS s1, CS s2){
+diff_cmp(S s1, S s2){
 	if ((diff_flags & DIFF_IBLANK) != 0 && (*skipwhite(s1) == ZERO || *skipwhite(s2) == ZERO))
 		return 0;
 
@@ -2982,8 +2982,8 @@ diff_cmp(CS s1, CS s2){
 	if ((diff_flags & DIFF_ICASE) != 0 && (diff_flags & ALL_WHITE_DIFF) == 0)
 		return caseInsensitiveCompareMaxCol(s1, s2);
 
-	CS p1 = s1;
-	CS p2 = s2;
+	S p1 = s1;
+	S p2 = s2;
 
 	//Ignore white space changes and possibly ignore case.
 	while (*p1 != ZERO && *p2 != ZERO) {
@@ -3087,7 +3087,7 @@ diff_set_topline(Portal* fromPort, Portal* toPort){
 
 private int
 parse_diffanchors(
-	NULLABLE CS diffAnchors,
+	NULLABLE S diffAnchors,
 	Boole check_only, //will only make sure the syntax is correct.
 	Book* book,
 	LineNr* anchors,
@@ -3095,7 +3095,7 @@ parse_diffanchors(
 ) {
 	if (!diffAnchors)
 		return OK;
-	CS dia = diffAnchors;
+	S dia = diffAnchors;
 
 	Book* origCurBook = curBook;
 	Portal* orig_curPor = curPor;
@@ -3155,7 +3155,7 @@ parse_diffanchors(
 
 //This is called when @diffanchors is changed.
 pub int
-diffanchors_changed(CS newVal, Boole buflocal) {
+diffanchors_changed(S newVal, Boole buflocal) {
 	int diffResult = parse_diffanchors(newVal, true, curBook, NULL, NULL);
 	if (diffResult == OK && (diff_flags & DIFF_ANCHOR) != 0) {
 		Tab   *t;
@@ -3177,7 +3177,7 @@ diffanchors_changed(CS newVal, Boole buflocal) {
 
 //This is called when @diffopt is changed.
 pub int
-diffopt_changed(CS newVal) {
+diffopt_changed(S newVal) {
 	int diff_context_new = 6;
 	int linematch_lines_new = 0;
 	Unt diff_flags_new = 0;
@@ -3186,7 +3186,7 @@ diffopt_changed(CS newVal) {
 	if (!newVal)
 		goto finishedParsing;
 
-	CS p = newVal;
+	S p = newVal;
 	Tab* t;
 	while (*p != ZERO) {
 		//Note: Keep this in sync with option.c:p_dip_values
@@ -3415,11 +3415,11 @@ diff_find_change_simple(
 	int si_org, si_new;
 	int ei_org, ei_new;
 	int added = true;
-	CS p1;
-	CS p2;
+	S p1;
+	S p2;
 	int l;
 
-	CS line_org = ((diff_flags & DIFF_INLINE_NONE) == 0 )
+	S line_org = ((diff_flags & DIFF_INLINE_NONE) == 0 )
 		? copyStr(memGetLine(po->book, lnum, false)) //Copy, the next ml_get() will invalidate it
 		: null; //We only care about the return value, not the actual string comparisons.
 
@@ -3434,7 +3434,7 @@ diff_find_change_simple(
 			if ((diff_flags & DIFF_INLINE_NONE) != 0)
 				break; //early terminate as we only care about the return value
 
-			CS line_new = memGetLine(curtab->diffbuf[i], dp->lnum[i] + off, false);
+			S line_new = memGetLine(curtab->diffbuf[i], dp->lnum[i] + off, false);
 
 			//Search for start of difference
 			si_org = si_new = 0;
@@ -3637,7 +3637,7 @@ diff_find_change_inline_diff(DiffBlock* dp) {
 		//Split each line into chars/words and populate fake file book as
 		//newline-delimited tokens as that's what xdiff requires.
 		for (int off = 0; off < dp->count[i]; off++) {
-			CS curline = memGetLine(curtab->diffbuf[i], dp->lnum[i] + off, false);
+			S curline = memGetLine(curtab->diffbuf[i], dp->lnum[i] + off, false);
 
 			int in_keyword = false;
 
@@ -3647,7 +3647,7 @@ diff_find_change_inline_diff(DiffBlock* dp) {
 			int eol_linemap_len = -1;
 			int eol_numlines = -1;
 
-			CS s;
+			S s;
 			for (s = curline; *s != ZERO;) {
 				int new_in_keyword = false;
 				if (diff_flags & DIFF_INLINE_WORD) {
@@ -3996,7 +3996,7 @@ nvDiffGetPut(int put, Long count) {
 		return;
 	}
 	if (count == 0)
-		invo.arg = S"";
+		invo.arg = u8"";
 	else {
 		eeSnprintf(buf, 30, "%ld", count);
 		invo.arg = buf;
@@ -4494,11 +4494,11 @@ diffLnumPort(LineNr lnum, Portal *po) {
 //Parse unified diff with zero(!) context lines.
 //Return FAIL if there is no diff information in "line".
 private int
-parse_diff_unified(CS line, Hunk* hunk) {
+parse_diff_unified(S line, Hunk* hunk) {
 	long    oldline, oldcount, newline, newcount;
 
 	//Parse unified diff hunk header: @@ -oldline,oldcount +newline,newcount @@
-	CS p = line;
+	S p = line;
 	if (*p++ == '@' && *p++ == '@' && *p++ == ' ' && *p++ == '-') {
 		oldline = parseLong(&p);
 		if (*p == ',') {
@@ -4558,7 +4558,7 @@ private int
 xdiff_out_unified(void* priv, MmBuffer* mb, int nbuf){
 	DiffResult* dout = (DiffResult *)priv;
 	for (int i = 0; i < nbuf; i++)
-		ga_concat_len(&dout->dout_ga, (CS)mb[i].ptr, mb[i].size);
+		ga_concat_len(&dout->dout_ga, (S)mb[i].ptr, mb[i].size);
 
 	return 0;
 }
@@ -4666,7 +4666,7 @@ parse_diff_optarg(
 ) {
 	Bag* d = opts->bag;
 
-	CS algo = bagGetString(d, tConst("algorithm"), false);
+	S algo = bagGetString(d, tConst("algorithm"), false);
 	if (algo) {
 		if (STRNCMP(algo, "myers", 5) == 0)
 			*diffalgo = 0;
@@ -4678,7 +4678,7 @@ parse_diff_optarg(
 			*diffalgo = XDF_HISTOGRAM_DIFF;
 	}
 
-	CS output_fmt = bagGetString(d, tConst("output"), false);
+	S output_fmt = bagGetString(d, tConst("output"), false);
 	if (output_fmt) {
 		if (STRNCMP(output_fmt, "unified", 7) == 0)
 			 *diff_output_fmt = DIO_OUTPUT_UNIFIED;
@@ -4698,7 +4698,7 @@ parse_diff_optarg(
 		*diffopts |= DIFF_IBLANK;
 	if (bagGetBool(d, tConst("icase"), false))
 		*diffopts |= DIFF_ICASE;
-	if (bagGetBool(d, tConst(S"iwhite"), false))
+	if (bagGetBool(d, tConst(u8"iwhite"), false))
 		*diffopts |= DIFF_IWHITE;
 	if (bagGetBool(d, tConst("iwhiteall"), false))
 		*diffopts |= DIFF_IWHITEALL;
@@ -4720,7 +4720,7 @@ list_to_diffin(List* l, DiffInp* din, int icase) {
 	ga_init2(&ga, 1, 2048);
 
 	FOR_ALL_LIST_ITEMS(l, li) {
-		CS str = tv_get_string(&li->c);
+		S str = tv_get_string(&li->c);
 		if (icase) {
 			str = strlow_save(str);
 			if (!str)
@@ -4740,10 +4740,10 @@ list_to_diffin(List* l, DiffInp* din, int icase) {
 private Bag*
 get_diff_hunk_indices(Hunk* hunk) {
 	Bag* hunkBag = allocBag();
-	bagAddNumber(hunkBag, S"from_idx", hunk->origLnum - 1);
-	bagAddNumber(hunkBag, S"from_count", hunk->origCount);
-	bagAddNumber(hunkBag, S"to_idx", hunk->newLnum  - 1);
-	bagAddNumber(hunkBag, S"to_count", hunk->newCount);
+	bagAddNumber(hunkBag, u8"from_idx", hunk->origLnum - 1);
+	bagAddNumber(hunkBag, u8"from_count", hunk->origCount);
+	bagAddNumber(hunkBag, u8"to_idx", hunk->newLnum  - 1);
+	bagAddNumber(hunkBag, u8"to_count", hunk->newCount);
 
 	return hunkBag;
 }
@@ -4785,7 +4785,7 @@ f_diff(Arr(Var) argvars, OUT Var* returnVar) {
 	//If @diffexpr is set, then the internal diff is not used.  Set
 	//@diffexpr to an empty string temporarily.
 	int restore_diffexpr = false;
-	CS p_dexSaved = p_dex;
+	S p_dexSaved = p_dex;
 	if (p_dex) {
 		restore_diffexpr = true;
 		p_dex = null;
@@ -4822,7 +4822,7 @@ f_diff(Arr(Var) argvars, OUT Var* returnVar) {
 	} else {
 		ga_append(&dio.dio_diff.dout_ga, ZERO);
 		returnVar->tag = VAR_STRING;
-		returnVar->string = copyStr((CS)dio.dio_diff.dout_ga.c);
+		returnVar->string = copyStr((S)dio.dio_diff.dout_ga.c);
 	}
 
 done:
@@ -5126,7 +5126,7 @@ xdl_recs_cmp(DiffData* dd1, long off1, long lim1,
 
 	//If one dimension is empty, then all records on the other one must be obviously changed.
 	if (off1 == lim1) {
-		CS rchg2 = dd2->rchg;
+		S rchg2 = dd2->rchg;
 		long *rindex2 = dd2->rindex;
 
 		for (; off2 < lim2; off2++)
@@ -5505,7 +5505,7 @@ group_slide_up(XdFile* xdf, XdlGroup* g) {
 }
 
 private void
-xdl_bug(CS msg) {
+xdl_bug(S msg) {
 	fprintf(stderr, "BUG: %s\n", msg);
 	exit(1);
 }
@@ -5538,7 +5538,7 @@ xdl_change_compact(XdFile* xdf, XdFile* xdfo, long flags) {
 			//Shift the group backward as much as possible:
 			while (!group_slide_up(xdf, &g))
 				if (group_previous(xdfo, &go))
-					xdl_bug(S"group sync broken sliding up");
+					xdl_bug(u8"group sync broken sliding up");
 
 			//This is this highest that this group can be shifted. Record its end index:
 			earliest_end = g.end;
@@ -5551,7 +5551,7 @@ xdl_change_compact(XdFile* xdf, XdFile* xdfo, long flags) {
 				if (group_slide_down(xdf, &g))
 					break;
 				if (group_next(xdfo, &go))
-					xdl_bug(S"group sync broken sliding down");
+					xdl_bug(u8"group sync broken sliding down");
 
 				if (go.end > go.start)
 					end_matching_other = g.end;
@@ -5571,9 +5571,9 @@ xdl_change_compact(XdFile* xdf, XdFile* xdfo, long flags) {
 			//changes from the other file that it can align with.
 			while (go.end == go.start) {
 				if (group_slide_up(xdf, &g))
-					xdl_bug(S"match disappeared");
+					xdl_bug(u8"match disappeared");
 				if (group_previous(xdfo, &go))
-					xdl_bug(S"group sync broken sliding to match");
+					xdl_bug(u8"group sync broken sliding to match");
 			}
 		} ei (flags & INDENT_HEURISTIC) {
 			//Indent heuristic: a group of pure add/delete lines implies two splits, one between the
@@ -5607,9 +5607,9 @@ xdl_change_compact(XdFile* xdf, XdFile* xdfo, long flags) {
 
 			while (g.end > best_shift) {
 				if (group_slide_up(xdf, &g))
-					xdl_bug(S"best shift unreached");
+					xdl_bug(u8"best shift unreached");
 				if (group_previous(xdfo, &go))
-					xdl_bug(S"group sync broken sliding to blank line");
+					xdl_bug(u8"group sync broken sliding to blank line");
 			}
 		}
 
@@ -5618,11 +5618,11 @@ xdl_change_compact(XdFile* xdf, XdFile* xdfo, long flags) {
 		if (group_next(xdf, &g))
 			break;
 		if (group_next(xdfo, &go))
-			xdl_bug(S"group sync broken moving to next group");
+			xdl_bug(u8"group sync broken moving to next group");
 	}
 
 	if (!group_next(xdfo, &go))
-		xdl_bug(S"group sync broken at end of file");
+		xdl_bug(u8"group sync broken at end of file");
 
 	return 0;
 }
@@ -5745,7 +5745,7 @@ xdl_bogosqrt(long n) {
 }
 
 private int
-xdl_emit_diffrec(CS rec, long size, CS pre, long psize, XdEmitCb* ecb) {
+xdl_emit_diffrec(S rec, long size, S pre, long psize, XdEmitCb* ecb) {
 	int i = 2;
 	MmBuffer mb[3];
 
@@ -5754,7 +5754,7 @@ xdl_emit_diffrec(CS rec, long size, CS pre, long psize, XdEmitCb* ecb) {
 	mb[1].ptr = rec;
 	mb[1].size = size;
 	if (size > 0 && rec[size - 1] != '\n') {
-		mb[2].ptr = S"\n\\ No newline at end of file\n";
+		mb[2].ptr = u8"\n\\ No newline at end of file\n";
 		mb[2].size = (long)STRLEN(mb[2].ptr);
 		i++;
 	}
@@ -5849,7 +5849,7 @@ xdl_guess_lines(MmFile* mf, long sample) {
 }
 
 private int
-xdl_blankline(CS line, long size, long flags) {
+xdl_blankline(S line, long size, long flags) {
 	if ((flags & WHITESPACE_FLAGS) == 0)
 		return (size <= 1);
 
@@ -5862,7 +5862,7 @@ xdl_blankline(CS line, long size, long flags) {
 
 //Have we eaten everything on the line, except for an optional CR at the very end?
 private int
-ends_with_optional_cr(CS l, long s, long i) {
+ends_with_optional_cr(S l, long s, long i) {
 	int complete = s && l[s - 1] == '\n';
 
 	if (complete)
@@ -5876,7 +5876,7 @@ ends_with_optional_cr(CS l, long s, long i) {
 }
 
 private int
-xdl_recmatch(CS l1, long s1, CS l2, long s2, long flags) {
+xdl_recmatch(S l1, long s1, S l2, long s2, long flags) {
 	int i1, i2;
 
 	if (s1 == s2 && !memcmp(l1, l2, s1))
@@ -5950,10 +5950,10 @@ xdl_recmatch(CS l1, long s1, CS l2, long s2, long flags) {
 }
 
 private unsigned long xdl_hash_record_with_whitespace(
-	Byte** data, CS top, long flags
+	Byte** data, S top, long flags
 ) {
 	unsigned long ha = 5381;
-	CS ptr = *data;
+	S ptr = *data;
 	int cr_at_eol_only = (flags & WHITESPACE_FLAGS) == IGNORE_CR_AT_EOL;
 
 	for (; ptr < top && *ptr != '\n'; ptr++) {
@@ -5962,7 +5962,7 @@ private unsigned long xdl_hash_record_with_whitespace(
 			if (*ptr == '\r' && (ptr + 1 < top && ptr[1] == '\n'))
 				continue;
 		} ei (XDL_ISSPACE(*ptr)) {
-			CS ptr2 = ptr;
+			S ptr2 = ptr;
 			int at_eol;
 			while (ptr + 1 < top && XDL_ISSPACE(ptr[1]) && ptr[1] != '\n')
 				ptr++;
@@ -5990,9 +5990,9 @@ private unsigned long xdl_hash_record_with_whitespace(
 }
 
 private Ulong
-xdl_hash_record(Byte** data, CS top, long flags) {
+xdl_hash_record(Byte** data, S top, long flags) {
 	unsigned long ha = 5381;
-	CS ptr = *data;
+	S ptr = *data;
 
 	if ((flags & WHITESPACE_FLAGS) != 0)
 		return xdl_hash_record_with_whitespace(data, top, flags);
@@ -6015,11 +6015,11 @@ xdl_hashbits(Unt size) {
 }
 
 private int
-xdl_num_out(CS out, long val) {
-	CS str = out;
+xdl_num_out(S out, long val) {
+	S str = out;
 	Byte buf[32];
 
-	CS ptr = buf + sizeof(buf) - 1;
+	S ptr = buf + sizeof(buf) - 1;
 	*ptr = '\0';
 	if (val < 0) {
 		*--ptr = '-';
@@ -6038,7 +6038,7 @@ xdl_num_out(CS out, long val) {
 }
 
 private int xdl_format_hunk_hdr(
-	long s1, long c1, long s2, long c2, CS func, long funclen, XdEmitCb* ecb
+	long s1, long c1, long s2, long c2, S func, long funclen, XdEmitCb* ecb
 ) {
 	MmBuffer mb;
 	Byte buf[128];
@@ -6187,7 +6187,7 @@ private int xdl_classify_record(unsigned int pass, Classifier *cf, Record **rhas
 					 unsigned int hbits, Record *rec) {
 	XdlClass *rcrec;
 
-	CS line = rec->ptr;
+	S line = rec->ptr;
 	long hi = (long) XDL_HASHLONG(rec->ha, cf->hbits);
 	for (rcrec = cf->rchash[hi]; rcrec; rcrec = rcrec->next) {
 		if (rcrec->ha == rec->ha
@@ -6525,7 +6525,7 @@ private int xdl_optimize_ctxs(Classifier* cf, XdFile* xdf1, XdFile* xdf2) {
 #define NON_UNIQUE UNT
 
 private int
-is_anchor(XpParam const *xpp, CS line) {
+is_anchor(XpParam const *xpp, S line) {
 	for (int i = 0; i < (int)xpp->anchors_nr; i++) {
 		if (!STRNCMP(line, xpp->anchors[i], STRLEN(xpp->anchors[i])))
 			return 1;
@@ -7095,9 +7095,9 @@ private long xdl_get_rec(XdFile *xdf, long ri, Byte** rec) {
 	return xdf->recs[ri]->size;
 }
 
-private int xdl_emit_record(XdFile *xdf, long ri, CS pre, XdEmitCb* ecb) {
+private int xdl_emit_record(XdFile *xdf, long ri, S pre, XdEmitCb* ecb) {
 	long psize = (long)STRLEN(pre);
-	CS rec;
+	S rec;
 	long size = xdl_get_rec(xdf, ri, OUT &rec);
 	if (xdl_emit_diffrec(rec, size, pre, psize, ecb) < 0) {
 		return -1;
@@ -7191,23 +7191,23 @@ xdl_emit_diff(XdfEnv* xe, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg
 
 		//Emit pre-context.
 		for (; s2 < xch->i2; s2++)
-			if (xdl_emit_record(&xe->xdf2, s2, S" ", ecb) < 0)
+			if (xdl_emit_record(&xe->xdf2, s2, u8" ", ecb) < 0)
 				return -1;
 
 		for (s1 = xch->i1, s2 = xch->i2;; xch = xch->next) {
 			//Merge previous with current change atom.
 			for (; s1 < xch->i1 && s2 < xch->i2; s1++, s2++)
-				if (xdl_emit_record(&xe->xdf2, s2, S" ", ecb) < 0)
+				if (xdl_emit_record(&xe->xdf2, s2, u8" ", ecb) < 0)
 					return -1;
 
 			//Removes lines from the first file.
 			for (s1 = xch->i1; s1 < xch->i1 + xch->chg1; s1++)
-				if (xdl_emit_record(&xe->xdf1, s1, S"-", ecb) < 0)
+				if (xdl_emit_record(&xe->xdf1, s1, u8"-", ecb) < 0)
 					return -1;
 
 			//Adds lines from the second file.
 			for (s2 = xch->i2; s2 < xch->i2 + xch->chg2; s2++) {
-				if (xdl_emit_record(&xe->xdf2, s2, S"+", ecb) < 0)
+				if (xdl_emit_record(&xe->xdf2, s2, u8"+", ecb) < 0)
 					return -1;
 			}
 
@@ -7219,7 +7219,7 @@ xdl_emit_diff(XdfEnv* xe, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg
 
 		//Emit post-context.
 		for (s2 = xche->i2 + xche->chg2; s2 < e2; s2++) {
-			if (xdl_emit_record(&xe->xdf2, s2, S" ", ecb) < 0)
+			if (xdl_emit_record(&xe->xdf2, s2, u8" ", ecb) < 0)
 				return -1;
 		}
 	}
