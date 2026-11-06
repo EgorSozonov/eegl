@@ -306,6 +306,7 @@
 [-] garbage collection (refcounting & weak refs FTW)
 [-] DIFF_ED (Outdated Ed-style diffs)
 [-] ZZ, ZQ commands (weird duplicates)
+[-] utf8CharLens (aka mb_bytelen_tab)
 
 tag.c:do_tag (weird matches is static, also newMatches?)
 

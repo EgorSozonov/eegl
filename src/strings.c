@@ -13,10 +13,9 @@
 #include "eegl.h"
 #include "h/data.h"
 #endif
-#define AVOID_DUPLICATION
-#include "h/strings.h"
-#undef AVOID_DUPLICATION
 
+
+#include <sys/mman.h>
 #include <string.h>
 #include <strings.h>
 #include <wchar.h>   //for towupper() and towlower()
@@ -42,7 +41,12 @@ typedef struct {
 	long last;
 } Interval;
 
+pub typedef struct RewindableArena RewindableArena;
+
 //}}}
+#define AVOID_DUPLICATION
+#include "h/strings.h"
+#undef AVOID_DUPLICATION
 //{{{@@forward declarations
 private Unt calculateChunkSize(Unt allocSize);
 private int eeIsBDigit(int c);
@@ -59,6 +63,7 @@ private Unt hashCode(Byte const* start);
 private Unt hashOfText(Text s);
 private DictStringInt128* initDict0(Arr(Byte const) text, Int size, Arena* a, OUT Arr(Unt)* temp);
 private void initDict1(Arena* a, int size, Arr(Unt) temp, OUT DictStringInt128* dict);
+private Unt calculateRewindableChunkSize(Unt allocSize);
 //}}}
 
 //{{{ Arena
@@ -5108,3 +5113,130 @@ pub Int getKv_Text_DictStringInt128(
 #undef dictGetterFn
 
 //}}}
+//{{{RewindableArena
+
+typedef struct RewindableArenaChunk RewindableArenaChunk;
+typedef struct RewindableArena RewindableArena;
+
+struct RewindableArenaChunk { //:RewindableArenaChunk
+	RewindableArenaChunk* prev;
+	Unt size;
+	char c[]; //flexible array member
+};
+
+struct RewindableArena { //:RewindableArena
+	RewindableArenaChunk* c; //current chunk
+	Unt ind;  //first free index in current chunk
+   Unt size; //size of current chunk
+   NULLABLE char* rewindSpot;
+};
+
+pub RewindableArena*
+createRewindableArena() { //:createRewindableArena
+	Unt firstChunkSize = CHUNK_QUANT;
+	RewindableArenaChunk* firstChunk = mmap(
+		NULL, firstChunkSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
+	);
+	if (firstChunk == MAP_FAILED)
+		abort();
+
+	firstChunk->size = firstChunkSize;
+	firstChunk->prev = null;
+
+	RewindableArena* a = (RewindableArena*)(&firstChunk->c);
+
+	a->c = firstChunk;
+	a->ind = sizeof(RewindableArena);
+	a->size = firstChunkSize - sizeof(RewindableArenaChunk);
+
+   printf("created chunk %p arena %p\n", firstChunk, a);
+	return a;
+}
+
+private Unt
+calculateRewindableChunkSize(Unt allocSize) { //:calculateRewindableChunkSize
+	Unt fullMemory = sizeof(ArenaChunk) + allocSize;
+	//struct header + main memory chunk + space for malloc bookkeep
+
+	Unt size = fullMemory < CHUNK_QUANT
+						? CHUNK_QUANT
+						: (fullMemory % CHUNK_QUANT > 0
+							? (fullMemory/CHUNK_QUANT + 1)*CHUNK_QUANT
+							: fullMemory);
+
+	return size;
+}
+
+pub void*
+allocateOnRewindableArena(Unt allocSize, RewindableArena* a) { //:allocateOnRewindableArena
+//Allocate memory in the arena, malloc'ing a new chunk if needed
+	if (a->ind + allocSize >= a->size) {
+		Unt newSize = calculateRewindableChunkSize(allocSize);
+		RewindableArenaChunk* newChunk = mmap(
+			NULL, newSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
+		);
+		if (newChunk == MAP_FAILED) {
+			perror("mmap error when allocating arena chunk");
+			exit(EXIT_FAILURE);
+		};
+		newChunk->size = newSize;
+		newChunk->prev = a->c;
+		a->c = newChunk;
+		a->ind = 0;
+      a->size = newSize - sizeof(RewindableArenaChunk);
+	}
+	void* result = (void*)(a->c->c + a->ind);
+	a->ind += allocSize;
+	if (allocSize % 4 != 0)  {
+		a->ind += (4 - (allocSize % 4));
+	}
+	return result;
+}
+
+pub CS
+allocateStringOnRewindableArena(Unt len, RewindableArena* a) {
+   CS str = allocateOnRewindableArena(len + 1, a);
+	str[len] = ZERO;
+	return str;
+}
+
+pub void
+deleteRewindableArena(RewindableArena* a) { //:deleteRewindableArena
+//Return memory of the arena to the OS
+	for (RewindableArenaChunk* curr = a->c; curr; ) {
+		RewindableArenaChunk* nextToFree = curr->prev;
+
+		Unt sz= curr->size; //TEMP
+      printf("curr %p size %d\n", curr, sz);
+
+		if (munmap(curr, curr->size) == -1) {
+			perror("munmap error when freeing arena");
+			exit(EXIT_FAILURE);
+		} else {
+			printf("unmapped a block of memory addr %p size %d\n", curr, sz);
+		}
+		curr = nextToFree;
+	}
+}
+
+pub void
+setRewindPoint(OUT RewindableArena* a) {
+   a->rewindSpot = a->c->c + a->ind;
+}
+
+pub void
+rewindArena(OUT RewindableArena* a) {
+	if (!a->rewindSpot) {
+		return;
+	}
+   for (
+		RewindableArenaChunk* curr = a->c;
+		curr && (a->rewindSpot < curr->c || a->rewindSpot > (char*)curr + curr->size);
+		curr = curr->prev, a->c = curr, a->size = curr->size - sizeof(RewindableArenaChunk)
+	) {
+	}
+	a->ind = a->rewindSpot - a->c->c;
+}
+
+//}}}
+

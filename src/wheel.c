@@ -2384,12 +2384,11 @@ getMoreChars(
 		}
 
 		if (lang) {
-			 //When getting a text character and the next character is a
-			 //multi-byte character, it could be a composing character.
-			 //However, don't wait for it to arrive. Also, do enable mapping,
-			 //because if it's put back with vungetc() it's too late to apply mapping.
+			//When getting a text character and the next character is a multi-byte character, it
+			//could be a composing character. However, don't wait for it to arrive. Also, do enable
+			//mapping, because if it's put back with vungetc() it's too late to apply mapping.
 			--no_mapping;
-			while ((c = vpeekc()) > 0 && (c >= 0x100 || utf8CharLens[vpeekc()] > 1)) {
+			while ((c = vpeekc()) > 0 && c >= 0x100) {
 				c = plain_vgetc();
 				if (!utf_iscomposing(c)) {
 					vungetc(c);      //it wasn't, put it back
@@ -3113,7 +3112,7 @@ clear_showcmd(void) {
 		lines = bot - top + 1;
 
 		if (VIsual_mode == Ctrl_V) {
-			getvcols(curPor, &curPor->cursor, &VIsual, &leftcol, &rightcol);
+			bookGetLeftRightVcols(curPor, &curPor->cursor, &VIsual, &leftcol, &rightcol);
 			sprintf((char *)showcmd_buf, "%ldx%ld", lines, (long)(rightcol - leftcol + 1));
 		} ei (VIsual_mode == 'V' || VIsual.lnum != curPor->cursor.lnum)
 			sprintf((char *)showcmd_buf, "%ld", lines);
@@ -7239,7 +7238,7 @@ v_swap_corners(int cmdchar) {
 
 	if (cmdchar == 'O' && VIsual_mode == Ctrl_V) {
 		old_cursor = curPor->cursor;
-		getvcols(curPor, &old_cursor, &VIsual, &left, &right);
+		bookGetLeftRightVcols(curPor, &old_cursor, &VIsual, &left, &right);
 		curPor->cursor.lnum = VIsual.lnum;
 		doColAdvance(left);
 		VIsual = curPor->cursor;
@@ -13186,7 +13185,7 @@ get_literal(int noReduceKeys) {
 			//A character with non-Shift modifiers should not be a valid character for i_CTRL-V_digit.
 			break;
 
-		if ((stateG & MODE_COMMLINE) == 0 && MB_BYTE2LEN_CHECK(nc) == 1)
+		if ((stateG & MODE_COMMLINE) == 0)
 			add_to_showcmd(nc);
 		if (nc == 'x' || nc == 'X')
 			hex = true;
@@ -13423,11 +13422,10 @@ insertchar0(
 		//- need to check for abbreviation: A non-word char after a word-char
 		while (      (c = vpeekc()) != ZERO
 			&& !ISSPECIAL(c)
-			&& (MB_BYTE2LEN_CHECK(c) == 1)
 			&& i < INPUT_BUFLEN
 			&& (textwidth == 0
 				 || (virtcol += byte2cells(buf[i - 1])) < (ColNr)textwidth)
-			&& !(!no_abbr && !eeIsWordc(c) && eeIsWordc(buf[i - 1])))
+			&& (no_abbr || eeIsWordc(c) || !eeIsWordc(buf[i - 1])))
 		{
 			buf[i] = vgetc();
 			i++;
@@ -13741,7 +13739,7 @@ oneright(void) {
 		//Adjust for multi-wide char (excluding TAB)
 		CS ptr = ml_get_cursor();
 		doColAdvance(doGetCursorPos() + ((*ptr != TAB
-						  && bookIsCharPrintable((*mb_ptr2char)(ptr)))
+						&& bookIsCharPrintable((*mb_ptr2char)(ptr)))
 				 ? bookPtr2Cells(ptr) : 1));
 		curPor->setCursWant = true;
 		//Return OK if the cursor moved, FAIL otherwise (at window edge).
@@ -13777,8 +13775,6 @@ oneleft(void) {
 		int width = 1;
 		for (;;) {
 			doColAdvance(v - width);
-			//doGetCursorPos() is slow, skip it when @showbreak is empty,
-			//@breakindent is not set and there are no multi-byte characters
 			if (doGetCursorPos() < v)
 				break;
 			++width;
@@ -14464,8 +14460,8 @@ ins_bs(int c, int mode, int* inserted_space_p) {
 						   && (!*inserted_space_p || arrow_used)))
 				)
 		) {
-			ColNr   vcol = 0;
-			ColNr   want_vcol;
+			ColNr vcol = 0;
+			ColNr want_vcol;
 			CS line;
 			CS ptr;
 			CS cursor_ptr;
@@ -14772,7 +14768,7 @@ ins_up( int      startcol) {  //when true move to insertStartG.col
 	Pos tpos = curPor->cursor;
 	if (cursor_up(1L, true) == OK) {
 		if (startcol)
-			 doColAdvance(getvcol_nolist(&insertStartG));
+			 doColAdvance(bookGetVcolNoList(&insertStartG));
 		if (old_topline != curPor->topLine || old_topfill != curPor->topFill)
 			 redraw_later(UPD_VALID);
 		start_arrow(&tpos);
@@ -14806,7 +14802,7 @@ ins_down(int startcol) {  //when true move to insertStartG.col
 	Pos tpos = curPor->cursor;
 	if (cursor_down(1L, true) == OK) {
 		if (startcol)
-			doColAdvance(getvcol_nolist(&insertStartG));
+			doColAdvance(bookGetVcolNoList(&insertStartG));
 		if (old_topline != curPor->topLine || old_topfill != curPor->topFill)
 			redraw_later(UPD_VALID);
 		start_arrow(&tpos);
@@ -14900,13 +14896,12 @@ ins_tab(void) {
 		}
 
 		//compute virtual column numbers of first white and cursor
-		getvcol(curPor, &fpos, &vcol, NULL, NULL);
-		getvcol(curPor, cursor, &want_vcol, NULL, NULL);
+		getvcol(curPor, &fpos, OUT &vcol, NULL, NULL);
+		getvcol(curPor, cursor, OUT &want_vcol, NULL, NULL);
 
 		bookInitCharsForKeywordsSizeArg(&cts, curPor, 0, vcol, tab, tab);
 
-		//Use as many TABs as possible.  Beware of 'breakindent', 'showbreak'
-		//and 'linebreak' adding extra virtual columns.
+		//Use as many TABs as possible
 		while (SPACE_OR_TAB(*ptr)) {
 			i = lbr_chartabsize(&cts);
 			if (cts.cts_vcol + i > want_vcol)
@@ -15063,7 +15058,7 @@ get_nolist_virtcol(void) {
 			|| curPor->cursor.lnum > curPor->book->mem.lineCount)
 		return 0;
 	if (curPor->o.list)
-		return getvcol_nolist(&curPor->cursor);
+		return bookGetVcolNoList(&curPor->cursor);
 	validate_virtcol();
 	return curPor->virtCol;
 }
@@ -15513,9 +15508,9 @@ ins_compl_accept_char(int c) {
 	if (isAutocomplActiveP && compl_from_nonkeyword)
 		return false;
 
-	if (ctrl_x_mode & CTRL_X_WANT_IDENT)
-		//When expanding an identifier only accept identifier chars.
-		return eeIsIdentifierChar(c);
+	if ((ctrl_x_mode & CTRL_X_WANT_IDENT) != 0)
+		//When expanding an identifier, only accept identifier chars.
+		return bookIsIdentifierChar(c);
 
 	switch (ctrl_x_mode) {
 	case CTRL_X_FILES:
@@ -19722,7 +19717,7 @@ private Unt
 get_normal_compl_info(CS line, int startcol, ColNr curs_col) {
 	if ((compl_cont_status & CONT_SOL) || ctrl_x_mode_path_defines()) {
 		if (!compl_status_adding()) {
-			 while (--startcol >= 0 && eeIsIdentifierChar(line[startcol]))
+			 while (--startcol >= 0 && bookIsIdentifierChar(line[startcol]))
 				 {}
 			 compl_col += ++startcol;
 			 compl_length = curs_col - startcol;

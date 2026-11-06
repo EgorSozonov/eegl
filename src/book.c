@@ -347,7 +347,8 @@ private void getLinesIntoVar(
 private void getBookLineIntoVar(Var* argvars, Var* returnVar, int retlist);
 private int initCharTable(Book* book);
 private int parseAnIsOption(CS var, Book* book, Boole only_check);
-private int win_nolbr_chartabsize(CharTableSize* cts, OUT int* headp);
+private int win_chartabsize(Portal *po, CS p, ColNr col);
+private int win_nolbr_chartabsize(CharTableSize* cts);
 private int inPortalBorder(Portal *po, ColNr vcol);
 private int calc_percentage(long part, long whole);
 private int readBook(
@@ -5612,9 +5613,6 @@ f_setline(Var *argvars, OUT Var* returnVar) {
 //}}}
 //{{{charset
 
-private int parseAnIsOption(CS var, Book* book, Boole only_check);
-private int win_nolbr_chartabsize(CharTableSize *cts, int *headp);
-
 private Boole chartab_initialized = false;
 
 //charsForKeywords[] is an array of 32 bytes, each bit representing one of the
@@ -5631,8 +5629,6 @@ private Byte charTableP[256];
 #define CT_PRINT_CHAR  0x10   //flag: set for printable chars
 #define CT_ID_CHAR     0x20   //flag: set for ID chars
 #define CT_FNAME_CHAR  0x40   //flag: set for file name chars
-
-private int inPortalBorder(Portal *po, ColNr vcol);
 
 //Fill charTableP[]. Also fill curBook->charsForKeywords[] with flags for keyword
 //characters for current book.
@@ -5713,16 +5709,16 @@ bookIsCharPrintable_strict(int c) {
 private int
 parseAnIsOption(CS var, Book* book, Boole only_check) {  //false: refill charTableP[]
 	CS p = var;
-	long c;
-	int tilde;
+	Long c;
+	Boole negation;
 
 	//Parse the 'isident', 'iskeyword', 'isfname' and 'isprint' options. Each option is a list of
 	//characters, character numbers or ranges, separated by commas, e.g.: "200-210,x,#-178,-"
 	while (*p != ZERO) {
-		tilde = false;
+		negation = false;
 		Boole do_isalpha = false;
 		if (*p == '^' && p[1] != ZERO) {
-			tilde = true;
+			negation = true;
 			++p;
 		}
 		if (EE_ISDIGIT(*p))
@@ -5766,17 +5762,17 @@ parseAnIsOption(CS var, Book* book, Boole only_check) {  //false: refill charTab
 		for (; c <= c2; c++) {
 			if (!do_isalpha || MB_ISLOWER(c) || MB_ISUPPER(c)) {
 				if (var == p_isi) {         //(re)set ID flag
-					if (tilde)
+					if (negation)
 						charTableP[c] &= ~CT_ID_CHAR;
 					else
 						charTableP[c] |= CT_ID_CHAR;
 				} ei (var == p_isf) {        //(re)set fname flag
-					if (tilde)
+					if (negation)
 						charTableP[c] &= ~CT_FNAME_CHAR;
 					else
 						charTableP[c] |= CT_FNAME_CHAR;
 				} else {//var == book->o.isKeyword (re)set keyword flag
-					if (tilde)
+					if (negation)
 						RESET_CHARTAB(book, c);
 					else
 						SET_CHARTAB(book, c);
@@ -5868,12 +5864,11 @@ bookTranscharByte(Unt c) {
 	return transchar_buf(c);
 }
 
-//Return the number of characters 'c' will take on the screen, taking into account the size of a tab
-//Use a define to make it fast, this is used very often!!! Also see getvcol() below.
+//Return the number of characters 'c' will take on the screen, taking into account the size of
+//a tab Use a define to make it fast, this is used very often!!! Also see getvcol() below.
 # define RET_PORT_BOOK_CHARSIZE(po, book, p, col) \
-	if (*(p) == TAB && (!(po)->o.list || listCharsG.tab1)) { \
-		int ts; \
-		ts = (book)->o.shiftWidth; \
+	if ((p)[0] == TAB && (!(po)->o.list || listCharsG.tab1)) { \
+		int ts = (book)->o.shiftWidth; \
 		return (int)(ts - (col % ts)); \
 	} else \
 		return bookPtr2Cells(p);
@@ -5883,7 +5878,7 @@ chartabsize(CS p, ColNr col) {
 	RET_PORT_BOOK_CHARSIZE(curPor, curBook, p, col)
 }
 
-pub int
+private int
 win_chartabsize(Portal *po, CS p, ColNr col) {
 	RET_PORT_BOOK_CHARSIZE(po, po->book, p, col)
 }
@@ -5976,7 +5971,7 @@ drawLineOnScreentabsize_cts(CharTableSize *cts, ColNr len) {
 	for ( ; *cts->cts_ptr != ZERO && (len == MAXCOL || cts->cts_ptr < cts->cts_line + len);
 			MB_PTR_ADV(cts->cts_ptr)
 	){
-		vcol += win_lbr_chartabsize(cts, NULL);
+		vcol += win_lbr_chartabsize(cts);
 		if (vcol > MAXCOL) {
 			cts->cts_vcol = MAXCOL;
 			break;
@@ -5985,48 +5980,46 @@ drawLineOnScreentabsize_cts(CharTableSize *cts, ColNr len) {
 	}
 	//check for a virtual text at the end of a line or on an empty line
 	if (len == MAXCOL && cts->cts_has_prop_with_text && *cts->cts_ptr == ZERO) {
-		(void)win_lbr_chartabsize(cts, NULL);
+		(void)win_lbr_chartabsize(cts);
 		vcol += cts->cts_cur_text_width;
 		//when properties are above or below the empty line must also be counted
 		if (cts->cts_ptr == cts->cts_line && cts->cts_prop_lines > 0)
-			 ++vcol;
+			++vcol;
 		cts->cts_vcol = vcol > MAXCOL ? MAXCOL : (int)vcol;
 	}
 }
 
 //Return true if 'c' is a normal identifier character: Letters and chars from the 'isident' option
 pub int
-eeIsIdentifierChar(int c) {
+bookIsIdentifierChar(int c) {
 	return (c > 0 && c < 0x100 && (charTableP[c] & CT_ID_CHAR));
 }
 
-//Like eeIsIdentifierChar() but not using the 'isident' option: letters, numbers and underscore
+//Like bookIsIdentifierChar() but not using the @isident option: letters, numbers and
+//underscore
 pub int
-eeIsNormalIdentifierChar(int c) {
+bookIsAsciiIdentifierChar(int c) {
 	return ASCII_ISALNUM(c) || c == '_';
 }
 
 pub int
-eeIsWordc_buf(Unt c, Book* book) {
+bookIsWordChar(Unt c, Book* book) {
 	if (c >= 0x100) {
 		return utf_class_buf(c, book) >= 2;
 	}
 	return (c < UNT_NEG && GET_CHARTAB(book, c) != 0);
 }
 
-//return true if 'c' is a keyword character: Letters and characters from @iskeyword option for the
-//current book. For multi-byte characters mb_get_class() is used (builtin rules).
+//return true if 'c' is a keyword character: Letters and characters from @iskeyword option for
+//the current book. For multi-byte characters mb_get_class() is used (builtin rules).
 pub int
 eeIsWordc(Unt c) {
-	return eeIsWordc_buf(c, curBook);
+	return bookIsWordChar(c, curBook);
 }
 
 pub int
 eeIsWordPtr_buf(CS p, Book* book) {
-	Unt c = *p;
-	if (utf8CharLens[c] > 1)
-		c = mb_ptr2char(p);
-	return eeIsWordc_buf(c, book);
+	return bookIsWordChar(p[0], book);
 }
 
 //Just like eeIsWordc() but uses a pointer to the (multi-byte) character.
@@ -6075,7 +6068,6 @@ bookInitCharsForKeywordsSizeArg(
 	cts->cts_vcol = col;
 	cts->cts_line = line;
 	cts->cts_ptr = ptr;
-	cts->cts_bri_size = -1;
 	if (lnum > 0 && !ignore_text_props) {
 		CS propStart;
 		int count = get_text_props(OUT &propStart, po->book, lnum, false);
@@ -6127,10 +6119,10 @@ pub int
 lbr_chartabsize(CharTableSize* cts) {
 	if (!cts->cts_has_prop_with_text) {
 		if (curPor->o.wrap)
-			return win_nolbr_chartabsize(cts, NULL);
+			return win_nolbr_chartabsize(cts);
 		RET_PORT_BOOK_CHARSIZE(curPor, curBook, cts->cts_ptr, cts->cts_vcol)
 	}
-	return win_lbr_chartabsize(cts, NULL);
+	return win_lbr_chartabsize(cts);
 }
 
 //Call lbr_chartabsize() and advance the pointer.
@@ -6148,24 +6140,21 @@ lbr_chartabsize_adv(CharTableSize *cts) {
 //
 //If "headp" not NULL, set "*headp" to the size of @breakindent
 //included in the return value.
-//
-//Warning: "*headp" may not be set if it's 0, init to 0 before calling.
 pub int
-win_lbr_chartabsize(CharTableSize* cts, OUT int* headp){
+win_lbr_chartabsize(CharTableSize* cts){
 	Portal* po = cts->port;
 	CS line = cts->cts_line; //start of the line
 	CS s = cts->cts_ptr;
 	ColNr vcol = cts->cts_vcol;
-	int mb_added = 0;
 	int n;
 
 	cts->cts_cur_text_width = 0;
 	cts->cts_first_char = 0;
 
-	//No @breakindent and text properties that insert text: finish quickly
+	//No text properties that insert text: finish quickly
 	if (!cts->cts_has_prop_with_text) {
 		if (po->o.wrap)
-			return win_nolbr_chartabsize(cts, headp);
+			return win_nolbr_chartabsize(cts);
 		RET_PORT_BOOK_CHARSIZE(po, po->book, s, vcol)
 	}
 
@@ -6173,12 +6162,11 @@ win_lbr_chartabsize(CharTableSize* cts, OUT int* headp){
 
 	//First get the normal size, without text properties
 	int size = win_chartabsize(po, s, vcol);
-	if (*s == ZERO) {
+	if (s[0] == ZERO) {
 		//1 cell for EOL list char (if present), as opposed to the two cell ^@
 		//for a ZERO character in the text.
 		size = has_lcs_eol ? 1 : 0;
 	}
-	int is_doublewidth = size == 2 && utf8CharLens[*s] > 1;
 
 	if (cts->cts_has_prop_with_text) {
 		int tab_size = size;
@@ -6250,18 +6238,6 @@ win_lbr_chartabsize(CharTableSize* cts, OUT int* headp){
 		}
 	}
 
-	if (is_doublewidth && po->o.wrap && inPortalBorder(po, vcol + size - 2)) {
-		++size;      //Count the ">" in the last column.
-		mb_added = 1;
-	}
-
-	//May have to add something for 'breakindent' and/or 'showbreak'
-	//string at the start of a screen line.
-	int head = mb_added;
-
-	if (headp)
-		*headp = head;
-
 	Boole need_lbr = false;
 	if (need_lbr) {
 		//Count all characters from first non-blank after a blank up to next non-blank after a blank.
@@ -6299,24 +6275,16 @@ win_lbr_chartabsize(CharTableSize* cts, OUT int* headp){
 //check for a double-byte character that doesn't fit at the end of the screen line.
 //Only use "port", "cts_ptr" and "cts_vcol" from "cts".
 private int
-win_nolbr_chartabsize(CharTableSize* cts, OUT int* headp){
+win_nolbr_chartabsize(CharTableSize* cts){
 	Portal* po = cts->port;
 	CS s = cts->cts_ptr;
 	ColNr col = cts->cts_vcol;
-	int n;
 
 	if (s[0] == TAB && (!po->o.list || listCharsG.tab1)) {
-		n = po->book->o.shiftWidth;
+		int n = po->book->o.shiftWidth;
 		return (int)(n - (col % n));
 	}
-	n = bookPtr2Cells(s);
-	//Add one cell for a double-width character in the last column of the
-	//portal, displayed with a ">".
-	if (n == 2 && utf8CharLens[s[0]] > 1 && inPortalBorder(po, col)) {
-		if (headp)
-			*headp = 1;
-		return 3;
-	}
+	int n = bookPtr2Cells(s);
 	return n;
 }
 
@@ -6334,7 +6302,6 @@ inPortalBorder(Portal *po, ColNr vcol) {
 		return false;
 	return ((vcol - width1) % width1 == width1 - 1);
 }
-
 
 //Get virtual column number of pos.
 //start: on the first position of this character (TAB, ctrl)
@@ -6363,10 +6330,8 @@ getvcol(
 	bookInitCharsForKeywordsSizeArg(&cts, po, pos->lnum, 0, line, line);
 
 	//This function is used very often, do some speed optimizations.
-	//When 'list', 'linebreak', 'showbreak' and 'breakindent' are not set
-	//and there are no text properties with "text" use a simple loop.
+	//When @list is not set and there are no text properties with "text", use a simple loop.
 	//Also use this when 'list' is set but tabs take their normal size.
-
 	Unt c;
 	if ((!po->o.list || listCharsG.tab1 != ZERO) && !cts.cts_has_prop_with_text) {
 		for (;;) {
@@ -6382,18 +6347,7 @@ getvcol(
 				incr = ts - (vcol % ts);
 			else {
 				//If the byte is >= 0x80, need to look at further bytes to find the cell width.
-				if (c >= 0x80)
-					incr = mb_ptr2cells(ptr);
-				else
-					incr = charTableP[c] & CT_CELL_MASK;
-
-				//If a double-cell char doesn't fit at the end of a line
-				//it wraps to the next line, it's like this char is three cells wide.
-				if (incr == 2 && po->o.wrap && utf8CharLens[*ptr] > 1 && inPortalBorder(po, vcol)
-				) {
-					++incr;
-					head = 1;
-				}
+				incr = (c >= 0x80) ? mb_ptr2cells(ptr) : (charTableP[c] & CT_CELL_MASK);
 			}
 
 			CS next_ptr = ptr + utfCharLen(ptr);
@@ -6407,7 +6361,7 @@ getvcol(
 		for (;;) {
 			//A tab gets expanded, depending on the current column. Other things also take up space.
 			head = 0;
-			incr = win_lbr_chartabsize(&cts, OUT &head);
+			incr = win_lbr_chartabsize(&cts);
 			//make sure we don't go past the end of the line
 			if (*cts.cts_ptr == ZERO) {
 				incr = 1;   //ZERO at end of line only takes one column
@@ -6462,17 +6416,17 @@ getvcol(
 	}
 }
 
-//Get virtual cursor column in the current portal, pretending 'list' is off.
+//Get virtual cursor column in the current portal, pretending @list is off.
 pub ColNr
-getvcol_nolist(Pos* posp) {
-	int   list_save = curPor->o.list;
-	ColNr vcol;
+bookGetVcolNoList(Pos* posp) {
+	Boole list_save = curPor->o.list;
 
 	curPor->o.list = false;
+	ColNr vcol;
 	if (posp->coladd)
-		bookGetVirtualColInVirtualMode(curPor, posp, NULL, &vcol, NULL);
+		bookGetVirtualColInVirtualMode(curPor, posp, NULL, OUT &vcol, NULL);
 	else
-		getvcol(curPor, posp, NULL, &vcol, NULL);
+		getvcol(curPor, posp, NULL, OUT &vcol, NULL);
 	curPor->o.list = list_save;
 	return vcol;
 }
@@ -6490,7 +6444,7 @@ bookGetVirtualColInVirtualMode(
 		//For virtual mode, only want one value
 
 		ColNr col;
-		getvcol(po, pos, &col, NULL, NULL);
+		getvcol(po, pos, OUT &col, NULL, NULL);
 
 		ColNr coladd = pos->coladd;
 		ColNr endadd = 0;
@@ -6520,7 +6474,7 @@ bookGetVirtualColInVirtualMode(
 
 //Get the leftmost and rightmost virtual column of pos1 and pos2. Used for Visual block mode.
 pub void
-getvcols(
+bookGetLeftRightVcols(
 	Portal* po,
 	Pos* pos1,
 	Pos* pos2,

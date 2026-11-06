@@ -4618,7 +4618,7 @@ set_context_for_wildcard_arg(
    //Check for environment variable.
    if (xp->input.c[0] == '$') {
       for (p = xp->input.c + 1; *p != ZERO; ++p) {
-         if (!eeIsIdentifierChar(*p))
+         if (!bookIsIdentifierChar(*p))
             break;
       }
       if (*p == ZERO) {
@@ -7755,7 +7755,7 @@ parse_pattern_and_range(
       return false;
 
    p = skipwhite(p);
-   Unt delim = (delim_optional && eeIsIdentifierChar(*p)) ? ' ' : *p++;
+   Unt delim = (delim_optional && bookIsIdentifierChar(*p)) ? ' ' : *p++;
    *searchDelim = delim;
 
    CS end = skip_regexp_ex(p, delim, true, NULL, NULL, &magic);

@@ -604,20 +604,8 @@ str2special(
 			special = true;
 	 }
 
-	if (!IS_SPECIAL(c) && utf8CharLens[c] > 1) {
-		*sp = str;
-		//Try to un-escape a multi-byte character after modifiers.
-		CS p = mb_unescape(sp);
-		if (p)
-			//Since 'special' is true the multi-byte character 'c' will be
-			//processed by get_special_key_name()
-			c = (*mb_ptr2char)(p);
-		else
-			//illegal byte
-			*sp = str + 1;
-	} else
-		//single-byte character, ZERO or illegal byte
-		*sp = str + (*str == ZERO ? 0 : 1);
+	//single-byte character, ZERO or illegal byte
+	*sp = str + (*str == ZERO ? 0 : 1);
 
 	//Make special keys and C0 control characters in <> form, also <M-Space>.
 	if (special

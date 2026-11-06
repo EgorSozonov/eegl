@@ -146,7 +146,6 @@ int bookChar2Cells(Unt c);
 int bookPtr2Cells(CS p);
 CS bookTranscharByte(Unt c);
 int chartabsize(CS p, ColNr col);
-int win_chartabsize(Portal *po, CS p, ColNr col);
 Unt linetabsize_str(CS s);
 int linetabsize_col(int startcol, CS s);
 Unt drawLineOnScreentabsize(Portal* po, LineNr lnum, CS line, ColNr len);
@@ -154,9 +153,9 @@ int linetabsize(Portal *po, LineNr lnum);
 int linetabsize_eol(Portal *po, LineNr lnum);
 int linetabsize_no_outer(Portal *po, LineNr lnum);
 void drawLineOnScreentabsize_cts(CharTableSize *cts, ColNr len);
-int eeIsIdentifierChar(int c);
-int eeIsNormalIdentifierChar(int c);
-int eeIsWordc_buf(Unt c, Book* book);
+int bookIsIdentifierChar(int c);
+int bookIsAsciiIdentifierChar(int c);
+int bookIsWordChar(Unt c, Book* book);
 int eeIsWordc(Unt c);
 int eeIsWordPtr_buf(CS p, Book* book);
 int eeIsWordPtr(CS p);
@@ -174,7 +173,7 @@ void bookInitCharsForKeywordsSizeArg(
 void clear_chartabsize_arg(OUT CharTableSize* cts);
 int lbr_chartabsize(CharTableSize* cts);
 int lbr_chartabsize_adv(CharTableSize *cts);
-int win_lbr_chartabsize(CharTableSize* cts, OUT int* headp);
+int win_lbr_chartabsize(CharTableSize* cts);
 void getvcol(
 	Portal* po,
 	Pos* pos,
@@ -182,7 +181,7 @@ void getvcol(
 	ColNr* cursor,
 	ColNr* end
 );
-ColNr getvcol_nolist(Pos* posp);
+ColNr bookGetVcolNoList(Pos* posp);
 void bookGetVirtualColInVirtualMode(
 	Portal* po,
 	Pos* pos,
@@ -190,7 +189,7 @@ void bookGetVirtualColInVirtualMode(
 	OUT ColNr* cursor,
 	OUT ColNr* end
 );
-void getvcols(
+void bookGetLeftRightVcols(
 	Portal* po,
 	Pos* pos1,
 	Pos* pos2,

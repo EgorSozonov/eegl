@@ -2285,22 +2285,18 @@ Examples:
 
 @@isfname                Global. String Default = "@,48-57,/,.,-,_,+,,,#,$,%,~,="
 
-The characters specified by this option are included in file names and
-path names.  Filenames are used for commands like "gf", "[i" and in
-the tags file.  It is also used for "\f" in a |pattern|.
-Multi-byte characters 256 and above are always included, only the
-characters up to 255 are specified with this option.
-For UTF-8 the characters 0xa0 to 0xff are included as well.
-Think twice before adding white space to this option.  Although a
-space may appear inside a file name, the effect will be that Eegl
-doesn't know where a file name starts or ends when doing completion.
-It most likely works better without a space in @isfname.
+The characters specified by this option are included in file names and path names. Filenames
+are used for commands like "gf", "[i" and in the tags file. It is also used for "\f" in a
+|pattern|. Multi-byte characters 256 and above are always included, only the characters up to
+255 are specified with this option. The characters 0xa0 to 0xff are included as well.
+Think twice before adding whitespace to this option. Although a space may appear inside a file
+name, the effect will be that Eegl doesn't know where a file name starts or ends when doing
+completion. It most likely works better without a space in @isfname.
 
-The format of this option is a list of parts, separated with commas.
-Each part can be a single character number or a range.  A range is two
-character numbers with '-' in between.  A character number can be a
-decimal number between 0 and 255 or the ASCII character itself (does
-not work for digits).  Example:
+The format of this option is a list of parts, separated with commas. Each part can be a single
+character number or a range.  A range is two character numbers with '-' in between.  A character
+number can be a decimal number between 0 and 255 or the ASCII character itself (does not work
+for digits). Example:
 
    "_,-,128-140,#-43"   (include '_' and '-' and the range
             128 to 140 and '#' to 43)
@@ -2315,13 +2311,14 @@ are included.  Normally these are the characters a to z and A to Z,
 plus accented characters.  To include '@' itself use "@-@".  Examples:
    "@,^a-z"   All alphabetic characters, excluding lower
          case ASCII letters.
-   "a-z,A-Z,@-@"   All letters plus the '@' character.
+   "a-z,A-Z,@-@"  All letters plus the '@' character.
 A comma can be included by using it where a character number is
 expected.  Example:
    "48-57,,,_"   Digits, comma and underscore.
 A comma can be excluded by prepending a '^'.  Example:
    " -~,^,,9"   All characters from space to '~', excluding
          comma, plus <Tab>.
+
 See |option-backslash| about including spaces and backslashes.
 
 

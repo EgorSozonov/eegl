@@ -3869,7 +3869,7 @@ show_termcodes(Unt flags) {
 //Note that the target string (p1) may contain additional trailing characters
 //that should not factor into the comparison. Example:
 //`LeftMouse>", "<LeftMouse>"] ...` should match with `LeftMouse`.
-//These characters are identified by eeIsNormalIdentifierChar().
+//These characters are identified by bookIsAsciiIdentifierChar().
 private int
 keyNameEntryComparer(void const* a, void const* b) {
 	CS p1 = ((KeyNameEntry *)a)->name.c;
@@ -3879,7 +3879,7 @@ keyNameEntryComparer(void const* a, void const* b) {
 	if (p1 == p2)
 		return 0;
 
-	while (eeIsNormalIdentifierChar(*p1) && *p2 != ZERO) {
+	while (bookIsAsciiIdentifierChar(*p1) && *p2 != ZERO) {
 		if ((result = TOLOWER_ASC(*p1) - TOLOWER_ASC(*p2)) != 0)
 			break;
 		++p1;
@@ -3888,7 +3888,7 @@ keyNameEntryComparer(void const* a, void const* b) {
 
 	if (result == 0) {
 		if (*p2 == ZERO) {
-			if (eeIsNormalIdentifierChar(*p1))
+			if (bookIsAsciiIdentifierChar(*p1))
 				result = 1;
 		} else {
 			result = -1;
@@ -4395,7 +4395,7 @@ termFindSpecialKey(
 
 	//Find end of modifier list
 	CS last_dash = src;
-	for (bp = src + 1; *bp == '-' || eeIsNormalIdentifierChar(*bp); bp++) {
+	for (bp = src + 1; *bp == '-' || bookIsAsciiIdentifierChar(*bp); bp++) {
 		if (*bp == '-') {
 			last_dash = bp;
 			if (bp[1] != ZERO) {

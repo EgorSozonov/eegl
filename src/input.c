@@ -367,8 +367,8 @@ get_keystroke(void) {
 			 }
 			 break;
 		}
-		if (utf8CharLens[c] > len)
-			continue;   //more bytes to get
+		//if (utf8CharLens[c] > len)
+		//	continue;   //more bytes to get
 		buf[len >= (int)buflen ? (int)buflen - 1 : len] = ZERO;
 		c = mb_ptr2char(buf);
 		if (c == extraInterruptCharG)
@@ -897,11 +897,7 @@ read_redo(int init, int old_redo) {
 	Unt c;
 	if ((c = *p) != ZERO) {
 		//Reverse the conversion done by addCharToBuf()
-		//For a multi-byte character get all the bytes and return the converted character.
-		if ((c != K_SPECIAL || p[1] == KS_SPECIAL))
-			 n = MB_BYTE2LEN_CHECK(c);
-		else
-			 n = 1;
+		n = 1;
 		for (i = 0; ; ++i) {
 			if (c == K_SPECIAL) { //special key or escaped K_SPECIAL
 				c = TO_SPECIAL(p[1], p[2]);
@@ -1316,7 +1312,7 @@ gotchars_add_byte(GotCharsState *state, Byte byte) {
 		//When receiving a multibyte character, store it until we have all
 		//the bytes, so that it won't be split between two buffer blocks,
 		//and deleteBufferTail() will work properly.
-		state->pending_mbyte = MB_BYTE2LEN_CHECK(c) - 1;
+		state->pending_mbyte = 0;
 	}
 
 	if (state->pending_mbyte > 0)
@@ -1695,8 +1691,6 @@ addByteToShowcmd(Byte byte) {
 pub Unt
 vgetc(void) {
 	Unt c, c2;
-	Unt n;
-	Byte buf[MB_MAXBYTES + 1];
 
 	//If a character was put back with vungetc, it was already processed. Return it directly.
 	if (can_get_old_char()) {
@@ -1764,26 +1758,6 @@ vgetc(void) {
 				last_used_map = NULL;
 				continue;
 			}
-		}
-
-		//For a multi-byte character get all the bytes and return the converted character.
-		//Note: This will loop until enough bytes are received!
-		if ((n = MB_BYTE2LEN_CHECK(c)) > 1) {
-			++no_mapping;
-			buf[0] = c;
-			for (Unt i = 1; i < n; ++i) {
-				buf[i] = vGetOrPeek(true);
-				if (buf[i] == K_SPECIAL) {
-					//Must be a K_SPECIAL - KS_SPECIAL - KE_FILLER sequence, which represents a
-					//K_SPECIAL (0x80), or a CSI - KS_EXTRA - KE_CSI sequence, which represents a CSI
-					//(0x9B), or a K_SPECIAL - KS_EXTRA - KE_CSI, which is CSI too.
-					c = vGetOrPeek(true);
-					if (vGetOrPeek(true) == KE_CSI && c == KS_EXTRA)
-						{ buf[i] = CSI; }
-				}
-			}
-			--no_mapping;
-			c = mb_ptr2char(buf);
 		}
 
 		if (vgetcOrigCharG == 0) {
@@ -2309,7 +2283,7 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
 					CS p1 = fin.foundMapping->lhs;
 					CS p2 = mb_unescape(&p1);
 
-					if (p2 && utf8CharLens[typebufChar] > utfCharLen(p2))
+					if (p2 && 1 > utfCharLen(p2))
 						fin.matchLen = 0;
 				}
 
@@ -3633,7 +3607,7 @@ format_lines(LineNr   line_count, int avoid_fex) { //don't use 'formatexpr'
 //- by main() to initialize
 //- by set_init_1() after 'encoding' was set to its default.
 //- by do_set() when 'encoding' has been set.
-//Fill utf8CharLens[] and return NULL when there are no problems. When there is something wrong:
+//When there is something wrong:
 //Return an error message and don't change anything.
 pub CS
 inputInitCharLens(void) {
@@ -3660,14 +3634,11 @@ mb_get_class(CS p) {
 
 pub Unt
 inpGetClassForBook(CS p, Book* book) {
-	if (utf8CharLens[p[0]] == 1) {
-		if (p[0] == ZERO || SPACE_OR_TAB(p[0]))
-			return 0;
-		if (eeIsWordc_buf(p[0], book))
-			return 2;
-		return 1;
-	}
-	return utf_class_buf(mb_ptr2char(p), book);
+	if (p[0] == ZERO || SPACE_OR_TAB(p[0]))
+		return 0;
+	if (bookIsWordChar(p[0], book))
+		return 2;
+	return 1;
 }
 
 //Convert a UTF-8 byte string to a wide character. Also get up to MAX_COMBINED_SYMBOLS
@@ -3854,7 +3825,7 @@ utf_class_buf(Unt c, Book* book) {
 	if (c < 0x100) {
 		if (c == ' ' || c == '\t' || c == ZERO || c == 0xa0)
 			 return 0;       //blank
-		if (eeIsWordc_buf(c, book))
+		if (bookIsWordChar(c, book))
 			 return 2;       //word character
 		return 1;       //punctuation
 	}
@@ -4128,10 +4099,7 @@ private int do_mousescroll_horiz(Ulong leftcol);
 //>2: multi-byte word character.
 private int
 get_mouse_class(CS p) {
-	if (utf8CharLens[p[0]] > 1)
-		return mb_get_class(p);
-
-	Unt c = *p;
+	Unt c = p[0];
 	if (c == ' ' || c == '\t')
 		return 0;
 
@@ -4575,7 +4543,7 @@ do_mouse(
 		//In Visual-block mode, divide the area in four, pick up the corner
 		//that is in the quarter that the cursor is in.
 		if (VIsual_mode == Ctrl_V) {
-			getvcols(curPor, &start_visual, &end_visual, &leftcol, &rightcol);
+			bookGetLeftRightVcols(curPor, &start_visual, &end_visual, &leftcol, &rightcol);
 			if (curPor->cursWant > (leftcol + rightcol) / 2)
 				end_visual.col = leftcol;
 			else
@@ -5785,7 +5753,7 @@ vcol2col(Portal* po, LineNr lnum, int vcol, ColNr *coladdp) {
 	CS line = memGetLine(po->book, lnum, false);
 	bookInitCharsForKeywordsSizeArg(&cts, po, lnum, 0, line, line);
 	while (cts.cts_vcol < vcol && *cts.cts_ptr != ZERO) {
-		int size = win_lbr_chartabsize(&cts, NULL);
+		int size = win_lbr_chartabsize(&cts);
 		if (cts.cts_vcol + size > vcol)
 			 break;
 		cts.cts_vcol += size;

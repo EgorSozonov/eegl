@@ -3777,7 +3777,7 @@ private CS
 skipEeglGrepPat_ext(CS p, Byte **s, Unt* flags, Byte** nulp, OUT Unt* cp) {
 	int c;
 
-	if (eeIsIdentifierChar(*p)) {
+	if (bookIsIdentifierChar(*p)) {
 		//";vimgrep pattern fname"
 		if (s)
 			*s = p;
@@ -7303,7 +7303,7 @@ get_bad_opt(CS p, Invocation* invo) {
 		invo->bad_char = BAD_KEEP;
 	ei (caseInsensitiveCompare(p, "drop") == 0)
 		invo->bad_char = BAD_DROP;
-	ei (utf8CharLens[*p] == 1 && p[1] == ZERO)
+	ei (p[1] == ZERO)
 		invo->bad_char = *p;
 	else
 		return FAIL;
@@ -10499,12 +10499,12 @@ doExpandEnvVarsWithEscaped(
 				tail = src + 1;
 				var = wr;
 				int spaceLeft = sentinel - wr - 1;
-				if (*tail == '{' && !eeIsIdentifierChar('{')) {
+				if (*tail == '{' && !bookIsIdentifierChar('{')) {
 					tail++;   //ignore '{'
 					while (spaceLeft-- > 0 && *tail != ZERO && *tail != '}')
 						*var++ = *tail++;
 				} else {
-					while (spaceLeft-- > 0 && *tail != ZERO && (eeIsIdentifierChar(*tail)))
+					while (spaceLeft-- > 0 && *tail != ZERO && (bookIsIdentifierChar(*tail)))
 						*var++ = *tail++;
 				}
 
@@ -17503,7 +17503,7 @@ cursor_pos_info(Bag* dict) {
 				oparg.is_VIsual = 1;
 				oparg.block_mode = true;
 				oparg.opTy = OP_NOP;
-				getvcols(curPor, &min_pos, &max_pos, &oparg.start_vcol, &oparg.end_vcol);
+				bookGetLeftRightVcols(curPor, &min_pos, &max_pos, &oparg.start_vcol, &oparg.end_vcol);
 				if (curPor->cursWant == MAXCOL)
 					 oparg.end_vcol = MAXCOL;
 				//Swap the start, end vcol if needed
@@ -17576,7 +17576,7 @@ cursor_pos_info(Bag* dict) {
 		if (!dict) {
 			if (VIsual_active) {
 				if (VIsual_mode == Ctrl_V && curPor->cursWant < MAXCOL) {
-					 getvcols(curPor, &min_pos, &max_pos, &min_pos.col, &max_pos.col);
+					 bookGetLeftRightVcols(curPor, &min_pos, &max_pos, &min_pos.col, &max_pos.col);
 					 eeSnprintf(buf1, sizeof(buf1), _("%ld Cols; "),
 						 (Long)(oparg.end_vcol - oparg.start_vcol + 1));
 				} else
@@ -18538,7 +18538,7 @@ doColAdvance2(
 		while (cts.cts_vcol <= wcol && *cts.cts_ptr != ZERO) {
 			int at_start = cts.cts_ptr == cts.cts_line;
 			//Count a tab for what it's worth (if list mode not on)
-			csize = win_lbr_chartabsize(&cts, &head);
+			csize = win_lbr_chartabsize(&cts);
 			MB_PTR_ADV(cts.cts_ptr);
 			cts.cts_vcol += csize;
 			if (at_start)
@@ -19146,7 +19146,7 @@ opChangeIndent(
 	int save_p_list = curPor->o.list;
 	curPor->o.list = false;
 	ignore_text_props = true;
-	ColNr vc = getvcol_nolist(&curPor->cursor);
+	ColNr vc = bookGetVcolNoList(&curPor->cursor);
 	int vcol = vc;
 
 	//determine offset from first non-blank

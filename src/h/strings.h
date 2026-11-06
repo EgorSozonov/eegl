@@ -1,4 +1,5 @@
 #ifndef AVOID_DUPLICATION
+typedef struct RewindableArena RewindableArena;
 declStruct(ChunkString);
 #endif
 
@@ -225,3 +226,8 @@ Int getOrDefault_Text_DictStringInt128( 	Text needle, Int defaultValue, DictStri
 );
 Int getKv_Text_DictStringInt128( 	OUT Unt* key, Text needle, DictStringInt128* restrict haystack
 );
+RewindableArena* createRewindableArena();
+void* allocateOnRewindableArena(Unt allocSize, RewindableArena* a);
+void deleteRewindableArena(RewindableArena* a);
+void setRewindPoint(OUT RewindableArena* a);
+void rewindArena(OUT RewindableArena* a);

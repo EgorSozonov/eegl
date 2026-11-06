@@ -3218,6 +3218,23 @@ struct Timer {
 };
 
 //}}}
+//{{{Programming language support
+
+#define PL_CHAR_COMMENT 1 // this char is the first in a comment or literal
+#define PL_CHAR_LITERAL 2 // this char is the first in a string literal
+
+typedef struct {
+   Byte initChars[64]; //2 bits per possible byte
+   Boole isInline; //are the filters inline in this obj or in separate allocations
+   union {
+      CS external;
+		Byte internal[128];
+	} prefixes;
+	Text a[36];
+	CS tails;
+} ProgrammingLanguage;
+
+//}}}
 //{{{Book
 
 //Syntax block data. These are items normally related to a book.  But when using ":ownsyntax",
@@ -3225,47 +3242,47 @@ struct Timer {
 typedef struct {
    EeSet keywords;      //syntax keywords hash table
    EeSet keywordsIgnoreCase;      //idem, ignore case
-   int      b_syn_error;      //true when error occurred in HL
-   int      redrawTime;      //true when 'redrawtime' reached
-   int      b_syn_ic;      //ignore case for :syn cmds
-   int      foldLevel;   //how to compute foldlevel on a line
-   int      synSpell;      //SYNSPL_ values
-   ArrayList   syntaxPatterns;      //table for syntax patterns
-   ArrayList   syntaxClusters;      //table for syntax clusters
-   int      spellClusterId;   //@Spell cluster ID or 0
-   int      noSpellClusterId;   //@NoSpell cluster ID or 0
+   int b_syn_error;      //true when error occurred in HL
+   int redrawTime;      //true when 'redrawtime' reached
+   int b_syn_ic;      //ignore case for :syn cmds
+   int foldLevel;   //how to compute foldlevel on a line
+   int synSpell;      //SYNSPL_ values
+   ArrayList syntaxPatterns;      //table for syntax patterns
+   ArrayList syntaxClusters;      //table for syntax clusters
+   int spellClusterId;   //@Spell cluster ID or 0
+   int noSpellClusterId;   //@NoSpell cluster ID or 0
    int b_syn_containedin;   //true when there is an item with a "containedin" argument
-   int      syncFlags;   //flags about how to sync
-   enum HiliteId   syncHiId;     //group to sync on
+   int syncFlags;   //flags about how to sync
+   HiliteId syncHiId;     //group to sync on
    Long b_syn_sync_minlines; //minimal sync lines offset
    Long b_syn_sync_maxlines; //maximal sync lines offset
    Long syncLinebreaks;   //offset for multi-line pattern
    Arr(Byte) lineContinuationPattern;   //line continuation pattern
-   RegProg   *lineContinProg;   //line continuation program
-   int  lineContinIgnoreCase;   //ignore-case flag for above
-   int  b_syn_topgrp;      //for ":syntax include"
-   int  b_syn_conceal;     //auto-conceal for :syn cmds
-   int  b_syn_folditems;   //number of patterns with the HL_FOLD flag set
-   SyntaxState   *array; //the state stack for a number of lines, for the
+   RegProg* lineContinProg;   //line continuation program
+   int lineContinIgnoreCase;   //ignore-case flag for above
+   int b_syn_topgrp;      //for ";syntax include"
+   int b_syn_conceal;     //auto-conceal for ;syn cmds
+   int b_syn_folditems;   //number of patterns with the HL_FOLD flag set
+   SyntaxState* array; //the state stack for a number of lines, for the
                          //start of that line (col == 0).  This avoids having to recompute
                          //the syntax state too often. It is allocated to hold the state for all
                          //displayed lines, and states for 1 out of about 20 other lines.
    int len;   //number of entries in b_sst_array[]
-   SyntaxState   *first; //pointer to first used entry in b_sst_array[] or NULL
-   SyntaxState   *firstFree; //pointer to first free entry in b_sst_array[] or NULL
-   int      freeCount; //number of free entries in array[]
+   SyntaxState* first; //pointer to first used entry in b_sst_array[] or NULL
+   SyntaxState* firstFree; //pointer to first free entry in b_sst_array[] or NULL
+   int freeCount; //number of free entries in array[]
    LineNr checkAfterLnum; //entries after this lnum need to be checked for validity
                           //(MAXLNUM means no check needed)
-   Short   lastDisplayTick;
+   Short lastDisplayTick;
 
    //for spell checking
-   ArrayList   b_langp;     //list of pointers to slang_T, see spell.c
+   ArrayList b_langp;     //list of pointers to slang_T, see spell.c
    Byte midwordFlags[256];  //flags: is midword char
    CS multibyteMidwordChars;   //multi-byte midword chars
    CS spellFile;
    CS spellLang;
    CS spellOpts;       //'spelloptions'
-   Byte   b_syn_chartab[32];  //syntax iskeyword option
+   Byte b_syn_chartab[32];  //syntax iskeyword option
 } SyntaxBlock;
 
 //order must be synchronized with p_buftype_values below
@@ -4158,18 +4175,17 @@ typedef struct {
 //Argument for lbr_chartabsize().
 typedef struct {
    Portal* port;
-   Byte* cts_line;      //start of the line
-   Byte* cts_ptr;      //current position in line
-   int cts_bri_size;      //cached size of 'breakindent', or -1 if not computed yet
+   CS cts_line;     //start of the line
+   CS cts_ptr;      //current position in line
    int cts_text_prop_count;   //number of text props; when zero cts_text_props is not used
-   TextProp* cts_text_props;   //text props (allocated)
-   char cts_has_prop_with_text;   //true if a property inserts text
-   int cts_cur_text_width;   //width of current inserted text
-   int cts_prop_lines;      //nr of properties above or below
-   int cts_first_char;      //width text props above the line
-   int cts_with_trailing;   //include size of trailing props with last character
-   int cts_start_incl;      //prop has true "start_incl" arg
-   int cts_vcol;      //virtual column at current position
+   TextProp* cts_text_props;    //text props (allocated)
+   char cts_has_prop_with_text; //true if a property inserts text
+   int cts_cur_text_width;    //width of current inserted text
+   int cts_prop_lines;        //nr of properties above or below
+   int cts_first_char;        //width text props above the line
+   int cts_with_trailing;     //include size of trailing props with last character
+   int cts_start_incl;        //prop has true "start_incl" arg
+   int cts_vcol;              //virtual column at current position
 } CharTableSize;
 
 typedef enum {
@@ -4940,9 +4956,6 @@ EXTERN Pos insertStartOrigG;
 #define DBCS_2BYTE    1   //2byte-
 #define DBCS_DEBUG (-1)
 
-//To speed up BYTELEN() we fill a table with the byte lengths
-EXTERN Byte utf8CharLens[256];
-
 //"State" is the main state of Eegl.
 //There are other variables that modify the state:
 //"Visual_mode"   When State is MODE_NORMAL or MODE_INSERT.
@@ -5571,16 +5584,12 @@ EXTERN Byte e_portal_layout_changed_unexpectedly[]
 EXTERN Byte e_eegl_instance_registry_property_is_badly_formed_deleted[]
    INIT(= "E251: EEGL instance registry property is badly formed.  Deleted!");
 EXTERN Byte e_cannot_allocate_color_str[] INIT(= "E254: Cannot allocate color %s");
-EXTERN Byte e_cstag_tag_not_founc[]
-   INIT(= "E257: cstag: Tag not found");
-EXTERN Byte e_unable_to_send_to_client[]
-   INIT(= "E258: Unable to send to client");
+EXTERN Byte e_cstag_tag_not_founc[] INIT(= "E257: cstag: Tag not found");
+EXTERN Byte e_unable_to_send_to_client[] INIT(= "E258: Unable to send to client");
 EXTERN Byte e_no_matches_found_for_cscope_query_str_of_str[]
    INIT(= "E259: No matches found for cscope query %s of %s");
-EXTERN Byte e_missing_name_after_method[]
-   INIT(= "E260: Missing name after ->");
-EXTERN Byte e_cscope_connection_str_not_founc[]
-   INIT(= "E261: Cscope connection %s not found");
+EXTERN Byte e_missing_name_after_method[] INIT(= "E260: Missing name after ->");
+EXTERN Byte e_cscope_connection_str_not_founc[] INIT(= "E261: Cscope connection %s not found");
 EXTERN Byte e_error_reading_cscope_connection_nr[]
    INIT(= "E262: Error reading cscope connection %d");
 EXTERN Byte e_no_white_space_allowed_before_parenthesis[]
@@ -5600,26 +5609,19 @@ EXTERN Byte e_seek_error_in_swap_file_read[] INIT(= "E294: Seek error in swap fi
 EXTERN Byte e_read_error_in_swap_file[] INIT(= "E295: Read error in swap file");
 EXTERN Byte e_seek_error_in_swap_file_write[] INIT(= "E296: Seek error in swap file write");
 EXTERN Byte e_write_error_in_swap_file[] INIT(= "E297: Write error in swap file");
-EXTERN Byte e_didnt_get_block_nr_zero[]
-   INIT(= "E298: Didn't get block nr 0?");
-EXTERN Byte e_didnt_get_block_nr_one[]
-   INIT(= "E298: Didn't get block nr 1?");
-EXTERN Byte e_didnt_get_block_nr_two[]
-   INIT(= "E298: Didn't get block nr 2?");
+EXTERN Byte e_didnt_get_block_nr_zero[] INIT(= "E298: Didn't get block nr 0?");
+EXTERN Byte e_didnt_get_block_nr_one[] INIT(= "E298: Didn't get block nr 1?");
+EXTERN Byte e_didnt_get_block_nr_two[] INIT(= "E298: Didn't get block nr 2?");
 EXTERN Byte e_swap_file_already_exists_symlink_attack[]
    INIT(= "E300: Swap file already exists (symlink attack?)");
-EXTERN Byte e_oops_lost_the_swap_file[]
-   INIT(= "E301: Oops, lost the swap file!!!");
-EXTERN Byte e_could_not_rename_swap_file[]
-   INIT(= "E302: Could not rename swap file");
+EXTERN Byte e_oops_lost_the_swap_file[] INIT(= "E301: Oops, lost the swap file!!!");
+EXTERN Byte e_could_not_rename_swap_file[] INIT(= "E302: Could not rename swap file");
 EXTERN Byte e_unable_to_open_swap_file_for_str_recovery_impossible[]
    INIT(= "E303: Unable to open swap file for \"%s\", recovery impossible");
 EXTERN Byte e_ml_upd_block0_didnt_get_block_zero[]
    INIT(= "E304: ml_upd_block0(): Didn't get block 0??");
-EXTERN Byte e_no_swap_file_found_for_str[]
-   INIT(= "E305: No swap file found for %s");
-EXTERN Byte e_cannot_open_str[]
-   INIT(= "E306: Cannot open %s");
+EXTERN Byte e_no_swap_file_found_for_str[] INIT(= "E305: No swap file found for %s");
+EXTERN Byte e_cannot_open_str[] INIT(= "E306: Cannot open %s");
 EXTERN Byte e_str_does_not_look_like_eegl_swap_file[]
    INIT(= "E307: %s does not look like an Eegl swap file");
 EXTERN Byte e_warning_original_file_may_have_been_changed[]
@@ -5628,76 +5630,56 @@ EXTERN Byte e_unable_to_read_block_one_from_str[]
    INIT(= "E309: Unable to read block 1 from %s");
 EXTERN Byte e_block_one_id_wrong_str_not_swp_file[]
    INIT(= "E310: Block 1 ID wrong (%s not a .swp file?)");
-EXTERN Byte e_recovery_interrupted[]
-   INIT(= "E311: Recovery Interrupted");
+EXTERN Byte e_recovery_interrupted[] INIT(= "E311: Recovery Interrupted");
 EXTERN Byte e_errors_detected_while_recovering_look_for_lines_starting_with_questions[]
    INIT(= "E312: Errors detected while recovering; look for lines starting with ???");
 EXTERN Byte e_cannot_preserve_there_is_no_swap_file[]
    INIT(= "E313: Cannot preserve, there is no swap file");
-EXTERN Byte e_preserve_failed[]
-   INIT(= "E314: Preserve failed");
-EXTERN Byte e_ml_get_invalid_lnum_nr[]
-   INIT(= "E315: ml_get: Invalid lnum: %ld");
+EXTERN Byte e_preserve_failed[] INIT(= "E314: Preserve failed");
+EXTERN Byte e_ml_get_invalid_lnum_nr[] INIT(= "E315: ml_get: Invalid lnum: %ld");
 EXTERN Byte e_ml_get_cannot_find_line_nr_in_buffer_nr_str[]
    INIT(= "E316: ml_get: Cannot find line %ld in buffer %d %s");
-EXTERN Byte e_pointer_block_id_wrong[]
-   INIT(= "E317: Pointer block id wrong");
-EXTERN Byte e_pointer_block_id_wrong_two[]
-   INIT(= "E317: Pointer block id wrong 2");
-EXTERN Byte e_pointer_block_id_wrong_three[]
-   INIT(= "E317: Pointer block id wrong 3");
-EXTERN Byte e_pointer_block_id_wrong_four[]
-   INIT(= "E317: Pointer block id wrong 4");
-EXTERN Byte e_updated_too_many_blocks[]
-   INIT(= "E318: Updated too many blocks?");
-EXTERN Byte e_cannot_find_line_nr[]
-   INIT(= "E320: Cannot find line %ld");
-EXTERN Byte e_could_not_reload_str[]
-   INIT(= "E321: Could not reload \"%s\"");
+EXTERN Byte e_pointer_block_id_wrong[] INIT(= "E317: Pointer block id wrong");
+EXTERN Byte e_pointer_block_id_wrong_two[] INIT(= "E317: Pointer block id wrong 2");
+EXTERN Byte e_pointer_block_id_wrong_three[] INIT(= "E317: Pointer block id wrong 3");
+EXTERN Byte e_pointer_block_id_wrong_four[] INIT(= "E317: Pointer block id wrong 4");
+EXTERN Byte e_updated_too_many_blocks[] INIT(= "E318: Updated too many blocks?");
+EXTERN Byte e_cannot_find_line_nr[] INIT(= "E320: Cannot find line %ld");
+EXTERN Byte e_could_not_reload_str[] INIT(= "E321: Could not reload \"%s\"");
 EXTERN Byte e_line_number_out_of_range_nr_past_the_end[]
    INIT(= "E322: Line number out of range: %ld past the end");
 EXTERN Byte e_line_count_wrong_in_block_nr[]
    INIT(= "E323: Line count wrong in block %ld");
-EXTERN Byte e_attention[]
-   INIT(= "E325: ATTENTION");
+EXTERN Byte e_attention[] INIT(= "E325: ATTENTION");
 EXTERN Byte e_too_many_swap_files_found[]
    INIT(= "E326: Too many swap files found");
-EXTERN Byte e_pattern_too_long[]
-   INIT(= "E339: Pattern too Long");
+EXTERN Byte e_pattern_too_long[] INIT(= "E339: Pattern too Long");
 EXTERN Byte e_internal_error_please_report_a_bug[]
    INIT(= "E340: Internal error; if you can reproduce please report a bug");
-EXTERN Byte e_internal_error_lalloc_zero[]
-   INIT(= "E341: Internal error: lalloc(0, )");
+EXTERN Byte e_internal_error_lalloc_zero[] INIT(= "E341: Internal error: lalloc(0, )");
 EXTERN Byte e_out_of_memory_allocating_nr_bytes[]
    INIT(= "E342: Out of memory!  (allocating %lu bytes)");
 EXTERN Byte e_invalid_path_number_must_be_at_end_of_path_or_be_followed_by_str[]
    INIT(= "E343: Invalid path: '**[number]' must be at the end of the path or be followed by '%s'.");
 EXTERN Byte e_cant_find_directory_str_in_cdpath[]
    INIT(= "E344: Can't find directory \"%s\" in cdpath");
-EXTERN Byte e_cant_find_file_str_in_path[]
-   INIT(= "E345: Can't find file \"%s\" in path");
+EXTERN Byte e_cant_find_file_str_in_path[] INIT(= "E345: Can't find file \"%s\" in path");
 EXTERN Byte e_no_more_directory_str_found_in_cdpath[]
    INIT(= "E346: No more directory \"%s\" found in cdpath");
 EXTERN Byte e_no_more_file_str_found_in_path[]
    INIT(= "E347: No more file \"%s\" found in path");
-EXTERN Byte e_no_string_under_cursor[]
-   INIT(= "E348: No string under cursor");
-EXTERN Byte e_no_identifier_under_cursor[]
-   INIT(= "E349: No identifier under cursor");
+EXTERN Byte e_no_string_under_cursor[] INIT(= "E348: No string under cursor");
+EXTERN Byte e_no_identifier_under_cursor[] INIT(= "E349: No identifier under cursor");
 EXTERN Byte e_cannot_create_fold_with_current_foldmethod[]
    INIT(= "E350: Cannot create fold with current 'foldmethod'");
 EXTERN Byte e_cannot_delete_fold_with_current_foldmethod[]
    INIT(= "E351: Cannot delete fold with current 'foldmethod'");
 EXTERN Byte e_cannot_erase_folds_with_current_foldmethod[]
    INIT(= "E352: Cannot erase folds with current 'foldmethod'");
-EXTERN Byte e_nothing_in_register_str[]
-   INIT(= "E353: Nothing in register %s");
-EXTERN Byte e_invalid_register_name_str[]
-   INIT(= "E354: Invalid register name: '%s'");
-EXTERN Byte e_unknown_option_str_2[]
-   INIT(= "E355: Unknown option: %s");
-EXTERN Byte e_refOfError[]
-   INIT(= "E356: refOf() ERROR");
+EXTERN Byte e_nothing_in_register_str[] INIT(= "E353: Nothing in register %s");
+EXTERN Byte e_invalid_register_name_str[] INIT(= "E354: Invalid register name: '%s'");
+EXTERN Byte e_unknown_option_str_2[] INIT(= "E355: Unknown option: %s");
+EXTERN Byte e_refOfError[] INIT(= "E356: refOf() ERROR");
 EXTERN Byte e_langmap_matching_character_missing_for_str[]
    INIT(= "E357: 'langmap': Matching character missing for %s");
 EXTERN Byte e_langmap_extra_characters_after_semicolon_str[]
@@ -5705,155 +5687,104 @@ EXTERN Byte e_langmap_extra_characters_after_semicolon_str[]
 EXTERN Byte e_screen_mode_setting_not_supported[]
    INIT(= "E359: Screen mode setting not supported");
 //E361 unused
-EXTERN Byte e_using_boolean_value_as_float[]
-   INIT(= "E362: Using a boolean value as a Float");
+EXTERN Byte e_using_boolean_value_as_float[] INIT(= "E362: Using a boolean value as a Float");
 EXTERN Byte e_pattern_uses_more_memory_than_maxmempattern[]
    INIT(= "E363: Pattern uses more memory than 'maxmempattern'");
 EXTERN Byte e_not_allowed_to_enter_popup_portal[]
    INIT(= "E366: Not allowed to enter a popup portal");
-EXTERN Byte e_no_such_group_str[]
-   INIT(= "E367: No such group: \"%s\"");
-EXTERN Byte e_invalid_item_in_str_brackets[]
-   INIT(= "E369: Invalid item in %s%%[]");
-EXTERN Byte e_could_not_load_library_str_str[]
-   INIT(= "E370: Could not load library %s: %s");
-EXTERN Byte e_too_many_chr_in_format_string[]
-   INIT(= "E372: Too many %%%c in format string");
-EXTERN Byte e_unexpected_chr_in_format_str[]
-   INIT(= "E373: Unexpected %%%c in format string");
-EXTERN Byte e_missing_rsb_in_format_string[]
-   INIT(= "E374: Missing ] in format string");
+EXTERN Byte e_no_such_group_str[] INIT(= "E367: No such group: \"%s\"");
+EXTERN Byte e_invalid_item_in_str_brackets[] INIT(= "E369: Invalid item in %s%%[]");
+EXTERN Byte e_could_not_load_library_str_str[] INIT(= "E370: Could not load library %s: %s");
+EXTERN Byte e_too_many_chr_in_format_string[] INIT(= "E372: Too many %%%c in format string");
+EXTERN Byte e_unexpected_chr_in_format_str[] INIT(= "E373: Unexpected %%%c in format string");
+EXTERN Byte e_missing_rsb_in_format_string[] INIT(= "E374: Missing ] in format string");
 EXTERN Byte e_unsupported_chr_in_format_string[]
    INIT(= "E375: Unsupported %%%c in format string");
 EXTERN Byte e_invalid_chr_in_format_string_prefix[]
    INIT(= "E376: Invalid %%%c in format string prefix");
-EXTERN Byte e_invalid_chr_in_format_string[]
-   INIT(= "E377: Invalid %%%c in format string");
+EXTERN Byte e_invalid_chr_in_format_string[] INIT(= "E377: Invalid %%%c in format string");
 EXTERN Byte e_errorformat_contains_no_pattern[]
    INIT(= "E378: 'errorformat' contains no pattern");
-EXTERN Byte e_missing_or_empty_directory_name[]
-   INIT(= "E379: Missing or empty directory name");
-EXTERN Byte e_at_bottom_of_quickfix_stack[]
-   INIT(= "E380: At bottom of quickfix stack");
-EXTERN Byte e_at_top_of_quickfix_stack[]
-   INIT(= "E381: At top of quickfix stack");
+EXTERN Byte e_missing_or_empty_directory_name[] INIT(= "E379: Missing or empty directory name");
+EXTERN Byte e_at_bottom_of_quickfix_stack[] INIT(= "E380: At bottom of quickfix stack");
+EXTERN Byte e_at_top_of_quickfix_stack[] INIT(= "E381: At top of quickfix stack");
 EXTERN Byte e_cannot_write_buftype_option_is_set[]
    INIT(= "E382: Cannot write, 'buftype' option is set");
-EXTERN Byte e_invalid_search_string_str[]
-   INIT(= "E383: Invalid search string: %s");
+EXTERN Byte e_invalid_search_string_str[] INIT(= "E383: Invalid search string: %s");
 EXTERN Byte e_search_hit_top_without_match_for_str[]
    INIT(= "E384: Search hit TOP without match for: %s");
 EXTERN Byte e_expected_question_or_slash_after_semicolon[]
    INIT(= "E386: Expected '?' or '/'  after ';'");
-EXTERN Byte e_match_is_on_current_line[]
-   INIT(= "E387: Match is on current line");
-EXTERN Byte e_couldnt_find_definition[]
-   INIT(= "E388: Couldn't find definition");
-EXTERN Byte e_couldnt_find_pattern[]
-   INIT(= "E389: Couldn't find pattern");
-EXTERN Byte e_illegal_argument_str_2[]
-   INIT(= "E390: Illegal argument: %s");
-EXTERN Byte e_no_such_syntax_cluster_str_1[]
-   INIT(= "E391: No such syntax cluster: %s");
-EXTERN Byte e_no_such_syntax_cluster_str_2[]
-   INIT(= "E392: No such syntax cluster: %s");
-EXTERN Byte e_groupthere_not_accepted_here[]
-   INIT(= "E393: group[t]here not accepted here");
-EXTERN Byte e_didnt_find_region_item_for_str[]
-   INIT(= "E394: Didn't find region item for %s");
+EXTERN Byte e_match_is_on_current_line[] INIT(= "E387: Match is on current line");
+EXTERN Byte e_couldnt_find_definition[] INIT(= "E388: Couldn't find definition");
+EXTERN Byte e_couldnt_find_pattern[] INIT(= "E389: Couldn't find pattern");
+EXTERN Byte e_illegal_argument_str_2[] INIT(= "E390: Illegal argument: %s");
+EXTERN Byte e_no_such_syntax_cluster_str_1[] INIT(= "E391: No such syntax cluster: %s");
+EXTERN Byte e_no_such_syntax_cluster_str_2[] INIT(= "E392: No such syntax cluster: %s");
+EXTERN Byte e_groupthere_not_accepted_here[] INIT(= "E393: group[t]here not accepted here");
+EXTERN Byte e_didnt_find_region_item_for_str[] INIT(= "E394: Didn't find region item for %s");
 EXTERN Byte e_contains_argument_not_accepted_here[]
    INIT(= "E395: Contains argument not accepted here");
 //E396 unused
-EXTERN Byte e_filename_required[]
-   INIT(= "E397: Filename required");
-EXTERN Byte e_missing_equal_str[]
-   INIT(= "E398: Missing '=': %s");
+EXTERN Byte e_filename_required[] INIT(= "E397: Filename required");
+EXTERN Byte e_missing_equal_str[] INIT(= "E398: Missing '=': %s");
 EXTERN Byte e_not_enough_arguments_syntax_region_str[]
    INIT(= "E399: Not enough arguments: syntax region %s");
-EXTERN Byte e_no_cluster_specified[]
-   INIT(= "E400: No cluster specified");
+EXTERN Byte e_no_cluster_specified[] INIT(= "E400: No cluster specified");
 EXTERN Byte e_pattern_delimiter_not_found_str[]
    INIT(= "E401: Pattern delimiter not found: %s");
-EXTERN Byte e_garbage_after_pattern_str[]
-   INIT(= "E402: Garbage after pattern: %s");
+EXTERN Byte e_garbage_after_pattern_str[] INIT(= "E402: Garbage after pattern: %s");
 EXTERN Byte e_syntax_sync_line_continuations_pattern_specified_twice[]
    INIT(= "E403: syntax sync: Line continuations pattern specified twice");
-EXTERN Byte e_illegal_arguments_str[]
-   INIT(= "E404: Illegal arguments: %s");
-EXTERN Byte e_missing_equal_sign_str[]
-   INIT(= "E405: Missing equal sign: %s");
-EXTERN Byte e_empty_argument_str[]
-   INIT(= "E406: Empty argument: %s");
-EXTERN Byte e_str_not_allowed_here[]
-   INIT(= "E407: %s not allowed here");
+EXTERN Byte e_illegal_arguments_str[] INIT(= "E404: Illegal arguments: %s");
+EXTERN Byte e_missing_equal_sign_str[] INIT(= "E405: Missing equal sign: %s");
+EXTERN Byte e_empty_argument_str[] INIT(= "E406: Empty argument: %s");
+EXTERN Byte e_str_not_allowed_here[] INIT(= "E407: %s not allowed here");
 EXTERN Byte e_str_must_be_first_in_contains_list[]
    INIT(= "E408: %s must be first in contains list");
-EXTERN Byte e_unknown_group_name_str[]
-   INIT(= "E409: Unknown group name: %s");
+EXTERN Byte e_unknown_group_name_str[] INIT(= "E409: Unknown group name: %s");
 EXTERN Byte e_invalid_syntax_subcommand_str[]
    INIT(= "E410: Invalid :syntax subcommand: %s");
-EXTERN Byte e_hilite_group_name_not_found_str[]
-   INIT(= "E411: Hilite group not found: %s");
+EXTERN Byte e_hilite_group_name_not_found_str[] INIT(= "E411: Hilite group not found: %s");
 EXTERN Byte e_not_enough_arguments_highlight_link_str[]
    INIT(= "E412: Not enough arguments: \":highlight link %s\"");
 EXTERN Byte e_too_many_arguments_highlight_link_str[]
    INIT(= "E413: Too many arguments: \":highlight link %s\"");
 EXTERN Byte e_group_has_settings_highlight_link_ignored[]
    INIT(= "E414: Group has settings, highlight link ignored");
-EXTERN Byte e_unexpected_equal_sign_str[]
-   INIT(= "E415: Unexpected equal sign: %s");
-EXTERN Byte e_missing_equal_sign_str_2[]
-   INIT(= "E416: Missing equal sign: %s");
-EXTERN Byte e_missing_argument_str[]
-   INIT(= "E417: Missing argument: %s");
-EXTERN Byte e_illegal_value_str[]
-   INIT(= "E418: Illegal value: %s");
-EXTERN Byte e_im_a_teapot[]
-   INIT(= "E418: I'm a teapot");
-EXTERN Byte e_fg_color_unknown[]
-   INIT(= "E419: FG color unknown");
-EXTERN Byte e_bg_color_unknown[]
-   INIT(= "E420: BG color unknown");
+EXTERN Byte e_unexpected_equal_sign_str[] INIT(= "E415: Unexpected equal sign: %s");
+EXTERN Byte e_missing_equal_sign_str_2[] INIT(= "E416: Missing equal sign: %s");
+EXTERN Byte e_missing_argument_str[] INIT(= "E417: Missing argument: %s");
+EXTERN Byte e_illegal_value_str[] INIT(= "E418: Illegal value: %s");
+EXTERN Byte e_im_a_teapot[] INIT(= "E418: I'm a teapot");
+EXTERN Byte e_fg_color_unknown[] INIT(= "E419: FG color unknown");
+EXTERN Byte e_bg_color_unknown[] INIT(= "E420: BG color unknown");
 EXTERN Byte e_color_name_or_number_not_recognized_str[]
    INIT(= "E421: Color name or number not recognized: %s");
-EXTERN Byte e_terminal_code_too_long_str[]
-   INIT(= "E422: Terminal code too Long: %s");
-EXTERN Byte e_illegal_argument_str_3[]
-   INIT(= "E423: Illegal argument: %s");
+EXTERN Byte e_terminal_code_too_long_str[] INIT(= "E422: Terminal code too Long: %s");
+EXTERN Byte e_illegal_argument_str_3[] INIT(= "E423: Illegal argument: %s");
 EXTERN Byte e_too_many_different_highlighting_decos_in_use[]
    INIT(= "E424: Too many different highlighting decorations in use");
 EXTERN Byte e_cannot_go_before_first_matching_tag[]
    INIT(= "E425: Cannot go before first matching tag");
-EXTERN Byte e_tag_not_found_str[]
-   INIT(= "E426: Tag not found: %s");
-EXTERN Byte e_there_is_only_one_matching_tag[]
-   INIT(= "E427: There is only one matching tag");
+EXTERN Byte e_tag_not_found_str[] INIT(= "E426: Tag not found: %s");
+EXTERN Byte e_there_is_only_one_matching_tag[] INIT(= "E427: There is only one matching tag");
 EXTERN Byte e_cannot_go_beyond_last_matching_tag[]
    INIT(= "E428: Cannot go beyond last matching tag");
-EXTERN Byte e_file_str_does_not_exist[]
-   INIT(= "E429: File \"%s\" does not exist");
-EXTERN Byte e_format_error_in_tags_file_str[]
-   INIT(= "E431: Format error in tags file \"%s\"");
-EXTERN Byte e_tags_file_not_sorted_str[]
-   INIT(= "E432: Tags file not sorted: %s");
-EXTERN Byte e_no_tags_file[]
-   INIT(= "E433: No tags file");
-EXTERN Byte e_cannot_find_tag_pattern[]
-   INIT(= "E434: Can't find tag pattern");
+EXTERN Byte e_file_str_does_not_exist[] INIT(= "E429: File \"%s\" does not exist");
+EXTERN Byte e_format_error_in_tags_file_str[] INIT(= "E431: Format error in tags file \"%s\"");
+EXTERN Byte e_tags_file_not_sorted_str[] INIT(= "E432: Tags file not sorted: %s");
+EXTERN Byte e_no_tags_file[] INIT(= "E433: No tags file");
+EXTERN Byte e_cannot_find_tag_pattern[] INIT(= "E434: Can't find tag pattern");
 EXTERN Byte e_couldnt_find_tag_just_guessing[]
    INIT(= "E435: Couldn't find tag, just guessing!");
-EXTERN Byte e_no_str_entry_in_termcap[]
-   INIT(= "E436: No \"%s\" entry in termcap");
+EXTERN Byte e_no_str_entry_in_termcap[] INIT(= "E436: No \"%s\" entry in termcap");
 EXTERN Byte e_terminal_capability_cm_required[]
    INIT(= "E437: Terminal capability \"cm\" required");
-EXTERN Byte e_u_undo_line_numbers_wrong[]
-   INIT(= "E438: u_undo: Line numbers wrong");
-EXTERN Byte e_undo_list_corrupt[]
-   INIT(= "E439: Undo list corrupt");
-EXTERN Byte e_undo_line_missing[]
-   INIT(= "E440: Undo line missing");
-EXTERN Byte e_there_is_no_preview_portal[]
-   INIT(= "E441: There is no preview portal");
+EXTERN Byte e_u_undo_line_numbers_wrong[] INIT(= "E438: u_undo: Line numbers wrong");
+EXTERN Byte e_undo_list_corrupt[] INIT(= "E439: Undo list corrupt");
+EXTERN Byte e_undo_line_missing[] INIT(= "E440: Undo line missing");
+EXTERN Byte e_there_is_no_preview_portal[] INIT(= "E441: There is no preview portal");
 EXTERN Byte e_cant_split_topleft_and_botright_at_the_same_time[]
    INIT(= "E442: Can't split topleft and botright at the same time");
 EXTERN Byte e_cannot_rotate_when_another_portal_is_split[]
@@ -5876,10 +5807,8 @@ EXTERN Byte e_expected_right_curly_str[] //{
    INIT(= "E451: Expected }: %s");
 EXTERN Byte e_double_semicolon_in_list_of_variables[]
    INIT(= "E452: Double ; in list of variables");
-EXTERN Byte e_ul_color_unknown[]
-   INIT(= "E453: UL color unknown");
-EXTERN Byte e_function_list_was_modified[]
-   INIT(= "E454: Function list was modified");
+EXTERN Byte e_ul_color_unknown[] INIT(= "E453: UL color unknown");
+EXTERN Byte e_function_list_was_modified[] INIT(= "E454: Function list was modified");
 EXTERN Byte e_cannot_go_back_to_previous_directory[]
    INIT(= "E459: Cannot go back to previous directory");
 EXTERN Byte e_entries_missing_in_mapset_dict_argument[]
@@ -5902,70 +5831,42 @@ EXTERN Byte e_completion_argument_only_allowed_for_custom_completion[]
    INIT(= "E468: Completion argument only allowed for custom completion");
 EXTERN Byte e_invalid_cscopequickfix_flag_chr_for_chr[]
    INIT(= "E469: Invalid cscopequickfix flag %c for %c");
-EXTERN Byte e_command_aborted[]
-   INIT(= "E470: Command aborted");
-EXTERN Byte e_argument_required[]
-   INIT(= "E471: Argument required");
-EXTERN Byte e_command_failed[]
-   INIT(= "E472: Command failed");
-EXTERN Byte e_internal_error_in_regexp[]
-   INIT(= "E473: Internal error in regexp");
-EXTERN Byte e_invalid_argument[]
-   INIT(= "E474: Invalid argument");
-EXTERN Byte e_invalid_argument_str[]
-   INIT(= "E475: Invalid argument: %s");
+EXTERN Byte e_command_aborted[] INIT(= "E470: Command aborted");
+EXTERN Byte e_argument_required[] INIT(= "E471: Argument required");
+EXTERN Byte e_command_failed[] INIT(= "E472: Command failed");
+EXTERN Byte e_internal_error_in_regexp[] INIT(= "E473: Internal error in regexp");
+EXTERN Byte e_invalid_argument[] INIT(= "E474: Invalid argument");
+EXTERN Byte e_invalid_argument_str[] INIT(= "E475: Invalid argument: %s");
 EXTERN Byte e_invalid_value_for_argument_str[]
    INIT(= "E475: Invalid value for argument %s");
 EXTERN Byte e_invalid_value_for_argument_str_str[]
    INIT(= "E475: Invalid value for argument %s: %s");
-EXTERN Byte e_invalid_command[]
-   INIT(= "E476: Invalid command");
-EXTERN Byte e_invalid_command_str[]
-   INIT(= "E476: Invalid command: %s");
+EXTERN Byte e_invalid_command[] INIT(= "E476: Invalid command");
+EXTERN Byte e_invalid_command_str[] INIT(= "E476: Invalid command: %s");
 EXTERN Byte e_invalid_command_str_expected_str[]
    INIT(= "E476: Invalid command: %s, expected %s");
-EXTERN Byte e_no_bang_allowed[]
-   INIT(= "E477: No ! allowed");
-EXTERN Byte e_dont_panic[]
-   INIT(= "E478: Don't panic!");
-EXTERN Byte e_no_match[]
-   INIT(= "E479: No match");
-EXTERN Byte e_no_match_str_2[]
-   INIT(= "E480: No match: %s");
-EXTERN Byte e_no_range_allowed[]
-   INIT(= "E481: No range allowed");
-EXTERN Byte e_cant_create_file_str[]
-   INIT(= "E482: Can't create file %s");
-EXTERN Byte e_cant_get_temp_file_name[]
-   INIT(= "E483: Can't get temp file name");
-EXTERN Byte e_cant_open_file_str[]
-   INIT(= "E484: Can't open file %s");
-EXTERN Byte e_cant_read_file_str[]
-   INIT(= "E485: Can't read file %s");
-EXTERN Byte e_pattern_not_found[]
-   INIT(= "E486: Pattern not found");
-EXTERN Byte e_pattern_not_found_str[]
-   INIT(= "E486: Pattern not found: %s");
-EXTERN Byte e_argument_must_be_positive[]
-   INIT(= "E487: Argument must be positive");
-EXTERN Byte e_argument_must_be_positive_str[]
-   INIT(= "E487: Argument must be positive: %s");
-EXTERN Byte e_trailing_characters[]
-   INIT(= "E488: Trailing characters");
-EXTERN Byte e_trailing_characters_str[]
-   INIT(= "E488: Trailing characters: %s");
+EXTERN Byte e_no_bang_allowed[] INIT(= "E477: No ! allowed");
+EXTERN Byte e_dont_panic[] INIT(= "E478: Don't panic!");
+EXTERN Byte e_no_match[] INIT(= "E479: No match");
+EXTERN Byte e_no_match_str_2[] INIT(= "E480: No match: %s");
+EXTERN Byte e_no_range_allowed[] INIT(= "E481: No range allowed");
+EXTERN Byte e_cant_create_file_str[] INIT(= "E482: Can't create file %s");
+EXTERN Byte e_cant_get_temp_file_name[] INIT(= "E483: Can't get temp file name");
+EXTERN Byte e_cant_open_file_str[] INIT(= "E484: Can't open file %s");
+EXTERN Byte e_cant_read_file_str[] INIT(= "E485: Can't read file %s");
+EXTERN Byte e_pattern_not_found[] INIT(= "E486: Pattern not found");
+EXTERN Byte e_pattern_not_found_str[] INIT(= "E486: Pattern not found: %s");
+EXTERN Byte e_argument_must_be_positive[] INIT(= "E487: Argument must be positive");
+EXTERN Byte e_argument_must_be_positive_str[] INIT(= "E487: Argument must be positive: %s");
+EXTERN Byte e_trailing_characters[] INIT(= "E488: Trailing characters");
+EXTERN Byte e_trailing_characters_str[] INIT(= "E488: Trailing characters: %s");
 EXTERN Byte e_no_call_stack_to_substitute_for_stack[]
    INIT(= "E489: No call stack to substitute for \"<stack>\"");
-EXTERN Byte e_no_fold_found[]
-   INIT(= "E490: No fold found");
-EXTERN Byte e_json_decode_error_at_str[]
-   INIT(= "E491: JSON decode error at '%s'");
-EXTERN Byte e_not_an_editor_command[]
-   INIT(= "E492: Not an editor command");
-EXTERN Byte e_backwards_range_given[]
-   INIT(= "E493: Backwards range given");
-EXTERN Byte e_use_w_or_w_gt_gt[]
-   INIT(= "E494: Use w or w>>");
+EXTERN Byte e_no_fold_found[] INIT(= "E490: No fold found");
+EXTERN Byte e_json_decode_error_at_str[] INIT(= "E491: JSON decode error at '%s'");
+EXTERN Byte e_not_an_editor_command[] INIT(= "E492: Not an editor command");
+EXTERN Byte e_backwards_range_given[] INIT(= "E493: Backwards range given");
+EXTERN Byte e_use_w_or_w_gt_gt[] INIT(= "E494: Use w or w>>");
 EXTERN Byte e_no_autocommand_file_name_to_substitute_for_afile[]
    INIT(= "E495: No autocommand file name to substitute for \"<afile>\"");
 EXTERN Byte e_no_autocommand_buffer_number_to_substitute_for_abuf[]
@@ -5977,13 +5878,10 @@ EXTERN Byte e_no_source_file_name_to_substitute_for_sfile[]
 EXTERN Byte e_empty_file_name_for_percent_or_hash_only_works_with_ph[]
    //xgettext:no-c-format
    INIT(= "E499: Empty file name for '%' or '#', only works with \":p:h\"");
-EXTERN Byte e_evaluates_to_an_empty_string[]
-   INIT(= "E500: Evaluates to an empty string");
-EXTERN Byte e_at_end_of_file[]
-   INIT(= "E501: At end-of-file");
+EXTERN Byte e_evaluates_to_an_empty_string[] INIT(= "E500: Evaluates to an empty string");
+EXTERN Byte e_at_end_of_file[] INIT(= "E501: At end-of-file");
    //E502
-EXTERN Byte e_is_a_directory[]
-   INIT(= "is a directory");
+EXTERN Byte e_is_a_directory[] INIT(= "is a directory");
    //E503
 EXTERN Byte e_is_not_file_or_writable_device[]
    INIT(= "is not a file or writable device");
@@ -6007,97 +5905,63 @@ EXTERN Byte e_cannot_create_backup_file_add_bang_to_write_anyway[]
    INIT(= "E509: Cannot create backup file (add ! to override)");
 EXTERN Byte e_cant_make_backup_file_add_bang_to_write_anyway[]
    INIT(= "E510: Can't make backup file (add ! to write anyway)");
-EXTERN Byte e_close_failed[]
-   INIT(= "E512: Close failed");
+EXTERN Byte e_close_failed[] INIT(= "E512: Close failed");
 EXTERN Byte e_write_error_conversion_failed_make_fenc_empty_to_override[]
    INIT(= "E513: Write error, conversion failed (make 'fenc' empty to override)");
 EXTERN Byte e_write_error_conversion_failed_in_line_nr_make_fenc_empty_to_override[]
    INIT(= "E513: Write error, conversion failed in line %ld (make 'fenc' empty to override)");
-EXTERN Byte e_write_error_file_system_full[]
-   INIT(= "E514: Write error (file system full?)");
-EXTERN Byte e_no_buffers_were_unloaded[]
-   INIT(= "E515: No buffers were unloaded");
-EXTERN Byte e_no_buffers_were_deleted[]
-   INIT(= "E516: No buffers were deleted");
-EXTERN Byte e_no_buffers_were_wiped_out[]
-   INIT(= "E517: No buffers were wiped out");
-EXTERN Byte e_unknown_option[]
-   INIT(= "E518: Unknown option");
-EXTERN Byte e_option_not_supported[]
-   INIT(= "E519: Option not supported");
-EXTERN Byte e_number_required_after_equal[]
-   INIT(= "E521: Number required after =");
-EXTERN Byte e_number_required_after_str_equal_str[]
-   INIT(= "E521: Number required: &%s = '%s'");
-EXTERN Byte e_not_found_in_termcap[]
-   INIT(= "E522: Not found in termcap");
-EXTERN Byte e_not_allowed_here[]
-   INIT(= "E523: Not allowed here");
-EXTERN Byte e_missing_colon[]
-   INIT(= "E524: Missing colon");
-EXTERN Byte e_zero_length_string[]
-   INIT(= "E525: Zero length string");
-EXTERN Byte e_missing_number_after_angle_str_angle[]
-   INIT(= "E526: Missing number after <%s>");
-EXTERN Byte e_missing_comma[]
-   INIT(= "E527: Missing comma");
-EXTERN Byte e_must_specify_a_value[]
-   INIT(= "E528: Must specify a ' value");
+EXTERN Byte e_write_error_file_system_full[] INIT(= "E514: Write error (file system full?)");
+EXTERN Byte e_no_buffers_were_unloaded[] INIT(= "E515: No buffers were unloaded");
+EXTERN Byte e_no_buffers_were_deleted[] INIT(= "E516: No buffers were deleted");
+EXTERN Byte e_no_buffers_were_wiped_out[] INIT(= "E517: No buffers were wiped out");
+EXTERN Byte e_unknown_option[] INIT(= "E518: Unknown option");
+EXTERN Byte e_option_not_supported[] INIT(= "E519: Option not supported");
+EXTERN Byte e_number_required_after_equal[] INIT(= "E521: Number required after =");
+EXTERN Byte e_number_required_after_str_equal_str[] INIT(= "E521: Number required: &%s = '%s'");
+EXTERN Byte e_not_found_in_termcap[] INIT(= "E522: Not found in termcap");
+EXTERN Byte e_not_allowed_here[] INIT(= "E523: Not allowed here");
+EXTERN Byte e_missing_colon[] INIT(= "E524: Missing colon");
+EXTERN Byte e_zero_length_string[] INIT(= "E525: Zero length string");
+EXTERN Byte e_missing_number_after_angle_str_angle[] INIT(= "E526: Missing number after <%s>");
+EXTERN Byte e_missing_comma[] INIT(= "E527: Missing comma");
+EXTERN Byte e_must_specify_a_value[] INIT(= "E528: Must specify a ' value");
 EXTERN Byte e_cannot_set_term_to_empty_string[]
    INIT(= "E529: Cannot set 'term' to empty string");
 EXTERN Byte e_illegal_character_after_chr[]
    INIT(= "E535: Illegal character after <%c>");
-EXTERN Byte e_comma_required[]
-   INIT(= "E536: Comma required");
+EXTERN Byte e_comma_required[] INIT(= "E536: Comma required");
 EXTERN Byte e_commentstring_must_be_empty_or_contain_str[]
    INIT(= "E537: 'commentstring' must be empty or contain %s");
 EXTERN Byte e_pattern_found_in_every_line_str[]
    INIT(= "E538: Pattern found in every line: %s");
-EXTERN Byte e_illegal_character_str[]
-   INIT(= "E539: Illegal character <%s>");
-EXTERN Byte e_unclosed_expression_sequence[]
-   INIT(= "E540: Unclosed expression sequence");
+EXTERN Byte e_illegal_character_str[] INIT(= "E539: Illegal character <%s>");
+EXTERN Byte e_unclosed_expression_sequence[] INIT(= "E540: Unclosed expression sequence");
 //E541 unused
-EXTERN Byte e_unbalanced_groups[]
-   INIT(= "E542: Unbalanced groups");
-EXTERN Byte e_keymap_file_not_found[]
-   INIT(= "E544: Keymap file not found");
-EXTERN Byte e_missing_colon_2[]
-   INIT(= "E545: Missing colon");
-EXTERN Byte e_illegal_mode[]
-   INIT(= "E546: Illegal mode");
-EXTERN Byte e_digit_expected[]
-   INIT(= "E548: Digit expected");
-EXTERN Byte e_illegal_percentage[]
-   INIT(= "E549: Illegal percentage");
-EXTERN Byte e_no_more_items[]
-   INIT(= "E553: No more items");
-EXTERN Byte e_syntax_error_in_str_curlies[]
-   INIT(= "E554: Syntax error in %s{...}");
-EXTERN Byte e_at_bottom_of_tag_stack[]
-   INIT(= "E555: At bottom of tag stack");
-EXTERN Byte e_at_top_of_tag_stack[]
-   INIT(= "E556: At top of tag stack");
-EXTERN Byte e_cannot_open_termcap_file[]
-   INIT(= "E557: Cannot open termcap file");
+EXTERN Byte e_unbalanced_groups[] INIT(= "E542: Unbalanced groups");
+EXTERN Byte e_keymap_file_not_found[] INIT(= "E544: Keymap file not found");
+EXTERN Byte e_missing_colon_2[] INIT(= "E545: Missing colon");
+EXTERN Byte e_illegal_mode[] INIT(= "E546: Illegal mode");
+EXTERN Byte e_digit_expected[] INIT(= "E548: Digit expected");
+EXTERN Byte e_illegal_percentage[] INIT(= "E549: Illegal percentage");
+EXTERN Byte e_no_more_items[] INIT(= "E553: No more items");
+EXTERN Byte e_syntax_error_in_str_curlies[] INIT(= "E554: Syntax error in %s{...}");
+EXTERN Byte e_at_bottom_of_tag_stack[] INIT(= "E555: At bottom of tag stack");
+EXTERN Byte e_at_top_of_tag_stack[] INIT(= "E556: At top of tag stack");
+EXTERN Byte e_cannot_open_termcap_file[] INIT(= "E557: Cannot open termcap file");
 EXTERN Byte e_terminal_entry_not_found_in_terminfo[]
    INIT(= "E558: Terminal entry not found in terminfo");
-EXTERN Byte e_usage_cscope_str[]
-   INIT(= "E560: Usage: cs[cope] %s");
+EXTERN Byte e_usage_cscope_str[] INIT(= "E560: Usage: cs[cope] %s");
 EXTERN Byte e_unknown_cscope_search_type[]
    INIT(= "E561: Unknown cscope search type");
-EXTERN Byte e_usage_cstag_ident[]
-   INIT(= "E562: Usage: cstag <ident>");
-EXTERN Byte e_stat_str_error_nr[]
-   INIT(= "E563: stat(%s) error: %d");
+EXTERN Byte e_usage_cstag_ident[] INIT(= "E562: Usage: cstag <ident>");
+EXTERN Byte e_stat_str_error_nr[] INIT(= "E563: stat(%s) error: %d");
 EXTERN Byte e_str_is_not_directory_or_valid_cscope_database[]
    INIT(= "E564: %s is not a directory or a valid cscope database");
 EXTERN Byte e_not_allowed_to_change_text_or_change_portal[]
    INIT(= "E565: Not allowed to change text or change portal");
 EXTERN Byte e_could_not_create_cscope_pipes[]
    INIT(= "E566: Could not create cscope pipes");
-EXTERN Byte e_no_cscope_connections[]
-   INIT(= "E567: No cscope connections");
+EXTERN Byte e_no_cscope_connections[] INIT(= "E567: No cscope connections");
 EXTERN Byte e_duplicate_cscope_database_not_added[]
    INIT(= "E568: Duplicate cscope database not added");
 //E569 unused
@@ -6117,32 +5981,6 @@ EXTERN Byte e_nonr_missing_gt[]
 EXTERN Byte e_illegal_register_name[]
    INIT(= "Illegal register name");
 //E578 unused
-EXTERN Byte e_if_nesting_too_deep[]
-   INIT(= "E579: :if nesting too deep");
-EXTERN Byte e_block_nesting_too_deep[]
-   INIT(= "E579: Block nesting too deep");
-EXTERN Byte e_endif_without_if[]
-   INIT(= "E580: :endif without :if");
-EXTERN Byte e_else_without_if[]
-   INIT(= "E581: :else without :if");
-EXTERN Byte e_elseif_without_if[]
-   INIT(= "E582: :elseif without :if");
-EXTERN Byte e_multiple_else[]
-   INIT(= "E583: Multiple :else");
-EXTERN Byte e_elseif_after_else[]
-   INIT(= "E584: :elseif after :else");
-EXTERN Byte e_while_for_nesting_too_deep[]
-   INIT(= "E585: :while/:for nesting too deep");
-EXTERN Byte e_continue_without_while_or_for[]
-   INIT(= "E586: :continue without :while or :for");
-EXTERN Byte e_break_without_while_or_for[]
-   INIT(= "E587: :break without :while or :for");
-EXTERN Byte e_endwhile_without_while[]
-   INIT(= "E588: :endwhile without :while");
-EXTERN Byte e_endfor_without_for[]
-   INIT(= "E588: :endfor without :for");
-EXTERN Byte e_backupext_and_patchmode_are_equal[]
-   INIT(= "E589: 'backupext' and 'patchmode' are equal");
 EXTERN Byte e_winheight_cannot_be_smaller_than_winminheight[]
    INIT(= "E591: 'winheight' cannot be smaller than 'winminheight'");
 EXTERN Byte e_winwidth_cannot_be_smaller_than_winminwidth[]
@@ -6151,26 +5989,6 @@ EXTERN Byte e_need_at_least_nr_lines[]
    INIT(= "E593: Need at least %d lines");
 EXTERN Byte e_need_at_least_nr_columns[]
    INIT(= "E594: Need at least %d columns");
-EXTERN Byte e_showbreak_contains_unprintable_or_wide_character[]
-   INIT(= "E595: 'showbreak' contains unprintable or wide character");
-EXTERN Byte e_missing_endtry[]
-   INIT(= "E600: Missing :endtry");
-EXTERN Byte e_try_nesting_too_deep[]
-   INIT(= "E601: :try nesting too deep");
-EXTERN Byte e_endtry_without_try[]
-   INIT(= "E602: :endtry without :try");
-EXTERN Byte e_catch_without_try[]
-   INIT(= "E603: :catch without :try");
-EXTERN Byte e_catch_after_finally[]
-   INIT(= "E604: :catch after :finally");
-EXTERN Byte e_exception_not_caught_str[]
-   INIT(= "E605: Exception not caught: %s");
-EXTERN Byte e_finally_without_try[]
-   INIT(= "E606: :finally without :try");
-EXTERN Byte e_multiple_finally[]
-   INIT(= "E607: Multiple :finally");
-EXTERN Byte e_cannot_throw_exceptions_with_eegl_prefix[]
-   INIT(= "E608: Cannot :throw exceptions with 'Eegl' prefix");
 EXTERN Byte e_cscope_error_str[]
    INIT(= "E609: Cscope error: %s");
 EXTERN Byte e_no_argument_to_delete[]
@@ -7484,8 +7302,7 @@ EXTERN Byte e_diff_anchors_with_hidden_windows[]
    INIT(= "E1562: Diff anchors cannot be used with hidden diff portals");
 EXTERN Byte e_use_get_not_set_for_reading_options[]
    INIT(= "E1564: Use :get, not :set, for reading option values");
-EXTERN Byte e_argument_must_not_be_negative[]
-   INIT(= "E1565: Argument must not be negative");
+EXTERN Byte e_argument_must_not_be_negative[] INIT(= "E1565: Argument must not be negative");
 EXTERN Byte e_illegal_combination_of_flags_str[]
    INIT(= "E1567: Illegal combination of flags in the option %s");
 EXTERN Byte e_trying_to_set_option_to_wrong_type[]
@@ -7496,8 +7313,7 @@ EXTERN Byte e_flags_required_after_equal[] INIT(= "E1572: Flags required after =
 EXTERN Byte e_setter_required_for_enum_or_flag_option[]
    INIT(= "E1573: Enumeration, flags and callback options require a setter function!");
 EXTERN Byte e_options_are_frozen[] INIT(= "E1574: Options are frozen and cannot be changed!");
-EXTERN Byte e_symlink_dereference_error[]
-   INIT(= "E1575: Symlink derefence error");
+EXTERN Byte e_symlink_dereference_error[] INIT(= "E1575: Symlink derefence error");
 EXTERN Byte e_symlink_dereference_buffer_overflow[]
    INIT(= "E1576: Buffer overflow during symlink derefence");
 
@@ -7513,12 +7329,6 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 #endif
 
 //{{{Constants
-
-//Return byte length of character that starts with byte "b".
-//Return 1 for a single-byte character.
-//MB_BYTE2LEN_CHECK() can be used to count a special key as one byte.
-//Don't call MB_BYTE2LEN(b) with b > 255!
-#define MB_BYTE2LEN_CHECK(b) (((b) > 255) ? 1 : utf8CharLens[b])
 
 //values for eeHandleSignal() that are not a signal
 #define SIGNAL_BLOCK   (-1)
@@ -7550,27 +7360,27 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 #define JSON_NL      2   //append a NL
 
 //Used for flags of doInPath()
-#define DIP_ALL       0x01   //all matches, not just the first one
-#define DIP_DIR       0x02   //find directories instead of files.
-#define DIP_ERR       0x04   //give an error message when none found.
-#define DIP_START   0x08   //also use "start" directory in 'packpath'
-#define DIP_OPT       0x10   //also use "opt" directory in 'packpath'
-#define DIP_NORTP   0x20   //do not use 'runtimepath'
-#define DIP_NOAFTER 0x40   //skip "after" directories
-#define DIP_AFTER   0x80   //only use "after" directories
+#define DIP_ALL      0x01 //all matches, not just the first one
+#define DIP_DIR      0x02 //find directories instead of files.
+#define DIP_ERR      0x04 //give an error message when none found.
+#define DIP_START    0x08 //also use "start" directory in 'packpath'
+#define DIP_OPT      0x10 //also use "opt" directory in 'packpath'
+#define DIP_NORTP    0x20 //do not use 'runtimepath'
+#define DIP_NOAFTER  0x40 //skip "after" directories
+#define DIP_AFTER    0x80 //only use "after" directories
 
 #define FOLD_TEXT_LEN 51  //buffer size for get_foldtext()
 
 //Values for trans_function_name() argument:
-#define TFN_INT         0x01   //internal function name OK
-#define TFN_QUIET       0x02   //no error messages
-#define TFN_NO_AUTOLOAD 0x04   //do not use script autoloading
-#define TFN_NO_DEREF    0x08   //do not dereference a Funcref
-#define TFN_READ_ONLY   0x10   //will not change the var
-#define TFN_NO_DECL     0x20   //only used for GLV_NO_DECL
-#define TFN_NEW_FUNC    0x40   //defining a new function
-#define TFN_ASSIGN_WITH_OP 0x80  //only for GLV_ASSIGN_WITH_OP
-#define TFN_IN_CLASS    0x100   //function in a class
+#define TFN_INT            0x01 //internal function name OK
+#define TFN_QUIET          0x02 //no error messages
+#define TFN_NO_AUTOLOAD    0x04 //do not use script autoloading
+#define TFN_NO_DEREF       0x08 //do not dereference a Funcref
+#define TFN_READ_ONLY      0x10 //will not change the var
+#define TFN_NO_DECL        0x20 //only used for GLV_NO_DECL
+#define TFN_NEW_FUNC       0x40 //defining a new function
+#define TFN_ASSIGN_WITH_OP 0x80 //only for GLV_ASSIGN_WITH_OP
+#define TFN_IN_CLASS      0x100 //function in a class
 
 //Values for get_lval() flags argument:
 #define GLV_QUIET   TFN_QUIET   //no error messages

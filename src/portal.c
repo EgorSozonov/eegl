@@ -5770,7 +5770,7 @@ plinesUpToCol(Portal *wp, LineNr lnum, long column) {
 	CharTableSize cts;
 	bookInitCharsForKeywordsSizeArg(OUT &cts, wp, lnum, 0, line, line);
 	while (*cts.cts_ptr != ZERO && --column >= 0) {
-		cts.cts_vcol += win_lbr_chartabsize(&cts, NULL);
+		cts.cts_vcol += win_lbr_chartabsize(&cts);
 		MB_PTR_ADV(cts.cts_ptr);
 	}
 
@@ -5780,7 +5780,7 @@ plinesUpToCol(Portal *wp, LineNr lnum, long column) {
 	//'columns' is not a multiple of 'ts') -- webb.
 	long col = cts.cts_vcol;
 	if (*cts.cts_ptr == TAB && (stateG & MODE_NORMAL) && (!wp->o.list || listCharsG.tab1))
-		col += win_lbr_chartabsize(&cts, NULL) - 1;
+		col += win_lbr_chartabsize(&cts) - 1;
 	clear_chartabsize_arg(&cts);
 
 	//Add column offset for 'number', 'relativenumber', 'foldcolumn', etc.

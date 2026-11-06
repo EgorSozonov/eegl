@@ -4828,10 +4828,10 @@ buildErrorFileName(void) {
 		sprintf((char *)name + (p - p_mef), "%d%d", start, off);
 		STRCAT(name, p + 2);
 		if (mch_getperm(name) < 0
-				 //Don't accept a symbolic link, it's a security risk.
-				 && lstat((char *)name, &sb) < 0
-			)
-			 break;
+				//Don't accept a symbolic link, it's a security risk.
+				&& lstat((char *)name, &sb) < 0
+		)
+			break;
 		eeglFree(name);
 	}
 	return name;
@@ -4858,7 +4858,7 @@ buildFullShellCommand(CS makecmd) {
 
 //Process :eegl command arguments. The command syntax is:
 //
-// :{count}eegl /{pattern}/[g][j]
+// ;{count}eegl /{pattern}/[g][j]
 private int
 eeglProcessArgs(Invocation* invo, OUT VimGrepArgs* args) {
 	CLEAR_POINTER(args);
@@ -5606,9 +5606,9 @@ c_lBelow(Invocation* invo) {
 	//A location entry column number is 1 based whereas cursor column
 	//number is 0 based. Adjust the column number.
 	pos.col++;
-	errornr = findNthAdjacentEntry(ll, curBook->fiNum, &pos,
-				invo->addrCount > 0 ? invo->line2 : 0, dir,
-				invo->id == C_lbelow || invo->id == C_labove
+	errornr = findNthAdjacentEntry(
+			ll, curBook->fiNum, &pos, invo->addrCount > 0 ? invo->line2 : 0, dir,
+			invo->id == C_lbelow || invo->id == C_labove
 	);
 
 	if (errornr > 0)
@@ -5621,16 +5621,16 @@ c_lBelow(Invocation* invo) {
 private CS
 cfile_get_auname(CommIndex id){
 	switch (id) {
-	case C_lfile:       return S"lfile";
+	case C_lfile:     return S"lfile";
 	case C_laddfile:  return S"laddfile";
-	default:       return NULL;
+	default:          return NULL;
 	}
 }
 
-//":lfile"/":laddfile" commands.
+//";lfile"/";laddfile" commands.
 pub void
 c_lFile(Invocation* invo) {
-	Unt   idSave = 0;      //init for gcc
+	Unt idSave = 0;      //init for gcc
 
 	CS auName = cfile_get_auname(invo->id);
 	if (auName && applyAutocomms(EVENT_QUICKFIXCMDPRE, auName, NULL, false, curBook)
@@ -5645,15 +5645,15 @@ c_lFile(Invocation* invo) {
 	}
 
 	LocationStack* stack = identifyStackByInvo(invo);
-	if (stack == NULL) {
+	if (!stack) {
 		emsg(_(e_no_location_stack));
 		return;
 	}
 
 	incrementLlBusyness();
 	//This function is used by the :mfile and :maddfile commands.
-	//:mfile always creates a new location list and may jump to the first entry.
-	//:maddfile adds to an existing location list. If there is no
+	//;mfile always creates a new location list and may jump to the first entry.
+	//;maddfile adds to an existing location list. If there is no
 	//location list then a new list is created.
 	int res = llInitFromFile(
 		stack, p_ef, curBook->o.errorFormat, (invo->id != C_laddfile),
@@ -5666,7 +5666,7 @@ c_lFile(Invocation* invo) {
 	if (auName != NULL)
 		applyAutocomms(EVENT_QUICKFIXCMDPOST, auName, NULL, false, curBook);
 
-	//Jump to the first error for a new list and if autocmds didn't free the list
+	//Jump to the first error for a new list and if autocomms didn't free the list
 	if (res > 0 && (invo->id == C_lfile) && isIdValid(stack, idSave))
 		//display the first error
 		jumpToFirstEntry(stack, idSave, invo->forceit);
@@ -5678,12 +5678,12 @@ c_lFile(Invocation* invo) {
 private CS
 vgr_get_auname(CommIndex id) {
 	switch (id) {
-	case C_vimgrep:     return (CS)"vimgrep";
-	case C_vimgrepadd:  return (CS)"vimgrepadd";
-	case C_grep:        return (CS)"grep";
-	case C_grepadd:     return (CS)"grepadd";
-	case C_elck:        return (CS)"elck";
-	default:              return NULL;
+	case C_vimgrep:     return S"vimgrep";
+	case C_vimgrepadd:  return S"vimgrepadd";
+	case C_grep:        return S"grep";
+	case C_grepadd:     return S"grepadd";
+	case C_elck:        return S"eegl";
+	default:            return NULL;
 	}
 }
 

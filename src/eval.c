@@ -4722,7 +4722,7 @@ list2fpos(
 pub int
 readEnvNameAndGetItsLen(OUT CS* arg) {
 	CS p;
-	for (p = *arg; eeIsIdentifierChar(*p); ++p)
+	for (p = *arg; bookIsIdentifierChar(p[0]); ++p)
 		;
 	if (p == *arg)       //no name found
 		return 0;

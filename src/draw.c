@@ -4488,7 +4488,7 @@ updatePortal(Portal* po, OUT Boole* didUpdateOnePortal) {
 			//First compute the actual start and end column.
 			if (VIsual_mode == Ctrl_V) {
 				ColNr fromc, toc;
-				getvcols(po, &VIsual, &curPor->cursor, OUT &fromc, OUT &toc);
+				bookGetLeftRightVcols(po, &VIsual, &curPor->cursor, OUT &fromc, OUT &toc);
 				++toc;
 				if (curPor->cursWant == MAXCOL) {
 					int cursor_above = curPor->cursor.lnum < VIsual.lnum;
@@ -5453,13 +5453,7 @@ drawLineSub(
 				);
 			}
 
-			//When there is a multi-byte character, just output a space to keep it simple.
-			if (utf8CharLens[screenTextP[lineStartsP[m->screen_row - 1]
-						+ (topframeG->width - 1)]] > 1
-			)
-				out_char(' ');
-			else
-				out_char(screenTextP[lineStartsP[m->screen_row - 1] + (topframeG->width - 1)]);
+			out_char(screenTextP[lineStartsP[m->screen_row - 1] + (topframeG->width - 1)]);
 
 			//force a redraw of the first char on the next line
 			screenDecosP[lineStartsP[m->screen_row]].hiId = 0;
@@ -6716,9 +6710,9 @@ drawLineOnScreen(
 		int head = 0;
 
 		bookInitCharsForKeywordsSizeArg(OUT &cts, port, lnum, m.vcol, m.line, m.ptr);
-		while (cts.cts_vcol < m.bufferLen && *cts.cts_ptr != ZERO) {
+		while (cts.cts_vcol < m.bufferLen && cts.cts_ptr[0] != ZERO) {
 			head = 0;
-			charsize = win_lbr_chartabsize(&cts, &head);
+			charsize = win_lbr_chartabsize(&cts);
 			cts.cts_vcol += charsize;
 			prev_ptr = cts.cts_ptr;
 			MB_PTR_ADV(cts.cts_ptr);

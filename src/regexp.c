@@ -1282,7 +1282,7 @@ private Boole isBusyP = false;
 //Return true if character 'c' is included in 'iskeyword' option for book where we're executin'.
 private int
 reg_iswordc(int c) {
-	return eeIsWordc_buf(c, exe.book);
+	return bookIsWordChar(c, exe.book);
 }
 
 private int can_f_submatch = false;   //true when submatch() can be used
@@ -7026,7 +7026,7 @@ check_char_class(int class, int c) {
 		return OK;
 		 break;
 	case CHAR_CLASS_IDENT:
-		if (eeIsIdentifierChar(c))
+		if (bookIsIdentifierChar(c))
 			return OK;
 		break;
 	case CHAR_CLASS_KEYWORD:
@@ -8244,12 +8244,12 @@ match(
 
 		//Character classes like \a for alpha, \d for digit etc.
 		case IDENT:   // \i
-			result = eeIsIdentifierChar(curc);
+			result = bookIsIdentifierChar(curc);
 			ADD_STATE_IF_MATCH(t->state);
 			break;
 
 		case SIDENT:   // \I
-			result = !EE_ISDIGIT(curc) && eeIsIdentifierChar(curc);
+			result = !EE_ISDIGIT(curc) && bookIsIdentifierChar(curc);
 			ADD_STATE_IF_MATCH(t->state);
 			break;
 
