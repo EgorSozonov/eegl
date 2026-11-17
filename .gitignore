@@ -10,7 +10,7 @@ a.txt
 
 *.o
 
-*.xz
+*.dump
 *.gz
 *.zstd
 *.bak
