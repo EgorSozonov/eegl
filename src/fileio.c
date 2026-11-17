@@ -126,7 +126,7 @@ pub
 private void findfilendir(Arr(Var) argvars, Var* returnVar, int find_what);
 private int mkdir_recurse(S dir, Unt prot, Byte** created);
 private int readdirex_dict_arg(Arr(Var) argvars, int *cmp);
-private void read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob);
+private void read_file_or_blob(Arr(Var) argvars, OUT Var* returnVar, Boole always_blob);
 private int dir_of_file_exists(S fname);
 private int eeBacktick(S p);
 private int expand_backtick(OUT ExpandMatch* matches, S pat, Unt flags);
@@ -197,6 +197,7 @@ private void putc_or_die(int c, FILE *fpo);
 private void fputs_or_die(S s, FILE* fpo);
 private void fclose_or_die(FILE *fpi, FILE *fpo);
 private int skip_to_eol(FILE *fpi, int c);
+private int read_blob(FILE* fd, OUT Var* returnVar, FileOffset offset, FileOffset size_arg);
 private int eeCopyfile(S from, S to);
 private int move_lines(Book* frombuf, Book* tobuf);
 private int compare_readdirex_item(const void *p1, const void *p2);
@@ -308,7 +309,7 @@ f_delete(Var* argvars, Var* returnVar) {
 	returnVar->number = -1;
 
 	S name = tv_get_string(&argvars[0]);
-	if (name == NULL || *name == ZERO) {
+	if (!name || *name == ZERO) {
 		emsg(_(e_invalid_argument));
 		return;
 	}
@@ -361,10 +362,8 @@ f_filewritable(Arr(Var) argvars, Var* returnVar) {
 
 private void
 findfilendir(Arr(Var) argvars, Var* returnVar, int find_what){
-	S fname;
 	S fresult = NULL;
 	S path = curBook->o.path;
-	S p;
 	Byte pathbuf[NUMBUFLEN];
 	int count = 1;
 	int first = true;
@@ -373,10 +372,10 @@ findfilendir(Arr(Var) argvars, Var* returnVar, int find_what){
 	returnVar->string = NULL;
 	returnVar->tag = VAR_STRING;
 
-	fname = tv_get_string(&argvars[0]);
+	S fname = tv_get_string(&argvars[0]);
 
 	if (argvars[1].tag != VAR_UNKNOWN) {
-		p = convertVarToString(&argvars[1], pathbuf);
+		S p = convertVarToString(&argvars[1], pathbuf);
 		if (!p)
 			error = true;
 		else {
@@ -438,19 +437,19 @@ pub void
 f_fnamemodify(Arr(Var) argvars, Var* returnVar) {
 	S fname;
 	S mods;
-	Unt   usedlen = 0;
-	Unt   len = 0;
+	Unt usedlen = 0;
+	Unt len = 0;
 	S fbuf = NULL;
-	Byte   buf[NUMBUFLEN];
+	Byte buf[NUMBUFLEN];
 
 	fname = convertVarToStringSingleUse(&argvars[0]);
 	mods = convertVarToString(&argvars[1], buf);
-	if (mods == NULL || fname == NULL)
+	if (!mods || !fname)
 		fname = NULL;
 	else {
 		len = STRLEN(fname);
 		if (mods != NULL && *mods != ZERO)
-			 (void)modify_fname(mods, false, &usedlen, &fname, &fbuf, &len);
+			(void)modify_fname(mods, false, &usedlen, &fname, &fbuf, &len);
 	}
 
 	returnVar->tag = VAR_STRING;
@@ -474,9 +473,9 @@ f_fnamemodify(Arr(Var) argvars, Var* returnVar) {
 //specified tab. If the portal or the tab doesn't exist then return NULL.
 pub void
 f_getcwd(Arr(Var) argvars, Var* returnVar) {
-	Portal   *wp = NULL;
-	Tab   *tp = NULL;
-	int      global = false;
+	Portal* wp = NULL;
+	Tab* tp = NULL;
+	int global = false;
 
 	returnVar->tag = VAR_STRING;
 	returnVar->string = NULL;
@@ -517,10 +516,9 @@ getfpermst(FileStat *st, S perm){
 //"getfperm({fname})" function
 pub void
 f_getfperm(Arr(Var) argvars, Var* returnVar) {
-	FileStat   st;
+	FileStat st;
 	S perm = NULL;
 	Byte permbuf[] = "---------";
-
 
 	S fname = tv_get_string(&argvars[0]);
 
@@ -533,10 +531,9 @@ f_getfperm(Arr(Var) argvars, Var* returnVar) {
 //"getfsize({fname})" function
 pub void
 f_getfsize(Arr(Var) argvars, Var* returnVar) {
-	S fname;
-	FileStat   st;
+	FileStat st;
 
-	fname = tv_get_string(&argvars[0]);
+	S fname = tv_get_string(&argvars[0]);
 	if (stat((char *)fname, &st) >= 0) {
 		if (mch_isdir(fname))
 			returnVar->number = 0;
@@ -554,10 +551,9 @@ f_getfsize(Arr(Var) argvars, Var* returnVar) {
 //"getftime({fname})" function
 pub void
 f_getftime(Arr(Var) argvars, Var* returnVar) {
-	S fname;
-	FileStat   st;
+	FileStat st;
 
-	fname = tv_get_string(&argvars[0]);
+	S fname = tv_get_string(&argvars[0]);
 	if (stat((char *)fname, &st) >= 0)
 		returnVar->number = (Long)st.st_mtime;
 	else
@@ -566,37 +562,36 @@ f_getftime(Arr(Var) argvars, Var* returnVar) {
 
 //Convert "st" to file type string.
 pub S
-getftypest(FileStat *st){
-	char    *t;
+getftypest(FileStat* st){
+	S t;
 
 	if (S_ISREG(st->st_mode))
-		t = "file";
+		t = u8"file";
 	ei (S_ISDIR(st->st_mode))
-		t = "dir";
+		t = u8"dir";
 	ei (S_ISLNK(st->st_mode))
-		t = "link";
+		t = u8"link";
 	ei (S_ISBLK(st->st_mode))
-		t = "bdev";
+		t = u8"bdev";
 	ei (S_ISCHR(st->st_mode))
-		t = "cdev";
+		t = u8"cdev";
 	ei (S_ISFIFO(st->st_mode))
-		t = "fifo";
+		t = u8"fifo";
 	ei (S_ISSOCK(st->st_mode))
-		t = "socket";
+		t = u8"socket";
 	else
-		t = "other";
-	return (S)t;
+		t = u8"other";
+	return t;
 }
 
 //"getftype({fname})" function
 pub void
 f_getftype(Arr(Var) argvars, Var* returnVar) {
-	FileStat   st;
-	S type = NULL;
-
+	FileStat st;
 	S fname = tv_get_string(&argvars[0]);
 
 	returnVar->tag = VAR_STRING;
+	S type = NULL;
 	if (lstat((char *)fname, &st) >= 0)
 		type = copyStr(getftypest(&st));
 	returnVar->string = type;
@@ -616,11 +611,10 @@ f_glob(Arr(Var) argvars, Var* returnVar) {
 		if (varGetNumberChk(argvars + 1, OUT &error))
 			 options |= WILD_KEEP_ALL;
 		if (argvars[2].tag != VAR_UNKNOWN) {
-			 if (varGetNumberChk(argvars + 2, OUT &error))
-			returnVar_list_set(returnVar, NULL);
-			 if (argvars[3].tag != VAR_UNKNOWN
-						 && varGetNumberChk(argvars + 3, OUT &error))
-			options |= WILD_ALLLINKS;
+			if (varGetNumberChk(argvars + 2, OUT &error))
+				returnVar_list_set(returnVar, NULL);
+			if (argvars[3].tag != VAR_UNKNOWN && varGetNumberChk(argvars + 3, OUT &error))
+				options |= WILD_ALLLINKS;
 		}
 	}
 	if (!error) {
@@ -736,7 +730,7 @@ f_mkdir(Var* argvars, Var* returnVar) {
 	returnVar->number = FAIL;
 
 	S dir = tv_get_string_buf(&argvars[0], buf);
-	if (*dir == ZERO)
+	if (dir[0] == ZERO)
 		return;
 
 	if (*fiGetShortFiName(dir) == ZERO)
@@ -799,7 +793,7 @@ f_pathshorten(Arr(Var) argvars, Var* returnVar) {
 	returnVar->tag = VAR_STRING;
 	S p = convertVarToStringSingleUse(&argvars[0]);
 
-	if (p == NULL)
+	if (!p)
 		returnVar->string = NULL;
 	else {
 		p = copyStr(p);
@@ -837,11 +831,10 @@ readdirex_dict_arg(Arr(Var) argvars, int *cmp) {
 
 pub void
 f_readdir(Arr(Var) argvars, Var* returnVar) {
-	int      ret;
 	S p;
-	ArrayList   ga;
-	int      i;
-	int      sort = READDIR_SORT_BYTE;
+	ArrayList ga;
+	int i;
+	int sort = READDIR_SORT_BYTE;
 
 	allocReturnList(returnVar);
 
@@ -849,7 +842,7 @@ f_readdir(Arr(Var) argvars, Var* returnVar) {
 		readdirex_dict_arg(argvars, &sort) == FAIL)
 	return;
 
-	ret = readdir_core(&ga, false, sort);
+	int ret = readdir_core(&ga, false, sort);
 	if (ret == OK) {
 		for (i = 0; i < ga.len; i++) {
 			 p = ((Byte **)ga.c)[i];
@@ -861,10 +854,10 @@ f_readdir(Arr(Var) argvars, Var* returnVar) {
 
 pub void
 f_readdirex(Arr(Var) argvars, Var* returnVar) {
-	int      ret;
-	ArrayList   ga;
-	int      i;
-	int      sort = READDIR_SORT_BYTE;
+	int ret;
+	ArrayList ga;
+	int i;
+	int sort = READDIR_SORT_BYTE;
 
 	allocReturnList(returnVar);
 
@@ -875,28 +868,28 @@ f_readdirex(Arr(Var) argvars, Var* returnVar) {
 	ret = readdir_core(&ga, true, sort);
 	if (ret == OK) {
 		for (i = 0; i < ga.len; i++) {
-			 Bag* bag = ((Bag**)ga.c)[i];
-			 listAppendBag(returnVar->list, bag);
-			 bagUnref(bag);
+			Bag* bag = ((Bag**)ga.c)[i];
+			listAppendBag(returnVar->list, bag);
+			bagUnref(bag);
 		}
 	}
 	ga_clear(&ga);
 }
 
 private void
-read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
+read_file_or_blob(Arr(Var) argvars, OUT Var* returnVar, Boole always_blob) {
 	int binary = false;
-	int blob = always_blob;
+	Boole blob = always_blob;
 	int failed = false;
 	FILE* fd;
 	Byte buf[(IOSIZE/256)*256];   //rounded to avoid odd + 1
 	int io_size = sizeof(buf);
 	int readlen;      //size of last fread()
-	S prev    = NULL;   //previously read bytes, if any
+	S prev = NULL;   //previously read bytes, if any
 	Long prevlen  = 0;      //length of data in prev
 	Long prevsize = 0;      //size of prev buffer
 	Long maxline  = MAXLNUM;
-	Long cnt    = 0;
+	Long cnt = 0;
 	S p;         //position in @buf
 	S start;         //start of current line
 	FileOffset offset = 0;
@@ -939,7 +932,7 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
 	}
 
 	if (blob) {
-		if (read_blob(fd, returnVar, offset, size) == FAIL)
+		if (read_blob(fd, OUT returnVar, offset, size) == FAIL)
 			showErrFmtMsg(_(e_cant_read_file_str), fname);
 		fclose(fd);
 		return;
@@ -958,7 +951,7 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
 		) {
 			if (readlen <= 0 || *p == '\n') {
 				ListItem  *li;
-				S s   = NULL;
+				S s  = NULL;
 				Ulong len = p - start;
 
 				//Finished a line.  Remove CRs before NL.
@@ -968,7 +961,7 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
 					//removal may cross back to the "prev" string
 					if (len == 0) {
 						while (prevlen > 0 && prev[prevlen - 1] == '\r')
-						   --prevlen;
+							--prevlen;
 					}
 				}
 				if (prevlen == 0)
@@ -1012,11 +1005,11 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
 				//fragment of a line, so the first allocation is made
 				//small, to avoid repeatedly 'allocing' large and 'reallocing' small.
 				if (prevsize == 0)
-					 prevsize = (Long)(p - start);
+					prevsize = (Long)(p - start);
 				else {
-					 Long grow50pc = (prevsize * 3) / 2;
-					 Long growmin  = (Long)((p - start) * 2 + prevlen);
-					 prevsize = grow50pc > growmin ? grow50pc : growmin;
+					Long grow50pc = (prevsize * 3) / 2;
+					Long growmin  = (Long)((p - start) * 2 + prevlen);
+					prevsize = grow50pc > growmin ? grow50pc : growmin;
 				}
 				//need bigger "prev" buffer
 				S newprev = eeRealloc(prev, prevsize);
@@ -1048,14 +1041,14 @@ read_file_or_blob(Arr(Var) argvars, Var* returnVar, int always_blob) {
 
 //"readblob()" function
 pub void
-f_readblob(Var* argvars, Var* returnVar) {
-	read_file_or_blob(argvars, returnVar, true);
+f_readblob(Arr(Var) argvars, OUT Var* returnVar) {
+	read_file_or_blob(argvars, OUT returnVar, true);
 }
 
 //"readfile()" function
 pub void
 f_readfile(Var* argvars, Var* returnVar) {
-	read_file_or_blob(argvars, returnVar, false);
+	read_file_or_blob(argvars, OUT returnVar, false);
 }
 
 pub void
@@ -5943,8 +5936,8 @@ skip_to_eol(FILE *fpi, int c) {
 //{{{blob i/o
 
 //Read blob from file "fd". Caller has allocated a blob in "returnVar". Return OK or FAIL.
-pub int
-read_blob(FILE* fd, Var* returnVar, FileOffset offset, FileOffset size_arg) {
+private int
+read_blob(FILE* fd, OUT Var* returnVar, FileOffset offset, FileOffset size_arg) {
 	Blob* blob = returnVar->blob;
 	struct stat st;
 	int whence;
@@ -7177,12 +7170,12 @@ done:
 private void
 fiGetShellOutput_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
 	S res = NULL;
-	Byte   *p;
-	Byte   *infile = NULL;
-	int      err = false;
-	FILE   *fd;
-	List   *list = NULL;
-	int      flags = SHELL_SILENT;
+	Byte* p;
+	Byte* infile = NULL;
+	int err = false;
+	FILE* fd;
+	List* list = NULL;
+	Unt flags = SHELL_SILENT;
 
 	returnVar->tag = VAR_STRING;
 	returnVar->string = NULL;

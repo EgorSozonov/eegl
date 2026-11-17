@@ -28,7 +28,7 @@ S getfpermst(FileStat *st, S perm);
 void f_getfperm(Arr(Var) argvars, Var* returnVar);
 void f_getfsize(Arr(Var) argvars, Var* returnVar);
 void f_getftime(Arr(Var) argvars, Var* returnVar);
-S getftypest(FileStat *st);
+S getftypest(FileStat* st);
 void f_getftype(Arr(Var) argvars, Var* returnVar);
 void f_glob(Arr(Var) argvars, Var* returnVar);
 void f_glob2regpat(Arr(Var) argvars, Var* returnVar);
@@ -39,7 +39,7 @@ void f_mkdir(Var* argvars, Var* returnVar);
 void f_pathshorten(Arr(Var) argvars, Var* returnVar);
 void f_readdir(Arr(Var) argvars, Var* returnVar);
 void f_readdirex(Arr(Var) argvars, Var* returnVar);
-void f_readblob(Var* argvars, Var* returnVar);
+void f_readblob(Arr(Var) argvars, OUT Var* returnVar);
 void f_readfile(Var* argvars, Var* returnVar);
 void f_resolve(Arr(Var) argvars, Var* returnVar);
 void f_tempname(Var*, Var* returnVar);
@@ -156,7 +156,6 @@ int readfile(
 	Invocation* invo,         //can be NULL!
 	Unt flags
 );
-int read_blob(FILE* fd, Var* returnVar, FileOffset offset, FileOffset size_arg);
 int write_blob(FILE* fd, Blob* blob);
 int prep_exarg(Invocation* invo, Book* book);
 void set_file_options(Invocation* invo);

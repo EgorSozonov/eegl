@@ -118,7 +118,7 @@ void mf_fullname(MemFile* mfp);
 int mf_need_trans(MemFile* mfp);
 Book* bookFindByName(S name, Boole curtab_only);
 Book* findBook(Var* avar);
-void f_append(Var *argvars, OUT Var* returnVar);
+void f_append(Arr(Var) argvars, OUT Var* returnVar);
 void f_appendbufline(Var *argvars, OUT Var* returnVar);
 void f_bufadd(Var *argvars, OUT Var* returnVar);
 void f_bufexists(Var *argvars, OUT Var* returnVar);

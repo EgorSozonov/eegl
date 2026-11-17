@@ -14,19 +14,13 @@ LDFLAGS ?= -L/usr/lib -Wl,-z,relro,-z,now
 
 LIBS	= -lm -ltinfo
 
-
 #
 # Compiling Eegl, summary:
 #
 #	make
 #	doas make install
-#
-# Compiling Eegl, details:
-#
-# Edit this file for adjusting to your system. You should not need to edit any
-# other file for machine specific things!
-#{{{ config
 
+#{{{ config
 
 VIEWNAME	= view
 
@@ -63,9 +57,6 @@ DATADIR		= ${datarootdir}
 ### Prefix for location of man pages
 MANDIR		= ${datarootdir}/man
 
-
-
-
 ### If the *.po files are to be translated to *.mo files.
 MAKEMO		= yes
 
@@ -75,18 +66,14 @@ MSGFMT_DESKTOP	= eegl.desktop
 APP = eegl
 
 #}}}
-#
-# 1. Edit this Makefile  {{{1
-#	The defaults for Eegl should work on most machines, but you may want to
-#	uncomment some lines or make other changes below to tune it to your
-#	system, compiler or preferences.  Uncommenting means that the '#' in
-#	the first column of a line is removed.
-#	- If you want a version of Eegl that is small and starts up quickly,
-#	  you might want to disable the GUI, X11, Perl, Python and Tcl.
+#{{{ 1. Edit this Makefile
+#The defaults for Eegl should work on most machines, but you may want to uncomment some lines
+#or make other changes below to tune it to your system, compiler or preferences. Uncommenting
+#means that the '#' in the first column of a line is removed.
+
 #	- Uncomment the line "CONF_OPT_X = --without-x" if you have X11 but
 #	  want to disable using X11 libraries.	This speeds up starting Eegl,
-#	  but the window title will not be set and the X11 selection can not
-#	  be used.
+#	  but the window title will not be set and the X11 selection can not be used.
 #	- Uncomment one of the lines with --with-features= to enable a set of
 #	  features (but not the interfaces just mentioned).
 #	- Uncomment the line with --disable-gpm to disable gpm support
@@ -99,20 +86,12 @@ APP = eegl
 #	- A few versions of make use '.include "file"' instead of 'include
 #	  file'.  Adjust the include line below if yours does.
 #
-# 2. Edit feature.h  {{{1
-#	Only if you do not agree with the default compile features, e.g.:
-#	- you want Eegl to be as vi compatible as it can be
-#	- you want to use Emacs tags files
-#	- you want right-to-left editing (Hebrew)
-#	- you want 'langmap' support (Greek)
-#	- you want to remove features to make Eegl smaller
-#
-# 3. "make"  {{{1
+#{{{ 3. "make"
 # 4. "make test"  {{{1
 # This is optional.  This will run Eegl scripts on a number of test files, and compare the
 # produced output with the expected output. If all is well, you will get the "ALL DONE" message
 # in the end. If a test fails, you get "TEST FAILURE".  See below (search for "/^test").
-# 5. "make install"  {{{1
+#{{{ 5. "make install"
 # If the new Eegl seems to be working OK you can install it and the documentation in the
 # appropriate location. The default is
 #	"/usr/local".  Change "prefix" below to change the location.
@@ -159,92 +138,9 @@ first: all
 # make variables with predefined values instead. Thus any second invocation
 # of make, will build Eegl.
 
-# CONFIGURE - configure arguments {{{1
-# You can give a lot of options to configure.
-# Change this to your desire and do 'make config' afterwards
-
-# examples you can uncomment:
-#CONF_ARGS1 = --exec-prefix=/usr
-#CONF_ARGS2 = --with-vim-name=vim8 --with-ex-name=ex8 --with-view-name=view8
-#CONF_ARGS3 = --with-global-runtime=/etc/vim,/usr/share/vim
-#CONF_ARGS4 = --with-local-dir=/usr/share
-#CONF_ARGS5 = --without-local-dir
-
-# Use this one if you distribute a modified version of Eegl.
-#CONF_ARGS6 = --with-modified-by="John Doe"
-
-
-# Uncomment the next line to fail if one of the requested language interfaces
-# cannot be configured.  Without this Eegl will be build anyway, without
-# the failing interfaces.
-#CONF_OPT_FAIL = --enable-fail-if-missing
-
-# CSCOPE
-# Uncomment this when you want to include the Cscope interface.
-#CONF_OPT_CSCOPE = --enable-cscope
-
-# TERMINAL - Terminal emulator support, :terminal command.  Requires the
-# channel feature. The default is enable for when using "huge" features.
-# Uncomment the first line when you want terminal emulator support for
-# not-huge builds.  Uncomment the second line when you don't want terminal
-# emulator support in the huge build.
-#CONF_OPT_TERMINAL = --enable-terminal
-#CONF_OPT_TERMINAL = --disable-terminal
-
-# MULTIBYTE - To edit multi-byte characters.
-# This is now always enabled.
-
-# NLS - National Language Support
-# Uncomment this when you do not want to support translated messages, even
-# though configure can find support for it.
-#CONF_OPT_NLS = --disable-nls
-
-# XIM - X Input Method.  Special character input support for X11 (Chinese,
-# Japanese, special symbols, etc).  Also needed for dead-key support.
-# When omitted it's automatically enabled for the X-windows GUI.
-#CONF_OPT_INPUT = --enable-xim
-#CONF_OPT_INPUT = --disable-xim
-
-# FONTSET - X fontset support for output of languages with many characters.
-# Uncomment this when you want to output a multibyte language.
-#CONF_OPT_OUTPUT = --enable-fontset
-
-# gpm - For mouse support on Linux console via gpm
-# Uncomment this when you do not want to include gpm support, even
-# though you have gpm libraries and includes.
-# For Debian/Ubuntu gpm support requires the libgpm-dev package.
-#CONF_OPT_GPM = --disable-gpm
-# Use this to enable dynamic loading of the GPM library.
-#CONF_OPT_GPM = --enable-gpm=dynamic
-
-# sysmouse - For mouse support on FreeBSD and DragonFly console via sysmouse
-# Uncomment this when you do not want do include sysmouse support, even
-# though you have /dev/sysmouse and includes.
-#CONF_OPT_SYSMOUSE = --disable-sysmouse
-
-
-# COMPILED BY - For including a specific e-mail address for ":version".
-#CONF_OPT_COMPBY = "--with-compiledby=John Doe <JohnDoe@yahoo.com>"
-
-
-# You may wish to include xsmp but use exclude xsmp-interact if the logout
-# XSMP functionality does not work well with your session-manager (at time of
-# writing, this would be early GNOME-1 gnome-session: it 'freezes' other
-# applications after Eegl has cancelled a logout (until Eegl quits).  This
-# *might* be the Eegl code, but is more likely a bug in early GNOME-1.
-# This disables the dialog that asks you if you want to save files or not.
-#CONF_OPT_XSMP = --disable-xsmp-interact
-
-# If you want to always automatically add a servername, also in the terminal.
-#CONF_OPT_AUTOSERVE = --enable-autoservername
-
-# COMPILER - Name of the compiler {{{1
 
 # Often used for GCC: mixed optimizing, lot of optimizing, debugging
 #C_FLAGS = -g -O2 -fno-strength-reduce -Wall -Wshadow -Wmissing-prototypes
-#C_FLAGS = -g -O2 -fno-strength-reduce -Wall -Wmissing-prototypes
-#C_FLAGS = -g -Wall -Wmissing-prototypes
-#C_FLAGS = -O6 -fno-strength-reduce -Wall -Wshadow -Wmissing-prototypes
 #C_FLAGS = -g -DDEBUG -Wall -Wshadow -Wmissing-prototypes
 #C_FLAGS = -g -O2 '-DSTARTUPTIME="vimstartup"' -fno-strength-reduce -Wall -Wmissing-prototypes
 
@@ -258,12 +154,12 @@ first: all
 #C_FLAGS = -g -O2 -Wall -Wextra -Wshadow -Wmissing-prototypes -Wpedantic -Wunreachable-code -Wno-cast-function-type -Wunused-result -Wno-deprecated-declarations -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
 
 
-
 # VALGRIND - remove the # to use valgrind for memory leaks and access errors.
 #	     Used for the unittest targets.
 # VALGRIND = valgrind --tool=memcheck --leak-check=yes --num-callers=25 --log-file=valgrind.$@
 
 # }}}
+#{{{debug, lint and optimize
 
 # LINT - for running lint
 #  For standard Unix lint
@@ -324,26 +220,25 @@ LINT_OPTIONS = -beprxzF
 #		   -fsanitize=address -fsanitize=undefined \
 #		   -fno-omit-frame-pointer
 
-# Similarly when compiling with clang and using ubsan.
-# $ export UBSAN_OPTIONS="print_stacktrace=1 log_path=ubsan"
-# $ export LSAN_OPTIONS="suppressions=`pwd`/tests/lsan-suppress.txt"
-# When running tests output can be found in tests/ubsan.*
+#Similarly when compiling with clang and using ubsan.
+#$ export UBSAN_OPTIONS="print_stacktrace=1 log_path=ubsan"
+#$ export LSAN_OPTIONS="suppressions=`pwd`/tests/lsan-suppress.txt"
+#When running tests output can be found in tests/ubsan.*
 #SANITIZER_FLAGS = -g -O0  -fsanitize-recover=all -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer
 
 SANITIZER_LIBS = $(SANITIZER_FLAGS)
 
-# MEMORY LEAK DETECTION
-# Requires installing the ccmalloc library.
-# Configuration is in the .ccmalloc or ~/.ccmalloc file.
-# Doesn't work very well, since memory linked to from global variables
-# (in libraries) is also marked as leaked memory.
+#MEMORY LEAK DETECTION
+#Requires installing the ccmalloc library.
+#Configuration is in the .ccmalloc or ~/.ccmalloc file.
+#Doesn't work very well, since memory linked to from global variables
+#(in libraries) is also marked as leaked memory.
 #LEAK_FLAGS = -DEXITFREE
 #LEAK_LIBS = -lccmalloc
 
 # Uncomment this line to have Eegl call abort() when an internal error is
-# detected.  Useful when using a tool to find errors.
+# detected. Useful when using a tool to find errors.
 #ABORT_FLAGS = -DABORT_ON_INTERNAL_ERROR
-
 
 ### Names of the programs and targets  {{{1
 EEGLTARGET	= ../bin/$(APP)
@@ -351,19 +246,8 @@ VIEWTARGET	= $(VIEWNAME)$(LNKEXT)
 EEGLDIFFNAME	= eegldiff
 VIMDIFFTARGET	= $(EEGLDIFFNAME)$(LNKEXT)
 
-### Names of the tools that are also made  {{{1
-
-### Installation directories.  The defaults come from configure. {{{1
-#
-### prefix	the top directory for the data (default "/usr/local")
-#
-# Uncomment the next line to install Eegl in your home directory.
-#prefix = $(HOME)
-
-### exec_prefix	is the top directory for the executable (default $(prefix))
-#
-# Uncomment the next line to install the Eegl executable in "/usr/machine/bin"
-#exec_prefix = /usr/machine
+#}}}
+###{{{Installation directories
 
 ### DESTDIR	root of the installation tree.  This is prepended to the other
 #		directories.  This directory must exist.
@@ -376,8 +260,9 @@ MAN1DIR = /man1
 VIMMAJOR = 9
 VIMMINOR = 1
 
-### Location of Eegl files (should not need to be changed, and  {{{1
-### some things might not work when they are changed!)
+#}}}
+###{{{ Location of Eegl files (should not need to be changed)
+
 VIMDIR = /vim
 VIMRTDIR = /vim$(VIMMAJOR)$(VIMMINOR)
 HELPSUBDIR = /doc
@@ -486,8 +371,9 @@ SYS_OPTWIN_FILE = $(DESTDIR)$(SCRIPTLOC)/optwin.vim
 
 # Program to install the program in the target directory.  Could also be "mv".
 INSTALL_PROG	= cp
+#}}}
+###{{{ Permissions for binaries
 
-### Permissions for binaries  {{{1
 BINMOD = 755
 
 ### Permissions for man page
@@ -496,7 +382,7 @@ MANMOD = 644
 ### Permissions for help files
 HELPMOD = 644
 
-### Permissions for Perl and shell scripts
+### Permissions for shell scripts
 SCRIPTMOD = 755
 
 ### Permission for Eegl script files (menu.vim, bugreport.vim, ..)
@@ -565,9 +451,6 @@ PRINTSOURCE = ../runtime/print
 # Where to look translated README and LICENSE files
 TRANSSOURCE = ../lang
 
-###
-
-
 ################################################
 ##   no changes required below this line      ##
 ################################################
@@ -619,21 +502,15 @@ DEST_MAN_TOP = $(DESTDIR)$(MANDIR)
 # We assume that the ".../man/xx/man1/" directory is for latin1 manual pages.
 # Some systems use UTF-8, but these should find the ".../man/xx.UTF-8/man1/"
 # directory first.
-# FreeBSD uses ".../man/xx.ISO8859-1/man1" for latin1, use that one too.
 DEST_MAN = $(DEST_MAN_TOP)$(MAN1DIR)
 DEST_MAN_RU = $(DEST_MAN_TOP)/ru.KOI8-R$(MAN1DIR)
 DEST_MAN_RU_U = $(DEST_MAN_TOP)/ru.UTF-8$(MAN1DIR)
 
-
 # get the list of tests
 include tests/Make_all.mak
 
-#	     BASIC_SRC: files that are always used
-#	       GUI_SRC: extra GUI files for current configuration
-#	   ALL_GUI_SRC: all GUI files for Unix
-#
-#		   SRC: files used for current configuration
-#	       ALL_SRC: source files used for make depend and make lint
+#}}}
+#{{{sources
 
 BASIC_SRC_NO_DIR = \
    book.c \
@@ -748,12 +625,11 @@ OBJ_MESSAGE_TEST = \
 MESSAGE_TEST_OBJ = $(OBJ_COMMON) $(OBJ_MESSAGE_TEST)
 
 ALL_OBJ = $(OBJ_COMMON) \
-	  $(OBJ_MAIN) \
-	  $(OBJ_JSON_TEST) \
-	  $(OBJ_KWORD_TEST) \
-	  $(OBJ_MEMFILE_TEST) \
-	  $(OBJ_MESSAGE_TEST)
-
+   $(OBJ_MAIN) \
+   $(OBJ_JSON_TEST) \
+   $(OBJ_KWORD_TEST) \
+   $(OBJ_MEMFILE_TEST) \
+   $(OBJ_MESSAGE_TEST)
 
 
 # Default target is making the executable and tools
@@ -763,8 +639,6 @@ tools: $(TOOLS)
 
 MUSL_STUFF:=-static-pie -nostdinc -I/usr/lib/musl/include \
    -B/usr/lib/musl/lib -lgcc
-
-
 
 # Run the script to generate the Command lookup table and the normal/visual mode command lookup
 # tables. This only needs to be run when command has been added or changed.
@@ -791,11 +665,13 @@ better: $(BETTERC) $(BASIC_HEADERS)
 COMPILE = $(CC) -c $(ALL_FLAGS)
 CClink = $(CC)
 
+#}}}
+
 # MAIN.
 
 $(EEGLTARGET): $(OBJ) ##LINK the target for running or debugging
 	$(CClink) $(LDFLAGS) -o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)
-	@echo "                               "
+	@echo "        E E G L                "
 	@echo "         .^^~-.                "
 	@echo '         / ,__`)               '
 	@echo "        |   \o/|'--.           "
@@ -806,6 +682,7 @@ $(EEGLTARGET): $(OBJ) ##LINK the target for running or debugging
 	@echo "        \`-'--'--'             "
 	@echo "                               "
 
+#{{{tests
 # Build the language specific files if they were unpacked.
 # Generate the converted .mo files separately, it's no problem if this fails.
 languages:
@@ -821,7 +698,6 @@ languages:
 # Update the *.po files for changes in the sources.  Only run manually.
 update-po:
 	cd $(PODIR); CC="$(CC)" $(MAKE) prefix=$(DESTDIR)$(prefix) update-po
-
 
 notags:
 	-rm -f tags
@@ -963,8 +839,6 @@ $(MESSAGE_TEST_TARGET): $(MESSAGE_TEST_OBJ)
 
 # install targets
 
-install: $(GUI_INSTALL)
-
 install_normal: installvim installtools $(INSTALL_LANGS) install-icons
 
 installvim: installvimbin installtutorbin \
@@ -993,7 +867,7 @@ installvimbin: $(EEGLTARGET) $(DESTDIR)$(exec_prefix) $(DEST_BIN)
 # Long list of arguments for the shell script that installs the manual pages
 # for one language.
 INSTALLMANARGS = $(VIMLOC) $(SCRIPTLOC) $(VIMRCLOC) $(HELPSOURCE) $(MANMOD) \
-		eegl $(EEGLDIFFNAME) $(EEEGLNAME)
+      eegl $(EEGLDIFFNAME) $(EEEGLNAME)
 
 # Install most of the runtime files
 installruntime: installrtbase installmacros installpack installtutor installspell
@@ -1027,7 +901,6 @@ installrtbase: $(HELPSOURCE)/vim.1 $(DEST_VIM) $(EEGLTARGET) $(DEST_RT) \
 		cd $(DEST_HELP); \
 		chmod $(HELPMOD) $$files
 	cp  $(HELPSOURCE)/*.pl $(DEST_HELP)
-	chmod $(SCRIPTMOD) $(DEST_HELP)/*.pl
 	cd $(HELPSOURCE); if test -f tags.dist; then mv -f tags.dist tags; fi
 # install the menu files
 	cp $(SCRIPTSOURCE)/menu.vim $(SYS_MENU_FILE)
@@ -1118,7 +991,6 @@ installmacros: $(DEST_VIM) $(DEST_RT) $(DEST_MACRO)
 	cp -r $(MACROSOURCE)/* $(DEST_MACRO)
 	chmod $(DIRMOD) `find $(DEST_MACRO) -type d -print`
 	chmod $(FILEMOD) `find $(DEST_MACRO) -type f -print`
-	chmod $(SCRIPTMOD) $(DEST_MACRO)/less.sh
 # When using CVS some CVS directories might have been copied.
 # Also delete AAPDIR and *.info files.
 	cvs=`find $(DEST_MACRO) \( -name CVS -o -name AAPDIR -o -name "*.info" \) -print`; \
@@ -1323,118 +1195,7 @@ uninstall: uninstall_runtime
 # Note: the "rmdir" will fail if any files were added after "make install"
 uninstall_runtime:
 	-$(SHELL) ./installman.sh uninstall $(DEST_MAN) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DA) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DA_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DA_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DE) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DE_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DE_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_FR) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_FR_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_FR_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_IT) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_IT_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_IT_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_JA_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_PL) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_PL_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_PL_U) "" $(INSTALLMANARGS)
 	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_RU) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_RU_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_TR) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_TR_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_TR_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DA) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DA_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DA_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DE) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DE_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DE_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_FR) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_FR_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_FR_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_IT) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_IT_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_IT_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_JA_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_PL) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_PL_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_PL_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_RU) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_RU_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_TR) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_TR_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_TR_U) $(INSTALLMLARGS)
-	-rm -f $(DEST_HELP)/*.txt $(DEST_HELP)/tags $(DEST_HELP)/*.pl
-	-rm -f $(DEST_HELP)/*.??x $(DEST_HELP)/tags-??
-	-rm -f $(SYS_MENU_FILE) $(SYS_SYNMENU_FILE) $(SYS_DELMENU_FILE)
-	-rm -f $(SYS_BUGR_FILE) $(VIM_DEFAULTS_FILE) $(EVIM_FILE) $(MSWIN_FILE)
-	-rm -f $(DEST_SCRIPT)/gvimrc_example.vim $(DEST_SCRIPT)/vimrc_example.vim
-	-rm -f $(SYS_FILETYPE_FILE) $(SYS_FTOFF_FILE) $(SYS_SCRIPTS_FILE)
-	-rm -f $(SYS_INDOFF_FILE) $(SYS_INDENT_FILE)
-	-rm -f $(SYS_FTPLUGOF_FILE) $(SYS_FTPLUGIN_FILE)
-	-rm -f $(SYS_OPTWIN_FILE)
-	-rm -f $(DEST_COL)/*.vim $(DEST_COL)/README.txt
-	-rm -rf $(DEST_COL)/tools
-	-rm -f $(DESKTOPPATH)/vim.desktop $(DESKTOPPATH)/gvim.desktop
-	-rm -f $(ICON16PATH)/gvim.png $(ICON32PATH)/gvim.png $(ICON48PATH)/gvim.png
-	-rm -rf $(DEST_COL)/lists
-	-rm -f $(DEST_SYN)/shared/*.vim $(DEST_SYN)/shared/README.txt
-	-rm -f $(DEST_SYN)/modula2/opt/*.vim
-	-rm -f $(DEST_SYN)/*.vim $(DEST_SYN)/README.txt
-	-rm -f $(DEST_IND)/*.vim $(DEST_IND)/README.txt
-	-rm -rf $(DEST_MACRO)
-	-rm -rf $(DEST_PACK)
-	-rm -rf $(DEST_TUTOR)/en
-	-rm -rf $(DEST_TUTOR)/it
-	-rm -rf $(DEST_TUTOR)/ru
-	-rm -rf $(DEST_TUTOR)/sr
-	-rm -rf $(DEST_TUTOR)
-	-rm -rf $(DEST_SPELL)
-	-rm -rf $(DEST_TOOLS)
-	-rm -rf $(DEST_LANG)
-	-rm -rf $(DEST_KMAP)
-	-rm -rf $(DEST_COMP)
-	-rm -f $(DEST_PRINT)/*.ps
-	-rmdir $(DEST_HELP) $(DEST_PRINT) $(DEST_COL) $(DEST_SYN)/shared
-	-rmdir $(DEST_SYN)/modula2/opt $(DEST_SYN)/modula2
-	-rmdir $(DEST_SYN) $(DEST_IND)
-	-rm -rf $(DEST_FTP)/*.vim $(DEST_FTP)/README.txt $(DEST_FTP)/logtalk.dict
-	-rm -f $(DEST_AUTO)/*.vim $(DEST_AUTO)/README.txt
-	-rm -f $(DEST_AUTO)/dist/*.vim $(DEST_AUTO)/xml/*.vim $(DEST_AUTO)/cargo/*.vim $(DEST_AUTO)/rust/*.vim
-	-rm -f $(DEST_IMPORT)/dist/*.vim
-	-rm -f $(DEST_PLUG)/*.vim $(DEST_PLUG)/README.txt
-	-rmdir $(DEST_FTP) $(DEST_AUTO)/dist $(DEST_AUTO)/xml $(DEST_AUTO)/cargo $(DEST_AUTO)/rust $(DEST_AUTO)
-	-rmdir $(DEST_IMPORT)/dist $(DEST_IMPORT)
-	-rm -f $(DEST_RT)/README.??.txt
-	-rm -f $(DEST_RT)/README.??_??.txt
-	-rm -f $(DEST_RT)/LICENSE.??.txt
-	-rm -f $(DEST_RT)/LICENSE.??_??.txt
-	-rm -f $(DEST_RT)/README.txt $(DEST_RT)/LICENSE
-	-rmdir $(DEST_PLUG) $(DEST_RT)
 #	This will fail when other Eegl versions are installed, no worries.
 	-rmdir $(DEST_VIM)
 
@@ -1478,9 +1239,9 @@ lintinstall:
 	$(COMPILE) $<
 
 
-# All the object files are put in the "$(OBJDIR)" directory.  Since not all make
-# commands understand putting object files in another directory, it must be
-# specified for each file separately.
+#All the object files are put in the "$(OBJDIR)" directory.  Since not all make
+#commands understand putting object files in another directory, it must be
+#specified for each file separately.
 
 $(OBJDIR): $(OBJDIR)/.dirstamp
 
@@ -1493,21 +1254,6 @@ $(OBJDIR)/.dirstamp:
 $(ALL_OBJ): $(OBJDIR)/.dirstamp
 
 $(OBJDIR)/%.o: src/%.c
-	$(COMPILE) -o $@ $<
-
-$(OBJDIR)/diff.o: src/diff.c
-	$(COMPILE) -o $@ $<
-
-$(OBJDIR)/option.o: src/option.c
-	$(COMPILE) -o $@ $<
-
-$(OBJDIR)/regexp.o: src/regexp.c
-	$(COMPILE) -o $@ $<
-
-$(OBJDIR)/ui.o: src/ui.c
-	$(COMPILE) -o $@ $<
-
-$(OBJDIR)/window.o: src/window.c
 	$(COMPILE) -o $@ $<
 
 $(OBJDIR)/main.o: main.c
@@ -1571,7 +1317,6 @@ $(OBJDIR)/message_test.o: src/message_test.c src/main.c src/eegl.h \
  src/commands.h src/message.c
 $(OBJDIR)/window.o: src/window.c src/eegl.h src/commands.h
 $(OBJDIR)/main.o: main.c src/eegl.h
-
 #}}}
 
 package: ##Create a package for Arch Linux by building a specific version

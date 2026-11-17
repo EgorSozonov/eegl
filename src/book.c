@@ -338,11 +338,11 @@ private void bufPortalCommon(Var* argvars, Var* returnVar, int get_nr);
 private LineNr findLnum(Book* book);
 private Bag * getBookInfo(Book* book);
 private void getLinesIntoVar(
-	Book   *book,
-	LineNr   start,
-	LineNr   end,
-	int      retlist,
-	OUT Var   *returnVar
+	Book* book,
+	LineNr start,
+	LineNr end,
+	int retlist,
+	OUT Var* returnVar
 );
 private void getBookLineIntoVar(Var* argvars, Var* returnVar, int retlist);
 private int initCharTable(Book* book);
@@ -354,7 +354,7 @@ private int calc_percentage(long part, long whole);
 private int readBook(
 	int read_stdin,       //read file from stdin, otherwise fifo
 	Invocation* invo,          //for forced 'ff' or NULL
-	Unt      flags          //extra flags for readfile()
+	Unt flags          //extra flags for readfile()
 );
 private void addBookToHashtable(Book* book);
 private void removeBookFromHashtable(Book* book);
@@ -5187,8 +5187,8 @@ updateLinesFromVars(
 	eeglFree(line);
 
 	if (added > 0) {
-		Portal       *po;
-		Tab   *t;
+		Portal* po;
+		Tab* t;
 
 		appended_lines_mark(appendLnum, added);
 
@@ -5196,8 +5196,9 @@ updateLinesFromVars(
 		//For curBook and other portals it has been done in markAdjust().
 		FOR_ALL_TAB_PORTALS(t, po) {
 			if (po->book == book
-					 && (po->book != curBook || po == curPor)
-					 && po->cursor.lnum > appendLnum)
+					&& (po->book != curBook || po == curPor)
+					&& po->cursor.lnum > appendLnum
+			)
 				po->cursor.lnum += added;
 		}
 		poRefreshCursorCol();
@@ -5215,8 +5216,8 @@ done:
 
 //"append(lnum, string/list)" function
 pub void
-f_append(Var *argvars, OUT Var* returnVar) {
-	int      anyEmsgSaved = anyEmsgG;
+f_append(Arr(Var) argvars, OUT Var* returnVar) {
+	int anyEmsgSaved = anyEmsgG;
 	LineNr lnum = tv_get_lnum(&argvars[0]);
 	if (anyEmsgG == anyEmsgSaved)
 		updateLinesFromVars(curBook, lnum, true, argvars + 1, returnVar);
@@ -5290,10 +5291,10 @@ f_bufnr(Var *argvars, OUT Var* returnVar) {
 	//If the book isn't found and the second argument is not 0, create a new book.
 	S name;
 	if (!book
-		  && argvars[1].tag != VAR_UNKNOWN
-		  && varGetNumberChk(&argvars[1], OUT &error) != 0
-		  && !error
-		  && (name = convertVarToStringSingleUse(&argvars[0])) != NULL
+		&& argvars[1].tag != VAR_UNKNOWN
+		&& varGetNumberChk(&argvars[1], OUT &error) != 0
+		&& !error
+		&& (name = convertVarToStringSingleUse(&argvars[0])) != NULL
 	)
 		book = bookNew(name, NULL, (LineNr)1, 0);
 
@@ -5330,12 +5331,12 @@ f_bufwinnr(Var *argvars, OUT Var* returnVar){
 
 pub void
 f_deletebufline(Var *argvars, OUT Var* returnVar) {
-	LineNr   last;
-	LineNr   lnum;
-	long   count;
-	Tab   *tp;
-	Portal   *po;
-	int      anyEmsgSaved = anyEmsgG;
+	LineNr last;
+	LineNr lnum;
+	long count;
+	Tab* tp;
+	Portal* po;
+	int anyEmsgSaved = anyEmsgG;
 
 	returnVar->number = 1;   //FAIL by default
 
@@ -5409,8 +5410,8 @@ findLnum(Book* book) {
 //Return book options, variables and other attributes in a dictionary.
 private Bag *
 getBookInfo(Book* book) {
-	Tab   *tp;
-	Portal   *po;
+	Tab* tp;
+	Portal* po;
 
 	Bag* bag = allocBag();
 	bagAddNumber(bag, u8"bufnr", book->fiNum);
@@ -5464,12 +5465,12 @@ getBookInfo(Book* book) {
 
 pub void
 f_getbufinfo(Var *argvars, OUT Var* returnVar) {
-	Book   *book = NULL;
-	Book   *argbuf = NULL;
-	int      filtered = false;
-	int      sel_buflisted = false;
-	int      sel_bufloaded = false;
-	int      sel_bufmodified = false;
+	Book* book = NULL;
+	Book* argbuf = NULL;
+	int filtered = false;
+	int sel_buflisted = false;
+	int sel_bufloaded = false;
+	int sel_bufmodified = false;
 
 	allocReturnList(returnVar);
 
@@ -5496,7 +5497,8 @@ f_getbufinfo(Var *argvars, OUT Var* returnVar) {
 			continue;
 		if (filtered && ((sel_bufloaded && book->mem.mfile == NULL)
 				|| (sel_buflisted && !book->o.bookListed)
-				|| (sel_bufmodified && !book->wasModified)))
+				|| (sel_bufmodified && !book->wasModified))
+		)
 			continue;
 
 		Bag* b = getBookInfo(book);
@@ -5512,11 +5514,11 @@ f_getbufinfo(Var *argvars, OUT Var* returnVar) {
 //If 'retlist' is true, then the lines are returned as an Eegl List.
 private void
 getLinesIntoVar(
-	Book   *book,
-	LineNr   start,
-	LineNr   end,
-	int      retlist,
-	OUT Var   *returnVar
+	Book* book,
+	LineNr start,
+	LineNr end,
+	int retlist,
+	OUT Var* returnVar
 ) {
 	S p;
 
@@ -5551,9 +5553,9 @@ getLinesIntoVar(
 //"retlist" false: "getbufoneline()" function
 private void
 getBookLineIntoVar(Var* argvars, Var* returnVar, int retlist) {
-	LineNr   lnum = 1;
-	LineNr   end = 1;
-	int      anyEmsgSaved = anyEmsgG;
+	LineNr lnum = 1;
+	LineNr end = 1;
+	int anyEmsgSaved = anyEmsgG;
 
 	Book* book = daGetBookFromArg(&argvars[0]);
 	if (book) {
@@ -5582,8 +5584,8 @@ f_getbufoneline(Var *argvars, OUT Var* returnVar) {
 //"getline(lnum, [end])" function
 pub void
 f_getline(Var *argvars, OUT Var* returnVar) {
-	LineNr   end;
-	int      retlist;
+	LineNr end;
+	int retlist;
 	LineNr lnum = tv_get_lnum(argvars);
 	if (argvars[1].tag == VAR_UNKNOWN) {
 		end = 0;
@@ -5603,7 +5605,7 @@ f_setbufline(Var *argvars, OUT Var* returnVar) {
 
 pub void
 f_setline(Var *argvars, OUT Var* returnVar) {
-	int      anyEmsgSaved = anyEmsgG;
+	int anyEmsgSaved = anyEmsgG;
 
 	LineNr lnum = tv_get_lnum(&argvars[0]);
 	if (anyEmsgG == anyEmsgSaved)
@@ -6173,7 +6175,7 @@ win_lbr_chartabsize(CharTableSize* cts){
 		int charlen = *s == ZERO ? 1 : utfCharLen(s);
 		int i;
 		int col = (int)(s - line);
-		ArrayList    *gap = &po->book->textPropText;
+		ArrayList* gap = &po->book->textPropText;
 
 		//The "$" for 'list' mode will go between the EOL and the text prop, account for that.
 		if (has_lcs_eol) {
@@ -6189,11 +6191,11 @@ win_lbr_chartabsize(CharTableSize* cts){
 			//copy, the text prop may actually have been removed from the line.
 			if (tp->id < 0
 					&& ((tp->col - 1 >= col && tp->col - 1 < col + charlen)
-						   || (tp->col == MAXCOL
-						         && ((tp->flags & TEXT_PROP_ALIGN_ABOVE)
-						            ? col == 0
-						            : (s[0] == ZERO && cts->cts_with_trailing))
-						      )
+							|| (tp->col == MAXCOL
+									&& ((tp->flags & TEXT_PROP_ALIGN_ABOVE)
+										? col == 0
+										: (s[0] == ZERO && cts->cts_with_trailing))
+								)
 						)
 					&& -tp->id - 1 < gap->len
 			) {
@@ -6206,8 +6208,8 @@ win_lbr_chartabsize(CharTableSize* cts){
 						int n_extra = (int)STRLEN(p);
 
 						cells = text_prop_position(
-						   po, tp, vcol, (vcol + size) % (po->width - col_off) + col_off, &n_extra,
-						   &p, NULL, NULL, false
+							po, tp, vcol, (vcol + size) % (po->width - col_off) + col_off, &n_extra,
+							&p, NULL, NULL, false
 						);
 					} else
 						cells = eeglStrSize(p);
@@ -6224,7 +6226,7 @@ win_lbr_chartabsize(CharTableSize* cts){
 						size += tab_size;
 					}
 					if (tp->col == MAXCOL
-						   && (tp->flags & (TEXT_PROP_ALIGN_ABOVE | TEXT_PROP_ALIGN_BELOW))
+							&& (tp->flags & (TEXT_PROP_ALIGN_ABOVE | TEXT_PROP_ALIGN_BELOW))
 					)  //count extra line for property above/below
 						++cts->cts_prop_lines;
 				}
@@ -6321,7 +6323,7 @@ getvcol(
 	int head;
 	int ts = po->book->o.shiftWidth;
 	CharTableSize cts;
-	int      on_ZERO = false;
+	int on_ZERO = false;
 
 	ColNr vcol = 0;
 	S ptr = memGetLine(po->book, pos->lnum, false);  //points to current char
@@ -6481,7 +6483,7 @@ bookGetLeftRightVcols(
 	ColNr* left,
 	ColNr* right
 ) {
-	ColNr   from1, from2, to1, to2;
+	ColNr from1, from2, to1, to2;
 
 	if (LT_POSP(pos1, pos2)) {
 		bookGetVirtualColInVirtualMode(po, pos1, &from1, NULL, &to1);
@@ -6519,7 +6521,7 @@ private S msg_qflist = u8"[Quickfix List]";
 //Number of times freeBook() was called.
 private int freeCallCountS = 0;
 
-private int   top_file_num = 1;   //highest file number
+private int top_file_num = 1;   //highest file number
 private ArrayList recycledFileNumberS = GA_EMPTY;   //file numbers to recycle
 
 //Calculate the percentage that `part` is of the `whole`.
@@ -6562,10 +6564,10 @@ private int
 readBook(
 	int read_stdin,       //read file from stdin, otherwise fifo
 	Invocation* invo,          //for forced 'ff' or NULL
-	Unt      flags          //extra flags for readfile()
+	Unt flags          //extra flags for readfile()
 ){
 	int retval = OK;
-	LineNr   line_count;
+	LineNr line_count;
 
 	//Read from the book which the text is already filled in and append at the end.
 	line_count = curBook->mem.lineCount;
@@ -6604,7 +6606,7 @@ bookEnsureLoaded(Book* book) {
 		return;
 
 	//Make sure there is a portal into the book. Otherwise skip it.
-	AutocommSave   aco;
+	AutocommSave aco;
 	auCommPrepareBook(&aco, book);
 	if (curBook == book) {
 		if (swap_exists_action != SEA_READONLY)
@@ -6621,9 +6623,9 @@ bookOpenFromInvo(
 	Invocation* invo, //for forced 'ff' or NULL
 	Unt flags        //extra flags for readfile()
 ){
-	int      retval = OK;
-	BookRef   oldCurBook;
-	int      read_fifo = false;
+	int retval = OK;
+	BookRef oldCurBook;
+	int read_fifo = false;
 
 	if (optImmutableMode() && curBook->fullFileName)
 		curBook->o.modifiable = false;
@@ -6747,7 +6749,7 @@ bookOpenFromInvo(
 
 		//Go to the book that was opened, make sure there is a portal into it.
 		//If not then skip it.
-		AutocommSave   aco;
+		AutocommSave aco;
 		auCommPrepareBook(OUT &aco, oldCurBook.c);
 		if (curBook == oldCurBook.c) {
 			curBook->flags &= ~(BF_CHECK_RO | BF_NEVERLOADED);
@@ -7041,8 +7043,8 @@ bookClose(
 
 	//Remove the book from the list.
 	if (wipe_buf) {
-		Tab   *tp;
-		Portal      *po;
+		Tab* tp;
+		Portal* po;
 
 		//Do not wipe out the book if it is open in a portal.
 		if (book->countPortals > 0)
@@ -7117,25 +7119,26 @@ bookFreeAll(Book* book, Unt flags){
 	//Make sure the book isn't closed by autocommands.
 	++book->locked;
 	++book->lockedSplit;
-	BookRef   bookRef;
+	BookRef bookRef;
 	bookStoreInRef(OUT &bookRef, book);
-	if (book->mem.mfile) {
-		if (applyAutocomms(EVENT_BUFUNLOAD, book->currFileName, book->currFileName,
-						           false, book) && !bookRefValid(&bookRef))
-			//autocommands deleted the book
-			return;
-	}
-	if ((flags & BFA_DEL) && book->o.bookListed) {
-		if (applyAutocomms(EVENT_BUFDELETE, book->currFileName, book->currFileName, false, book)
-				&& !bookRefValid(&bookRef))
-		  //autocommands deleted the book
-		  return;
-	 }
-	if (flags & BFA_WIPE) {
-		if (applyAutocomms(EVENT_BUFWIPEOUT, book->currFileName, book->currFileName, false, book)
-				&& !bookRefValid(&bookRef))
-			 //autocommands deleted the book
-			 return;
+	if (
+			(book->mem.mfile
+			&& applyAutocomms(EVENT_BUFUNLOAD, book->currFileName, book->currFileName, false, book)
+			&& !bookRefValid(&bookRef)
+			)
+		|| ((flags & BFA_DEL) != 0 && book->o.bookListed
+			&& applyAutocomms(EVENT_BUFDELETE, book->currFileName, book->currFileName, false, book)
+			&& !bookRefValid(&bookRef)
+			)
+		|| ((flags & BFA_WIPE) != 0
+			&& applyAutocomms(
+					EVENT_BUFWIPEOUT, book->currFileName, book->currFileName, false, book
+				)
+			&& !bookRefValid(&bookRef)
+			)
+	) {
+		//autocommands deleted the book
+		return;
 	}
 	--book->locked;
 	--book->lockedSplit;
@@ -7494,7 +7497,7 @@ bookDo(
 		}
 	}
 
-	if (book == NULL) {    //could not find it
+	if (!book) {    //could not find it
 		if (start == DOBOOK_FIRST) {
 			//don't warn when deleting
 			if (!unload)
@@ -7538,7 +7541,8 @@ bookDo(
 		//When unloading or deleting a book that's already unloaded and
 		//unlisted: fail silently.
 		if (action != DOBOOK_WIPE && action != DOBOOK_WIPE_REUSE
-						&& !book->mem.mfile && !book->o.bookListed)
+						&& !book->mem.mfile && !book->o.bookListed
+		)
 			 return FAIL;
 
 		if ((flags & DOBOOK_FORCEIT) == 0 && bookWasChanged(book)) {
@@ -7615,10 +7619,10 @@ bookDo(
 					//Skip current and unlisted bufs. Also skip a location book, it might be deleted soon
 					if (book == curBook || !book->o.bookListed || isLocationListBook(book))
 						book = NULL;
-					ei (book->mem.mfile == NULL) {
+					ei (!book->mem.mfile) {
 						//skip unloaded book, but may keep it for later
 						if (!bp)
-						   bp = book;
+							bp = book;
 						book = NULL;
 					}
 				}
